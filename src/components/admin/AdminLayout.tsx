@@ -55,28 +55,28 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
 
       {/* Conteúdo principal com transição */}
       <main className="flex-1 h-full overflow-y-auto bg-gray-50 lg:ml-64 transition-all duration-300">
-        {/* Header fixo com blur backdrop */}
+        {/* Header fixo com blur backdrop - Mobile Optimized */}
         <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-30 shadow-sm" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-          <div className="w-full px-4 sm:px-6 lg:px-8 py-2 sm:py-3 flex justify-between items-center">
-            <div className="flex items-center gap-2 sm:gap-3">
+          <div className="w-full px-2 sm:px-4 lg:px-8 py-1.5 sm:py-2 lg:py-3 flex justify-between items-center gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 min-w-0 flex-1">
               {/* Botão menu mobile com toque otimizado */}
               <Button
                 variant="ghost"
                 size="icon"
                 className="lg:hidden text-gray-700 hover:text-gray-900 hover:bg-gray-100 
-                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
+                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95 flex-shrink-0"
                 onClick={() => setSidebarOpen(true)}
               >
                 <Menu className="h-5 w-5 sm:h-6 sm:w-6" />
               </Button>
-              <div className="flex items-center gap-2 sm:gap-3">
-                {icon && <div className="text-xl sm:text-2xl">{icon}</div>}
-                <div>
-                  <h1 className="text-lg sm:text-xl lg:text-2xl font-bold text-gray-900 font-playfair">
+              <div className="flex items-center gap-1.5 sm:gap-2 lg:gap-3 min-w-0">
+                {icon && <div className="text-lg sm:text-xl lg:text-2xl flex-shrink-0">{icon}</div>}
+                <div className="min-w-0">
+                  <h1 className="text-base sm:text-lg lg:text-xl xl:text-2xl font-bold text-gray-900 font-playfair truncate">
                     {title}
                   </h1>
                   {description && (
-                    <p className="text-xs sm:text-sm text-gray-700 font-raleway mt-0.5">
+                    <p className="text-[10px] sm:text-xs lg:text-sm text-gray-700 font-raleway mt-0.5 truncate hidden sm:block">
                       {description}
                     </p>
                   )}
@@ -84,9 +84,9 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
               </div>
             </div>
 
-            <div className="flex items-center gap-1 sm:gap-3">
+            <div className="flex items-center gap-0.5 sm:gap-1 lg:gap-3 flex-shrink-0">
               {/* Saudação do usuário - com cache para não piscar */}
-              <span className="hidden sm:block text-sm font-medium text-gray-700 transition-opacity duration-0">
+              <span className="hidden lg:block text-xs lg:text-sm font-medium text-gray-700 transition-opacity duration-0 truncate max-w-[120px] xl:max-w-none">
                 Bem-vindo, {displayName}
               </span>
               
@@ -95,10 +95,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                 variant="ghost"
                 size="icon"
                 className="relative text-gray-700 hover:text-gray-900 hover:bg-gray-100 
-                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
+                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95 flex-shrink-0"
               >
                 <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <Badge className="absolute top-1 right-1 h-3 w-3 sm:h-4 sm:w-4 bg-urbana-gold text-white p-0 border-0 text-[10px]" />
+                <Badge className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-urbana-gold text-white p-0 border-0 text-[8px] sm:text-[10px]" />
               </Button>
 
               {/* Menu Usuário */}
@@ -107,10 +107,10 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                   <Button 
                     variant="ghost" 
                     className="relative h-9 w-9 sm:h-10 sm:w-10 rounded-full hover:bg-gray-100 
-                    min-h-[44px] min-w-[44px] touch-manipulation active:scale-95"
+                    min-h-[44px] min-w-[44px] touch-manipulation active:scale-95 flex-shrink-0"
                   >
-                    <Avatar className="h-8 w-8 border-2 border-urbana-gold">
-                      <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white text-sm font-medium">
+                    <Avatar className="h-7 w-7 sm:h-8 sm:w-8 border-2 border-urbana-gold">
+                      <AvatarFallback className="bg-gradient-to-r from-urbana-gold to-yellow-500 text-white text-xs sm:text-sm font-medium">
                         {userInitials}
                       </AvatarFallback>
                     </Avatar>

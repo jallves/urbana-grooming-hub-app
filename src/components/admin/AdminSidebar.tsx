@@ -70,18 +70,18 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
           document.addEventListener('touchend', handleTouchEnd);
         }}
       >
-        {/* Header */}
-        <div className="p-6 border-b border-gray-200 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center">
+        {/* Header - Mobile Optimized */}
+        <div className="p-3 sm:p-4 lg:p-6 border-b border-gray-200 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center flex-shrink-0">
               <img 
                 src="/logo-costa-urbana-new.png" 
                 alt="Costa Urbana Logo" 
                 className="w-full h-full object-contain"
               />
             </div>
-            <div>
-              <h2 className="text-xl font-bold text-urbana-gold-dark font-playfair">
+            <div className="min-w-0">
+              <h2 className="text-base sm:text-lg lg:text-xl font-bold text-urbana-gold-dark font-playfair truncate">
                 Gestão Financeira
               </h2>
             </div>
@@ -91,17 +91,17 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               variant="ghost"
               size="icon"
               onClick={onClose}
-              className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 lg:hidden"
+              className="text-gray-500 hover:text-gray-900 hover:bg-gray-100 lg:hidden min-h-[44px] min-w-[44px] touch-manipulation flex-shrink-0"
             >
               <X className="h-5 w-5" />
             </Button>
           )}
         </div>
 
-        {/* Navigation com animações */}
-        <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
+        {/* Navigation com animações - Mobile Optimized */}
+        <nav className="flex-1 p-2 sm:p-3 lg:p-4 space-y-0.5 sm:space-y-1 overflow-y-auto">
           {loading ? (
-            <div className="text-center py-4 text-gray-500">Carregando...</div>
+            <div className="text-center py-3 sm:py-4 text-gray-500 text-xs sm:text-sm">Carregando...</div>
           ) : (
             menuItems.map((item, index) => {
             const isActiveRoute = location.pathname === item.href || 
@@ -114,7 +114,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               onClick={onClose}
               style={{ animationDelay: `${index * 30}ms` }}
               className={({ isActive }) =>
-                `group flex items-center gap-3 p-3 rounded-lg transition-all duration-200 
+                `group flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 lg:p-3 rounded-lg transition-all duration-200 
                 relative overflow-hidden animate-fade-in min-h-[44px] touch-manipulation
                 active:scale-[0.98] ${
                   isActive
@@ -124,9 +124,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               }
               end={item.href === '/admin'}
             >
-              <div className="relative z-10 flex items-center gap-3">
-                <item.icon className={`h-5 w-5 flex-shrink-0 ${isActiveRoute ? 'text-white' : 'text-urbana-gold'}`} />
-                <span className={`font-medium text-sm font-raleway truncate ${isActiveRoute ? 'text-white' : 'text-gray-900'}`}>{item.title}</span>
+              <div className="relative z-10 flex items-center gap-2 sm:gap-3 min-w-0">
+                <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 flex-shrink-0 ${isActiveRoute ? 'text-white' : 'text-urbana-gold'}`} />
+                <span className={`font-medium text-xs sm:text-sm font-raleway truncate ${isActiveRoute ? 'text-white' : 'text-gray-900'}`}>{item.title}</span>
               </div>
             </NavLink>
             );
@@ -134,16 +134,16 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
           )}
         </nav>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex flex-col items-center gap-2">
-            <p className="text-sm font-semibold text-urbana-gold">ERP Sistema Inteligente</p>
-            <div className="flex items-center gap-2 justify-center">
-              <p className="text-xs text-gray-900">powered by</p>
+        {/* Footer - Mobile Optimized */}
+        <div className="p-2 sm:p-3 lg:p-4 border-t border-gray-200">
+          <div className="flex flex-col items-center gap-1 sm:gap-2">
+            <p className="text-xs sm:text-sm font-semibold text-urbana-gold text-center">ERP Sistema Inteligente</p>
+            <div className="flex items-center gap-1.5 sm:gap-2 justify-center">
+              <p className="text-[10px] sm:text-xs text-gray-900">powered by</p>
               <img 
                 src={beltecLogo} 
                 alt="Beltec Soluções" 
-                className="h-5 w-auto object-contain"
+                className="h-4 sm:h-5 w-auto object-contain"
               />
             </div>
           </div>

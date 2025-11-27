@@ -55,8 +55,8 @@ export const TotemLayout: React.FC<TotemLayoutProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 lg:p-8 font-poppins relative overflow-hidden">
-      {/* Background image */}
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-2 sm:p-3 md:p-4 lg:p-6 xl:p-8 font-poppins relative overflow-hidden">
+      {/* Background image - Mobile Optimized */}
       <div className="absolute inset-0 z-0">
         <img 
           src={barbershopBg} 
@@ -67,58 +67,58 @@ export const TotemLayout: React.FC<TotemLayoutProps> = ({
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
 
-      {/* Animated background effects */}
+      {/* Animated background effects - Responsive */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
-      {/* Header */}
+      {/* Header - Mobile First */}
       {(title || showBackButton) && (
-        <div className="relative z-10 flex items-center justify-between mb-4 sm:mb-6">
+        <div className="relative z-10 flex items-center justify-between mb-3 sm:mb-4 md:mb-6 gap-2">
           {/* Back Button */}
           {showBackButton ? (
             <Button
               onClick={handleBack}
               variant="ghost"
               size="lg"
-              className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200"
+              className="h-11 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200 min-w-[44px] touch-manipulation"
             >
-              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
+              <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2 flex-shrink-0" />
               <span className="hidden sm:inline">Voltar</span>
             </Button>
           ) : (
-            <div className="w-12 sm:w-16 md:w-24" />
+            <div className="w-11 sm:w-12 md:w-16 lg:w-24 flex-shrink-0" />
           )}
 
           {/* Title */}
           {title && (
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-light text-center flex-1 drop-shadow-lg">
+            <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-bold text-urbana-light text-center flex-1 drop-shadow-lg leading-tight px-2">
               {title}
             </h1>
           )}
 
           {/* Header Right */}
           {headerRight ? (
-            <div className="flex items-center">
+            <div className="flex items-center flex-shrink-0">
               {headerRight}
             </div>
           ) : (
-            <div className="w-12 sm:w-16 md:w-24" />
+            <div className="w-11 sm:w-12 md:w-16 lg:w-24 flex-shrink-0" />
           )}
         </div>
       )}
 
-      {/* Subtitle */}
+      {/* Subtitle - Mobile Optimized */}
       {subtitle && (
-        <p className="relative z-10 text-center text-sm sm:text-base md:text-lg text-urbana-light/70 mb-4 sm:mb-6 drop-shadow-md">
+        <p className="relative z-10 text-center text-xs sm:text-sm md:text-base lg:text-lg text-urbana-light/70 mb-3 sm:mb-4 md:mb-6 drop-shadow-md px-4">
           {subtitle}
         </p>
       )}
 
-      {/* Content */}
+      {/* Content - Mobile Optimized */}
       <div className={cn(
-        'relative z-10 flex-1 overflow-y-auto pb-4 sm:pb-6',
+        'relative z-10 flex-1 overflow-y-auto pb-3 sm:pb-4 md:pb-6',
         className
       )}>
         {children}
@@ -153,7 +153,7 @@ export const TotemContentContainer: React.FC<{
 
   return (
     <div className={cn(
-      'mx-auto w-full pb-4',
+      'mx-auto w-full pb-2 sm:pb-3 md:pb-4 px-2 sm:px-3 md:px-4',
       getMaxWidthClass(),
       className
     )}>
@@ -171,27 +171,27 @@ export const TotemGrid: React.FC<{
   const getGridCols = () => {
     switch (columns) {
       case 1: return 'grid-cols-1';
-      case 2: return 'grid-cols-2 sm:grid-cols-2';
-      case 3: return 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3';
-      case 4: return 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4';
-      default: return 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-3';
+      case 2: return 'grid-cols-1 xs:grid-cols-2';
+      case 3: return 'grid-cols-1 xs:grid-cols-2 lg:grid-cols-3';
+      case 4: return 'grid-cols-1 xs:grid-cols-2 md:grid-cols-3 xl:grid-cols-4';
+      default: return 'grid-cols-1 xs:grid-cols-2 lg:grid-cols-3';
     }
   };
 
   const getGapClass = () => {
     switch (gap) {
       case 2: return 'gap-2';
-      case 3: return 'gap-3';
-      case 4: return 'gap-4';
-      case 6: return 'gap-6';
-      case 8: return 'gap-8';
-      default: return 'gap-4';
+      case 3: return 'gap-2 sm:gap-3';
+      case 4: return 'gap-2 sm:gap-3 md:gap-4';
+      case 6: return 'gap-3 sm:gap-4 md:gap-6';
+      case 8: return 'gap-3 sm:gap-5 md:gap-8';
+      default: return 'gap-2 sm:gap-3 md:gap-4';
     }
   };
 
   return (
     <div className={cn(
-      'grid',
+      'grid w-full',
       getGridCols(),
       getGapClass(),
       className
