@@ -4508,6 +4508,7 @@ export type Database = {
         }
         Returns: string
       }
+      dearmor: { Args: { "": string }; Returns: string }
       decrease_product_stock: {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
@@ -4518,6 +4519,8 @@ export type Database = {
         Args: { p_reason?: string; p_user_id: string }
         Returns: Json
       }
+      gen_random_uuid: { Args: never; Returns: string }
+      gen_salt: { Args: { "": string }; Returns: string }
       generate_payment_number: { Args: never; Returns: string }
       generate_qr_checkin: {
         Args: { p_agendamento_id: string; p_secret: string }
@@ -4752,6 +4755,10 @@ export type Database = {
           errors: Json
           migrated_count: number
         }[]
+      }
+      pgp_armor_headers: {
+        Args: { "": string }
+        Returns: Record<string, unknown>[]
       }
       reprocess_failed_appointment: {
         Args: { p_agendamento_id: string }
