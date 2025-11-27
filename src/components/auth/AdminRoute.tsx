@@ -1,9 +1,19 @@
-import React, { useEffect } from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle, LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -19,6 +29,10 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
 }) => {
   const { user, isAdmin, isBarber, isManager, isMaster, canAccessModule, loading, requiresPasswordChange, signOut, rolesChecked } = useAuth();
   const location = useLocation();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Usuário tem acesso se for admin, manager, master ou (barber quando permitido)
   const hasAccess = user ? (isAdmin || isManager || isMaster || (allowBarber && isBarber)) : false;
@@ -26,16 +40,97 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // Validação simplificada de módulo usando a função do AuthContext
   const hasModuleAccess = requiredModule ? canAccessModule(requiredModule) : true;
 
+  // Detectar loading infinito (mais de 8 segundos)
+  useEffect(() => {
+    if (loading || !rolesChecked) {
+      const timer = setTimeout(() => {
+        console.warn('[AdminRoute] ⚠️ Loading timeout detectado - mostrando dialog de recuperação');
+        setLoadingTimeout(true);
+        setShowRecoveryDialog(true);
+      }, 8000); // 8 segundos
+
+      return () => clearTimeout(timer);
+    } else {
+      setLoadingTimeout(false);
+    }
+  }, [loading, rolesChecked]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast({
+        title: "Logout realizado",
+        description: "Você foi deslogado com sucesso",
+      });
+      window.location.href = '/auth';
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      toast({
+        title: "Erro ao deslogar",
+        description: "Tente novamente ou limpe o cache do navegador",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGoToDashboard = () => {
+    setShowRecoveryDialog(false);
+    navigate('/admin', { replace: true });
+  };
+
   // Durante loading OU enquanto roles não foram verificados, mostrar spinner
   // Isso garante que nunca mostramos conteúdo antes da validação completa
   if (loading || !rolesChecked) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-background">
-        <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary mb-4" />
-        <p className="text-muted-foreground text-base sm:text-lg font-medium animate-pulse">
-          Carregando...
-        </p>
-      </div>
+      <>
+        <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-background">
+          <Loader2 className="h-10 w-10 sm:h-12 sm:w-12 animate-spin text-primary mb-4" />
+          <p className="text-muted-foreground text-base sm:text-lg font-medium animate-pulse">
+            Carregando...
+          </p>
+          {loadingTimeout && (
+            <p className="text-yellow-600 dark:text-yellow-400 text-sm mt-4 animate-pulse">
+              Isso está demorando mais do que o normal...
+            </p>
+          )}
+        </div>
+
+        {/* Dialog de Recuperação para Loading Infinito */}
+        <AlertDialog open={showRecoveryDialog} onOpenChange={setShowRecoveryDialog}>
+          <AlertDialogContent className="max-w-md">
+            <AlertDialogHeader>
+              <div className="flex items-center gap-3 mb-2">
+                <AlertCircle className="h-6 w-6 text-yellow-600 dark:text-yellow-400" />
+                <AlertDialogTitle className="text-xl">Carregamento Lento</AlertDialogTitle>
+              </div>
+              <AlertDialogDescription className="text-base space-y-3">
+                <p>
+                  O carregamento está demorando mais do que o esperado. Isso pode ser um problema de sessão ou conexão.
+                </p>
+                <p className="font-semibold text-foreground">
+                  O que você gostaria de fazer?
+                </p>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+              <AlertDialogAction
+                onClick={handleGoToDashboard}
+                className="w-full sm:w-auto bg-primary hover:bg-primary/90"
+              >
+                <Home className="mr-2 h-4 w-4" />
+                Ir para Dashboard
+              </AlertDialogAction>
+              <AlertDialogAction
+                onClick={handleLogout}
+                className="w-full sm:w-auto bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Deslogar
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </>
     );
   }
 
