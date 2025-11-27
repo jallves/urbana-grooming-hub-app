@@ -20,13 +20,13 @@
   }
 
   html, body {
-    @apply bg-white text-gray-900 font-raleway;
+    @apply text-gray-900 font-raleway;
     overflow-x: hidden;
     position: relative;
   }
 
   body {
-    @apply bg-white text-gray-900 font-raleway;
+    @apply text-gray-900 font-raleway;
     overflow-y: hidden; /* Remove scroll do body */
   }
   
