@@ -92,10 +92,16 @@ if (!container) {
   throw new Error("Root element not found");
 }
 
-// Remover o loading screen inicial quando o React carregar
-if (initialLoader) {
-  initialLoader.style.display = "none";
-}
+// Aguardar 1 segundo antes de remover o loading inicial para garantir que o React carregou
+setTimeout(() => {
+  if (initialLoader) {
+    initialLoader.style.transition = "opacity 0.3s ease-out";
+    initialLoader.style.opacity = "0";
+    setTimeout(() => {
+      initialLoader.style.display = "none";
+    }, 300);
+  }
+}, 1000);
 
 const root = createRoot(container);
 root.render(
