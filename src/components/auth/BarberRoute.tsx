@@ -43,14 +43,14 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
     }
   }, [location.pathname, loading, rolesChecked, user, isMaster, isAdmin, isManager, isBarber, allowBarber]);
 
-  // Detectar loading infinito (mais de 8 segundos)
+  // Detectar loading infinito (mais de 3 segundos)
   useEffect(() => {
     if (loading || !rolesChecked) {
       const timer = setTimeout(() => {
         console.warn('[BarberRoute] ⚠️ Loading timeout detectado - mostrando dialog de recuperação');
         setLoadingTimeout(true);
         setShowRecoveryDialog(true);
-      }, 8000); // 8 segundos
+      }, 3000); // 3 segundos
 
       return () => clearTimeout(timer);
     } else {
