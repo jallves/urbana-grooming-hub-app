@@ -23,7 +23,10 @@ interface AdminSidebarProps {
 }
 
 const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
-  const { canAccessModule, loading } = useAuth();
+  const { canAccessModule, loading, rolesChecked } = useAuth();
+  
+  // Considera carregando se loading OU roles não verificadas
+  const isLoading = loading || !rolesChecked;
 
   const allMenuItems = [
     { title: 'Dashboard', icon: LayoutDashboard, href: '/admin', color: 'from-blue-500 to-cyan-500' },
@@ -100,7 +103,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
 
         {/* Navigation com animações - Mobile Optimized */}
         <nav className="flex-1 p-2 sm:p-3 lg:p-4 space-y-0.5 sm:space-y-1 overflow-y-auto">
-          {loading ? (
+          {isLoading ? (
             <div className="text-center py-3 sm:py-4 text-gray-500 text-xs sm:text-sm">Carregando...</div>
           ) : (
             menuItems.map((item, index) => {
