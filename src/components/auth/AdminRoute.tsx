@@ -47,14 +47,14 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
   // Validação simplificada de módulo usando a função do AuthContext
   const hasModuleAccess = requiredModule ? canAccessModule(requiredModule) : true;
 
-  // Detectar loading infinito (mais de 8 segundos)
+  // Detectar loading infinito (mais de 3 segundos)
   useEffect(() => {
     if (loading || !rolesChecked) {
       const timer = setTimeout(() => {
         console.warn('[AdminRoute] ⚠️ Loading timeout detectado - mostrando dialog de recuperação');
         setLoadingTimeout(true);
         setShowRecoveryDialog(true);
-      }, 8000); // 8 segundos
+      }, 3000); // 3 segundos
 
       return () => clearTimeout(timer);
     } else {
