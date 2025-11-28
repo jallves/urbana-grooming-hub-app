@@ -31,8 +31,8 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    // Container principal - viewport fixo com overscroll bloqueado
-    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden" style={{ overscrollBehavior: 'none' }}>
+    // Container principal - viewport fixo
+    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -53,9 +53,9 @@ const BarberLayout: React.FC = () => {
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Header FIXO - Fixed position para garantir que nunca se mova */}
+      {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
+        className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
@@ -111,9 +111,9 @@ const BarberLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Navigation FIXO - Fixed position para garantir que nunca se mova */}
+      {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
+        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="w-full px-1">
@@ -266,7 +266,7 @@ const BarberLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Área com scroll próprio e overscroll bloqueado */}
+      {/* Main Content - Área com scroll próprio */}
       <main 
         className="absolute z-10 overflow-y-auto overflow-x-hidden"
         style={{
@@ -276,8 +276,6 @@ const BarberLayout: React.FC = () => {
           right: 0,
           paddingLeft: 'env(safe-area-inset-left)',
           paddingRight: 'env(safe-area-inset-right)',
-          overscrollBehavior: 'contain',
-          WebkitOverflowScrolling: 'touch',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
