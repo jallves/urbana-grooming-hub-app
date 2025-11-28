@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BarberData {
   id: string;
@@ -14,51 +13,53 @@ interface BarberData {
 export const useBarberAuth = () => {
   const [barber, setBarber] = useState<BarberData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { user } = useAuth(); // Usa o AuthContext ao invés de verificar novamente
 
   useEffect(() => {
-    checkBarberAuth();
-  }, []);
+    // CRÍTICO: Só busca dados do barbeiro se houver usuário autenticado
+    // NÃO faz navegação aqui - isso é responsabilidade do BarberRoute
+    if (user?.email) {
+      checkBarberAuth();
+    } else {
+      setLoading(false);
+    }
+  }, [user]);
 
   const checkBarberAuth = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      
-      if (!user) {
-        navigate('/barbeiro/login');
-        return;
-      }
+    if (!user?.email) {
+      setLoading(false);
+      return;
+    }
 
+    try {
       // Buscar barbeiro da tabela painel_barbeiros
       const { data: barberData, error } = await supabase
         .from('painel_barbeiros')
         .select('*')
         .eq('email', user.email)
         .eq('is_active', true)
-        .single();
+        .maybeSingle(); // maybeSingle ao invés de single para não dar erro se não encontrar
 
-      if (error || !barberData) {
-        console.error('Erro ao verificar barbeiro:', error);
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar o painel do barbeiro",
-          variant: "destructive",
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
+      if (error) {
+        console.error('Erro ao buscar barbeiro:', error);
+        setBarber(null);
         return;
       }
 
-      setBarber({
-        id: barberData.id,
-        nome: barberData.nome,
-        email: barberData.email,
-        is_active: barberData.is_active
-      });
+      if (barberData) {
+        setBarber({
+          id: barberData.id,
+          nome: barberData.nome,
+          email: barberData.email,
+          is_active: barberData.is_active
+        });
+      } else {
+        console.warn('Barbeiro não encontrado para:', user.email);
+        setBarber(null);
+      }
     } catch (error) {
-      console.error('Erro na autenticação do barbeiro:', error);
-      navigate('/barbeiro/login');
+      console.error('Erro ao verificar barbeiro:', error);
+      setBarber(null);
     } finally {
       setLoading(false);
     }

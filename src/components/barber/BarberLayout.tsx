@@ -19,6 +19,8 @@ const BarberLayout: React.FC = () => {
   const handleLogout = () => {
     setIsLoggingOut(true);
     console.log('🚪 [BarberLayout] Iniciando processo de logout...');
+    console.log('🧹 [BarberLayout] Limpando rota salva do barbeiro');
+    localStorage.removeItem('barber_last_route'); // CRÍTICO: Limpa rota salva ao fazer logout manual
     signOut();
     navigate('/barbeiro/login', { replace: true });
   };

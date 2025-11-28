@@ -29,8 +29,16 @@ const BarberAuth: React.FC = () => {
     // Usuário autenticado - redirecionar para seu painel
     const hasBarberAccess = isBarber || isAdmin || isMaster || isManager;
     if (hasBarberAccess) {
-      console.log('[BarberAuth] ✅ Barbeiro autenticado - redirecionando para dashboard');
-      navigate('/barbeiro/dashboard', { replace: true });
+      console.log('[BarberAuth] ✅ Barbeiro autenticado - redirecionando');
+      
+      // CRÍTICO: Verificar se há uma rota salva para restaurar
+      const savedRoute = localStorage.getItem('barber_last_route');
+      const targetRoute = savedRoute && savedRoute.startsWith('/barbeiro/') 
+        ? savedRoute 
+        : '/barbeiro/dashboard';
+      
+      console.log('[BarberAuth] 🎯 Redirecionando para:', targetRoute);
+      navigate(targetRoute, { replace: true });
     } else {
       console.log('[BarberAuth] ℹ️ Usuário não é barbeiro - redirecionando para home');
       navigate('/', { replace: true });
@@ -38,9 +46,16 @@ const BarberAuth: React.FC = () => {
   }, [user, isBarber, isAdmin, isMaster, isManager, rolesChecked, authLoading, navigate]);
 
   const handleLoginSuccess = async (userId: string) => {
-    console.log('Login successful for user:', userId);
-    // Após login bem-sucedido, redirecionar para dashboard
-    navigate('/barbeiro/dashboard', { replace: true });
+    console.log('[BarberAuth] ✅ Login successful for user:', userId);
+    
+    // CRÍTICO: Após login, verificar se há uma rota salva para restaurar
+    const savedRoute = localStorage.getItem('barber_last_route');
+    const targetRoute = savedRoute && savedRoute.startsWith('/barbeiro/') 
+      ? savedRoute 
+      : '/barbeiro/dashboard';
+    
+    console.log('[BarberAuth] 🎯 Após login, redirecionando para:', targetRoute);
+    navigate(targetRoute, { replace: true });
   };
 
   const handleGoHome = () => {
@@ -51,9 +66,10 @@ const BarberAuth: React.FC = () => {
   // O redirecionamento é feito pelo useEffect quando houver usuário autenticado
 
   const handleLogout = () => {
+    console.log('[BarberAuth] 🚪 Logout - limpando rota salva');
+    localStorage.removeItem('barber_last_route'); // Limpa a rota salva ao fazer logout
     signOut();
     navigate('/barbeiro/login', { replace: true });
-    console.log('[BarberAuth] 🚪 Logout realizado');
   };
 
   // Se usuário logado, useEffect cuida do redirecionamento

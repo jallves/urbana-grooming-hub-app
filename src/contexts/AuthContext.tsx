@@ -34,6 +34,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [session, setSession] = useState<any>(null); // CRÍTICO: Armazenar session completa
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
@@ -89,44 +90,24 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     let mounted = true;
 
-    const initializeAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-
-        if (session?.user) {
-          setUser(session.user);
-          const role = await checkUserRoles(session.user.id);
-          if (mounted) {
-            applyRole(role);
-            setLoading(false);
-          }
-        } else {
-          setLoading(false);
-          setRolesChecked(true);
-        }
-      } catch (error) {
-        console.error('[AuthContext] Erro na inicialização:', error);
-        if (mounted) {
-          setLoading(false);
-          setRolesChecked(true);
-        }
-      }
-    };
-
+    // CRÍTICO: Setup do listener PRIMEIRO para capturar todos os eventos
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (!mounted) return;
         
         console.log('[AuthContext] 🔔 Auth event:', event);
         
+        // SEMPRE atualiza a session primeiro
+        setSession(session);
+        
         if (event === 'SIGNED_OUT') {
+          console.log('[AuthContext] 👋 Usuário deslogado');
           setUser(null);
           applyRole(null);
           setLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
           if (session?.user) {
+            console.log('[AuthContext] ✅ Sessão ativa:', event);
             setUser(session.user);
             const role = await checkUserRoles(session.user.id);
             if (mounted) {
@@ -137,6 +118,38 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
     );
+
+    // DEPOIS do listener, inicializar com sessão existente
+    const initializeAuth = async () => {
+      try {
+        console.log('[AuthContext] 🔍 Verificando sessão existente...');
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!mounted) return;
+
+        setSession(session); // CRÍTICO: Armazenar session
+
+        if (session?.user) {
+          console.log('[AuthContext] ✅ Sessão encontrada para:', session.user.email);
+          setUser(session.user);
+          const role = await checkUserRoles(session.user.id);
+          if (mounted) {
+            applyRole(role);
+            setLoading(false);
+          }
+        } else {
+          console.log('[AuthContext] ℹ️ Nenhuma sessão encontrada');
+          setLoading(false);
+          setRolesChecked(true);
+        }
+      } catch (error) {
+        console.error('[AuthContext] ❌ Erro na inicialização:', error);
+        if (mounted) {
+          setLoading(false);
+          setRolesChecked(true);
+        }
+      }
+    };
 
     initializeAuth();
 
@@ -157,12 +170,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsClient(false);
     setUserRole(null);
     setUser(null);
+    setSession(null); // CRÍTICO: Limpar session também
     setRolesChecked(true);
     setLoading(false);
     
     // 2. LIMPAR TODO O LOCALSTORAGE IMEDIATAMENTE (síncrono)
     localStorage.removeItem('admin_last_route');
-    localStorage.removeItem('barber_last_route');
+    localStorage.removeItem('barber_last_route'); // CRÍTICO: Limpa rota salva
     localStorage.removeItem('client_last_route');
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
