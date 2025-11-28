@@ -65,9 +65,12 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 right-0 z-[51] w-[280px] bg-[#0d0d0d] transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 shadow-2xl ${
-        isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
-      }`}>
+      <div 
+        style={{ backgroundColor: '#000000' }}
+        className={`fixed inset-y-0 right-0 z-[51] w-[280px] transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 shadow-2xl ${
+          isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
+        }`}
+      >
         <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30">
           <h2 className="text-lg font-semibold text-urbana-gold">Menu</h2>
           <Button
