@@ -93,6 +93,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
           <div className="flex flex-col space-y-3 flex-1">
             <Link 
               to="/" 
+              style={{ backgroundColor: '#000000' }}
               className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
@@ -101,7 +102,8 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
             </Link>
             
             <a 
-              href="#services" 
+              href="#services"
+              style={{ backgroundColor: '#000000' }}
               className="flex items-center space-x-3 text-white hover:text-urbana-gold transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
@@ -111,6 +113,7 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
             <Link 
               to="/painel-cliente/login"
+              style={{ backgroundColor: '#000000' }}
               className="flex items-center space-x-3 text-urbana-gold hover:text-yellow-300 transition-colors py-3 px-2 rounded-md hover:bg-urbana-gold/20"
               onClick={() => handleItemClick()}
             >
