@@ -125,8 +125,8 @@ const PainelClienteLayout: React.FC = () => {
 
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl safe-bottom"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         <div className="w-full px-1">
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
