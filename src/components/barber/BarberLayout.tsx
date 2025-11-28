@@ -31,8 +31,8 @@ const BarberLayout: React.FC = () => {
   ];
 
   return (
-    // Container principal - viewport fixo
-    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
+    // Container principal - viewport fixo com safe areas
+    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden touch-pan-y">
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -55,23 +55,26 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
+        style={{ 
+          paddingTop: 'max(0.5rem, env(safe-area-inset-top))',
+          height: 'calc(64px + env(safe-area-inset-top))'
+        }}
       >
-        <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
-          <div className="flex items-center justify-between">
+        <div className="w-full px-2 md:px-6 lg:px-8 h-16 flex items-center">
+          <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
                 <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                    className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
+                <h1 className="text-base sm:text-lg md:text-xl font-bold text-urbana-light drop-shadow-lg">
                   Barbearia Costa Urbana
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
@@ -113,11 +116,14 @@ const BarberLayout: React.FC = () => {
 
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ 
+          paddingBottom: 'max(0.5rem, env(safe-area-inset-bottom))',
+          height: 'calc(72px + env(safe-area-inset-bottom))'
+        }}
       >
-        <div className="w-full px-1">
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+        <div className="w-full px-1 h-full flex items-center">
+          <div className="grid grid-cols-4 gap-1 w-full">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -129,8 +135,8 @@ const BarberLayout: React.FC = () => {
                   onClick={() => navigate(item.path)}
                   className={`
                     w-full h-auto flex flex-col items-center justify-center 
-                    p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
-                    relative overflow-hidden min-h-[60px] sm:min-h-[70px]
+                    p-2 rounded-xl transition-all duration-300 
+                    relative overflow-hidden
                     ${isActive 
                       ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                       : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -138,18 +144,18 @@ const BarberLayout: React.FC = () => {
                   `}
                 >
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl" />
                   )}
                   
-                  <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
-                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-xs sm:text-sm font-medium leading-tight text-center">
+                  <div className="relative z-10 flex flex-col items-center gap-0.5">
+                    <Icon className="h-5 w-5" />
+                    <span className="text-[10px] font-medium leading-tight text-center">
                       {item.label}
                     </span>
                   </div>
                   
                   {isActive && (
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
+                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
                   )}
                 </Button>
               );
@@ -159,7 +165,12 @@ const BarberLayout: React.FC = () => {
       </nav>
 
       {/* Desktop Navigation Sidebar */}
-      <nav className="hidden md:flex absolute left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+      <nav className="hidden md:flex fixed left-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto"
+        style={{
+          top: 'calc(64px + env(safe-area-inset-top))',
+          bottom: 0
+        }}
+      >
         <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
@@ -266,12 +277,12 @@ const BarberLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Área com scroll próprio */}
+      {/* Main Content - Área com scroll próprio e safe areas calculadas */}
       <main 
-        className="absolute z-10 overflow-y-auto overflow-x-hidden"
+        className="fixed z-10 overflow-y-auto overflow-x-hidden md:overflow-y-auto overscroll-contain"
         style={{
-          top: '72px',
-          bottom: '100px',
+          top: 'calc(64px + env(safe-area-inset-top))',
+          bottom: 'calc(72px + env(safe-area-inset-bottom))',
           left: 0,
           right: 0,
           paddingLeft: 'env(safe-area-inset-left)',
@@ -279,8 +290,8 @@ const BarberLayout: React.FC = () => {
         }}
       >
         {/* Desktop: ajusta para sidebar */}
-        <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80 md:pb-0">
-          <div className="w-full max-w-[1800px] mx-auto px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="w-full min-h-full md:pl-64 lg:pl-72 xl:pl-80">
+          <div className="w-full max-w-[1800px] mx-auto px-3 md:px-6 lg:px-8 py-4">
             <Outlet />
           </div>
         </div>
@@ -292,6 +303,19 @@ const BarberLayout: React.FC = () => {
           main {
             bottom: 0 !important;
           }
+        }
+        
+        /* Previne comportamentos indesejados de touch */
+        body {
+          overscroll-behavior: none;
+          -webkit-overflow-scrolling: touch;
+        }
+        
+        /* Garante que elementos fixos permaneçam fixos */
+        header, nav {
+          position: fixed !important;
+          -webkit-transform: translateZ(0);
+          transform: translateZ(0);
         }
       `}</style>
     </div>
