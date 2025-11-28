@@ -20,34 +20,7 @@ export default function PainelClienteLogin() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
-  // REDIRECIONAR se já estiver logado como cliente
-  React.useEffect(() => {
-    // Aguardar verificação completa
-    if (authLoading || !rolesChecked) {
-      return;
-    }
-
-    // Sem usuário = mostrar formulário de login
-    if (!user) {
-      return;
-    }
-
-    // Usuário autenticado e é cliente = redirecionar para dashboard
-    if (isClient) {
-      console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando');
-      
-      // CRÍTICO: Verificar se há uma rota salva para restaurar
-      const savedRoute = localStorage.getItem('client_last_route');
-      const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
-        ? savedRoute 
-        : '/painel-cliente/dashboard';
-      
-      console.log('[PainelClienteLogin] 🎯 Redirecionando para:', targetRoute);
-      navigate(targetRoute, { replace: true });
-    }
-    // Se não é cliente, apenas mostrar o formulário de login normalmente
-    // Não redirecionar para lugar nenhum - deixar usuário tentar logar como cliente
-  }, [user, isClient, rolesChecked, authLoading, navigate]);
+  // SEM REDIRECIONAMENTO AUTOMÁTICO - Mostrar tela de acesso se já logado
 
   const handleLogin = async (email: string, senha: string) => {
     setErro('');
@@ -135,6 +108,67 @@ export default function PainelClienteLogin() {
   const handleGoHome = () => {
     navigate('/');
   };
+
+  const handleGoDashboard = () => {
+    const savedRoute = localStorage.getItem('client_last_route');
+    const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+      ? savedRoute 
+      : '/painel-cliente/dashboard';
+    navigate(targetRoute);
+  };
+
+  const handleLogout = async () => {
+    setLoading(true);
+    localStorage.removeItem('client_last_route');
+    await signOut();
+    setLoading(false);
+  };
+
+  // Se já estiver logado como cliente, mostrar tela de acesso
+  if (user && isClient && rolesChecked && !authLoading) {
+    return (
+      <AuthContainer
+        title="Costa Urbana"
+        subtitle="Você já está logado"
+      >
+        <div className="w-full space-y-4">
+          <div className="p-6 bg-urbana-gold/10 border border-urbana-gold/20 rounded-xl text-center space-y-2">
+            <p className="text-urbana-gold font-semibold text-lg">✅ Sessão Ativa</p>
+            <p className="text-urbana-light/80 text-sm">
+              Você já está logado como cliente.
+            </p>
+          </div>
+
+          <Button
+            onClick={handleGoDashboard}
+            variant="default"
+            disabled={loading}
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
+          >
+            Ir para o Painel
+          </Button>
+
+          <Button
+            onClick={handleLogout}
+            variant="outline"
+            disabled={loading}
+            className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 h-12 rounded-xl"
+          >
+            Sair da Conta
+          </Button>
+
+          <Button
+            onClick={handleGoHome}
+            variant="ghost"
+            className="w-full text-urbana-light/60 hover:text-urbana-gold hover:bg-urbana-gold/10 h-12 rounded-xl"
+          >
+            <Home className="h-4 w-4 mr-2" />
+            Voltar ao site
+          </Button>
+        </div>
+      </AuthContainer>
+    );
+  }
 
   return (
     <AuthContainer
