@@ -96,12 +96,12 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
                 <AlertDialogTitle className="text-xl">Carregamento Lento</AlertDialogTitle>
               </div>
               <AlertDialogDescription className="text-base space-y-3">
-                <span className="block">
+                <p>
                   O carregamento está demorando mais do que o esperado. Isso pode ser um problema de sessão ou conexão.
-                </span>
-                <span className="block font-semibold text-foreground">
+                </p>
+                <p className="font-semibold text-foreground">
                   O que você gostaria de fazer?
-                </span>
+                </p>
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter className="flex-col sm:flex-row gap-2">

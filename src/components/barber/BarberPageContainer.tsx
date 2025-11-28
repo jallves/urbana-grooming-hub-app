@@ -61,9 +61,9 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
             <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
               Olá, {displayName?.split(' ')[0] || 'Barbeiro'}!
             </h1>
-            <span className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md mt-1 block">
+            <p className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md mt-1">
               Bem-vindo ao seu painel profissional
-            </span>
+            </p>
           </div>
         </div>
       )}

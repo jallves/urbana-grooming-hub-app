@@ -125,7 +125,7 @@ const BarberDashboard: React.FC = () => {
                     <PainelBarbeiroCardTitle className="text-xs sm:text-sm font-medium text-urbana-light/70 mt-0.5 sm:mt-1 truncate">
                       {stat.label}
                     </PainelBarbeiroCardTitle>
-                    <p className="text-[10px] sm:text-xs text-urbana-light/50 truncate leading-tight">
+                    <p className="text-[10px] sm:text-xs text-urbana-light/50 truncate">
                       {stat.subtitle}
                     </p>
                   </div>
@@ -146,10 +146,10 @@ const BarberDashboard: React.FC = () => {
                   <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-urbana-gold" />
                 </div>
                 <div>
-                  <span className="text-sm sm:text-base text-urbana-light/70 block">Receita Total do Mês</span>
-                  <span className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold font-playfair block">
+                  <p className="text-sm sm:text-base text-urbana-light/70">Receita Total do Mês</p>
+                  <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold font-playfair">
                     R$ {metrics.totalRevenue.toFixed(2)}
-                  </span>
+                  </p>
                 </div>
               </div>
             </div>
