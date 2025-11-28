@@ -49,7 +49,8 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
       'max-w-7xl',
       'mx-auto',
       // Padding vertical
-      'py-4 sm:py-6',
+      'pt-4 sm:pt-6',
+      'pb-4 sm:pb-6',
       // Padding horizontal
       'px-4 md:px-6 lg:px-8',
       className

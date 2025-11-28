@@ -115,8 +115,8 @@ const BarberLayout: React.FC = () => {
 
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}
+        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl safe-bottom"
+        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
       >
         <div className="w-full px-1">
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
@@ -270,19 +270,17 @@ const BarberLayout: React.FC = () => {
 
       {/* Main Content - Área com scroll próprio */}
       <main 
-        className="absolute z-10 overflow-y-auto overflow-x-hidden"
+        className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
           top: '72px',
-          bottom: '80px',
+          bottom: '90px',
           left: 0,
           right: 0,
-          paddingLeft: 'env(safe-area-inset-left)',
-          paddingRight: 'env(safe-area-inset-right)',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
-        <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80 md:pb-0">
-          <div className="w-full max-w-[1800px] mx-auto px-4 md:px-6 lg:px-8 py-4 sm:py-6">
+        <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80">
+          <div className="w-full max-w-[1800px] mx-auto">
             <Outlet />
           </div>
         </div>
