@@ -151,12 +151,12 @@ const ProductList: React.FC = () => {
         ) : (
           <div className="h-full overflow-y-auto">
             <div className="p-3 sm:p-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3">
                 {filteredProducts.map((product) => (
-                  <Card key={product.id} className="hover:shadow-lg transition-all overflow-hidden">
+                  <Card key={product.id} className="hover:shadow-md transition-all overflow-hidden">
                     {/* Imagem do Produto */}
                     {product.imagens && product.imagens.length > 0 ? (
-                      <div className="aspect-square bg-muted overflow-hidden">
+                      <div className="aspect-[4/3] bg-muted overflow-hidden">
                         <img 
                           src={product.imagens[0]} 
                           alt={product.nome}
@@ -164,38 +164,38 @@ const ProductList: React.FC = () => {
                           onError={(e) => {
                             console.error('Erro ao carregar imagem:', product.imagens[0]);
                             e.currentTarget.style.display = 'none';
-                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-12 h-12 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg></div>';
+                            e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg></div>';
                           }}
                         />
                       </div>
                     ) : (
-                      <div className="aspect-square bg-muted flex items-center justify-center">
-                        <Package className="h-12 w-12 text-muted-foreground opacity-30" />
+                      <div className="aspect-[4/3] bg-muted flex items-center justify-center">
+                        <Package className="h-8 w-8 text-muted-foreground opacity-30" />
                       </div>
                     )}
                     
-                    <div className="p-3 sm:p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-xs sm:text-base truncate mr-2">
+                    <div className="p-2 sm:p-2.5">
+                      <div className="flex items-start justify-between mb-1">
+                        <h3 className="font-medium text-[10px] sm:text-xs truncate mr-1 leading-tight">
                           {product.nome}
                         </h3>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
+                            <Button variant="ghost" size="sm" className="h-5 w-5 p-0 flex-shrink-0">
                               <MoreVertical className="h-3 w-3" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuItem 
                               onClick={() => handleEditProduct(product.id)}
-                              className="text-xs sm:text-sm cursor-pointer"
+                              className="text-xs cursor-pointer"
                             >
                               <Edit className="h-3 w-3 mr-2" />
                               Editar
                             </DropdownMenuItem>
                             <DropdownMenuItem 
                               onClick={() => confirmDeleteProduct(product.id)}
-                              className="text-destructive text-xs sm:text-sm cursor-pointer"
+                              className="text-destructive text-xs cursor-pointer"
                             >
                               <Trash2 className="h-3 w-3 mr-2" />
                               Excluir
@@ -204,14 +204,7 @@ const ProductList: React.FC = () => {
                         </DropdownMenu>
                       </div>
                       
-                      <div className="space-y-2 text-xs sm:text-sm">
-                        {product.imagens && product.imagens.length > 0 && (
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                            <ImageIcon className="h-3 w-3" />
-                            <span>{product.imagens.length} {product.imagens.length === 1 ? 'imagem' : 'imagens'}</span>
-                          </div>
-                        )}
-                        
+                      <div className="space-y-0.5 text-[10px] sm:text-xs">
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Preço:</span>
                           <span className="text-primary font-semibold">
@@ -221,16 +214,13 @@ const ProductList: React.FC = () => {
                         
                         <div className="flex justify-between">
                           <span className="text-muted-foreground">Estoque:</span>
-                          <span className="font-medium">
-                            {product.estoque}
-                          </span>
+                          <span className="font-medium">{product.estoque}</span>
                         </div>
                         
                         <div className="flex justify-between items-center">
-                          <span className="text-muted-foreground">Status:</span>
                           <Badge 
                             variant={product.is_active ? "default" : "outline"}
-                            className="text-xs"
+                            className="text-[8px] sm:text-[10px] px-1.5 py-0"
                           >
                             {product.is_active ? "Ativo" : "Inativo"}
                           </Badge>
