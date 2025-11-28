@@ -56,9 +56,118 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&family=Raleway:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      /* Prevenir flash de tela branca - carrega IMEDIATAMENTE */
+      body {
+        margin: 0;
+        padding: 0;
+        background: linear-gradient(135deg, #1A1410 0%, rgba(26, 20, 16, 0.95) 50%, rgba(26, 20, 16, 0.9) 100%);
+        min-height: 100vh;
+      }
+      
+      /* Loading screen inicial - será substituído pelo React */
+      #initial-loader {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        min-height: 100vh;
+        padding: 1rem;
+        text-align: center;
+        background: linear-gradient(135deg, #1A1410 0%, rgba(26, 20, 16, 0.95) 50%, rgba(26, 20, 16, 0.9) 100%);
+        z-index: 9999;
+      }
+      
+      #initial-loader .spinner {
+        position: relative;
+        margin-bottom: 2rem;
+      }
+      
+      #initial-loader .spinner-outer {
+        position: absolute;
+        inset: 0;
+        border-radius: 9999px;
+        border: 4px solid rgba(218, 165, 32, 0.2);
+        animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
+      }
+      
+      #initial-loader .spinner-inner {
+        position: relative;
+        width: 5rem;
+        height: 5rem;
+        border-radius: 9999px;
+        border-top: 4px solid #DAA520;
+        border-bottom: 4px solid #DAA520;
+        animation: spin 1s linear infinite;
+      }
+      
+      #initial-loader .progress-bar {
+        width: 16rem;
+        height: 0.5rem;
+        background: rgba(26, 20, 16, 0.5);
+        border-radius: 9999px;
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+      }
+      
+      #initial-loader .progress-fill {
+        height: 100%;
+        width: 50%;
+        background: linear-gradient(90deg, #DAA520 0%, #F4D03F 50%, #DAA520 100%);
+        animation: slide 1.5s ease-in-out infinite;
+      }
+      
+      #initial-loader .title {
+        color: #DAA520;
+        font-size: 1.25rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+      
+      #initial-loader .subtitle {
+        color: rgba(255, 255, 255, 0.6);
+        font-size: 0.875rem;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      @keyframes ping {
+        75%, 100% {
+          transform: scale(2);
+          opacity: 0;
+        }
+      }
+      
+      @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.5; }
+      }
+      
+      @keyframes slide {
+        0% { transform: translateX(-100%); }
+        100% { transform: translateX(300%); }
+      }
+    </style>
   </head>
 
   <body>
+    <div id="initial-loader">
+      <div class="spinner">
+        <div class="spinner-outer"></div>
+        <div class="spinner-inner"></div>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="title">Carregando Painel</div>
+      <div class="subtitle">Verificando suas credenciais...</div>
+    </div>
     <div id="root"></div>
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
