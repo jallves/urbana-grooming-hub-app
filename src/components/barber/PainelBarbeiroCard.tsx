@@ -39,41 +39,41 @@ export const PainelBarbeiroCard: React.FC<PainelBarbeiroCardProps> = ({
   disabled = false,
 }) => {
   const getVariantStyles = () => {
-    const baseStyles = 'bg-urbana-black/20 backdrop-blur-md border transition-all duration-300';
+    const baseStyles = 'bg-urbana-black/70 backdrop-blur-md border transition-all duration-300';
     
     switch (variant) {
       case 'highlight':
         return cn(
           baseStyles,
-          'border-urbana-gold/30 hover:border-urbana-gold/50 hover:bg-urbana-gold/10',
-          'shadow-lg shadow-urbana-gold/10 hover:shadow-xl hover:shadow-urbana-gold/20',
+          'border-urbana-gold/50 hover:border-urbana-gold/80 hover:bg-urbana-gold/20',
+          'shadow-lg shadow-urbana-gold/30 hover:shadow-xl hover:shadow-urbana-gold/50',
           onClick && !disabled && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
         );
       case 'success':
         return cn(
           baseStyles,
-          'border-green-500/30 hover:border-green-500/50 hover:bg-green-500/10',
-          'shadow-lg shadow-green-500/10 hover:shadow-xl hover:shadow-green-500/20',
+          'border-green-500/50 hover:border-green-500/80 hover:bg-green-500/20',
+          'shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/50',
           onClick && !disabled && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
         );
       case 'warning':
         return cn(
           baseStyles,
-          'border-yellow-500/30 hover:border-yellow-500/50 hover:bg-yellow-500/10',
-          'shadow-lg shadow-yellow-500/10 hover:shadow-xl hover:shadow-yellow-500/20',
+          'border-red-500/50 hover:border-red-500/80 hover:bg-red-500/20',
+          'shadow-lg shadow-red-500/30 hover:shadow-xl hover:shadow-red-500/50',
           onClick && !disabled && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
         );
       case 'info':
         return cn(
           baseStyles,
-          'border-blue-500/30 hover:border-blue-500/50 hover:bg-blue-500/10',
-          'shadow-lg shadow-blue-500/10 hover:shadow-xl hover:shadow-blue-500/20',
+          'border-blue-500/50 hover:border-blue-500/80 hover:bg-blue-500/20',
+          'shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/50',
           onClick && !disabled && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
         );
       default:
         return cn(
           baseStyles,
-          'border-urbana-light/20 hover:border-urbana-light/30 hover:bg-urbana-light/5',
+          'border-urbana-light/30 hover:border-urbana-light/50 hover:bg-urbana-light/10',
           'shadow-lg hover:shadow-xl',
           onClick && !disabled && 'cursor-pointer hover:scale-[1.02] active:scale-[0.98]'
         );
