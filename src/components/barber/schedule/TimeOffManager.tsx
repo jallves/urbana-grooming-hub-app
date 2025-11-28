@@ -188,44 +188,44 @@ const TimeOffManager: React.FC = () => {
       {!showForm ? (
         <Button
           onClick={() => setShowForm(true)}
-          className="w-full bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
+          className="w-full h-10 sm:h-auto bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 text-sm sm:text-base touch-manipulation"
         >
           <Plus className="h-4 w-4 mr-2" />
           Registrar Nova Ausência
         </Button>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4 p-4 backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4 p-3 sm:p-4 backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <Label className="text-urbana-light/70">Data de Início</Label>
+              <Label className="text-urbana-light/70 text-sm">Data de Início</Label>
               <Input
                 type="date"
                 value={formData.start_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
                 min={format(new Date(), 'yyyy-MM-dd')}
-                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
+                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-10 text-sm"
                 required
               />
             </div>
             <div>
-              <Label className="text-urbana-light/70">Data de Fim</Label>
+              <Label className="text-urbana-light/70 text-sm">Data de Fim</Label>
               <Input
                 type="date"
                 value={formData.end_date}
                 onChange={(e) => setFormData(prev => ({ ...prev, end_date: e.target.value }))}
                 min={formData.start_date || format(new Date(), 'yyyy-MM-dd')}
-                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
+                className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-10 text-sm"
                 required
               />
             </div>
           </div>
 
           <div>
-            <Label className="text-urbana-light/70">Tipo de Ausência</Label>
+            <Label className="text-urbana-light/70 text-sm">Tipo de Ausência</Label>
             <select
               value={formData.type}
               onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
-              className="w-full px-3 py-2 bg-urbana-black/40 border border-urbana-gold/20 rounded-md text-urbana-light"
+              className="w-full h-10 px-3 py-2 bg-urbana-black/40 border border-urbana-gold/20 rounded-md text-urbana-light text-sm"
             >
               <option value="folga">Folga</option>
               <option value="ferias">Férias</option>
@@ -235,17 +235,17 @@ const TimeOffManager: React.FC = () => {
           </div>
 
           <div>
-            <Label className="text-urbana-light/70">Motivo (opcional)</Label>
+            <Label className="text-urbana-light/70 text-sm">Motivo (opcional)</Label>
             <Textarea
               value={formData.reason}
               onChange={(e) => setFormData(prev => ({ ...prev, reason: e.target.value }))}
               placeholder="Descreva o motivo da ausência..."
-              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light"
+              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light text-sm"
               rows={3}
             />
           </div>
 
-          <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row gap-2">
             <Button
               type="button"
               variant="outline"
@@ -253,14 +253,14 @@ const TimeOffManager: React.FC = () => {
                 setShowForm(false);
                 setFormData({ start_date: '', end_date: '', reason: '', type: 'folga' });
               }}
-              className="flex-1 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10"
+              className="w-full sm:flex-1 h-10 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10 text-sm touch-manipulation"
             >
               Cancelar
             </Button>
             <Button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90"
+              className="w-full sm:flex-1 h-10 bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 text-sm touch-manipulation"
             >
               {saving ? (
                 <>
@@ -278,12 +278,12 @@ const TimeOffManager: React.FC = () => {
         </form>
       )}
 
-      {/* Lista de ausências */}
-      <div className="space-y-3">
+      {/* Lista de ausências - Responsivo */}
+      <div className="space-y-2 sm:space-y-3">
         {timeOffList.length === 0 ? (
-          <div className="text-center py-12 text-gray-400">
-            <Calendar className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>Nenhuma ausência registrada</p>
+          <div className="text-center py-8 sm:py-12 text-gray-400">
+            <Calendar className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+            <p className="text-sm sm:text-base">Nenhuma ausência registrada</p>
           </div>
         ) : (
           timeOffList.map((timeOff) => {
@@ -294,35 +294,36 @@ const TimeOffManager: React.FC = () => {
             return (
               <div
                 key={timeOff.id}
-                className="p-4 bg-gray-800/50 border border-gray-700 rounded-lg hover:border-gray-600 transition-all"
+                className="p-3 sm:p-4 bg-gray-800/50 border border-gray-700 rounded-lg hover:border-gray-600 transition-all"
               >
-                <div className="flex justify-between items-start gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-3 py-1 rounded-full text-xs font-medium border ${getTypeBadgeClass(timeOff.type)}`}>
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3">
+                  <div className="flex-1 min-w-0">
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2">
+                      <span className={`px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium border ${getTypeBadgeClass(timeOff.type)}`}>
                         {getTypeLabel(timeOff.type)}
                       </span>
                       {!isFutureTimeOff && (
-                        <span className="px-3 py-1 rounded-full text-xs font-medium border bg-gray-500/20 text-gray-400 border-gray-500/30">
+                        <span className="px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-medium border bg-gray-500/20 text-gray-400 border-gray-500/30">
                           Passado
                         </span>
                       )}
                     </div>
-                    <p className="text-white font-medium mb-1">
+                    <p className="text-sm sm:text-base text-white font-medium mb-1 leading-tight">
                       {format(startDate, "dd 'de' MMMM", { locale: ptBR })} até{' '}
                       {format(endDate, "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
                     </p>
                     {timeOff.reason && (
-                      <p className="text-sm text-gray-400">{timeOff.reason}</p>
+                      <p className="text-xs sm:text-sm text-gray-400 leading-tight">{timeOff.reason}</p>
                     )}
                   </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setDeleteId(timeOff.id)}
-                    className="border-red-600 text-red-400 hover:bg-red-600/10"
+                    className="border-red-600 text-red-400 hover:bg-red-600/10 w-full sm:w-auto h-9 sm:h-8 text-xs sm:text-sm touch-manipulation"
                   >
-                    <Trash2 className="h-4 w-4" />
+                    <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 sm:mr-0" />
+                    <span className="ml-2 sm:hidden">Remover</span>
                   </Button>
                 </div>
               </div>
@@ -331,23 +332,25 @@ const TimeOffManager: React.FC = () => {
         )}
       </div>
 
-      {/* Dialog de confirmação de exclusão */}
+      {/* Dialog de confirmação de exclusão - Responsivo */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Remover ausência?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-white text-base sm:text-lg">
+              Remover ausência?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 text-sm">
               Esta ação removerá o registro de ausência e você voltará a aparecer como disponível 
               para agendamentos neste período.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600 w-full sm:w-auto h-10 text-sm touch-manipulation">
               Cancelar
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteId && handleDelete(deleteId)}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-red-600 text-white hover:bg-red-700 w-full sm:w-auto h-10 text-sm touch-manipulation"
             >
               Remover
             </AlertDialogAction>
