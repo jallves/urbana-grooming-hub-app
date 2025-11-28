@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
+import { supabase } from '@/integrations/supabase/client';
 
 interface AdminRouteProps {
   children: React.ReactNode;
@@ -69,9 +70,31 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
           <Button
             onClick={async () => {
               setIsLoggingOut(true);
-              localStorage.removeItem('admin_last_route');
-              await signOut();
-              navigate('/auth');
+              console.log('[AdminRoute] 🚪 Iniciando logout COMPLETO...');
+              
+              // 1. Limpar TUDO do localStorage e sessionStorage primeiro
+              localStorage.clear();
+              sessionStorage.clear();
+              console.log('[AdminRoute] 🧹 Storage limpo');
+              
+              // 2. Limpar estado do AuthContext
+              signOut();
+              console.log('[AdminRoute] 🧹 Estado do AuthContext limpo');
+              
+              // 3. Garantir que o Supabase também deslogou
+              try {
+                await supabase.auth.signOut();
+                console.log('[AdminRoute] ✅ Supabase deslogado');
+              } catch (error) {
+                console.warn('[AdminRoute] ⚠️ Erro ao deslogar do Supabase:', error);
+              }
+              
+              // 4. Aguardar um pouco para garantir que tudo foi limpo
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              // 5. FORÇAR reload completo da página para limpar TUDO do React
+              console.log('[AdminRoute] 🔄 Forçando reload completo...');
+              window.location.href = '/auth';
             }}
             variant="default"
             disabled={isLoggingOut}
