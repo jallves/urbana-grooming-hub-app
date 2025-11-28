@@ -34,8 +34,16 @@ export default function PainelClienteLogin() {
 
     // Usuário autenticado e é cliente = redirecionar para dashboard
     if (isClient) {
-      console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando para dashboard');
-      navigate('/painel-cliente/dashboard', { replace: true });
+      console.log('[PainelClienteLogin] ✅ Cliente autenticado - redirecionando');
+      
+      // CRÍTICO: Verificar se há uma rota salva para restaurar
+      const savedRoute = localStorage.getItem('client_last_route');
+      const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+        ? savedRoute 
+        : '/painel-cliente/dashboard';
+      
+      console.log('[PainelClienteLogin] 🎯 Redirecionando para:', targetRoute);
+      navigate(targetRoute, { replace: true });
     }
     // Se não é cliente, apenas mostrar o formulário de login normalmente
     // Não redirecionar para lugar nenhum - deixar usuário tentar logar como cliente
@@ -77,7 +85,14 @@ export default function PainelClienteLogin() {
         duration: 3000,
       });
 
-      navigate('/painel-cliente/dashboard');
+      // CRÍTICO: Após login, verificar se há uma rota salva para restaurar
+      const savedRoute = localStorage.getItem('client_last_route');
+      const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+        ? savedRoute 
+        : '/painel-cliente/dashboard';
+      
+      console.log('[PainelClienteLogin] 🎯 Após login, redirecionando para:', targetRoute);
+      navigate(targetRoute);
     } catch (error) {
       console.error('[PainelClienteLogin] ❌ Erro inesperado:', error);
       setErro('Erro inesperado. Tente novamente.');
@@ -105,8 +120,14 @@ export default function PainelClienteLogin() {
         // Redirecionar para página de confirmação de email
         navigate('/painel-cliente/confirmar-email');
       } else {
-        // Login automático se não precisar confirmar
-        navigate('/painel-cliente/dashboard');
+        // CRÍTICO: Login automático - verificar se há uma rota salva para restaurar
+        const savedRoute = localStorage.getItem('client_last_route');
+        const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+          ? savedRoute 
+          : '/painel-cliente/dashboard';
+        
+        console.log('[PainelClienteLogin] 🎯 Após cadastro, redirecionando para:', targetRoute);
+        navigate(targetRoute);
       }
     }
   };
