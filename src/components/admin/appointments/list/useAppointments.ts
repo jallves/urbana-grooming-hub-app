@@ -124,7 +124,8 @@ export const useAppointments = () => {
               end_time: endTime.toISOString(),
               status: painel.status === 'cancelado' ? 'cancelled' : 
                       painel.status === 'confirmado' ? 'confirmed' : 
-                      painel.status === 'concluido' ? 'completed' : 'scheduled',
+                      painel.status === 'concluido' ? 'completed' :
+                      painel.status === 'ausente' ? 'ausente' : 'scheduled',
               notes: null,
               created_at: painel.created_at,
               updated_at: painel.updated_at,
@@ -262,7 +263,8 @@ export const useAppointments = () => {
         const painelStatus = newStatus === 'cancelled' ? 'cancelado' : 
                             newStatus === 'confirmed' ? 'confirmado' : 
                             newStatus === 'completed' ? 'concluido' : 
-                            newStatus === 'scheduled' ? 'agendado' : 'confirmado';
+                            newStatus === 'scheduled' ? 'agendado' :
+                            newStatus === 'ausente' ? 'ausente' : 'confirmado';
 
         console.log('📝 [PAINEL ADMIN] Atualizando painel_agendamentos:', { 
           realId, 
@@ -325,7 +327,8 @@ export const useAppointments = () => {
         confirmed: 'confirmado',
         completed: 'concluído',
         cancelled: 'cancelado',
-        scheduled: 'agendado'
+        scheduled: 'agendado',
+        ausente: 'ausente (não compareceu)'
       };
 
       toast.success('✅ Status atualizado!', {
