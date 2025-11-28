@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X, UserX } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from 'sonner';
+import { isPastInBrazil } from '@/lib/brazilTimezone';
 
 interface PainelAgendamento {
   id: string;
@@ -79,13 +80,17 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
   onDelete
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
 
   // LEI PÉTREA: Determinar status didático do agendamento
   const getActualStatus = () => {
-    // Verificar se foi cancelado manualmente
+    // Verificar se foi cancelado ou marcado como ausente manualmente
     const statusUpper = appointment.status?.toUpperCase() || '';
     if (statusUpper === 'CANCELADO') {
       return 'cancelado';
+    }
+    if (statusUpper === 'AUSENTE') {
+      return 'ausente';
     }
 
     const hasCheckIn = appointment.totem_sessions && 
@@ -138,6 +143,12 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
         className: 'bg-red-100 text-red-700 border-red-300',
         icon: '❌'
       },
+      'ausente': {
+        label: 'Ausente',
+        sublabel: 'Não Compareceu',
+        className: 'bg-gray-100 text-gray-700 border-gray-300',
+        icon: '👻'
+      },
     };
 
     const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.agendado;
@@ -174,6 +185,37 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
   const canCancel = () => {
     const currentStatus = actualStatus;
     return currentStatus === 'agendado' || currentStatus === 'check_in_finalizado';
+  };
+
+  // Verificar se pode marcar como ausente (horário já passou e status apropriado)
+  const canMarkAsAbsent = () => {
+    const currentStatus = actualStatus;
+    
+    // Só pode marcar como ausente se status for agendado ou check_in_finalizado
+    if (currentStatus !== 'agendado' && currentStatus !== 'check_in_finalizado') {
+      return false;
+    }
+
+    // Verificar se o horário já passou (usando timezone do Brasil)
+    try {
+      const appointmentDateTime = `${appointment.data}T${appointment.hora}`;
+      return isPastInBrazil(appointmentDateTime);
+    } catch (error) {
+      console.error('Erro ao validar horário para ausente:', error);
+      return false;
+    }
+  };
+
+  const handleAbsentClick = () => {
+    setIsAbsentDialogOpen(true);
+  };
+
+  const handleConfirmAbsent = () => {
+    onStatusChange(appointment.id, 'ausente');
+    setIsAbsentDialogOpen(false);
+    toast.warning('Cliente marcado como ausente', {
+      description: 'Este agendamento não gerará receita ou comissão.'
+    });
   };
 
   const getDeleteBlockedReason = () => {
@@ -280,6 +322,16 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
                 </DropdownMenuItem>
               )}
 
+              {canMarkAsAbsent() && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-gray-700 py-2.5"
+                  onClick={handleAbsentClick}
+                >
+                  <UserX className="mr-3 h-4 w-4" />
+                  <span className="text-sm font-medium">Marcar Ausente</span>
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuItem
                 className={`cursor-pointer py-2.5 ${canDelete() ? 'text-red-600' : 'opacity-50 cursor-not-allowed text-gray-400'}`}
                 onClick={handleDeleteClick}
@@ -319,6 +371,44 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
               className="bg-red-600 hover:bg-red-700"
             >
               Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de Marcar como Ausente */}
+      <AlertDialog open={isAbsentDialogOpen} onOpenChange={setIsAbsentDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-gray-700 font-bold">👻 Marcar Cliente como Ausente</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p className="font-semibold text-gray-900">
+                Marcar <strong className="text-gray-700">{appointment.painel_clientes?.nome}</strong> como ausente?
+              </p>
+              
+              <div className="bg-gray-50 border-l-4 border-gray-400 p-3 rounded">
+                <p className="text-sm text-gray-800 font-medium mb-2">📋 Detalhes:</p>
+                <ul className="text-sm text-gray-700 space-y-1">
+                  <li><strong>Serviço:</strong> {appointment.painel_servicos?.nome}</li>
+                  <li><strong>Data:</strong> {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')} às {appointment.hora}</li>
+                  <li><strong>Valor:</strong> R$ {appointment.painel_servicos?.preco?.toFixed(2)}</li>
+                </ul>
+              </div>
+
+              <div className="bg-red-50 border-l-4 border-red-400 p-3 rounded">
+                <p className="text-sm text-red-800">
+                  ⚠️ <strong>Atenção:</strong> Este agendamento <strong>NÃO gerará receita nem comissão</strong>.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Voltar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmAbsent}
+              className="bg-gray-600 hover:bg-gray-700"
+            >
+              Confirmar Ausência
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
