@@ -21,6 +21,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   const navigate = useNavigate();
   const [showTimeoutOptions, setShowTimeoutOptions] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showLoadingScreen, setShowLoadingScreen] = useState(false);
 
   // CRÍTICO: Persistência de rota - salvar SEMPRE a rota atual quando autenticado
   useEffect(() => {
@@ -50,11 +51,8 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   // Se ainda está carregando mas passou do timeout, mostrar opções
   if ((loading || !rolesChecked) && showTimeoutOptions) {
     return (
-      <AuthContainer
-        title="Costa Urbana"
-        subtitle="Carregamento Demorado"
-      >
-        <div className="w-full space-y-4">
+      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
+        <div className="w-full max-w-md space-y-6">
           <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
             <p className="text-yellow-500 font-semibold text-lg">⏱️ Demorando Muito?</p>
             <p className="text-urbana-light/80 text-sm">
@@ -66,27 +64,33 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
             onClick={() => {
               console.log('[BarberRoute] 🚪 Logout COMPLETO iniciado...');
               
-              // 1. Limpar TODAS as sessões e caches locais IMEDIATAMENTE (igual ao menu hambúrguer)
-              localStorage.removeItem('admin_last_route');
-              localStorage.removeItem('barber_last_route');
-              localStorage.removeItem('client_last_route');
-              localStorage.removeItem('totem_last_route');
-              localStorage.removeItem('user_role_cache');
-              localStorage.removeItem('barber_session_token');
-              localStorage.removeItem('client_session_token');
+              // Mostrar tela de loading
+              setShowLoadingScreen(true);
               
-              // 2. Limpar qualquer cache do Supabase
-              const supabaseKeys = Object.keys(localStorage).filter(key => 
-                key.startsWith('sb-') || key.includes('supabase')
-              );
-              supabaseKeys.forEach(key => localStorage.removeItem(key));
-              
-              // 3. Chamar o signOut do contexto
-              signOut();
-              
-              // 4. Forçar reload completo para garantir que tudo foi limpo (vai para /barbeiro/login)
-              console.log('[BarberRoute] ✅ Limpeza completa realizada, forçando reload...');
-              window.location.href = '/barbeiro/login';
+              // Aguardar um momento para o usuário ver a tela de loading
+              setTimeout(() => {
+                // 1. Limpar TODAS as sessões e caches locais IMEDIATAMENTE (igual ao menu hambúrguer)
+                localStorage.removeItem('admin_last_route');
+                localStorage.removeItem('barber_last_route');
+                localStorage.removeItem('client_last_route');
+                localStorage.removeItem('totem_last_route');
+                localStorage.removeItem('user_role_cache');
+                localStorage.removeItem('barber_session_token');
+                localStorage.removeItem('client_session_token');
+                
+                // 2. Limpar qualquer cache do Supabase
+                const supabaseKeys = Object.keys(localStorage).filter(key => 
+                  key.startsWith('sb-') || key.includes('supabase')
+                );
+                supabaseKeys.forEach(key => localStorage.removeItem(key));
+                
+                // 3. Chamar o signOut do contexto
+                signOut();
+                
+                // 4. Forçar reload completo para garantir que tudo foi limpo (vai para /barbeiro/login)
+                console.log('[BarberRoute] ✅ Limpeza completa realizada, forçando reload...');
+                window.location.href = '/barbeiro/login';
+              }, 100);
             }}
             variant="default"
             disabled={isLoggingOut}
@@ -95,24 +99,15 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
             <LogOut className="h-4 w-4 mr-2" />
             Sair e Fazer Login Novamente
           </Button>
-
-          <Button
-            onClick={() => navigate('/')}
-            variant="ghost"
-            className="w-full text-urbana-light/60 hover:text-urbana-gold hover:bg-urbana-gold/10 h-12 rounded-xl"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Voltar ao Site
-          </Button>
         </div>
-      </AuthContainer>
+      </div>
     );
   }
 
   // CRÍTICO: Durante loading inicial (primeiros 3 segundos), mostrar loading bonito
-  if (loading || !rolesChecked) {
+  if (loading || !rolesChecked || showLoadingScreen) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
+      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
         <div className="relative mb-8">
           {/* Círculo animado externo */}
           <div className="absolute inset-0 rounded-full border-4 border-urbana-gold/20 animate-ping"></div>

@@ -86,8 +86,15 @@ if ('serviceWorker' in navigator) {
 }
 
 const container = document.getElementById("root");
+const initialLoader = document.getElementById("initial-loader");
+
 if (!container) {
   throw new Error("Root element not found");
+}
+
+// Remover o loading screen inicial quando o React carregar
+if (initialLoader) {
+  initialLoader.style.display = "none";
 }
 
 const root = createRoot(container);
