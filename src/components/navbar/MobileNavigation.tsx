@@ -61,11 +61,11 @@ const MobileNavigation: React.FC<MobileNavigationProps> = ({
 
       {/* Mobile Overlay */}
       {isMobileMenuOpen && (
-        <div className="fixed inset-0 z-50 bg-black md:hidden" onClick={closeMenu} />
+        <div className="fixed inset-0 z-50 bg-black/80 md:hidden" onClick={closeMenu} />
       )}
 
       {/* Mobile Sidebar */}
-      <div className={`fixed inset-y-0 right-0 z-[51] w-[280px] bg-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 ${
+      <div className={`fixed inset-y-0 right-0 z-[51] w-[280px] bg-urbana-black transform transition-transform duration-300 ease-in-out md:hidden border-l border-urbana-gold/30 shadow-2xl ${
         isMobileMenuOpen ? 'translate-x-0' : 'translate-x-full'
       }`}>
         <div className="flex items-center justify-between p-4 border-b border-urbana-gold/30">
