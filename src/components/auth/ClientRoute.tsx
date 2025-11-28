@@ -21,34 +21,11 @@ const ClientRoute: React.FC<ClientRouteProps> = ({ children }) => {
 
   // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
   useEffect(() => {
-    if (!loading && rolesChecked && user && isClient) {
+    if (!loading && rolesChecked && user && isClient && location.pathname.startsWith('/painel-cliente/')) {
+      console.log('[ClientRoute] 💾 Salvando rota:', location.pathname);
       localStorage.setItem('client_last_route', location.pathname);
     }
   }, [location.pathname, loading, rolesChecked, user, isClient]);
-
-  useEffect(() => {
-    // CRÍTICO: Durante loading, NUNCA redirecionar - apenas aguardar
-    if (!rolesChecked || loading) {
-      console.log('[ClientRoute] ⏳ Aguardando verificação...');
-      return;
-    }
-
-    // Se não há usuário, redirecionar para login do painel cliente
-    if (!user) {
-      console.log('[ClientRoute] ❌ Usuário não autenticado - redirecionando para login');
-      navigate('/painel-cliente/login', { replace: true });
-      return;
-    }
-
-    // CRÍTICO: Se usuário não é cliente, também redirecionar para login do painel
-    // NUNCA redirecionar para homepage - isso causa o bug de deslogamento
-    if (!isClient) {
-      console.log('[ClientRoute] ❌ Usuário não é cliente - redirecionando para login do painel');
-      navigate('/painel-cliente/login', { replace: true });
-    } else {
-      console.log('[ClientRoute] ✅ Acesso autorizado - mantendo na rota atual:', location.pathname);
-    }
-  }, [user, isClient, loading, rolesChecked, navigate, location.pathname]);
 
   // Mostrar loading enquanto verifica
   if (loading || !rolesChecked) {

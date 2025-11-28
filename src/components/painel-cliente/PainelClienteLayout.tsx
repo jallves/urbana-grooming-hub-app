@@ -21,6 +21,8 @@ const PainelClienteLayout: React.FC = () => {
   const handleLogout = () => {
     setIsLoggingOut(true);
     console.log('🚪 [Layout] Iniciando processo de logout...');
+    console.log('[PainelClienteLayout] 🚪 Logout - limpando rota salva');
+    localStorage.removeItem('client_last_route'); // Limpa a rota salva ao fazer logout
     signOut();
     navigate('/painel-cliente/login', { replace: true });
   };
