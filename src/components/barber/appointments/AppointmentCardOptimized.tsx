@@ -68,70 +68,76 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
   return (
     <>
       <Card className="bg-gray-800/50 border-gray-700 hover:bg-gray-800/70 transition-all">
-        <div className="p-4 space-y-3">
-          {/* Header */}
-          <div className="flex justify-between items-start">
-            <div className="flex-1">
-              <h3 className="font-semibold text-white text-lg">{appointment.client_name}</h3>
-              <p className="text-sm text-gray-400 mt-1">
+        <div className="p-3 sm:p-4 space-y-2 sm:space-y-3">
+          {/* Header - Responsivo */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-2">
+            <div className="flex-1 min-w-0">
+              <h3 className="font-semibold text-white text-base sm:text-lg truncate">
+                {appointment.client_name}
+              </h3>
+              <p className="text-xs sm:text-sm text-gray-400 mt-0.5 sm:mt-1 truncate">
                 {format(appointmentDateTime, "EEEE, dd 'de' MMMM", { locale: ptBR })}
               </p>
-              <p className="text-sm text-urbana-gold font-medium">
+              <p className="text-xs sm:text-sm text-urbana-gold font-medium mt-0.5">
                 {format(appointmentDateTime, "HH:mm", { locale: ptBR })}
               </p>
             </div>
-            {getStatusBadge()}
+            <div className="flex-shrink-0 self-start">
+              {getStatusBadge()}
+            </div>
           </div>
 
-          {/* Service Info */}
-          <div className="flex justify-between items-center p-3 bg-gray-700/50 rounded-lg">
-            <span className="text-gray-300">{appointment.service_name}</span>
-            <span className="text-urbana-gold font-semibold">
+          {/* Service Info - Responsivo */}
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-2.5 sm:p-3 bg-gray-700/50 rounded-lg">
+            <span className="text-xs sm:text-sm text-gray-300 truncate flex-1">
+              {appointment.service_name}
+            </span>
+            <span className="text-sm sm:text-base text-urbana-gold font-semibold flex-shrink-0">
               R$ {appointment.service?.price?.toFixed(2) || '0.00'}
             </span>
           </div>
 
-          {/* Actions */}
+          {/* Actions - Mobile First */}
           {(canEdit || canMarkAbsent) && (
-            <div className="flex flex-wrap gap-2 pt-2">
-              {/* Editar (até 40 minutos após o horário) - Abre modal direto */}
+            <div className="flex flex-col sm:flex-row gap-2 pt-1 sm:pt-2">
+              {/* Editar */}
               {canEdit && onEdit && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => onEdit(appointment.id, appointment.start_time)}
                   disabled={isUpdating}
-                  className="flex-1 min-w-[120px] border-blue-600 text-blue-400 hover:bg-blue-600/10"
+                  className="w-full sm:flex-1 h-9 sm:h-8 border-blue-600 text-blue-400 hover:bg-blue-600/10 text-xs sm:text-sm touch-manipulation"
                 >
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Editar
                 </Button>
               )}
 
-              {/* Marcar como Ausente (sempre disponível para agendados passados) */}
+              {/* Marcar como Ausente */}
               {canMarkAbsent && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowAbsentDialog(true)}
                   disabled={isUpdating}
-                  className="flex-1 min-w-[120px] border-orange-600 text-orange-400 hover:bg-orange-600/10"
+                  className="w-full sm:flex-1 h-9 sm:h-8 border-orange-600 text-orange-400 hover:bg-orange-600/10 text-xs sm:text-sm touch-manipulation"
                 >
-                  <UserX className="h-4 w-4 mr-2" />
+                  <UserX className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Ausente
                 </Button>
               )}
 
-              {/* Cancelar (até 40 minutos após o horário) */}
+              {/* Cancelar */}
               {canCancel && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={() => setShowCancelDialog(true)}
                   disabled={isUpdating}
-                  className="flex-1 min-w-[120px] border-red-600 text-red-400 hover:bg-red-600/10"
+                  className="w-full sm:flex-1 h-9 sm:h-8 border-red-600 text-red-400 hover:bg-red-600/10 text-xs sm:text-sm touch-manipulation"
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Cancelar
                 </Button>
               )}
@@ -140,20 +146,22 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
         </div>
       </Card>
 
-      {/* Dialog de confirmação para CANCELAR */}
+      {/* Dialog de confirmação para CANCELAR - Responsivo */}
       <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Cancelar agendamento?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-white text-base sm:text-lg">
+              Cancelar agendamento?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 text-sm">
               Esta ação irá marcar o agendamento como cancelado.
               <strong className="text-red-400 block mt-2">
                 Tem certeza que deseja cancelar este agendamento?
               </strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600 w-full sm:w-auto h-10 sm:h-9 text-sm touch-manipulation">
               Não, voltar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -163,7 +171,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 setIsUpdating(false);
                 setShowCancelDialog(false);
               }}
-              className="bg-red-600 text-white hover:bg-red-700"
+              className="bg-red-600 text-white hover:bg-red-700 w-full sm:w-auto h-10 sm:h-9 text-sm touch-manipulation"
             >
               Sim, cancelar
             </AlertDialogAction>
@@ -171,20 +179,22 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog de confirmação para marcar como AUSENTE */}
+      {/* Dialog de confirmação para marcar como AUSENTE - Responsivo */}
       <AlertDialog open={showAbsentDialog} onOpenChange={setShowAbsentDialog}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white">Marcar cliente como ausente?</AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400">
+            <AlertDialogTitle className="text-white text-base sm:text-lg">
+              Marcar cliente como ausente?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-400 text-sm">
               Esta ação marcará que o cliente não compareceu ao agendamento. 
               <strong className="text-orange-400 block mt-2">
                 Não será gerada receita nem comissão para este agendamento.
               </strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600">
+          <AlertDialogFooter className="flex-col sm:flex-row gap-2">
+            <AlertDialogCancel className="bg-gray-700 text-white hover:bg-gray-600 w-full sm:w-auto h-10 sm:h-9 text-sm touch-manipulation">
               Não, voltar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -194,7 +204,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 setIsUpdating(false);
                 setShowAbsentDialog(false);
               }}
-              className="bg-orange-600 text-white hover:bg-orange-700"
+              className="bg-orange-600 text-white hover:bg-orange-700 w-full sm:w-auto h-10 sm:h-9 text-sm touch-manipulation"
             >
               Sim, marcar ausente
             </AlertDialogAction>

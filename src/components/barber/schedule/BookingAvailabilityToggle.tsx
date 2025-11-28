@@ -122,38 +122,36 @@ const BookingAvailabilityToggle: React.FC = () => {
   }
 
   return (
-    <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl sm:rounded-2xl p-4 sm:p-6 shadow-2xl">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-        <div className="flex-1">
-          <div className="flex items-center gap-3 mb-3">
+    <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
+        <div className="flex-1 w-full">
+          <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
             {isAvailable ? (
-              <UserCheck className="h-6 w-6 text-green-400" />
+              <UserCheck className="h-5 w-5 sm:h-6 sm:w-6 text-green-400 flex-shrink-0" />
             ) : (
-              <UserX className="h-6 w-6 text-orange-400" />
+              <UserX className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 flex-shrink-0" />
             )}
-            <h3 className="text-base sm:text-lg font-semibold text-urbana-light">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-urbana-light">
               Disponível para Novos Agendamentos
             </h3>
           </div>
           
-          <p className="text-xs sm:text-sm text-urbana-light/70 mb-4">
+          <p className="text-xs sm:text-sm text-urbana-light/70 mb-3 sm:mb-4 leading-relaxed">
             Controle se você aparece como disponível quando clientes fazem novos agendamentos.
             Não afeta agendamentos já existentes, totem, vendas ou comissões.
           </p>
 
           <Alert className={`${isAvailable ? 'bg-green-500/10 border-green-500/30' : 'bg-orange-500/10 border-orange-500/30'}`}>
-            <AlertCircle className={`h-4 w-4 ${isAvailable ? 'text-green-400' : 'text-orange-400'}`} />
-            <AlertDescription className={`${isAvailable ? 'text-green-300' : 'text-orange-300'} text-xs sm:text-sm`}>
+            <AlertCircle className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isAvailable ? 'text-green-400' : 'text-orange-400'}`} />
+            <AlertDescription className={`${isAvailable ? 'text-green-300' : 'text-orange-300'} text-xs sm:text-sm leading-relaxed`}>
               {isAvailable ? (
                 <>
-                  <strong>Status Atual: Disponível</strong>
-                  <br />
+                  <strong className="block mb-1">Status Atual: Disponível</strong>
                   Seus horários livres aparecem para novos agendamentos
                 </>
               ) : (
                 <>
-                  <strong>Status Atual: Indisponível</strong>
-                  <br />
+                  <strong className="block mb-1">Status Atual: Indisponível</strong>
                   Seus horários livres NÃO aparecem para novos agendamentos.
                   Agendamentos existentes, totem e vendas continuam funcionando normalmente.
                 </>
@@ -162,30 +160,30 @@ const BookingAvailabilityToggle: React.FC = () => {
           </Alert>
         </div>
 
-        <div className="flex flex-col items-center gap-2">
+        <div className="flex flex-row md:flex-col items-center justify-between md:justify-center gap-3 md:gap-2 w-full md:w-auto">
+          <span className="text-xs font-medium text-urbana-light/60 md:order-2">
+            {isAvailable ? 'ATIVO' : 'INATIVO'}
+          </span>
           <Switch
             checked={isAvailable}
             onCheckedChange={handleToggle}
             disabled={isSaving}
-            className="data-[state=checked]:bg-green-500"
+            className="data-[state=checked]:bg-green-500 md:order-1 scale-110 sm:scale-125"
           />
-          <span className="text-xs text-urbana-light/60">
-            {isAvailable ? 'ATIVO' : 'INATIVO'}
-          </span>
         </div>
       </div>
 
       {!isAvailable && (
-        <div className="mt-4 pt-4 border-t border-urbana-gold/20">
-          <h4 className="text-sm font-medium text-urbana-light mb-2">O que continua funcionando:</h4>
-          <ul className="text-xs sm:text-sm text-urbana-light/70 space-y-1">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-urbana-gold/20">
+          <h4 className="text-xs sm:text-sm font-medium text-urbana-light mb-2">O que continua funcionando:</h4>
+          <ul className="text-[11px] sm:text-xs md:text-sm text-urbana-light/70 space-y-0.5 sm:space-y-1 leading-relaxed">
             <li>✅ Agendamentos já existentes</li>
             <li>✅ Check-in no totem</li>
             <li>✅ Finalização de atendimentos</li>
             <li>✅ Venda de produtos</li>
             <li>✅ Recebimento de comissões</li>
           </ul>
-          <p className="text-xs text-orange-400 mt-3">
+          <p className="text-[11px] sm:text-xs text-orange-400 mt-2 sm:mt-3 leading-relaxed">
             ⚠️ Apenas novos agendamentos serão bloqueados
           </p>
         </div>
