@@ -31,11 +31,13 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   const [showRecoveryDialog, setShowRecoveryDialog] = useState(false);
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Persistência de rota: salvar rota atual quando mudar (somente se autenticado)
+  // CRÍTICO: Persistência de rota - salvar SEMPRE a rota atual quando autenticado
   useEffect(() => {
     if (!loading && rolesChecked && user) {
       const hasAccess = isMaster || isAdmin || isManager || (allowBarber && isBarber);
-      if (hasAccess) {
+      if (hasAccess && location.pathname.startsWith('/barbeiro/')) {
+        // Salva a rota atual para persistir após reload
+        console.log('[BarberRoute] 💾 Salvando rota:', location.pathname);
         localStorage.setItem('barber_last_route', location.pathname);
       }
     }
