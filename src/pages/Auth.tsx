@@ -33,8 +33,16 @@ const Auth: React.FC = () => {
 
     // Usuário autenticado - redirecionar para seu painel
     if (hasAdminAccess) {
-      console.log('[Auth] ✅ Admin autenticado - redirecionando para dashboard admin');
-      navigate('/admin', { replace: true });
+      console.log('[Auth] ✅ Admin autenticado - redirecionando');
+      
+      // CRÍTICO: Verificar se há uma rota salva para restaurar
+      const savedRoute = localStorage.getItem('admin_last_route');
+      const targetRoute = savedRoute && savedRoute.startsWith('/admin') 
+        ? savedRoute 
+        : '/admin';
+      
+      console.log('[Auth] 🎯 Redirecionando para:', targetRoute);
+      navigate(targetRoute, { replace: true });
     } else {
       console.log('[Auth] ℹ️ Usuário não é admin - redirecionando para home');
       navigate('/', { replace: true });
@@ -52,8 +60,9 @@ const Auth: React.FC = () => {
   };
 
   const handleLogout = () => {
+    console.log('[Auth] 🚪 Logout - limpando rota salva');
+    localStorage.removeItem('admin_last_route'); // Limpa a rota salva ao fazer logout
     signOut();
-    console.log('[Auth] 🚪 Logout realizado');
   };
 
   // Se usuário logado, useEffect cuida do redirecionamento
