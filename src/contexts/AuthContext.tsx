@@ -89,73 +89,78 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   useEffect(() => {
     let mounted = true;
+    let roleCheckTimeout: NodeJS.Timeout | null = null;
 
     // CRÍTICO: Setup do listener PRIMEIRO para capturar todos os eventos
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
+      (event, currentSession) => {
         if (!mounted) return;
         
         console.log('[AuthContext] 🔔 Auth event:', event);
         
-        // SEMPRE atualiza a session primeiro
-        setSession(session);
+        // SEMPRE atualiza a session primeiro (síncrono)
+        setSession(currentSession);
         
         if (event === 'SIGNED_OUT') {
           console.log('[AuthContext] 👋 Usuário deslogado');
           setUser(null);
           applyRole(null);
           setLoading(false);
-        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-          if (session?.user) {
-            console.log('[AuthContext] ✅ Sessão ativa:', event);
-            setUser(session.user);
-            const role = await checkUserRoles(session.user.id);
-            if (mounted) {
-              applyRole(role);
-              setLoading(false);
+        } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
+          if (currentSession?.user) {
+            console.log('[AuthContext] ✅ Sessão ativa:', event, '- User:', currentSession.user.email);
+            setUser(currentSession.user);
+            
+            // Limpar timeout anterior se existir
+            if (roleCheckTimeout) {
+              clearTimeout(roleCheckTimeout);
             }
+            
+            // CRÍTICO: Usar setTimeout para evitar deadlock com async no callback
+            roleCheckTimeout = setTimeout(async () => {
+              if (!mounted) return;
+              try {
+                console.log('[AuthContext] 🔍 Buscando role para:', currentSession.user.id);
+                const role = await checkUserRoles(currentSession.user.id);
+                console.log('[AuthContext] ✅ Role encontrada:', role);
+                if (mounted) {
+                  applyRole(role);
+                  setLoading(false);
+                }
+              } catch (error) {
+                console.error('[AuthContext] ❌ Erro ao verificar role:', error);
+                if (mounted) {
+                  applyRole(null);
+                  setLoading(false);
+                }
+              }
+            }, 0);
+          } else if (event === 'INITIAL_SESSION') {
+            // Sessão inicial sem usuário - não está logado
+            console.log('[AuthContext] ℹ️ INITIAL_SESSION sem usuário');
+            setLoading(false);
+            setRolesChecked(true);
           }
         }
       }
     );
 
-    // DEPOIS do listener, inicializar com sessão existente
-    const initializeAuth = async () => {
-      try {
-        console.log('[AuthContext] 🔍 Verificando sessão existente...');
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (!mounted) return;
-
-        setSession(session); // CRÍTICO: Armazenar session
-
-        if (session?.user) {
-          console.log('[AuthContext] ✅ Sessão encontrada para:', session.user.email);
-          setUser(session.user);
-          const role = await checkUserRoles(session.user.id);
-          if (mounted) {
-            applyRole(role);
-            setLoading(false);
-          }
-        } else {
-          console.log('[AuthContext] ℹ️ Nenhuma sessão encontrada');
-          setLoading(false);
-          setRolesChecked(true);
-        }
-      } catch (error) {
-        console.error('[AuthContext] ❌ Erro na inicialização:', error);
-        if (mounted) {
-          setLoading(false);
-          setRolesChecked(true);
-        }
+    // Timeout de segurança: se após 5 segundos ainda não terminou, forçar loading=false
+    const safetyTimeout = setTimeout(() => {
+      if (mounted && loading) {
+        console.warn('[AuthContext] ⚠️ Safety timeout atingido - forçando loading=false');
+        setLoading(false);
+        setRolesChecked(true);
       }
-    };
-
-    initializeAuth();
+    }, 5000);
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      clearTimeout(safetyTimeout);
+      if (roleCheckTimeout) {
+        clearTimeout(roleCheckTimeout);
+      }
     };
   }, []);
 
