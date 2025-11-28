@@ -51,11 +51,11 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   // Se ainda está carregando mas passou do timeout, mostrar opções
   if ((loading || !rolesChecked) && showTimeoutOptions) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
-        <div className="w-full max-w-md space-y-6">
-          <div className="p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
-            <p className="text-yellow-500 font-semibold text-lg">⏱️ Demorando Muito?</p>
-            <p className="text-urbana-light/80 text-sm">
+      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen min-h-[100dvh] w-full px-4 sm:px-6 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90 safe-top safe-bottom">
+        <div className="w-full max-w-md space-y-4 sm:space-y-6">
+          <div className="p-5 sm:p-6 bg-yellow-500/10 border border-yellow-500/20 rounded-xl text-center space-y-2">
+            <p className="text-yellow-500 font-semibold text-base sm:text-lg leading-relaxed">⏱️ Demorando Muito?</p>
+            <p className="text-urbana-light/80 text-xs sm:text-sm leading-relaxed">
               A verificação está demorando mais que o esperado.
             </p>
           </div>
@@ -94,7 +94,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
             }}
             variant="default"
             disabled={isLoggingOut}
-            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-11 sm:h-12 rounded-xl text-sm sm:text-base font-medium"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Sair e Fazer Login Novamente
@@ -107,23 +107,23 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
   // CRÍTICO: Durante loading inicial (primeiros 3 segundos), mostrar loading bonito
   if (loading || !rolesChecked || showLoadingScreen) {
     return (
-      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen w-full px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
-        <div className="relative mb-8">
+      <div className="fixed inset-0 flex flex-col items-center justify-center min-h-screen min-h-[100dvh] w-full px-4 sm:px-6 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90 safe-top safe-bottom">
+        <div className="relative mb-6 sm:mb-8">
           {/* Círculo animado externo */}
-          <div className="absolute inset-0 rounded-full border-4 border-urbana-gold/20 animate-ping"></div>
+          <div className="absolute inset-0 rounded-full border-3 sm:border-4 border-urbana-gold/20 animate-ping"></div>
           {/* Círculo animado interno */}
-          <div className="relative animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-urbana-gold"></div>
+          <div className="relative animate-spin rounded-full h-16 w-16 sm:h-20 sm:w-20 border-t-3 border-b-3 sm:border-t-4 sm:border-b-4 border-urbana-gold"></div>
         </div>
         
         {/* Barra de progresso animada */}
-        <div className="w-64 h-2 bg-urbana-black/50 rounded-full overflow-hidden mb-6">
+        <div className="w-56 sm:w-64 max-w-[90vw] h-1.5 sm:h-2 bg-urbana-black/50 rounded-full overflow-hidden mb-5 sm:mb-6">
           <div className="h-full bg-gradient-to-r from-urbana-gold via-yellow-500 to-urbana-gold animate-[slide_1.5s_ease-in-out_infinite] w-1/2"></div>
         </div>
         
-        <p className="text-urbana-gold text-xl font-semibold animate-pulse mb-2">
+        <p className="text-urbana-gold text-lg sm:text-xl font-semibold animate-pulse mb-2 leading-relaxed">
           Carregando Painel
         </p>
-        <p className="text-urbana-light/60 text-sm">
+        <p className="text-urbana-light/60 text-sm leading-relaxed px-4">
           Verificando suas credenciais...
         </p>
       </div>
