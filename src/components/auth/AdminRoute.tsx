@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { RefreshCw, LogOut, Home } from 'lucide-react';
+import { LogOut, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 
@@ -67,27 +67,18 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
           </div>
 
           <Button
-            onClick={() => window.location.reload()}
-            variant="default"
-            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
-          >
-            <RefreshCw className="h-4 w-4 mr-2" />
-            Recarregar Página
-          </Button>
-
-          <Button
             onClick={async () => {
               setIsLoggingOut(true);
               localStorage.removeItem('admin_last_route');
               await signOut();
               navigate('/auth');
             }}
-            variant="outline"
+            variant="default"
             disabled={isLoggingOut}
-            className="w-full border-red-500/30 bg-urbana-black/30 text-red-400 hover:bg-red-500/20 hover:text-red-300 hover:border-red-500/50 h-12 rounded-xl"
+            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
           >
             <LogOut className="h-4 w-4 mr-2" />
-            Sair e Fazer Novo Login
+            Sair e Fazer Login Novamente
           </Button>
 
           <Button
@@ -103,13 +94,27 @@ const AdminRoute: React.FC<AdminRouteProps> = ({
     );
   }
 
-  // CRÍTICO: Durante loading inicial (primeiros 3 segundos), apenas aguardar
+  // CRÍTICO: Durante loading inicial (primeiros 3 segundos), mostrar loading bonito
   if (loading || !rolesChecked) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-background">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-urbana-gold mb-4"></div>
-        <p className="text-urbana-light/80 text-lg font-medium animate-pulse">
-          Carregando...
+      <div className="flex flex-col items-center justify-center h-screen px-4 text-center bg-gradient-to-br from-urbana-black via-urbana-black/95 to-urbana-black/90">
+        <div className="relative mb-8">
+          {/* Círculo animado externo */}
+          <div className="absolute inset-0 rounded-full border-4 border-urbana-gold/20 animate-ping"></div>
+          {/* Círculo animado interno */}
+          <div className="relative animate-spin rounded-full h-20 w-20 border-t-4 border-b-4 border-urbana-gold"></div>
+        </div>
+        
+        {/* Barra de progresso animada */}
+        <div className="w-64 h-2 bg-urbana-black/50 rounded-full overflow-hidden mb-6">
+          <div className="h-full bg-gradient-to-r from-urbana-gold via-yellow-500 to-urbana-gold animate-[slide_1.5s_ease-in-out_infinite] w-1/2"></div>
+        </div>
+        
+        <p className="text-urbana-gold text-xl font-semibold animate-pulse mb-2">
+          Carregando Painel
+        </p>
+        <p className="text-urbana-light/60 text-sm">
+          Verificando suas credenciais...
         </p>
       </div>
     );
