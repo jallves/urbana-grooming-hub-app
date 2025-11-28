@@ -1,8 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BarberData {
   id: string;
@@ -14,51 +13,50 @@ interface BarberData {
 export const useBarberAuth = () => {
   const [barber, setBarber] = useState<BarberData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
-  const navigate = useNavigate();
+  const { user } = useAuth();
 
   useEffect(() => {
-    checkBarberAuth();
-  }, []);
+    if (user?.email) {
+      fetchBarberData();
+    } else {
+      setLoading(false);
+    }
+  }, [user?.email]);
 
-  const checkBarberAuth = async () => {
+  const fetchBarberData = async () => {
+    if (!user?.email) return;
+    
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      setLoading(true);
       
-      if (!user) {
-        navigate('/barbeiro/login');
-        return;
-      }
-
       // Buscar barbeiro da tabela painel_barbeiros
       const { data: barberData, error } = await supabase
         .from('painel_barbeiros')
         .select('*')
         .eq('email', user.email)
         .eq('is_active', true)
-        .single();
+        .maybeSingle();
 
-      if (error || !barberData) {
-        console.error('Erro ao verificar barbeiro:', error);
-        toast({
-          title: "Acesso negado",
-          description: "Você não tem permissão para acessar o painel do barbeiro",
-          variant: "destructive",
-        });
-        await supabase.auth.signOut();
-        navigate('/barbeiro/login');
+      if (error) {
+        console.error('[useBarberAuth] Erro ao buscar barbeiro:', error);
+        setBarber(null);
         return;
       }
 
-      setBarber({
-        id: barberData.id,
-        nome: barberData.nome,
-        email: barberData.email,
-        is_active: barberData.is_active
-      });
+      if (barberData) {
+        setBarber({
+          id: barberData.id,
+          nome: barberData.nome,
+          email: barberData.email,
+          is_active: barberData.is_active
+        });
+      } else {
+        console.warn('[useBarberAuth] ⚠️ Barbeiro não encontrado na tabela painel_barbeiros');
+        setBarber(null);
+      }
     } catch (error) {
-      console.error('Erro na autenticação do barbeiro:', error);
-      navigate('/barbeiro/login');
+      console.error('[useBarberAuth] Erro na busca do barbeiro:', error);
+      setBarber(null);
     } finally {
       setLoading(false);
     }
@@ -78,7 +76,7 @@ export const useBarberAuth = () => {
   return {
     barber,
     loading,
-    checkBarberAuth,
+    refetch: fetchBarberData,
     displayName: getFirstTwoNames()
   };
 };
