@@ -8,10 +8,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { DollarSign, User, CheckCircle, Clock, CreditCard, X } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { formatBrazilDateOnly, formatFullDateTime } from '@/lib/utils/dateUtils';
 
 interface ComissoesTabProps {
   filters: {
@@ -471,7 +470,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
                     <div>
                       <p className="font-medium text-white">{commission.barber?.name}</p>
                       <p className="text-sm text-gray-400">
-                        Taxa: {commission.commission_rate}% • {format(new Date(commission.created_at), 'dd/MM/yyyy', { locale: ptBR })}
+                        Taxa: {commission.commission_rate}% • {formatBrazilDateOnly(commission.created_at)}
                       </p>
                       <p className="text-xs text-gray-500">
                         ID: {commission.id.slice(0, 8)}...
@@ -483,7 +482,7 @@ const ComissoesTab: React.FC<ComissoesTabProps> = ({ filters }) => {
                       )}
                       {commission.paid_at && (
                         <p className="text-xs text-green-500">
-                          Pago em: {format(new Date(commission.paid_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
+                          Pago em: {formatFullDateTime(commission.paid_at)}
                         </p>
                       )}
                     </div>

@@ -2,13 +2,12 @@ import React from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { formatBrazilDateOnly } from '@/lib/utils/dateUtils';
 import { 
   PainelBarbeiroCard, 
   PainelBarbeiroCardTitle,
@@ -187,7 +186,7 @@ const BarberCommissionsComponent: React.FC = () => {
                           </p>
                         </div>
                         <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 mb-2">
-                          {format(new Date(commission.created_at), "dd/MM/yyyy", { locale: ptBR })}
+                          {formatBrazilDateOnly(commission.created_at)}
                         </p>
                         <div className="flex flex-wrap gap-1.5 sm:gap-2">
                           <Badge variant={commission.commission_type === 'service' ? 'default' : 'secondary'} className="text-[9px] sm:text-[10px] md:text-xs px-1.5 sm:px-2 py-0.5">

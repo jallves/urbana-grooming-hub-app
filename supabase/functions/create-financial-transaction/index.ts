@@ -1,6 +1,17 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
+// Função auxiliar para obter data/hora no timezone do Brasil
+function getBrazilDateTime() {
+  const now = new Date();
+  // Converter para timezone do Brasil (UTC-3)
+  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  return {
+    date: brazilTime.toISOString().split('T')[0], // YYYY-MM-DD
+    datetime: brazilTime.toISOString()
+  };
+}
+
 /**
  * Edge Function: create-financial-transaction
  * Cria transações financeiras completas no sistema ERP
@@ -130,12 +141,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Se ainda não tiver, usar data/hora atual
+    // Se ainda não tiver, usar data/hora atual DO BRASIL
     if (!transactionDate || !transactionDateTime) {
-      const now = new Date()
-      transactionDate = now.toISOString().split('T')[0]
-      transactionDateTime = now.toISOString()
-      console.log('⏰ Usando data/hora atual:', { date: transactionDate, datetime: transactionDateTime })
+      const brazilTime = getBrazilDateTime();
+      transactionDate = brazilTime.date;
+      transactionDateTime = brazilTime.datetime;
+      console.log('⏰ Usando data/hora atual do Brasil:', { date: transactionDate, datetime: transactionDateTime })
+    }
+    
+    // IMPORTANTE: Sempre garantir que a transaction_date seja a data CORRETA do Brasil
+    // Se temos um datetime, extrair a data dele considerando timezone do Brasil
+    if (transactionDateTime) {
+      const dt = new Date(transactionDateTime);
+      const brazilDateStr = dt.toLocaleString('en-US', { 
+        timeZone: 'America/Sao_Paulo',
+        year: 'numeric',
+        month: '2-digit', 
+        day: '2-digit'
+      });
+      // Converter de MM/DD/YYYY para YYYY-MM-DD
+      const [month, day, year] = brazilDateStr.split('/');
+      transactionDate = `${year}-${month}-${day}`;
+      console.log('📅 Data corrigida para timezone do Brasil:', transactionDate);
     }
 
     console.log('💰 Criando transação financeira:', {
