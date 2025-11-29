@@ -87,11 +87,11 @@ const BarberScheduleView: React.FC = () => {
   return (
     <BarberPageContainer hideHeader>
       {/* Header com navegação - 100% responsivo */}
-      <div className="flex flex-col gap-3 mb-4 sm:mb-6 pb-4 border-b border-urbana-gold/20">
+      <div className="flex flex-col gap-3 mb-8 sm:mb-10 lg:mb-12 pb-6 sm:pb-8 border-b border-urbana-gold/20">
         {/* Título */}
         <div className="flex items-center gap-2">
-          <Calendar className="w-5 h-5 text-urbana-gold flex-shrink-0" />
-          <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold font-playfair truncate">
+          <Calendar className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold flex-shrink-0" />
+          <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-gold font-playfair truncate">
             {format(currentWeek, "MMMM 'de' yyyy", { locale: ptBR })}
           </h2>
         </div>

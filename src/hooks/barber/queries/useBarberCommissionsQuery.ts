@@ -27,38 +27,35 @@ export const useBarberCommissionsQuery = () => {
   return useQuery({
     queryKey: ['barber-commissions', user?.id],
     queryFn: async () => {
-      console.log('🔍 Buscando comissões para usuário:', { id: user?.id, email: user?.email });
+      console.log('🔍 Buscando comissões para usuário:', { 
+        id: user?.id, 
+        email: user?.email,
+        authUserId: user?.id 
+      });
       
-      if (!user?.email) {
-        console.log('❌ Usuário sem email');
+      if (!user?.id) {
+        console.log('❌ Usuário sem ID');
         return { commissions: [], stats: null };
       }
 
-      // Buscar staff ID - tentar primeiro por user_id
-      let staffData = await supabase
+      // Buscar staff ID usando o user_id do auth
+      const { data: staffData, error: staffError } = await supabase
         .from('staff')
-        .select('id, name, email')
+        .select('id, name, email, user_id')
         .eq('user_id', user.id)
         .eq('role', 'barber')
         .maybeSingle();
 
-      console.log('📋 Busca por user_id:', { found: !!staffData?.data, data: staffData?.data });
+      console.log('📋 Busca de staff:', { 
+        found: !!staffData, 
+        staffId: staffData?.id,
+        error: staffError,
+        searchingFor: user.id
+      });
 
-      // Se não encontrou por user_id, buscar por email
-      if (!staffData?.data && user.email) {
-        staffData = await supabase
-          .from('staff')
-          .select('id, name, email')
-          .eq('email', user.email)
-          .eq('role', 'barber')
-          .maybeSingle();
-        
-        console.log('📋 Busca por email:', { found: !!staffData?.data, data: staffData?.data });
-      }
-
-      const staffId = staffData?.data?.id;
+      const staffId = staffData?.id;
       if (!staffId) {
-        console.log('❌ Staff ID não encontrado');
+        console.log('❌ Staff ID não encontrado para user_id:', user.id);
         return { commissions: [], stats: null };
       }
 
@@ -133,8 +130,10 @@ export const useBarberCommissionsQuery = () => {
 
       return { commissions, stats };
     },
-    enabled: !!user?.email,
-    staleTime: 2 * 60 * 1000, // 2 minutos
-    gcTime: 10 * 60 * 1000,
+    enabled: !!user?.id,
+    staleTime: 30 * 1000, // 30 segundos
+    gcTime: 2 * 60 * 1000, // 2 minutos
+    refetchOnWindowFocus: true, // Refetch ao focar na janela
+    refetchOnMount: true, // Sempre refetch ao montar
   });
 };
