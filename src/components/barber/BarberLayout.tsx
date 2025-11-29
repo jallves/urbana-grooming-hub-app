@@ -3,11 +3,13 @@ import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, Calendar, Clock, DollarSign, Home, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
 const BarberLayout: React.FC = () => {
   const { user, signOut } = useAuth();
+  const { displayName } = useEmployeeProfile();
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
@@ -93,7 +95,7 @@ const BarberLayout: React.FC = () => {
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
                 <span className="text-xs sm:text-sm text-urbana-light font-medium">
-                  {user?.user_metadata?.name?.split(' ')[0] || 'Barbeiro'}
+                  {displayName?.split(' ')[0] || 'Barbeiro'}
                 </span>
               </div>
               
@@ -242,7 +244,7 @@ const BarberLayout: React.FC = () => {
             <div className="relative">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-vibrant/10 flex items-center justify-center border border-urbana-gold/30 shadow-lg shadow-urbana-gold/20">
                 <span className="text-urbana-gold font-bold text-lg">
-                  {(user?.user_metadata?.name?.charAt(0) || 'B').toUpperCase()}
+                  {(displayName?.charAt(0) || 'B').toUpperCase()}
                 </span>
               </div>
               <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-urbana-black shadow-lg shadow-green-500/50 animate-pulse" />
@@ -253,7 +255,7 @@ const BarberLayout: React.FC = () => {
                 Barbeiro
               </p>
               <p className="text-sm font-semibold text-urbana-light truncate mt-0.5">
-                {user?.user_metadata?.name || 'Usuário'}
+                {displayName || 'Usuário'}
               </p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
