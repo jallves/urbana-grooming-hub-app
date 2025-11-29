@@ -1,11 +1,14 @@
 import React from 'react';
 import { Badge } from "@/components/ui/badge";
-import { DollarSign, TrendingUp, Clock, Package, Scissors } from 'lucide-react';
+import { Button } from "@/components/ui/button";
+import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { 
   PainelBarbeiroCard, 
   PainelBarbeiroCardTitle,
@@ -15,7 +18,21 @@ import {
 import { cn } from '@/lib/utils';
 
 const BarberCommissionsComponent: React.FC = () => {
-  const { data, isLoading } = useBarberCommissionsQuery();
+  const { data, isLoading, refetch } = useBarberCommissionsQuery();
+  const queryClient = useQueryClient();
+  const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    console.log('🔄 Forçando atualização das comissões...');
+    
+    // Invalidar e refetch
+    await queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+    await refetch();
+    
+    toast.success('Comissões atualizadas!');
+    setIsRefreshing(false);
+  };
   
   const commissions = data?.commissions || [];
   const stats = data?.stats || {
@@ -40,13 +57,27 @@ const BarberCommissionsComponent: React.FC = () => {
   return (
     <BarberPageContainer hideHeader>
       {/* Header da página */}
-      <div className="mb-6 sm:mb-8 pb-4 sm:pb-6 border-b border-urbana-gold/20">
-        <h1 className="text-2xl sm:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
-          Minhas Comissões
-        </h1>
-        <p className="text-urbana-light/70 text-sm sm:text-base drop-shadow-md mt-1">
-          Acompanhe seus ganhos
-        </p>
+      <div className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-urbana-gold/20">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+              Minhas Comissões
+            </h1>
+            <p className="text-urbana-light/70 text-sm sm:text-base lg:text-lg drop-shadow-md mt-1 sm:mt-2">
+              Acompanhe seus ganhos
+            </p>
+          </div>
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="flex items-center gap-2 border-urbana-gold/30 bg-transparent text-urbana-light hover:bg-urbana-gold/10"
+          >
+            <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">Atualizar</span>
+          </Button>
+        </div>
       </div>
 
       {/* Cards de Estatísticas - Mobile First Responsive */}
