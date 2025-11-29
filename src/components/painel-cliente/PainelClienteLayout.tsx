@@ -258,10 +258,7 @@ const PainelClienteLayout: React.FC = () => {
             
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-urbana-light truncate">
-                {cliente?.nome || 'Usuário'}
-              </p>
-              <p className="text-xs text-urbana-light/60 truncate mt-0.5">
-                {cliente?.email || 'email@exemplo.com'}
+                {cliente?.nome?.split(' ').slice(0, 2).join(' ') || 'Usuário'}
               </p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />

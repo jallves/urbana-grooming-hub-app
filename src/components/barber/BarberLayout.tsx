@@ -249,11 +249,11 @@ const BarberLayout: React.FC = () => {
             </div>
             
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-semibold text-urbana-light truncate">
-                {user?.user_metadata?.name || 'Barbeiro'}
+              <p className="text-xs text-urbana-light/60 truncate">
+                Barbeiro
               </p>
-              <p className="text-xs text-urbana-light/60 truncate mt-0.5">
-                {user?.email || 'barbeiro@exemplo.com'}
+              <p className="text-sm font-semibold text-urbana-light truncate mt-0.5">
+                {user?.user_metadata?.name || 'Usuário'}
               </p>
               <div className="flex items-center gap-1.5 mt-1.5">
                 <div className="w-1.5 h-1.5 rounded-full bg-green-500 shadow-sm shadow-green-500/50" />
