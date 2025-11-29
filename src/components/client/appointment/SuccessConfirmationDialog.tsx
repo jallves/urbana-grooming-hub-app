@@ -124,7 +124,10 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
             {/* Botões de ação */}
             <div className="flex gap-3 pt-2">
               <Button 
-                onClick={onClose}
+                onClick={() => {
+                  onClose();
+                  navigate('/painel-cliente');
+                }}
                 variant="outline"
                 className="flex-1 border-urbana-gold/30 bg-transparent text-urbana-light hover:bg-urbana-gold/10 hover:text-urbana-light hover:border-urbana-gold/50"
               >
