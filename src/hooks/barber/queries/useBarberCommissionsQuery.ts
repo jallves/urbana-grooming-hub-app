@@ -27,30 +27,45 @@ export const useBarberCommissionsQuery = () => {
   return useQuery({
     queryKey: ['barber-commissions', user?.id],
     queryFn: async () => {
-      if (!user?.email) return { commissions: [], stats: null };
+      console.log('🔍 Buscando comissões para usuário:', { id: user?.id, email: user?.email });
+      
+      if (!user?.email) {
+        console.log('❌ Usuário sem email');
+        return { commissions: [], stats: null };
+      }
 
-      // Buscar staff ID
+      // Buscar staff ID - tentar primeiro por user_id
       let staffData = await supabase
         .from('staff')
-        .select('id')
+        .select('id, name, email')
         .eq('user_id', user.id)
         .eq('role', 'barber')
         .maybeSingle();
 
+      console.log('📋 Busca por user_id:', { found: !!staffData?.data, data: staffData?.data });
+
+      // Se não encontrou por user_id, buscar por email
       if (!staffData?.data && user.email) {
         staffData = await supabase
           .from('staff')
-          .select('id')
+          .select('id, name, email')
           .eq('email', user.email)
           .eq('role', 'barber')
           .maybeSingle();
+        
+        console.log('📋 Busca por email:', { found: !!staffData?.data, data: staffData?.data });
       }
 
       const staffId = staffData?.data?.id;
-      if (!staffId) return { commissions: [], stats: null };
+      if (!staffId) {
+        console.log('❌ Staff ID não encontrado');
+        return { commissions: [], stats: null };
+      }
+
+      console.log('✅ Staff ID encontrado:', staffId);
 
       // Buscar comissões do ERP Financeiro
-      const { data: commissionsData } = await supabase
+      const { data: commissionsData, error: commissionsError } = await supabase
         .from('financial_records')
         .select('*')
         .eq('transaction_type', 'commission')
@@ -58,13 +73,40 @@ export const useBarberCommissionsQuery = () => {
         .order('transaction_date', { ascending: false })
         .limit(50); // Limitar a 50 registros mais recentes
 
-      if (!commissionsData) return { commissions: [], stats: null };
+      console.log('💰 Comissões encontradas:', { 
+        count: commissionsData?.length, 
+        error: commissionsError,
+        staffId 
+      });
+
+      if (commissionsError) {
+        console.error('❌ Erro ao buscar comissões:', commissionsError);
+        return { commissions: [], stats: null };
+      }
+
+      if (!commissionsData || commissionsData.length === 0) {
+        console.log('⚠️ Nenhuma comissão encontrada');
+        return { commissions: [], stats: null };
+      }
 
       // Mapear dados
       const commissions: Commission[] = commissionsData.map((record) => {
         const metadata = record.metadata as any;
-        // Corrigir mapeamento: staff_payments = serviço, products = produto
-        const commissionType = record.category === 'staff_payments' ? 'service' : 'product';
+        // Determinar tipo de comissão pela categoria e subcategoria
+        const commissionType = record.category === 'staff_payments' 
+          ? 'service' 
+          : record.subcategory === 'product_commission' 
+            ? 'product' 
+            : 'service';
+        
+        console.log('📊 Mapeando comissão:', {
+          id: record.id,
+          category: record.category,
+          subcategory: record.subcategory,
+          type: commissionType,
+          amount: record.net_amount,
+          status: record.status
+        });
         
         return {
           id: record.id,
@@ -77,6 +119,8 @@ export const useBarberCommissionsQuery = () => {
           product_sale_id: metadata?.product_sale_id || null
         };
       });
+
+      console.log('✅ Total de comissões mapeadas:', commissions.length);
 
       // Calcular estatísticas
       const stats: CommissionStats = {
