@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw } from 'lucide-react';
@@ -15,11 +15,53 @@ import {
   PainelBarbeiroCardContent 
 } from '@/components/barber/PainelBarbeiroCard';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
 
 const BarberCommissionsComponent: React.FC = () => {
   const { data, isLoading, refetch } = useBarberCommissionsQuery();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // Real-time updates para comissões
+  useEffect(() => {
+    if (!user?.id) return;
+
+    console.log('🔴 [Real-time] Conectando ao canal de comissões do barbeiro');
+
+    const channel = supabase
+      .channel('barber-commissions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*', // Escuta INSERT, UPDATE, DELETE
+          schema: 'public',
+          table: 'barber_commissions',
+        },
+        (payload) => {
+          console.log('🔴 [Real-time] Mudança detectada em barber_commissions:', payload);
+          
+          // Invalidar e refetch automaticamente
+          queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+          
+          // Mostrar toast apenas para updates de status
+          if (payload.eventType === 'UPDATE' && payload.new?.status === 'paid') {
+            toast.success('💰 Comissão marcada como paga!', {
+              description: `R$ ${Number(payload.new.amount).toFixed(2)}`
+            });
+          }
+        }
+      )
+      .subscribe((status) => {
+        console.log('🔴 [Real-time] Status da conexão:', status);
+      });
+
+    return () => {
+      console.log('🔴 [Real-time] Desconectando do canal de comissões');
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id, queryClient]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
