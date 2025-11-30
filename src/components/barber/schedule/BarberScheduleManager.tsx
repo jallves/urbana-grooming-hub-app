@@ -1,7 +1,7 @@
 import React, { useState, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BookingAvailabilityToggle from './BookingAvailabilityToggle';
-import { Calendar, Clock, Settings } from 'lucide-react';
+import { Calendar, Clock, Settings, Lock } from 'lucide-react';
 import BarberScheduleSkeleton from '@/components/ui/loading/BarberScheduleSkeleton';
 import { 
   PainelBarbeiroCard,
@@ -14,9 +14,10 @@ import {
 // Lazy load dos componentes pesados
 const WorkingHoursManager = React.lazy(() => import('./WorkingHoursManager'));
 const TimeOffManager = React.lazy(() => import('./TimeOffManager'));
+const SlotBlockManager = React.lazy(() => import('./SlotBlockManager'));
 
 const BarberScheduleManager: React.FC = () => {
-  const [activeTab, setActiveTab] = useState('working-hours');
+  const [activeTab, setActiveTab] = useState('slot-blocks');
 
   return (
     <div className="w-full space-y-4 max-w-[800px] mx-auto">
@@ -35,7 +36,7 @@ const BarberScheduleManager: React.FC = () => {
                 Gerenciar Horários
               </PainelBarbeiroCardTitle>
               <PainelBarbeiroCardDescription className="text-xs sm:text-sm text-urbana-light/60">
-                Configure seus horários de trabalho e folgas
+                Configure seus horários de trabalho, bloqueios e folgas
               </PainelBarbeiroCardDescription>
             </div>
           </div>
@@ -43,23 +44,39 @@ const BarberScheduleManager: React.FC = () => {
 
         <PainelBarbeiroCardContent className="p-4 sm:p-5 pt-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            {/* Abas melhoradas - Sem scroll */}
-            <TabsList className="grid w-full grid-cols-2 bg-urbana-black/50 backdrop-blur-sm border border-urbana-gold/20 rounded-xl p-1 h-auto gap-1 mb-4">
+            {/* Abas melhoradas - 3 colunas */}
+            <TabsList className="grid w-full grid-cols-3 bg-urbana-black/50 backdrop-blur-sm border border-urbana-gold/20 rounded-xl p-1 h-auto gap-1 mb-4">
+              <TabsTrigger 
+                value="slot-blocks"
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2"
+              >
+                <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="font-medium hidden sm:inline">Bloqueios</span>
+                <span className="font-medium sm:hidden">Bloq.</span>
+              </TabsTrigger>
               <TabsTrigger 
                 value="working-hours"
-                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-xs sm:text-sm py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2"
               >
-                <Clock className="h-4 w-4 flex-shrink-0" />
-                <span className="font-medium">Horários</span>
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="font-medium hidden sm:inline">Horários</span>
+                <span className="font-medium sm:hidden">Hor.</span>
               </TabsTrigger>
               <TabsTrigger 
                 value="time-off"
-                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-xs sm:text-sm py-2.5 sm:py-3 px-3 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-2"
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-xs sm:text-sm py-2.5 sm:py-3 px-2 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2"
               >
-                <Calendar className="h-4 w-4 flex-shrink-0" />
-                <span className="font-medium">Folgas</span>
+                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="font-medium hidden sm:inline">Folgas</span>
+                <span className="font-medium sm:hidden">Folg.</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="slot-blocks" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <Suspense fallback={<BarberScheduleSkeleton />}>
+                <SlotBlockManager />
+              </Suspense>
+            </TabsContent>
 
             <TabsContent value="working-hours" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <Suspense fallback={<BarberScheduleSkeleton />}>
