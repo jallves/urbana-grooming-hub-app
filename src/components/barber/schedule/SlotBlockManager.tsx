@@ -149,7 +149,30 @@ const SlotBlockManager: React.FC = () => {
     fetchData();
   }, [fetchData]);
 
-  // Montar lista de slots com status
+  // Realtime subscription para atualização automática
+  useEffect(() => {
+    if (!barberData?.staff_id) return;
+
+    const channel = supabase
+      .channel('barber-availability-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'barber_availability',
+          filter: `barber_id=eq.${barberData.staff_id}`,
+        },
+        () => {
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [barberData?.staff_id, fetchData]);
   useEffect(() => {
     if (isDayOff) {
       setSlots([]);
