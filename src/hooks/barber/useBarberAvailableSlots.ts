@@ -25,13 +25,35 @@ export const useBarberAvailableSlots = () => {
       const currentMinute = now.getMinutes();
       const isCurrentDay = isToday(date);
       
-      // Buscar todos os horários possíveis (9h às 20h, intervalos de 30min)
+      // Buscar todos os horários possíveis (8:30 às 20h, intervalos de 30min)
+      // REGRA: Primeiro atendimento às 08:30 (preparação de 08:00-08:30)
+      // REGRA: Último slot = 20:00 - duração do serviço (ex: 60min -> último slot 19:00)
       const allSlots: TimeSlot[] = [];
-      for (let hour = 9; hour < 20; hour++) {
+      const FIRST_SLOT_HOUR = 8;
+      const FIRST_SLOT_MINUTE = 30;
+      const CLOSING_HOUR = 20;
+      const CLOSING_MINUTE = 0;
+      
+      // Calcular o último horário possível baseado na duração do serviço
+      const closingTotalMinutes = CLOSING_HOUR * 60 + CLOSING_MINUTE;
+      const lastSlotTotalMinutes = closingTotalMinutes - serviceDuration;
+      
+      for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
         for (let minute of [0, 30]) {
+          // Pular 08:00 - primeiro slot é 08:30
+          if (hour === FIRST_SLOT_HOUR && minute < FIRST_SLOT_MINUTE) {
+            continue;
+          }
+          
+          const slotTotalMinutes = hour * 60 + minute;
+          
+          // Pular se o serviço não couber antes do fechamento
+          if (slotTotalMinutes > lastSlotTotalMinutes) {
+            continue;
+          }
+          
           // Se for hoje, só incluir horários futuros (pelo menos 30min à frente)
           if (isCurrentDay) {
-            const slotTotalMinutes = hour * 60 + minute;
             const currentTotalMinutes = currentHour * 60 + currentMinute;
             
             // Pular se o horário já passou ou está muito próximo (menos de 30min)
