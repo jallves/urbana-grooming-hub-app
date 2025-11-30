@@ -5,6 +5,7 @@ export type AppRole = 'master' | 'admin' | 'manager' | 'barber' | 'user';
 export interface UserWithRole {
   id: string;
   email: string;
+  name: string;
   created_at: string;
   last_sign_in_at: string | null;
   role: string;

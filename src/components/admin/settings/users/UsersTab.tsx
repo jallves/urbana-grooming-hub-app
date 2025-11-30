@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PlusCircle, Search, UserPlus } from 'lucide-react';
+import { PlusCircle, Search, RefreshCw } from 'lucide-react';
 import UserTable from './UserTable';
 import AddUserDialog from './AddUserDialog';
 import UserRoleDialog from './UserRoleDialog';
@@ -15,15 +15,14 @@ const UsersTab: React.FC = () => {
     loading,
     searchQuery,
     setSearchQuery,
-    syncLoading,
     fetchUsers,
     handleDeleteUser,
-    handleSyncStaff
   } = useUserManagement();
   
   const [addUserOpen, setAddUserOpen] = useState(false);
   const [roleDialogOpen, setRoleDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserWithRole | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const handleAddUser = () => {
     setAddUserOpen(true);
@@ -34,37 +33,44 @@ const UsersTab: React.FC = () => {
     setRoleDialogOpen(true);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    await fetchUsers();
+    setIsRefreshing(false);
+  };
+
   return (
     <>
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-3">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por email..."
-            className="pl-8"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2 w-full sm:w-auto">
-          <Button 
-            onClick={handleSyncStaff} 
-            variant="outline"
-            size="sm"
-            disabled={syncLoading}
-            className="flex items-center gap-2 w-full sm:w-auto"
-          >
-            <UserPlus className="h-4 w-4" />
-            <span>Sincronizar Barbeiros</span>
-          </Button>
-          <Button 
-            onClick={handleAddUser}
-            disabled={syncLoading}
-            className="w-full sm:w-auto"
-          >
-            <PlusCircle className="mr-2 h-4 w-4" />
-            Adicionar Usuário
-          </Button>
+      <div className="flex flex-col gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+          <div className="relative w-full sm:max-w-sm">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome ou email..."
+              className="pl-10 bg-white border-gray-200 focus:border-urbana-gold focus:ring-urbana-gold/20"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button 
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              disabled={isRefreshing}
+              className="flex items-center gap-2"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span className="hidden sm:inline">Atualizar</span>
+            </Button>
+            <Button 
+              onClick={handleAddUser}
+              className="flex-1 sm:flex-none bg-gradient-to-r from-urbana-gold to-yellow-500 hover:from-urbana-gold-dark hover:to-yellow-600 text-white shadow-sm"
+            >
+              <PlusCircle className="mr-2 h-4 w-4" />
+              Adicionar Usuário
+            </Button>
+          </div>
         </div>
       </div>
 
