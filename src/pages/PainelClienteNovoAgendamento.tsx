@@ -470,7 +470,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
               )}
               {selectedBarber && (
                 <div className="flex items-center gap-1.5 sm:gap-2 bg-urbana-gold/10 px-2 sm:px-3 py-1.5 sm:py-2 rounded-lg">
-                  <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-urbana-gold flex-shrink-0" />
+                  {selectedBarber.image_url ? (
+                    <img src={selectedBarber.image_url} alt={selectedBarber.nome} className="w-6 h-6 rounded-full object-cover border border-urbana-gold/50 flex-shrink-0" />
+                  ) : (
+                    <User className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-urbana-gold flex-shrink-0" />
+                  )}
                   <span className="text-xs sm:text-sm font-medium text-white truncate">{selectedBarber.nome}</span>
                 </div>
               )}
@@ -557,7 +561,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       Nenhum profissional disponível
                     </div>
                   ) : (
-                    barbers.map((barber, index) => (
+                  barbers.map((barber, index) => (
                       <TotemCard
                         key={barber.id}
                         icon={User}
@@ -565,13 +569,19 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         variant="default"
                         animationDelay={`${index * 0.1}s`}
                       >
-                        {barber.image_url && (
-                          <img
-                            src={barber.image_url}
-                            alt={barber.nome}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-3 object-cover border-2 border-urbana-gold/50"
-                          />
-                        )}
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-3 overflow-hidden border-3 border-urbana-gold/60 bg-gradient-to-br from-urbana-black-soft to-urbana-black shadow-lg">
+                          {barber.image_url ? (
+                            <img
+                              src={barber.image_url}
+                              alt={barber.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <User className="w-12 h-12 sm:w-14 sm:h-14 text-urbana-gold/60" />
+                            </div>
+                          )}
+                        </div>
                         <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>
                       </TotemCard>
                     ))

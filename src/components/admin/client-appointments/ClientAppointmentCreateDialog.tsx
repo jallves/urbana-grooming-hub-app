@@ -708,15 +708,19 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
                       className="cursor-pointer hover:shadow-lg hover:border-urbana-gold transition-all bg-white border-gray-200"
                     >
                       <CardContent className="p-4 sm:p-6 text-center">
-                        {barber.image_url ? (
-                          <img
-                            src={barber.image_url}
-                            alt={barber.nome}
-                            className="w-16 h-16 sm:w-20 sm:h-20 rounded-full mx-auto mb-2 sm:mb-3 object-cover border-2 border-urbana-gold"
-                          />
-                        ) : (
-                          <User className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-2 sm:mb-3 text-urbana-gold" />
-                        )}
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full mx-auto mb-3 overflow-hidden border-3 border-urbana-gold/50 bg-gradient-to-br from-gray-100 to-gray-200 shadow-md">
+                          {barber.image_url ? (
+                            <img
+                              src={barber.image_url}
+                              alt={barber.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gray-100">
+                              <User className="w-10 h-10 sm:w-12 sm:h-12 text-urbana-gold/60" />
+                            </div>
+                          )}
+                        </div>
                         <h3 className="font-bold text-base sm:text-lg text-gray-900">{barber.nome}</h3>
                       </CardContent>
                     </Card>
