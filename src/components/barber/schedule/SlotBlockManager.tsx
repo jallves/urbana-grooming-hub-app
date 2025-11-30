@@ -325,23 +325,26 @@ const SlotBlockManager: React.FC = () => {
           Selecionar Data
         </Label>
         
-        {/* Botões de data rápida - sem hover */}
+        {/* Botões de data rápida */}
         <div className="flex flex-wrap gap-2">
-          {quickDateButtons.map(({ label, date }) => (
-            <Button
-              key={label}
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
-              className={cn(
-                'border-urbana-gold/20 text-urbana-light text-xs hover:bg-transparent hover:border-urbana-gold/20',
-                selectedDate === format(date, 'yyyy-MM-dd') && 'bg-urbana-gold/20 border-urbana-gold/50'
-              )}
-            >
-              {label}
-            </Button>
-          ))}
+          {quickDateButtons.map(({ label, date }) => {
+            const isSelected = selectedDate === format(date, 'yyyy-MM-dd');
+            return (
+              <button
+                key={label}
+                type="button"
+                onClick={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
+                className={cn(
+                  'px-3 py-1.5 text-xs rounded-md border transition-colors',
+                  isSelected 
+                    ? 'bg-urbana-gold/20 border-urbana-gold/50 text-urbana-light' 
+                    : 'bg-transparent border-urbana-gold/20 text-urbana-light/70'
+                )}
+              >
+                {label}
+              </button>
+            );
+          })}
         </div>
 
         <Input
