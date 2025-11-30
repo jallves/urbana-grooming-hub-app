@@ -310,7 +310,7 @@ const SlotBlockManager: React.FC = () => {
 
   const getSlotClasses = (slot: TimeSlot) => {
     const status = getSlotStatus(slot);
-    const base = 'flex items-center justify-between p-3 rounded-lg border transition-colors';
+    const base = 'flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-all duration-150';
     
     switch (status) {
       case 'occupied':
@@ -334,22 +334,22 @@ const SlotBlockManager: React.FC = () => {
   return (
     <div className="space-y-4">
       {/* Informativo */}
-      <div className="backdrop-blur-sm bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
-        <p className="text-xs sm:text-sm text-amber-300">
-          <AlertCircle className="h-4 w-4 inline mr-2" />
-          Bloqueie horários específicos quando precisar se ausentar. Clique em um horário livre para bloqueá-lo.
+      <div className="backdrop-blur-sm bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 sm:p-4">
+        <p className="text-[11px] sm:text-sm text-amber-300 leading-relaxed">
+          <AlertCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 flex-shrink-0" />
+          Bloqueie horários específicos quando precisar se ausentar. Toque em um horário livre para bloqueá-lo.
         </p>
       </div>
 
       {/* Seletor de Data */}
-      <div className="space-y-3">
-        <Label className="text-urbana-light/70 text-sm flex items-center gap-2">
-          <CalendarDays className="h-4 w-4" />
+      <div className="space-y-2 sm:space-y-3">
+        <Label className="text-urbana-light/70 text-xs sm:text-sm flex items-center gap-1.5 sm:gap-2">
+          <CalendarDays className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Selecionar Data
         </Label>
         
         {/* Botões de data rápida */}
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-1.5 sm:gap-2">
           {quickDateButtons.map(({ label, date }) => {
             const isSelected = selectedDate === format(date, 'yyyy-MM-dd');
             return (
@@ -358,7 +358,7 @@ const SlotBlockManager: React.FC = () => {
                 type="button"
                 onClick={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
                 className={cn(
-                  'px-3 py-1.5 text-xs rounded-md border transition-colors',
+                  'px-2.5 sm:px-3 py-1.5 text-[11px] sm:text-xs rounded-md border transition-colors touch-manipulation',
                   isSelected 
                     ? 'bg-urbana-gold/20 border-urbana-gold/50 text-urbana-light' 
                     : 'bg-transparent border-urbana-gold/20 text-urbana-light/70'
@@ -378,8 +378,8 @@ const SlotBlockManager: React.FC = () => {
           className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light h-10 text-sm"
         />
 
-        <p className="text-sm text-urbana-gold font-medium">
-          {format(new Date(selectedDate + 'T12:00:00'), "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+        <p className="text-xs sm:text-sm text-urbana-gold font-medium leading-tight">
+          {format(new Date(selectedDate + 'T12:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
         </p>
       </div>
 
@@ -395,28 +395,28 @@ const SlotBlockManager: React.FC = () => {
       ) : (
         <>
           {/* Legenda */}
-          <div className="flex flex-wrap gap-3 text-xs">
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-green-500/50 border border-green-500/70" />
+          <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-green-500/50 border border-green-500/70" />
               <span className="text-urbana-light/70">Disponível</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-red-500/50 border border-red-500/70" />
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-red-500/50 border border-red-500/70" />
               <span className="text-urbana-light/70">Bloqueado</span>
             </div>
-            <div className="flex items-center gap-1.5">
-              <div className="w-3 h-3 rounded bg-blue-500/50 border border-blue-500/70" />
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500/50 border border-blue-500/70" />
               <span className="text-urbana-light/70">Agendado</span>
             </div>
           </div>
 
           {/* Grade de Horários */}
           {loading ? (
-            <div className="flex justify-center items-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
+            <div className="flex justify-center items-center py-8 sm:py-12">
+              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin text-urbana-gold" />
             </div>
           ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5 sm:gap-2">
               {slots.map((slot) => {
                 const status = getSlotStatus(slot);
                 const isSaving = saving === slot.time;
@@ -430,22 +430,23 @@ const SlotBlockManager: React.FC = () => {
                     className={cn(
                       getSlotClasses(slot),
                       !canToggle && 'cursor-not-allowed opacity-70',
-                      canToggle && 'cursor-pointer'
+                      canToggle && 'cursor-pointer active:scale-95',
+                      'touch-manipulation'
                     )}
                   >
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 flex-shrink-0" />
-                      <span className="font-medium text-sm">{slot.time}</span>
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                      <span className="font-medium text-xs sm:text-sm">{slot.time}</span>
                     </div>
                     
                     {isSaving ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
                     ) : status === 'occupied' ? (
-                      <span className="text-xs bg-blue-500/30 px-2 py-0.5 rounded">Agendado</span>
+                      <span className="text-[10px] sm:text-xs bg-blue-500/30 px-1.5 sm:px-2 py-0.5 rounded">Agend.</span>
                     ) : status === 'blocked' ? (
-                      <Lock className="h-4 w-4" />
+                      <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     ) : (
-                      <Unlock className="h-4 w-4" />
+                      <Unlock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                     )}
                   </button>
                 );
@@ -454,26 +455,26 @@ const SlotBlockManager: React.FC = () => {
           )}
 
           {/* Resumo */}
-          <div className="backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl p-4">
-            <h4 className="text-sm font-medium text-urbana-light mb-2">Resumo do Dia</h4>
-            <div className="grid grid-cols-3 gap-3 text-center">
+          <div className="backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl p-3 sm:p-4">
+            <h4 className="text-xs sm:text-sm font-medium text-urbana-light mb-2">Resumo do Dia</h4>
+            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
               <div>
-                <p className="text-lg font-bold text-green-400">
+                <p className="text-base sm:text-lg font-bold text-green-400">
                   {slots.filter(s => getSlotStatus(s) === 'available').length}
                 </p>
-                <p className="text-xs text-urbana-light/60">Disponíveis</p>
+                <p className="text-[10px] sm:text-xs text-urbana-light/60">Disponíveis</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-blue-400">
+                <p className="text-base sm:text-lg font-bold text-blue-400">
                   {slots.filter(s => getSlotStatus(s) === 'occupied').length}
                 </p>
-                <p className="text-xs text-urbana-light/60">Agendados</p>
+                <p className="text-[10px] sm:text-xs text-urbana-light/60">Agendados</p>
               </div>
               <div>
-                <p className="text-lg font-bold text-red-400">
+                <p className="text-base sm:text-lg font-bold text-red-400">
                   {slots.filter(s => getSlotStatus(s) === 'blocked' && !s.hasAppointment).length}
                 </p>
-                <p className="text-xs text-urbana-light/60">Bloqueados</p>
+                <p className="text-[10px] sm:text-xs text-urbana-light/60">Bloqueados</p>
               </div>
             </div>
           </div>
