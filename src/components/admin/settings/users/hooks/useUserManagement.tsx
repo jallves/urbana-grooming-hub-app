@@ -33,6 +33,7 @@ export const useUserManagement = () => {
       const usersWithRoles = (employeeData || []).map((emp: any) => ({
         id: emp.user_id || emp.employee_id,
         email: emp.email,
+        name: emp.name || 'Sem nome',
         created_at: emp.created_at,
         last_sign_in_at: emp.last_login,
         role: emp.role || 'user'
@@ -191,7 +192,9 @@ export const useUserManagement = () => {
   }, [fetchUsers]);
 
   const filteredUsers = users.filter(
-    (user) => user.email?.toLowerCase().includes(searchQuery.toLowerCase())
+    (user) => 
+      user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return {
