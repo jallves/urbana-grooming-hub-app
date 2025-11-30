@@ -4,15 +4,19 @@
  * REGRAS DO SISTEMA:
  * - Buffer de 10 minutos entre agendamentos
  * - Horário de funcionamento: 
- *   Segunda a Sábado: 08:00 às 20:00
+ *   Segunda a Sábado: 08:00 às 20:00 (portas)
+ *   Primeiro atendimento: 08:30 (tempo de preparação de 08:00-08:30)
+ *   Último atendimento: calculado dinamicamente baseado na duração do serviço
+ *   Exemplo: serviço de 60min -> último slot 19:00, serviço de 30min -> último slot 19:30
  *   Domingo: 09:00 às 13:00
  * - Slots de 30 minutos
  */
 
 export const BUFFER_MINUTES = 10;
 export const SLOT_INTERVAL_MINUTES = 30;
-export const BUSINESS_START_HOUR = 8; // Segunda a Sábado inicia às 08:00
-export const BUSINESS_END_HOUR = 20; // Segunda a Sábado termina às 20:00
+export const BUSINESS_START_HOUR = 8; // Barbearia abre às 08:00
+export const BUSINESS_START_MINUTE = 30; // Primeiro atendimento às 08:30
+export const BUSINESS_END_HOUR = 20; // Barbearia fecha às 20:00
 export const SUNDAY_START_HOUR = 9; // Domingo inicia às 09:00
 export const SUNDAY_END_HOUR = 13; // Domingo termina às 13:00
 
@@ -96,23 +100,29 @@ export const hasTimeOverlap = (
 /**
  * Valida se um horário está dentro do expediente
  * Considera que o serviço precisa terminar antes do fechamento
+ * REGRA: Primeiro atendimento às 08:30, fechamento às 20:00
+ * REGRA: O último slot depende da duração do serviço (serviço deve terminar até 20:00)
  */
 export const isWithinBusinessHours = (startTime: string, serviceDuration: number): boolean => {
   const startMinutes = timeToMinutes(startTime);
-  const startHour = Math.floor(startMinutes / 60);
+  const businessStartMinutes = BUSINESS_START_HOUR * 60 + BUSINESS_START_MINUTE; // 08:30 = 510 min
+  const businessEndMinutes = BUSINESS_END_HOUR * 60; // 20:00 = 1200 min
   
-  // Verificar início
-  if (startHour < BUSINESS_START_HOUR || startHour >= BUSINESS_END_HOUR) {
+  // Verificar se o início é após o horário de abertura para atendimentos (08:30)
+  if (startMinutes < businessStartMinutes) {
+    return false;
+  }
+  
+  // Verificar se o início é antes do fechamento
+  if (startMinutes >= businessEndMinutes) {
     return false;
   }
   
   // Verificar se o serviço termina antes do fechamento (sem buffer)
   const endMinutes = startMinutes + serviceDuration;
-  const endHour = Math.floor(endMinutes / 60);
-  const endMinute = endMinutes % 60;
   
   // Não pode terminar depois das 20:00
-  if (endHour > BUSINESS_END_HOUR || (endHour === BUSINESS_END_HOUR && endMinute > 0)) {
+  if (endMinutes > businessEndMinutes) {
     return false;
   }
   
