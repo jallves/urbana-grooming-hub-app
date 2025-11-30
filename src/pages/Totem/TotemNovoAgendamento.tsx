@@ -568,7 +568,20 @@ const TotemNovoAgendamento: React.FC = () => {
                   <User className="w-4 h-4" />
                   <p className="text-xs md:text-sm font-medium">Barbeiro</p>
                 </div>
-                <p className="text-urbana-light font-bold text-base md:text-lg landscape:text-sm">{selectedBarber?.nome}</p>
+                <div className="flex items-center gap-3">
+                  {selectedBarber?.image_url ? (
+                    <img 
+                      src={selectedBarber.image_url} 
+                      alt={selectedBarber.nome}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-urbana-gold/50"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center">
+                      <User className="w-5 h-5 text-urbana-gold/60" />
+                    </div>
+                  )}
+                  <p className="text-urbana-light font-bold text-base md:text-lg landscape:text-sm">{selectedBarber?.nome}</p>
+                </div>
               </div>
               
               <div className="space-y-1 p-4 bg-urbana-black-soft/50 rounded-xl border border-urbana-gold/20 landscape:p-2">
