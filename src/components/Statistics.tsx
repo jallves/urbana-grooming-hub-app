@@ -1,6 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { useCountAnimation } from '@/hooks/useCountAnimation';
+import { useHomeStatistics } from '@/hooks/useHomeStatistics';
 import { Award, Users, Scissors, Star } from 'lucide-react';
 
 interface StatItemProps {
@@ -9,10 +10,12 @@ interface StatItemProps {
   suffix?: string;
   label: string;
   delay: number;
+  decimals?: number;
 }
 
-const StatItem: React.FC<StatItemProps> = ({ icon: Icon, end, suffix = '', label, delay }) => {
+const StatItem: React.FC<StatItemProps> = ({ icon: Icon, end, suffix = '', label, delay, decimals = 0 }) => {
   const { count, ref } = useCountAnimation(end, 2000);
+  const displayValue = decimals > 0 ? (count).toFixed(decimals) : count;
 
   return (
     <motion.div
@@ -55,7 +58,7 @@ const StatItem: React.FC<StatItemProps> = ({ icon: Icon, end, suffix = '', label
                 textShadow: '0 0 40px rgba(255, 215, 0, 0.3)'
               }}
             >
-              {count}{suffix}
+              {displayValue}{suffix}
             </h3>
             <p className="text-urbana-light/80 font-raleway text-lg font-light">
               {label}
@@ -76,34 +79,40 @@ const StatItem: React.FC<StatItemProps> = ({ icon: Icon, end, suffix = '', label
 };
 
 const Statistics: React.FC = () => {
+  const { stats: dynamicStats } = useHomeStatistics();
+  
   const stats = [
     {
       icon: Award,
-      end: 2,
+      end: dynamicStats.yearsOfExcellence,
       suffix: '',
       label: 'Anos de Excelência',
-      delay: 0.1
+      delay: 0.1,
+      decimals: 0
     },
     {
       icon: Users,
-      end: 400,
+      end: dynamicStats.satisfiedClients,
       suffix: '+',
       label: 'Clientes Satisfeitos',
-      delay: 0.2
+      delay: 0.2,
+      decimals: 0
     },
     {
       icon: Scissors,
-      end: 700,
+      end: dynamicStats.servicesCompleted,
       suffix: '+',
       label: 'Serviços Realizados',
-      delay: 0.3
+      delay: 0.3,
+      decimals: 0
     },
     {
       icon: Star,
-      end: 99,
+      end: dynamicStats.positiveRating,
       suffix: '%',
       label: 'Avaliação Positiva',
-      delay: 0.4
+      delay: 0.4,
+      decimals: 1
     }
   ];
 
@@ -171,6 +180,7 @@ const Statistics: React.FC = () => {
               suffix={stat.suffix}
               label={stat.label}
               delay={stat.delay}
+              decimals={stat.decimals}
             />
           ))}
         </div>

@@ -85,7 +85,7 @@ const Index = () => {
           </div>
           
           {/* Gallery */}
-          <section className="w-full py-12 transition-all duration-700">
+          <section id="gallery" className="w-full py-12 transition-all duration-700">
             <Gallery />
           </section>
           
@@ -97,7 +97,7 @@ const Index = () => {
           </div>
           
           {/* Client Reviews */}
-          <section className="w-full py-12 transition-all duration-700">
+          <section id="reviews" className="w-full py-12 transition-all duration-700">
             <ClientReviews />
           </section>
           

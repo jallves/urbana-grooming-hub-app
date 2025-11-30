@@ -49,11 +49,13 @@ export const useHomeServices = () => {
 
     const fetchServices = async () => {
       try {
+        // Busca serviços do painel_servicos com show_on_home = true
         const { data: services, error: fetchError } = await supabase
-          .from('services')
-          .select('id, name, description, price, duration, is_active')
+          .from('painel_servicos')
+          .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
           .eq('is_active', true)
-          .order('price', { ascending: true })
+          .eq('show_on_home', true)
+          .order('display_order', { ascending: true })
           .limit(6);
 
         if (!mounted) return;
@@ -61,8 +63,17 @@ export const useHomeServices = () => {
         if (fetchError) {
           console.error('[Services] Erro ao carregar:', fetchError.message);
         } else if (services && services.length > 0) {
-          console.log('[Services] ✅ Carregados:', services.length);
-          setData(services);
+          console.log('[Services] ✅ Carregados (show_on_home):', services.length);
+          // Mapeia os campos do painel_servicos para o formato esperado
+          const mappedServices: Service[] = services.map(s => ({
+            id: s.id,
+            name: s.nome,
+            description: s.descricao,
+            price: Number(s.preco),
+            duration: s.duracao,
+            is_active: s.is_active
+          }));
+          setData(mappedServices);
         }
       } catch (err: any) {
         if (!mounted) return;
@@ -72,14 +83,15 @@ export const useHomeServices = () => {
 
     fetchServices();
 
+    // Realtime updates para painel_servicos
     const channel = supabase
-      .channel('services_changes')
+      .channel('painel_servicos_home_changes')
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
-          table: 'services'
+          table: 'painel_servicos'
         },
         () => {
           if (mounted) fetchServices();
@@ -96,16 +108,25 @@ export const useHomeServices = () => {
   const refetch = async () => {
     try {
       const { data: services, error: fetchError } = await supabase
-        .from('services')
-        .select('id, name, description, price, duration, is_active')
+        .from('painel_servicos')
+        .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
         .eq('is_active', true)
-        .order('price', { ascending: true })
+        .eq('show_on_home', true)
+        .order('display_order', { ascending: true })
         .limit(6);
 
       if (fetchError) {
         console.error('[Services] Erro no refetch:', fetchError.message);
       } else if (services && services.length > 0) {
-        setData(services);
+        const mappedServices: Service[] = services.map(s => ({
+          id: s.id,
+          name: s.nome,
+          description: s.descricao,
+          price: Number(s.preco),
+          duration: s.duracao,
+          is_active: s.is_active
+        }));
+        setData(mappedServices);
       }
     } catch (err: any) {
       console.error('[Services] Exceção no refetch:', err?.message);
