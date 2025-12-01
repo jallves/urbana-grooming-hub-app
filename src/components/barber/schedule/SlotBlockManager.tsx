@@ -128,7 +128,7 @@ const SlotBlockManager: React.FC = () => {
         // Buscar agendamentos do dia usando os campos corretos (data e hora separados)
         const { data: appointmentsData, error: appointmentsError } = await supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, servico:servico_id(duracao)')
+          .select('id, data, hora, servico:servico_id(duracao, nome)')
           .eq('barbeiro_id', barbeiroData.id)
           .eq('data', selectedDate)
           .not('status', 'in', '("cancelado","ausente")');
@@ -190,10 +190,24 @@ const SlotBlockManager: React.FC = () => {
         b.start_time.substring(0, 5) === time && !b.is_available
       );
 
-      // Verificar se tem agendamento (usando campo hora)
+      // Converter horário do slot para minutos para comparação
+      const [slotHour, slotMin] = time.split(':').map(Number);
+      const slotTotalMinutes = slotHour * 60 + slotMin;
+
+      // Verificar se tem agendamento considerando a duração do serviço
       const hasAppointment = appointments.some(apt => {
         const aptTime = apt.hora?.substring(0, 5);
-        return aptTime === time;
+        if (!aptTime) return false;
+        
+        const [aptHour, aptMin] = aptTime.split(':').map(Number);
+        const aptTotalMinutes = aptHour * 60 + aptMin;
+        
+        // Duração do serviço (padrão 30 min se não encontrar)
+        const duracao = apt.servico?.duracao || 30;
+        const aptEndMinutes = aptTotalMinutes + duracao;
+        
+        // Verifica se o slot atual está dentro do intervalo do agendamento
+        return slotTotalMinutes >= aptTotalMinutes && slotTotalMinutes < aptEndMinutes;
       });
 
       // Se for hoje e o horário já passou, marcar como não disponível
