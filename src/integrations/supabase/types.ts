@@ -4386,26 +4386,16 @@ export type Database = {
         }
         Returns: boolean
       }
-      check_unified_slot_availability:
-        | {
-            Args: {
-              p_date: string
-              p_duration: number
-              p_staff_id: string
-              p_time: string
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_date: string
-              p_duration_minutes: number
-              p_exclude_appointment_id?: string
-              p_staff_id: string
-              p_time: string
-            }
-            Returns: boolean
-          }
+      check_unified_slot_availability: {
+        Args: {
+          p_date: string
+          p_duration_minutes: number
+          p_exclude_appointment_id?: string
+          p_staff_id: string
+          p_time: string
+        }
+        Returns: boolean
+      }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
       cleanup_all_sessions: { Args: never; Returns: undefined }
       cleanup_expired_sessions: { Args: never; Returns: number }
