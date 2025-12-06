@@ -1,8 +1,129 @@
 # Totem Android - Integração TEF PayGo Local
 
+## 📋 Índice
+
+1. [Visão Geral](#visão-geral)
+2. [Arquitetura do Sistema](#arquitetura-do-sistema)
+3. [Requisitos](#requisitos)
+4. [Estrutura do Projeto Android](#estrutura-do-projeto-android)
+5. [Configuração Inicial](#configuração-inicial)
+6. [Implementação Detalhada](#implementação-detalhada)
+7. [Integração SDK PayGo](#integração-sdk-paygo)
+8. [Comunicação JavaScript ↔ Android](#comunicação-javascript--android)
+9. [Fluxo de Transações](#fluxo-de-transações)
+10. [Gerenciamento USB/Pinpad](#gerenciamento-usbpinpad)
+11. [Modo Debug e Logs](#modo-debug-e-logs)
+12. [Homologação PayGo](#homologação-paygo)
+13. [Deploy e Distribuição](#deploy-e-distribuição)
+14. [Troubleshooting](#troubleshooting)
+15. [Referências](#referências)
+
+---
+
 ## Visão Geral
 
 Este documento descreve a arquitetura e implementação do app Android nativo para o Totem da Barbearia Costa Urbana, com integração TEF PayGo Local e pinpad PPC930 USB.
+
+### Objetivo
+
+Criar um APK Android que:
+- Carrega o PWA do Totem em uma WebView fullscreen
+- Expõe uma bridge JavaScript para comunicação com o código nativo
+- Integra o SDK PayGo TEF Local para processar pagamentos
+- Gerencia o pinpad Gertec PPC930 via USB
+
+### Por que é necessário um APK nativo?
+
+O SDK PayGo TEF Local é **exclusivamente nativo Android** (Java/Kotlin). Não existe versão web/JavaScript do SDK, portanto:
+
+1. **PWA sozinho NÃO consegue** acessar o SDK
+2. **Capacitor/Cordova NÃO resolve** porque precisamos do SDK proprietário da PayGo
+3. **APK nativo é obrigatório** para chamar as funções do SDK
+
+### Fluxo de Dados
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                           FLUXO DE PAGAMENTO                            │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌─────────┐     ┌──────────┐     ┌──────────┐     ┌─────────────────┐  │
+│  │   PWA   │────▶│  Bridge  │────▶│  PayGo   │────▶│  Pinpad PPC930  │  │
+│  │(WebView)│     │   TEF    │     │   SDK    │     │      (USB)      │  │
+│  └────┬────┘     └────┬─────┘     └────┬─────┘     └────────┬────────┘  │
+│       │               │                │                    │           │
+│       │    JS call    │   SDK call     │   USB command      │           │
+│       │◀──────────────│◀───────────────│◀───────────────────│           │
+│       │   resultado   │   callback     │   resposta         │           │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Arquitetura do Sistema
+
+### Diagrama de Componentes
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          APK TOTEM COSTA URBANA                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                             │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                          CAMADA DE APRESENTAÇÃO                        │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │                      MainActivity.kt                             │  │  │
+│  │  │  • Modo fullscreen imersivo                                      │  │  │
+│  │  │  • Gerenciamento do ciclo de vida                                │  │  │
+│  │  │  • Configuração da WebView                                       │  │  │
+│  │  │  • Registro de receivers USB                                     │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                          CAMADA DE BRIDGE                              │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │                       TEFBridge.kt                               │  │  │
+│  │  │  • @JavascriptInterface para o PWA                               │  │  │
+│  │  │  • Parsing de parâmetros JSON                                    │  │  │
+│  │  │  • Callbacks para o WebView                                      │  │  │
+│  │  │  • Sistema de logs para debug                                    │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                          CAMADA DE SERVIÇO                             │  │
+│  │  ┌────────────────────────┐  ┌─────────────────────────────────────┐  │  │
+│  │  │   PayGoService.kt      │  │      USBPinpadManager.kt            │  │  │
+│  │  │  • Wrapper do SDK      │  │  • Detecção de dispositivos         │  │  │
+│  │  │  • Gerencia transações │  │  • Solicitação de permissões        │  │  │
+│  │  │  • Callbacks           │  │  • Comunicação serial               │  │  │
+│  │  └────────────────────────┘  └─────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                    │                                        │
+│                                    ▼                                        │
+│  ┌───────────────────────────────────────────────────────────────────────┐  │
+│  │                          CAMADA DE INTEGRAÇÃO                          │  │
+│  │  ┌─────────────────────────────────────────────────────────────────┐  │  │
+│  │  │                   PayGo TEF Local SDK (.aar)                     │  │  │
+│  │  │  • Biblioteca proprietária da PayGo                              │  │  │
+│  │  │  • Comunicação com pinpad                                        │  │  │
+│  │  │  • Processamento de transações                                   │  │  │
+│  │  │  • Geração de comprovantes                                       │  │  │
+│  │  └─────────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────────┘  │
+│                                                                             │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                     │
+                                     ▼
+                          ┌─────────────────────┐
+                          │  Pinpad PPC930 USB  │
+                          │  (Gertec)           │
+                          └─────────────────────┘
+```
 
 ---
 
@@ -801,23 +922,411 @@ class TEFBridge(
 
 ---
 
-## 5. Contato PayGo para SDK
+---
 
-Para solicitar o SDK PayGo TEF Local, entre em contato:
+## 9. Fluxo de Transações
 
-- **Email**: suporte@paygo.com.br
-- **Telefone**: (11) 3003-0000
-- **Portal**: https://portal.paygo.com.br
+### 9.1 Diagrama de Sequência - Pagamento com Sucesso
 
-### Informações para homologação:
-- **Modelo do Pinpad**: Gertec PPC930
-- **Tipo de conexão**: USB (CDC/ACM)
-- **Ambiente**: Homologação → Produção
-- **Modalidades**: Débito, Crédito à vista, Crédito parcelado, Voucher
+```
+┌─────────┐          ┌───────────┐          ┌──────────┐          ┌─────────┐
+│   PWA   │          │ TEFBridge │          │  PayGo   │          │ Pinpad  │
+│(WebView)│          │  (Kotlin) │          │   SDK    │          │ PPC930  │
+└────┬────┘          └─────┬─────┘          └────┬─────┘          └────┬────┘
+     │                     │                     │                     │
+     │ TEF.iniciarPagamento(json)                │                     │
+     │────────────────────▶│                     │                     │
+     │                     │                     │                     │
+     │                     │ startTransaction()  │                     │
+     │                     │────────────────────▶│                     │
+     │                     │                     │                     │
+     │                     │                     │ Insira o cartão     │
+     │                     │                     │────────────────────▶│
+     │                     │                     │                     │
+     │                     │                     │◀────────────────────│
+     │                     │                     │    Cartão lido      │
+     │                     │                     │                     │
+     │                     │                     │ Digite a senha      │
+     │                     │                     │────────────────────▶│
+     │                     │                     │                     │
+     │                     │                     │◀────────────────────│
+     │                     │                     │    Senha OK         │
+     │                     │                     │                     │
+     │                     │                     │──────┐              │
+     │                     │                     │      │ Autorização  │
+     │                     │                     │◀─────┘ Adquirente   │
+     │                     │                     │                     │
+     │                     │◀────────────────────│                     │
+     │                     │   onSuccess()       │                     │
+     │                     │                     │                     │
+     │◀────────────────────│                     │                     │
+     │ window.onTefResultado(resultado)          │                     │
+     │                     │                     │                     │
+```
+
+### 9.2 Diagrama de Sequência - Pagamento Negado
+
+```
+┌─────────┐          ┌───────────┐          ┌──────────┐          ┌─────────┐
+│   PWA   │          │ TEFBridge │          │  PayGo   │          │ Pinpad  │
+└────┬────┘          └─────┬─────┘          └────┬─────┘          └────┬────┘
+     │                     │                     │                     │
+     │ TEF.iniciarPagamento(json)                │                     │
+     │────────────────────▶│                     │                     │
+     │                     │────────────────────▶│                     │
+     │                     │                     │────────────────────▶│
+     │                     │                     │◀────────────────────│
+     │                     │                     │                     │
+     │                     │                     │──────┐              │
+     │                     │                     │      │ Autorização  │
+     │                     │                     │◀─────┘ NEGADA       │
+     │                     │                     │                     │
+     │                     │◀────────────────────│                     │
+     │                     │   onError(51, "Saldo insuficiente")       │
+     │                     │                     │                     │
+     │◀────────────────────│                     │                     │
+     │ window.onTefResultado({status:"negado"})  │                     │
+```
+
+### 9.3 Códigos de Resposta Comuns
+
+| Código | Descrição | Ação Recomendada |
+|--------|-----------|------------------|
+| 00 | Transação aprovada | Finalizar venda |
+| 05 | Não autorizada | Solicitar outra forma de pagamento |
+| 14 | Cartão inválido | Verificar cartão |
+| 51 | Saldo insuficiente | Tentar valor menor |
+| 54 | Cartão expirado | Usar outro cartão |
+| 55 | Senha inválida | Digitar novamente |
+| 57 | Transação não permitida | Verificar tipo de cartão |
+| 91 | Emissor indisponível | Tentar novamente |
+| 96 | Falha de comunicação | Verificar conexão |
 
 ---
 
-## 6. Checklist de Implementação
+## 10. Gerenciamento USB/Pinpad
+
+### 10.1 Identificação do Dispositivo
+
+O pinpad Gertec PPC930 usa comunicação USB CDC/ACM:
+
+```kotlin
+// Identificadores USB
+const val VENDOR_ID_GERTEC = 1753      // 0x06D9
+const val PRODUCT_ID_PPC930 = 0xC902   // 51458 em decimal
+
+// Verificar no device_filter.xml
+// vendor-id deve ser em decimal: 1753
+// product-id deve ser em decimal: 51458
+```
+
+### 10.2 Fluxo de Conexão USB
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                      FLUXO DE CONEXÃO USB                               │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────────────────┐  │
+│  │ App inicia   │───▶│ Busca USB    │───▶│ Pinpad encontrado?       │  │
+│  └──────────────┘    │ devices      │    └─────────────┬────────────┘  │
+│                      └──────────────┘                  │               │
+│                                                        │               │
+│                             ┌───────────────────────────┼───────────┐  │
+│                             │ NÃO                       │ SIM       │  │
+│                             ▼                           ▼           │  │
+│                  ┌──────────────────────┐    ┌──────────────────┐   │  │
+│                  │ Aguarda evento       │    │ Tem permissão?   │   │  │
+│                  │ USB_DEVICE_ATTACHED  │    └────────┬─────────┘   │  │
+│                  └──────────────────────┘             │             │  │
+│                                           ┌───────────┼───────────┐ │  │
+│                                           │ NÃO       │ SIM       │ │  │
+│                                           ▼           ▼           │ │  │
+│                                ┌────────────────┐ ┌────────────┐  │ │  │
+│                                │ Solicita       │ │ Inicializa │  │ │  │
+│                                │ permissão      │ │ SDK PayGo  │  │ │  │
+│                                └───────┬────────┘ └────────────┘  │ │  │
+│                                        │                          │ │  │
+│                                        ▼                          │ │  │
+│                                ┌────────────────┐                 │ │  │
+│                                │ Usuário aceita │                 │ │  │
+│                                │ permissão?     │                 │ │  │
+│                                └───────┬────────┘                 │ │  │
+│                                        │                          │ │  │
+│                              ┌─────────┼─────────┐                │ │  │
+│                              │ SIM     │ NÃO     │                │ │  │
+│                              ▼         ▼         │                │ │  │
+│                    ┌────────────┐ ┌──────────┐   │                │ │  │
+│                    │ Inicializa │ │ Notifica │   │                │ │  │
+│                    │ SDK PayGo  │ │ erro PWA │   │                │ │  │
+│                    └────────────┘ └──────────┘   │                │ │  │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 10.3 Tratamento de Desconexão
+
+```kotlin
+// No TEFBridge.kt
+fun onPinpadDisconnected() {
+    isPinpadConnected = false
+    
+    // Se há transação em andamento, cancelar
+    currentTransactionId?.let {
+        sendError("PINPAD_DESCONECTADO", "Pinpad desconectado durante transação")
+    }
+    
+    // Notificar PWA
+    mainHandler.post {
+        webView.evaluateJavascript(
+            "window.dispatchEvent(new CustomEvent('tefPinpadDisconnected'));",
+            null
+        )
+    }
+    
+    // Tentar reconectar automaticamente
+    scheduleReconnect()
+}
+
+private fun scheduleReconnect() {
+    mainHandler.postDelayed({
+        checkAndRequestUsbPermission()
+    }, 5000) // Tenta reconectar após 5 segundos
+}
+```
+
+---
+
+## 11. Modo Debug e Logs
+
+### 11.1 Ativando Modo Debug
+
+No PWA:
+```javascript
+// Ativar modo debug
+if (window.TEF) {
+    window.TEF.setModoDebug(true);
+}
+```
+
+No código Android (para desenvolvimento):
+```kotlin
+// Em MainActivity.kt, durante onCreate
+if (BuildConfig.DEBUG) {
+    WebView.setWebContentsDebuggingEnabled(true)
+    setDebugMode(true)
+}
+```
+
+### 11.2 Capturando Logs para Homologação
+
+```kotlin
+// Adicionar em TEFBridge.kt
+@JavascriptInterface
+fun exportarLogsParaArquivo(): String {
+    try {
+        val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+        val fileName = "tef_logs_$timestamp.txt"
+        val file = File(context.getExternalFilesDir(null), fileName)
+        
+        file.writeText(debugLogs.joinToString("\n"))
+        
+        return JSONObject().apply {
+            put("sucesso", true)
+            put("arquivo", file.absolutePath)
+            put("tamanho", file.length())
+        }.toString()
+    } catch (e: Exception) {
+        return JSONObject().apply {
+            put("sucesso", false)
+            put("erro", e.message)
+        }.toString()
+    }
+}
+```
+
+### 11.3 Formato dos Logs
+
+```
+[10:30:45.123] iniciarPagamento chamado: {"ordemId":"ORD123","valorCentavos":5000,"metodo":"credito"}
+[10:30:45.125] Validando parâmetros...
+[10:30:45.126] Iniciando transação no SDK PayGo
+[10:30:45.500] SDK PayGo: Aguardando cartão
+[10:30:48.200] SDK PayGo: Cartão lido - VISA ****1234
+[10:30:48.250] SDK PayGo: Solicitando senha
+[10:30:52.100] SDK PayGo: Senha confirmada
+[10:30:52.150] SDK PayGo: Enviando para autorização
+[10:30:54.800] SDK PayGo: Transação aprovada - NSU: 123456789012
+[10:30:54.850] Enviando resultado para WebView
+[10:30:54.852] Resultado enviado com sucesso
+```
+
+---
+
+## 12. Homologação PayGo
+
+### 12.1 Processo de Homologação
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     ETAPAS DA HOMOLOGAÇÃO PAYGO                         │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                         │
+│  1. CADASTRO                                                            │
+│     ├── Criar conta no Portal PayGo                                     │
+│     ├── Solicitar acesso ao SDK TEF Local                               │
+│     └── Receber credenciais de homologação                              │
+│                                                                         │
+│  2. DESENVOLVIMENTO                                                     │
+│     ├── Integrar SDK no projeto Android                                 │
+│     ├── Configurar ambiente de homologação                              │
+│     └── Implementar todas as modalidades                                │
+│                                                                         │
+│  3. TESTES INTERNOS                                                     │
+│     ├── Transações de débito (aprovado/negado)                          │
+│     ├── Transações de crédito à vista                                   │
+│     ├── Transações de crédito parcelado (2x, 3x, 6x, 12x)               │
+│     ├── Transações de voucher                                           │
+│     ├── Cancelamentos                                                   │
+│     └── Cenários de erro (timeout, sem conexão, cartão inválido)        │
+│                                                                         │
+│  4. VALIDAÇÃO PAYGO                                                     │
+│     ├── Enviar logs de todas as transações                              │
+│     ├── Demonstração remota (se solicitado)                             │
+│     └── Correções (se necessário)                                       │
+│                                                                         │
+│  5. PRODUÇÃO                                                            │
+│     ├── Receber credenciais de produção                                 │
+│     ├── Configurar ambiente de produção                                 │
+│     ├── Teste de sanidade (1 transação real)                            │
+│     └── Go-live                                                         │
+│                                                                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 12.2 Cenários Obrigatórios de Teste
+
+| # | Cenário | Valor | Parcelas | Resultado Esperado |
+|---|---------|-------|----------|-------------------|
+| 1 | Débito aprovado | R$ 10,00 | - | Aprovado |
+| 2 | Débito negado | R$ 0,51 | - | Negado (saldo) |
+| 3 | Crédito à vista | R$ 25,00 | 1 | Aprovado |
+| 4 | Crédito 2x | R$ 50,00 | 2 | Aprovado |
+| 5 | Crédito 3x | R$ 75,00 | 3 | Aprovado |
+| 6 | Crédito 6x | R$ 150,00 | 6 | Aprovado |
+| 7 | Crédito 12x | R$ 300,00 | 12 | Aprovado |
+| 8 | Voucher | R$ 30,00 | - | Aprovado |
+| 9 | Cancelamento | - | - | Cancelado |
+| 10 | Timeout | - | - | Erro tratado |
+| 11 | Cartão inválido | R$ 10,00 | - | Erro tratado |
+| 12 | Senha incorreta | R$ 10,00 | - | Erro tratado |
+
+### 12.3 Contato PayGo
+
+| Canal | Informação |
+|-------|------------|
+| **Email Suporte** | suporte@paygo.com.br |
+| **Email Comercial** | comercial@paygo.com.br |
+| **Telefone** | (11) 3003-0000 |
+| **Portal** | https://portal.paygo.com.br |
+| **Documentação** | https://docs.paygo.com.br |
+
+### 12.4 Dados para Solicitar SDK
+
+Ao entrar em contato com a PayGo, forneça:
+
+```
+Empresa: Barbearia Costa Urbana
+CNPJ: [Seu CNPJ]
+Contato: [Nome do responsável]
+Email: [Email]
+Telefone: [Telefone]
+
+Necessidades:
+- SDK TEF Local para Android
+- Pinpad: Gertec PPC930 (USB)
+- Tablet: Samsung Galaxy Tab A SM-T510
+- Modalidades: Débito, Crédito (à vista e parcelado), Voucher
+- Ambiente: Homologação inicialmente, depois Produção
+
+Observações:
+- Integração via WebView + JavascriptInterface
+- App de Totem para autoatendimento
+```
+
+---
+
+## 13. Deploy e Distribuição
+
+### 13.1 Gerando APK de Release
+
+```bash
+# No Android Studio ou via terminal
+
+# 1. Configurar keystore (primeira vez)
+keytool -genkey -v -keystore totem-release.keystore \
+    -alias totem \
+    -keyalg RSA \
+    -keysize 2048 \
+    -validity 10000
+
+# 2. Configurar em build.gradle
+android {
+    signingConfigs {
+        release {
+            storeFile file("totem-release.keystore")
+            storePassword "sua_senha"
+            keyAlias "totem"
+            keyPassword "sua_senha"
+        }
+    }
+    buildTypes {
+        release {
+            signingConfig signingConfigs.release
+            minifyEnabled true
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+}
+
+# 3. Gerar APK
+./gradlew assembleRelease
+
+# APK estará em: app/build/outputs/apk/release/app-release.apk
+```
+
+### 13.2 Instalação no Tablet
+
+```bash
+# Via ADB
+adb install -r app-release.apk
+
+# Ou copiar para o tablet e instalar manualmente
+# (Habilitar "Fontes desconhecidas" nas configurações)
+```
+
+### 13.3 Configuração como Launcher
+
+Para o app funcionar como Totem (kiosk mode):
+
+1. No AndroidManifest.xml (já configurado):
+```xml
+<intent-filter>
+    <category android:name="android.intent.category.HOME" />
+    <category android:name="android.intent.category.DEFAULT" />
+</intent-filter>
+```
+
+2. Após instalar, pressionar Home e selecionar o app como launcher padrão
+
+3. Para sair do modo kiosk (manutenção):
+```bash
+adb shell am start -a android.settings.SETTINGS
+```
+
+---
+
+## 14. Checklist de Implementação
 
 ### App Android
 - [ ] Configurar projeto Android Studio
@@ -876,11 +1385,115 @@ Para solicitar o SDK PayGo TEF Local, entre em contato:
 
 ---
 
-## 8. Segurança
+---
 
-- **Não armazenar** dados de cartão no app
-- **Não logar** dados sensíveis em produção
-- **Usar HTTPS** para comunicação com PWA
-- **Validar** todos os inputs do JavaScript
-- **Ofuscar** código em builds de produção
-- **Implementar** certificate pinning se necessário
+## 16. Segurança
+
+### 16.1 Boas Práticas
+
+| Prática | Implementação |
+|---------|---------------|
+| **Não armazenar dados de cartão** | SDK PayGo gerencia isso |
+| **Não logar dados sensíveis** | Mascarar PAN, CVV em logs |
+| **Usar HTTPS** | WebView só aceita HTTPS |
+| **Validar inputs** | Sanitizar JSON do JavaScript |
+| **Ofuscar código** | ProGuard habilitado em release |
+| **Certificate pinning** | Opcional, mas recomendado |
+
+### 16.2 Configuração ProGuard
+
+```proguard
+# proguard-rules.pro
+
+# Manter classes do SDK PayGo
+-keep class com.paygo.** { *; }
+-keepclassmembers class com.paygo.** { *; }
+
+# Manter interface JavaScript
+-keepclassmembers class com.costaurbana.totem.TEFBridge {
+    @android.webkit.JavascriptInterface <methods>;
+}
+
+# Logs
+-assumenosideeffects class android.util.Log {
+    public static *** d(...);
+    public static *** v(...);
+}
+```
+
+---
+
+## 17. Estrutura Final do Projeto
+
+```
+totem-android/
+├── app/
+│   ├── build.gradle
+│   ├── proguard-rules.pro
+│   ├── libs/
+│   │   └── paygo-tef-local-sdk.aar    # SDK PayGo (obter com PayGo)
+│   └── src/
+│       └── main/
+│           ├── AndroidManifest.xml
+│           ├── java/com/costaurbana/totem/
+│           │   ├── MainActivity.kt
+│           │   ├── TEFBridge.kt
+│           │   ├── PayGoService.kt        # Wrapper do SDK
+│           │   └── USBPinpadManager.kt    # Gerenciador USB
+│           └── res/
+│               ├── xml/
+│               │   └── device_filter.xml
+│               ├── values/
+│               │   ├── strings.xml
+│               │   └── styles.xml
+│               └── mipmap-*/
+│                   └── ic_launcher.png
+├── build.gradle
+├── settings.gradle
+└── gradle.properties
+```
+
+---
+
+## 18. Referências
+
+### Documentação Oficial
+
+| Recurso | Link |
+|---------|------|
+| Android WebView | https://developer.android.com/reference/android/webkit/WebView |
+| JavascriptInterface | https://developer.android.com/reference/android/webkit/JavascriptInterface |
+| USB Host | https://developer.android.com/guide/topics/connectivity/usb/host |
+| PayGo Portal | https://portal.paygo.com.br |
+| Gertec PPC930 | https://www.gertec.com.br/produto/ppc930 |
+
+### Bibliotecas Úteis
+
+| Biblioteca | Uso |
+|------------|-----|
+| usb-serial-for-android | Comunicação serial USB |
+| Timber | Logging avançado |
+| Moshi/Gson | Parsing JSON |
+
+---
+
+## 19. Próximos Passos
+
+1. **Solicitar SDK PayGo** - Entrar em contato com suporte@paygo.com.br
+2. **Contratar desenvolvedor Android** - Com experiência em TEF/pagamentos
+3. **Configurar ambiente** - Android Studio + Tablet + Pinpad
+4. **Desenvolver** - Seguir esta documentação
+5. **Homologar** - Testar com PayGo
+6. **Deploy** - Instalar nos Totems
+
+---
+
+## 20. Suporte
+
+Para dúvidas sobre esta documentação ou o PWA:
+- **Sistema**: Barbearia Costa Urbana
+- **PWA URL**: https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/totem
+
+Para dúvidas sobre o SDK PayGo:
+- **Email**: suporte@paygo.com.br
+- **Portal**: https://portal.paygo.com.br
