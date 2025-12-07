@@ -9,7 +9,7 @@
 export interface TEFPaymentParams {
   ordemId: string;
   valorCentavos: number;
-  metodo: 'debito' | 'credito' | 'credito_parcelado' | 'voucher';
+  metodo: 'debito' | 'credito' | 'credito_parcelado' | 'pix' | 'voucher';
   parcelas?: number;
 }
 
@@ -274,8 +274,7 @@ export function mapPaymentMethod(
     case 'credit':
       return installments && installments > 1 ? 'credito_parcelado' : 'credito';
     case 'pix':
-      // PIX não é suportado via TEF tradicional
-      return 'debito';
+      return 'pix';
     default:
       return 'credito';
   }

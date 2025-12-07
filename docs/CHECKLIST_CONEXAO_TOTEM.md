@@ -1,12 +1,12 @@
-# Checklist de Conexão - Totem TEF
+# Checklist de Conexão - Totem TEF PayGo
 
-## 🚨 PROBLEMA ATUAL DIAGNOSTICADO
+## 📋 MÉTODOS DE PAGAMENTO SUPORTADOS
 
-O diagnóstico mostra que:
-- `window.TEF` existe mas está retornando `(MOCK)` - **Isso é simulação, não SDK real**
-- UserAgent mostra `Linux x86_64` em vez de `Android` - **WebView não está configurado**
-
-**CONCLUSÃO:** O APK Android **NÃO ESTÁ** injetando a interface `window.TEF` corretamente. A interface que aparece é o mock de teste.
+O TEF PayGo deve suportar os seguintes métodos:
+- **Débito** (`debito`)
+- **Crédito** (`credito`)
+- **Crédito Parcelado** (`credito_parcelado`)
+- **PIX** (`pix`) - QR Code exibido no próprio pinpad
 
 ---
 
@@ -20,12 +20,34 @@ O diagnóstico mostra que:
 4. **Injetar window.TEF** quando a página terminar de carregar (onPageFinished)
 5. **Disparar evento** `tefAndroidReady` para a PWA
 
+### Métodos que devem ser implementados
+
+```kotlin
+@JavascriptInterface
+fun iniciarPagamento(jsonParams: String)  // Recebe: ordemId, valorCentavos, metodo, parcelas
+
+@JavascriptInterface
+fun cancelarPagamento()
+
+@JavascriptInterface
+fun verificarPinpad(): String  // Retorna JSON: {conectado, modelo, timestamp}
+
+@JavascriptInterface
+fun setModoDebug(enabled: Boolean)
+
+@JavascriptInterface
+fun getLogs(): String
+
+@JavascriptInterface
+fun limparLogs()
+```
+
 ---
 
 ## 📋 Pré-requisitos
 
 ### No Totem (Hardware)
-- [ ] SDK PayGo instalado
+- [ ] SDK PayGo instalado (modo homologação)
 - [ ] APK da barbearia instalado
 - [ ] Pinpad PPC930 conectado via USB
 - [ ] Totem ligado e com internet
@@ -33,7 +55,7 @@ O diagnóstico mostra que:
 ### No APK Android
 - [ ] WebView configurado com `@JavascriptInterface`
 - [ ] Classe `TEFBridge` implementada
-- [ ] SDK PayGo inicializado
+- [ ] SDK PayGo inicializado em modo homologação
 
 ---
 
