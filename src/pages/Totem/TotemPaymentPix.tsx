@@ -2,464 +2,339 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle, Clock } from 'lucide-react';
-import { QRCodeSVG } from 'qrcode.react';
+import { ArrowLeft, CheckCircle2, Loader2, WifiOff, QrCode } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
+import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false, payment_id } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false } = location.state || {};
   
-  const [pixCode, setPixCode] = useState('');
-  const [pixKey] = useState('suachavepix@email.com'); // CONFIGURAR CHAVE PIX DA BARBEARIA
-  const [paymentId, setPaymentId] = useState<string>('');
-  const [timeLeft, setTimeLeft] = useState(300); // 5 minutos
-  const [simulationTimer, setSimulationTimer] = useState(10); // ⏱️ TESTE: 10 segundos
-  const [isSimulationActive, setIsSimulationActive] = useState(true); // Controle de simulação
-  const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [processing, setProcessing] = useState(false);
+  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   
-  // 🔒 Usar ref para garantir que temos o payment_id disponível imediatamente
-  const paymentIdRef = useRef<string>('');
-  // 🔒 Flag para evitar execução duplicada do pagamento
-  const isProcessingPaymentRef = useRef<boolean>(false);
+  const isProcessingRef = useRef(false);
 
+  // Hook TEF Android
+  const {
+    isAndroidAvailable,
+    isPinpadConnected,
+    iniciarPagamento: iniciarPagamentoTEF,
+    cancelarPagamento: cancelarPagamentoTEF
+  } = useTEFAndroid({
+    onSuccess: async (resultado) => {
+      console.log('✅ [PIX-TEF] Pagamento aprovado:', resultado);
+      if (currentPaymentId) {
+        await finalizePayment(currentPaymentId, {
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao
+        });
+      }
+    },
+    onError: (erro) => {
+      console.error('❌ [PIX-TEF] Erro no pagamento:', erro);
+      toast.error('Pagamento PIX falhou', { description: erro });
+      setError(erro);
+      setProcessing(false);
+    },
+    onCancelled: () => {
+      console.log('⚠️ [PIX-TEF] Pagamento cancelado');
+      toast.info('Pagamento cancelado');
+      setProcessing(false);
+    }
+  });
+
+  // Iniciar pagamento PIX via TEF quando componente montar
   useEffect(() => {
-    console.log('🎬 [PIX] TotemPaymentPix montado - Estado recebido:', {
-      venda_id,
-      total,
-      session_id,
-      payment_id,
-      isDirect,
-      hasAppointment: !!appointment,
-      hasClient: !!client,
-      productsCount: selectedProducts?.length || 0
-    });
-
     if (!venda_id || !total) {
-      console.error('❌ [PIX] Dados incompletos - venda_id ou total ausente');
-      toast.error('Erro', {
-        description: 'Dados de pagamento incompletos'
-      });
+      console.error('❌ [PIX] Dados incompletos');
+      toast.error('Dados de pagamento incompletos');
       navigate('/totem/home');
       return;
     }
 
-    // Iniciar processos de forma assíncrona
-    const initializePayment = async () => {
-      // 🔒 ROBUSTEZ: Gerar PIX e obter payment_id ANTES de iniciar timer
-      console.log('🔄 [PIX] Inicializando pagamento PIX...');
-      const finalPaymentId = await generatePixCode();
-      
-      if (!finalPaymentId) {
-        console.error('❌ [PIX] Falha ao gerar payment_id');
-        toast.error('Erro ao inicializar pagamento PIX');
-        return null;
-      }
-      
-      console.log('✅ [PIX] Payment ID confirmado antes do timer:', finalPaymentId);
-      
-      // Iniciar timer de expiração
-      startTimer();
-      
-      console.log('⏱️ [PIX] Iniciando timer de simulação (10 segundos)');
-      setIsSimulationActive(true);
-      
-      // ⏱️ Timer de simulação: aprovar pagamento após 10 segundos
-      let countdown = 10;
-      const simulationInterval = setInterval(() => {
-        countdown--;
-        console.log(`⏱️ [PIX] Simulação: ${countdown}s restantes`);
-        setSimulationTimer(countdown);
-        
-        if (countdown <= 0) {
-          clearInterval(simulationInterval);
-          console.log('🤖 [PIX] SIMULAÇÃO: Aprovando pagamento PIX automaticamente após 10s');
-          console.log('🔒 [PIX] Payment ID no momento da aprovação:', paymentIdRef.current);
-          setIsSimulationActive(false);
-          toast.info('Modo Teste', {
-            description: '✅ Pagamento PIX aprovado automaticamente',
-            duration: 3000
-          });
-          handlePaymentSuccess();
-        }
-      }, 1000);
+    if (!isAndroidAvailable || !isPinpadConnected) {
+      console.log('⚠️ [PIX] TEF não disponível, aguardando...');
+      return;
+    }
 
-      return simulationInterval;
-    };
+    if (isProcessingRef.current) {
+      return;
+    }
 
-    let cleanupInterval: NodeJS.Timeout | null = null;
+    iniciarPagamentoPix();
+  }, [isAndroidAvailable, isPinpadConnected, venda_id, total]);
+
+  const iniciarPagamentoPix = async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
     
-    initializePayment().then(interval => {
-      cleanupInterval = interval;
-    });
+    console.log('💚 [PIX] Iniciando pagamento PIX via TEF PayGo...');
+    console.log('   💰 Venda ID:', venda_id);
+    console.log('   💵 Total:', total);
+    
+    setProcessing(true);
+    setError(null);
 
-    return () => {
-      console.log('🧹 Limpando timer de simulação');
-      if (cleanupInterval) {
-        clearInterval(cleanupInterval);
-      }
-      // Reset flag on unmount
-      isProcessingPaymentRef.current = false;
-    };
-  }, []);
-
-  const generatePixCode = async (): Promise<string> => {
     try {
-      // Se já tem payment_id (venda direta), apenas gerar QR code
-      if (payment_id) {
-        const transactionId = `TOTEM${Date.now()}`;
-        const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}52040000530398654${total.toFixed(2)}5802BR5925BARBEARIA COSTA URBANA6014BELO HORIZONTE62070503***6304${transactionId}`;
-        setPixCode(pixPayload);
-        paymentIdRef.current = payment_id;
-        setPaymentId(payment_id);
-        return payment_id;
-      }
-
-      // Gerar código PIX (simplificado - integrar com API real depois)
-      const transactionId = `TOTEM${Date.now()}`;
-      const pixPayload = `00020126580014BR.GOV.BCB.PIX0136${pixKey}52040000530398654${total.toFixed(2)}5802BR5925BARBEARIA COSTA URBANA6014BELO HORIZONTE62070503***6304${transactionId}`;
-      
-      setPixCode(pixPayload);
-
       // Criar registro de pagamento
-      const { data: payment, error } = await supabase
+      const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
         .insert({
           session_id: session_id,
           payment_method: 'pix',
           amount: total,
-          status: 'pending',
-          pix_qr_code: pixPayload,
-          pix_key: pixKey,
-          transaction_id: transactionId
+          status: 'processing',
+          transaction_id: `PIX${Date.now()}`
         })
         .select()
         .single();
 
-      if (error) throw error;
-      
-      // 🔒 ROBUSTEZ: Armazenar na ref E no estado
-      paymentIdRef.current = payment.id;
-      setPaymentId(payment.id);
-      console.log('✅ Payment ID criado e armazenado:', payment.id);
-      
-      return payment.id;
+      if (paymentError) {
+        console.error('❌ [PIX] Erro ao criar registro:', paymentError);
+        throw paymentError;
+      }
+
+      console.log('✅ [PIX] Registro criado:', payment.id);
+      setCurrentPaymentId(payment.id);
+
+      // Chamar TEF Android para PIX (PayGo gera QR code no próprio pinpad)
+      console.log('🔌 [PIX] Chamando TEF PayGo para PIX...');
+      const success = await iniciarPagamentoTEF({
+        ordemId: payment.id,
+        valor: total,
+        tipo: 'pix',
+        parcelas: 1
+      });
+
+      if (!success) {
+        console.error('❌ [PIX] Falha ao iniciar TEF');
+        toast.error('Erro ao iniciar pagamento PIX');
+        setProcessing(false);
+        isProcessingRef.current = false;
+      }
+
     } catch (error) {
-      console.error('Erro ao gerar PIX:', error);
-      toast.error('Erro ao gerar código PIX');
-      return '';
+      console.error('❌ [PIX] Erro:', error);
+      toast.error('Erro ao processar pagamento');
+      setProcessing(false);
+      isProcessingRef.current = false;
     }
   };
 
-
-  const startTimer = () => {
-    const interval = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          handleTimeout();
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
+  const handleCancelPayment = () => {
+    cancelarPagamentoTEF();
+    setProcessing(false);
+    isProcessingRef.current = false;
+    toast.info('Pagamento cancelado');
+    navigate('/totem/checkout', { state: location.state });
   };
 
-
-  const handlePaymentSuccess = async () => {
-    // 🔒 PROTEÇÃO: Evitar execução duplicada
-    if (isProcessingPaymentRef.current) {
-      console.log('⏭️ [PIX] Pagamento já está sendo processado, ignorando chamada duplicada');
-      return;
-    }
-    
-    isProcessingPaymentRef.current = true;
-    
+  const finalizePayment = async (paymentId: string, transactionData: {
+    nsu?: string;
+    autorizacao?: string;
+  }) => {
     try {
-      // 🔒 ROBUSTEZ: Usar paymentIdRef para garantir valor correto
-      const finalPaymentId = paymentIdRef.current || payment_id;
+      console.log('✅ [PIX] Finalizando pagamento...');
       
-      console.log('✅ [PIX] Pagamento PIX confirmado! Finalizando venda...', {
-        paymentIdRef: paymentIdRef.current,
-        paymentIdState: paymentId,
-        payment_id_prop: payment_id,
-        finalPaymentId,
-        venda_id,
-        session_id,
-        isDirect,
-        total
-      });
-
-      // Verificar se tem payment_id antes de atualizar
-      if (!finalPaymentId) {
-        console.error('❌ [PIX] Nenhum payment_id disponível');
-        isProcessingPaymentRef.current = false;
-        toast.error('Erro no pagamento', {
-          description: 'ID de pagamento não encontrado'
-        });
-        return;
-      }
-
-      console.log('💳 Usando payment_id:', finalPaymentId);
-
       // Atualizar status do pagamento
-      const { error: updateError } = await supabase
+      await supabase
         .from('totem_payments')
-        .update({ 
+        .update({
           status: 'completed',
-          paid_at: new Date().toISOString()
+          paid_at: new Date().toISOString(),
+          ...(transactionData.nsu && { nsu: transactionData.nsu }),
+          ...(transactionData.autorizacao && { authorization_code: transactionData.autorizacao })
         })
-        .eq('id', finalPaymentId);
+        .eq('id', paymentId);
 
-      if (updateError) {
-        console.error('❌ Erro ao atualizar pagamento:', updateError);
-        throw updateError;
-      }
-
-      console.log('✅ Status do pagamento atualizado para completed');
-
-      // Se é venda direta de produtos, chamar edge function específica
+      // Finalizar venda
       if (isDirect) {
-        console.log('📦 Finalizando venda direta de produtos');
-        const { data: directSaleData, error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+        await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
             venda_id: venda_id,
-            payment_id: finalPaymentId
+            payment_id: paymentId
           }
         });
-
-        if (finishError) {
-          console.error('❌ Erro ao finalizar venda direta:', finishError);
-          toast.error('Erro ao finalizar', {
-            description: 'Por favor, informe a recepção'
-          });
-        } else {
-          console.log('✅ Venda direta finalizada:', directSaleData);
-        }
       } else {
-        // Venda de serviço (checkout normal)
-        console.log('💈 Finalizando checkout de serviço');
-        
-        // 🔒 Produtos já foram salvos no TotemCheckout, apenas atualizar estoque
+        // Atualizar estoque
         if (selectedProducts && selectedProducts.length > 0) {
-          console.log('📦 Atualizando estoque de', selectedProducts.length, 'produtos');
-          
           for (const product of selectedProducts) {
-            console.log('📦 Atualizando estoque - Produto:', product.product_id, 'Quantidade:', product.quantidade);
-            const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+            await supabase.rpc('decrease_product_stock', {
               p_product_id: product.product_id,
               p_quantity: product.quantidade
             });
-
-            if (stockError) {
-              console.error('❌ Erro ao atualizar estoque:', stockError);
-              // Continua mesmo com erro de estoque
-            } else {
-              console.log('✅ Estoque atualizado para produto:', product.product_id);
-            }
           }
         }
 
-        // 🔒 Chamar edge function para finalizar checkout de serviço
-        console.log('🔄 Chamando totem-checkout para finalizar');
-        const { data: checkoutData, error: finishError } = await supabase.functions.invoke('totem-checkout', {
+        // Finalizar checkout
+        await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
             venda_id: venda_id,
             session_id: session_id,
-            payment_id: finalPaymentId
+            payment_id: paymentId
           }
         });
-
-        if (finishError) {
-          console.error('❌ Erro ao finalizar checkout:', finishError);
-          toast.error('Erro ao finalizar', {
-            description: 'Por favor, informe a recepção'
-          });
-        } else {
-          console.log('✅ Checkout finalizado:', checkoutData);
-        }
       }
 
-      console.log('✅ Todos os processos finalizados! Navegando para tela de sucesso');
-      toast.success('Pagamento confirmado!', {
-        description: 'Obrigado pela preferência!',
-        duration: 3000
-      });
-      
+      toast.success('Pagamento PIX confirmado!');
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
           client,
           total,
-          paymentMethod: 'pix', // ✅ Indicar que foi PIX
-          isDirect
+          paymentMethod: 'pix',
+          isDirect,
+          transactionData
         },
         replace: true
       });
-    } catch (error: any) {
-      console.error('❌ Erro ao confirmar pagamento:', error);
-      isProcessingPaymentRef.current = false;
-      toast.error('Erro ao processar pagamento', {
-        description: error.message || 'Por favor, informe a recepção'
-      });
-      
-      // Não navegar de volta em caso de erro, deixar o usuário ver a mensagem
+    } catch (error) {
+      console.error('❌ [PIX] Erro ao finalizar:', error);
+      toast.error('Erro ao processar pagamento');
+      setProcessing(false);
     }
   };
 
-  const handleTimeout = () => {
-    console.log('⏱️ Tempo de pagamento PIX expirado');
-    toast.error('Tempo esgotado', {
-      description: 'O tempo para pagamento expirou. Tente novamente.'
-    });
-    navigate('/totem/checkout', { state: { appointment } });
-  };
+  // Tela de erro quando TEF não está disponível
+  if (!isAndroidAvailable || !isPinpadConnected) {
+    return (
+      <div className="fixed inset-0 w-screen h-screen flex flex-col p-6 font-poppins overflow-hidden relative">
+        <div className="absolute inset-0 z-0">
+          <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-urbana-black/80" />
+        </div>
 
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
+        <div className="flex-1 flex items-center justify-center z-10">
+          <Card className="max-w-lg p-8 bg-black/50 backdrop-blur-xl border-2 border-red-500/50 text-center">
+            <WifiOff className="w-20 h-20 text-red-500 mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-white mb-4">Pinpad Não Conectado</h2>
+            <p className="text-gray-300 mb-6">
+              A maquininha não está conectada. Verifique a conexão USB para realizar pagamentos PIX.
+            </p>
+            <div className="space-y-3">
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full bg-urbana-gold hover:bg-urbana-gold-dark"
+              >
+                Tentar Novamente
+              </Button>
+              <Button 
+                onClick={() => navigate('/totem/checkout', { state: location.state })} 
+                variant="outline"
+                className="w-full border-gray-500 text-gray-300"
+              >
+                Voltar
+              </Button>
+            </div>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
-      {/* Background image */}
+      {/* Background */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src={barbershopBg} 
-          alt="Barbearia" 
-          className="w-full h-full object-cover"
-        />
+        <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-urbana-black/60" />
       </div>
 
       {/* Premium background effects */}
       <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-green-500/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-96 sm:h-96 bg-green-400/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 z-10">
         <Button
-          onClick={() => navigate('/totem/checkout', { state: { appointment } })}
+          onClick={handleCancelPayment}
           variant="ghost"
           size="lg"
-          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/20"
+          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/20"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
-          <span className="hidden sm:inline">Voltar</span>
+          <span className="hidden sm:inline">Cancelar</span>
         </Button>
         <div className="text-center flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
             Pagamento via PIX
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-urbana-gray-light mt-1">Escaneie o QR Code</p>
+          <p className="text-xs sm:text-sm md:text-base text-green-400 mt-1 flex items-center justify-center gap-1">
+            <CheckCircle2 className="w-3 h-3" />
+            Pinpad conectado
+          </p>
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] text-center rounded-3xl">
-          {/* Indicador de Simulação */}
-          {isSimulationActive && (
-            <div className="bg-gradient-to-r from-emerald-500/20 via-green-500/15 to-emerald-500/20 border-2 border-emerald-500/40 rounded-xl p-3 sm:p-4">
-              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <div className="relative">
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full animate-ping absolute opacity-75" />
-                  <div className="w-2 h-2 bg-emerald-400 rounded-full relative z-10" />
-                </div>
-                <p className="text-sm sm:text-base md:text-lg font-bold text-emerald-400">
-                  🤖 MODO TESTE: Aprovação em {simulationTimer}s
-                </p>
+        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 bg-black/30 backdrop-blur-xl border-2 border-green-500/30 shadow-[0_8px_32px_rgba(34,197,94,0.3)] text-center rounded-3xl">
+          
+          {/* Status TEF */}
+          <div className="bg-gradient-to-r from-green-500/20 via-green-400/15 to-green-500/20 border-2 border-green-500/40 rounded-xl p-4">
+            <div className="flex items-center justify-center gap-2">
+              <div className="relative">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-ping absolute" />
+                <div className="w-2 h-2 bg-green-400 rounded-full" />
               </div>
-            </div>
-          )}
-
-          {/* Timer */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
-            <Clock className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold animate-pulse" />
-            <div className="text-left">
-              <p className="text-xs sm:text-sm text-urbana-light/60">Tempo restante</p>
-              <p className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold">
-                {formatTime(timeLeft)}
+              <p className="text-base sm:text-lg font-bold text-green-400">
+                Aguardando pagamento PIX...
               </p>
             </div>
           </div>
 
-          {/* QR Code */}
-          <div className="flex justify-center py-4 sm:py-6">
+          {/* Visual do QR Code (indicação que está no pinpad) */}
+          <div className="flex justify-center py-6">
             <div className="relative">
-              <div className="absolute -inset-3 bg-urbana-gold/20 rounded-2xl blur-xl" />
-              <div className="relative bg-white p-3 sm:p-4 md:p-5 rounded-xl shadow-xl">
-                {pixCode ? (
-                  <QRCodeSVG value={pixCode} size={window.innerWidth < 640 ? 180 : window.innerWidth < 768 ? 200 : 220} />
-                ) : (
-                  <div className="w-[180px] h-[180px] sm:w-[200px] sm:h-[200px] md:w-[220px] md:h-[220px] flex items-center justify-center">
-                    <div className="text-center space-y-2">
-                      <div className="w-8 h-8 border-3 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto" />
-                      <p className="text-sm sm:text-base text-gray-500 font-medium">Gerando QR Code...</p>
-                    </div>
-                  </div>
-                )}
+              <div className="absolute -inset-3 bg-green-500/20 rounded-2xl blur-xl animate-pulse" />
+              <div className="relative bg-gradient-to-br from-green-500/20 to-green-600/20 p-8 rounded-2xl border-2 border-green-500/40">
+                <QrCode className="w-24 h-24 sm:w-32 sm:h-32 text-green-400" />
               </div>
             </div>
           </div>
 
+          {/* Instrução */}
+          <div className="space-y-4">
+            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+              Escaneie o QR Code na maquininha
+            </p>
+            <p className="text-base sm:text-lg text-gray-300">
+              O código PIX está sendo exibido no pinpad
+            </p>
+          </div>
+
           {/* Amount */}
-          <div className="space-y-2 sm:space-y-3 p-4 sm:p-5 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-xl border-2 border-urbana-gold/30">
-            <p className="text-base sm:text-lg md:text-xl text-urbana-light/70 font-medium">Valor total</p>
-            <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <div className="space-y-2 p-5 bg-gradient-to-r from-green-500/10 via-green-400/10 to-green-500/10 rounded-xl border-2 border-green-500/30">
+            <p className="text-lg text-gray-400 font-medium">Valor total</p>
+            <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
               R$ {total?.toFixed(2)}
             </p>
           </div>
 
-          {/* Instructions */}
-          <div className="pt-6 space-y-4">
-            <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light mb-4">Como pagar:</h3>
-            <div className="space-y-3 sm:space-y-4">
-              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
-                  <span className="text-lg sm:text-xl font-black text-urbana-gold">1</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Abra o app do seu banco</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
-                  <span className="text-lg sm:text-xl font-black text-urbana-gold">2</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Escolha Pix e escaneie o código</p>
-                </div>
-              </div>
-              
-              <div className="flex items-start gap-3 sm:gap-4 p-3 sm:p-4 bg-urbana-black/30 rounded-xl border border-urbana-gold/20">
-                <div className="flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-urbana-gold/20 flex items-center justify-center border-2 border-urbana-gold">
-                  <span className="text-lg sm:text-xl font-black text-urbana-gold">3</span>
-                </div>
-                <div className="flex-1 text-left">
-                  <p className="text-base sm:text-lg md:text-xl font-semibold text-urbana-light">Confirme o pagamento</p>
-                </div>
-              </div>
-            </div>
+          {/* Loader */}
+          <div className="flex justify-center">
+            <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-urbana-light/60 animate-pulse pt-4">
-            <div className="w-2 h-2 bg-urbana-gold rounded-full animate-bounce" />
-            <p className="text-base sm:text-lg md:text-xl font-medium">
-              Aguardando confirmação do pagamento...
-            </p>
-          </div>
+          {/* Cancel Button */}
+          <Button
+            onClick={handleCancelPayment}
+            variant="outline"
+            size="lg"
+            className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+          >
+            Cancelar Pagamento
+          </Button>
         </Card>
       </div>
     </div>
