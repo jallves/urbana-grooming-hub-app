@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, Loader2, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, Loader2, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
+import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentCard: React.FC = () => {
@@ -15,22 +16,65 @@ const TotemPaymentCard: React.FC = () => {
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
-  const [simulationTimer, setSimulationTimer] = useState(10); // Timer de simulação (10 segundos)
+  const [simulationTimer, setSimulationTimer] = useState(10);
+  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [usandoSimulacao, setUsandoSimulacao] = useState(false);
+
+  // Hook TEF Android
+  const {
+    isAndroidAvailable,
+    isPinpadConnected,
+    isProcessing: tefProcessing,
+    iniciarPagamento: iniciarPagamentoTEF,
+    cancelarPagamento: cancelarPagamentoTEF
+  } = useTEFAndroid({
+    onSuccess: async (resultado) => {
+      console.log('✅ [TEF] Pagamento aprovado:', resultado);
+      if (currentPaymentId) {
+        await finalizePayment(currentPaymentId, {
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao,
+          bandeira: resultado.bandeira
+        });
+      }
+    },
+    onError: (erro) => {
+      console.error('❌ [TEF] Erro no pagamento:', erro);
+      toast.error('Pagamento negado', { description: erro });
+      setProcessing(false);
+      setPaymentType(null);
+    },
+    onCancelled: () => {
+      console.log('⚠️ [TEF] Pagamento cancelado');
+      toast.info('Pagamento cancelado');
+      setProcessing(false);
+      setPaymentType(null);
+    }
+  });
+
+  // Log status do TEF ao montar
+  useEffect(() => {
+    console.log('🔌 [CARD] Status TEF Android:', {
+      isAndroidAvailable,
+      isPinpadConnected,
+      tefProcessing
+    });
+  }, [isAndroidAvailable, isPinpadConnected, tefProcessing]);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     console.log('💳 [CARD] Iniciando pagamento com cartão:', type);
     console.log('   💰 Venda ID:', venda_id);
     console.log('   🎫 Session ID:', session_id);
     console.log('   💵 Total:', total);
+    console.log('   🔌 TEF Disponível:', isAndroidAvailable);
+    console.log('   📡 Pinpad Conectado:', isPinpadConnected);
     
     setPaymentType(type);
     setProcessing(true);
-    setSimulationTimer(10); // Reset timer
+    setError(null);
 
     try {
-      console.log(`🔄 [CARD] Processando pagamento ${type === 'credit' ? 'crédito' : 'débito'}...`);
-
       // Criar registro de pagamento
       const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
@@ -46,35 +90,34 @@ const TotemPaymentCard: React.FC = () => {
 
       if (paymentError) {
         console.error('❌ [CARD] Erro ao criar registro de pagamento:', paymentError);
-        toast.error('Erro ao processar', {
-          description: 'Não foi possível iniciar o pagamento. Tente novamente.'
-        });
         throw paymentError;
       }
 
       console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
+      setCurrentPaymentId(payment.id);
 
-      // Integrar com API da maquininha (Stone, Cielo, etc)
-      toast.info('Aguarde...', {
-        description: 'Simulando processamento do pagamento...',
-        duration: 5000
-      });
-
-      // Iniciar timer de simulação
-      const interval = setInterval(() => {
-        setSimulationTimer((prev) => {
-          if (prev <= 1) {
-            clearInterval(interval);
-            console.log('🤖 Simulação: Aprovando pagamento automaticamente...');
-            toast.info('Simulação', {
-              description: `Pagamento no ${type === 'credit' ? 'crédito' : 'débito'} aprovado automaticamente`
-            });
-            finalizePayment(payment.id);
-            return 0;
-          }
-          return prev - 1;
+      // Verificar se TEF Android está disponível
+      if (isAndroidAvailable && isPinpadConnected) {
+        console.log('🔌 [CARD] Usando TEF Android real...');
+        setUsandoSimulacao(false);
+        
+        // Chamar TEF Android real
+        const success = await iniciarPagamentoTEF({
+          ordemId: payment.id,
+          valor: total,
+          tipo: type,
+          parcelas: 1
         });
-      }, 1000);
+
+        if (!success) {
+          console.warn('⚠️ [CARD] TEF não iniciou, usando simulação...');
+          iniciarSimulacao(payment.id);
+        }
+      } else {
+        // TEF não disponível - usar simulação (homologação)
+        console.log('🤖 [CARD] TEF não disponível, usando simulação (homologação)...');
+        iniciarSimulacao(payment.id);
+      }
 
     } catch (error) {
       console.error('❌ Erro no pagamento:', error);
@@ -83,26 +126,62 @@ const TotemPaymentCard: React.FC = () => {
       });
       setProcessing(false);
       setPaymentType(null);
-      
-      setTimeout(() => {
-        navigate('/totem/home');
-      }, 3000);
     }
   };
 
-  const finalizePayment = async (paymentId: string) => {
+  const iniciarSimulacao = (paymentId: string) => {
+    setUsandoSimulacao(true);
+    setSimulationTimer(10);
+    
+    toast.info('Modo Homologação', {
+      description: 'Pagamento será aprovado automaticamente em 10 segundos',
+      duration: 5000
+    });
+
+    const interval = setInterval(() => {
+      setSimulationTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          console.log('🤖 [SIMULAÇÃO] Aprovando pagamento automaticamente...');
+          finalizePayment(paymentId, {
+            nsu: `SIM${Date.now()}`,
+            autorizacao: 'HOMOLOG',
+            bandeira: 'SIMULADO'
+          });
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleCancelPayment = () => {
+    if (isAndroidAvailable && !usandoSimulacao) {
+      cancelarPagamentoTEF();
+    }
+    setProcessing(false);
+    setPaymentType(null);
+    toast.info('Pagamento cancelado');
+  };
+
+  const finalizePayment = async (paymentId: string, transactionData?: {
+    nsu?: string;
+    autorizacao?: string;
+    bandeira?: string;
+  }) => {
     try {
-      console.log('✅ [CARD] Pagamento no cartão aprovado! Finalizando venda...');
+      console.log('✅ [CARD] Finalizando pagamento...');
       console.log('   💰 Payment ID:', paymentId);
-      console.log('   💰 Venda ID:', venda_id);
-      console.log('   🎫 Session ID:', session_id);
+      console.log('   📝 Transaction Data:', transactionData);
       
-      // Atualizar status do pagamento
+      // Atualizar status do pagamento com dados da transação
       const { error: paymentError } = await supabase
         .from('totem_payments')
         .update({
           status: 'completed',
-          paid_at: new Date().toISOString()
+          paid_at: new Date().toISOString(),
+          ...(transactionData?.nsu && { nsu: transactionData.nsu }),
+          ...(transactionData?.autorizacao && { authorization_code: transactionData.autorizacao })
         })
         .eq('id', paymentId);
 
@@ -115,7 +194,7 @@ const TotemPaymentCard: React.FC = () => {
 
       // Se é venda direta, usar edge function específica
       if (isDirect) {
-        console.log('📡 [CARD] Chamando totem-direct-sale para finalizar venda direta...');
+        console.log('📡 [CARD] Chamando totem-direct-sale...');
         const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
@@ -125,24 +204,21 @@ const TotemPaymentCard: React.FC = () => {
         });
         if (finishError) {
           console.error('❌ [CARD] Erro ao finalizar venda direta:', finishError);
-        } else {
-          console.log('✅ [CARD] Venda direta finalizada');
         }
       } else {
         // Atualizar estoque dos produtos
         if (selectedProducts && selectedProducts.length > 0) {
-          console.log('📦 [CARD] Atualizando estoque de', selectedProducts.length, 'produtos...');
+          console.log('📦 [CARD] Atualizando estoque...');
           for (const product of selectedProducts) {
             await supabase.rpc('decrease_product_stock', {
               p_product_id: product.product_id,
               p_quantity: product.quantidade
             });
           }
-          console.log('✅ [CARD] Estoque atualizado');
         }
 
-        // Finalizar checkout de serviço - a edge function totem-checkout agora integra com ERP
-        console.log('📡 [CARD] Chamando totem-checkout para finalizar checkout de serviço...');
+        // Finalizar checkout de serviço
+        console.log('📡 [CARD] Chamando totem-checkout...');
         const { error: finishError } = await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
@@ -153,12 +229,9 @@ const TotemPaymentCard: React.FC = () => {
         });
         if (finishError) {
           console.error('❌ [CARD] Erro ao finalizar checkout:', finishError);
-        } else {
-          console.log('✅ [CARD] Checkout finalizado');
         }
       }
 
-      console.log('✅ [CARD] Navegando para tela de sucesso...');
       toast.success('Pagamento aprovado!');
       navigate('/totem/payment-success', { 
         state: { 
@@ -166,11 +239,12 @@ const TotemPaymentCard: React.FC = () => {
           client,
           total,
           paymentMethod: paymentType,
-          isDirect
+          isDirect,
+          transactionData
         } 
       });
     } catch (error) {
-      console.error('❌ [CARD] Erro ao finalizar pagamento:', error);
+      console.error('❌ [CARD] Erro ao finalizar:', error);
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
     }
@@ -210,10 +284,22 @@ const TotemPaymentCard: React.FC = () => {
           <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
             Pagamento com Cartão
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-urbana-gray-light mt-0.5">Escolha o tipo de cartão</p>
+          <p className="text-xs sm:text-sm md:text-base text-urbana-gray-light mt-0.5">
+            {isAndroidAvailable && isPinpadConnected ? 'Pinpad conectado' : 'Modo homologação'}
+          </p>
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
+
+      {/* Status TEF (dev info) */}
+      {!isAndroidAvailable && (
+        <div className="absolute top-2 right-2 z-20">
+          <div className="flex items-center gap-1 px-2 py-1 bg-yellow-500/20 border border-yellow-500/50 rounded text-xs text-yellow-400">
+            <AlertTriangle className="w-3 h-3" />
+            <span>TEF não conectado</span>
+          </div>
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
@@ -242,7 +328,7 @@ const TotemPaymentCard: React.FC = () => {
                     className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
                     <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center transition-all duration-100">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center">
                         <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
                       </div>
                       <div className="text-center">
@@ -258,7 +344,7 @@ const TotemPaymentCard: React.FC = () => {
                     className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
                     <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center transition-all duration-100">
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center">
                         <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
                       </div>
                       <div className="text-center">
@@ -273,7 +359,10 @@ const TotemPaymentCard: React.FC = () => {
               {/* Info */}
               <div className="text-center pt-4">
                 <p className="text-base sm:text-lg md:text-xl text-urbana-gray-light">
-                  Após selecionar, siga as instruções na maquininha
+                  {isAndroidAvailable && isPinpadConnected 
+                    ? 'Após selecionar, siga as instruções na maquininha'
+                    : 'Modo homologação: pagamento será simulado'
+                  }
                 </p>
               </div>
             </>
@@ -282,17 +371,31 @@ const TotemPaymentCard: React.FC = () => {
               {/* Processing State */}
               <div className="flex flex-col items-center justify-center py-6 sm:py-8 space-y-4 sm:space-y-6">
                 {/* Indicador de Simulação */}
-                <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-xl p-3 sm:p-4 w-full">
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="relative">
-                      <div className="w-2 h-2 bg-urbana-gold rounded-full animate-ping absolute" />
-                      <div className="w-2 h-2 bg-urbana-gold rounded-full" />
+                {usandoSimulacao && (
+                  <div className="bg-gradient-to-r from-yellow-500/20 via-yellow-400/15 to-yellow-500/20 border-2 border-yellow-500/40 rounded-xl p-3 sm:p-4 w-full">
+                    <div className="flex items-center justify-center gap-2">
+                      <AlertTriangle className="w-5 h-5 text-yellow-400" />
+                      <p className="text-sm sm:text-base md:text-lg font-bold text-yellow-400">
+                        HOMOLOGAÇÃO: Aprovação em {simulationTimer}s
+                      </p>
                     </div>
-                    <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold">
-                      🤖 MODO TESTE: Aprovação em {simulationTimer}s
-                    </p>
                   </div>
-                </div>
+                )}
+
+                {/* Indicador TEF Real */}
+                {!usandoSimulacao && (
+                  <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-xl p-3 sm:p-4 w-full">
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="relative">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute" />
+                        <div className="w-2 h-2 bg-green-500 rounded-full" />
+                      </div>
+                      <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold">
+                        TEF ATIVO: Aguardando pinpad...
+                      </p>
+                    </div>
+                  </div>
+                )}
 
                 <div className="relative">
                   <Loader2 className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold animate-spin" />
@@ -309,9 +412,18 @@ const TotemPaymentCard: React.FC = () => {
                     </p>
                   </div>
                   <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light animate-pulse mt-2">
-                    Siga as instruções na maquininha
+                    {usandoSimulacao ? 'Simulando transação...' : 'Siga as instruções na maquininha'}
                   </p>
                 </div>
+
+                {/* Cancel Button */}
+                <Button
+                  onClick={handleCancelPayment}
+                  variant="outline"
+                  className="mt-4 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  Cancelar pagamento
+                </Button>
 
                 {/* Progress Steps */}
                 <div className="flex items-center gap-2 sm:gap-3 mt-4">
