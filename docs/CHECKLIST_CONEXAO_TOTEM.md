@@ -1,5 +1,27 @@
 # Checklist de Conexão - Totem TEF
 
+## 🚨 PROBLEMA ATUAL DIAGNOSTICADO
+
+O diagnóstico mostra que:
+- `window.TEF` existe mas está retornando `(MOCK)` - **Isso é simulação, não SDK real**
+- UserAgent mostra `Linux x86_64` em vez de `Android` - **WebView não está configurado**
+
+**CONCLUSÃO:** O APK Android **NÃO ESTÁ** injetando a interface `window.TEF` corretamente. A interface que aparece é o mock de teste.
+
+---
+
+## 📋 O QUE O APK PRECISA FAZER
+
+### Ordem de Execução
+
+1. **Inicializar WebView** com JavaScript habilitado
+2. **Adicionar JavascriptInterface** com nome "Android"
+3. **Carregar a URL** da PWA
+4. **Injetar window.TEF** quando a página terminar de carregar (onPageFinished)
+5. **Disparar evento** `tefAndroidReady` para a PWA
+
+---
+
 ## 📋 Pré-requisitos
 
 ### No Totem (Hardware)

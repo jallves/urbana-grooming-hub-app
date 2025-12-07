@@ -82,43 +82,58 @@ const TotemDiagnostico: React.FC = () => {
   const runDiagnostics = () => {
     addLog('info', '=== Iniciando diagnóstico do Totem ===');
     
-    // 1. Verificar se window.TEF existe
-    const tefExists = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
-    if (tefExists) {
-      addLog('success', '✓ window.TEF encontrado');
-      
-      // Listar métodos disponíveis
-      const tef = (window as any).TEF;
-      const methods = Object.keys(tef);
-      addLog('info', `Métodos disponíveis: ${methods.join(', ')}`);
+    // 1. Verificar UserAgent primeiro
+    addLog('info', `UserAgent: ${navigator.userAgent}`);
+    const isAndroidDevice = /Android/i.test(navigator.userAgent);
+    if (isAndroidDevice) {
+      addLog('success', '✓ Executando em dispositivo Android');
     } else {
-      addLog('error', '✗ window.TEF NÃO encontrado');
-      addLog('info', 'O APK Android precisa injetar a interface TEF no WebView');
+      addLog('error', '✗ NÃO é dispositivo Android - UserAgent não contém "Android"');
+      addLog('warning', 'Isso indica que o WebView não está configurado corretamente');
     }
 
-    // 2. Verificar hook
-    addLog('info', `isAndroidTEFAvailable(): ${isAndroidTEFAvailable()}`);
-    
+    // 2. Verificar se window.TEF existe
+    const tefExists = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
+    if (tefExists) {
+      const tef = (window as any).TEF;
+      const methods = Object.keys(tef);
+      addLog('success', `✓ window.TEF encontrado (${methods.length} métodos)`);
+      addLog('info', `Métodos: ${methods.join(', ')}`);
+      
+      // Verificar se é MOCK ou REAL
+      const status = verificarPinpad();
+      if (status?.modelo?.includes('MOCK')) {
+        addLog('warning', '⚠️ ATENÇÃO: TEF está em MODO MOCK - Não é o SDK real!');
+        addLog('info', 'O mock foi injetado via JavaScript. O APK real deve injetar window.TEF');
+      } else {
+        addLog('success', '✓ TEF parece ser do SDK real');
+      }
+    } else {
+      addLog('error', '✗ window.TEF NÃO encontrado');
+      addLog('error', '→ O APK Android DEVE injetar window.TEF no WebView');
+      addLog('info', '→ Verifique se addJavascriptInterface foi chamado');
+      addLog('info', '→ Verifique se evaluateJavascript foi executado em onPageFinished');
+    }
+
     // 3. Verificar pinpad
     if (tefExists) {
       const status = verificarPinpad();
       if (status) {
         addLog('info', `Status Pinpad: ${JSON.stringify(status)}`);
         if (status.conectado) {
-          addLog('success', `✓ Pinpad conectado - Modelo: ${status.modelo || 'N/A'}`);
+          addLog('success', `✓ Pinpad: ${status.modelo}`);
         } else {
           addLog('warning', '✗ Pinpad não conectado');
         }
       }
     }
 
-    // 4. Verificar UserAgent
-    addLog('info', `UserAgent: ${navigator.userAgent}`);
-    const isAndroidDevice = /Android/i.test(navigator.userAgent);
-    if (isAndroidDevice) {
-      addLog('success', '✓ Executando em dispositivo Android');
+    // 4. Verificar comunicação com Android
+    if (typeof (window as any).Android !== 'undefined') {
+      addLog('success', '✓ window.Android encontrado (JavascriptInterface)');
     } else {
-      addLog('warning', '✗ Não parece ser um dispositivo Android');
+      addLog('warning', '✗ window.Android NÃO encontrado');
+      addLog('info', '→ O APK deve usar addJavascriptInterface(bridge, "Android")');
     }
 
     addLog('info', '=== Diagnóstico concluído ===');
