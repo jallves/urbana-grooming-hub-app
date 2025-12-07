@@ -96,6 +96,7 @@ import { Toaster } from './components/ui/toaster';
 import ChangePassword from './pages/ChangePassword';
 import ForceSignOutUser from './pages/admin/ForceSignOutUser';
 import ResetPassword from './pages/ResetPassword';
+import TotemDiagnostico from './pages/admin/TotemDiagnostico';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -479,6 +480,9 @@ function App() {
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemError /></TotemProtectedRoute>
                     </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/diagnostico" element={
+                    <TotemDiagnostico />
                   } />
 
                   {/* PWA Install Pages */}
