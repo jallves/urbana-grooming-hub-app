@@ -5,10 +5,9 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Wifi, 
-  WifiOff, 
   Smartphone, 
   CreditCard, 
   RefreshCw, 
@@ -22,8 +21,9 @@ import {
   Loader2,
   AlertTriangle,
   Usb,
-  QrCode,
-  Copy
+  Copy,
+  FileCode,
+  Zap
 } from 'lucide-react';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { 
@@ -34,6 +34,9 @@ import {
   setModoDebug 
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
+import { APKChecklist } from '@/components/totem/diagnostico/APKChecklist';
+import { TEFSimulator } from '@/components/totem/diagnostico/TEFSimulator';
+import { CommunicationTest } from '@/components/totem/diagnostico/CommunicationTest';
 
 interface DiagnosticLog {
   timestamp: Date;
@@ -451,9 +454,22 @@ const TotemDiagnostico: React.FC = () => {
   const overallStatus = diagnosticResults.some(r => r.status === 'fail') ? 'fail' :
                         diagnosticResults.some(r => r.status === 'warning') ? 'warning' : 'pass';
 
+  // Variáveis derivadas para o checklist
+  const isAndroidEnvironment = /Android/i.test(navigator.userAgent);
+  const hasAndroidInterface = typeof (window as any).Android !== 'undefined';
+  const hasTEFInterface = typeof (window as any).TEF !== 'undefined';
+  const isMockMode = pinpadStatus?.modelo?.includes('MOCK') || pinpadStatus?.modelo?.includes('SIMULADOR') || false;
+
+  const handleSimulatorChange = (active: boolean) => {
+    if (active) {
+      // Re-executar diagnóstico após ativar simulador
+      setTimeout(() => runFullDiagnostics(), 500);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-950 text-white p-4">
-      <div className="max-w-5xl mx-auto space-y-6">
+      <div className="max-w-6xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>
@@ -521,6 +537,47 @@ const TotemDiagnostico: React.FC = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Tabs para organizar conteúdo */}
+        <Tabs defaultValue="checklist" className="w-full">
+          <TabsList className="grid w-full grid-cols-4 bg-gray-800">
+            <TabsTrigger value="checklist" className="data-[state=active]:bg-gray-700">
+              <FileCode className="h-4 w-4 mr-2" />
+              Checklist APK
+            </TabsTrigger>
+            <TabsTrigger value="tests" className="data-[state=active]:bg-gray-700">
+              <Zap className="h-4 w-4 mr-2" />
+              Testes
+            </TabsTrigger>
+            <TabsTrigger value="payment" className="data-[state=active]:bg-gray-700">
+              <CreditCard className="h-4 w-4 mr-2" />
+              Pagamento
+            </TabsTrigger>
+            <TabsTrigger value="logs" className="data-[state=active]:bg-gray-700">
+              <Terminal className="h-4 w-4 mr-2" />
+              Logs
+            </TabsTrigger>
+          </TabsList>
+
+          {/* Tab: Checklist APK */}
+          <TabsContent value="checklist" className="space-y-4 mt-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <APKChecklist
+                isAndroidEnvironment={isAndroidEnvironment}
+                hasAndroidInterface={hasAndroidInterface}
+                hasTEFInterface={hasTEFInterface}
+                hasPinpadConnected={isPinpadConnected}
+                isMockMode={isMockMode}
+              />
+              <div className="space-y-4">
+                <TEFSimulator onSimulatorStateChange={handleSimulatorChange} />
+                <CommunicationTest />
+              </div>
+            </div>
+          </TabsContent>
+
+          {/* Tab: Testes */}
+          <TabsContent value="tests" className="space-y-4 mt-4">
 
         {/* Resultados do Diagnóstico */}
         <Card className="border-gray-700 bg-gray-900/50">
@@ -648,91 +705,96 @@ const TotemDiagnostico: React.FC = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
 
-        {/* Ferramentas */}
-        <Card className="border-gray-700 bg-gray-900/50">
-          <CardHeader>
-            <CardTitle>🛠️ Ferramentas</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-3">
-              <Button onClick={handleTestConnection} variant="outline" size="sm">
-                <Wifi className="w-4 h-4 mr-2" />
-                Testar Conexão Pinpad
-              </Button>
-              <Button onClick={handleToggleDebug} variant="outline" size="sm">
-                <Bug className="w-4 h-4 mr-2" />
-                {debugMode ? 'Desativar Debug' : 'Ativar Debug'}
-              </Button>
-              <Button onClick={handleRefreshLogs} variant="outline" size="sm">
-                <Terminal className="w-4 h-4 mr-2" />
-                Carregar Logs Android
-              </Button>
-              <Button onClick={handleClearLogs} variant="outline" size="sm">
-                Limpar Logs
-              </Button>
-              <Button onClick={copyDiagnosticReport} variant="outline" size="sm">
-                <Copy className="w-4 h-4 mr-2" />
-                Copiar Relatório
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Logs de Diagnóstico */}
-        <Card className="border-gray-700 bg-gray-900/50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Terminal className="w-5 h-5" />
-              Logs de Diagnóstico
-            </CardTitle>
-            <CardDescription>{logs.length} entradas</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="h-80 border border-gray-700 rounded-lg p-3 bg-black/50 font-mono text-xs">
-              {logs.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">Nenhum log registrado</p>
-              ) : (
-                <div className="space-y-1">
-                  {logs.map((log, i) => (
-                    <div key={i} className="flex items-start gap-2">
-                      {getLogIcon(log.type)}
-                      <span className="text-gray-500">{log.timestamp.toLocaleTimeString()}</span>
-                      <span className={
-                        log.type === 'critical' ? 'text-red-400 font-bold' :
-                        log.type === 'error' ? 'text-red-400' :
-                        log.type === 'success' ? 'text-green-400' :
-                        log.type === 'warning' ? 'text-yellow-400' :
-                        'text-gray-300'
-                      }>
-                        {log.message}
-                      </span>
-                      {log.details && (
-                        <span className="text-gray-500 break-all">| {log.details}</span>
-                      )}
-                    </div>
-                  ))}
+          {/* Tab: Logs */}
+          <TabsContent value="logs" className="space-y-4 mt-4">
+            {/* Ferramentas */}
+            <Card className="border-gray-700 bg-gray-900/50">
+              <CardHeader>
+                <CardTitle>🛠️ Ferramentas</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-wrap gap-3">
+                  <Button onClick={handleTestConnection} variant="outline" size="sm">
+                    <Wifi className="w-4 h-4 mr-2" />
+                    Testar Conexão Pinpad
+                  </Button>
+                  <Button onClick={handleToggleDebug} variant="outline" size="sm">
+                    <Bug className="w-4 h-4 mr-2" />
+                    {debugMode ? 'Desativar Debug' : 'Ativar Debug'}
+                  </Button>
+                  <Button onClick={handleRefreshLogs} variant="outline" size="sm">
+                    <Terminal className="w-4 h-4 mr-2" />
+                    Carregar Logs Android
+                  </Button>
+                  <Button onClick={handleClearLogs} variant="outline" size="sm">
+                    Limpar Logs
+                  </Button>
+                  <Button onClick={copyDiagnosticReport} variant="outline" size="sm">
+                    <Copy className="w-4 h-4 mr-2" />
+                    Copiar Relatório
+                  </Button>
                 </div>
-              )}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Logs do Android */}
-        {androidLogs.length > 0 && (
-          <Card className="border-gray-700 bg-gray-900/50">
-            <CardHeader>
-              <CardTitle>📱 Logs do Android (SDK)</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-48 border border-gray-700 rounded-lg p-3 bg-black/50">
-                <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap">
-                  {androidLogs.join('\n')}
-                </pre>
-              </ScrollArea>
-            </CardContent>
-          </Card>
-        )}
+            {/* Logs de Diagnóstico */}
+            <Card className="border-gray-700 bg-gray-900/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Terminal className="w-5 h-5" />
+                  Logs de Diagnóstico
+                </CardTitle>
+                <CardDescription>{logs.length} entradas</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ScrollArea className="h-80 border border-gray-700 rounded-lg p-3 bg-black/50 font-mono text-xs">
+                  {logs.length === 0 ? (
+                    <p className="text-gray-500 text-center py-8">Nenhum log registrado</p>
+                  ) : (
+                    <div className="space-y-1">
+                      {logs.map((log, i) => (
+                        <div key={i} className="flex items-start gap-2">
+                          {getLogIcon(log.type)}
+                          <span className="text-gray-500">{log.timestamp.toLocaleTimeString()}</span>
+                          <span className={
+                            log.type === 'critical' ? 'text-red-400 font-bold' :
+                            log.type === 'error' ? 'text-red-400' :
+                            log.type === 'success' ? 'text-green-400' :
+                            log.type === 'warning' ? 'text-yellow-400' :
+                            'text-gray-300'
+                          }>
+                            {log.message}
+                          </span>
+                          {log.details && (
+                            <span className="text-gray-500 break-all">| {log.details}</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
+            {/* Logs do Android */}
+            {androidLogs.length > 0 && (
+              <Card className="border-gray-700 bg-gray-900/50">
+                <CardHeader>
+                  <CardTitle>📱 Logs do Android (SDK)</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-48 border border-gray-700 rounded-lg p-3 bg-black/50">
+                    <pre className="text-xs font-mono text-green-400 whitespace-pre-wrap">
+                      {androidLogs.join('\n')}
+                    </pre>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+            )}
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   );
