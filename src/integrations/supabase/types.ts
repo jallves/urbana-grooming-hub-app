@@ -4761,8 +4761,8 @@ export type Database = {
       }
       invalidate_user_session: { Args: { p_user_email: string }; Returns: Json }
       is_admin:
-        | { Args: { user_id: string }; Returns: boolean }
         | { Args: never; Returns: boolean }
+        | { Args: { user_id: string }; Returns: boolean }
       is_admin_user: { Args: never; Returns: boolean }
       is_barber: { Args: { user_id?: string }; Returns: boolean }
       is_master: { Args: { _user_id: string }; Returns: boolean }
