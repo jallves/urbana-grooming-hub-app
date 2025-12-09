@@ -1,4 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#000000</color>
-    <color name="white">#FFFFFF</color>
+    <!-- Brand Colors -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="gold">#FFD4A853</color>
+    <color name="gold_dark">#FFB8902F</color>
+    
+    <!-- Grays -->
+    <color name="gray_dark">#FF1A1A1A</color>
+    <color name="gray">#FF2A2A2A</color>
+    <color name="gray_light">#FF888888</color>
+    
+    <!-- Status Colors -->
+    <color name="green">#FF22C55E</color>
+    <color name="red">#FFEF4444</color>
+    <color name="orange">#FFF97316</color>
 </resources>
