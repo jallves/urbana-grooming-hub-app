@@ -40,6 +40,16 @@
             <meta-data
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter"/>
+
+            <!-- PayGo Integrado Response Handler -->
+            <intent-filter android:label="filter_app_payment">
+                <action android:name="br.com.setis.interfaceautomacao.SERVICO"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                
+                <data android:scheme="app" android:host="payment"/>
+                <data android:scheme="app" android:host="resolve"/>
+            </intent-filter>
         </activity>
 
     </application>
