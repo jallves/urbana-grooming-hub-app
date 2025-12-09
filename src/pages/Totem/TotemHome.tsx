@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
+import { TotemTEFDiagnostics } from '@/components/totem/TotemTEFDiagnostics';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
 import { toast } from 'sonner';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
@@ -15,6 +16,7 @@ const TotemHome: React.FC = () => {
   const { logout } = useTotemAuth();
   const [isIdle, setIsIdle] = useState(true);
   const [showNewFeatures, setShowNewFeatures] = useState(false);
+  const [showTEFDiagnostics, setShowTEFDiagnostics] = useState(false);
 
   // Sistema de timeout aprimorado
   const { showWarning, formatTimeLeft, extendTime } = useTotemTimeout({
@@ -122,6 +124,18 @@ const TotemHome: React.FC = () => {
           }} />
         </div>
       </div>
+
+      {/* Settings Button (TEF Diagnostics) - Discreto no canto inferior esquerdo */}
+      <Button
+        onClick={() => setShowTEFDiagnostics(true)}
+        variant="ghost"
+        size="sm"
+        className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 h-8 w-8 sm:h-10 sm:w-10 p-0 text-urbana-light/30 hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200 z-10 rounded-lg"
+        style={{ touchAction: 'manipulation' }}
+        title="Configurações TEF"
+      >
+        <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
+      </Button>
 
       {/* Logout Button */}
       <Button
@@ -265,6 +279,12 @@ const TotemHome: React.FC = () => {
       <NewFeaturesModal 
         isOpen={showNewFeatures} 
         onClose={handleCloseNewFeatures} 
+      />
+
+      {/* TEF Diagnostics Modal */}
+      <TotemTEFDiagnostics
+        isOpen={showTEFDiagnostics}
+        onClose={() => setShowTEFDiagnostics(false)}
       />
 
       <TimeoutWarning
