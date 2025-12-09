@@ -173,6 +173,87 @@ class MainActivity : AppCompatActivity() {
 
         // Start auto-start countdown
         startAutoStartCountdown()
+        
+        // Handle PayGo response if launched via Intent
+        handlePayGoIntent(intent)
+    }
+    
+    /**
+     * Recebe Intent quando a Activity já está em execução (singleTask)
+     * Usado para receber respostas do PayGo Integrado
+     */
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        addLog("onNewIntent received")
+        intent?.let { handlePayGoIntent(it) }
+    }
+    
+    /**
+     * Processa Intent de resposta do PayGo Integrado
+     * Action: br.com.setis.interfaceautomacao.SERVICO
+     */
+    private fun handlePayGoIntent(intent: Intent?) {
+        if (intent == null) return
+        
+        val action = intent.action
+        addLog("handlePayGoIntent: action=$action")
+        
+        if (action == PayGoService.ACTION_RESPONSE) {
+            addLog("✅ PayGo response received!")
+            
+            val responseUri = intent.data
+            if (responseUri != null) {
+                addLog("Response URI: $responseUri")
+                payGoService.handlePayGoResponse(responseUri)
+                
+                // Notificar WebView do resultado
+                notifyWebViewPaymentResult(responseUri)
+                
+                // Retornar para o WebView (se estava em background)
+                if (webView.visibility != View.VISIBLE) {
+                    startTotemWebView()
+                }
+            } else {
+                addLog("⚠️ PayGo response without URI data")
+            }
+        }
+    }
+    
+    /**
+     * Notifica o WebView sobre o resultado do pagamento
+     */
+    private fun notifyWebViewPaymentResult(responseUri: android.net.Uri) {
+        // Converter query params para JSON
+        val params = mutableMapOf<String, String>()
+        responseUri.queryParameterNames.forEach { key ->
+            responseUri.getQueryParameter(key)?.let { value ->
+                params[key] = value
+            }
+        }
+        
+        val jsonParams = org.json.JSONObject(params as Map<*, *>).toString()
+        
+        val js = """
+            (function() {
+                console.log('[Android] PayGo response received');
+                if (window.onTefResultado) {
+                    try {
+                        window.onTefResultado($jsonParams);
+                    } catch(e) {
+                        console.error('[Android] Error calling onTefResultado:', e);
+                    }
+                }
+                if (window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
+                        detail: $jsonParams 
+                    }));
+                }
+            })();
+        """.trimIndent()
+        
+        runOnUiThread {
+            webView.evaluateJavascript(js, null)
+        }
     }
 
     private fun initializeViews() {
