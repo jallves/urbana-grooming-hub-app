@@ -41,6 +41,8 @@ declare global {
       iniciarPagamento: (jsonParams: string) => void;
       cancelarPagamento: () => void;
       verificarPinpad: () => string;
+      getStatus: () => string;
+      verificarPayGo: () => string;
       setModoDebug: (enabled: boolean) => void;
       getLogs: () => string;
       limparLogs: () => void;
