@@ -260,10 +260,11 @@ class PayGoService(private val context: Context) {
             val customizationUri = buildCustomizationUri()
             addLog("[TXN] Customization URI: $customizationUri")
             
-            // Criar Intent
+            // Criar Intent conforme documentação PayGo
+            // Chaves corretas: "posData" e "posCustomization" (não "DadosAutomacao" e "Personalizacao")
             val intent = Intent(ACTION_TRANSACTION, transactionUri).apply {
-                putExtra("DadosAutomacao", posDataUri.toString())
-                putExtra("Personalizacao", customizationUri.toString())
+                putExtra("posData", posDataUri.toString())
+                putExtra("posCustomization", customizationUri.toString())
                 putExtra("package", context.packageName)
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
@@ -384,6 +385,8 @@ class PayGoService(private val context: Context) {
 
     /**
      * Constrói a URI de personalização visual (cores da Costa Urbana)
+     * IMPORTANTE: Uri.Builder faz encoding automaticamente, então usamos # direto
+     * O builder vai converter # para %23 automaticamente
      */
     private fun buildCustomizationUri(): Uri {
         return Uri.Builder()
@@ -391,15 +394,16 @@ class PayGoService(private val context: Context) {
             .authority("payment")
             .appendPath("posCustomization")
             // Cores baseadas no tema Costa Urbana (tons escuros com dourado)
-            .appendQueryParameter("screenBackgroundColor", "%231a1a2e")  // Fundo escuro
-            .appendQueryParameter("toolbarBackgroundColor", "%23c9a961") // Dourado
-            .appendQueryParameter("fontColor", "%23ffffff")              // Texto branco
-            .appendQueryParameter("keyboardBackgroundColor", "%232d2d44")
-            .appendQueryParameter("keyboardFontColor", "%23ffffff")
-            .appendQueryParameter("editboxBackgroundColor", "%23ffffff")
-            .appendQueryParameter("releasedKeyColor", "%233d3d5c")
-            .appendQueryParameter("pressedKeyColor", "%23c9a961")
-            .appendQueryParameter("menuSeparatorColor", "%23c9a961")
+            // Usar # direto - o Uri.Builder fará o encoding para %23
+            .appendQueryParameter("screenBackgroundColor", "#1a1a2e")  // Fundo escuro
+            .appendQueryParameter("toolbarBackgroundColor", "#c9a961") // Dourado
+            .appendQueryParameter("fontColor", "#ffffff")              // Texto branco
+            .appendQueryParameter("keyboardBackgroundColor", "#2d2d44")
+            .appendQueryParameter("keyboardFontColor", "#ffffff")
+            .appendQueryParameter("editboxBackgroundColor", "#ffffff")
+            .appendQueryParameter("releasedKeyColor", "#3d3d5c")
+            .appendQueryParameter("pressedKeyColor", "#c9a961")
+            .appendQueryParameter("menuSeparatorColor", "#c9a961")
             .build()
     }
 
