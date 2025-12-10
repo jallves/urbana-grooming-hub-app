@@ -139,43 +139,60 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        addLog("=== TotemCostaUrbana Starting ===")
-        
-        // Keep screen on
-        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        try {
+            addLog("=== TotemCostaUrbana Starting ===")
+            addLog("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            addLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
+            
+            // Keep screen on
+            window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
-        setContentView(R.layout.activity_main)
+            setContentView(R.layout.activity_main)
 
-        // Initialize all views
-        initializeViews()
+            // Initialize all views
+            initializeViews()
 
-        // Initialize USB
-        usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
-        payGoService = PayGoService(this)
+            // Initialize USB
+            usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
+            payGoService = PayGoService(this)
 
-        // Configure WebView (but don't show it yet)
-        configureWebView()
-        
-        // Setup JavaScript interface
-        setupJavascriptInterface()
-        
-        // Register USB receiver
-        registerUsbReceiver()
+            // Configure WebView (but don't show it yet)
+            configureWebView()
+            
+            // Setup JavaScript interface
+            setupJavascriptInterface()
+            
+            // Register USB receiver
+            registerUsbReceiver()
 
-        // Update diagnostic info
-        updateDiagnosticInfo()
-        
-        // Check for connected pinpad
-        checkAndRequestUsbPermission()
+            // Update diagnostic info
+            updateDiagnosticInfo()
+            
+            // Check for connected pinpad
+            checkAndRequestUsbPermission()
 
-        // Setup button listeners
-        setupButtonListeners()
+            // Setup button listeners
+            setupButtonListeners()
 
-        // Start auto-start countdown
-        startAutoStartCountdown()
-        
-        // Handle PayGo response if launched via Intent
-        handlePayGoIntent(intent)
+            // Start auto-start countdown
+            startAutoStartCountdown()
+            
+            // Handle PayGo response if launched via Intent
+            handlePayGoIntent(intent)
+            
+            addLog("=== Initialization Complete ===")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "CRITICAL ERROR in onCreate: ${e.message}", e)
+            // Show error on screen if possible
+            try {
+                android.widget.Toast.makeText(
+                    this,
+                    "Erro ao inicializar: ${e.message}",
+                    android.widget.Toast.LENGTH_LONG
+                ).show()
+            } catch (_: Exception) {}
+        }
     }
     
     /**
@@ -223,67 +240,80 @@ class MainActivity : AppCompatActivity() {
      * Notifica o WebView sobre o resultado do pagamento
      */
     private fun notifyWebViewPaymentResult(responseUri: android.net.Uri) {
-        // Converter query params para JSON
-        val params = mutableMapOf<String, String>()
-        responseUri.queryParameterNames.forEach { key ->
-            responseUri.getQueryParameter(key)?.let { value ->
-                params[key] = value
+        try {
+            // Converter query params para JSON usando org.json.JSONObject corretamente
+            val jsonParams = org.json.JSONObject()
+            responseUri.queryParameterNames.forEach { key ->
+                responseUri.getQueryParameter(key)?.let { value ->
+                    jsonParams.put(key, value)
+                }
             }
-        }
-        
-        val jsonParams = org.json.JSONObject(params as Map<*, *>).toString()
-        
-        val js = """
-            (function() {
-                console.log('[Android] PayGo response received');
-                if (window.onTefResultado) {
-                    try {
-                        window.onTefResultado($jsonParams);
-                    } catch(e) {
-                        console.error('[Android] Error calling onTefResultado:', e);
+            
+            val jsonString = jsonParams.toString()
+            
+            val js = """
+                (function() {
+                    console.log('[Android] PayGo response received');
+                    if (window.onTefResultado) {
+                        try {
+                            window.onTefResultado($jsonString);
+                        } catch(e) {
+                            console.error('[Android] Error calling onTefResultado:', e);
+                        }
                     }
+                    if (window.dispatchEvent) {
+                        window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
+                            detail: $jsonString 
+                        }));
+                    }
+                })();
+            """.trimIndent()
+            
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    webView.evaluateJavascript(js, null)
                 }
-                if (window.dispatchEvent) {
-                    window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
-                        detail: $jsonParams 
-                    }));
-                }
-            })();
-        """.trimIndent()
-        
-        runOnUiThread {
-            webView.evaluateJavascript(js, null)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error notifying WebView payment result: ${e.message}", e)
         }
     }
 
     private fun initializeViews() {
-        // Diagnostic screen views
-        diagnosticScreen = findViewById(R.id.diagnosticScreen)
-        tvAppVersion = findViewById(R.id.tvAppVersion)
-        tvPackageName = findViewById(R.id.tvPackageName)
-        tvBuildNumber = findViewById(R.id.tvBuildNumber)
-        tvAndroidVersion = findViewById(R.id.tvAndroidVersion)
-        tvSdkVersion = findViewById(R.id.tvSdkVersion)
-        tvDeviceModel = findViewById(R.id.tvDeviceModel)
-        tvNetworkStatus = findViewById(R.id.tvNetworkStatus)
-        tvUsbStatus = findViewById(R.id.tvUsbStatus)
-        tvPinpadStatus = findViewById(R.id.tvPinpadStatus)
-        tvSdkStatus = findViewById(R.id.tvSdkStatus)
-        tvUsbDevicesList = findViewById(R.id.tvUsbDevicesList)
-        tvLogOutput = findViewById(R.id.tvLogOutput)
-        tvAutoStartInfo = findViewById(R.id.tvAutoStartInfo)
-        statusNetworkIndicator = findViewById(R.id.statusNetworkIndicator)
-        statusUsbIndicator = findViewById(R.id.statusUsbIndicator)
-        statusPinpadIndicator = findViewById(R.id.statusPinpadIndicator)
-        statusSdkIndicator = findViewById(R.id.statusSdkIndicator)
-        btnRefresh = findViewById(R.id.btnRefresh)
-        btnStartTotem = findViewById(R.id.btnStartTotem)
+        try {
+            // Diagnostic screen views
+            diagnosticScreen = findViewById(R.id.diagnosticScreen)
+            tvAppVersion = findViewById(R.id.tvAppVersion)
+            tvPackageName = findViewById(R.id.tvPackageName)
+            tvBuildNumber = findViewById(R.id.tvBuildNumber)
+            tvAndroidVersion = findViewById(R.id.tvAndroidVersion)
+            tvSdkVersion = findViewById(R.id.tvSdkVersion)
+            tvDeviceModel = findViewById(R.id.tvDeviceModel)
+            tvNetworkStatus = findViewById(R.id.tvNetworkStatus)
+            tvUsbStatus = findViewById(R.id.tvUsbStatus)
+            tvPinpadStatus = findViewById(R.id.tvPinpadStatus)
+            tvSdkStatus = findViewById(R.id.tvSdkStatus)
+            tvUsbDevicesList = findViewById(R.id.tvUsbDevicesList)
+            tvLogOutput = findViewById(R.id.tvLogOutput)
+            tvAutoStartInfo = findViewById(R.id.tvAutoStartInfo)
+            statusNetworkIndicator = findViewById(R.id.statusNetworkIndicator)
+            statusUsbIndicator = findViewById(R.id.statusUsbIndicator)
+            statusPinpadIndicator = findViewById(R.id.statusPinpadIndicator)
+            statusSdkIndicator = findViewById(R.id.statusSdkIndicator)
+            btnRefresh = findViewById(R.id.btnRefresh)
+            btnStartTotem = findViewById(R.id.btnStartTotem)
 
-        // WebView views
-        webView = findViewById(R.id.webView)
-        progressBar = findViewById(R.id.progressBar)
-        statusText = findViewById(R.id.statusText)
-        loadingOverlay = findViewById(R.id.loadingOverlay)
+            // WebView views
+            webView = findViewById(R.id.webView)
+            progressBar = findViewById(R.id.progressBar)
+            statusText = findViewById(R.id.statusText)
+            loadingOverlay = findViewById(R.id.loadingOverlay)
+            
+            addLog("✅ Views initialized successfully")
+        } catch (e: Exception) {
+            Log.e(TAG, "Error initializing views: ${e.message}", e)
+            throw e
+        }
     }
 
     private fun setupButtonListeners() {
