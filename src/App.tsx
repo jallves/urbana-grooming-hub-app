@@ -97,6 +97,7 @@ import ChangePassword from './pages/ChangePassword';
 import ForceSignOutUser from './pages/admin/ForceSignOutUser';
 import ResetPassword from './pages/ResetPassword';
 import TotemDiagnostico from './pages/admin/TotemDiagnostico';
+import TotemTEFDebug from './pages/Totem/TotemTEFDebug';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -339,6 +340,11 @@ function App() {
                   <Route path="/totem" element={
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemHome /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/tef-debug" element={
+                    <AdminRedirectGuard>
+                      <TotemTEFDebug />
                     </AdminRedirectGuard>
                   } />
                   <Route path="/totem/home" element={
