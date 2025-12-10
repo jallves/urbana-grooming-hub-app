@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff, Terminal } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
 import { TotemTEFDiagnostics } from '@/components/totem/TotemTEFDiagnostics';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
+import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { toast } from 'sonner';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -17,6 +18,9 @@ const TotemHome: React.FC = () => {
   const [isIdle, setIsIdle] = useState(true);
   const [showNewFeatures, setShowNewFeatures] = useState(false);
   const [showTEFDiagnostics, setShowTEFDiagnostics] = useState(false);
+  
+  // Hook para status TEF Android
+  const { isAndroidAvailable, isPinpadConnected } = useTEFAndroid();
 
   // Sistema de timeout aprimorado
   const { showWarning, formatTimeLeft, extendTime } = useTotemTimeout({
@@ -125,17 +129,64 @@ const TotemHome: React.FC = () => {
         </div>
       </div>
 
-      {/* Settings Button (TEF Diagnostics) - Discreto no canto inferior esquerdo */}
-      <Button
-        onClick={() => setShowTEFDiagnostics(true)}
-        variant="ghost"
-        size="sm"
-        className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 h-8 w-8 sm:h-10 sm:w-10 p-0 text-urbana-light/30 hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200 z-10 rounded-lg"
-        style={{ touchAction: 'manipulation' }}
-        title="Configurações TEF"
-      >
-        <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
-      </Button>
+      {/* TEF Status Indicator - Canto inferior esquerdo */}
+      <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 z-10 flex items-center gap-2">
+        {/* Status Badge */}
+        <div 
+          className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium backdrop-blur-sm border ${
+            isAndroidAvailable 
+              ? isPinpadConnected 
+                ? 'bg-green-500/20 border-green-500/30 text-green-400'
+                : 'bg-yellow-500/20 border-yellow-500/30 text-yellow-400'
+              : 'bg-gray-500/20 border-gray-500/30 text-gray-400'
+          }`}
+        >
+          {isAndroidAvailable ? (
+            isPinpadConnected ? (
+              <>
+                <Wifi className="w-3 h-3" />
+                <span className="hidden sm:inline">TEF OK</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3 h-3" />
+                <span className="hidden sm:inline">Pinpad</span>
+              </>
+            )
+          ) : (
+            <>
+              <WifiOff className="w-3 h-3" />
+              <span className="hidden sm:inline">Web</span>
+            </>
+          )}
+        </div>
+        
+        {/* Settings Button */}
+        <Button
+          onClick={() => setShowTEFDiagnostics(true)}
+          variant="ghost"
+          size="sm"
+          className="h-8 w-8 sm:h-8 sm:w-8 p-0 text-urbana-light/30 hover:text-urbana-gold hover:bg-urbana-gold/10 transition-all duration-200 rounded-lg"
+          style={{ touchAction: 'manipulation' }}
+          title="Diagnóstico TEF"
+        >
+          <Settings className="w-4 h-4" />
+        </Button>
+        
+        {/* Debug Console Button - Só aparece no Android */}
+        {isAndroidAvailable && (
+          <Button
+            onClick={() => navigate('/totem/tef-debug')}
+            variant="ghost"
+            size="sm"
+            className="h-8 w-8 sm:h-8 sm:w-8 p-0 text-urbana-light/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200 rounded-lg"
+            style={{ touchAction: 'manipulation' }}
+            title="Console de Debug TEF"
+          >
+            <Terminal className="w-4 h-4" />
+          </Button>
+        )}
+      </div>
 
       {/* Logout Button */}
       <Button
