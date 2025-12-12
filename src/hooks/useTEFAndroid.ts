@@ -45,13 +45,21 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
   useEffect(() => {
     const checkAvailability = () => {
       const available = isAndroidTEFAvailable();
+      console.log('[useTEFAndroid] ========== VERIFICAÇÃO TEF ==========');
+      console.log('[useTEFAndroid] window.TEF existe?', typeof window.TEF !== 'undefined');
+      console.log('[useTEFAndroid] isAndroidAvailable:', available);
       setIsAndroidAvailable(available);
       
       if (available) {
         const status = verificarPinpad();
+        console.log('[useTEFAndroid] Pinpad status:', JSON.stringify(status));
         setPinpadStatus(status);
         setIsPinpadConnected(status?.conectado || false);
+        console.log('[useTEFAndroid] isPinpadConnected:', status?.conectado || false);
+      } else {
+        console.log('[useTEFAndroid] TEF NÃO disponível - window.TEF:', window.TEF);
       }
+      console.log('[useTEFAndroid] =====================================');
     };
 
     // Verificar imediatamente
@@ -59,8 +67,14 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
     // Verificar novamente após um delay (para dar tempo do Android injetar a interface)
     const timeout = setTimeout(checkAvailability, 1000);
+    
+    // Verificar mais uma vez após 2 segundos
+    const timeout2 = setTimeout(checkAvailability, 2000);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(timeout2);
+    };
   }, []);
 
   // Registrar listeners de eventos do pinpad
