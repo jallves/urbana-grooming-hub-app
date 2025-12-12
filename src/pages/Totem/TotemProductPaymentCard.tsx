@@ -43,6 +43,16 @@ const TotemProductPaymentCard: React.FC = () => {
 
   // Iniciar pagamento quando tiver cardType e TEF disponível
   useEffect(() => {
+    console.log('💳 [TotemProductPaymentCard] ========== ESTADO TEF ==========');
+    console.log('💳 [TotemProductPaymentCard] isAndroidAvailable:', isAndroidAvailable);
+    console.log('💳 [TotemProductPaymentCard] isPinpadConnected:', isPinpadConnected);
+    console.log('💳 [TotemProductPaymentCard] cardType:', cardType);
+    console.log('💳 [TotemProductPaymentCard] isProcessing:', isProcessing);
+    console.log('💳 [TotemProductPaymentCard] tefProcessing:', tefProcessing);
+    console.log('💳 [TotemProductPaymentCard] sale:', sale?.id);
+    console.log('💳 [TotemProductPaymentCard] window.TEF:', typeof window.TEF);
+    console.log('💳 [TotemProductPaymentCard] ==========================================');
+    
     if (!sale || !client || !barber) {
       toast.error('Dados incompletos');
       navigate('/totem/home');
@@ -51,7 +61,10 @@ const TotemProductPaymentCard: React.FC = () => {
 
     // Se TEF está disponível e conectado, iniciar pagamento
     if (isAndroidAvailable && isPinpadConnected && cardType && !isProcessing && !tefProcessing) {
+      console.log('💳 [TotemProductPaymentCard] ✅ Todas condições OK - iniciando pagamento real');
       iniciarPagamentoReal();
+    } else {
+      console.log('💳 [TotemProductPaymentCard] ⚠️ Condições não atendidas para pagamento');
     }
   }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType]);
 

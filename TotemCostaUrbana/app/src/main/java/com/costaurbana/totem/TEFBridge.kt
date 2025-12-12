@@ -80,7 +80,8 @@ class TEFBridge(
             put("timestamp", System.currentTimeMillis())
         }
         
-        Log.d(TAG, "verificarPinpad resultado: $result")
+        Log.i(TAG, "verificarPinpad resultado: conectado=${status.conectado}, modelo=${status.modelo}")
+        Log.d(TAG, "verificarPinpad JSON: $result")
         return result.toString()
     }
 

@@ -650,9 +650,10 @@ class MainActivity : AppCompatActivity() {
         val js = """
             (function() {
                 console.log('[Android] TEF Android ready, version: $version');
+                console.log('[Android] Pinpad connected: $isPinpadConnected');
                 if (window.dispatchEvent) {
                     window.dispatchEvent(new CustomEvent('tefAndroidReady', { 
-                        detail: { version: '$version' } 
+                        detail: { version: '$version', pinpadConnected: $isPinpadConnected } 
                     }));
                 }
             })();
@@ -661,6 +662,11 @@ class MainActivity : AppCompatActivity() {
         runOnUiThread {
             webView.evaluateJavascript(js, null)
         }
+        
+        // Também notificar status do pinpad após página carregar
+        handler.postDelayed({
+            notifyWebViewPinpadStatus(isPinpadConnected)
+        }, 500)
     }
 
     private fun notifyWebViewPinpadStatus(connected: Boolean) {
