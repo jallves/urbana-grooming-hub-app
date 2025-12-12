@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import TotemDebugButton from './TotemDebugButton';
 
 interface TotemLayoutProps {
   children: React.ReactNode;
@@ -123,6 +124,9 @@ export const TotemLayout: React.FC<TotemLayoutProps> = ({
       )}>
         {children}
       </div>
+
+      {/* Debug Button */}
+      <TotemDebugButton />
     </div>
   );
 };

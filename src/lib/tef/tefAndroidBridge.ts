@@ -47,6 +47,10 @@ declare global {
       getLogs: () => string;
       limparLogs: () => void;
     };
+    Android?: {
+      // Legacy Android interface
+      [key: string]: unknown;
+    };
     onTefResultado?: (resultado: TEFResultado) => void;
   }
 }
@@ -194,6 +198,46 @@ export function limparLogsAndroid(): boolean {
   } catch (error) {
     console.error('[TEFBridge] Erro ao limpar logs:', error);
     return false;
+  }
+}
+
+/**
+ * Obtém status completo do serviço TEF
+ */
+export function getFullStatusAndroid(): Record<string, unknown> | null {
+  if (!isAndroidTEFAvailable()) {
+    return null;
+  }
+  
+  try {
+    if (window.TEF?.getStatus) {
+      const statusJson = window.TEF.getStatus();
+      return JSON.parse(statusJson);
+    }
+    return null;
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao obter status:', error);
+    return null;
+  }
+}
+
+/**
+ * Obtém informações do PayGo instalado
+ */
+export function getPayGoInfoAndroid(): Record<string, unknown> | null {
+  if (!isAndroidTEFAvailable()) {
+    return null;
+  }
+  
+  try {
+    if (window.TEF?.verificarPayGo) {
+      const infoJson = window.TEF.verificarPayGo();
+      return JSON.parse(infoJson);
+    }
+    return null;
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao verificar PayGo:', error);
+    return null;
   }
 }
 

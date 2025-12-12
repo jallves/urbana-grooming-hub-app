@@ -144,4 +144,32 @@ class TEFBridge(
         }
         returnResult(result)
     }
+
+    /**
+     * Retorna o status completo do serviço TEF
+     * Chamado do JS: TEF.getStatus()
+     * @return JSON string com status completo
+     */
+    @JavascriptInterface
+    fun getStatus(): String {
+        Log.d(TAG, "getStatus chamado")
+        
+        val status = payGoService.getFullStatus()
+        Log.d(TAG, "getStatus resultado: $status")
+        return status.toString()
+    }
+
+    /**
+     * Verifica informações do PayGo instalado
+     * Chamado do JS: TEF.verificarPayGo()
+     * @return JSON string com informações do PayGo
+     */
+    @JavascriptInterface
+    fun verificarPayGo(): String {
+        Log.d(TAG, "verificarPayGo chamado")
+        
+        val info = payGoService.getPayGoInfo()
+        Log.d(TAG, "verificarPayGo resultado: $info")
+        return info.toString()
+    }
 }
