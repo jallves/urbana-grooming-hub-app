@@ -3,7 +3,6 @@ package com.costaurbana.totem
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.hardware.usb.UsbDevice
 import android.net.Uri
 import android.util.Log
 import org.json.JSONArray
@@ -12,6 +11,10 @@ import java.util.UUID
 
 /**
  * PayGo Service - Integração via URI com PayGo Integrado
+ * 
+ * IMPORTANTE: O PayGo Integrado gerencia internamente o pinpad.
+ * Não é necessário conectar ao pinpad via USB diretamente.
+ * O app PayGo detecta e conecta ao pinpad automaticamente.
  * 
  * Baseado na documentação: https://github.com/adminti2/mobile-integracao-uri
  * 
@@ -33,9 +36,14 @@ class PayGoService(private val context: Context) {
         const val ACTION_CONFIRMATION = "br.com.setis.confirmation.TRANSACTION"
         const val ACTION_RESPONSE = "br.com.setis.interfaceautomacao.SERVICO"
         
-        // Package name do PayGo Integrado
-        const val PAYGO_PACKAGE = "br.com.setis.payment.integrado"
-        const val PAYGO_PACKAGE_ALT = "br.com.setis.interfaceautomacao"
+        // Package names do PayGo Integrado (várias possibilidades)
+        val PAYGO_PACKAGES = listOf(
+            "br.com.setis.payment.integrado",
+            "br.com.setis.interfaceautomacao",
+            "br.com.paygo.integrado",
+            "br.com.paygo",
+            "br.com.setis.payment"
+        )
         
         // Currency code Brasil (ISO4217)
         const val CURRENCY_CODE_BRL = "986"
@@ -46,10 +54,11 @@ class PayGoService(private val context: Context) {
         const val POS_DEVELOPER = "CostaUrbana"
     }
 
-    // Status do pinpad
-    private var pinpadConnected = false
-    private var pinpadModel: String? = null
-    private var currentDevice: UsbDevice? = null
+    // Status do PayGo e pinpad
+    // NOTA: O PayGo gerencia o pinpad internamente, só precisamos saber se PayGo está instalado
+    private var payGoInstalled: Boolean = false
+    private var payGoPackage: String? = null
+    private var payGoVersion: String? = null
     
     // Transação pendente
     private var pendingTransactionId: String? = null
@@ -58,10 +67,6 @@ class PayGoService(private val context: Context) {
     // Debug
     private var debugMode = true
     private val logs = mutableListOf<String>()
-    
-    // Cache do status do PayGo
-    private var payGoInstalled: Boolean? = null
-    private var payGoVersion: String? = null
 
     init {
         addLog("========================================")
@@ -76,6 +81,8 @@ class PayGoService(private val context: Context) {
 
     /**
      * Verifica se o PayGo Integrado está instalado
+     * Se o PayGo estiver instalado, consideramos o pinpad como "disponível"
+     * porque o PayGo gerencia o pinpad internamente
      */
     fun checkPayGoInstallation(): Boolean {
         addLog("[PAYGO] Verificando instalação do PayGo...")
@@ -83,17 +90,11 @@ class PayGoService(private val context: Context) {
         val pm = context.packageManager
         
         // Tentar encontrar o PayGo Integrado
-        val packages = listOf(
-            PAYGO_PACKAGE,
-            PAYGO_PACKAGE_ALT,
-            "br.com.paygo.integrado",
-            "br.com.paygo"
-        )
-        
-        for (pkg in packages) {
+        for (pkg in PAYGO_PACKAGES) {
             try {
                 val info = pm.getPackageInfo(pkg, 0)
                 payGoInstalled = true
+                payGoPackage = pkg
                 payGoVersion = info.versionName
                 addLog("[PAYGO] ✅ PayGo encontrado!")
                 addLog("[PAYGO]    Package: $pkg")
@@ -101,11 +102,11 @@ class PayGoService(private val context: Context) {
                 addLog("[PAYGO]    VersionCode: ${info.longVersionCode}")
                 return true
             } catch (e: PackageManager.NameNotFoundException) {
-                addLog("[PAYGO] Package $pkg não encontrado")
+                // Continuar verificando outros packages
             }
         }
         
-        // Verificar se há algum app que responde ao Intent
+        // Verificar se há algum app que responde ao Intent de transação
         val testIntent = Intent(ACTION_TRANSACTION)
         val resolveInfos = pm.queryIntentActivities(testIntent, 0)
         
@@ -116,11 +117,13 @@ class PayGoService(private val context: Context) {
                 val pkgName = info.activityInfo.packageName
                 addLog("[PAYGO]    - $appName ($pkgName)")
                 payGoInstalled = true
+                payGoPackage = pkgName
             }
             return true
         }
         
         payGoInstalled = false
+        payGoPackage = null
         addLog("[PAYGO] ❌ PayGo NÃO está instalado!")
         addLog("[PAYGO] Por favor, instale o PayGo Integrado")
         return false
@@ -131,45 +134,11 @@ class PayGoService(private val context: Context) {
      */
     fun getPayGoInfo(): JSONObject {
         return JSONObject().apply {
-            put("installed", payGoInstalled ?: false)
+            put("installed", payGoInstalled)
             put("version", payGoVersion ?: "desconhecido")
-            put("packageName", PAYGO_PACKAGE)
+            put("packageName", payGoPackage ?: "não encontrado")
+            put("packages_checked", JSONArray(PAYGO_PACKAGES))
         }
-    }
-
-    // ================== USB Device Management ==================
-
-    fun onUsbPermissionGranted(device: UsbDevice) {
-        Log.i(TAG, "USB Permission granted: ${device.deviceName}")
-        addLog("[USB] ✅ Permissão concedida")
-        addLog("[USB]    Device: ${device.deviceName}")
-        addLog("[USB]    VendorId: ${device.vendorId}")
-        addLog("[USB]    ProductId: ${device.productId}")
-        device.productName?.let { addLog("[USB]    Nome: $it") }
-        
-        currentDevice = device
-        pinpadConnected = true
-        pinpadModel = "PPC930" // Gertec pinpad
-        
-        addLog("[PINPAD] ✅ Conectado: $pinpadModel")
-    }
-
-    fun onUsbPermissionDenied() {
-        Log.w(TAG, "USB Permission denied")
-        addLog("[USB] ❌ Permissão USB negada pelo usuário")
-        
-        pinpadConnected = false
-        pinpadModel = null
-        currentDevice = null
-    }
-
-    fun onPinpadDisconnected() {
-        Log.i(TAG, "Pinpad disconnected")
-        addLog("[PINPAD] ⚠️ Desconectado")
-        
-        pinpadConnected = false
-        pinpadModel = null
-        currentDevice = null
     }
 
     // ================== Status ==================
@@ -179,10 +148,20 @@ class PayGoService(private val context: Context) {
         val modelo: String?
     )
 
+    /**
+     * Retorna status do pinpad
+     * NOTA: Se PayGo está instalado, consideramos pinpad como disponível
+     * porque o PayGo gerencia a conexão internamente
+     */
     fun getPinpadStatus(): PinpadStatus {
+        // Revalidar instalação do PayGo
+        if (!payGoInstalled) {
+            checkPayGoInstallation()
+        }
+        
         return PinpadStatus(
-            conectado = pinpadConnected,
-            modelo = if (pinpadConnected) pinpadModel else null
+            conectado = payGoInstalled,  // Se PayGo está instalado, pinpad está "disponível"
+            modelo = if (payGoInstalled) "PayGo Integrado" else null
         )
     }
     
@@ -190,12 +169,19 @@ class PayGoService(private val context: Context) {
      * Retorna status completo do serviço TEF
      */
     fun getFullStatus(): JSONObject {
+        // Revalidar instalação
+        if (!payGoInstalled) {
+            checkPayGoInstallation()
+        }
+        
         return JSONObject().apply {
             put("pinpad", JSONObject().apply {
-                put("conectado", pinpadConnected)
-                put("modelo", pinpadModel ?: "")
+                put("conectado", payGoInstalled)  // PayGo gerencia o pinpad
+                put("modelo", if (payGoInstalled) "PayGo Integrado" else "")
+                put("info", "Pinpad gerenciado pelo PayGo")
             })
             put("paygo", getPayGoInfo())
+            put("ready", payGoInstalled)  // Pronto para transações se PayGo instalado
             put("pendingTransaction", pendingTransactionId)
             put("debugMode", debugMode)
             put("logsCount", logs.size)
@@ -229,7 +215,12 @@ class PayGoService(private val context: Context) {
         addLog("========================================")
 
         // Verificar se PayGo está instalado
-        if (payGoInstalled != true) {
+        if (!payGoInstalled) {
+            // Tentar verificar novamente
+            checkPayGoInstallation()
+        }
+        
+        if (!payGoInstalled) {
             addLog("[TXN] ❌ ERRO: PayGo não está instalado!")
             callback(createError("PAYGO_NOT_INSTALLED", "PayGo Integrado não está instalado. Por favor, instale o aplicativo PayGo."))
             return
@@ -261,17 +252,15 @@ class PayGoService(private val context: Context) {
             addLog("[TXN] Customization URI: $customizationUri")
             
             // Criar Intent conforme documentação PayGo
-            // Chaves corretas: "posData" e "posCustomization" (não "DadosAutomacao" e "Personalizacao")
             val intent = Intent(ACTION_TRANSACTION, transactionUri).apply {
                 putExtra("posData", posDataUri.toString())
                 putExtra("posCustomization", customizationUri.toString())
                 putExtra("package", context.packageName)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             
             addLog("[TXN] Intent criado com action: $ACTION_TRANSACTION")
-            addLog("[TXN] Package: ${context.packageName}")
-            addLog("[TXN] Flags: FLAG_ACTIVITY_NEW_TASK | FLAG_ACTIVITY_CLEAR_TASK")
+            addLog("[TXN] Package de retorno: ${context.packageName}")
             
             // Verificar se há app para resolver o Intent
             val resolveInfo = context.packageManager.resolveActivity(intent, 0)
@@ -279,6 +268,7 @@ class PayGoService(private val context: Context) {
                 addLog("[TXN] ✅ Intent será resolvido por: ${resolveInfo.activityInfo.packageName}")
             } else {
                 addLog("[TXN] ⚠️ Nenhum app encontrado para resolver o Intent")
+                addLog("[TXN] Tentando abrir mesmo assim...")
             }
             
             addLog("[TXN] >>> Chamando startActivity() <<<")
@@ -288,6 +278,7 @@ class PayGoService(private val context: Context) {
             
             addLog("[TXN] ✅ Intent enviado com sucesso!")
             addLog("[TXN] Aguardando resposta do PayGo...")
+            addLog("[TXN] O PayGo vai abrir e gerenciar o pagamento no pinpad")
             
         } catch (e: android.content.ActivityNotFoundException) {
             Log.e(TAG, "PayGo não encontrado: ${e.message}", e)
@@ -297,7 +288,7 @@ class PayGoService(private val context: Context) {
             pendingTransactionId = null
             pendingCallback = null
             
-            callback(createError("ACTIVITY_NOT_FOUND", "PayGo não encontrado. Verifique se está instalado."))
+            callback(createError("ACTIVITY_NOT_FOUND", "PayGo não encontrado. Verifique se está instalado corretamente."))
             
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao iniciar transação: ${e.message}", e)
@@ -357,7 +348,10 @@ class PayGoService(private val context: Context) {
                 addLog("[URI] Tipo: PIX")
             }
             else -> {
-                addLog("[URI] ⚠️ Método desconhecido: $metodo")
+                // Padrão para crédito à vista
+                builder.appendQueryParameter("cardType", "CARTAO_CREDITO")
+                builder.appendQueryParameter("finType", "A_VISTA")
+                addLog("[URI] ⚠️ Método desconhecido '$metodo', usando CRÉDITO à vista")
             }
         }
         
@@ -385,8 +379,6 @@ class PayGoService(private val context: Context) {
 
     /**
      * Constrói a URI de personalização visual (cores da Costa Urbana)
-     * IMPORTANTE: Uri.Builder faz encoding automaticamente, então usamos # direto
-     * O builder vai converter # para %23 automaticamente
      */
     private fun buildCustomizationUri(): Uri {
         return Uri.Builder()
@@ -394,7 +386,6 @@ class PayGoService(private val context: Context) {
             .authority("payment")
             .appendPath("posCustomization")
             // Cores baseadas no tema Costa Urbana (tons escuros com dourado)
-            // Usar # direto - o Uri.Builder fará o encoding para %23
             .appendQueryParameter("screenBackgroundColor", "#1a1a2e")  // Fundo escuro
             .appendQueryParameter("toolbarBackgroundColor", "#c9a961") // Dourado
             .appendQueryParameter("fontColor", "#ffffff")              // Texto branco

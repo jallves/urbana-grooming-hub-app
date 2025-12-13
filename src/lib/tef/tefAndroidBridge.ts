@@ -46,6 +46,7 @@ declare global {
       setModoDebug: (enabled: boolean) => void;
       getLogs: () => string;
       limparLogs: () => void;
+      isReady: () => boolean;
     };
     Android?: {
       // Legacy Android interface
