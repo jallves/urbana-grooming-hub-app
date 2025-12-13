@@ -1,6 +1,34 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android"
-    android:shape="rectangle">
-    <solid android:color="#1A1A2E"/>
-    <corners android:radius="8dp"/>
-</shape>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background circle (dark blue/black) -->
+    <path
+        android:fillColor="#1A1A2E"
+        android:pathData="M0,0h108v108h-108z"/>
+    
+    <!-- Gold accent circle -->
+    <path
+        android:fillColor="#D4A853"
+        android:pathData="M54,54m-35,0a35,35 0,1 1,70 0a35,35 0,1 1,-70 0"/>
+    
+    <!-- Inner dark circle -->
+    <path
+        android:fillColor="#1A1A2E"
+        android:pathData="M54,54m-28,0a28,28 0,1 1,56 0a28,28 0,1 1,-56 0"/>
+    
+    <!-- C letter (for Costa Urbana) -->
+    <path
+        android:fillColor="#D4A853"
+        android:strokeWidth="0"
+        android:pathData="M54,36c-9.9,0 -18,8.1 -18,18s8.1,18 18,18c5,0 9.5,-2 12.7,-5.3l-4.2,-4.2c-2.2,2.2 -5.2,3.5 -8.5,3.5c-6.6,0 -12,-5.4 -12,-12s5.4,-12 12,-12c3.3,0 6.3,1.3 8.5,3.5l4.2,-4.2c-3.2,-3.3 -7.7,-5.3 -12.7,-5.3z"/>
+    
+    <!-- U letter -->
+    <path
+        android:fillColor="#D4A853"
+        android:strokeWidth="0"
+        android:pathData="M54,42v18c0,3.3 -2.7,6 -6,6s-6,-2.7 -6,-6v-18h-6v18c0,6.6 5.4,12 12,12s12,-5.4 12,-12v-18h-6z"/>
+</vector>
