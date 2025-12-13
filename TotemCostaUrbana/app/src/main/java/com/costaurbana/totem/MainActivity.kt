@@ -40,10 +40,6 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val TAG = "TotemMain"
-        private const val ACTION_USB_PERMISSION = "com.costaurbana.totem.USB_PERMISSION"
-        
-        // Gertec PPC930 USB IDs
-        private const val VENDOR_ID_GERTEC = 1753
         
         // URL do Totem Web
         private const val PWA_URL = "https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/totem"
@@ -80,61 +76,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var statusText: TextView
     private lateinit var loadingOverlay: View
     
-    private lateinit var usbManager: UsbManager
     private lateinit var tefBridge: TEFBridge
     private lateinit var payGoService: PayGoService
 
     private val handler = Handler(Looper.getMainLooper())
     private var autoStartRunnable: Runnable? = null
     private var autoStartCountdown = 10
-    private var isPinpadConnected = false
     private val logMessages = StringBuilder()
-
-    private val usbReceiver = object : BroadcastReceiver() {
-        override fun onReceive(context: Context?, intent: Intent?) {
-            when (intent?.action) {
-                ACTION_USB_PERMISSION -> {
-                    synchronized(this) {
-                        val device = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE, UsbDevice::class.java)
-                        } else {
-                            @Suppress("DEPRECATION")
-                            intent.getParcelableExtra(UsbManager.EXTRA_DEVICE)
-                        }
-                        
-                        if (intent.getBooleanExtra(UsbManager.EXTRA_PERMISSION_GRANTED, false)) {
-                            device?.let { 
-                                addLog("✅ USB Permission granted: ${it.deviceName}")
-                                payGoService.onUsbPermissionGranted(it) 
-                                isPinpadConnected = true
-                                updatePinpadStatus(true)
-                                notifyWebViewPinpadStatus(true)
-                            }
-                        } else {
-                            addLog("❌ USB Permission denied")
-                            payGoService.onUsbPermissionDenied()
-                            isPinpadConnected = false
-                            updatePinpadStatus(false)
-                            notifyWebViewPinpadStatus(false)
-                        }
-                    }
-                }
-                UsbManager.ACTION_USB_DEVICE_ATTACHED -> {
-                    addLog("🔌 USB Device attached")
-                    checkAndRequestUsbPermission()
-                    updateUsbDevicesList()
-                }
-                UsbManager.ACTION_USB_DEVICE_DETACHED -> {
-                    addLog("🔌 USB Device detached")
-                    payGoService.onPinpadDisconnected()
-                    isPinpadConnected = false
-                    updatePinpadStatus(false)
-                    updateUsbDevicesList()
-                    notifyWebViewPinpadStatus(false)
-                }
-            }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -152,24 +100,17 @@ class MainActivity : AppCompatActivity() {
             // Initialize all views
             initializeViews()
 
-            // Initialize USB
-            usbManager = getSystemService(Context.USB_SERVICE) as UsbManager
+            // Initialize PayGo Service (gerencia pinpad internamente)
             payGoService = PayGoService(this)
-
+            
             // Configure WebView (but don't show it yet)
             configureWebView()
             
             // Setup JavaScript interface
             setupJavascriptInterface()
-            
-            // Register USB receiver
-            registerUsbReceiver()
 
             // Update diagnostic info
             updateDiagnosticInfo()
-            
-            // Check for connected pinpad
-            checkAndRequestUsbPermission()
 
             // Setup button listeners
             setupButtonListeners()
@@ -215,6 +156,7 @@ class MainActivity : AppCompatActivity() {
         val action = intent.action
         addLog("handlePayGoIntent: action=$action")
         
+        // Verificar se é resposta do PayGo
         if (action == PayGoService.ACTION_RESPONSE) {
             addLog("✅ PayGo response received!")
             
@@ -232,6 +174,19 @@ class MainActivity : AppCompatActivity() {
                 }
             } else {
                 addLog("⚠️ PayGo response without URI data")
+                // Tentar verificar extras
+                intent.extras?.let { extras ->
+                    addLog("Intent extras: ${extras.keySet().joinToString()}")
+                }
+            }
+        }
+        
+        // Verificar também scheme "app" que pode vir como resposta
+        intent.data?.let { uri ->
+            if (uri.scheme == "app" && (uri.host == "payment" || uri.host == "resolve")) {
+                addLog("✅ PayGo URI response via data: $uri")
+                payGoService.handlePayGoResponse(uri)
+                notifyWebViewPaymentResult(uri)
             }
         }
     }
@@ -241,7 +196,7 @@ class MainActivity : AppCompatActivity() {
      */
     private fun notifyWebViewPaymentResult(responseUri: android.net.Uri) {
         try {
-            // Converter query params para JSON usando org.json.JSONObject corretamente
+            // Converter query params para JSON
             val jsonParams = org.json.JSONObject()
             responseUri.queryParameterNames.forEach { key ->
                 responseUri.getQueryParameter(key)?.let { value ->
@@ -254,12 +209,16 @@ class MainActivity : AppCompatActivity() {
             val js = """
                 (function() {
                     console.log('[Android] PayGo response received');
+                    console.log('[Android] Response data:', $jsonString);
                     if (window.onTefResultado) {
                         try {
                             window.onTefResultado($jsonString);
+                            console.log('[Android] onTefResultado called successfully');
                         } catch(e) {
                             console.error('[Android] Error calling onTefResultado:', e);
                         }
+                    } else {
+                        console.warn('[Android] window.onTefResultado not defined');
                     }
                     if (window.dispatchEvent) {
                         window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
@@ -320,7 +279,6 @@ class MainActivity : AppCompatActivity() {
         btnRefresh.setOnClickListener {
             addLog("🔄 Manual refresh triggered")
             updateDiagnosticInfo()
-            checkAndRequestUsbPermission()
         }
 
         btnStartTotem.setOnClickListener {
@@ -354,12 +312,8 @@ class MainActivity : AppCompatActivity() {
         // Network status
         updateNetworkStatus()
 
-        // USB devices
-        updateUsbDevicesList()
-
-        // SDK status (always mock for now)
-        tvSdkStatus.text = "Mock (não integrado)"
-        statusSdkIndicator.setBackgroundResource(R.drawable.status_indicator_yellow)
+        // PayGo status (o PayGo gerencia o pinpad)
+        updatePayGoStatus()
 
         addLog("📊 Diagnostic info updated")
     }
@@ -394,51 +348,42 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun updateUsbDevicesList() {
-        val deviceList = usbManager.deviceList
+    private fun updatePayGoStatus() {
+        val payGoInfo = payGoService.getPayGoInfo()
+        val installed = payGoInfo.optBoolean("installed", false)
+        val version = payGoInfo.optString("version", "")
         
-        if (deviceList.isEmpty()) {
-            tvUsbDevicesList.text = "Nenhum dispositivo detectado"
-            tvUsbStatus.text = "Nenhum"
-            statusUsbIndicator.setBackgroundResource(R.drawable.status_indicator_red)
+        if (installed) {
+            tvSdkStatus.text = "PayGo Instalado (v$version)"
+            tvSdkStatus.setTextColor(0xFF22C55E.toInt())
+            statusSdkIndicator.setBackgroundResource(R.drawable.status_indicator_green)
+            
+            // Pinpad é gerenciado pelo PayGo
+            tvPinpadStatus.text = "Gerenciado pelo PayGo"
+            tvPinpadStatus.setTextColor(0xFF22C55E.toInt())
+            statusPinpadIndicator.setBackgroundResource(R.drawable.status_indicator_green)
+            
+            // USB não precisa ser verificado para pinpad (PayGo gerencia)
+            tvUsbStatus.text = "Via PayGo"
+            statusUsbIndicator.setBackgroundResource(R.drawable.status_indicator_green)
+            tvUsbDevicesList.text = "O PayGo Integrado gerencia a conexão com o pinpad internamente.\nNão é necessário conectar via USB diretamente."
+            
+            addLog("✅ PayGo: Instalado v$version")
+            addLog("✅ Pinpad: Gerenciado pelo PayGo")
         } else {
-            val sb = StringBuilder()
-            var hasGertec = false
+            tvSdkStatus.text = "PayGo NÃO instalado"
+            tvSdkStatus.setTextColor(0xFFEF4444.toInt())
+            statusSdkIndicator.setBackgroundResource(R.drawable.status_indicator_red)
             
-            deviceList.values.forEachIndexed { index, device ->
-                if (index > 0) sb.append("\n")
-                val isGertec = device.vendorId == VENDOR_ID_GERTEC
-                if (isGertec) hasGertec = true
-                
-                sb.append("${index + 1}. ")
-                sb.append(if (isGertec) "🟢 " else "⚪ ")
-                sb.append("VID: ${device.vendorId}, PID: ${device.productId}")
-                if (isGertec) sb.append(" (Gertec)")
-                sb.append("\n   ${device.deviceName}")
-                
-                device.productName?.let { sb.append("\n   $it") }
-            }
+            tvPinpadStatus.text = "Instale o PayGo"
+            tvPinpadStatus.setTextColor(0xFFEF4444.toInt())
+            statusPinpadIndicator.setBackgroundResource(R.drawable.status_indicator_red)
             
-            tvUsbDevicesList.text = sb.toString()
-            tvUsbStatus.text = "${deviceList.size} dispositivo(s)"
-            statusUsbIndicator.setBackgroundResource(
-                if (hasGertec) R.drawable.status_indicator_green 
-                else R.drawable.status_indicator_yellow
-            )
-        }
-    }
-
-    private fun updatePinpadStatus(connected: Boolean) {
-        runOnUiThread {
-            if (connected) {
-                tvPinpadStatus.text = "Conectado (PPC930)"
-                tvPinpadStatus.setTextColor(0xFF22C55E.toInt())
-                statusPinpadIndicator.setBackgroundResource(R.drawable.status_indicator_green)
-            } else {
-                tvPinpadStatus.text = "Desconectado"
-                tvPinpadStatus.setTextColor(0xFFEF4444.toInt())
-                statusPinpadIndicator.setBackgroundResource(R.drawable.status_indicator_red)
-            }
+            tvUsbStatus.text = "N/A"
+            statusUsbIndicator.setBackgroundResource(R.drawable.status_indicator_yellow)
+            tvUsbDevicesList.text = "❌ PayGo Integrado não está instalado!\n\nInstale o aplicativo PayGo para processar pagamentos com cartão."
+            
+            addLog("❌ PayGo: NÃO instalado")
         }
     }
 
@@ -595,51 +540,6 @@ class MainActivity : AppCompatActivity() {
         addLog("📱 JavaScript interface 'TEF' added")
     }
 
-    private fun registerUsbReceiver() {
-        val filter = IntentFilter().apply {
-            addAction(ACTION_USB_PERMISSION)
-            addAction(UsbManager.ACTION_USB_DEVICE_ATTACHED)
-            addAction(UsbManager.ACTION_USB_DEVICE_DETACHED)
-        }
-        
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(usbReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
-        } else {
-            registerReceiver(usbReceiver, filter)
-        }
-        
-        addLog("📡 USB receiver registered")
-    }
-
-    private fun checkAndRequestUsbPermission() {
-        val deviceList = usbManager.deviceList
-        addLog("🔍 Connected USB devices: ${deviceList.size}")
-        
-        deviceList.values.forEach { device ->
-            addLog("   USB: VID=${device.vendorId}, PID=${device.productId}")
-            
-            if (device.vendorId == VENDOR_ID_GERTEC) {
-                addLog("🎯 Gertec pinpad detected!")
-                
-                if (!usbManager.hasPermission(device)) {
-                    val pendingIntent = PendingIntent.getBroadcast(
-                        this,
-                        0,
-                        Intent(ACTION_USB_PERMISSION),
-                        PendingIntent.FLAG_IMMUTABLE
-                    )
-                    usbManager.requestPermission(device, pendingIntent)
-                    addLog("🔐 Requesting USB permission...")
-                } else {
-                    addLog("✅ USB permission already granted")
-                    payGoService.onUsbPermissionGranted(device)
-                    isPinpadConnected = true
-                    updatePinpadStatus(true)
-                }
-            }
-        }
-    }
-
     private fun notifyAndroidReady() {
         val version = try {
             packageManager.getPackageInfo(packageName, 0).versionName
@@ -647,38 +547,30 @@ class MainActivity : AppCompatActivity() {
             "1.0.0"
         }
         
+        val payGoInfo = payGoService.getPayGoInfo()
+        val payGoInstalled = payGoInfo.optBoolean("installed", false)
+        
         val js = """
             (function() {
                 console.log('[Android] TEF Android ready, version: $version');
-                console.log('[Android] Pinpad connected: $isPinpadConnected');
+                console.log('[Android] PayGo installed: $payGoInstalled');
+                console.log('[Android] window.TEF available:', typeof window.TEF !== 'undefined');
+                
+                // Disparar evento de pronto
                 if (window.dispatchEvent) {
                     window.dispatchEvent(new CustomEvent('tefAndroidReady', { 
-                        detail: { version: '$version', pinpadConnected: $isPinpadConnected } 
+                        detail: { 
+                            version: '$version', 
+                            pinpadConnected: $payGoInstalled,
+                            payGoInstalled: $payGoInstalled
+                        } 
                     }));
                 }
-            })();
-        """.trimIndent()
-        
-        runOnUiThread {
-            webView.evaluateJavascript(js, null)
-        }
-        
-        // Também notificar status do pinpad após página carregar
-        handler.postDelayed({
-            notifyWebViewPinpadStatus(isPinpadConnected)
-        }, 500)
-    }
-
-    private fun notifyWebViewPinpadStatus(connected: Boolean) {
-        val eventName = if (connected) "tefPinpadConnected" else "tefPinpadDisconnected"
-        val modelo = if (connected) "PPC930" else ""
-        
-        val js = """
-            (function() {
-                console.log('[Android] Pinpad status: $connected');
-                if (window.dispatchEvent) {
-                    window.dispatchEvent(new CustomEvent('$eventName', { 
-                        detail: { modelo: '$modelo' } 
+                
+                // Também disparar evento de pinpad conectado se PayGo estiver instalado
+                if ($payGoInstalled && window.dispatchEvent) {
+                    window.dispatchEvent(new CustomEvent('tefPinpadConnected', { 
+                        detail: { modelo: 'PayGo Integrado' } 
                     }));
                 }
             })();
@@ -746,11 +638,6 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         cancelAutoStart()
-        try {
-            unregisterReceiver(usbReceiver)
-        } catch (e: Exception) {
-            Log.w(TAG, "Error unregistering receiver: ${e.message}")
-        }
         webView.destroy()
     }
 }

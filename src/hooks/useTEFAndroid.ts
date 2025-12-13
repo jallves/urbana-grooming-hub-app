@@ -51,11 +51,29 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       setIsAndroidAvailable(available);
       
       if (available) {
+        // IMPORTANTE: Se window.TEF existe, PayGo está disponível
+        // O PayGo gerencia o pinpad internamente
         const status = verificarPinpad();
         console.log('[useTEFAndroid] Pinpad status:', JSON.stringify(status));
         setPinpadStatus(status);
-        setIsPinpadConnected(status?.conectado || false);
-        console.log('[useTEFAndroid] isPinpadConnected:', status?.conectado || false);
+        
+        // Se window.TEF existe e PayGo está instalado, consideramos conectado
+        const connected = status?.conectado ?? false;
+        setIsPinpadConnected(connected);
+        console.log('[useTEFAndroid] isPinpadConnected:', connected);
+        
+        // Verificar também via isReady se disponível
+        if (window.TEF?.isReady) {
+          try {
+            const ready = window.TEF.isReady();
+            console.log('[useTEFAndroid] TEF.isReady():', ready);
+            if (ready && !connected) {
+              setIsPinpadConnected(true);
+            }
+          } catch (e) {
+            console.warn('[useTEFAndroid] Erro ao chamar isReady:', e);
+          }
+        }
       } else {
         console.log('[useTEFAndroid] TEF NÃO disponível - window.TEF:', window.TEF);
       }
@@ -65,15 +83,17 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     // Verificar imediatamente
     checkAvailability();
 
-    // Verificar novamente após um delay (para dar tempo do Android injetar a interface)
-    const timeout = setTimeout(checkAvailability, 1000);
-    
-    // Verificar mais uma vez após 2 segundos
-    const timeout2 = setTimeout(checkAvailability, 2000);
+    // Verificar novamente após delays progressivos
+    const timeout1 = setTimeout(checkAvailability, 500);
+    const timeout2 = setTimeout(checkAvailability, 1000);
+    const timeout3 = setTimeout(checkAvailability, 2000);
+    const timeout4 = setTimeout(checkAvailability, 3000);
 
     return () => {
-      clearTimeout(timeout);
+      clearTimeout(timeout1);
       clearTimeout(timeout2);
+      clearTimeout(timeout3);
+      clearTimeout(timeout4);
     };
   }, []);
 

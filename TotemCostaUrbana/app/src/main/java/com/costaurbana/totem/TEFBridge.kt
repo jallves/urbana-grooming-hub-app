@@ -10,6 +10,9 @@ import org.json.JSONObject
  * 
  * Esta classe expõe métodos que podem ser chamados do JavaScript web
  * através do objeto global `window.TEF`
+ * 
+ * IMPORTANTE: O PayGo Integrado gerencia o pinpad internamente.
+ * Quando window.TEF existe e PayGo está instalado, está pronto para uso.
  */
 class TEFBridge(
     private val activity: MainActivity,
@@ -66,6 +69,7 @@ class TEFBridge(
 
     /**
      * Verifica o status do pinpad
+     * NOTA: Retorna status do PayGo, que gerencia o pinpad internamente
      * Chamado do JS: TEF.verificarPinpad()
      * @return JSON string com status do pinpad
      */
@@ -78,10 +82,10 @@ class TEFBridge(
             put("conectado", status.conectado)
             put("modelo", status.modelo ?: JSONObject.NULL)
             put("timestamp", System.currentTimeMillis())
+            put("info", "Pinpad gerenciado pelo PayGo Integrado")
         }
         
         Log.i(TAG, "verificarPinpad resultado: conectado=${status.conectado}, modelo=${status.modelo}")
-        Log.d(TAG, "verificarPinpad JSON: $result")
         return result.toString()
     }
 
@@ -171,5 +175,17 @@ class TEFBridge(
         val info = payGoService.getPayGoInfo()
         Log.d(TAG, "verificarPayGo resultado: $info")
         return info.toString()
+    }
+    
+    /**
+     * Verifica se o sistema está pronto para pagamentos
+     * Chamado do JS: TEF.isReady()
+     * @return boolean indicando se está pronto
+     */
+    @JavascriptInterface
+    fun isReady(): Boolean {
+        val status = payGoService.getPinpadStatus()
+        Log.d(TAG, "isReady chamado - resultado: ${status.conectado}")
+        return status.conectado
     }
 }
