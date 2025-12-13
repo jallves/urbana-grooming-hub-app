@@ -5,9 +5,40 @@
     <!-- Permissions -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    
+    <!-- IMPORTANTE: Permissão para consultar apps instalados (Android 11+) -->
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES"
+        tools:ignore="QueryAllPackagesPermission" />
 
     <!-- USB Host (opcional para pinpad) -->
     <uses-feature android:name="android.hardware.usb.host" android:required="false"/>
+
+    <!-- 
+        QUERIES: Declarar packages que precisamos consultar (Android 11+)
+        Obrigatório para detectar o PayGo Integrado
+    -->
+    <queries>
+        <!-- PayGo Integrado - Package CONFIRMADO pelo cliente -->
+        <package android:name="br.com.setis.clientepaygoweb.cert" />
+        <package android:name="br.com.setis.clientepaygoweb" />
+        <package android:name="br.com.setis.clientepaygoweb.hml" />
+        <package android:name="br.com.setis.interfaceautomacao" />
+        <package android:name="br.com.setis.interfaceautomacao.cert" />
+        <package android:name="br.com.setis.pgintegrado" />
+        <package android:name="br.com.setis.pgintegrado.cert" />
+        <package android:name="br.com.paygo.integrado" />
+        <package android:name="br.com.paygo.integrado.cert" />
+        <package android:name="br.com.paygo" />
+        <package android:name="br.com.paygo.cert" />
+        
+        <!-- Intent que o PayGo responde -->
+        <intent>
+            <action android:name="br.com.setis.payment.TRANSACTION" />
+        </intent>
+        <intent>
+            <action android:name="br.com.setis.interfaceautomacao.SERVICO" />
+        </intent>
+    </queries>
 
     <application
         android:allowBackup="false"
