@@ -433,6 +433,29 @@ class MainActivity : AppCompatActivity() {
     private fun startTotemWebView() {
         addLog("▶️ Starting Totem WebView...")
         
+        // Verificar conexão de internet antes de carregar
+        val connectivityManager = getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork
+        val capabilities = connectivityManager.getNetworkCapabilities(network)
+        
+        val isConnected = capabilities != null && (
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+            capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+        )
+        
+        if (!isConnected) {
+            addLog("❌ SEM CONEXÃO DE INTERNET!")
+            android.widget.Toast.makeText(
+                this,
+                "Sem conexão de internet. Verifique a conexão e tente novamente.",
+                android.widget.Toast.LENGTH_LONG
+            ).show()
+            return
+        }
+        
+        addLog("✅ Conexão de internet OK")
+        
         // Hide diagnostic screen, show loading
         diagnosticScreen.visibility = View.GONE
         loadingOverlay.visibility = View.VISIBLE
@@ -443,6 +466,11 @@ class MainActivity : AppCompatActivity() {
         
         // Load the PWA
         addLog("🌐 Loading URL: $PWA_URL")
+        addLog("🌐 WebView settings:")
+        addLog("   - JavaScript: ${webView.settings.javaScriptEnabled}")
+        addLog("   - DOM Storage: ${webView.settings.domStorageEnabled}")
+        addLog("   - Mixed Content: ${webView.settings.mixedContentMode}")
+        
         statusText.text = "Carregando..."
         webView.loadUrl(PWA_URL)
     }
@@ -494,10 +522,40 @@ class MainActivity : AppCompatActivity() {
                 super.onReceivedError(view, request, error)
                 if (request?.isForMainFrame == true) {
                     addLog("❌ Error loading page: ${error?.description}")
-                    statusText.text = "Erro ao carregar. Tocque para tentar novamente."
+                    addLog("❌ Error code: ${error?.errorCode}")
+                    statusText.text = "Erro ao carregar. Toque para tentar novamente."
                     loadingOverlay.setOnClickListener {
                         webView.reload()
                     }
+                }
+            }
+            
+            @android.annotation.SuppressLint("WebViewClientOnReceivedSslError")
+            override fun onReceivedSslError(
+                view: WebView?,
+                handler: android.webkit.SslErrorHandler?,
+                error: android.net.http.SslError?
+            ) {
+                addLog("⚠️ SSL Error: ${error?.primaryError}")
+                addLog("⚠️ SSL URL: ${error?.url}")
+                // Aceitar certificado para domínio de produção
+                if (error?.url?.contains("barbeariacostaurbana.com.br") == true) {
+                    addLog("✅ Aceitando SSL para domínio confiável")
+                    handler?.proceed()
+                } else {
+                    addLog("❌ Rejeitando SSL para domínio desconhecido")
+                    super.onReceivedSslError(view, handler, error)
+                }
+            }
+            
+            override fun onReceivedHttpError(
+                view: WebView?,
+                request: WebResourceRequest?,
+                errorResponse: android.webkit.WebResourceResponse?
+            ) {
+                super.onReceivedHttpError(view, request, errorResponse)
+                if (request?.isForMainFrame == true) {
+                    addLog("❌ HTTP Error: ${errorResponse?.statusCode} - ${errorResponse?.reasonPhrase}")
                 }
             }
 
@@ -506,7 +564,11 @@ class MainActivity : AppCompatActivity() {
                 request: WebResourceRequest?
             ): Boolean {
                 val url = request?.url?.toString() ?: return false
-                if (url.contains("lovableproject.com") || url.contains("lovable.app")) {
+                addLog("🔗 URL loading: $url")
+                // Permitir todos os URLs do domínio
+                if (url.contains("barbeariacostaurbana.com.br") ||
+                    url.contains("lovableproject.com") || 
+                    url.contains("lovable.app")) {
                     return false
                 }
                 return false
