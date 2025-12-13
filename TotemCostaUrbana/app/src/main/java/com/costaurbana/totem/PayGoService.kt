@@ -36,40 +36,22 @@ class PayGoService(private val context: Context) {
         const val ACTION_CONFIRMATION = "br.com.setis.confirmation.TRANSACTION"
         const val ACTION_RESPONSE = "br.com.setis.interfaceautomacao.SERVICO"
         
-        // Package names do PayGo Integrado (incluindo versões de certificação/homologação)
+        // Package names do PayGo Integrado (ordem de prioridade)
+        // PRIMEIRO: Package confirmado pelo cliente (CERT/Homologação)
         val PAYGO_PACKAGES = listOf(
-            // PayGo Integrado oficial (Google Play)
-            "br.com.setis.clientepaygoweb",
+            // ✅ Package CONFIRMADO - PGIntegrado Android CERT v4.1.50.5
             "br.com.setis.clientepaygoweb.cert",
+            // Outros packages conhecidos
+            "br.com.setis.clientepaygoweb",
             "br.com.setis.clientepaygoweb.hml",
-            // PGIntegrado Android (nome do app no screenshot)
-            "com.pgintegrado.android.cert",
-            "com.pgintegrado.android",
-            "com.pgintegrado.cert",
-            "com.pgintegrado",
-            // Variações comuns
-            "br.com.setis.pgintegradoandroid",
-            "br.com.setis.pgintegradoandroid.cert",
-            "com.setis.pgintegrado",
-            "com.setis.pgintegrado.cert",
-            // Setis / PayGo - Produção
-            "br.com.setis.payment.integrado",
             "br.com.setis.interfaceautomacao",
-            "br.com.setis.pgintegrado",
-            "br.com.paygo.integrado",
-            "br.com.paygo",
-            "br.com.setis.payment",
-            // Certificação/Homologação (CERT)
-            "br.com.setis.payment.integrado.cert",
             "br.com.setis.interfaceautomacao.cert",
+            "br.com.setis.pgintegrado",
             "br.com.setis.pgintegrado.cert",
+            "br.com.paygo.integrado",
             "br.com.paygo.integrado.cert",
-            "br.com.paygo.cert",
-            "br.com.setis.payment.cert",
-            // Homologação (HML)
-            "br.com.setis.payment.integrado.hml",
-            "br.com.paygo.integrado.hml",
-            "br.com.paygo.hml"
+            "br.com.paygo",
+            "br.com.paygo.cert"
         )
         
         // Currency code Brasil (ISO4217)
