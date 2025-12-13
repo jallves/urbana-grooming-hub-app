@@ -38,11 +38,20 @@ class PayGoService(private val context: Context) {
         
         // Package names do PayGo Integrado (incluindo versões de certificação/homologação)
         val PAYGO_PACKAGES = listOf(
+            // PayGo Integrado oficial (Google Play)
+            "br.com.setis.clientepaygoweb",
+            "br.com.setis.clientepaygoweb.cert",
+            "br.com.setis.clientepaygoweb.hml",
             // PGIntegrado Android (nome do app no screenshot)
             "com.pgintegrado.android.cert",
             "com.pgintegrado.android",
             "com.pgintegrado.cert",
             "com.pgintegrado",
+            // Variações comuns
+            "br.com.setis.pgintegradoandroid",
+            "br.com.setis.pgintegradoandroid.cert",
+            "com.setis.pgintegrado",
+            "com.setis.pgintegrado.cert",
             // Setis / PayGo - Produção
             "br.com.setis.payment.integrado",
             "br.com.setis.interfaceautomacao",
