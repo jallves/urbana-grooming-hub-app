@@ -402,8 +402,15 @@ class MainActivity : AppCompatActivity() {
             logMessages.append(lines.takeLast(50).joinToString("\n"))
         }
         
+        // Verificar se tvLogOutput foi inicializado antes de usar
         runOnUiThread {
-            tvLogOutput.text = logMessages.toString()
+            try {
+                if (::tvLogOutput.isInitialized) {
+                    tvLogOutput.text = logMessages.toString()
+                }
+            } catch (e: Exception) {
+                // Ignorar erro se view ainda não está pronta
+            }
         }
     }
 
