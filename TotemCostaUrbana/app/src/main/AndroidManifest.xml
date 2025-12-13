@@ -42,12 +42,13 @@
                 android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
                 android:resource="@xml/device_filter"/>
 
-            <!-- PayGo Integrado Response Handler -->
+            <!-- PayGo Integrado Response Handler (Integração Direta via URI) -->
+            <!-- Ref: Documentação oficial PayGo - seção 3.4.1 Resposta -->
             <intent-filter android:label="filter_app_payment">
                 <action android:name="br.com.setis.interfaceautomacao.SERVICO"/>
                 <category android:name="android.intent.category.DEFAULT"/>
                 <category android:name="android.intent.category.BROWSABLE"/>
-                
+                <!-- Schemes para receber resposta de payment e resolve -->
                 <data android:scheme="app" android:host="payment"/>
                 <data android:scheme="app" android:host="resolve"/>
             </intent-filter>
