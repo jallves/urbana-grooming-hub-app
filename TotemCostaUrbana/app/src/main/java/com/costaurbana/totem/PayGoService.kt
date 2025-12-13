@@ -370,12 +370,18 @@ class PayGoService(private val context: Context) {
             val customizationUri = buildCustomizationUri()
             addLog("[TXN] Customization URI: $customizationUri")
             
-            // Criar Intent conforme documentação PayGo
+            // Criar Intent conforme documentação oficial PayGo (Integração Direta via URI)
+            // Ref: https://github.com/nicup/integracao-direta
             val intent = Intent(ACTION_TRANSACTION, transactionUri).apply {
-                putExtra("posData", posDataUri.toString())
-                putExtra("posCustomization", customizationUri.toString())
+                // Bundle Extra dos Dados Automação (chave: "DadosAutomacao" conforme doc)
+                putExtra("DadosAutomacao", posDataUri.toString())
+                // Bundle Extra da Personalização (chave: "Personalizacao" conforme doc)
+                putExtra("Personalizacao", customizationUri.toString())
+                // Bundle Extra do nome do pacote da aplicação
                 putExtra("package", context.packageName)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                // Flags obrigatórias conforme documentação:
+                // FLAG_ACTIVITY_NEW_TASK + FLAG_ACTIVITY_CLEAR_TASK
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             
             addLog("[TXN] Intent criado com action: $ACTION_TRANSACTION")
