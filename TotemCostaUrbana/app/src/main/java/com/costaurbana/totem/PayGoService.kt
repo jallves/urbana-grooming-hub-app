@@ -38,15 +38,22 @@ class PayGoService(private val context: Context) {
         
         // Package names do PayGo Integrado (incluindo versões de certificação/homologação)
         val PAYGO_PACKAGES = listOf(
-            // Produção
+            // PGIntegrado Android (nome do app no screenshot)
+            "com.pgintegrado.android.cert",
+            "com.pgintegrado.android",
+            "com.pgintegrado.cert",
+            "com.pgintegrado",
+            // Setis / PayGo - Produção
             "br.com.setis.payment.integrado",
             "br.com.setis.interfaceautomacao",
+            "br.com.setis.pgintegrado",
             "br.com.paygo.integrado",
             "br.com.paygo",
             "br.com.setis.payment",
             // Certificação/Homologação (CERT)
             "br.com.setis.payment.integrado.cert",
             "br.com.setis.interfaceautomacao.cert",
+            "br.com.setis.pgintegrado.cert",
             "br.com.paygo.integrado.cert",
             "br.com.paygo.cert",
             "br.com.setis.payment.cert",
@@ -106,7 +113,7 @@ class PayGoService(private val context: Context) {
         
         val pm = context.packageManager
         
-        // Tentar encontrar o PayGo Integrado (lista inclui versões CERT e HML)
+        // Primeiro, tentar encontrar pelos packages conhecidos
         for (pkg in PAYGO_PACKAGES) {
             try {
                 val info = pm.getPackageInfo(pkg, 0)
@@ -134,7 +141,7 @@ class PayGoService(private val context: Context) {
             }
         }
         
-        // Verificar se há algum app que responde ao Intent de transação
+        // Segundo, verificar se há algum app que responde ao Intent de transação
         val testIntent = Intent(ACTION_TRANSACTION)
         val resolveInfos = pm.queryIntentActivities(testIntent, 0)
         
@@ -146,8 +153,10 @@ class PayGoService(private val context: Context) {
                 addLog("[PAYGO]    - $appName ($pkgName)")
                 payGoInstalled = true
                 payGoPackage = pkgName
+                payGoVersion = try {
+                    pm.getPackageInfo(pkgName, 0).versionName
+                } catch (e: Exception) { "desconhecida" }
                 
-                // Tentar detectar ambiente pelo nome
                 val isCert = appName.contains("cert", ignoreCase = true) || 
                              appName.contains("homolog", ignoreCase = true) ||
                              pkgName.contains("cert", ignoreCase = true)
@@ -156,9 +165,43 @@ class PayGoService(private val context: Context) {
             return true
         }
         
+        // Terceiro, buscar qualquer app instalado que contenha palavras-chave
+        addLog("[PAYGO] Buscando apps TEF instalados no dispositivo...")
+        val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment")
+        val installedApps = pm.getInstalledApplications(0)
+        
+        for (appInfo in installedApps) {
+            val pkgName = appInfo.packageName.lowercase()
+            val appName = appInfo.loadLabel(pm).toString().lowercase()
+            
+            if (keywords.any { pkgName.contains(it) || appName.contains(it) }) {
+                addLog("[PAYGO] 📦 App TEF encontrado:")
+                addLog("[PAYGO]    Nome: ${appInfo.loadLabel(pm)}")
+                addLog("[PAYGO]    Package: ${appInfo.packageName}")
+                
+                // Verificar se este app responde ao Intent de pagamento
+                val checkIntent = Intent(ACTION_TRANSACTION)
+                checkIntent.setPackage(appInfo.packageName)
+                val canHandle = pm.queryIntentActivities(checkIntent, 0).isNotEmpty()
+                
+                if (canHandle) {
+                    payGoInstalled = true
+                    payGoPackage = appInfo.packageName
+                    payGoVersion = try {
+                        pm.getPackageInfo(appInfo.packageName, 0).versionName
+                    } catch (e: Exception) { "desconhecida" }
+                    
+                    addLog("[PAYGO] ✅ Este app aceita Intent de pagamento!")
+                    return true
+                } else {
+                    addLog("[PAYGO]    ⚠️ Não responde ao Intent de pagamento")
+                }
+            }
+        }
+        
         payGoInstalled = false
         payGoPackage = null
-        addLog("[PAYGO] ❌ PayGo NÃO está instalado!")
+        addLog("[PAYGO] ❌ PayGo NÃO está instalado ou não configurado!")
         addLog("[PAYGO] Por favor, instale o PayGo Integrado (versão CERT para homologação)")
         addLog("[PAYGO] Packages verificados:")
         PAYGO_PACKAGES.forEach { pkg ->

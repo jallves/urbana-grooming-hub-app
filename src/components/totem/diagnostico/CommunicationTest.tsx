@@ -112,6 +112,13 @@ export const CommunicationTest: React.FC<CommunicationTestProps> = ({ onTestComp
       direction: 'js-to-android', 
       status: 'pending' 
     },
+    { 
+      id: 'listar-apps', 
+      name: 'listarAppsInstalados()', 
+      description: 'Lista apps TEF instalados e detecta PayGo',
+      direction: 'js-to-android', 
+      status: 'pending' 
+    },
   ];
 
   const runAllTests = async () => {
@@ -414,6 +421,68 @@ export const CommunicationTest: React.FC<CommunicationTestProps> = ({ onTestComp
           success: true,
           message: `${logs.length} log(s) retornado(s)`,
           rawResponse: logs.slice(0, 3).join('\n') || 'Nenhum log'
+        };
+      } catch (e: any) {
+        return {
+          success: false,
+          message: `Erro: ${e.message}`,
+          rawResponse: e.stack || e.message
+        };
+      }
+    });
+
+    // Teste 11: listarAppsInstalados()
+    await runTest('listar-apps', async () => {
+      const tef = (window as any).TEF;
+      if (!tef?.listarAppsInstalados) {
+        return { 
+          success: false, 
+          warning: true,
+          message: 'Método não disponível (atualize o APK)',
+          rawResponse: 'O método listarAppsInstalados() não existe. Recompile o APK com o código mais recente.'
+        };
+      }
+      
+      try {
+        const rawResult = tef.listarAppsInstalados();
+        let parsed: any;
+        
+        try {
+          parsed = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+        } catch {
+          return {
+            success: false,
+            message: 'Resposta não é JSON válido',
+            rawResponse: String(rawResult).substring(0, 200)
+          };
+        }
+        
+        const paymentApps = parsed.paymentApps || [];
+        const relatedApps = parsed.relatedApps || [];
+        
+        if (paymentApps.length > 0) {
+          const app = paymentApps[0];
+          return {
+            success: true,
+            message: `PayGo encontrado: ${app.appName || app.packageName}`,
+            rawResponse: `Package: ${app.packageName}\nTotal apps relacionados: ${relatedApps.length}`
+          };
+        }
+        
+        if (relatedApps.length > 0) {
+          const appsList = relatedApps.map((a: any) => `${a.appName} (${a.packageName})`).join('\n');
+          return {
+            success: false,
+            warning: true,
+            message: `${relatedApps.length} app(s) relacionado(s), mas nenhum responde ao Intent`,
+            rawResponse: appsList
+          };
+        }
+        
+        return {
+          success: false,
+          message: 'Nenhum app PayGo/TEF encontrado',
+          rawResponse: `Total apps no dispositivo: ${parsed.totalInstalledApps || 'desconhecido'}`
         };
       } catch (e: any) {
         return {

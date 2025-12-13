@@ -1,8 +1,10 @@
 package com.costaurbana.totem
 
+import android.content.Intent
 import android.util.Log
 import android.webkit.JavascriptInterface
 import android.webkit.WebView
+import org.json.JSONArray
 import org.json.JSONObject
 
 /**
@@ -187,5 +189,85 @@ class TEFBridge(
         val status = payGoService.getPinpadStatus()
         Log.d(TAG, "isReady chamado - resultado: ${status.conectado}")
         return status.conectado
+    }
+    
+    /**
+     * Lista todos os apps instalados que podem ser relacionados a TEF/pagamentos
+     * APENAS PARA DEBUG - Ajuda a identificar o package name correto do PayGo
+     * Chamado do JS: TEF.listarAppsInstalados()
+     * @return JSON string com lista de apps
+     */
+    @JavascriptInterface
+    fun listarAppsInstalados(): String {
+        Log.d(TAG, "listarAppsInstalados chamado")
+        
+        val pm = activity.packageManager
+        val result = JSONObject()
+        
+        try {
+            // Listar apps que respondem ao Intent de transação PayGo
+            val transactionIntent = Intent("br.com.setis.payment.TRANSACTION")
+            val transactionApps = pm.queryIntentActivities(transactionIntent, 0)
+            
+            val paymentAppsArray = JSONArray()
+            for (info in transactionApps) {
+                paymentAppsArray.put(JSONObject().apply {
+                    put("packageName", info.activityInfo.packageName)
+                    put("appName", info.activityInfo.applicationInfo.loadLabel(pm).toString())
+                    put("activityName", info.activityInfo.name)
+                })
+            }
+            result.put("paymentApps", paymentAppsArray)
+            
+            // Buscar apps com palavras-chave relacionadas
+            val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment", "pag")
+            val installedApps = pm.getInstalledApplications(0)
+            
+            val relatedAppsArray = JSONArray()
+            for (appInfo in installedApps) {
+                val pkgName = appInfo.packageName.lowercase()
+                val appName = appInfo.loadLabel(pm).toString().lowercase()
+                
+                if (keywords.any { pkgName.contains(it) || appName.contains(it) }) {
+                    val version = try {
+                        pm.getPackageInfo(appInfo.packageName, 0).versionName
+                    } catch (e: Exception) { "desconhecida" }
+                    
+                    relatedAppsArray.put(JSONObject().apply {
+                        put("packageName", appInfo.packageName)
+                        put("appName", appInfo.loadLabel(pm).toString())
+                        put("version", version)
+                    })
+                }
+            }
+            result.put("relatedApps", relatedAppsArray)
+            
+            // Contar total de apps
+            result.put("totalInstalledApps", installedApps.size)
+            result.put("timestamp", System.currentTimeMillis())
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao listar apps", e)
+            result.put("error", e.message)
+        }
+        
+        Log.d(TAG, "listarAppsInstalados resultado: $result")
+        return result.toString()
+    }
+    
+    /**
+     * Força uma nova verificação do PayGo
+     * Chamado do JS: TEF.revalidarPayGo()
+     * @return JSON string com resultado da validação
+     */
+    @JavascriptInterface
+    fun revalidarPayGo(): String {
+        Log.d(TAG, "revalidarPayGo chamado")
+        
+        val found = payGoService.checkPayGoInstallation()
+        val info = payGoService.getPayGoInfo()
+        
+        Log.d(TAG, "revalidarPayGo resultado: encontrado=$found, info=$info")
+        return info.toString()
     }
 }
