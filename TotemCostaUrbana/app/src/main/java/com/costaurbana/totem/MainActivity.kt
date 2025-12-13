@@ -41,8 +41,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val TAG = "TotemMain"
         
-        // URL do Totem Web
-        private const val PWA_URL = "https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/totem"
+        // URL do Totem Web - Produção
+        private const val PWA_URL = "https://barbeariacostaurbana.com.br/totem"
         
         // Auto-start delay
         private const val AUTO_START_DELAY = 10000L // 10 seconds
