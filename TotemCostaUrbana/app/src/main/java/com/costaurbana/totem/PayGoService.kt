@@ -36,22 +36,36 @@ class PayGoService(private val context: Context) {
         const val ACTION_CONFIRMATION = "br.com.setis.confirmation.TRANSACTION"
         const val ACTION_RESPONSE = "br.com.setis.interfaceautomacao.SERVICO"
         
-        // Package names do PayGo Integrado (várias possibilidades)
+        // Package names do PayGo Integrado (incluindo versões de certificação/homologação)
         val PAYGO_PACKAGES = listOf(
+            // Produção
             "br.com.setis.payment.integrado",
             "br.com.setis.interfaceautomacao",
             "br.com.paygo.integrado",
             "br.com.paygo",
-            "br.com.setis.payment"
+            "br.com.setis.payment",
+            // Certificação/Homologação (CERT)
+            "br.com.setis.payment.integrado.cert",
+            "br.com.setis.interfaceautomacao.cert",
+            "br.com.paygo.integrado.cert",
+            "br.com.paygo.cert",
+            "br.com.setis.payment.cert",
+            // Homologação (HML)
+            "br.com.setis.payment.integrado.hml",
+            "br.com.paygo.integrado.hml",
+            "br.com.paygo.hml"
         )
         
         // Currency code Brasil (ISO4217)
         const val CURRENCY_CODE_BRL = "986"
         
-        // Dados da Automação Comercial
+        // Dados da Automação Comercial - HOMOLOGAÇÃO
         const val POS_NAME = "TotemCostaUrbana"
-        const val POS_VERSION = "1.0.0"
+        const val POS_VERSION = "1.0.0-CERT" // Versão de certificação
         const val POS_DEVELOPER = "CostaUrbana"
+        
+        // Flag de ambiente
+        const val IS_HOMOLOGATION = true // Alterar para false em produção
     }
 
     // Status do PayGo e pinpad
@@ -83,23 +97,37 @@ class PayGoService(private val context: Context) {
      * Verifica se o PayGo Integrado está instalado
      * Se o PayGo estiver instalado, consideramos o pinpad como "disponível"
      * porque o PayGo gerencia o pinpad internamente
+     * 
+     * HOMOLOGAÇÃO: Suporta tanto versões de produção quanto de certificação
      */
     fun checkPayGoInstallation(): Boolean {
         addLog("[PAYGO] Verificando instalação do PayGo...")
+        addLog("[PAYGO] Modo: ${if (IS_HOMOLOGATION) "HOMOLOGAÇÃO/CERTIFICAÇÃO" else "PRODUÇÃO"}")
         
         val pm = context.packageManager
         
-        // Tentar encontrar o PayGo Integrado
+        // Tentar encontrar o PayGo Integrado (lista inclui versões CERT e HML)
         for (pkg in PAYGO_PACKAGES) {
             try {
                 val info = pm.getPackageInfo(pkg, 0)
                 payGoInstalled = true
                 payGoPackage = pkg
                 payGoVersion = info.versionName
-                addLog("[PAYGO] ✅ PayGo encontrado!")
+                
+                val isCertPackage = pkg.contains("cert", ignoreCase = true) || pkg.contains("hml", ignoreCase = true)
+                val ambiente = if (isCertPackage) "CERTIFICAÇÃO" else "PRODUÇÃO"
+                
+                addLog("[PAYGO] ✅ PayGo encontrado! ($ambiente)")
                 addLog("[PAYGO]    Package: $pkg")
                 addLog("[PAYGO]    Versão: ${info.versionName}")
                 addLog("[PAYGO]    VersionCode: ${info.longVersionCode}")
+                
+                if (IS_HOMOLOGATION && !isCertPackage) {
+                    addLog("[PAYGO] ⚠️ ATENÇÃO: App está em modo HOMOLOGAÇÃO mas PayGo é de PRODUÇÃO")
+                } else if (!IS_HOMOLOGATION && isCertPackage) {
+                    addLog("[PAYGO] ⚠️ ATENÇÃO: App está em PRODUÇÃO mas PayGo é de CERTIFICAÇÃO")
+                }
+                
                 return true
             } catch (e: PackageManager.NameNotFoundException) {
                 // Continuar verificando outros packages
@@ -118,6 +146,12 @@ class PayGoService(private val context: Context) {
                 addLog("[PAYGO]    - $appName ($pkgName)")
                 payGoInstalled = true
                 payGoPackage = pkgName
+                
+                // Tentar detectar ambiente pelo nome
+                val isCert = appName.contains("cert", ignoreCase = true) || 
+                             appName.contains("homolog", ignoreCase = true) ||
+                             pkgName.contains("cert", ignoreCase = true)
+                addLog("[PAYGO]    Ambiente detectado: ${if (isCert) "CERTIFICAÇÃO" else "PRODUÇÃO"}")
             }
             return true
         }
@@ -125,7 +159,11 @@ class PayGoService(private val context: Context) {
         payGoInstalled = false
         payGoPackage = null
         addLog("[PAYGO] ❌ PayGo NÃO está instalado!")
-        addLog("[PAYGO] Por favor, instale o PayGo Integrado")
+        addLog("[PAYGO] Por favor, instale o PayGo Integrado (versão CERT para homologação)")
+        addLog("[PAYGO] Packages verificados:")
+        PAYGO_PACKAGES.forEach { pkg ->
+            addLog("[PAYGO]    - $pkg")
+        }
         return false
     }
 
@@ -133,10 +171,16 @@ class PayGoService(private val context: Context) {
      * Retorna informações detalhadas sobre o PayGo
      */
     fun getPayGoInfo(): JSONObject {
+        val isCertPackage = payGoPackage?.let { 
+            it.contains("cert", ignoreCase = true) || it.contains("hml", ignoreCase = true)
+        } ?: false
+        
         return JSONObject().apply {
             put("installed", payGoInstalled)
             put("version", payGoVersion ?: "desconhecido")
             put("packageName", payGoPackage ?: "não encontrado")
+            put("ambiente", if (isCertPackage) "CERTIFICAÇÃO" else if (payGoInstalled) "PRODUÇÃO" else "N/A")
+            put("appModoHomologacao", IS_HOMOLOGATION)
             put("packages_checked", JSONArray(PAYGO_PACKAGES))
         }
     }
