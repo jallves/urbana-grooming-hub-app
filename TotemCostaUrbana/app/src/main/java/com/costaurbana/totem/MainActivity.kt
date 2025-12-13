@@ -88,17 +88,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         
         try {
-            addLog("=== TotemCostaUrbana Starting ===")
-            addLog("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
-            addLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
-            
             // Keep screen on
             window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
 
             setContentView(R.layout.activity_main)
 
-            // Initialize all views
+            // Initialize all views FIRST before any addLog calls
             initializeViews()
+            
+            // NOW we can use addLog safely
+            addLog("=== TotemCostaUrbana Starting ===")
+            addLog("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")
+            addLog("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
 
             // Initialize PayGo Service (gerencia pinpad internamente)
             payGoService = PayGoService(this)
