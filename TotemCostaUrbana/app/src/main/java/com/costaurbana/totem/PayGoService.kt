@@ -175,18 +175,41 @@ class PayGoService(private val context: Context) {
         }
         
         // Terceiro, buscar qualquer app instalado que contenha palavras-chave
+        // IMPORTANTE: Buscar pelo NOME do app também (PGIntegrado Android CERT)
         addLog("[PAYGO] Buscando apps TEF instalados no dispositivo...")
-        val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment")
+        val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment", "integrado")
         val installedApps = pm.getInstalledApplications(0)
         
         for (appInfo in installedApps) {
             val pkgName = appInfo.packageName.lowercase()
             val appName = appInfo.loadLabel(pm).toString().lowercase()
             
-            if (keywords.any { pkgName.contains(it) || appName.contains(it) }) {
+            // Detectar pelo nome "PGIntegrado" que aparece no Settings do Android
+            val isPGIntegrado = appName.contains("pgintegrado") || 
+                                appName.contains("pg integrado") ||
+                                appName.contains("paygo") ||
+                                pkgName.contains("pgintegrado") ||
+                                pkgName.contains("paygo") ||
+                                pkgName.contains("setis")
+            
+            if (isPGIntegrado || keywords.any { pkgName.contains(it) || appName.contains(it) }) {
                 addLog("[PAYGO] 📦 App TEF encontrado:")
                 addLog("[PAYGO]    Nome: ${appInfo.loadLabel(pm)}")
                 addLog("[PAYGO]    Package: ${appInfo.packageName}")
+                
+                // Para o PGIntegrado, aceitar mesmo sem verificar Intent (o app gerencia internamente)
+                if (appName.contains("pgintegrado") || appName.contains("pg integrado")) {
+                    payGoInstalled = true
+                    payGoPackage = appInfo.packageName
+                    payGoVersion = try {
+                        pm.getPackageInfo(appInfo.packageName, 0).versionName
+                    } catch (e: Exception) { "desconhecida" }
+                    
+                    val isCert = appName.contains("cert") || pkgName.contains("cert")
+                    addLog("[PAYGO] ✅ PGIntegrado detectado pelo nome!")
+                    addLog("[PAYGO]    Ambiente: ${if (isCert) "CERTIFICAÇÃO" else "PRODUÇÃO"}")
+                    return true
+                }
                 
                 // Verificar se este app responde ao Intent de pagamento
                 val checkIntent = Intent(ACTION_TRANSACTION)

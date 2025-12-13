@@ -63,8 +63,8 @@ const TotemPaymentCard: React.FC = () => {
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     // Verificar se TEF está disponível
     if (!isAndroidAvailable || !isPinpadConnected) {
-      toast.error('Pinpad não conectado', {
-        description: 'Verifique a conexão com a maquininha'
+      toast.error('PayGo não detectado', {
+        description: 'Verifique se o aplicativo PayGo está instalado'
       });
       return;
     }
@@ -111,7 +111,7 @@ const TotemPaymentCard: React.FC = () => {
       if (!success) {
         console.error('❌ [CARD] Falha ao iniciar TEF');
         toast.error('Erro ao iniciar pagamento', {
-          description: 'Verifique a conexão com o pinpad'
+          description: 'Verifique se o PayGo está funcionando corretamente'
         });
         setProcessing(false);
         setPaymentType(null);
@@ -221,9 +221,9 @@ const TotemPaymentCard: React.FC = () => {
         <div className="flex-1 flex items-center justify-center z-10">
           <Card className="max-w-lg p-8 bg-black/50 backdrop-blur-xl border-2 border-red-500/50 text-center">
             <WifiOff className="w-20 h-20 text-red-500 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-white mb-4">Pinpad Não Conectado</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">PayGo Não Detectado</h2>
             <p className="text-gray-300 mb-6">
-              A maquininha de cartão não está conectada. Verifique a conexão USB e tente novamente.
+              O aplicativo PayGo Integrado não foi detectado. Verifique se está instalado e configurado corretamente.
             </p>
             <div className="space-y-3">
               <Button 
@@ -278,7 +278,7 @@ const TotemPaymentCard: React.FC = () => {
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-green-400 mt-0.5 flex items-center justify-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            Pinpad conectado
+            PayGo conectado
           </p>
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
@@ -358,7 +358,7 @@ const TotemPaymentCard: React.FC = () => {
                       <div className="w-2 h-2 bg-green-500 rounded-full" />
                     </div>
                     <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold">
-                      Aguardando pagamento no pinpad...
+                      Aguardando pagamento no PayGo...
                     </p>
                   </div>
                 </div>
