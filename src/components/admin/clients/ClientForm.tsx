@@ -8,6 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const clientSchema = z.object({
   nome: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
@@ -27,6 +37,8 @@ interface ClientFormProps {
 const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingData, setIsLoadingData] = useState(!!clientId);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingData, setPendingData] = useState<ClientFormData | null>(null);
 
   const form = useForm<ClientFormData>({
     resolver: zodResolver(clientSchema),
@@ -72,13 +84,21 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
     }
   };
 
-  const onSubmit = async (data: ClientFormData) => {
+  const handleFormSubmit = (data: ClientFormData) => {
+    // Para edição, mostrar confirmação. Para criação, executar direto.
+    if (clientId) {
+      setPendingData(data);
+      setShowConfirmDialog(true);
+    } else {
+      executeSubmit(data);
+    }
+  };
+
+  const executeSubmit = async (data: ClientFormData) => {
     try {
       setIsLoading(true);
-      console.log('Iniciando atualização do cliente:', { clientId, data });
 
       if (clientId) {
-        // Atualizar client_profiles (tabela real)
         const updateData = {
           nome: data.nome,
           email: data.email || null,
@@ -87,18 +107,13 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           updated_at: new Date().toISOString(),
         };
         
-        console.log('Dados a serem atualizados:', updateData);
-        
-        const { data: updatedData, error, count } = await supabase
+        const { data: updatedData, error } = await supabase
           .from('client_profiles')
           .update(updateData)
           .eq('id', clientId)
           .select();
 
-        console.log('Resultado da atualização:', { updatedData, error, count });
-
         if (error) {
-          console.error('Erro Supabase:', error);
           throw error;
         }
         
@@ -178,78 +193,107 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
   }
 
   return (
-    <form
-      onSubmit={form.handleSubmit(onSubmit)}
-      className="space-y-6 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8"
-    >
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="nome">Nome *</Label>
-          <Input id="nome" placeholder="Nome completo" {...form.register('nome')} />
-          {form.formState.errors.nome && (
-            <p className="text-sm text-red-500">{form.formState.errors.nome.message}</p>
-          )}
+    <>
+      <form
+        onSubmit={form.handleSubmit(handleFormSubmit)}
+        className="space-y-6 w-full max-w-3xl mx-auto px-4 sm:px-6 lg:px-8"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="nome">Nome *</Label>
+            <Input id="nome" placeholder="Nome completo" {...form.register('nome')} />
+            {form.formState.errors.nome && (
+              <p className="text-sm text-red-500">{form.formState.errors.nome.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">E-mail</Label>
+            <Input
+              id="email"
+              type="email"
+              placeholder="email@exemplo.com"
+              {...form.register('email')}
+            />
+            {form.formState.errors.email && (
+              <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">WhatsApp *</Label>
+            <Input
+              id="whatsapp"
+              placeholder="(11) 99999-9999"
+              {...form.register('whatsapp')}
+            />
+            {form.formState.errors.whatsapp && (
+              <p className="text-sm text-red-500">{form.formState.errors.whatsapp.message}</p>
+            )}
+            <p className="text-xs text-muted-foreground">
+              Cada cliente deve ter um número único. Este número será usado no Totem.
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
+            <Input id="data_nascimento" type="date" {...form.register('data_nascimento')} />
+            {form.formState.errors.data_nascimento && (
+              <p className="text-sm text-red-500">{form.formState.errors.data_nascimento.message}</p>
+            )}
+          </div>
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="email">E-mail</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="email@exemplo.com"
-            {...form.register('email')}
-          />
-          {form.formState.errors.email && (
-            <p className="text-sm text-red-500">{form.formState.errors.email.message}</p>
-          )}
+        <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+            className="w-full sm:w-auto"
+          >
+            Cancelar
+          </Button>
+          <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
+            {isLoading ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                {clientId ? 'Atualizando...' : 'Criando...'}
+              </>
+            ) : (
+              clientId ? 'Atualizar Cliente' : 'Criar Cliente'
+            )}
+          </Button>
         </div>
+      </form>
 
-        <div className="space-y-2">
-          <Label htmlFor="whatsapp">WhatsApp *</Label>
-          <Input
-            id="whatsapp"
-            placeholder="(11) 99999-9999"
-            {...form.register('whatsapp')}
-          />
-          {form.formState.errors.whatsapp && (
-            <p className="text-sm text-red-500">{form.formState.errors.whatsapp.message}</p>
-          )}
-          <p className="text-xs text-muted-foreground">
-            Cada cliente deve ter um número único. Este número será usado no Totem.
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
-          <Input id="data_nascimento" type="date" {...form.register('data_nascimento')} />
-          {form.formState.errors.data_nascimento && (
-            <p className="text-sm text-red-500">{form.formState.errors.data_nascimento.message}</p>
-          )}
-        </div>
-      </div>
-
-      <div className="flex flex-col sm:flex-row justify-end gap-3 sm:gap-4">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={onCancel}
-          disabled={isLoading}
-          className="w-full sm:w-auto"
-        >
-          Cancelar
-        </Button>
-        <Button type="submit" disabled={isLoading} className="w-full sm:w-auto">
-          {isLoading ? (
-            <>
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-              {clientId ? 'Atualizando...' : 'Criando...'}
-            </>
-          ) : (
-            clientId ? 'Atualizar Cliente' : 'Criar Cliente'
-          )}
-        </Button>
-      </div>
-    </form>
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar alteração</AlertDialogTitle>
+            <AlertDialogDescription>
+              Tem certeza que deseja alterar os dados deste cliente? Esta ação irá atualizar as informações no sistema.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setPendingData(null)}>
+              Cancelar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (pendingData) {
+                  executeSubmit(pendingData);
+                  setPendingData(null);
+                }
+                setShowConfirmDialog(false);
+              }}
+            >
+              Confirmar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 };
 
