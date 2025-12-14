@@ -55,15 +55,15 @@ const actionIcons: Record<string, typeof Eye> = {
 };
 
 const actionColors: Record<string, string> = {
-  view: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
-  create: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
-  update: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
-  delete: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
-  login: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
-  logout: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
-  cancel: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
-  complete: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
-  absent: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
+  view: 'bg-blue-600 text-white',
+  create: 'bg-green-600 text-white',
+  update: 'bg-amber-500 text-white',
+  delete: 'bg-red-600 text-white',
+  login: 'bg-purple-600 text-white',
+  logout: 'bg-gray-600 text-white',
+  cancel: 'bg-orange-600 text-white',
+  complete: 'bg-emerald-600 text-white',
+  absent: 'bg-slate-600 text-white',
 };
 
 const entityLabels: Record<string, string> = {
@@ -342,67 +342,67 @@ export const SecurityLogViewer = () => {
 
       {/* Estatísticas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card className="bg-blue-50 dark:bg-blue-950/30">
+        <Card className="bg-blue-600 border-blue-700">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <Eye className="h-5 w-5 text-white" />
               <div>
-                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                <p className="text-2xl font-bold text-white">
                   {logs.filter(l => l.action === 'view').length}
                 </p>
-                <p className="text-xs text-blue-600 dark:text-blue-400">Visualizações</p>
+                <p className="text-xs text-blue-100">Visualizações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50 dark:bg-green-950/30">
+        <Card className="bg-green-600 border-green-700">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <Plus className="h-5 w-5 text-white" />
               <div>
-                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                <p className="text-2xl font-bold text-white">
                   {logs.filter(l => l.action === 'create').length}
                 </p>
-                <p className="text-xs text-green-600 dark:text-green-400">Criações</p>
+                <p className="text-xs text-green-100">Criações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-amber-50 dark:bg-amber-950/30">
+        <Card className="bg-amber-500 border-amber-600">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Edit className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+              <Edit className="h-5 w-5 text-white" />
               <div>
-                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
+                <p className="text-2xl font-bold text-white">
                   {logs.filter(l => l.action === 'update').length}
                 </p>
-                <p className="text-xs text-amber-600 dark:text-amber-400">Atualizações</p>
+                <p className="text-xs text-amber-100">Atualizações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-red-50 dark:bg-red-950/30">
+        <Card className="bg-red-600 border-red-700">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
+              <Trash2 className="h-5 w-5 text-white" />
               <div>
-                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                <p className="text-2xl font-bold text-white">
                   {logs.filter(l => l.action === 'delete').length}
                 </p>
-                <p className="text-xs text-red-600 dark:text-red-400">Exclusões</p>
+                <p className="text-xs text-red-100">Exclusões</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-orange-50 dark:bg-orange-950/30">
+        <Card className="bg-orange-600 border-orange-700">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <XCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <XCircle className="h-5 w-5 text-white" />
               <div>
-                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                <p className="text-2xl font-bold text-white">
                   {logs.filter(l => l.action === 'cancel' || l.action === 'complete' || l.action === 'absent').length}
                 </p>
-                <p className="text-xs text-orange-600 dark:text-orange-400">Status</p>
+                <p className="text-xs text-orange-100">Status</p>
               </div>
             </div>
           </CardContent>
@@ -458,12 +458,12 @@ export const SecurityLogViewer = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <User className="h-3 w-3" />
+                      <div className="flex items-center gap-4 mt-2 text-sm flex-wrap">
+                        <span className="flex items-center gap-1 font-medium text-foreground">
+                          <User className="h-4 w-4 text-primary" />
                           {log.admin_name || log.admin_email || 'Desconhecido'}
                         </span>
-                        <span className="flex items-center gap-1">
+                        <span className="flex items-center gap-1 text-muted-foreground">
                           <Calendar className="h-3 w-3" />
                           {format(parseISO(log.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
                         </span>
@@ -489,13 +489,13 @@ export const SecurityLogViewer = () => {
       </Card>
 
       {/* Informação sobre retenção */}
-      <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
+      <Card className="bg-amber-500 border-amber-600">
         <CardContent className="pt-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-white mt-0.5" />
             <div>
-              <p className="font-medium text-amber-800 dark:text-amber-300">Política de Retenção</p>
-              <p className="text-sm text-amber-700 dark:text-amber-400">
+              <p className="font-medium text-white">Política de Retenção</p>
+              <p className="text-sm text-amber-100">
                 Os logs de segurança são mantidos por 30 dias. Após esse período, são automaticamente 
                 removidos para otimizar o armazenamento do banco de dados.
               </p>
