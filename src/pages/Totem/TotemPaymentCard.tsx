@@ -17,58 +17,22 @@ const TotemPaymentCard: React.FC = () => {
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
-  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);
-  const [isCheckingConnection, setIsCheckingConnection] = useState(true); // Delay inicial para verificar conexão
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
-  // Refs para acesso em callbacks
-  const currentPaymentIdRef = useRef<string | null>(null);
-  const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
+  // Ref para evitar finalização duplicada
   const finalizingRef = useRef(false);
+  const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
   
-  // CRÍTICO: Recuperar payment ID do localStorage ao montar
-  // Isso garante que o ID não seja perdido se o WebView for recriado
-  useEffect(() => {
-    const storedPaymentId = localStorage.getItem('currentPaymentId');
-    const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
-    
-    if (storedPaymentId && storedPaymentTime) {
-      const age = Date.now() - parseInt(storedPaymentTime, 10);
-      // Aceitar se foi criado nos últimos 5 minutos
-      if (age < 300000) {
-        console.log('[CARD] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
-        currentPaymentIdRef.current = storedPaymentId;
-        setCurrentPaymentId(storedPaymentId);
-        setPaymentStarted(true);
-        setProcessing(true);
-      } else {
-        // Limpar dados antigos
-        localStorage.removeItem('currentPaymentId');
-        localStorage.removeItem('currentPaymentIdTime');
-      }
-    }
-  }, []);
-  
-  // Atualizar refs E persistir no localStorage
-  useEffect(() => {
-    currentPaymentIdRef.current = currentPaymentId;
-    if (currentPaymentId) {
-      localStorage.setItem('currentPaymentId', currentPaymentId);
-      localStorage.setItem('currentPaymentIdTime', Date.now().toString());
-      console.log('[CARD] 💾 Payment ID salvo no localStorage:', currentPaymentId);
-    }
-  }, [currentPaymentId]);
-  
+  // Atualizar ref quando paymentType mudar
   useEffect(() => {
     paymentTypeRef.current = paymentType;
-    if (paymentType) {
-      localStorage.setItem('currentPaymentType', paymentType);
-    }
   }, [paymentType]);
 
-  // Função de finalização
-  const finalizePayment = useCallback(async (paymentId: string, transactionData: {
+  // Função de finalização - NÃO depende mais de currentPaymentId
+  // Usa venda_id diretamente do location.state (assim como TotemProductPaymentCard faz)
+  const finalizePayment = useCallback(async (transactionData: {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
@@ -82,68 +46,59 @@ const TotemPaymentCard: React.FC = () => {
     
     try {
       console.log('✅ [CARD] ═══════════════════════════════════════');
-      console.log('✅ [CARD] FINALIZANDO PAGAMENTO');
-      console.log('✅ [CARD] Payment ID:', paymentId);
+      console.log('✅ [CARD] FINALIZANDO PAGAMENTO DE SERVIÇO');
+      console.log('✅ [CARD] Venda ID:', venda_id);
+      console.log('✅ [CARD] Session ID:', session_id);
       console.log('✅ [CARD] NSU:', transactionData.nsu);
       console.log('✅ [CARD] Autorização:', transactionData.autorizacao);
       console.log('✅ [CARD] Bandeira:', transactionData.bandeira);
       console.log('✅ [CARD] ═══════════════════════════════════════');
-      
-      // Atualizar status do pagamento com dados da transação
-      const { error: paymentError } = await supabase
-        .from('totem_payments')
-        .update({
-          status: 'completed',
-          paid_at: new Date().toISOString(),
-          ...(transactionData.nsu && { nsu: transactionData.nsu }),
-          ...(transactionData.autorizacao && { authorization_code: transactionData.autorizacao })
-        })
-        .eq('id', paymentId);
 
-      if (paymentError) {
-        console.error('❌ [CARD] Erro ao atualizar pagamento:', paymentError);
-        throw paymentError;
+      // Atualizar estoque dos produtos (se houver)
+      if (selectedProducts && selectedProducts.length > 0) {
+        for (const product of selectedProducts) {
+          await supabase.rpc('decrease_product_stock', {
+            p_product_id: product.product_id,
+            p_quantity: product.quantidade
+          });
+        }
       }
 
-      // Finalizar venda
+      // Finalizar venda - usando edge function
       if (isDirect) {
         console.log('📡 [CARD] Chamando totem-direct-sale...');
-        await supabase.functions.invoke('totem-direct-sale', {
+        const { error: directError } = await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
             venda_id: venda_id,
-            payment_id: paymentId
+            transaction_data: transactionData
           }
         });
-      } else {
-        // Atualizar estoque dos produtos
-        if (selectedProducts && selectedProducts.length > 0) {
-          for (const product of selectedProducts) {
-            await supabase.rpc('decrease_product_stock', {
-              p_product_id: product.product_id,
-              p_quantity: product.quantidade
-            });
-          }
+        
+        if (directError) {
+          console.error('❌ [CARD] Erro ao finalizar venda direta:', directError);
+          throw directError;
         }
-
-        // Finalizar checkout de serviço
-        await supabase.functions.invoke('totem-checkout', {
+      } else {
+        // Finalizar checkout de serviço normal
+        console.log('📡 [CARD] Chamando totem-checkout finish...');
+        const { error: checkoutError } = await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
             venda_id: venda_id,
             session_id: session_id,
-            payment_id: paymentId
+            transaction_data: transactionData
           }
         });
+        
+        if (checkoutError) {
+          console.error('❌ [CARD] Erro ao finalizar checkout:', checkoutError);
+          throw checkoutError;
+        }
       }
 
       console.log('✅ [CARD] Pagamento finalizado com sucesso!');
       toast.success('Pagamento aprovado!');
-      
-      // Limpar localStorage após sucesso
-      localStorage.removeItem('currentPaymentId');
-      localStorage.removeItem('currentPaymentIdTime');
-      localStorage.removeItem('currentPaymentType');
       
       navigate('/totem/payment-success', { 
         state: { 
@@ -164,54 +119,24 @@ const TotemPaymentCard: React.FC = () => {
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
   // Handler para resultado do TEF
-  // IMPORTANTE: Usa refs E localStorage para garantir acesso aos valores
+  // SIMPLIFICADO: NÃO depende de currentPaymentId - usa venda_id diretamente
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [CARD] ═══════════════════════════════════════');
     console.log('📞 [CARD] handleTEFResult CHAMADO');
     console.log('📞 [CARD] Status:', resultado.status);
-    console.log('📞 [CARD] currentPaymentIdRef:', currentPaymentIdRef.current);
-    console.log('📞 [CARD] currentPaymentId (state):', currentPaymentId);
-    
-    // CRÍTICO: Tentar múltiplas fontes para o paymentId
-    let paymentId = currentPaymentIdRef.current || currentPaymentId;
-    
-    // Se não encontrou em ref/state, tentar localStorage (sobrevive reload do WebView)
-    if (!paymentId) {
-      const storedPaymentId = localStorage.getItem('currentPaymentId');
-      const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
-      
-      if (storedPaymentId && storedPaymentTime) {
-        const age = Date.now() - parseInt(storedPaymentTime, 10);
-        if (age < 300000) { // 5 minutos
-          console.log('[CARD] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
-          paymentId = storedPaymentId;
-          currentPaymentIdRef.current = storedPaymentId;
-        }
-      }
-    }
-    
-    console.log('📞 [CARD] PaymentId final:', paymentId);
+    console.log('📞 [CARD] Venda ID:', venda_id);
+    console.log('📞 [CARD] Session ID:', session_id);
     console.log('📞 [CARD] ═══════════════════════════════════════');
     
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [CARD] Pagamento APROVADO pelo PayGo');
-        console.log('✅ [CARD] PaymentId disponível:', paymentId);
-        if (paymentId) {
-          finalizePayment(paymentId, {
-            nsu: resultado.nsu,
-            autorizacao: resultado.autorizacao,
-            bandeira: resultado.bandeira
-          });
-        } else {
-          // FALLBACK: Tentar criar pagamento agora se não existir
-          console.error('❌ [CARD] currentPaymentId não disponível - tentando recuperar...');
-          console.log('❌ [CARD] Dados do resultado:', JSON.stringify(resultado, null, 2));
-          toast.error('Erro interno - ID do pagamento não encontrado. Procure um atendente.');
-          setProcessing(false);
-          setPaymentType(null);
-          setPaymentStarted(false);
-        }
+        // Finalizar diretamente com transactionData - SEM depender de paymentId
+        finalizePayment({
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao,
+          bandeira: resultado.bandeira
+        });
         break;
         
       case 'negado':
@@ -240,7 +165,7 @@ const TotemPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, [finalizePayment, currentPaymentId]);
+  }, [finalizePayment, venda_id, session_id]);
 
   // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
   // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
@@ -328,13 +253,6 @@ const TotemPaymentCard: React.FC = () => {
       }
 
       console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
-      
-      // CRÍTICO: Atualizar ref IMEDIATAMENTE antes de qualquer outra operação
-      currentPaymentIdRef.current = payment.id;
-      setCurrentPaymentId(payment.id);
-      
-      // Log de confirmação
-      console.log('✅ [CARD] currentPaymentIdRef.current ATUALIZADO:', currentPaymentIdRef.current);
 
       // Chamar TEF Android (PayGo)
       console.log('💳 [CARD] Iniciando TEF Android...');

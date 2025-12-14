@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, action, venda_id, session_id, payment_id } = await req.json()
+    const { agendamento_id, extras, action, venda_id, session_id, payment_id, transaction_data } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
@@ -359,31 +359,51 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: FINISH ====================
     if (action === 'finish') {
-      console.log('🎯 Finalizando checkout - venda:', venda_id, 'session:', session_id, 'payment:', payment_id)
+      console.log('🎯 Finalizando checkout - venda:', venda_id, 'session:', session_id)
+      console.log('📝 Transaction data:', JSON.stringify(transaction_data))
 
-      if (!venda_id || !session_id || !payment_id) {
-        console.error('❌ Dados insuficientes:', { venda_id, session_id, payment_id })
-        throw new Error('Dados insuficientes para finalizar checkout')
+      if (!venda_id || !session_id) {
+        console.error('❌ Dados insuficientes:', { venda_id, session_id })
+        throw new Error('Dados insuficientes para finalizar checkout (venda_id e session_id obrigatórios)')
       }
 
-      // 🔒 Validar que o pagamento existe e está completo
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .select('*')
-        .eq('id', payment_id)
-        .single()
-
-      if (paymentError || !payment) {
-        console.error('❌ Pagamento não encontrado:', payment_id)
-        throw new Error('Pagamento não encontrado. Gere o pagamento antes de finalizar.')
+      // Buscar pagamento mais recente da sessão (se existir)
+      // NOTA: Agora não é mais obrigatório ter payment_id
+      let payment = null
+      if (payment_id) {
+        const { data: paymentData } = await supabase
+          .from('totem_payments')
+          .select('*')
+          .eq('id', payment_id)
+          .single()
+        payment = paymentData
+      } else {
+        // Buscar o pagamento mais recente da sessão
+        const { data: paymentData } = await supabase
+          .from('totem_payments')
+          .select('*')
+          .eq('session_id', session_id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        payment = paymentData
       }
 
-      if (payment.status !== 'completed' && payment.status !== 'paid') {
-        console.error('❌ Pagamento não está completo:', payment.status)
-        throw new Error('Pagamento ainda não foi confirmado. Complete o pagamento primeiro.')
+      // Se encontrou pagamento, atualizar para completed
+      if (payment && payment.status !== 'completed') {
+        console.log('💳 Atualizando pagamento para completed:', payment.id)
+        await supabase
+          .from('totem_payments')
+          .update({ 
+            status: 'completed',
+            paid_at: new Date().toISOString(),
+            ...(transaction_data?.nsu && { nsu: transaction_data.nsu }),
+            ...(transaction_data?.autorizacao && { authorization_code: transaction_data.autorizacao })
+          })
+          .eq('id', payment.id)
       }
 
-      console.log('✅ Pagamento validado:', payment.id, 'Status:', payment.status)
+      console.log('✅ Pagamento processado:', payment?.id || 'Sem pagamento registrado')
 
       // Buscar venda
       const { data: venda, error: vendaError } = await supabase
@@ -440,17 +460,7 @@ Deno.serve(async (req) => {
 
       console.log('✅ Agendamento encontrado:', venda.agendamento_id, 'Status atual:', agendamento.status)
 
-      // 1. Atualizar pagamento com confirmação
-      console.log('💳 Confirmando pagamento...')
-      await supabase
-        .from('totem_payments')
-        .update({ 
-          paid_at: new Date().toISOString(),
-          status: 'completed'
-        })
-        .eq('id', payment_id)
-
-      // 2. Atualizar sessão totem para completed
+      // 1. Atualizar sessão totem para completed
       console.log('🔄 Finalizando sessão...')
       await supabase
         .from('totem_sessions')
@@ -507,12 +517,15 @@ Deno.serve(async (req) => {
         discount: 0
       }))
 
+      // Determinar payment_method a partir do pagamento ou usar default
+      const paymentMethodRaw = payment?.payment_method || 'credit'
+      
       console.log('💰 Integrando com ERP Financeiro...', {
         appointment_id: venda.agendamento_id,
         client_id: venda.cliente_id,
         barber_id: barber_staff_id,
         items_count: erpItems.length,
-        payment_method: payment.payment_method,
+        payment_method: paymentMethodRaw,
         total: venda.total
       })
 
@@ -526,7 +539,7 @@ Deno.serve(async (req) => {
         'credit_card': 'credit_card',
         'debit_card': 'debit_card'
       }
-      const normalizedPaymentMethod = paymentMethodMap[payment.payment_method] || payment.payment_method
+      const normalizedPaymentMethod = paymentMethodMap[paymentMethodRaw] || paymentMethodRaw
 
       console.log('🔄 Payment method normalizado:', payment.payment_method, '->', normalizedPaymentMethod)
 
