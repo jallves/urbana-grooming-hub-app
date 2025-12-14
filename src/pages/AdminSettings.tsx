@@ -1,12 +1,13 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, Smartphone, FileText, Rocket } from "lucide-react";
+import { Users, Shield, Smartphone, FileText, Rocket, ScrollText } from "lucide-react";
 import TEFDocumentacao from '@/components/admin/tef/TEFDocumentacao';
 import TEFProducao from '@/components/admin/tef/TEFProducao';
 import TotemStatus from '@/components/admin/tef/TotemStatus';
 import UserManagement from '@/components/admin/settings/UserManagement';
 import SessionsManagement from '@/pages/admin/SessionsManagement';
+import { SecurityLogViewer } from '@/components/admin/security/SecurityLogViewer';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -18,7 +19,7 @@ const AdminSettings: React.FC = () => {
       <div className="w-full h-full p-4 md:p-6">
         <Tabs defaultValue="users" className="w-full">
           {/* Tabs com cores fixas pastéis */}
-          <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-2 md:grid-cols-5 gap-1 p-1.5 h-auto">
+          <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-3 md:grid-cols-6 gap-1 p-1.5 h-auto">
             <TabsTrigger 
               value="users"
               className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-amber-100 text-amber-800 border border-amber-200 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-amber-400 data-[state=active]:shadow-sm"
@@ -59,6 +60,14 @@ const AdminSettings: React.FC = () => {
               <span className="hidden sm:inline">TEF Produção</span>
               <span className="sm:hidden">Prod</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="security-log"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-indigo-100 text-indigo-800 border border-indigo-200 data-[state=active]:bg-indigo-200 data-[state=active]:text-indigo-900 data-[state=active]:border-indigo-400 data-[state=active]:shadow-sm"
+            >
+              <ScrollText className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Log Segurança</span>
+              <span className="sm:hidden">Logs</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-6">
@@ -79,6 +88,10 @@ const AdminSettings: React.FC = () => {
 
           <TabsContent value="tef-prod" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
             <TEFProducao />
+          </TabsContent>
+
+          <TabsContent value="security-log" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
+            <SecurityLogViewer />
           </TabsContent>
         </Tabs>
       </div>
