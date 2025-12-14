@@ -32,11 +32,14 @@ const TotemProductPaymentSuccess: React.FC = () => {
         return;
       }
 
-      const items = sale.items?.map((item: any) => ({
+      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = sale.items?.map((item: any) => ({
         name: item.produto?.nome || item.name || 'Produto',
         quantity: item.quantidade || item.quantity || 1,
-        price: (item.preco_unitario || item.price || 0) * (item.quantidade || item.quantity || 1)
-      })) || [{ name: 'Produtos', price: sale.total }];
+        price: (item.preco_unitario || item.price || 0) * (item.quantidade || item.quantity || 1),
+        type: 'product' as const
+      })) || [{ name: 'Produtos', price: sale.total, type: 'product' as const }];
+
+      console.log('[ProductPaymentSuccess] Itens para e-mail:', items);
 
       const result = await sendReceiptEmail({
         clientName: client.nome,

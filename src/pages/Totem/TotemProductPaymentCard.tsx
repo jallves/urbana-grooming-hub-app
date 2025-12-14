@@ -142,8 +142,16 @@ const TotemProductPaymentCard: React.FC = () => {
       
       console.log('✅ [PRODUCT-CARD] Pagamento finalizado com sucesso!');
       toast.success('Pagamento aprovado!');
+      
+      // Passar sale com items incluídos para a página de sucesso
+      const saleWithItems = { ...sale, items: saleItems };
+      
       navigate('/totem/product-payment-success', { 
-        state: { sale, client, transactionData } 
+        state: { 
+          sale: saleWithItems, 
+          client, 
+          transactionData: { ...transactionData, paymentMethod: cardType }
+        } 
       });
     } catch (err) {
       console.error('Erro ao processar pagamento:', err);
