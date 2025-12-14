@@ -37,6 +37,9 @@ verify_jwt = false
 [functions.admin-signout-user]
 verify_jwt = true
 
+[functions.send-email-confirmation]
+verify_jwt = false
+
 [functions.send-receipt-email]
 verify_jwt = false
 

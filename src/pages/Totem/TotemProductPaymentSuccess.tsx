@@ -1,13 +1,17 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, Home } from 'lucide-react';
+import { CheckCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { sendReceiptEmail, getCurrentUserEmail } from '@/services/receiptEmailService';
+import { useToast } from '@/hooks/use-toast';
 
 const TotemProductPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  const emailSentRef = useRef(false);
   const { sale, client, transactionData } = location.state || {};
 
   useEffect(() => {
@@ -16,12 +20,50 @@ const TotemProductPaymentSuccess: React.FC = () => {
       return;
     }
 
+    // Enviar comprovante por e-mail
+    const sendEmailReceipt = async () => {
+      if (emailSentRef.current) return;
+      emailSentRef.current = true;
+
+      const email = await getCurrentUserEmail();
+      if (!email) {
+        console.log('[ProductPaymentSuccess] Usuário não tem e-mail cadastrado');
+        return;
+      }
+
+      const items = sale.items?.map((item: any) => ({
+        name: item.produto?.nome || item.name || 'Produto',
+        quantity: item.quantidade || item.quantity || 1,
+        price: (item.preco_unitario || item.price || 0) * (item.quantidade || item.quantity || 1)
+      })) || [{ name: 'Produtos', price: sale.total }];
+
+      const result = await sendReceiptEmail({
+        clientName: client.nome,
+        clientEmail: email,
+        transactionType: 'product',
+        items,
+        total: sale.total,
+        paymentMethod: transactionData?.paymentMethod || 'card',
+        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
+        nsu: transactionData?.nsu
+      });
+
+      if (result.success) {
+        toast({
+          title: "Comprovante enviado!",
+          description: `Enviamos para ${email}`,
+        });
+      }
+    };
+
+    sendEmailReceipt();
+
     const timer = setTimeout(() => {
       navigate('/totem/home');
     }, 8000);
 
     return () => clearTimeout(timer);
-  }, [sale, client, navigate]);
+  }, [sale, client, navigate, transactionData, toast]);
 
   if (!sale || !client) return null;
 
