@@ -126,7 +126,7 @@ const TotemRating: React.FC = () => {
 
   if (showScheduleQuestion) {
     return (
-      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-3 sm:p-4 md:p-6 lg:p-8 font-poppins overflow-hidden">
+      <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-4 sm:p-6 md:p-8 lg:p-10 font-poppins overflow-hidden">
         {/* Background image */}
         <div className="absolute inset-0 z-0">
           <img 
@@ -134,7 +134,7 @@ const TotemRating: React.FC = () => {
             alt="Barbearia" 
             className="w-full h-full object-cover"
           />
-          <div className="absolute inset-0 bg-urbana-black/60" />
+          <div className="absolute inset-0 bg-urbana-black/70" />
         </div>
 
         {/* Background effects */}
@@ -143,45 +143,54 @@ const TotemRating: React.FC = () => {
           <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }} />
         </div>
 
-        {/* Glassmorphism Card */}
-        <Card className="relative z-10 w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-6 sm:p-8 md:p-12 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] animate-scale-in rounded-3xl overflow-hidden">
-          <div className="relative z-10 text-center space-y-6 sm:space-y-8">
-            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full bg-urbana-gold/20 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-lg">
-              <Calendar className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold drop-shadow-lg" />
+        {/* Glassmorphism Card - Melhorado para não cortar texto */}
+        <Card className="relative z-10 w-full max-w-[90vw] sm:max-w-xl md:max-w-2xl lg:max-w-3xl mx-auto p-5 sm:p-6 md:p-8 lg:p-10 bg-black/40 backdrop-blur-xl border-2 border-urbana-gold/40 shadow-[0_8px_32px_rgba(212,175,55,0.4)] animate-scale-in rounded-2xl sm:rounded-3xl">
+          <div className="relative z-10 text-center space-y-5 sm:space-y-6 md:space-y-8">
+            {/* Ícone */}
+            <div className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-full bg-urbana-gold/20 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-lg">
+              <Calendar className="w-7 h-7 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold drop-shadow-lg" />
             </div>
             
-            <div className="space-y-3 sm:space-y-4">
-              <h2 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold drop-shadow-lg">
-                {client.nome.split(' ')[0]}, deseja agendar<br />seu próximo corte?
+            {/* Título - Texto responsivo que não corta */}
+            <div className="space-y-2 sm:space-y-3 px-2">
+              <h2 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-urbana-gold drop-shadow-lg leading-tight">
+                {client.nome.split(' ')[0]}, deseja agendar seu próximo corte?
               </h2>
-              <p className="text-base sm:text-lg md:text-xl text-urbana-gold/70 drop-shadow-lg">
+              <p className="text-sm sm:text-base md:text-lg text-urbana-gold/70 drop-shadow-lg">
                 Garanta já seu horário para a próxima visita!
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 pt-4">
+            {/* Botões - Layout responsivo */}
+            <div className="flex flex-col gap-3 sm:gap-4 pt-2 sm:pt-4">
               <Button
                 onClick={handleScheduleYes}
-                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:from-yellow-500 hover:via-urbana-gold hover:to-yellow-500 text-urbana-black shadow-lg transition-all duration-300 hover:scale-105"
+                className="w-full h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl font-bold bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold hover:from-yellow-500 hover:via-urbana-gold hover:to-yellow-500 text-urbana-black shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
               >
-                <Calendar className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
-                Sim, quero agendar!
+                <Calendar className="w-5 h-5 sm:w-6 sm:h-6 mr-2 flex-shrink-0" />
+                <span className="truncate">Sim, quero agendar!</span>
               </Button>
 
               <Button
                 onClick={handleScheduleNo}
                 variant="outline"
-                className="flex-1 h-14 sm:h-16 md:h-20 text-lg sm:text-xl md:text-2xl border-2 border-urbana-gold/40 bg-black/10 backdrop-blur-sm text-urbana-gold hover:bg-urbana-gold/10 hover:border-urbana-gold/60 shadow-lg transition-all duration-300"
+                className="w-full h-12 sm:h-14 md:h-16 text-base sm:text-lg md:text-xl border-2 border-urbana-gold/40 bg-black/20 backdrop-blur-sm text-urbana-gold hover:bg-urbana-gold/10 hover:border-urbana-gold/60 shadow-lg transition-all duration-300"
               >
-                <Home className="w-6 h-6 sm:w-7 sm:h-7 mr-2" />
-                Não, obrigado
+                <Home className="w-5 h-5 sm:w-6 sm:h-6 mr-2 flex-shrink-0" />
+                <span className="truncate">Não, obrigado</span>
               </Button>
             </div>
 
-            <div className="pt-4 border-t border-urbana-gold/20">
-              <p className="text-sm sm:text-base text-urbana-gold/70">
-                Voltando ao início em <span className="text-urbana-gold font-bold text-lg">{countdown}</span> segundos...
-              </p>
+            {/* Countdown - Mais visível */}
+            <div className="pt-3 sm:pt-4 border-t border-urbana-gold/20">
+              <div className="flex items-center justify-center gap-2">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-urbana-gold/20 border border-urbana-gold/40 flex items-center justify-center">
+                  <span className="text-lg sm:text-xl font-bold text-urbana-gold">{countdown}</span>
+                </div>
+                <p className="text-xs sm:text-sm text-urbana-gold/60">
+                  segundos para voltar ao início
+                </p>
+              </div>
             </div>
           </div>
         </Card>
