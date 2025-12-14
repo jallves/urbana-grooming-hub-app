@@ -324,12 +324,17 @@ const TotemNovoAgendamento: React.FC = () => {
 
       console.log('✅ Agendamento criado com sucesso:', result.id);
 
-      // Enviar e-mail de confirmação (em background)
-      sendAppointmentConfirmationEmail(result.id).then(sent => {
-        if (sent) {
+      // Enviar e-mail de confirmação (aguardar para garantir envio antes de navegar)
+      try {
+        const emailSent = await sendAppointmentConfirmationEmail(result.id);
+        if (emailSent) {
           console.log('📧 E-mail de confirmação enviado!');
+        } else {
+          console.log('📧 E-mail não enviado (cliente sem e-mail válido ou erro)');
         }
-      });
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
+      }
 
       toast.success('✅ Agendamento criado com sucesso!', {
         description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,
