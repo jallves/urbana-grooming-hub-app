@@ -131,12 +131,23 @@ const TotemPaymentSuccess: React.FC = () => {
         items.push({ name: 'Serviço', price: total, type: 'service' });
       }
 
+      // Determinar o tipo de transação
+      const hasServices = items.some(item => item.type === 'service');
+      const hasProducts = items.some(item => item.type === 'product');
+      let transactionType: 'service' | 'product' | 'mixed' = 'service';
+      if (hasServices && hasProducts) {
+        transactionType = 'mixed';
+      } else if (hasProducts) {
+        transactionType = 'product';
+      }
+
       console.log('[PaymentSuccess] Itens para e-mail:', items);
+      console.log('[PaymentSuccess] Tipo de transação:', transactionType);
 
       const result = await sendReceiptEmail({
         clientName: client.nome,
         clientEmail: clientEmail,
-        transactionType: 'service',
+        transactionType,
         items,
         total,
         paymentMethod: paymentMethod || 'card',

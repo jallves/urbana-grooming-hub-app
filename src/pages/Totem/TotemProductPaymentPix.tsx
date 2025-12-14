@@ -137,8 +137,16 @@ const TotemProductPaymentPix: React.FC = () => {
       
       console.log('✅ [PRODUCT-PIX] Pagamento finalizado com sucesso!');
       toast.success('Pagamento PIX aprovado!');
+      
+      // Passar sale com items incluídos para a página de sucesso
+      const saleWithItems = { ...sale, items: saleItems };
+      
       navigate('/totem/product-payment-success', { 
-        state: { sale, client, transactionData } 
+        state: { 
+          sale: saleWithItems, 
+          client, 
+          transactionData: { ...transactionData, paymentMethod: 'pix' }
+        } 
       });
     } catch (err) {
       console.error('Erro ao processar pagamento:', err);

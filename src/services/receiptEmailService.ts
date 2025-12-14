@@ -1,14 +1,17 @@
 import { supabase } from '@/integrations/supabase/client';
 
+interface ReceiptItem {
+  name: string;
+  quantity?: number;
+  price: number;
+  type?: 'service' | 'product';
+}
+
 interface ReceiptEmailData {
   clientName: string;
   clientEmail: string;
-  transactionType: 'service' | 'product';
-  items: Array<{
-    name: string;
-    quantity?: number;
-    price: number;
-  }>;
+  transactionType: 'service' | 'product' | 'mixed';
+  items: ReceiptItem[];
   total: number;
   paymentMethod: string;
   transactionDate: string;

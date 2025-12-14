@@ -81,18 +81,22 @@ const handler = async (req: Request): Promise<Response> => {
       'cash': 'Dinheiro'
     }[paymentMethod] || paymentMethod;
 
-    // Separar itens por tipo usando o campo type explícito ou inferindo pela quantidade
-    const services = items.filter(item => {
-      if (item.type) return item.type === 'service';
-      // Se não tem type, infere: sem quantity ou quantity=1 sem multiplicador = serviço
-      return !item.quantity || item.quantity === 1;
-    });
+    // Separar itens por tipo usando o campo type explícito
+    // IMPORTANTE: Agora confiamos no campo 'type' que vem do frontend
+    const services = items.filter(item => item.type === 'service');
+    const products = items.filter(item => item.type === 'product');
     
-    const products = items.filter(item => {
-      if (item.type) return item.type === 'product';
-      // Se não tem type, infere: com quantity > 0 = produto
-      return item.quantity && item.quantity > 0;
-    });
+    // Se nenhum item tem type definido, usar fallback baseado no transactionType
+    const untyped = items.filter(item => !item.type);
+    if (untyped.length > 0) {
+      if (transactionType === 'product') {
+        products.push(...untyped);
+      } else {
+        services.push(...untyped);
+      }
+    }
+    
+    console.log(`📧 Email: ${services.length} serviços, ${products.length} produtos`);
 
     // Calcular subtotais
     const servicesSubtotal = services.reduce((sum, item) => sum + item.price, 0);
