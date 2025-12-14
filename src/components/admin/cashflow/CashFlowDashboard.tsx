@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter } from 'lucide-react';
+import { TrendingUp, TrendingDown, DollarSign, Calendar, Filter, Landmark } from 'lucide-react';
 import { format, startOfMonth, endOfMonth, subMonths, parseISO, getDaysInMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import CashFlowChart from './CashFlowChart';
@@ -21,13 +21,11 @@ const CashFlowDashboard: React.FC = () => {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState((now.getMonth() + 1).toString());
-  
-  const currentMonth = new Date();
-  const lastMonth = subMonths(currentMonth, 1);
 
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['financial-data'] });
-    queryClient.invalidateQueries({ queryKey: ['last-month-data'] });
+    queryClient.invalidateQueries({ queryKey: ['selected-month-data'] });
+    queryClient.invalidateQueries({ queryKey: ['total-balance'] });
   }, [refreshFinancials, queryClient]);
 
   // Calcular datas baseadas no ano e mês selecionados
@@ -63,18 +61,15 @@ const CashFlowDashboard: React.FC = () => {
     { value: '12', label: 'Dezembro' },
   ];
 
-  const { data: currentMonthData, isLoading } = useQuery({
-    queryKey: ['cash-flow-current-month'],
+  // Buscar dados do MÊS SELECIONADO
+  const { data: selectedMonthData, isLoading } = useQuery({
+    queryKey: ['selected-month-data', periodDates.start, periodDates.end],
     queryFn: async () => {
-      const start = startOfMonth(currentMonth);
-      const end = endOfMonth(currentMonth);
-      
-      // 💰 Buscar de financial_records (tabela correta do ERP)
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
-        .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'))
+        .gte('transaction_date', periodDates.start)
+        .lte('transaction_date', periodDates.end)
         .order('transaction_date', { ascending: false });
 
       if (error) {
@@ -84,24 +79,58 @@ const CashFlowDashboard: React.FC = () => {
       
       return data || [];
     },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    refetchInterval: 10000,
   });
 
-  const { data: lastMonthData } = useQuery({
-    queryKey: ['cash-flow-last-month'],
+  // Buscar SALDO TOTAL (tudo que entrou - tudo que saiu desde o início)
+  const { data: totalBalanceData } = useQuery({
+    queryKey: ['total-balance'],
     queryFn: async () => {
-      const start = startOfMonth(lastMonth);
-      const end = endOfMonth(lastMonth);
-      
-      // 💰 Buscar de financial_records (tabela correta do ERP)
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('transaction_type, net_amount, status')
+        .eq('status', 'completed');
+
+      if (error) {
+        console.error('Erro ao buscar saldo total:', error);
+        throw error;
+      }
+
+      // Calcular total de receitas
+      const totalRevenue = data
+        ?.filter(t => t.transaction_type === 'revenue')
+        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+
+      // Calcular total de despesas
+      const totalExpense = data
+        ?.filter(t => t.transaction_type === 'expense' || t.transaction_type === 'commission')
+        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+
+      return {
+        totalRevenue,
+        totalExpense,
+        balance: totalRevenue - totalExpense
+      };
+    },
+    refetchInterval: 10000,
+  });
+
+  // Buscar dados do mês anterior ao selecionado para comparação
+  const previousMonth = new Date(parseInt(selectedYear), parseInt(selectedMonth) - 2, 1);
+  const prevMonthStart = format(startOfMonth(previousMonth), 'yyyy-MM-dd');
+  const prevMonthEnd = format(endOfMonth(previousMonth), 'yyyy-MM-dd');
+
+  const { data: previousMonthData } = useQuery({
+    queryKey: ['previous-month-data', prevMonthStart, prevMonthEnd],
+    queryFn: async () => {
       const { data, error } = await supabase
         .from('financial_records')
         .select('*')
-        .gte('transaction_date', format(start, 'yyyy-MM-dd'))
-        .lte('transaction_date', format(end, 'yyyy-MM-dd'));
+        .gte('transaction_date', prevMonthStart)
+        .lte('transaction_date', prevMonthEnd);
 
       if (error) {
-        console.error('Erro ao buscar dados financeiros do mês anterior:', error);
+        console.error('Erro ao buscar dados do mês anterior:', error);
         throw error;
       }
       
@@ -109,37 +138,38 @@ const CashFlowDashboard: React.FC = () => {
     },
   });
 
-  // 💰 Calcular valores usando financial_records (transaction_type: revenue, expense, commission)
-  const currentIncome = currentMonthData?.filter(t => 
+  // Calcular valores do MÊS SELECIONADO
+  const selectedIncome = selectedMonthData?.filter(t => 
     t.transaction_type === 'revenue' && t.status === 'completed'
   ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
   
-  const currentExpense = currentMonthData?.filter(t => 
+  const selectedExpense = selectedMonthData?.filter(t => 
     (t.transaction_type === 'expense' || t.transaction_type === 'commission') && 
     t.status === 'completed'
   ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
   
-  const currentNet = currentIncome - currentExpense;
+  const selectedNet = selectedIncome - selectedExpense;
 
-  const lastIncome = lastMonthData?.filter(t => 
+  // Calcular valores do mês anterior para comparação
+  const previousIncome = previousMonthData?.filter(t => 
     t.transaction_type === 'revenue' && t.status === 'completed'
   ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
   
-  const lastExpense = lastMonthData?.filter(t => 
+  const previousExpense = previousMonthData?.filter(t => 
     (t.transaction_type === 'expense' || t.transaction_type === 'commission') && 
     t.status === 'completed'
   ).reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
   
-  const lastNet = lastIncome - lastExpense;
+  const previousNet = previousIncome - previousExpense;
 
-  const incomeGrowth = lastIncome > 0 ? ((currentIncome - lastIncome) / lastIncome) * 100 : 0;
-  const expenseGrowth = lastExpense > 0 ? ((currentExpense - lastExpense) / lastExpense) * 100 : 0;
-  const netGrowth = lastNet !== 0 ? ((currentNet - lastNet) / Math.abs(lastNet)) * 100 : 0;
+  const incomeGrowth = previousIncome > 0 ? ((selectedIncome - previousIncome) / previousIncome) * 100 : 0;
+  const expenseGrowth = previousExpense > 0 ? ((selectedExpense - previousExpense) / previousExpense) * 100 : 0;
+  const netGrowth = previousNet !== 0 ? ((selectedNet - previousNet) / Math.abs(previousNet)) * 100 : 0;
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
-        {[1, 2, 3].map((i) => (
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        {[1, 2, 3, 4].map((i) => (
           <Card key={i} className="bg-white border-gray-300">
             <CardContent className="p-3 sm:p-4 lg:p-6">
               <div className="space-y-2 sm:space-y-3">
@@ -191,18 +221,18 @@ const CashFlowDashboard: React.FC = () => {
       {/* Fluxo de Caixa do Dia - NOVO */}
       <DailyCashFlow />
 
-      {/* Métricas principais - Grid responsivo */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
+      {/* Métricas do Mês Selecionado + Saldo Bancário */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border-gray-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium text-black">
-              Receitas
+              Receitas do Mês
             </CardTitle>
             <TrendingUp className="h-3 w-3 sm:h-4 sm:w-4 text-black" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4 pt-0">
             <div className="text-lg sm:text-xl lg:text-2xl font-bold text-green-600">
-              R$ {currentIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {selectedIncome.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${incomeGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -215,13 +245,13 @@ const CashFlowDashboard: React.FC = () => {
         <Card className="bg-white border-gray-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium text-black">
-              Despesas
+              Despesas do Mês
             </CardTitle>
             <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 text-black" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4 pt-0">
             <div className="text-lg sm:text-xl lg:text-2xl font-bold text-red-600">
-              R$ {currentExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+              R$ {selectedExpense.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${expenseGrowth <= 0 ? 'text-green-600' : 'text-red-600'}`}>
@@ -231,22 +261,40 @@ const CashFlowDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        <Card className="bg-white border-gray-300 sm:col-span-2 lg:col-span-1">
+        <Card className="bg-white border-gray-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium text-black">
-              Saldo Líquido
+              Saldo do Mês
             </CardTitle>
             <DollarSign className="h-3 w-3 sm:h-4 sm:w-4 text-black" />
           </CardHeader>
           <CardContent className="p-3 sm:p-4 pt-0">
-            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${currentNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-              R$ {currentNet.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${selectedNet >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
+              R$ {selectedNet.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
             </div>
             <div className="flex items-center mt-1">
               <span className={`text-xs ${netGrowth >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                 {netGrowth >= 0 ? '+' : ''}{netGrowth.toFixed(1)}% vs mês anterior
               </span>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Saldo Bancário - Saldo Geral da Empresa */}
+        <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-white">
+              Saldo Bancário
+            </CardTitle>
+            <Landmark className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${(totalBalanceData?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              R$ {(totalBalanceData?.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              Saldo total para conciliação
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -319,11 +367,10 @@ const CashFlowDashboard: React.FC = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-3 sm:p-4 lg:p-6 pt-0">
-          {currentMonthData && currentMonthData.length > 0 ? (
+          {selectedMonthData && selectedMonthData.length > 0 ? (
             <div className="space-y-2 sm:space-y-3">
-              {currentMonthData.slice(0, 5).map((transaction) => {
+              {selectedMonthData.slice(0, 5).map((transaction) => {
                 const isRevenue = transaction.transaction_type === 'revenue';
-                const isExpense = transaction.transaction_type === 'expense' || transaction.transaction_type === 'commission';
                 
                 return (
                   <div key={transaction.id} className="flex items-center justify-between p-2 sm:p-3 bg-gray-50 rounded-lg border border-gray-200">
@@ -355,7 +402,7 @@ const CashFlowDashboard: React.FC = () => {
             </div>
           ) : (
             <div className="text-center py-6 sm:py-8">
-              <p className="text-gray-600 text-sm">Nenhuma transação encontrada este mês</p>
+              <p className="text-gray-600 text-sm">Nenhuma transação encontrada neste mês</p>
             </div>
           )}
         </CardContent>
