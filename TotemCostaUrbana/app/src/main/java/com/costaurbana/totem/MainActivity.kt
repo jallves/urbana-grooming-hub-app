@@ -211,50 +211,122 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * Notifica o WebView sobre o resultado do pagamento
+     * Implementa retry para garantir que o callback seja recebido
      */
     private fun notifyWebViewPaymentResult(responseUri: android.net.Uri) {
-        val currentWebView = webView ?: return
+        val currentWebView = webView ?: run {
+            addLog("❌ WebView não disponível para notificação")
+            return
+        }
         
         try {
-            // Converter query params para JSON
+            // Converter query params para JSON estruturado
             val jsonParams = JSONObject()
             responseUri.queryParameterNames.forEach { key ->
                 responseUri.getQueryParameter(key)?.let { value ->
-                    jsonParams.put(key, value)
+                    // Tentar converter valores numéricos
+                    when {
+                        value.matches(Regex("-?\\d+")) -> jsonParams.put(key, value.toLong())
+                        value.matches(Regex("-?\\d+\\.\\d+")) -> jsonParams.put(key, value.toDouble())
+                        value.equals("true", ignoreCase = true) -> jsonParams.put(key, true)
+                        value.equals("false", ignoreCase = true) -> jsonParams.put(key, false)
+                        else -> jsonParams.put(key, value)
+                    }
                 }
             }
             
-            val jsonString = jsonParams.toString()
+            // Determinar status baseado em transactionResult
+            val transactionResult = jsonParams.optInt("transactionResult", -99)
+            val status = when {
+                transactionResult == 0 -> "aprovado"
+                transactionResult in 1..99 -> "negado"
+                transactionResult == -1 -> "cancelado"
+                else -> "erro"
+            }
+            jsonParams.put("status", status)
             
+            val jsonString = jsonParams.toString()
+            addLog("📤 Notificando WebView: $status")
+            
+            // JavaScript com retry mechanism
             val js = """
                 (function() {
-                    console.log('[Android] PayGo response received');
-                    console.log('[Android] Response data:', $jsonString);
-                    if (window.onTefResultado) {
-                        try {
-                            window.onTefResultado($jsonString);
-                            console.log('[Android] onTefResultado called successfully');
-                        } catch(e) {
-                            console.error('[Android] Error calling onTefResultado:', e);
+                    console.log('[Android] ═══════════════════════════════════════');
+                    console.log('[Android] PayGo RESPONSE RECEIVED');
+                    console.log('[Android] Data:', JSON.stringify($jsonString, null, 2));
+                    console.log('[Android] ═══════════════════════════════════════');
+                    
+                    var resultado = $jsonString;
+                    var notified = false;
+                    
+                    // Função para tentar notificar
+                    function tryNotify() {
+                        if (notified) return true;
+                        
+                        // Método 1: Callback direto
+                        if (typeof window.onTefResultado === 'function') {
+                            try {
+                                console.log('[Android] Chamando window.onTefResultado()...');
+                                window.onTefResultado(resultado);
+                                console.log('[Android] ✅ onTefResultado chamado com sucesso!');
+                                notified = true;
+                                return true;
+                            } catch(e) {
+                                console.error('[Android] ❌ Erro em onTefResultado:', e);
+                            }
+                        } else {
+                            console.warn('[Android] ⚠️ window.onTefResultado não definido');
                         }
-                    } else {
-                        console.warn('[Android] window.onTefResultado not defined');
+                        
+                        // Método 2: CustomEvent
+                        try {
+                            window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
+                                detail: resultado,
+                                bubbles: true
+                            }));
+                            console.log('[Android] CustomEvent tefPaymentResult disparado');
+                        } catch(e) {
+                            console.error('[Android] Erro no CustomEvent:', e);
+                        }
+                        
+                        return notified;
                     }
-                    if (window.dispatchEvent) {
-                        window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
-                            detail: $jsonString 
-                        }));
+                    
+                    // Tentar imediatamente
+                    if (!tryNotify()) {
+                        // Retry após 500ms
+                        setTimeout(function() {
+                            if (!tryNotify()) {
+                                // Retry final após 1s
+                                setTimeout(function() {
+                                    if (!tryNotify()) {
+                                        console.error('[Android] ❌ Falha ao notificar após retries');
+                                        // Fallback: navegar diretamente se aprovado
+                                        if (resultado.status === 'aprovado') {
+                                            console.log('[Android] Fallback: forçando navegação para sucesso');
+                                            // Salvar resultado no sessionStorage para recuperação
+                                            try {
+                                                sessionStorage.setItem('lastTefResult', JSON.stringify(resultado));
+                                            } catch(e) {}
+                                        }
+                                    }
+                                }, 1000);
+                            }
+                        }, 500);
                     }
                 })();
             """.trimIndent()
             
             runOnUiThread {
                 if (!isFinishing && !isDestroyed) {
-                    currentWebView.evaluateJavascript(js, null)
+                    currentWebView.evaluateJavascript(js) { result ->
+                        addLog("JS executado, resultado: $result")
+                    }
                 }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error notifying WebView payment result: ${e.message}", e)
+            addLog("❌ Erro ao notificar: ${e.message}")
         }
     }
 
