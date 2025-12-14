@@ -25,9 +25,37 @@ const TotemPaymentPix: React.FC = () => {
   const finalizingRef = useRef(false);
   const currentPaymentIdRef = useRef<string | null>(null);
 
-  // Atualizar ref
+  // CRÍTICO: Recuperar payment ID do localStorage ao montar
+  // Isso garante que o ID não seja perdido se o WebView for recriado
+  useEffect(() => {
+    const storedPaymentId = localStorage.getItem('currentPaymentId');
+    const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
+    
+    if (storedPaymentId && storedPaymentTime) {
+      const age = Date.now() - parseInt(storedPaymentTime, 10);
+      // Aceitar se foi criado nos últimos 5 minutos
+      if (age < 300000) {
+        console.log('[PIX] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
+        currentPaymentIdRef.current = storedPaymentId;
+        setCurrentPaymentId(storedPaymentId);
+        setPaymentStarted(true);
+        setProcessing(true);
+      } else {
+        // Limpar dados antigos
+        localStorage.removeItem('currentPaymentId');
+        localStorage.removeItem('currentPaymentIdTime');
+      }
+    }
+  }, []);
+
+  // Atualizar ref E persistir no localStorage
   useEffect(() => {
     currentPaymentIdRef.current = currentPaymentId;
+    if (currentPaymentId) {
+      localStorage.setItem('currentPaymentId', currentPaymentId);
+      localStorage.setItem('currentPaymentIdTime', Date.now().toString());
+      console.log('[PIX] 💾 Payment ID salvo no localStorage:', currentPaymentId);
+    }
   }, [currentPaymentId]);
 
   // Função para finalizar pagamento
@@ -95,6 +123,11 @@ const TotemPaymentPix: React.FC = () => {
       console.log('✅ [PIX] Pagamento finalizado com sucesso!');
       toast.success('Pagamento PIX confirmado!');
       
+      // Limpar localStorage após sucesso
+      localStorage.removeItem('currentPaymentId');
+      localStorage.removeItem('currentPaymentIdTime');
+      localStorage.removeItem('currentPaymentType');
+      
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -115,17 +148,34 @@ const TotemPaymentPix: React.FC = () => {
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
   // Handler para resultado do TEF
-  // IMPORTANTE: Usa refs para garantir acesso aos valores mais atuais
+  // IMPORTANTE: Usa refs E localStorage para garantir acesso aos valores
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PIX] ═══════════════════════════════════════');
     console.log('📞 [PIX] handleTEFResult CHAMADO');
     console.log('📞 [PIX] Status:', resultado.status);
     console.log('📞 [PIX] currentPaymentIdRef:', currentPaymentIdRef.current);
     console.log('📞 [PIX] currentPaymentId (state):', currentPaymentId);
-    console.log('📞 [PIX] ═══════════════════════════════════════');
     
-    // Usar ref OU state - o que estiver disponível
-    const paymentId = currentPaymentIdRef.current || currentPaymentId;
+    // CRÍTICO: Tentar múltiplas fontes para o paymentId
+    let paymentId = currentPaymentIdRef.current || currentPaymentId;
+    
+    // Se não encontrou em ref/state, tentar localStorage (sobrevive reload do WebView)
+    if (!paymentId) {
+      const storedPaymentId = localStorage.getItem('currentPaymentId');
+      const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
+      
+      if (storedPaymentId && storedPaymentTime) {
+        const age = Date.now() - parseInt(storedPaymentTime, 10);
+        if (age < 300000) { // 5 minutos
+          console.log('[PIX] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
+          paymentId = storedPaymentId;
+          currentPaymentIdRef.current = storedPaymentId;
+        }
+      }
+    }
+    
+    console.log('📞 [PIX] PaymentId final:', paymentId);
+    console.log('📞 [PIX] ═══════════════════════════════════════');
     
     switch (resultado.status) {
       case 'aprovado':

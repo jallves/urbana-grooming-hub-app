@@ -27,13 +27,44 @@ const TotemPaymentCard: React.FC = () => {
   const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
   const finalizingRef = useRef(false);
   
-  // Atualizar refs
+  // CRÍTICO: Recuperar payment ID do localStorage ao montar
+  // Isso garante que o ID não seja perdido se o WebView for recriado
+  useEffect(() => {
+    const storedPaymentId = localStorage.getItem('currentPaymentId');
+    const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
+    
+    if (storedPaymentId && storedPaymentTime) {
+      const age = Date.now() - parseInt(storedPaymentTime, 10);
+      // Aceitar se foi criado nos últimos 5 minutos
+      if (age < 300000) {
+        console.log('[CARD] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
+        currentPaymentIdRef.current = storedPaymentId;
+        setCurrentPaymentId(storedPaymentId);
+        setPaymentStarted(true);
+        setProcessing(true);
+      } else {
+        // Limpar dados antigos
+        localStorage.removeItem('currentPaymentId');
+        localStorage.removeItem('currentPaymentIdTime');
+      }
+    }
+  }, []);
+  
+  // Atualizar refs E persistir no localStorage
   useEffect(() => {
     currentPaymentIdRef.current = currentPaymentId;
+    if (currentPaymentId) {
+      localStorage.setItem('currentPaymentId', currentPaymentId);
+      localStorage.setItem('currentPaymentIdTime', Date.now().toString());
+      console.log('[CARD] 💾 Payment ID salvo no localStorage:', currentPaymentId);
+    }
   }, [currentPaymentId]);
   
   useEffect(() => {
     paymentTypeRef.current = paymentType;
+    if (paymentType) {
+      localStorage.setItem('currentPaymentType', paymentType);
+    }
   }, [paymentType]);
 
   // Função de finalização
@@ -109,6 +140,11 @@ const TotemPaymentCard: React.FC = () => {
       console.log('✅ [CARD] Pagamento finalizado com sucesso!');
       toast.success('Pagamento aprovado!');
       
+      // Limpar localStorage após sucesso
+      localStorage.removeItem('currentPaymentId');
+      localStorage.removeItem('currentPaymentIdTime');
+      localStorage.removeItem('currentPaymentType');
+      
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -128,17 +164,34 @@ const TotemPaymentCard: React.FC = () => {
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
   // Handler para resultado do TEF
-  // IMPORTANTE: Usa refs para garantir acesso aos valores mais atuais
+  // IMPORTANTE: Usa refs E localStorage para garantir acesso aos valores
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [CARD] ═══════════════════════════════════════');
     console.log('📞 [CARD] handleTEFResult CHAMADO');
     console.log('📞 [CARD] Status:', resultado.status);
     console.log('📞 [CARD] currentPaymentIdRef:', currentPaymentIdRef.current);
     console.log('📞 [CARD] currentPaymentId (state):', currentPaymentId);
-    console.log('📞 [CARD] ═══════════════════════════════════════');
     
-    // Usar ref OU state - o que estiver disponível
-    const paymentId = currentPaymentIdRef.current || currentPaymentId;
+    // CRÍTICO: Tentar múltiplas fontes para o paymentId
+    let paymentId = currentPaymentIdRef.current || currentPaymentId;
+    
+    // Se não encontrou em ref/state, tentar localStorage (sobrevive reload do WebView)
+    if (!paymentId) {
+      const storedPaymentId = localStorage.getItem('currentPaymentId');
+      const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
+      
+      if (storedPaymentId && storedPaymentTime) {
+        const age = Date.now() - parseInt(storedPaymentTime, 10);
+        if (age < 300000) { // 5 minutos
+          console.log('[CARD] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
+          paymentId = storedPaymentId;
+          currentPaymentIdRef.current = storedPaymentId;
+        }
+      }
+    }
+    
+    console.log('📞 [CARD] PaymentId final:', paymentId);
+    console.log('📞 [CARD] ═══════════════════════════════════════');
     
     switch (resultado.status) {
       case 'aprovado':
