@@ -12,18 +12,20 @@ import java.util.UUID
 /**
  * PayGo Service - Integração via URI com PayGo Integrado
  * 
- * IMPORTANTE: O PayGo Integrado gerencia internamente o pinpad.
- * Não é necessário conectar ao pinpad via USB diretamente.
- * O app PayGo detecta e conecta ao pinpad automaticamente.
+ * Implementação 100% conforme documentação oficial:
+ * https://github.com/adminti2/mobile-integracao-uri
  * 
- * Baseado na documentação: https://github.com/adminti2/mobile-integracao-uri
+ * Package da Automação: com.costaurbana.totem
  * 
  * Intent Actions:
- * - br.com.setis.payment.TRANSACTION (para transações)
- * - br.com.setis.confirmation.TRANSACTION (para confirmação)
+ * - br.com.setis.payment.TRANSACTION (transações com UI)
+ * - br.com.setis.confirmation.TRANSACTION (confirmação/resolução - broadcast)
  * 
  * Response Action:
  * - br.com.setis.interfaceautomacao.SERVICO
+ * 
+ * URI Scheme: app://
+ * Authorities: payment, confirmation, resolve
  */
 class PayGoService(private val context: Context) {
 
@@ -31,18 +33,25 @@ class PayGoService(private val context: Context) {
         private const val TAG = "PayGoService"
         private const val MAX_LOGS = 200
         
-        // PayGo Intent Actions
+        // ========== PayGo Intent Actions (Documentação Oficial) ==========
+        // Transação (venda, cancelamento, etc) - via startActivity
         const val ACTION_TRANSACTION = "br.com.setis.payment.TRANSACTION"
+        // Confirmação e Resolução de pendência - via sendBroadcast
         const val ACTION_CONFIRMATION = "br.com.setis.confirmation.TRANSACTION"
+        // Resposta do PayGo (tratada no Manifest)
         const val ACTION_RESPONSE = "br.com.setis.interfaceautomacao.SERVICO"
         
-        // Package names do PayGo Integrado (ordem de prioridade)
-        // PRIMEIRO: Package confirmado pelo cliente (CERT/Homologação)
+        // ========== Bundle Extras Keys (Documentação Oficial) ==========
+        const val EXTRA_DADOS_AUTOMACAO = "DadosAutomacao"
+        const val EXTRA_PERSONALIZACAO = "Personalizacao"
+        const val EXTRA_PACKAGE = "package"
+        const val EXTRA_URI = "uri"
+        const val EXTRA_CONFIRMACAO = "Confirmacao"
+        
+        // ========== Package Names do PayGo Integrado ==========
         val PAYGO_PACKAGES = listOf(
-            // ✅ Package CONFIRMADO - PGIntegrado Android CERT v4.1.50.5
-            "br.com.setis.clientepaygoweb.cert",
-            // Outros packages conhecidos
-            "br.com.setis.clientepaygoweb",
+            "br.com.setis.clientepaygoweb.cert",      // CERT/Homologação
+            "br.com.setis.clientepaygoweb",           // Produção
             "br.com.setis.clientepaygoweb.hml",
             "br.com.setis.interfaceautomacao",
             "br.com.setis.interfaceautomacao.cert",
@@ -57,17 +66,16 @@ class PayGoService(private val context: Context) {
         // Currency code Brasil (ISO4217)
         const val CURRENCY_CODE_BRL = "986"
         
-        // Dados da Automação Comercial - HOMOLOGAÇÃO
+        // Dados da Automação Comercial
         const val POS_NAME = "TotemCostaUrbana"
-        const val POS_VERSION = "1.0.0-CERT" // Versão de certificação
+        const val POS_VERSION = "1.0.0-CERT"
         const val POS_DEVELOPER = "CostaUrbana"
         
         // Flag de ambiente
-        const val IS_HOMOLOGATION = true // Alterar para false em produção
+        const val IS_HOMOLOGATION = true
     }
 
-    // Status do PayGo e pinpad
-    // NOTA: O PayGo gerencia o pinpad internamente, só precisamos saber se PayGo está instalado
+    // Estado
     private var payGoInstalled: Boolean = false
     private var payGoPackage: String? = null
     private var payGoVersion: String? = null
@@ -76,35 +84,33 @@ class PayGoService(private val context: Context) {
     private var pendingTransactionId: String? = null
     private var pendingCallback: ((JSONObject) -> Unit)? = null
     
+    // Dados de transação pendente (para resolução)
+    private var lastPendingData: JSONObject? = null
+    
     // Debug
     private var debugMode = true
     private val logs = mutableListOf<String>()
 
     init {
-        addLog("========================================")
-        addLog("PayGoService inicializado")
-        addLog("Versão: $POS_VERSION")
+        addLog("════════════════════════════════════════")
+        addLog("PayGoService v$POS_VERSION inicializado")
+        addLog("Package: ${context.packageName}")
         addLog("Desenvolvedor: $POS_DEVELOPER")
+        addLog("Modo: ${if (IS_HOMOLOGATION) "HOMOLOGAÇÃO" else "PRODUÇÃO"}")
         checkPayGoInstallation()
-        addLog("========================================")
+        addLog("════════════════════════════════════════")
     }
 
-    // ================== PayGo Installation Check ==================
+    // ========================================================================
+    // VERIFICAÇÃO DE INSTALAÇÃO DO PAYGO
+    // ========================================================================
 
-    /**
-     * Verifica se o PayGo Integrado está instalado
-     * Se o PayGo estiver instalado, consideramos o pinpad como "disponível"
-     * porque o PayGo gerencia o pinpad internamente
-     * 
-     * HOMOLOGAÇÃO: Suporta tanto versões de produção quanto de certificação
-     */
     fun checkPayGoInstallation(): Boolean {
-        addLog("[PAYGO] Verificando instalação do PayGo...")
-        addLog("[PAYGO] Modo: ${if (IS_HOMOLOGATION) "HOMOLOGAÇÃO/CERTIFICAÇÃO" else "PRODUÇÃO"}")
+        addLog("[PAYGO] Verificando instalação...")
         
         val pm = context.packageManager
         
-        // Primeiro, tentar encontrar pelos packages conhecidos
+        // 1. Verificar pelos packages conhecidos
         for (pkg in PAYGO_PACKAGES) {
             try {
                 val info = pm.getPackageInfo(pkg, 0)
@@ -112,123 +118,68 @@ class PayGoService(private val context: Context) {
                 payGoPackage = pkg
                 payGoVersion = info.versionName
                 
-                val isCertPackage = pkg.contains("cert", ignoreCase = true) || pkg.contains("hml", ignoreCase = true)
-                val ambiente = if (isCertPackage) "CERTIFICAÇÃO" else "PRODUÇÃO"
-                
-                addLog("[PAYGO] ✅ PayGo encontrado! ($ambiente)")
-                addLog("[PAYGO]    Package: $pkg")
+                val isCert = pkg.contains("cert", ignoreCase = true) || pkg.contains("hml", ignoreCase = true)
+                addLog("[PAYGO] ✅ Encontrado: $pkg")
                 addLog("[PAYGO]    Versão: ${info.versionName}")
-                addLog("[PAYGO]    VersionCode: ${info.longVersionCode}")
-                
-                if (IS_HOMOLOGATION && !isCertPackage) {
-                    addLog("[PAYGO] ⚠️ ATENÇÃO: App está em modo HOMOLOGAÇÃO mas PayGo é de PRODUÇÃO")
-                } else if (!IS_HOMOLOGATION && isCertPackage) {
-                    addLog("[PAYGO] ⚠️ ATENÇÃO: App está em PRODUÇÃO mas PayGo é de CERTIFICAÇÃO")
-                }
-                
+                addLog("[PAYGO]    Ambiente: ${if (isCert) "CERTIFICAÇÃO" else "PRODUÇÃO"}")
                 return true
             } catch (e: PackageManager.NameNotFoundException) {
-                // Continuar verificando outros packages
+                // Continuar verificando
             }
         }
         
-        // Segundo, verificar se há algum app que responde ao Intent de transação
+        // 2. Verificar por Intent resolution
         val testIntent = Intent(ACTION_TRANSACTION)
         val resolveInfos = pm.queryIntentActivities(testIntent, 0)
         
         if (resolveInfos.isNotEmpty()) {
-            addLog("[PAYGO] ✅ App encontrado via Intent resolution:")
-            for (info in resolveInfos) {
-                val appName = info.activityInfo.applicationInfo.loadLabel(pm).toString()
-                val pkgName = info.activityInfo.packageName
-                addLog("[PAYGO]    - $appName ($pkgName)")
-                payGoInstalled = true
-                payGoPackage = pkgName
-                payGoVersion = try {
-                    pm.getPackageInfo(pkgName, 0).versionName
-                } catch (e: Exception) { "desconhecida" }
-                
-                val isCert = appName.contains("cert", ignoreCase = true) || 
-                             appName.contains("homolog", ignoreCase = true) ||
-                             pkgName.contains("cert", ignoreCase = true)
-                addLog("[PAYGO]    Ambiente detectado: ${if (isCert) "CERTIFICAÇÃO" else "PRODUÇÃO"}")
-            }
+            val info = resolveInfos.first()
+            payGoInstalled = true
+            payGoPackage = info.activityInfo.packageName
+            payGoVersion = try {
+                pm.getPackageInfo(payGoPackage!!, 0).versionName
+            } catch (e: Exception) { "desconhecida" }
+            
+            addLog("[PAYGO] ✅ Encontrado via Intent: ${info.activityInfo.applicationInfo.loadLabel(pm)}")
+            addLog("[PAYGO]    Package: $payGoPackage")
             return true
         }
         
-        // Terceiro, buscar qualquer app instalado que contenha palavras-chave
-        // IMPORTANTE: Buscar pelo NOME do app também (PGIntegrado Android CERT)
-        addLog("[PAYGO] Buscando apps TEF instalados no dispositivo...")
-        val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment", "integrado")
+        // 3. Buscar por apps com palavras-chave
+        val keywords = listOf("paygo", "setis", "pgintegrado", "tef")
         val installedApps = pm.getInstalledApplications(0)
         
         for (appInfo in installedApps) {
             val pkgName = appInfo.packageName.lowercase()
             val appName = appInfo.loadLabel(pm).toString().lowercase()
             
-            // Detectar pelo nome "PGIntegrado" que aparece no Settings do Android
-            val isPGIntegrado = appName.contains("pgintegrado") || 
-                                appName.contains("pg integrado") ||
-                                appName.contains("paygo") ||
-                                pkgName.contains("pgintegrado") ||
-                                pkgName.contains("paygo") ||
-                                pkgName.contains("setis")
-            
-            if (isPGIntegrado || keywords.any { pkgName.contains(it) || appName.contains(it) }) {
-                addLog("[PAYGO] 📦 App TEF encontrado:")
-                addLog("[PAYGO]    Nome: ${appInfo.loadLabel(pm)}")
-                addLog("[PAYGO]    Package: ${appInfo.packageName}")
+            if (keywords.any { pkgName.contains(it) || appName.contains(it) }) {
+                addLog("[PAYGO] 📦 App relacionado: ${appInfo.loadLabel(pm)} ($pkgName)")
                 
-                // Para o PGIntegrado, aceitar mesmo sem verificar Intent (o app gerencia internamente)
-                if (appName.contains("pgintegrado") || appName.contains("pg integrado")) {
-                    payGoInstalled = true
-                    payGoPackage = appInfo.packageName
-                    payGoVersion = try {
-                        pm.getPackageInfo(appInfo.packageName, 0).versionName
-                    } catch (e: Exception) { "desconhecida" }
-                    
-                    val isCert = appName.contains("cert") || pkgName.contains("cert")
-                    addLog("[PAYGO] ✅ PGIntegrado detectado pelo nome!")
-                    addLog("[PAYGO]    Ambiente: ${if (isCert) "CERTIFICAÇÃO" else "PRODUÇÃO"}")
-                    return true
-                }
-                
-                // Verificar se este app responde ao Intent de pagamento
+                // Verificar se responde ao Intent
                 val checkIntent = Intent(ACTION_TRANSACTION)
                 checkIntent.setPackage(appInfo.packageName)
-                val canHandle = pm.queryIntentActivities(checkIntent, 0).isNotEmpty()
-                
-                if (canHandle) {
+                if (pm.queryIntentActivities(checkIntent, 0).isNotEmpty()) {
                     payGoInstalled = true
                     payGoPackage = appInfo.packageName
                     payGoVersion = try {
                         pm.getPackageInfo(appInfo.packageName, 0).versionName
                     } catch (e: Exception) { "desconhecida" }
                     
-                    addLog("[PAYGO] ✅ Este app aceita Intent de pagamento!")
+                    addLog("[PAYGO] ✅ Este app aceita transações!")
                     return true
-                } else {
-                    addLog("[PAYGO]    ⚠️ Não responde ao Intent de pagamento")
                 }
             }
         }
         
         payGoInstalled = false
         payGoPackage = null
-        addLog("[PAYGO] ❌ PayGo NÃO está instalado ou não configurado!")
-        addLog("[PAYGO] Por favor, instale o PayGo Integrado (versão CERT para homologação)")
-        addLog("[PAYGO] Packages verificados:")
-        PAYGO_PACKAGES.forEach { pkg ->
-            addLog("[PAYGO]    - $pkg")
-        }
+        addLog("[PAYGO] ❌ PayGo NÃO encontrado!")
         return false
     }
 
-    /**
-     * Retorna informações detalhadas sobre o PayGo
-     */
     fun getPayGoInfo(): JSONObject {
-        val isCertPackage = payGoPackage?.let { 
+        val isCert = payGoPackage?.let { 
             it.contains("cert", ignoreCase = true) || it.contains("hml", ignoreCase = true)
         } ?: false
         
@@ -236,69 +187,60 @@ class PayGoService(private val context: Context) {
             put("installed", payGoInstalled)
             put("version", payGoVersion ?: "desconhecido")
             put("packageName", payGoPackage ?: "não encontrado")
-            put("ambiente", if (isCertPackage) "CERTIFICAÇÃO" else if (payGoInstalled) "PRODUÇÃO" else "N/A")
+            put("ambiente", if (isCert) "CERTIFICAÇÃO" else if (payGoInstalled) "PRODUÇÃO" else "N/A")
             put("appModoHomologacao", IS_HOMOLOGATION)
-            put("packages_checked", JSONArray(PAYGO_PACKAGES))
         }
     }
 
-    // ================== Status ==================
+    // ========================================================================
+    // STATUS DO SISTEMA
+    // ========================================================================
 
     data class PinpadStatus(
         val conectado: Boolean,
         val modelo: String?
     )
 
-    /**
-     * Retorna status do pinpad
-     * NOTA: Se PayGo está instalado, consideramos pinpad como disponível
-     * porque o PayGo gerencia a conexão internamente
-     */
     fun getPinpadStatus(): PinpadStatus {
-        // Revalidar instalação do PayGo
-        if (!payGoInstalled) {
-            checkPayGoInstallation()
-        }
+        if (!payGoInstalled) checkPayGoInstallation()
         
         return PinpadStatus(
-            conectado = payGoInstalled,  // Se PayGo está instalado, pinpad está "disponível"
+            conectado = payGoInstalled,
             modelo = if (payGoInstalled) "PayGo Integrado" else null
         )
     }
     
-    /**
-     * Retorna status completo do serviço TEF
-     */
     fun getFullStatus(): JSONObject {
-        // Revalidar instalação
-        if (!payGoInstalled) {
-            checkPayGoInstallation()
-        }
+        if (!payGoInstalled) checkPayGoInstallation()
         
         return JSONObject().apply {
             put("pinpad", JSONObject().apply {
-                put("conectado", payGoInstalled)  // PayGo gerencia o pinpad
+                put("conectado", payGoInstalled)
                 put("modelo", if (payGoInstalled) "PayGo Integrado" else "")
                 put("info", "Pinpad gerenciado pelo PayGo")
             })
             put("paygo", getPayGoInfo())
-            put("ready", payGoInstalled)  // Pronto para transações se PayGo instalado
+            put("ready", payGoInstalled)
             put("pendingTransaction", pendingTransactionId)
+            put("hasPendingData", lastPendingData != null)
             put("debugMode", debugMode)
             put("logsCount", logs.size)
         }
     }
 
-    // ================== PayGo URI Integration ==================
+    // ========================================================================
+    // 3.4.1 TRANSAÇÃO (via startActivity)
+    // ========================================================================
 
     /**
      * Inicia uma transação de pagamento via Intent URI
+     * Conforme documentação: https://github.com/adminti2/mobile-integracao-uri#341-transação
      * 
      * @param ordemId Identificador único da ordem
-     * @param valorCentavos Valor em centavos (ex: 1000 = R$10,00)
-     * @param metodo Tipo de pagamento: "debito", "credito", "credito_parcelado", "pix"
-     * @param parcelas Número de parcelas (para crédito parcelado)
-     * @param callback Função chamada com o resultado da transação
+     * @param valorCentavos Valor em centavos (ex: 100 = R$1,00)
+     * @param metodo Tipo: "debito", "credito", "credito_parcelado", "pix"
+     * @param parcelas Número de parcelas
+     * @param callback Função chamada com o resultado
      */
     fun startTransaction(
         ordemId: String,
@@ -307,23 +249,20 @@ class PayGoService(private val context: Context) {
         parcelas: Int,
         callback: (JSONObject) -> Unit
     ) {
-        addLog("========================================")
-        addLog("[TXN] INICIANDO NOVA TRANSAÇÃO")
+        addLog("════════════════════════════════════════")
+        addLog("[TXN] INICIANDO TRANSAÇÃO")
         addLog("[TXN] OrdemId: $ordemId")
-        addLog("[TXN] Valor: R$ ${valorCentavos / 100.0}")
+        addLog("[TXN] Valor: R$ ${String.format("%.2f", valorCentavos / 100.0)}")
         addLog("[TXN] Método: $metodo")
         addLog("[TXN] Parcelas: $parcelas")
-        addLog("========================================")
+        addLog("════════════════════════════════════════")
 
-        // Verificar se PayGo está instalado
-        if (!payGoInstalled) {
-            // Tentar verificar novamente
-            checkPayGoInstallation()
-        }
+        // Verificar PayGo
+        if (!payGoInstalled) checkPayGoInstallation()
         
         if (!payGoInstalled) {
-            addLog("[TXN] ❌ ERRO: PayGo não está instalado!")
-            callback(createError("PAYGO_NOT_INSTALLED", "PayGo Integrado não está instalado. Por favor, instale o aplicativo PayGo."))
+            addLog("[TXN] ❌ PayGo não instalado!")
+            callback(createError("PAYGO_NOT_INSTALLED", "PayGo Integrado não está instalado."))
             return
         }
 
@@ -333,78 +272,70 @@ class PayGoService(private val context: Context) {
         pendingCallback = callback
 
         try {
-            // Construir URI de transação
-            val transactionUri = buildTransactionUri(
-                transactionId = transactionId,
-                valorCentavos = valorCentavos,
-                metodo = metodo,
-                parcelas = parcelas
-            )
+            // ========== Construir URIs conforme documentação ==========
             
-            addLog("[TXN] URI de transação construída:")
-            addLog("[TXN] $transactionUri")
+            // 1. URI de Transação (dados obrigatórios)
+            val transactionUri = buildTransactionUri(transactionId, valorCentavos, metodo, parcelas)
+            addLog("[TXN] Transaction URI: $transactionUri")
             
-            // Construir URI de dados da automação
-            val posDataUri = buildPosDataUri()
-            addLog("[TXN] PosData URI: $posDataUri")
+            // 2. URI de Dados Automação (obrigatório)
+            val dadosAutomacaoUri = buildDadosAutomacaoUri()
+            addLog("[TXN] DadosAutomacao URI: $dadosAutomacaoUri")
             
-            // Construir URI de personalização
-            val customizationUri = buildCustomizationUri()
-            addLog("[TXN] Customization URI: $customizationUri")
+            // 3. URI de Personalização (opcional)
+            val personalizacaoUri = buildPersonalizacaoUri()
+            addLog("[TXN] Personalizacao URI: $personalizacaoUri")
             
-            // Criar Intent conforme documentação oficial PayGo (Integração Direta via URI)
-            // Ref: https://github.com/nicup/integracao-direta
+            // ========== Criar Intent conforme documentação ==========
+            // Ref: "A requisição deve ser feita através do método startActivity"
             val intent = Intent(ACTION_TRANSACTION, transactionUri).apply {
-                // Bundle Extra dos Dados Automação (chave: "DadosAutomacao" conforme doc)
-                putExtra("DadosAutomacao", posDataUri.toString())
-                // Bundle Extra da Personalização (chave: "Personalizacao" conforme doc)
-                putExtra("Personalizacao", customizationUri.toString())
-                // Bundle Extra do nome do pacote da aplicação
-                putExtra("package", context.packageName)
-                // Flags obrigatórias conforme documentação:
-                // FLAG_ACTIVITY_NEW_TASK + FLAG_ACTIVITY_CLEAR_TASK
+                // Bundle Extra dos Dados Automação (chave: "DadosAutomacao")
+                putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
+                
+                // Bundle Extra da Personalização (chave: "Personalizacao")
+                putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
+                
+                // Bundle Extra do nome do pacote (chave: "package")
+                // "necessário para que o aplicativo PayGo Integrado consiga efetuar a devolutiva"
+                putExtra(EXTRA_PACKAGE, context.packageName)
+                
+                // Flags obrigatórias:
+                // "FLAG_ACTIVITY_NEW_TASK + FLAG_ACTIVITY_CLEAR_TASK"
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
             }
             
-            addLog("[TXN] Intent criado com action: $ACTION_TRANSACTION")
+            addLog("[TXN] Intent Action: $ACTION_TRANSACTION")
             addLog("[TXN] Package de retorno: ${context.packageName}")
             
-            // Verificar se há app para resolver o Intent
+            // Verificar se há app para resolver
             val resolveInfo = context.packageManager.resolveActivity(intent, 0)
             if (resolveInfo != null) {
-                addLog("[TXN] ✅ Intent será resolvido por: ${resolveInfo.activityInfo.packageName}")
+                addLog("[TXN] ✅ Resolvido por: ${resolveInfo.activityInfo.packageName}")
             } else {
-                addLog("[TXN] ⚠️ Nenhum app encontrado para resolver o Intent")
-                addLog("[TXN] Tentando abrir mesmo assim...")
+                addLog("[TXN] ⚠️ Nenhum app encontrado para resolver Intent")
             }
             
+            // ========== Iniciar Activity ==========
             addLog("[TXN] >>> Chamando startActivity() <<<")
-            
-            // Iniciar Activity do PayGo
             context.startActivity(intent)
             
-            addLog("[TXN] ✅ Intent enviado com sucesso!")
+            addLog("[TXN] ✅ Intent enviado!")
             addLog("[TXN] Aguardando resposta do PayGo...")
-            addLog("[TXN] O PayGo vai abrir e gerenciar o pagamento no pinpad")
             
         } catch (e: android.content.ActivityNotFoundException) {
-            Log.e(TAG, "PayGo não encontrado: ${e.message}", e)
-            addLog("[TXN] ❌ ERRO: Activity não encontrada!")
+            Log.e(TAG, "ActivityNotFoundException: ${e.message}", e)
+            addLog("[TXN] ❌ Activity não encontrada!")
             addLog("[TXN] ${e.message}")
             
             pendingTransactionId = null
             pendingCallback = null
             
-            callback(createError("ACTIVITY_NOT_FOUND", "PayGo não encontrado. Verifique se está instalado corretamente."))
+            callback(createError("ACTIVITY_NOT_FOUND", "PayGo não encontrado. Verifique a instalação."))
             
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao iniciar transação: ${e.message}", e)
-            addLog("[TXN] ❌ ERRO INESPERADO!")
-            addLog("[TXN] Tipo: ${e.javaClass.simpleName}")
-            addLog("[TXN] Mensagem: ${e.message}")
-            e.stackTrace.take(5).forEach { 
-                addLog("[TXN]    at ${it.className}.${it.methodName}:${it.lineNumber}")
-            }
+            addLog("[TXN] ❌ ERRO: ${e.javaClass.simpleName}")
+            addLog("[TXN] ${e.message}")
             
             pendingTransactionId = null
             pendingCallback = null
@@ -414,8 +345,8 @@ class PayGoService(private val context: Context) {
     }
 
     /**
-     * Constrói a URI de transação conforme especificação PayGo
-     * Formato: app://payment/input?operation=VENDA&amount=1000&currencyCode=986&transactionId=xxx
+     * Constrói URI de transação conforme RFC2396
+     * Formato: app://payment/input?operation=VENDA&transactionId=xxx&amount=xxx&currencyCode=986
      */
     private fun buildTransactionUri(
         transactionId: String,
@@ -432,7 +363,7 @@ class PayGoService(private val context: Context) {
             .appendQueryParameter("amount", valorCentavos.toString())
             .appendQueryParameter("currencyCode", CURRENCY_CODE_BRL)
         
-        // Tipo de cartão e financiamento baseado no método
+        // Tipo de cartão e financiamento
         when (metodo) {
             "debito" -> {
                 builder.appendQueryParameter("cardType", "CARTAO_DEBITO")
@@ -448,17 +379,16 @@ class PayGoService(private val context: Context) {
                 builder.appendQueryParameter("cardType", "CARTAO_CREDITO")
                 builder.appendQueryParameter("finType", "PARCELADO_ESTABELECIMENTO")
                 builder.appendQueryParameter("installments", parcelas.toString())
-                addLog("[URI] Tipo: CRÉDITO parcelado ($parcelas x)")
+                addLog("[URI] Tipo: CRÉDITO parcelado ${parcelas}x")
             }
             "pix" -> {
                 builder.appendQueryParameter("paymentMode", "PAGAMENTO_CARTEIRA_VIRTUAL")
-                addLog("[URI] Tipo: PIX")
+                addLog("[URI] Tipo: PIX/Carteira Virtual")
             }
             else -> {
-                // Padrão para crédito à vista
                 builder.appendQueryParameter("cardType", "CARTAO_CREDITO")
                 builder.appendQueryParameter("finType", "A_VISTA")
-                addLog("[URI] ⚠️ Método desconhecido '$metodo', usando CRÉDITO à vista")
+                addLog("[URI] Tipo padrão: CRÉDITO à vista")
             }
         }
         
@@ -466,9 +396,10 @@ class PayGoService(private val context: Context) {
     }
 
     /**
-     * Constrói a URI de dados da automação comercial
+     * Constrói URI de Dados Automação (obrigatório em toda transação)
+     * Formato: app://payment/posData?posName=xxx&posVersion=xxx&...
      */
-    private fun buildPosDataUri(): Uri {
+    private fun buildDadosAutomacaoUri(): Uri {
         return Uri.Builder()
             .scheme("app")
             .authority("payment")
@@ -485,17 +416,18 @@ class PayGoService(private val context: Context) {
     }
 
     /**
-     * Constrói a URI de personalização visual (cores da Costa Urbana)
+     * Constrói URI de Personalização (cores do tema Costa Urbana)
+     * Formato: app://payment/posCustomization?screenBackgroundColor=%231a1a2e&...
+     * NOTA: # deve ser substituído por %23 na URI
      */
-    private fun buildCustomizationUri(): Uri {
+    private fun buildPersonalizacaoUri(): Uri {
         return Uri.Builder()
             .scheme("app")
             .authority("payment")
             .appendPath("posCustomization")
-            // Cores baseadas no tema Costa Urbana (tons escuros com dourado)
-            .appendQueryParameter("screenBackgroundColor", "#1a1a2e")  // Fundo escuro
-            .appendQueryParameter("toolbarBackgroundColor", "#c9a961") // Dourado
-            .appendQueryParameter("fontColor", "#ffffff")              // Texto branco
+            .appendQueryParameter("screenBackgroundColor", "#1a1a2e")
+            .appendQueryParameter("toolbarBackgroundColor", "#c9a961")
+            .appendQueryParameter("fontColor", "#ffffff")
             .appendQueryParameter("keyboardBackgroundColor", "#2d2d44")
             .appendQueryParameter("keyboardFontColor", "#ffffff")
             .appendQueryParameter("editboxBackgroundColor", "#ffffff")
@@ -505,44 +437,61 @@ class PayGoService(private val context: Context) {
             .build()
     }
 
+    // ========================================================================
+    // 3.4.1 RESPOSTA DA TRANSAÇÃO
+    // ========================================================================
+
     /**
      * Processa a resposta do PayGo Integrado
-     * Chamado pela MainActivity quando recebe o Intent de resposta
+     * Chamado pela MainActivity quando recebe Intent com ACTION_RESPONSE
      */
     fun handlePayGoResponse(responseUri: Uri) {
-        addLog("========================================")
-        addLog("[RESP] RESPOSTA DO PAYGO RECEBIDA")
+        addLog("════════════════════════════════════════")
+        addLog("[RESP] RESPOSTA DO PAYGO")
         addLog("[RESP] URI: $responseUri")
-        addLog("========================================")
+        addLog("════════════════════════════════════════")
         
-        // Log de todos os parâmetros recebidos
-        addLog("[RESP] Parâmetros recebidos:")
+        // Log de todos os parâmetros
+        addLog("[RESP] Parâmetros:")
         responseUri.queryParameterNames.forEach { key ->
-            val value = responseUri.getQueryParameter(key)
-            addLog("[RESP]    $key = $value")
+            addLog("[RESP]   $key = ${responseUri.getQueryParameter(key)}")
         }
         
         val callback = pendingCallback
         if (callback == null) {
-            addLog("[RESP] ⚠️ Nenhum callback pendente!")
+            addLog("[RESP] ⚠️ Nenhum callback pendente")
             return
         }
         
         try {
             val result = parseResponseUri(responseUri)
-            addLog("[RESP] Resultado parseado:")
-            addLog("[RESP]    Status: ${result.optString("status")}")
-            addLog("[RESP]    NSU: ${result.optString("nsu")}")
-            addLog("[RESP]    Autorização: ${result.optString("autorizacao")}")
-            addLog("[RESP]    Mensagem: ${result.optString("mensagem")}")
+            
+            addLog("[RESP] Status: ${result.optString("status")}")
+            addLog("[RESP] NSU: ${result.optString("nsu")}")
+            addLog("[RESP] Autorização: ${result.optString("autorizacao")}")
+            
+            // Verificar pendência
+            val pendingExists = responseUri.getQueryParameter("pendingTransactionExists")?.toBoolean() ?: false
+            if (pendingExists) {
+                addLog("[RESP] ⚠️ EXISTE TRANSAÇÃO PENDENTE!")
+                savePendingData(responseUri)
+            }
+            
+            // Verificar se requer confirmação
+            val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
+            val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
+            
+            if (requiresConfirmation && confirmationId != null) {
+                addLog("[RESP] Transação requer confirmação automática")
+                sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+            }
             
             callback(result)
-            addLog("[RESP] ✅ Callback executado com sucesso")
+            addLog("[RESP] ✅ Callback executado")
             
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao processar resposta: ${e.message}", e)
-            addLog("[RESP] ❌ ERRO ao processar resposta!")
-            addLog("[RESP] ${e.message}")
+            addLog("[RESP] ❌ ERRO: ${e.message}")
             callback(createError("PARSE_ERROR", "Erro ao processar resposta: ${e.message}"))
         } finally {
             pendingTransactionId = null
@@ -551,20 +500,15 @@ class PayGoService(private val context: Context) {
     }
 
     /**
-     * Parseia a URI de resposta do PayGo para JSONObject
+     * Parseia URI de resposta para JSONObject
+     * Conforme tabela 3.3.2 da documentação
      */
     private fun parseResponseUri(uri: Uri): JSONObject {
         val result = JSONObject()
         
-        // Pegar todos os query parameters
         val transactionResult = uri.getQueryParameter("transactionResult")?.toIntOrNull() ?: -1
-        val requiresConfirmation = uri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
-        val confirmationId = uri.getQueryParameter("confirmationTransactionId")
         
-        addLog("[PARSE] transactionResult: $transactionResult")
-        addLog("[PARSE] requiresConfirmation: $requiresConfirmation")
-        
-        // Determinar status baseado no transactionResult
+        // Determinar status (transactionResult: 0 = aprovado, 1-99 = negado, -1 = cancelado)
         val status = when {
             transactionResult == 0 -> "aprovado"
             transactionResult in 1..99 -> "negado"
@@ -572,124 +516,201 @@ class PayGoService(private val context: Context) {
             else -> "erro"
         }
         
-        addLog("[PARSE] Status interpretado: $status")
+        addLog("[PARSE] transactionResult: $transactionResult -> $status")
         
         result.put("status", status)
         result.put("transactionResult", transactionResult)
-        result.put("requiresConfirmation", requiresConfirmation)
+        result.put("requiresConfirmation", uri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false)
         
-        // Dados da transação aprovada
-        if (status == "aprovado") {
-            result.put("nsu", uri.getQueryParameter("transactionNsu") ?: "")
-            result.put("autorizacao", uri.getQueryParameter("authorizationCode") ?: "")
-            result.put("bandeira", uri.getQueryParameter("cardName") ?: "")
-            result.put("cartaoMascarado", uri.getQueryParameter("maskedPan") ?: "")
-            result.put("tipoCartao", uri.getQueryParameter("cardType") ?: "")
-            result.put("valor", uri.getQueryParameter("amount")?.toLongOrNull() ?: 0)
-            result.put("parcelas", uri.getQueryParameter("installments")?.toIntOrNull() ?: 1)
-            result.put("comprovanteCliente", uri.getQueryParameter("cardholderReceipt") ?: "")
-            result.put("comprovanteLojista", uri.getQueryParameter("merchantReceipt") ?: "")
-            result.put("comprovanteCompleto", uri.getQueryParameter("fullReceipt") ?: "")
-            
-            if (confirmationId != null) {
-                result.put("confirmationTransactionId", confirmationId)
-            }
-            
-            addLog("[PARSE] ✅ Transação APROVADA!")
-        } else if (status == "negado") {
-            addLog("[PARSE] ❌ Transação NEGADA")
-        } else if (status == "cancelado") {
-            addLog("[PARSE] ⚠️ Transação CANCELADA pelo usuário")
+        // Dados da transação
+        result.put("nsu", uri.getQueryParameter("transactionNsu") ?: "")
+        result.put("terminalNsu", uri.getQueryParameter("terminalNsu") ?: "")
+        result.put("autorizacao", uri.getQueryParameter("authorizationCode") ?: "")
+        result.put("bandeira", uri.getQueryParameter("cardName") ?: "")
+        result.put("cartaoMascarado", uri.getQueryParameter("maskedPan") ?: "")
+        result.put("tipoCartao", uri.getQueryParameter("cardType") ?: "")
+        result.put("valor", uri.getQueryParameter("amount")?.toLongOrNull() ?: 0)
+        result.put("parcelas", uri.getQueryParameter("installments")?.toIntOrNull() ?: 1)
+        
+        // Comprovantes
+        result.put("comprovanteCliente", uri.getQueryParameter("cardholderReceipt") ?: "")
+        result.put("comprovanteLojista", uri.getQueryParameter("merchantReceipt") ?: "")
+        result.put("comprovanteCompleto", uri.getQueryParameter("fullReceipt") ?: "")
+        result.put("comprovanteReduzido", uri.getQueryParameter("shortReceipt") ?: "")
+        
+        // Confirmação
+        uri.getQueryParameter("confirmationTransactionId")?.let {
+            result.put("confirmationTransactionId", it)
         }
         
-        // Mensagem de resultado
+        // Mensagem
         result.put("mensagem", uri.getQueryParameter("resultMessage") ?: "")
         result.put("timestamp", System.currentTimeMillis())
         result.put("ordemId", pendingTransactionId?.substringBefore("_") ?: "")
         
-        // Se requer confirmação, enviar automaticamente
-        if (requiresConfirmation && confirmationId != null) {
-            addLog("[PARSE] Transação requer confirmação, enviando...")
-            sendConfirmation(confirmationId)
-        }
+        // Dados adicionais
+        result.put("merchantId", uri.getQueryParameter("merchantId") ?: "")
+        result.put("merchantName", uri.getQueryParameter("merchantName") ?: "")
+        result.put("providerName", uri.getQueryParameter("providerName") ?: "")
         
         return result
     }
 
     /**
-     * Envia confirmação automática da transação
+     * Salva dados de transação pendente para resolução posterior
      */
-    fun sendConfirmation(confirmationTransactionId: String) {
-        addLog("[CONFIRM] Enviando confirmação: $confirmationTransactionId")
+    private fun savePendingData(uri: Uri) {
+        lastPendingData = JSONObject().apply {
+            put("providerName", uri.getQueryParameter("providerName") ?: "")
+            put("merchantId", uri.getQueryParameter("merchantId") ?: "")
+            put("localNsu", uri.getQueryParameter("terminalNsu") ?: "")
+            put("transactionNsu", uri.getQueryParameter("transactionNsu") ?: "")
+            put("hostNsu", uri.getQueryParameter("transactionNsu") ?: "") // Usar mesmo NSU se hostNsu não vier
+        }
+        addLog("[PENDING] Dados de pendência salvos: $lastPendingData")
+    }
+
+    // ========================================================================
+    // 3.4.2 CONFIRMAÇÃO (via sendBroadcast)
+    // ========================================================================
+
+    /**
+     * Envia confirmação de transação
+     * Conforme documentação: https://github.com/adminti2/mobile-integracao-uri#342-confirmação
+     * 
+     * @param confirmationTransactionId ID recebido na resposta
+     * @param transactionStatus CONFIRMADO_AUTOMATICO, CONFIRMADO_MANUAL ou DESFEITO_MANUAL
+     */
+    fun sendConfirmation(confirmationTransactionId: String, transactionStatus: String = "CONFIRMADO_AUTOMATICO") {
+        addLog("[CONFIRM] Enviando confirmação...")
+        addLog("[CONFIRM] ID: $confirmationTransactionId")
+        addLog("[CONFIRM] Status: $transactionStatus")
         
+        // Construir URI de confirmação
+        // Formato: app://confirmation/confirmation?confirmationTransactionId=xxx&transactionStatus=xxx
         val confirmationUri = Uri.Builder()
             .scheme("app")
             .authority("confirmation")
             .appendPath("confirmation")
             .appendQueryParameter("confirmationTransactionId", confirmationTransactionId)
-            .appendQueryParameter("transactionStatus", "CONFIRMADO_AUTOMATICO")
+            .appendQueryParameter("transactionStatus", transactionStatus)
             .build()
         
         addLog("[CONFIRM] URI: $confirmationUri")
         
         try {
+            // "A requisição deve ser efetuada com o método sendBroadcast"
             val intent = Intent().apply {
                 action = ACTION_CONFIRMATION
-                putExtra("uri", confirmationUri.toString())
+                // Bundle extra com a URI (chave: "uri")
+                putExtra(EXTRA_URI, confirmationUri.toString())
+                // "deve ser incluída a seguinte flag: FLAG_INCLUDE_STOPPED_PACKAGES"
                 addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
             
             context.sendBroadcast(intent)
-            addLog("[CONFIRM] ✅ Confirmação enviada com sucesso")
+            addLog("[CONFIRM] ✅ Broadcast enviado")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao enviar confirmação: ${e.message}", e)
+            Log.e(TAG, "Erro na confirmação: ${e.message}", e)
             addLog("[CONFIRM] ❌ ERRO: ${e.message}")
         }
     }
 
-    /**
-     * Cancela a transação atual (desfaz)
-     */
-    fun cancelTransaction(callback: (JSONObject) -> Unit) {
-        addLog("[CANCEL] Solicitação de cancelamento recebida")
+    // ========================================================================
+    // 3.4.3 RESOLUÇÃO DE PENDÊNCIA (via sendBroadcast)
+    // ========================================================================
 
-        val confirmationId = pendingTransactionId
-        if (confirmationId == null) {
-            addLog("[CANCEL] ⚠️ Nenhuma transação pendente para cancelar")
-            callback(createError("NO_TRANSACTION", "Nenhuma transação pendente"))
+    /**
+     * Resolve transação pendente
+     * Conforme documentação: https://github.com/adminti2/mobile-integracao-uri#343-resolução-de-pendência
+     */
+    fun resolvePendingTransaction(callback: (JSONObject) -> Unit) {
+        addLog("[RESOLVE] Resolvendo pendência...")
+        
+        val pendingData = lastPendingData
+        if (pendingData == null) {
+            addLog("[RESOLVE] ⚠️ Nenhuma pendência registrada")
+            callback(createError("NO_PENDING", "Nenhuma transação pendente para resolver"))
             return
         }
-
-        addLog("[CANCEL] Cancelando transação: $confirmationId")
-
+        
         try {
-            val cancelUri = Uri.Builder()
+            // Construir URI de resolução
+            // Formato: app://resolve/pendingTransaction?providerName=xxx&merchantId=xxx&...
+            val resolveUri = Uri.Builder()
                 .scheme("app")
-                .authority("confirmation")
-                .appendPath("confirmation")
-                .appendQueryParameter("confirmationTransactionId", confirmationId)
-                .appendQueryParameter("transactionStatus", "DESFEITO_MANUAL")
+                .authority("resolve")
+                .appendPath("pendingTransaction")
+                .appendQueryParameter("providerName", pendingData.optString("providerName"))
+                .appendQueryParameter("merchantId", pendingData.optString("merchantId"))
+                .appendQueryParameter("localNsu", pendingData.optString("localNsu"))
+                .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu"))
+                .appendQueryParameter("hostNsu", pendingData.optString("hostNsu"))
                 .build()
             
-            addLog("[CANCEL] URI: $cancelUri")
+            addLog("[RESOLVE] URI: $resolveUri")
             
+            // URI de confirmação automática
+            val confirmacaoUri = "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO"
+            
+            // Enviar broadcast
             val intent = Intent().apply {
                 action = ACTION_CONFIRMATION
-                putExtra("uri", cancelUri.toString())
+                putExtra(EXTRA_URI, resolveUri.toString())
+                putExtra(EXTRA_CONFIRMACAO, confirmacaoUri)
                 addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
             
             context.sendBroadcast(intent)
-            addLog("[CANCEL] ✅ Cancelamento enviado")
+            addLog("[RESOLVE] ✅ Broadcast enviado")
+            
+            // Limpar dados de pendência
+            lastPendingData = null
+            
+            callback(JSONObject().apply {
+                put("status", "resolvido")
+                put("mensagem", "Resolução de pendência enviada")
+            })
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro na resolução: ${e.message}", e)
+            addLog("[RESOLVE] ❌ ERRO: ${e.message}")
+            callback(createError("RESOLVE_ERROR", "Erro ao resolver pendência: ${e.message}"))
+        }
+    }
+
+    // ========================================================================
+    // CANCELAMENTO (DESFAZER)
+    // ========================================================================
+
+    /**
+     * Cancela/desfaz a transação atual
+     */
+    fun cancelTransaction(callback: (JSONObject) -> Unit) {
+        addLog("[CANCEL] Solicitação de cancelamento")
+
+        val confirmationId = pendingTransactionId
+        if (confirmationId == null) {
+            addLog("[CANCEL] ⚠️ Nenhuma transação pendente")
+            callback(createError("NO_TRANSACTION", "Nenhuma transação pendente"))
+            return
+        }
+
+        addLog("[CANCEL] Desfazendo: $confirmationId")
+
+        try {
+            sendConfirmation(confirmationId, "DESFEITO_MANUAL")
             
             pendingTransactionId = null
             pendingCallback = null
             
             callback(JSONObject().apply {
                 put("status", "cancelado")
-                put("mensagem", "Transação cancelada")
+                put("mensagem", "Transação desfeita")
             })
+            
+            addLog("[CANCEL] ✅ Cancelamento enviado")
             
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao cancelar: ${e.message}", e)
@@ -698,20 +719,96 @@ class PayGoService(private val context: Context) {
         }
     }
 
-    // ================== Debug & Logs ==================
+    // ========================================================================
+    // OPERAÇÃO DE CANCELAMENTO DE VENDA
+    // ========================================================================
+
+    /**
+     * Inicia operação de cancelamento de uma venda anterior
+     * 
+     * @param ordemId ID da ordem
+     * @param valorCentavos Valor original da transação
+     * @param nsuOriginal NSU da transação a ser cancelada
+     * @param autorizacaoOriginal Código de autorização original
+     * @param callback Callback com resultado
+     */
+    fun startCancelamento(
+        ordemId: String,
+        valorCentavos: Long,
+        nsuOriginal: String,
+        autorizacaoOriginal: String,
+        callback: (JSONObject) -> Unit
+    ) {
+        addLog("════════════════════════════════════════")
+        addLog("[CANCELAMENTO] INICIANDO")
+        addLog("[CANCELAMENTO] Valor: R$ ${String.format("%.2f", valorCentavos / 100.0)}")
+        addLog("[CANCELAMENTO] NSU Original: $nsuOriginal")
+        addLog("[CANCELAMENTO] Autorização Original: $autorizacaoOriginal")
+        addLog("════════════════════════════════════════")
+
+        if (!payGoInstalled) checkPayGoInstallation()
+        
+        if (!payGoInstalled) {
+            callback(createError("PAYGO_NOT_INSTALLED", "PayGo não instalado"))
+            return
+        }
+
+        val transactionId = "${ordemId}_CANCEL_${System.currentTimeMillis()}"
+        pendingTransactionId = transactionId
+        pendingCallback = callback
+
+        try {
+            // URI de cancelamento
+            val cancelUri = Uri.Builder()
+                .scheme("app")
+                .authority("payment")
+                .appendPath("input")
+                .appendQueryParameter("operation", "CANCELAMENTO")
+                .appendQueryParameter("transactionId", transactionId)
+                .appendQueryParameter("amount", valorCentavos.toString())
+                .appendQueryParameter("currencyCode", CURRENCY_CODE_BRL)
+                .appendQueryParameter("originalTransactionNsu", nsuOriginal)
+                .appendQueryParameter("originalAuthorizationCode", autorizacaoOriginal)
+                .build()
+            
+            addLog("[CANCELAMENTO] URI: $cancelUri")
+            
+            val dadosAutomacaoUri = buildDadosAutomacaoUri()
+            val personalizacaoUri = buildPersonalizacaoUri()
+            
+            val intent = Intent(ACTION_TRANSACTION, cancelUri).apply {
+                putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
+                putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
+                putExtra(EXTRA_PACKAGE, context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            }
+            
+            context.startActivity(intent)
+            addLog("[CANCELAMENTO] ✅ Intent enviado")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro no cancelamento: ${e.message}", e)
+            addLog("[CANCELAMENTO] ❌ ERRO: ${e.message}")
+            pendingTransactionId = null
+            pendingCallback = null
+            callback(createError("CANCEL_ERROR", "Erro ao iniciar cancelamento: ${e.message}"))
+        }
+    }
+
+    // ========================================================================
+    // DEBUG & LOGS
+    // ========================================================================
 
     fun setDebugMode(enabled: Boolean) {
         debugMode = enabled
-        addLog("[DEBUG] Modo debug: ${if (enabled) "ATIVADO" else "DESATIVADO"}")
+        addLog("[DEBUG] Modo: ${if (enabled) "ATIVADO" else "DESATIVADO"}")
     }
 
-    fun getLogs(): JSONArray {
-        return JSONArray(logs)
-    }
+    fun getLogs(): JSONArray = JSONArray(logs)
 
     fun clearLogs() {
         logs.clear()
-        addLog("[LOGS] Histórico de logs limpo")
+        addLog("[LOGS] Histórico limpo")
     }
 
     private fun addLog(message: String) {
@@ -721,8 +818,6 @@ class PayGoService(private val context: Context) {
         
         synchronized(logs) {
             logs.add(logEntry)
-            
-            // Manter apenas os últimos MAX_LOGS
             while (logs.size > MAX_LOGS) {
                 logs.removeAt(0)
             }
@@ -733,12 +828,12 @@ class PayGoService(private val context: Context) {
         }
     }
 
-    // ================== Helpers ==================
+    // ========================================================================
+    // HELPERS
+    // ========================================================================
 
     private fun createError(code: String, message: String): JSONObject {
-        addLog("[ERROR] Código: $code")
-        addLog("[ERROR] Mensagem: $message")
-        
+        addLog("[ERROR] $code: $message")
         return JSONObject().apply {
             put("status", "erro")
             put("codigoErro", code)

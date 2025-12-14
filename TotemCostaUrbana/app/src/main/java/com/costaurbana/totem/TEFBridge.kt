@@ -13,8 +13,14 @@ import org.json.JSONObject
  * Esta classe expõe métodos que podem ser chamados do JavaScript web
  * através do objeto global `window.TEF`
  * 
- * IMPORTANTE: O PayGo Integrado gerencia o pinpad internamente.
- * Quando window.TEF existe e PayGo está instalado, está pronto para uso.
+ * Implementado conforme documentação PayGo Integrado:
+ * https://github.com/adminti2/mobile-integracao-uri
+ * 
+ * Operações suportadas:
+ * - Venda (débito, crédito, parcelado, PIX)
+ * - Cancelamento de venda
+ * - Confirmação automática/manual
+ * - Resolução de pendências
  */
 class TEFBridge(
     private val activity: MainActivity,
@@ -25,13 +31,23 @@ class TEFBridge(
         private const val TAG = "TEFBridge"
     }
 
+    // ========================================================================
+    // PAGAMENTO (VENDA)
+    // ========================================================================
+
     /**
      * Inicia um pagamento TEF
      * Chamado do JS: TEF.iniciarPagamento(jsonParams)
+     * 
+     * @param params JSON string com:
+     *   - ordemId: ID único da ordem
+     *   - valorCentavos: valor em centavos (100 = R$1,00)
+     *   - metodo: "debito", "credito", "credito_parcelado", "pix"
+     *   - parcelas: número de parcelas (para crédito parcelado)
      */
     @JavascriptInterface
     fun iniciarPagamento(params: String) {
-        Log.i(TAG, "iniciarPagamento chamado: $params")
+        Log.i(TAG, "iniciarPagamento: $params")
         
         try {
             val obj = JSONObject(params)
@@ -45,39 +61,137 @@ class TEFBridge(
                 return
             }
 
-            Log.d(TAG, "Processando pagamento: ordem=$ordemId, valor=$valorCentavos, metodo=$metodo, parcelas=$parcelas")
+            Log.d(TAG, "Pagamento: ordem=$ordemId, valor=$valorCentavos, metodo=$metodo, parcelas=$parcelas")
 
             payGoService.startTransaction(ordemId, valorCentavos, metodo, parcelas) { result ->
                 returnResult(result)
             }
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao processar iniciarPagamento", e)
+            Log.e(TAG, "Erro em iniciarPagamento", e)
             returnError("PARSE_ERROR", "Erro ao processar parâmetros: ${e.message}")
         }
     }
 
+    // ========================================================================
+    // CANCELAMENTO DE VENDA
+    // ========================================================================
+
     /**
-     * Cancela o pagamento atual
+     * Inicia cancelamento de uma venda anterior
+     * Chamado do JS: TEF.cancelarVenda(jsonParams)
+     * 
+     * @param params JSON string com:
+     *   - ordemId: ID da ordem
+     *   - valorCentavos: valor original
+     *   - nsuOriginal: NSU da transação original
+     *   - autorizacaoOriginal: código de autorização original
+     */
+    @JavascriptInterface
+    fun cancelarVenda(params: String) {
+        Log.i(TAG, "cancelarVenda: $params")
+        
+        try {
+            val obj = JSONObject(params)
+            val ordemId = obj.optString("ordemId", "")
+            val valorCentavos = obj.optLong("valorCentavos", 0)
+            val nsuOriginal = obj.optString("nsuOriginal", "")
+            val autorizacaoOriginal = obj.optString("autorizacaoOriginal", "")
+
+            if (ordemId.isEmpty() || valorCentavos <= 0 || nsuOriginal.isEmpty()) {
+                returnError("PARAMS_INVALIDOS", "ordemId, valorCentavos e nsuOriginal são obrigatórios")
+                return
+            }
+
+            payGoService.startCancelamento(ordemId, valorCentavos, nsuOriginal, autorizacaoOriginal) { result ->
+                returnResult(result)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro em cancelarVenda", e)
+            returnError("PARSE_ERROR", "Erro ao processar parâmetros: ${e.message}")
+        }
+    }
+
+    // ========================================================================
+    // CANCELAMENTO DE TRANSAÇÃO ATUAL
+    // ========================================================================
+
+    /**
+     * Cancela/desfaz o pagamento atual em andamento
      * Chamado do JS: TEF.cancelarPagamento()
      */
     @JavascriptInterface
     fun cancelarPagamento() {
-        Log.i(TAG, "cancelarPagamento chamado")
+        Log.i(TAG, "cancelarPagamento")
         
         payGoService.cancelTransaction { result ->
             returnResult(result)
         }
     }
 
+    // ========================================================================
+    // CONFIRMAÇÃO MANUAL
+    // ========================================================================
+
+    /**
+     * Envia confirmação manual de uma transação
+     * Chamado do JS: TEF.confirmarTransacao(confirmationId, status)
+     * 
+     * @param confirmationId ID de confirmação recebido na resposta
+     * @param status "CONFIRMADO_MANUAL" ou "DESFEITO_MANUAL"
+     */
+    @JavascriptInterface
+    fun confirmarTransacao(confirmationId: String, status: String) {
+        Log.i(TAG, "confirmarTransacao: id=$confirmationId, status=$status")
+        
+        if (confirmationId.isEmpty()) {
+            returnError("PARAMS_INVALIDOS", "confirmationId é obrigatório")
+            return
+        }
+        
+        val validStatus = when (status) {
+            "CONFIRMADO_MANUAL", "DESFEITO_MANUAL", "CONFIRMADO_AUTOMATICO" -> status
+            else -> "CONFIRMADO_MANUAL"
+        }
+        
+        payGoService.sendConfirmation(confirmationId, validStatus)
+        
+        returnResult(JSONObject().apply {
+            put("status", "enviado")
+            put("mensagem", "Confirmação enviada")
+            put("confirmationId", confirmationId)
+            put("transactionStatus", validStatus)
+        })
+    }
+
+    // ========================================================================
+    // RESOLUÇÃO DE PENDÊNCIA
+    // ========================================================================
+
+    /**
+     * Resolve transação pendente
+     * Chamado do JS: TEF.resolverPendencia()
+     */
+    @JavascriptInterface
+    fun resolverPendencia() {
+        Log.i(TAG, "resolverPendencia")
+        
+        payGoService.resolvePendingTransaction { result ->
+            returnResult(result)
+        }
+    }
+
+    // ========================================================================
+    // STATUS E VERIFICAÇÃO
+    // ========================================================================
+
     /**
      * Verifica o status do pinpad
-     * NOTA: Retorna status do PayGo, que gerencia o pinpad internamente
      * Chamado do JS: TEF.verificarPinpad()
-     * @return JSON string com status do pinpad
+     * @return JSON string com status
      */
     @JavascriptInterface
     fun verificarPinpad(): String {
-        Log.d(TAG, "verificarPinpad chamado")
+        Log.d(TAG, "verificarPinpad")
         
         val status = payGoService.getPinpadStatus()
         val result = JSONObject().apply {
@@ -87,9 +201,59 @@ class TEFBridge(
             put("info", "Pinpad gerenciado pelo PayGo Integrado")
         }
         
-        Log.i(TAG, "verificarPinpad resultado: conectado=${status.conectado}, modelo=${status.modelo}")
+        Log.i(TAG, "verificarPinpad: conectado=${status.conectado}")
         return result.toString()
     }
+
+    /**
+     * Retorna o status completo do serviço TEF
+     * Chamado do JS: TEF.getStatus()
+     * @return JSON string com status completo
+     */
+    @JavascriptInterface
+    fun getStatus(): String {
+        Log.d(TAG, "getStatus")
+        return payGoService.getFullStatus().toString()
+    }
+
+    /**
+     * Verifica informações do PayGo instalado
+     * Chamado do JS: TEF.verificarPayGo()
+     * @return JSON string com informações do PayGo
+     */
+    @JavascriptInterface
+    fun verificarPayGo(): String {
+        Log.d(TAG, "verificarPayGo")
+        return payGoService.getPayGoInfo().toString()
+    }
+    
+    /**
+     * Verifica se o sistema está pronto para pagamentos
+     * Chamado do JS: TEF.isReady()
+     * @return boolean
+     */
+    @JavascriptInterface
+    fun isReady(): Boolean {
+        val status = payGoService.getPinpadStatus()
+        Log.d(TAG, "isReady: ${status.conectado}")
+        return status.conectado
+    }
+
+    /**
+     * Força uma nova verificação do PayGo
+     * Chamado do JS: TEF.revalidarPayGo()
+     * @return JSON string com resultado
+     */
+    @JavascriptInterface
+    fun revalidarPayGo(): String {
+        Log.d(TAG, "revalidarPayGo")
+        payGoService.checkPayGoInstallation()
+        return payGoService.getPayGoInfo().toString()
+    }
+
+    // ========================================================================
+    // DEBUG E LOGS
+    // ========================================================================
 
     /**
      * Ativa/desativa modo debug
@@ -108,9 +272,8 @@ class TEFBridge(
      */
     @JavascriptInterface
     fun getLogs(): String {
-        val logs = payGoService.getLogs()
         return JSONObject().apply {
-            put("logs", logs)
+            put("logs", payGoService.getLogs())
         }.toString()
     }
 
@@ -120,93 +283,30 @@ class TEFBridge(
      */
     @JavascriptInterface
     fun limparLogs() {
-        Log.d(TAG, "limparLogs chamado")
+        Log.d(TAG, "limparLogs")
         payGoService.clearLogs()
     }
 
-    /**
-     * Retorna resultado para o JavaScript
-     */
-    private fun returnResult(result: JSONObject) {
-        val js = "window.onTefResultado && window.onTefResultado($result);"
-        Log.d(TAG, "Enviando resultado para JS: $result")
-        
-        activity.runOnUiThread {
-            webView.evaluateJavascript(js) { response ->
-                Log.d(TAG, "JS callback response: $response")
-            }
-        }
-    }
+    // ========================================================================
+    // DEBUG - LISTAR APPS
+    // ========================================================================
 
     /**
-     * Retorna erro para o JavaScript
-     */
-    private fun returnError(code: String, message: String) {
-        val result = JSONObject().apply {
-            put("status", "erro")
-            put("codigoErro", code)
-            put("mensagem", message)
-            put("timestamp", System.currentTimeMillis())
-        }
-        returnResult(result)
-    }
-
-    /**
-     * Retorna o status completo do serviço TEF
-     * Chamado do JS: TEF.getStatus()
-     * @return JSON string com status completo
-     */
-    @JavascriptInterface
-    fun getStatus(): String {
-        Log.d(TAG, "getStatus chamado")
-        
-        val status = payGoService.getFullStatus()
-        Log.d(TAG, "getStatus resultado: $status")
-        return status.toString()
-    }
-
-    /**
-     * Verifica informações do PayGo instalado
-     * Chamado do JS: TEF.verificarPayGo()
-     * @return JSON string com informações do PayGo
-     */
-    @JavascriptInterface
-    fun verificarPayGo(): String {
-        Log.d(TAG, "verificarPayGo chamado")
-        
-        val info = payGoService.getPayGoInfo()
-        Log.d(TAG, "verificarPayGo resultado: $info")
-        return info.toString()
-    }
-    
-    /**
-     * Verifica se o sistema está pronto para pagamentos
-     * Chamado do JS: TEF.isReady()
-     * @return boolean indicando se está pronto
-     */
-    @JavascriptInterface
-    fun isReady(): Boolean {
-        val status = payGoService.getPinpadStatus()
-        Log.d(TAG, "isReady chamado - resultado: ${status.conectado}")
-        return status.conectado
-    }
-    
-    /**
-     * Lista todos os apps instalados que podem ser relacionados a TEF/pagamentos
-     * APENAS PARA DEBUG - Ajuda a identificar o package name correto do PayGo
+     * Lista apps instalados relacionados a TEF/pagamentos
+     * APENAS PARA DEBUG
      * Chamado do JS: TEF.listarAppsInstalados()
      * @return JSON string com lista de apps
      */
     @JavascriptInterface
     fun listarAppsInstalados(): String {
-        Log.d(TAG, "listarAppsInstalados chamado")
+        Log.d(TAG, "listarAppsInstalados")
         
         val pm = activity.packageManager
         val result = JSONObject()
         
         try {
-            // Listar apps que respondem ao Intent de transação PayGo
-            val transactionIntent = Intent("br.com.setis.payment.TRANSACTION")
+            // Apps que respondem ao Intent de transação
+            val transactionIntent = Intent(PayGoService.ACTION_TRANSACTION)
             val transactionApps = pm.queryIntentActivities(transactionIntent, 0)
             
             val paymentAppsArray = JSONArray()
@@ -219,7 +319,7 @@ class TEFBridge(
             }
             result.put("paymentApps", paymentAppsArray)
             
-            // Buscar apps com palavras-chave relacionadas
+            // Apps com palavras-chave
             val keywords = listOf("paygo", "setis", "pgintegrado", "tef", "payment", "pag")
             val installedApps = pm.getInstalledApplications(0)
             
@@ -241,8 +341,6 @@ class TEFBridge(
                 }
             }
             result.put("relatedApps", relatedAppsArray)
-            
-            // Contar total de apps
             result.put("totalInstalledApps", installedApps.size)
             result.put("timestamp", System.currentTimeMillis())
             
@@ -251,23 +349,37 @@ class TEFBridge(
             result.put("error", e.message)
         }
         
-        Log.d(TAG, "listarAppsInstalados resultado: $result")
         return result.toString()
     }
-    
+
+    // ========================================================================
+    // COMUNICAÇÃO COM JAVASCRIPT
+    // ========================================================================
+
     /**
-     * Força uma nova verificação do PayGo
-     * Chamado do JS: TEF.revalidarPayGo()
-     * @return JSON string com resultado da validação
+     * Retorna resultado para o JavaScript
      */
-    @JavascriptInterface
-    fun revalidarPayGo(): String {
-        Log.d(TAG, "revalidarPayGo chamado")
+    private fun returnResult(result: JSONObject) {
+        val js = "window.onTefResultado && window.onTefResultado($result);"
+        Log.d(TAG, "Enviando para JS: $result")
         
-        val found = payGoService.checkPayGoInstallation()
-        val info = payGoService.getPayGoInfo()
-        
-        Log.d(TAG, "revalidarPayGo resultado: encontrado=$found, info=$info")
-        return info.toString()
+        activity.runOnUiThread {
+            webView.evaluateJavascript(js) { response ->
+                Log.d(TAG, "JS response: $response")
+            }
+        }
+    }
+
+    /**
+     * Retorna erro para o JavaScript
+     */
+    private fun returnError(code: String, message: String) {
+        val result = JSONObject().apply {
+            put("status", "erro")
+            put("codigoErro", code)
+            put("mensagem", message)
+            put("timestamp", System.currentTimeMillis())
+        }
+        returnResult(result)
     }
 }
