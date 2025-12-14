@@ -63,30 +63,64 @@ const TotemWaiting: React.FC = () => {
     if (!appointment) return;
 
     try {
-      // Contar check-ins válidos SEM checkout concluído (em atendimento ou aguardando)
-      const { data: sessionsAhead, error } = await supabase
+      // Buscar todas as sessões ativas (com check-in, sem checkout)
+      const { data: allSessions, error } = await supabase
         .from('totem_sessions')
-        .select('id, check_in_time, check_out_time, appointment_id(servico_id(duracao))')
-        .in('status', ['check_in', 'in_service'])
-        .is('check_out_time', null) // Garantir que não tem checkout
-        .lt('check_in_time', session?.check_in_time || new Date().toISOString())
+        .select('id, check_in_time, check_out_time, status, appointment_id')
+        .is('check_out_time', null)
+        .not('check_in_time', 'is', null)
         .order('check_in_time', { ascending: true });
 
-      if (!error && sessionsAhead) {
+      if (error) {
+        console.error('Erro ao buscar fila:', error);
+        setQueuePosition(1);
+        setEstimatedWaitTime(0);
+        return;
+      }
+
+      // Filtrar sessões do mesmo barbeiro que chegaram antes de mim
+      const sessionsToCheck = (allSessions || []).filter((s: any) => 
+        s.id !== session?.id && 
+        s.status !== 'completed' && 
+        s.status !== 'cancelled' &&
+        s.check_in_time &&
+        new Date(s.check_in_time) < new Date(session?.check_in_time || new Date())
+      );
+
+      // Buscar dados dos agendamentos para filtrar pelo mesmo barbeiro
+      const validSessions: any[] = [];
+      let totalWaitTime = 0;
+
+      for (const s of sessionsToCheck) {
+        if (s.appointment_id) {
+          const { data: apptData } = await supabase
+            .from('painel_agendamentos')
+            .select('barbeiro_id, servico_id(duracao)')
+            .eq('id', s.appointment_id)
+            .single();
+          
+          // Só conta se for do mesmo barbeiro
+          if ((apptData as any)?.barbeiro_id === appointment.barbeiro_id) {
+            validSessions.push(s);
+            const duration = (apptData as any)?.servico_id?.duracao || 30;
+            totalWaitTime += duration;
+          }
+        }
+      }
+
+      if (validSessions.length === 0) {
+        // Ninguém na fila antes de mim = Sou o próximo!
+        setQueuePosition(1);
+        setEstimatedWaitTime(0);
+      } else {
         // Posição na fila = número de pessoas à frente + 1
-        setQueuePosition(sessionsAhead.length + 1);
-        
-        // Calcular tempo real baseado na duração de cada serviço na fila
-        let totalWaitTime = 0;
-        sessionsAhead.forEach((s: any) => {
-          const duration = s.appointment_id?.servico_id?.duracao || 30;
-          totalWaitTime += duration;
-        });
-        
+        setQueuePosition(validSessions.length + 1);
         setEstimatedWaitTime(totalWaitTime);
       }
     } catch (error) {
       console.error('Erro ao calcular fila:', error);
+      setQueuePosition(1);
+      setEstimatedWaitTime(0);
     }
   };
 
