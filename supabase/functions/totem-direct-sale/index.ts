@@ -6,6 +6,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+// Função auxiliar para obter data/hora no timezone do Brasil
+function getBrazilDateTime() {
+  const now = new Date();
+  // Converter para timezone do Brasil (UTC-3)
+  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  
+  // Formatar data como YYYY-MM-DD
+  const year = brazilTime.getFullYear();
+  const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
+  const day = String(brazilTime.getDate()).padStart(2, '0');
+  const date = `${year}-${month}-${day}`;
+  
+  // Formatar hora como HH:MM:SS
+  const hours = String(brazilTime.getHours()).padStart(2, '0');
+  const minutes = String(brazilTime.getMinutes()).padStart(2, '0');
+  const seconds = String(brazilTime.getSeconds()).padStart(2, '0');
+  const time = `${hours}:${minutes}:${seconds}`;
+  
+  return {
+    date,
+    datetime: `${date}T${time}`,
+    formatted: `${day}/${month}/${year} ${time}`
+  };
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -107,6 +132,10 @@ serve(async (req) => {
       })
 
       // 7. Chamar edge function para criar registros no ERP financeiro (com comissões se houver barbeiro)
+      // Usar horário do Brasil para a transação
+      const brazilTime = getBrazilDateTime();
+      console.log('📅 Usando horário do Brasil:', brazilTime);
+      
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
@@ -119,8 +148,8 @@ serve(async (req) => {
             notes: venda.barbeiro_id 
               ? `Venda direta de produtos no totem - ID: ${venda_id} - Com barbeiro`
               : `Venda direta de produtos no totem - ID: ${venda_id}`,
-            transaction_date: new Date().toISOString().split('T')[0],
-            transaction_datetime: new Date().toISOString()
+            transaction_date: brazilTime.date,
+            transaction_datetime: brazilTime.datetime
           }
         }
       )
