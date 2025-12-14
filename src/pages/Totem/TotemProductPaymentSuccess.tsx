@@ -4,7 +4,7 @@ import { CheckCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import { sendReceiptEmail, getCurrentUserEmail } from '@/services/receiptEmailService';
+import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
 
 const TotemProductPaymentSuccess: React.FC = () => {
@@ -25,9 +25,10 @@ const TotemProductPaymentSuccess: React.FC = () => {
       if (emailSentRef.current) return;
       emailSentRef.current = true;
 
-      const email = await getCurrentUserEmail();
-      if (!email) {
-        console.log('[ProductPaymentSuccess] Usuário não tem e-mail cadastrado');
+      // Usar o e-mail do cliente cadastrado
+      const clientEmail = client?.email;
+      if (!clientEmail) {
+        console.log('[ProductPaymentSuccess] Cliente não tem e-mail cadastrado');
         return;
       }
 
@@ -39,7 +40,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
 
       const result = await sendReceiptEmail({
         clientName: client.nome,
-        clientEmail: email,
+        clientEmail: clientEmail,
         transactionType: 'product',
         items,
         total: sale.total,
@@ -51,7 +52,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
       if (result.success) {
         toast({
           title: "Comprovante enviado!",
-          description: `Enviamos para ${email}`,
+          description: `Enviamos para ${clientEmail}`,
         });
       }
     };

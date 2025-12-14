@@ -1000,6 +1000,7 @@ export type Database = {
         Row: {
           created_at: string | null
           data_nascimento: string | null
+          email: string | null
           id: string
           nome: string
           updated_at: string | null
@@ -1008,6 +1009,7 @@ export type Database = {
         Insert: {
           created_at?: string | null
           data_nascimento?: string | null
+          email?: string | null
           id: string
           nome: string
           updated_at?: string | null
@@ -1016,6 +1018,7 @@ export type Database = {
         Update: {
           created_at?: string | null
           data_nascimento?: string | null
+          email?: string | null
           id?: string
           nome?: string
           updated_at?: string | null
