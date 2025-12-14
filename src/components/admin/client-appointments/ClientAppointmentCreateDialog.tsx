@@ -456,13 +456,18 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       console.log('✅ Agendamento criado:', appointmentData);
 
-      // Enviar e-mail de confirmação (em background)
+      // Enviar e-mail de confirmação (aguardar para garantir envio)
       if (appointmentData?.id) {
-        sendAppointmentConfirmationEmail(appointmentData.id).then(sent => {
-          if (sent) {
+        try {
+          const emailSent = await sendAppointmentConfirmationEmail(appointmentData.id);
+          if (emailSent) {
             console.log('📧 E-mail de confirmação enviado!');
+          } else {
+            console.log('📧 E-mail não enviado (cliente sem e-mail válido ou erro)');
           }
-        });
+        } catch (emailError) {
+          console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
+        }
       }
 
       if (progressToast) toast.dismiss(progressToast);
