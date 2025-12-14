@@ -1,12 +1,16 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, Receipt, Star } from 'lucide-react';
+import { CheckCircle, Receipt, Star, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { sendReceiptEmail, getCurrentUserEmail } from '@/services/receiptEmailService';
+import { useToast } from '@/hooks/use-toast';
 
 const TotemPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { toast } = useToast();
+  const emailSentRef = useRef(false);
   const { appointment, client, total, paymentMethod, isDirect, transactionData } = location.state || {};
 
   useEffect(() => {
@@ -21,14 +25,49 @@ const TotemPaymentSuccess: React.FC = () => {
       return;
     }
 
+    // Enviar comprovante por e-mail
+    const sendEmailReceipt = async () => {
+      if (emailSentRef.current) return;
+      emailSentRef.current = true;
+
+      const email = await getCurrentUserEmail();
+      if (!email) {
+        console.log('[PaymentSuccess] Usuário não tem e-mail cadastrado');
+        return;
+      }
+
+      const items = appointment?.servico 
+        ? [{ name: appointment.servico.nome, price: total }]
+        : [{ name: 'Serviço', price: total }];
+
+      const result = await sendReceiptEmail({
+        clientName: client.nome,
+        clientEmail: email,
+        transactionType: 'service',
+        items,
+        total,
+        paymentMethod: paymentMethod || 'card',
+        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
+        nsu: transactionData?.nsu,
+        barberName: appointment?.barbeiro?.nome
+      });
+
+      if (result.success) {
+        toast({
+          title: "Comprovante enviado!",
+          description: `Enviamos para ${email}`,
+        });
+      }
+    };
+
+    sendEmailReceipt();
+
     // Para checkout de serviço: ir direto para avaliação após 3 segundos
     // Para venda direta de produtos: voltar para home após 5 segundos
     const timer = setTimeout(() => {
       if (isDirect) {
-        // Venda direta de produtos - voltar para home
         navigate('/totem/home');
       } else if (appointment) {
-        // Serviço com agendamento - ir direto para avaliação
         navigate('/totem/rating', {
           state: { appointment, client }
         });
@@ -41,7 +80,7 @@ const TotemPaymentSuccess: React.FC = () => {
       clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData]);
+  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast]);
 
   if (!total || !client) {
     return null;
