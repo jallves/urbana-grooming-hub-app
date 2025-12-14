@@ -186,7 +186,30 @@ const CashFlowDashboard: React.FC = () => {
 
   return (
     <div className="space-y-3 sm:space-y-4 lg:space-y-6 w-full">
-      {/* Filtro de Período - Ano e Mês */}
+      {/* Fluxo de Caixa do Dia + Saldo Bancário */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+        <DailyCashFlow />
+        
+        {/* Saldo Bancário - Saldo Geral da Empresa (Total Histórico) */}
+        <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-white">
+              Saldo Bancário
+            </CardTitle>
+            <Landmark className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${(totalBalanceData?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              R$ {(totalBalanceData?.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              Saldo total para conciliação
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Filtro de Período - Ano e Mês (entre fluxo do dia e métricas do mês) */}
       <Card className="bg-white border-gray-300">
         <CardContent className="p-3 sm:p-4">
           <div className="flex items-center gap-3 flex-wrap">
@@ -218,11 +241,8 @@ const CashFlowDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Fluxo de Caixa do Dia - NOVO */}
-      <DailyCashFlow />
-
-      {/* Métricas do Mês Selecionado + Saldo Bancário */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
+      {/* Métricas do Mês Selecionado */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 lg:gap-6">
         <Card className="bg-white border-gray-300">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium text-black">
@@ -277,24 +297,6 @@ const CashFlowDashboard: React.FC = () => {
                 {netGrowth >= 0 ? '+' : ''}{netGrowth.toFixed(1)}% vs mês anterior
               </span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Saldo Bancário - Saldo Geral da Empresa */}
-        <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
-            <CardTitle className="text-xs sm:text-sm font-medium text-white">
-              Saldo Bancário
-            </CardTitle>
-            <Landmark className="h-3 w-3 sm:h-4 sm:w-4 text-white" />
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 pt-0">
-            <div className={`text-lg sm:text-xl lg:text-2xl font-bold ${(totalBalanceData?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-              R$ {(totalBalanceData?.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-slate-300 mt-1">
-              Saldo total para conciliação
-            </p>
           </CardContent>
         </Card>
       </div>
