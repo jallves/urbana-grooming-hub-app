@@ -1,61 +1,67 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CreditCard, Settings2, Users, Shield, Smartphone } from "lucide-react";
-import TEFHomologacao from '@/components/admin/tef/TEFHomologacao';
-import TEFSettingsForm from '@/components/admin/tef/TEFSettingsForm';
-import TEFAndroidIntegration from '@/components/admin/tef/TEFAndroidIntegration';
+import { Users, Shield, Smartphone, FileText, Rocket } from "lucide-react";
+import TEFDocumentacao from '@/components/admin/tef/TEFDocumentacao';
+import TEFProducao from '@/components/admin/tef/TEFProducao';
+import TotemStatus from '@/components/admin/tef/TotemStatus';
 import UserManagement from '@/components/admin/settings/UserManagement';
 import SessionsManagement from '@/pages/admin/SessionsManagement';
 
 const AdminSettings: React.FC = () => {
   return (
     <AdminLayout 
-      title="Configurações do Sistema" 
-      description="Configure o TEF e suas integrações de pagamento"
+      title="Configurações Master" 
+      description="Painel exclusivo do administrador master"
       icon="⚙️"
     >
-      <div className="w-full h-full p-6">
+      <div className="w-full h-full p-4 md:p-6">
         <Tabs defaultValue="users" className="w-full">
-          <TabsList className="bg-white border border-gray-200 grid grid-cols-2 md:grid-cols-5">
+          {/* Tabs com cores fixas pastéis */}
+          <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-2 md:grid-cols-5 gap-1 p-1.5 h-auto">
             <TabsTrigger 
               value="users"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-urbana-gold data-[state=active]:to-yellow-500 data-[state=active]:text-white"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-amber-100 text-amber-800 border border-amber-200 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-amber-400 data-[state=active]:shadow-sm"
             >
-              <Users className="h-4 w-4 mr-2" />
-              Usuários
+              <Users className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Usuários</span>
+              <span className="sm:hidden">Users</span>
             </TabsTrigger>
             <TabsTrigger 
               value="sessions"
-              className="data-[state=active]:bg-gradient-to-r data-[state=active]:from-blue-600 data-[state=active]:to-blue-700 data-[state=active]:text-white"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-blue-100 text-blue-800 border border-blue-200 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-blue-400 data-[state=active]:shadow-sm"
             >
-              <Shield className="h-4 w-4 mr-2" />
-              Sessões
+              <Shield className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Sessões</span>
+              <span className="sm:hidden">Sess.</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="tef-homologacao"
-              className="data-[state=active]:bg-black data-[state=active]:text-white"
+              value="totem"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-green-100 text-green-800 border border-green-200 data-[state=active]:bg-green-200 data-[state=active]:text-green-900 data-[state=active]:border-green-400 data-[state=active]:shadow-sm"
             >
-              <CreditCard className="h-4 w-4 mr-2" />
-              TEF Homologação
+              <Smartphone className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Totem</span>
+              <span className="sm:hidden">Totem</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="tef-android"
-              className="data-[state=active]:bg-green-600 data-[state=active]:text-white"
+              value="tef-docs"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-purple-100 text-purple-800 border border-purple-200 data-[state=active]:bg-purple-200 data-[state=active]:text-purple-900 data-[state=active]:border-purple-400 data-[state=active]:shadow-sm"
             >
-              <Smartphone className="h-4 w-4 mr-2" />
-              Totem Android
+              <FileText className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">TEF Docs</span>
+              <span className="sm:hidden">Docs</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="tef-settings"
-              className="data-[state=active]:bg-black data-[state=active]:text-white"
+              value="tef-prod"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-rose-100 text-rose-800 border border-rose-200 data-[state=active]:bg-rose-200 data-[state=active]:text-rose-900 data-[state=active]:border-rose-400 data-[state=active]:shadow-sm"
             >
-              <Settings2 className="h-4 w-4 mr-2" />
-              Config TEF
+              <Rocket className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">TEF Produção</span>
+              <span className="sm:hidden">Prod</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="users" className="mt-6 h-[calc(100vh-250px)]">
+          <TabsContent value="users" className="mt-6">
             <UserManagement />
           </TabsContent>
 
@@ -63,16 +69,16 @@ const AdminSettings: React.FC = () => {
             <SessionsManagement />
           </TabsContent>
 
-          <TabsContent value="tef-homologacao" className="mt-6">
-            <TEFHomologacao />
+          <TabsContent value="totem" className="mt-6">
+            <TotemStatus />
           </TabsContent>
 
-          <TabsContent value="tef-android" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
-            <TEFAndroidIntegration />
+          <TabsContent value="tef-docs" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
+            <TEFDocumentacao />
           </TabsContent>
 
-          <TabsContent value="tef-settings" className="mt-6">
-            <TEFSettingsForm />
+          <TabsContent value="tef-prod" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
+            <TEFProducao />
           </TabsContent>
         </Tabs>
       </div>
