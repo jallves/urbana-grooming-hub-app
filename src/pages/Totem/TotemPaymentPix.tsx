@@ -13,7 +13,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], extraServices = [], resumo, isDirect = false } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
@@ -135,7 +135,10 @@ const TotemPaymentPix: React.FC = () => {
           total,
           paymentMethod: 'pix',
           isDirect,
-          transactionData
+          transactionData,
+          selectedProducts,
+          extraServices,
+          resumo
         },
         replace: true
       });

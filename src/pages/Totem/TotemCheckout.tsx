@@ -722,7 +722,9 @@ const TotemCheckout: React.FC = () => {
             appointment: appointment,
             client: client,
             total: totalWithProducts,
-            selectedProducts: selectedProducts
+            selectedProducts: selectedProducts,
+            extraServices: extraServices,
+            resumo: resumo
           }
         });
       } else {
@@ -733,7 +735,9 @@ const TotemCheckout: React.FC = () => {
             appointment: appointment,
             client: client,
             total: totalWithProducts,
-            selectedProducts: selectedProducts
+            selectedProducts: selectedProducts,
+            extraServices: extraServices,
+            resumo: resumo
           }
         });
       }
