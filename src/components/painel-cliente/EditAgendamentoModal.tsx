@@ -4,18 +4,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Save, X } from 'lucide-react';
+import { Calendar, Clock, Save, X, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { motion } from 'framer-motion';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 
 interface Agendamento {
   id: string;
   data: string;
   hora: string;
   status: string;
+  barbeiro_id?: string;
+  servico_id?: string;
   painel_barbeiros: {
     nome: string;
   };
@@ -47,9 +50,14 @@ interface EditAgendamentoModalProps {
 
 export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onUpdate }: EditAgendamentoModalProps) {
   const { toast } = useToast();
+  const { getAvailableTimeSlots } = useAppointmentValidation();
   const [loading, setLoading] = useState(false);
+  const [loadingSlots, setLoadingSlots] = useState(false);
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
+  const [availableTimeSlots, setAvailableTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
+  const [currentBarberId, setCurrentBarberId] = useState<string>('');
+  const [currentServiceDuration, setCurrentServiceDuration] = useState<number>(30);
   
   const [formData, setFormData] = useState({
     data: '',
@@ -58,16 +66,85 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     servico_id: ''
   });
 
+  // Carregar dados do agendamento quando abrir
   useEffect(() => {
-    if (agendamento) {
-      setFormData({
-        data: agendamento.data,
-        hora: agendamento.hora,
-        barbeiro_id: '',
-        servico_id: ''
-      });
-    }
-  }, [agendamento]);
+    const loadAgendamentoData = async () => {
+      if (agendamento && isOpen) {
+        // Buscar o barbeiro_id e servico_id do agendamento
+        const { data } = await supabase
+          .from('painel_agendamentos')
+          .select('barbeiro_id, servico_id, painel_servicos(duracao)')
+          .eq('id', agendamento.id)
+          .single();
+        
+        if (data) {
+          setCurrentBarberId(data.barbeiro_id);
+          setCurrentServiceDuration(data.painel_servicos?.duracao || 30);
+          setFormData({
+            data: agendamento.data,
+            hora: agendamento.hora,
+            barbeiro_id: '',
+            servico_id: ''
+          });
+        }
+      }
+    };
+    
+    loadAgendamentoData();
+  }, [agendamento, isOpen]);
+
+  // Buscar horários disponíveis quando data, barbeiro ou serviço mudar
+  useEffect(() => {
+    const fetchAvailableSlots = async () => {
+      if (!formData.data || !agendamento) return;
+      
+      const barberId = formData.barbeiro_id || currentBarberId;
+      if (!barberId) return;
+      
+      // Verificar duração do serviço (usar novo se selecionado, senão usar atual)
+      let duration = currentServiceDuration;
+      if (formData.servico_id) {
+        const selectedService = servicos.find(s => s.id === formData.servico_id);
+        if (selectedService) {
+          duration = selectedService.duracao;
+        }
+      }
+      
+      setLoadingSlots(true);
+      try {
+        const selectedDate = new Date(formData.data + 'T12:00:00');
+        const slots = await getAvailableTimeSlots(barberId, selectedDate, duration);
+        
+        // Filtrar apenas horários disponíveis
+        // Também incluir o horário atual do agendamento se for o mesmo dia
+        const filteredSlots = slots.filter(slot => {
+          if (slot.available) return true;
+          // Permitir o horário atual do agendamento (já está reservado para este agendamento)
+          if (agendamento.data === formData.data && slot.time === agendamento.hora) {
+            return true;
+          }
+          return false;
+        }).map(slot => ({
+          ...slot,
+          available: slot.available || (agendamento.data === formData.data && slot.time === agendamento.hora)
+        }));
+        
+        setAvailableTimeSlots(filteredSlots);
+        
+        // Se o horário selecionado não está mais disponível, limpar
+        if (formData.hora && !filteredSlots.find(s => s.time === formData.hora && s.available)) {
+          setFormData(prev => ({ ...prev, hora: '' }));
+        }
+      } catch (error) {
+        console.error('Erro ao buscar horários:', error);
+        setAvailableTimeSlots([]);
+      } finally {
+        setLoadingSlots(false);
+      }
+    };
+    
+    fetchAvailableSlots();
+  }, [formData.data, formData.barbeiro_id, formData.servico_id, currentBarberId, currentServiceDuration, agendamento, servicos, getAvailableTimeSlots]);
 
   useEffect(() => {
     if (isOpen) {
@@ -102,43 +179,6 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       }, []);
       setServicos(uniqueServices);
     }
-  };
-
-  // Gerar horários disponíveis com base no horário atual e data selecionada
-  const gerarHorariosDisponiveis = () => {
-    if (!formData.data) return [];
-    
-    const selectedDate = new Date(formData.data);
-    const now = new Date();
-    const isToday = selectedDate.getDate() === now.getDate() &&
-                   selectedDate.getMonth() === now.getMonth() &&
-                   selectedDate.getFullYear() === now.getFullYear();
-
-    const horarios = [];
-    
-    // Horário de funcionamento: 09:00 às 20:00
-    for (let hora = 9; hora < 20; hora++) {
-      for (let minuto = 0; minuto < 60; minuto += 30) {
-        const horaFormatada = `${hora.toString().padStart(2, '0')}:${minuto.toString().padStart(2, '0')}`;
-        
-        // Se for hoje, permitir horários até 10 minutos após passar
-        if (isToday) {
-          const slotTime = new Date(now);
-          slotTime.setHours(hora, minuto, 0, 0);
-          
-          // Permitir até 10 minutos depois do horário passar
-          const minTime = new Date(now.getTime() - 10 * 60 * 1000);
-          
-          if (slotTime < minTime) {
-            continue;
-          }
-        }
-        
-        horarios.push(horaFormatada);
-      }
-    }
-    
-    return horarios;
   };
 
   // Gerar datas disponíveis com base nas regras de negócio
@@ -210,8 +250,8 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
 
   if (!agendamento) return null;
 
-  const horariosDisponiveis = gerarHorariosDisponiveis();
   const datasDisponiveis = gerarDatasDisponiveis();
+  const horariosDisponiveis = availableTimeSlots.filter(s => s.available).map(s => s.time);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -256,18 +296,25 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
               <Select 
                 value={formData.hora} 
                 onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
-                disabled={!formData.data}
+                disabled={!formData.data || loadingSlots}
               >
                 <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  <SelectValue 
-                    placeholder={
-                      !formData.data 
-                        ? "Selecione uma data primeiro" 
-                        : horariosDisponiveis.length === 0 
-                          ? "Nenhum horário disponível" 
-                          : "Selecione um horário"
-                    } 
-                  />
+                  {loadingSlots ? (
+                    <div className="flex items-center gap-2">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Carregando...</span>
+                    </div>
+                  ) : (
+                    <SelectValue 
+                      placeholder={
+                        !formData.data 
+                          ? "Selecione uma data primeiro" 
+                          : horariosDisponiveis.length === 0 
+                            ? "Nenhum horário disponível" 
+                            : "Selecione um horário"
+                      } 
+                    />
+                  )}
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-600">
                   {horariosDisponiveis.length > 0 ? (
