@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,8 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -15,8 +17,11 @@ const TotemProductPaymentCard: React.FC = () => {
   const { sale, client, cardType, barber } = location.state || {};
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [paymentStarted, setPaymentStarted] = useState(false);
+  
+  const finalizingRef = useRef(false);
 
-  // Função de sucesso definida primeiro com useCallback
+  // Função de sucesso
   const handlePaymentSuccess = useCallback(async (transactionData?: {
     nsu?: string;
     autorizacao?: string;
@@ -24,9 +29,20 @@ const TotemProductPaymentCard: React.FC = () => {
   }) => {
     if (!sale || !barber) return;
     
+    // Evitar finalização duplicada
+    if (finalizingRef.current) {
+      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento');
+      return;
+    }
+    finalizingRef.current = true;
+    
     try {
-      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
-      console.log('   📝 Transaction Data:', transactionData);
+      console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+      console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO DE PRODUTO');
+      console.log('✅ [PRODUCT-CARD] NSU:', transactionData?.nsu);
+      console.log('✅ [PRODUCT-CARD] Autorização:', transactionData?.autorizacao);
+      console.log('✅ [PRODUCT-CARD] Bandeira:', transactionData?.bandeira);
+      console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
       
       // 1. Buscar itens da venda
       const { data: saleItems, error: itemsError } = await supabase
@@ -41,6 +57,7 @@ const TotemProductPaymentCard: React.FC = () => {
           title: 'Erro ao processar venda',
           message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
         });
+        finalizingRef.current = false;
         return;
       }
 
@@ -118,9 +135,11 @@ const TotemProductPaymentCard: React.FC = () => {
           title: 'Erro ao finalizar pagamento',
           message: 'O pagamento foi aprovado, mas houve um erro ao finalizar a venda. Procure um atendente.'
         });
+        finalizingRef.current = false;
         return;
       }
       
+      console.log('✅ [PRODUCT-CARD] Pagamento finalizado com sucesso!');
       toast.success('Pagamento aprovado!');
       navigate('/totem/product-payment-success', { 
         state: { sale, client, transactionData } 
@@ -132,10 +151,58 @@ const TotemProductPaymentCard: React.FC = () => {
         message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
       });
       setIsProcessing(false);
+      finalizingRef.current = false;
     }
   }, [sale, client, cardType, barber, navigate]);
 
-  // Hook TEF Android - conexão real com PayGo
+  // Handler para resultado do TEF
+  const handleTEFResult = useCallback((resultado: TEFResultado) => {
+    console.log('📞 [PRODUCT-CARD] handleTEFResult chamado:', resultado.status);
+    
+    switch (resultado.status) {
+      case 'aprovado':
+        console.log('✅ [PRODUCT-CARD] Pagamento APROVADO pelo PayGo');
+        handlePaymentSuccess({
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao,
+          bandeira: resultado.bandeira
+        });
+        break;
+        
+      case 'negado':
+        console.log('❌ [PRODUCT-CARD] Pagamento NEGADO pelo PayGo');
+        toast.error('Pagamento negado', { description: resultado.mensagem || 'Tente novamente' });
+        setError({ title: 'Pagamento Negado', message: resultado.mensagem || 'Tente novamente' });
+        setIsProcessing(false);
+        setPaymentStarted(false);
+        break;
+        
+      case 'cancelado':
+        console.log('⚠️ [PRODUCT-CARD] Pagamento CANCELADO');
+        toast.info('Pagamento cancelado');
+        setIsProcessing(false);
+        setPaymentStarted(false);
+        break;
+        
+      case 'erro':
+        console.log('❌ [PRODUCT-CARD] ERRO no pagamento');
+        toast.error('Erro no pagamento', { description: resultado.mensagem });
+        setError({ title: 'Erro no Pagamento', message: resultado.mensagem || 'Erro desconhecido' });
+        setIsProcessing(false);
+        setPaymentStarted(false);
+        break;
+    }
+  }, [handlePaymentSuccess]);
+
+  // Hook dedicado para receber resultado do PayGo
+  useTEFPaymentResult({
+    enabled: paymentStarted && isProcessing,
+    onResult: handleTEFResult,
+    pollingInterval: 500,
+    maxWaitTime: 180000 // 3 minutos
+  });
+
+  // Hook TEF Android
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -143,24 +210,19 @@ const TotemProductPaymentCard: React.FC = () => {
     iniciarPagamento: iniciarPagamentoTEF,
     cancelarPagamento: cancelarPagamentoTEF
   } = useTEFAndroid({
-    onSuccess: async (resultado) => {
-      console.log('✅ [TEF Produto] Pagamento aprovado:', resultado);
-      await handlePaymentSuccess({
-        nsu: resultado.nsu,
-        autorizacao: resultado.autorizacao,
-        bandeira: resultado.bandeira
-      });
-    },
+    onSuccess: handleTEFResult,
     onError: (erro) => {
       console.error('❌ [TEF Produto] Erro no pagamento:', erro);
       toast.error('Pagamento negado', { description: erro });
       setError({ title: 'Pagamento Negado', message: erro });
       setIsProcessing(false);
+      setPaymentStarted(false);
     },
     onCancelled: () => {
       console.log('⚠️ [TEF Produto] Pagamento cancelado');
       toast.info('Pagamento cancelado');
       setIsProcessing(false);
+      setPaymentStarted(false);
     }
   });
 
@@ -170,13 +232,16 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
-    console.log('💳 [TEF Produto] Iniciando pagamento:', {
-      tipo: cardType,
-      valor: sale.total,
-      venda_id: sale.id
-    });
+    console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
+    console.log('💳 [PRODUCT-CARD] INICIANDO PAGAMENTO DE PRODUTO');
+    console.log('💳 [PRODUCT-CARD] Tipo:', cardType);
+    console.log('💳 [PRODUCT-CARD] Valor:', sale.total);
+    console.log('💳 [PRODUCT-CARD] Venda ID:', sale.id);
+    console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
 
     setIsProcessing(true);
+    setPaymentStarted(true);
+    finalizingRef.current = false;
 
     const success = await iniciarPagamentoTEF({
       ordemId: sale.id,
@@ -186,24 +251,27 @@ const TotemProductPaymentCard: React.FC = () => {
     });
 
     if (!success) {
-      console.error('❌ [TEF Produto] Falha ao iniciar TEF');
+      console.error('❌ [PRODUCT-CARD] Falha ao iniciar TEF');
       toast.error('Erro ao iniciar pagamento', {
         description: 'Verifique a conexão com o pinpad'
       });
       setIsProcessing(false);
+      setPaymentStarted(false);
+    } else {
+      console.log('✅ [PRODUCT-CARD] TEF iniciado, aguardando resposta do PayGo...');
     }
   }, [isAndroidAvailable, isPinpadConnected, sale, cardType, iniciarPagamentoTEF]);
 
   // Iniciar pagamento quando tiver cardType e TEF disponível
   useEffect(() => {
-    console.log('💳 [TotemProductPaymentCard] ========== ESTADO TEF ==========');
-    console.log('💳 [TotemProductPaymentCard] isAndroidAvailable:', isAndroidAvailable);
-    console.log('💳 [TotemProductPaymentCard] isPinpadConnected:', isPinpadConnected);
-    console.log('💳 [TotemProductPaymentCard] cardType:', cardType);
-    console.log('💳 [TotemProductPaymentCard] isProcessing:', isProcessing);
-    console.log('💳 [TotemProductPaymentCard] tefProcessing:', tefProcessing);
-    console.log('💳 [TotemProductPaymentCard] sale:', sale?.id);
-    console.log('💳 [TotemProductPaymentCard] ==========================================');
+    console.log('💳 [TotemProductPaymentCard] Estado:', {
+      isAndroidAvailable,
+      isPinpadConnected,
+      cardType,
+      isProcessing,
+      tefProcessing,
+      sale_id: sale?.id
+    });
     
     if (!sale || !client || !barber) {
       toast.error('Dados incompletos');
@@ -213,62 +281,15 @@ const TotemProductPaymentCard: React.FC = () => {
 
     // Se TEF está disponível e conectado, iniciar pagamento
     if (isAndroidAvailable && isPinpadConnected && cardType && !isProcessing && !tefProcessing) {
-      console.log('💳 [TotemProductPaymentCard] ✅ Todas condições OK - iniciando pagamento real');
+      console.log('💳 [TotemProductPaymentCard] ✅ Todas condições OK - iniciando pagamento');
       iniciarPagamentoReal();
-    } else {
-      console.log('💳 [TotemProductPaymentCard] ⚠️ Condições não atendidas para pagamento');
     }
   }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType, isProcessing, tefProcessing, navigate, iniciarPagamentoReal]);
-
-  // Fallback: verificar sessionStorage para resultado pendente do PayGo
-  useEffect(() => {
-    if (!isProcessing) return;
-    
-    const checkStoredResult = () => {
-      try {
-        const storedResult = sessionStorage.getItem('lastTefResult');
-        const storedTime = sessionStorage.getItem('lastTefResultTime');
-        
-        if (storedResult && storedTime) {
-          const resultAge = Date.now() - parseInt(storedTime, 10);
-          // Se o resultado foi salvo nos últimos 30 segundos
-          if (resultAge < 30000) {
-            const resultado = JSON.parse(storedResult);
-            console.log('🔄 [PRODUCT-CARD] Recuperando resultado do sessionStorage:', resultado);
-            
-            // Limpar storage para evitar reprocessamento
-            sessionStorage.removeItem('lastTefResult');
-            sessionStorage.removeItem('lastTefResultTime');
-            
-            if (resultado.status === 'aprovado') {
-              console.log('✅ [PRODUCT-CARD] Pagamento aprovado via fallback, finalizando...');
-              handlePaymentSuccess({
-                nsu: resultado.nsu || resultado.transactionNsu,
-                autorizacao: resultado.autorizacao || resultado.authorizationCode,
-                bandeira: resultado.bandeira || resultado.cardName
-              });
-            } else if (resultado.status === 'cancelado' || resultado.status === 'negado') {
-              console.log('❌ [PRODUCT-CARD] Pagamento negado/cancelado via fallback');
-              setIsProcessing(false);
-              toast.error('Pagamento não aprovado', { description: resultado.mensagem || resultado.resultMessage });
-            }
-          }
-        }
-      } catch (e) {
-        console.error('❌ [PRODUCT-CARD] Erro ao verificar sessionStorage:', e);
-      }
-    };
-    
-    // Verificar periodicamente enquanto está processando
-    const interval = setInterval(checkStoredResult, 1000);
-    return () => clearInterval(interval);
-  }, [isProcessing, handlePaymentSuccess]);
-
-  // Nota: iniciarPagamentoReal e handlePaymentSuccess definidos acima via useCallback
 
   const handleCancelPayment = () => {
     cancelarPagamentoTEF();
     setIsProcessing(false);
+    setPaymentStarted(false);
     navigate(-1);
   };
 
@@ -281,6 +302,7 @@ const TotemProductPaymentCard: React.FC = () => {
         message={error.message}
         onRetry={() => {
           setError(null);
+          finalizingRef.current = false;
           iniciarPagamentoReal();
         }}
         onGoHome={() => navigate('/totem')}
