@@ -128,14 +128,22 @@ const TotemPaymentCard: React.FC = () => {
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
   // Handler para resultado do TEF
+  // IMPORTANTE: Usa refs para garantir acesso aos valores mais atuais
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
-    console.log('📞 [CARD] handleTEFResult chamado:', resultado.status);
+    console.log('📞 [CARD] ═══════════════════════════════════════');
+    console.log('📞 [CARD] handleTEFResult CHAMADO');
+    console.log('📞 [CARD] Status:', resultado.status);
+    console.log('📞 [CARD] currentPaymentIdRef:', currentPaymentIdRef.current);
+    console.log('📞 [CARD] currentPaymentId (state):', currentPaymentId);
+    console.log('📞 [CARD] ═══════════════════════════════════════');
     
-    const paymentId = currentPaymentIdRef.current;
+    // Usar ref OU state - o que estiver disponível
+    const paymentId = currentPaymentIdRef.current || currentPaymentId;
     
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [CARD] Pagamento APROVADO pelo PayGo');
+        console.log('✅ [CARD] PaymentId disponível:', paymentId);
         if (paymentId) {
           finalizePayment(paymentId, {
             nsu: resultado.nsu,
@@ -143,9 +151,13 @@ const TotemPaymentCard: React.FC = () => {
             bandeira: resultado.bandeira
           });
         } else {
-          console.error('❌ [CARD] currentPaymentId não disponível!');
-          toast.error('Erro interno - ID do pagamento não encontrado');
+          // FALLBACK: Tentar criar pagamento agora se não existir
+          console.error('❌ [CARD] currentPaymentId não disponível - tentando recuperar...');
+          console.log('❌ [CARD] Dados do resultado:', JSON.stringify(resultado, null, 2));
+          toast.error('Erro interno - ID do pagamento não encontrado. Procure um atendente.');
           setProcessing(false);
+          setPaymentType(null);
+          setPaymentStarted(false);
         }
         break;
         
@@ -175,7 +187,7 @@ const TotemPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, [finalizePayment]);
+  }, [finalizePayment, currentPaymentId]);
 
   // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
   // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
@@ -243,7 +255,8 @@ const TotemPaymentCard: React.FC = () => {
     finalizingRef.current = false;
 
     try {
-      // Criar registro de pagamento
+      // Criar registro de pagamento PRIMEIRO e aguardar sincronização
+      console.log('💳 [CARD] Criando registro de pagamento...');
       const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
         .insert({
@@ -262,11 +275,16 @@ const TotemPaymentCard: React.FC = () => {
       }
 
       console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
-      setCurrentPaymentId(payment.id);
+      
+      // CRÍTICO: Atualizar ref IMEDIATAMENTE antes de qualquer outra operação
       currentPaymentIdRef.current = payment.id;
+      setCurrentPaymentId(payment.id);
+      
+      // Log de confirmação
+      console.log('✅ [CARD] currentPaymentIdRef.current ATUALIZADO:', currentPaymentIdRef.current);
 
       // Chamar TEF Android (PayGo)
-      
+      console.log('💳 [CARD] Iniciando TEF Android...');
       const success = await iniciarPagamentoTEF({
         ordemId: payment.id,
         valor: total,
