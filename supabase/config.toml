@@ -17,7 +17,6 @@ verify_jwt = false
 
 [functions.monitor-failed-transactions]
 verify_jwt = false
-# Executa a cada hora
 [functions.monitor-failed-transactions.cron]
 schedule = "0 * * * *"
 
@@ -26,7 +25,6 @@ verify_jwt = false
 
 [functions.send-appointment-reminders]
 verify_jwt = false
-# Executa a cada hora
 [functions.send-appointment-reminders.cron]
 schedule = "0 * * * *"
 
@@ -38,4 +36,7 @@ verify_jwt = false
 
 [functions.admin-signout-user]
 verify_jwt = true
+
+[functions.send-receipt-email]
+verify_jwt = false
 
