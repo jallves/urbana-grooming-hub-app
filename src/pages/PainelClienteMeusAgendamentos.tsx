@@ -86,6 +86,7 @@ export default function PainelClienteMeusAgendamentos() {
       confirmado: { label: 'Confirmado', color: 'bg-green-500/20 text-green-400 border-green-500/30' },
       concluido: { label: 'Concluído', color: 'bg-urbana-gold/20 text-urbana-gold border-urbana-gold/30' },
       cancelado: { label: 'Cancelado', color: 'bg-red-500/20 text-red-400 border-red-500/30' },
+      ausente: { label: 'Ausente', color: 'bg-orange-500/20 text-orange-400 border-orange-500/30' },
     };
     
     const config = statusConfig[status as keyof typeof statusConfig] || { label: status, color: 'bg-gray-500/20 text-gray-400 border-gray-500/30' };
@@ -248,12 +249,13 @@ export default function PainelClienteMeusAgendamentos() {
 
           {/* Filters */}
           <motion.div variants={itemVariants}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-3">
               {[
                 { key: 'todos', label: 'Todos', color: 'from-gray-500 to-gray-600' },
                 { key: 'agendado', label: 'Agendados', color: 'from-blue-500 to-blue-600' },
                 { key: 'confirmado', label: 'Confirmados', color: 'from-green-500 to-green-600' },
                 { key: 'concluido', label: 'Concluídos', color: 'from-urbana-gold to-urbana-gold-vibrant' },
+                { key: 'ausente', label: 'Ausentes', color: 'from-orange-500 to-orange-600' },
                 { key: 'cancelado', label: 'Cancelados', color: 'from-red-500 to-red-600' }
               ].map((filtro) => (
                 <Button
