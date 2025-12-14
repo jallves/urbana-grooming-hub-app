@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { 
   RefreshCw, 
   Smartphone, 
@@ -16,7 +18,9 @@ import {
   Terminal,
   Wifi,
   WifiOff,
-  ArrowLeft
+  ArrowLeft,
+  Zap,
+  TestTube
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -26,6 +30,7 @@ import {
   setModoDebug,
   limparLogsAndroid 
 } from '@/lib/tef/tefAndroidBridge';
+import { toast } from 'sonner';
 
 interface TEFStatus {
   pinpad: {
@@ -50,6 +55,11 @@ export default function TotemTEFDebug() {
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [testAmount, setTestAmount] = useState(100); // R$ 1,00
   const logsEndRef = useRef<HTMLDivElement>(null);
+  
+  // Campos para simulação
+  const [simNsu, setSimNsu] = useState(`SIM${Date.now()}`);
+  const [simAuth, setSimAuth] = useState(`AUTH${Math.floor(Math.random() * 999999)}`);
+  const [simBandeira, setSimBandeira] = useState('VISA');
   
   const { 
     isAndroidAvailable, 
@@ -154,6 +164,115 @@ export default function TotemTEFDebug() {
       tipo: method === 'debito' ? 'debit' : method === 'credito' ? 'credit' : 'pix',
       parcelas: 1
     });
+  };
+
+  // =========================================
+  // SIMULAÇÃO DE RESPOSTA PAYGO
+  // Permite testar o fluxo completo sem hardware
+  // =========================================
+  const simulatePayGoResponse = (status: 'aprovado' | 'negado' | 'cancelado' | 'erro') => {
+    console.log('🧪 [SIMULAÇÃO] ═══════════════════════════════════════');
+    console.log('🧪 [SIMULAÇÃO] Injetando resposta simulada do PayGo');
+    console.log('🧪 [SIMULAÇÃO] Status:', status);
+    console.log('🧪 [SIMULAÇÃO] NSU:', simNsu);
+    console.log('🧪 [SIMULAÇÃO] Auth:', simAuth);
+    console.log('🧪 [SIMULAÇÃO] Bandeira:', simBandeira);
+    console.log('🧪 [SIMULAÇÃO] ═══════════════════════════════════════');
+
+    const resultado = {
+      status,
+      nsu: status === 'aprovado' ? simNsu : undefined,
+      autorizacao: status === 'aprovado' ? simAuth : undefined,
+      bandeira: status === 'aprovado' ? simBandeira : undefined,
+      mensagem: status === 'aprovado' ? 'Pagamento simulado aprovado' :
+                status === 'negado' ? 'Cartão recusado (simulação)' :
+                status === 'cancelado' ? 'Operação cancelada pelo usuário' :
+                'Erro de comunicação (simulação)',
+      codigoResposta: status === 'aprovado' ? '00' : 
+                      status === 'negado' ? '51' : 
+                      status === 'cancelado' ? '99' : 'XX',
+      timestamp: new Date().toISOString()
+    };
+
+    const resultadoJson = JSON.stringify(resultado);
+    
+    // Simula o que o MainActivity.kt faz
+    // 1. Salva em sessionStorage
+    try {
+      sessionStorage.setItem('paygo_resultado', resultadoJson);
+      sessionStorage.setItem('paygo_resultado_timestamp', Date.now().toString());
+      console.log('🧪 [SIMULAÇÃO] Salvo em sessionStorage');
+    } catch (e) {
+      console.error('🧪 [SIMULAÇÃO] Erro ao salvar sessionStorage:', e);
+    }
+
+    // 2. Salva em localStorage
+    try {
+      localStorage.setItem('paygo_resultado', resultadoJson);
+      localStorage.setItem('paygo_resultado_timestamp', Date.now().toString());
+      console.log('🧪 [SIMULAÇÃO] Salvo em localStorage');
+    } catch (e) {
+      console.error('🧪 [SIMULAÇÃO] Erro ao salvar localStorage:', e);
+    }
+
+    // 3. Dispara evento CustomEvent
+    try {
+      const event = new CustomEvent('tefResultado', { detail: resultado });
+      window.dispatchEvent(event);
+      console.log('🧪 [SIMULAÇÃO] Evento CustomEvent disparado');
+    } catch (e) {
+      console.error('🧪 [SIMULAÇÃO] Erro ao disparar evento:', e);
+    }
+
+    // 4. Chama window.onTefResultado se existir
+    try {
+      if (typeof (window as any).onTefResultado === 'function') {
+        console.log('🧪 [SIMULAÇÃO] Chamando window.onTefResultado...');
+        (window as any).onTefResultado(resultadoJson);
+        console.log('🧪 [SIMULAÇÃO] window.onTefResultado chamado com sucesso!');
+      } else {
+        console.log('🧪 [SIMULAÇÃO] window.onTefResultado não está definido');
+      }
+    } catch (e) {
+      console.error('🧪 [SIMULAÇÃO] Erro ao chamar onTefResultado:', e);
+    }
+
+    toast.success(`Simulação ${status} injetada!`, {
+      description: 'Verifique se o fluxo do checkout processa corretamente'
+    });
+
+    // Gerar novos IDs para próxima simulação
+    setSimNsu(`SIM${Date.now()}`);
+    setSimAuth(`AUTH${Math.floor(Math.random() * 999999)}`);
+  };
+
+  // Mostra o que está atualmente armazenado
+  const checkStoredResult = () => {
+    const ssResult = sessionStorage.getItem('paygo_resultado');
+    const lsResult = localStorage.getItem('paygo_resultado');
+    const ssTimestamp = sessionStorage.getItem('paygo_resultado_timestamp');
+    const lsTimestamp = localStorage.getItem('paygo_resultado_timestamp');
+    
+    console.log('📦 [STORAGE] ═══════════════════════════════════════');
+    console.log('📦 [STORAGE] sessionStorage.paygo_resultado:', ssResult);
+    console.log('📦 [STORAGE] sessionStorage.timestamp:', ssTimestamp);
+    console.log('📦 [STORAGE] localStorage.paygo_resultado:', lsResult);
+    console.log('📦 [STORAGE] localStorage.timestamp:', lsTimestamp);
+    console.log('📦 [STORAGE] window.onTefResultado definido:', typeof (window as any).onTefResultado === 'function');
+    console.log('📦 [STORAGE] ═══════════════════════════════════════');
+    
+    toast.info('Verifique o console para ver o estado do storage');
+  };
+
+  const clearStoredResults = () => {
+    sessionStorage.removeItem('paygo_resultado');
+    sessionStorage.removeItem('paygo_resultado_timestamp');
+    localStorage.removeItem('paygo_resultado');
+    localStorage.removeItem('paygo_resultado_timestamp');
+    localStorage.removeItem('totem_current_payment_id');
+    localStorage.removeItem('totem_venda_id');
+    localStorage.removeItem('totem_session_id');
+    toast.success('Storage limpo!');
   };
 
   const getLogLineColor = (log: string) => {
@@ -347,6 +466,103 @@ export default function TotemTEFDebug() {
                   Disponível apenas no Android
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* SIMULAÇÃO PayGo - Para testar fluxo sem hardware */}
+          <Card className="bg-gray-800 border-gray-700 border-2 border-yellow-500/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm flex items-center gap-2 text-yellow-400">
+                <TestTube className="h-4 w-4" />
+                Simulação PayGo
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-gray-400">
+                Simula a resposta que o PayGo enviaria. Use para testar o fluxo de checkout sem hardware.
+              </p>
+              
+              <div className="space-y-2">
+                <div>
+                  <Label className="text-xs text-gray-500">NSU</Label>
+                  <Input
+                    value={simNsu}
+                    onChange={(e) => setSimNsu(e.target.value)}
+                    className="h-8 text-xs bg-gray-700 border-gray-600"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500">Autorização</Label>
+                  <Input
+                    value={simAuth}
+                    onChange={(e) => setSimAuth(e.target.value)}
+                    className="h-8 text-xs bg-gray-700 border-gray-600"
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs text-gray-500">Bandeira</Label>
+                  <Input
+                    value={simBandeira}
+                    onChange={(e) => setSimBandeira(e.target.value)}
+                    className="h-8 text-xs bg-gray-700 border-gray-600"
+                  />
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  size="sm"
+                  className="bg-green-600 hover:bg-green-700 text-xs"
+                  onClick={() => simulatePayGoResponse('aprovado')}
+                >
+                  <Zap className="h-3 w-3 mr-1" />
+                  Aprovado
+                </Button>
+                <Button
+                  size="sm"
+                  variant="destructive"
+                  className="text-xs"
+                  onClick={() => simulatePayGoResponse('negado')}
+                >
+                  <XCircle className="h-3 w-3 mr-1" />
+                  Negado
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs"
+                  onClick={() => simulatePayGoResponse('cancelado')}
+                >
+                  Cancelado
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="text-xs text-red-400 border-red-400"
+                  onClick={() => simulatePayGoResponse('erro')}
+                >
+                  Erro
+                </Button>
+              </div>
+              
+              <div className="flex gap-2 pt-2 border-t border-gray-700">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-xs"
+                  onClick={checkStoredResult}
+                >
+                  Ver Storage
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="flex-1 text-xs text-red-400"
+                  onClick={clearStoredResults}
+                >
+                  Limpar Storage
+                </Button>
+              </div>
             </CardContent>
           </Card>
 
