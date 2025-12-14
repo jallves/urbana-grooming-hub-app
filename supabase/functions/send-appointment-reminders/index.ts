@@ -12,6 +12,33 @@ const corsHeaders = {
 // Configuração: horas de antecedência para enviar lembrete
 const REMINDER_HOURS_BEFORE = 3;
 
+// Timezone do Brasil (UTC-3)
+const BRAZIL_OFFSET_HOURS = -3;
+
+/**
+ * Obtém a data/hora atual no horário do Brasil
+ */
+function getBrazilNow(): Date {
+  const now = new Date();
+  // Converte para horário do Brasil (UTC-3)
+  const brazilTime = new Date(now.getTime() + (BRAZIL_OFFSET_HOURS * 60 * 60 * 1000));
+  return brazilTime;
+}
+
+/**
+ * Converte uma string de data/hora local do Brasil para Date
+ */
+function parseBrazilDateTime(dateStr: string, timeStr: string): Date {
+  // dateStr: "2025-12-14", timeStr: "18:00:00"
+  // Isso representa 18:00 no horário do Brasil
+  const [year, month, day] = dateStr.split('-').map(Number);
+  const [hours, minutes, seconds] = timeStr.split(':').map(Number);
+  
+  // Cria a data como se fosse UTC, mas representa o horário do Brasil
+  // Para comparação, ambos precisam estar no mesmo referencial
+  return new Date(Date.UTC(year, month - 1, day, hours, minutes, seconds || 0));
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -24,17 +51,36 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calcular janela de tempo: agendamentos entre agora + 2h50min e agora + 3h10min
-    // Isso garante que capturamos agendamentos com horários quebrados (ex: 14:15, 14:25)
-    // O cron roda a cada 5 minutos, então a janela de 20 minutos cobre todos os casos
-    const now = new Date();
-    const reminderStart = new Date(now.getTime() + (REMINDER_HOURS_BEFORE * 60 - 10) * 60 * 1000); // 2h50min
-    const reminderEnd = new Date(now.getTime() + (REMINDER_HOURS_BEFORE * 60 + 10) * 60 * 1000); // 3h10min
+    // Obter horário atual no Brasil
+    const nowUTC = new Date();
+    const brazilNow = getBrazilNow();
+    
+    // Formatar para log
+    const brazilHours = brazilNow.getUTCHours().toString().padStart(2, '0');
+    const brazilMinutes = brazilNow.getUTCMinutes().toString().padStart(2, '0');
+    console.log(`🕐 Horário atual - UTC: ${nowUTC.toISOString()}, Brasil: ${brazilHours}:${brazilMinutes}`);
 
-    const today = now.toISOString().split('T')[0];
-    const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    // Calcular janela de lembrete no horário do Brasil
+    // Agendamentos que ocorrerão entre 2h50min e 3h10min a partir de agora (no horário do Brasil)
+    const reminderStartMs = brazilNow.getTime() + (REMINDER_HOURS_BEFORE * 60 - 10) * 60 * 1000; // +2h50min
+    const reminderEndMs = brazilNow.getTime() + (REMINDER_HOURS_BEFORE * 60 + 10) * 60 * 1000; // +3h10min
+    
+    const reminderStartTime = new Date(reminderStartMs);
+    const reminderEndTime = new Date(reminderEndMs);
+    
+    const startHours = reminderStartTime.getUTCHours().toString().padStart(2, '0');
+    const startMinutes = reminderStartTime.getUTCMinutes().toString().padStart(2, '0');
+    const endHours = reminderEndTime.getUTCHours().toString().padStart(2, '0');
+    const endMinutes = reminderEndTime.getUTCMinutes().toString().padStart(2, '0');
 
-    console.log(`📅 Buscando agendamentos para lembrete entre ${reminderStart.toISOString()} e ${reminderEnd.toISOString()}`);
+    console.log(`📅 Janela de lembrete (horário Brasil): ${startHours}:${startMinutes} até ${endHours}:${endMinutes}`);
+
+    // Calcular datas para busca (hoje e amanhã no horário do Brasil)
+    const todayBrazil = `${brazilNow.getUTCFullYear()}-${(brazilNow.getUTCMonth() + 1).toString().padStart(2, '0')}-${brazilNow.getUTCDate().toString().padStart(2, '0')}`;
+    const tomorrowBrazil = new Date(brazilNow.getTime() + 24 * 60 * 60 * 1000);
+    const tomorrowStr = `${tomorrowBrazil.getUTCFullYear()}-${(tomorrowBrazil.getUTCMonth() + 1).toString().padStart(2, '0')}-${tomorrowBrazil.getUTCDate().toString().padStart(2, '0')}`;
+
+    console.log(`📆 Buscando agendamentos para: ${todayBrazil} e ${tomorrowStr}`);
 
     // Buscar agendamentos que precisam de lembrete
     const { data: agendamentos, error: agendamentosError } = await supabase
@@ -48,9 +94,9 @@ const handler = async (req: Request): Promise<Response> => {
         barbeiro:painel_barbeiros!painel_agendamentos_barbeiro_id_fkey(id, nome),
         servico:painel_servicos!painel_agendamentos_servico_id_fkey(id, nome, preco, duracao)
       `)
-      .in('data', [today, tomorrow])
+      .in('data', [todayBrazil, tomorrowStr])
       .in('status', ['agendado', 'confirmado'])
-      .is('lembrete_enviado', null); // Apenas agendamentos sem lembrete enviado
+      .is('lembrete_enviado', null);
 
     if (agendamentosError) {
       console.error("❌ Erro ao buscar agendamentos:", agendamentosError);
@@ -65,14 +111,22 @@ const handler = async (req: Request): Promise<Response> => {
 
     for (const agendamento of agendamentos || []) {
       try {
-        // Construir datetime do agendamento
-        const appointmentDateTime = new Date(`${agendamento.data}T${agendamento.hora}`);
+        // Converter datetime do agendamento (que está no horário do Brasil)
+        const appointmentDateTime = parseBrazilDateTime(agendamento.data, agendamento.hora);
+        const appointmentTimeMs = appointmentDateTime.getTime();
         
-        // Verificar se está na janela de lembrete (3 horas antes)
-        if (appointmentDateTime < reminderStart || appointmentDateTime > reminderEnd) {
-          console.log(`⏭️ Agendamento ${agendamento.id} fora da janela de lembrete`);
+        const apptHours = appointmentDateTime.getUTCHours().toString().padStart(2, '0');
+        const apptMinutes = appointmentDateTime.getUTCMinutes().toString().padStart(2, '0');
+        
+        console.log(`🔍 Verificando agendamento ${agendamento.id}: ${agendamento.data} ${agendamento.hora} (${apptHours}:${apptMinutes})`);
+        
+        // Verificar se está na janela de lembrete
+        if (appointmentTimeMs < reminderStartMs || appointmentTimeMs > reminderEndMs) {
+          console.log(`⏭️ Agendamento ${agendamento.id} fora da janela (horário: ${apptHours}:${apptMinutes}, janela: ${startHours}:${startMinutes} - ${endHours}:${endMinutes})`);
           continue;
         }
+
+        console.log(`✅ Agendamento ${agendamento.id} DENTRO da janela de lembrete!`);
 
         const cliente = agendamento.cliente;
         const barbeiro = agendamento.barbeiro;
@@ -84,7 +138,8 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         // Formatar data para exibição
-        const dataFormatada = new Date(agendamento.data).toLocaleDateString('pt-BR', {
+        const [year, month, day] = agendamento.data.split('-');
+        const dataFormatada = new Date(Number(year), Number(month) - 1, Number(day)).toLocaleDateString('pt-BR', {
           weekday: 'long',
           day: '2-digit',
           month: 'long',
@@ -175,7 +230,7 @@ const handler = async (req: Request): Promise<Response> => {
           `,
         });
 
-        console.log(`✅ Lembrete enviado com sucesso para ${cliente.email}`);
+        console.log(`✅ Lembrete enviado com sucesso para ${cliente.email}, ID: ${emailResponse?.id}`);
 
         // Marcar agendamento como lembrete enviado
         await supabase
@@ -188,7 +243,7 @@ const handler = async (req: Request): Promise<Response> => {
           agendamentoId: agendamento.id,
           email: cliente.email,
           status: 'sent',
-          emailId: emailResponse.id
+          emailId: emailResponse?.id
         });
 
       } catch (emailError: any) {
@@ -212,7 +267,9 @@ const handler = async (req: Request): Promise<Response> => {
           totalProcessed: agendamentos?.length || 0,
           emailsSent,
           emailsFailed,
-          reminderHoursBefore: REMINDER_HOURS_BEFORE
+          reminderHoursBefore: REMINDER_HOURS_BEFORE,
+          currentTimeBrazil: `${brazilHours}:${brazilMinutes}`,
+          reminderWindow: `${startHours}:${startMinutes} - ${endHours}:${endMinutes}`
         },
         results
       }),
