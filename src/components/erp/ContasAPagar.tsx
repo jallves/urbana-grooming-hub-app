@@ -1,13 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2, CheckCircle2 } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2, CheckCircle2, CheckSquare } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
@@ -43,6 +44,8 @@ interface FinancialRecord {
   created_at: string;
   payment_date?: string;
   payment_records: PaymentRecord[];
+  barber_id?: string;
+  appointment_id?: string;
   metadata?: {
     service_name?: string;
     product_name?: string;
@@ -62,6 +65,8 @@ export const ContasAPagar: React.FC = () => {
   const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [recordToPay, setRecordToPay] = useState<string | null>(null);
+  const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
+  const [batchPaymentDialogOpen, setBatchPaymentDialogOpen] = useState(false);
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
@@ -353,6 +358,133 @@ export const ContasAPagar: React.FC = () => {
     }
   };
 
+  // Seleção múltipla
+  const pendingRecords = useMemo(() => {
+    return payables?.filter(r => r.status === 'pending') || [];
+  }, [payables]);
+
+  const handleSelectRecord = (recordId: string, checked: boolean) => {
+    setSelectedRecords(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(recordId);
+      } else {
+        newSet.delete(recordId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (checked: boolean) => {
+    if (checked) {
+      setSelectedRecords(new Set(pendingRecords.map(r => r.id)));
+    } else {
+      setSelectedRecords(new Set());
+    }
+  };
+
+  const selectedTotal = useMemo(() => {
+    return payables
+      ?.filter(r => selectedRecords.has(r.id))
+      .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+  }, [payables, selectedRecords]);
+
+  const batchPayMutation = useMutation({
+    mutationFn: async (recordIds: string[]) => {
+      const paymentDate = new Date().toISOString();
+      
+      for (const recordId of recordIds) {
+        // Buscar o registro
+        const { data: record, error: fetchError } = await supabase
+          .from('financial_records')
+          .select('*')
+          .eq('id', recordId)
+          .single();
+
+        if (fetchError) {
+          console.error('Erro ao buscar registro:', fetchError);
+          continue;
+        }
+
+        // Atualizar status
+        const { error } = await supabase
+          .from('financial_records')
+          .update({ 
+            status: 'completed',
+            completed_at: paymentDate,
+            payment_date: paymentDate,
+            updated_at: paymentDate,
+          })
+          .eq('id', recordId);
+
+        if (error) {
+          console.error('Erro ao atualizar registro:', error);
+          continue;
+        }
+
+        // Sincronizar com barber_commissions se for comissão
+        if (record.transaction_type === 'commission' && record.appointment_id) {
+          await supabase
+            .from('barber_commissions')
+            .update({ 
+              status: 'paid',
+              payment_date: paymentDate,
+              updated_at: paymentDate
+            })
+            .eq('appointment_id', record.appointment_id)
+            .eq('barber_id', record.barber_id);
+        }
+
+        // Sincronizar com fluxo de caixa
+        const transactionType = (record.transaction_type === 'revenue' || 
+                                 record.transaction_type === 'expense' || 
+                                 record.transaction_type === 'commission') 
+                                 ? record.transaction_type 
+                                 : 'expense';
+        
+        const metadata = typeof record.metadata === 'object' && record.metadata !== null 
+          ? record.metadata as Record<string, any>
+          : {};
+
+        await syncToCashFlowAsync({
+          financialRecordId: recordId,
+          transactionType: transactionType,
+          amount: record.net_amount,
+          description: record.description,
+          category: record.category,
+          paymentMethod: metadata?.payment_method || 'other',
+          transactionDate: record.transaction_date,
+          metadata: metadata
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      toast.success(`${selectedRecords.size} pagamentos registrados com sucesso!`);
+      setSelectedRecords(new Set());
+      setBatchPaymentDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao processar pagamentos em lote', {
+        description: error.message
+      });
+    }
+  });
+
+  const handleBatchPayment = () => {
+    if (selectedRecords.size === 0) {
+      toast.error('Selecione pelo menos um registro para pagar');
+      return;
+    }
+    setBatchPaymentDialogOpen(true);
+  };
+
+  const confirmBatchPayment = () => {
+    batchPayMutation.mutate(Array.from(selectedRecords));
+  };
+
   const handleEdit = (record: FinancialRecord) => {
     setEditingRecord({
       id: record.id,
@@ -458,12 +590,58 @@ export const ContasAPagar: React.FC = () => {
       <div className="space-y-3 sm:space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h2 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h2>
-          <Button onClick={() => setFormOpen(true)} className="w-full sm:w-auto">
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Novo Lançamento</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          <div className="flex gap-2 w-full sm:w-auto">
+            {selectedRecords.size > 0 && (
+              <Button 
+                onClick={handleBatchPayment} 
+                className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
+                disabled={batchPayMutation.isPending}
+              >
+                {batchPayMutation.isPending ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <CheckSquare className="h-4 w-4 mr-2" />
+                )}
+                <span className="hidden sm:inline">Pagar Selecionados ({selectedRecords.size})</span>
+                <span className="sm:hidden">Pagar ({selectedRecords.size})</span>
+              </Button>
+            )}
+            <Button onClick={() => setFormOpen(true)} className="flex-1 sm:flex-none">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Novo Lançamento</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Barra de seleção */}
+        {selectedRecords.size > 0 && (
+          <Card className="bg-green-50 border-green-200">
+            <CardContent className="py-3 px-4">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div className="flex items-center gap-3">
+                  <CheckSquare className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
+                    {selectedRecords.size} {selectedRecords.size === 1 ? 'item selecionado' : 'itens selecionados'}
+                  </span>
+                </div>
+                <div className="flex items-center gap-4">
+                  <span className="text-lg font-bold text-green-700">
+                    Total: R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  </span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setSelectedRecords(new Set())}
+                    className="text-green-700 hover:text-green-800 hover:bg-green-100"
+                  >
+                    Limpar seleção
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Cards de Resumo */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
@@ -536,26 +714,56 @@ export const ContasAPagar: React.FC = () => {
           <CardContent className="p-3 sm:p-4 lg:p-6">
             {payables && payables.length > 0 ? (
               <>
+                {/* Seleção em massa para pendentes */}
+                {pendingRecords.length > 0 && (
+                  <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <Checkbox
+                      id="select-all"
+                      checked={selectedRecords.size === pendingRecords.length && pendingRecords.length > 0}
+                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                    />
+                    <label htmlFor="select-all" className="text-sm font-medium text-gray-700 cursor-pointer">
+                      Selecionar todos os pendentes ({pendingRecords.length})
+                    </label>
+                  </div>
+                )}
+
                 {/* Layout em Cards para Mobile/Tablet */}
                 <div className="block lg:hidden space-y-3">
                   {payables.map((record) => (
-                    <div key={record.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3 space-y-3">
+                    <div 
+                      key={record.id} 
+                      className={`border rounded-lg p-3 space-y-3 transition-colors ${
+                        selectedRecords.has(record.id) 
+                          ? 'bg-green-50 border-green-300' 
+                          : 'bg-gray-50 border-gray-200'
+                      }`}
+                    >
                       {/* Header do Card */}
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <Badge variant="outline" className={`mb-2 ${
-                            record.transaction_type === 'commission' 
-                              ? 'bg-blue-100 text-blue-700' 
-                              : 'bg-orange-100 text-orange-700'
-                          }`}>
-                            {getTypeLabel(record.transaction_type)}
-                          </Badge>
-                          <p className="font-medium text-sm text-gray-900 truncate">
-                            {record.description}
-                          </p>
-                          <p className="text-xs text-gray-600 font-mono mt-1">
-                            #{record.transaction_number}
-                          </p>
+                        <div className="flex items-start gap-3 flex-1 min-w-0">
+                          {record.status === 'pending' && (
+                            <Checkbox
+                              checked={selectedRecords.has(record.id)}
+                              onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
+                              className="mt-1"
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <Badge variant="outline" className={`mb-2 ${
+                              record.transaction_type === 'commission' 
+                                ? 'bg-blue-100 text-blue-700' 
+                                : 'bg-orange-100 text-orange-700'
+                            }`}>
+                              {getTypeLabel(record.transaction_type)}
+                            </Badge>
+                            <p className="font-medium text-sm text-gray-900 truncate">
+                              {record.description}
+                            </p>
+                            <p className="text-xs text-gray-600 font-mono mt-1">
+                              #{record.transaction_number}
+                            </p>
+                          </div>
                         </div>
                         {getStatusBadge(record.status)}
                       </div>
@@ -665,6 +873,7 @@ export const ContasAPagar: React.FC = () => {
                   <Table className="text-xs sm:text-sm">
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10"></TableHead>
                         <TableHead className="whitespace-nowrap">Número</TableHead>
                         <TableHead className="whitespace-nowrap">Tipo</TableHead>
                         <TableHead className="whitespace-nowrap">Descrição</TableHead>
@@ -679,7 +888,18 @@ export const ContasAPagar: React.FC = () => {
                     </TableHeader>
                     <TableBody>
                       {payables.map((record) => (
-                        <TableRow key={record.id}>
+                        <TableRow 
+                          key={record.id}
+                          className={selectedRecords.has(record.id) ? 'bg-green-50' : ''}
+                        >
+                          <TableCell>
+                            {record.status === 'pending' && (
+                              <Checkbox
+                                checked={selectedRecords.has(record.id)}
+                                onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
+                              />
+                            )}
+                          </TableCell>
                           <TableCell className="font-mono text-xs">
                             {record.transaction_number}
                           </TableCell>
@@ -834,6 +1054,44 @@ export const ContasAPagar: React.FC = () => {
               className="bg-green-600 text-white hover:bg-green-700"
             >
               Confirmar Pagamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog para pagamento em lote */}
+      <AlertDialog open={batchPaymentDialogOpen} onOpenChange={setBatchPaymentDialogOpen}>
+        <AlertDialogContent className="sm:max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <CheckSquare className="h-5 w-5 text-green-600" />
+              Confirmar Pagamento em Lote
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <p>Você está prestes a marcar <strong>{selectedRecords.size}</strong> {selectedRecords.size === 1 ? 'lançamento' : 'lançamentos'} como pago(s).</p>
+              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                <p className="text-sm text-green-800">
+                  <strong>Valor total:</strong> R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </div>
+              <p className="text-sm">Esta ação será registrada no fluxo de caixa e não pode ser desfeita.</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={batchPayMutation.isPending}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmBatchPayment}
+              className="bg-green-600 text-white hover:bg-green-700"
+              disabled={batchPayMutation.isPending}
+            >
+              {batchPayMutation.isPending ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                'Confirmar Pagamento'
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
