@@ -458,16 +458,19 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       // Enviar e-mail de confirmação (aguardar para garantir envio)
       if (appointmentData?.id) {
+        console.log('📧 Iniciando envio de e-mail para agendamento:', appointmentData.id);
         try {
           const emailSent = await sendAppointmentConfirmationEmail(appointmentData.id);
           if (emailSent) {
-            console.log('📧 E-mail de confirmação enviado!');
+            console.log('📧 E-mail de confirmação enviado com sucesso!');
           } else {
             console.log('📧 E-mail não enviado (cliente sem e-mail válido ou erro)');
           }
         } catch (emailError) {
           console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
         }
+      } else {
+        console.log('⚠️ Agendamento sem ID, não é possível enviar e-mail');
       }
 
       if (progressToast) toast.dismiss(progressToast);

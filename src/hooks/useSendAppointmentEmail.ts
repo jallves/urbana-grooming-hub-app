@@ -63,8 +63,11 @@ export const useSendAppointmentEmail = () => {
 export const sendAppointmentConfirmationEmail = async (
   appointmentId: string
 ): Promise<boolean> => {
+  console.log('📧 [Email] sendAppointmentConfirmationEmail INICIADO para ID:', appointmentId);
+  
   try {
     // Buscar dados completos do agendamento
+    console.log('📧 [Email] Buscando dados do agendamento...');
     const { data: appointment, error: appointmentError } = await supabase
       .from('painel_agendamentos')
       .select(`
@@ -83,9 +86,19 @@ export const sendAppointmentConfirmationEmail = async (
       return false;
     }
 
+    console.log('📧 [Email] Dados do agendamento encontrados:', {
+      id: appointment.id,
+      data: appointment.data,
+      hora: appointment.hora
+    });
+
     const cliente = appointment.cliente as any;
     const servico = appointment.servico as any;
     const barbeiro = appointment.barbeiro as any;
+
+    console.log('📧 [Email] Cliente:', cliente?.nome, '- Email:', cliente?.email);
+    console.log('📧 [Email] Serviço:', servico?.nome);
+    console.log('📧 [Email] Barbeiro:', barbeiro?.nome);
 
     // Validar se tem e-mail
     if (!cliente?.email || !cliente.email.includes('@')) {
@@ -93,9 +106,9 @@ export const sendAppointmentConfirmationEmail = async (
       return false;
     }
 
-    console.log('📧 [Email] Enviando confirmação para:', cliente.email);
-
-    const { error } = await supabase.functions.invoke('send-email-confirmation', {
+    console.log('📧 [Email] Invocando edge function send-email-confirmation...');
+    
+    const { data: responseData, error } = await supabase.functions.invoke('send-email-confirmation', {
       body: {
         clientName: cliente.nome,
         clientEmail: cliente.email,
@@ -109,10 +122,11 @@ export const sendAppointmentConfirmationEmail = async (
     });
 
     if (error) {
-      console.error('❌ [Email] Erro ao enviar:', error);
+      console.error('❌ [Email] Erro ao invocar edge function:', error);
       return false;
     }
 
+    console.log('✅ [Email] Resposta da edge function:', responseData);
     console.log('✅ [Email] Confirmação enviada com sucesso!');
     return true;
   } catch (error) {
