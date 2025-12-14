@@ -20,6 +20,7 @@ const TotemPaymentCard: React.FC = () => {
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true); // Delay inicial para verificar conexão
   
   // Refs para acesso em callbacks
   const currentPaymentIdRef = useRef<string | null>(null);
@@ -198,6 +199,15 @@ const TotemPaymentCard: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
+  // Delay inicial para verificar conexão TEF (evita flash da tela de erro)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 1500); // Aguarda 1.5s para TEF inicializar
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Log status do TEF ao montar
   useEffect(() => {
     console.log('🔌 [CARD] Status TEF Android:', {
@@ -205,9 +215,10 @@ const TotemPaymentCard: React.FC = () => {
       isPinpadConnected,
       tefProcessing,
       processing,
-      paymentStarted
+      paymentStarted,
+      isCheckingConnection
     });
-  }, [isAndroidAvailable, isPinpadConnected, tefProcessing, processing, paymentStarted]);
+  }, [isAndroidAvailable, isPinpadConnected, tefProcessing, processing, paymentStarted, isCheckingConnection]);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     // Verificar se TEF está disponível
@@ -296,8 +307,8 @@ const TotemPaymentCard: React.FC = () => {
     toast.info('Pagamento cancelado');
   };
 
-  // Tela de erro quando TEF não está disponível
-  if (!isAndroidAvailable || !isPinpadConnected) {
+  // Tela de erro quando TEF não está disponível (APENAS após delay de verificação)
+  if (!isCheckingConnection && (!isAndroidAvailable || !isPinpadConnected)) {
     return (
       <div className="fixed inset-0 w-screen h-screen flex flex-col p-6 font-poppins overflow-hidden relative">
         <div className="absolute inset-0 z-0">
