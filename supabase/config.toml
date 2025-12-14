@@ -49,3 +49,6 @@ verify_jwt = false
 [functions.send-appointment-update-email]
 verify_jwt = false
 
+[functions.send-appointment-cancellation-email]
+verify_jwt = false
+

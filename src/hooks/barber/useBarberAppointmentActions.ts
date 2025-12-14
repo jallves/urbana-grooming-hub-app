@@ -5,6 +5,7 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useQueryClient } from '@tanstack/react-query';
+import { sendAppointmentCancellationEmail } from '@/hooks/useSendAppointmentCancellationEmail';
 
 interface AppointmentWithDetails {
   id: string;
@@ -62,6 +63,17 @@ export const useBarberAppointmentActions = ({ barberId, onUpdate }: UseBarberApp
         .eq('id', appointmentId);
 
       if (error) throw error;
+
+      // Enviar e-mail de cancelamento
+      console.log('📧 [Barbeiro] Enviando e-mail de cancelamento...');
+      try {
+        await sendAppointmentCancellationEmail({
+          appointmentId,
+          cancelledBy: 'barber'
+        });
+      } catch (emailError) {
+        console.error('⚠️ [Barbeiro] Erro ao enviar e-mail de cancelamento:', emailError);
+      }
 
       const appointmentDate = parseISO(appointment.start_time);
       toast.success('❌ Agendamento Cancelado', {
