@@ -82,35 +82,32 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           .from('client_profiles')
           .update({
             nome: data.nome,
-            email: data.email || null, // Salvar email no perfil
+            email: data.email || null,
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', clientId);
 
-        // Atualizar email em auth.users se necessário
-        if (data.email) {
-          await supabase.auth.admin.updateUserById(clientId, {
-            email: data.email
-          });
-        }
-
         if (error) {
           throw error;
         }
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        // Criar usuário via Supabase Auth
-        const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-          email: data.email || `${Date.now()}@temp.com`,
-          password: Math.random().toString(36).slice(-8),
-          email_confirm: true,
-          user_metadata: {
-            user_type: 'client',
-            nome: data.nome,
-            whatsapp: data.whatsapp,
-            data_nascimento: data.data_nascimento
+        // Para criar novo cliente, usar signUp público
+        const tempEmail = data.email || `cliente_${Date.now()}@temp.barbearia.com`;
+        const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
+        
+        const { data: authData, error: authError } = await supabase.auth.signUp({
+          email: tempEmail,
+          password: tempPassword,
+          options: {
+            data: {
+              user_type: 'client',
+              nome: data.nome,
+              whatsapp: data.whatsapp,
+              data_nascimento: data.data_nascimento
+            }
           }
         });
 
@@ -118,26 +115,34 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           throw authError;
         }
 
-        // O perfil será criado automaticamente pelo trigger
-        // Apenas precisamos garantir que os dados estejam corretos
+        if (!authData.user) {
+          throw new Error('Falha ao criar usuário');
+        }
+
+        // Aguardar um pouco para o trigger criar o perfil
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Atualizar o perfil com os dados corretos
         const { error: profileError } = await supabase
           .from('client_profiles')
-          .update({
+          .upsert({
+            id: authData.user.id,
             nome: data.nome,
-            email: data.email || null, // Salvar email no perfil
+            email: data.email || null,
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null
-          })
-          .eq('id', authData.user.id);
+          });
 
         if (profileError) {
-          throw profileError;
+          console.error('Erro ao atualizar perfil:', profileError);
         }
+        
         toast.success('Cliente criado com sucesso!');
       }
 
       onSuccess();
     } catch (error) {
+      console.error('Erro:', error);
       toast.error(clientId ? 'Erro ao atualizar cliente' : 'Erro ao criar cliente', {
         description: (error as Error).message,
       });

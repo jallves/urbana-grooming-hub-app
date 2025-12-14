@@ -3,7 +3,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Edit, Trash2, Mail, MessageCircle, Calendar, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 
 interface PainelClient {
@@ -23,10 +23,12 @@ interface ClientCardProps {
 }
 
 const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => {
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null, isDateOnly = false) => {
     if (!dateString) return '-';
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+      // Para datas apenas (YYYY-MM-DD), usar parseISO para evitar problemas de timezone
+      const date = isDateOnly ? parseISO(dateString) : new Date(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: ptBR });
     } catch {
       return '-';
     }
@@ -100,7 +102,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
             <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
               <Calendar className="h-4 w-4 text-muted-foreground flex-shrink-0" />
               <span className="text-sm">
-                Nascimento: {formatDate(client.data_nascimento)}
+                Nascimento: {formatDate(client.data_nascimento, true)}
               </span>
             </div>
           )}
