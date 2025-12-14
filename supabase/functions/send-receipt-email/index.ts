@@ -69,9 +69,10 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const formattedTotal = total.toFixed(2).replace('.', ',');
-    const isService = transactionType === 'service';
-    const title = 'Comprovante de Atendimento';
-    const emoji = '✂️';
+    const title = 'Comprovante de Pagamento';
+    
+    // URL da logo hospedada publicamente
+    const logoUrl = 'https://barbeariacostaurbana.com.br/images/logo-barbearia-costa-urbana.png';
 
     const paymentMethodText = {
       'credit': 'Cartão de Crédito',
@@ -131,14 +132,15 @@ const handler = async (req: Request): Promise<Response> => {
     const hasProducts = productsHtml.length > 0;
 
     const emailResponse = await resend.emails.send({
-      from: "Costa Urbana Barbearia <noreply@barbeariacostaurbana.com.br>",
+      from: "Barbearia Costa Urbana <noreply@barbeariacostaurbana.com.br>",
       to: [clientEmail],
-      subject: `${emoji} ${title} - Costa Urbana Barbearia`,
+      subject: `✂️ ${title} - Barbearia Costa Urbana`,
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
           <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 24px; color: #D4A574;">${emoji} ${title}</h1>
-            <p style="margin: 10px 0 0; font-size: 14px; color: #ccc;">Costa Urbana Barbearia</p>
+            <img src="${logoUrl}" alt="Barbearia Costa Urbana" style="width: 120px; height: 120px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #D4A574;" />
+            <h1 style="margin: 0; font-size: 22px; color: #D4A574;">✂️ ${title}</h1>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #ccc;">Barbearia Costa Urbana</p>
           </div>
           
           <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
@@ -224,7 +226,7 @@ const handler = async (req: Request): Promise<Response> => {
                 Obrigado pela preferência! 🙏
               </p>
               <p style="color: #D4A574; font-weight: bold; font-size: 16px; margin: 15px 0;">
-                Costa Urbana Barbearia ✂️
+                Barbearia Costa Urbana ✂️
               </p>
               <p style="color: #999; font-size: 12px; font-style: italic;">
                 Este é um comprovante eletrônico gerado automaticamente.
