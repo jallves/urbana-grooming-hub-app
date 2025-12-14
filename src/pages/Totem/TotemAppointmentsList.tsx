@@ -9,6 +9,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
+// ============================================
+// 🚨 MODO HOMOLOGAÇÃO - BYPASS DE VALIDAÇÃO DE HORÁRIO
+// Para voltar ao normal: alterar para false
+// ============================================
+const HOMOLOGATION_MODE = true;
+// ============================================
+
 interface Appointment {
   id: string;
   data: string;
@@ -101,13 +108,20 @@ const TotemAppointmentsList: React.FC = () => {
       id: appointment.id,
       data: appointment.data,
       hora: appointment.hora,
-      status: appointment.status
+      status: appointment.status,
+      homologationMode: HOMOLOGATION_MODE
     });
 
     // Verificar se o status permite check-in
     if (appointment.status !== 'agendado' && appointment.status !== 'confirmado') {
       console.log('❌ Status não permite check-in:', appointment.status);
       return { allowed: false, reason: 'Status do agendamento não permite check-in' };
+    }
+
+    // 🚨 MODO HOMOLOGAÇÃO: Bypass de validação de horário
+    if (HOMOLOGATION_MODE) {
+      console.log('🔓 MODO HOMOLOGAÇÃO ATIVO - Check-in liberado independente do horário');
+      return { allowed: true };
     }
 
     // Criar data/hora completa do agendamento no horário de Brasília
