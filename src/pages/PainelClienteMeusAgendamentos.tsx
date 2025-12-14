@@ -91,12 +91,34 @@ export default function PainelClienteMeusAgendamentos() {
     return <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${config.color} backdrop-blur-sm`}>{config.label}</span>;
   };
 
-  const handleEditAgendamento = (agendamento: Agendamento) => {
+  // Verificar se o agendamento pode ser editado/cancelado (até 2 horas antes)
+  const canEditOrCancel = (agendamento: Agendamento): { allowed: boolean; reason?: string } => {
     if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+      return { allowed: false, reason: 'Apenas agendamentos agendados ou confirmados podem ser alterados.' };
+    }
+
+    const now = new Date();
+    const appointmentDateTime = new Date(`${agendamento.data}T${agendamento.hora}`);
+    const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
+
+    if (hoursUntilAppointment < 2) {
+      return { 
+        allowed: false, 
+        reason: 'Alterações só podem ser feitas com pelo menos 2 horas de antecedência.' 
+      };
+    }
+
+    return { allowed: true };
+  };
+
+  const handleEditAgendamento = (agendamento: Agendamento) => {
+    const { allowed, reason } = canEditOrCancel(agendamento);
+    
+    if (!allowed) {
       toast({
         variant: "destructive",
         title: "Não é possível editar",
-        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser editados.",
+        description: reason,
       });
       return;
     }
@@ -106,11 +128,13 @@ export default function PainelClienteMeusAgendamentos() {
   };
 
   const handleDeleteAgendamento = async (agendamento: Agendamento) => {
-    if (!['agendado', 'confirmado'].includes(agendamento.status)) {
+    const { allowed, reason } = canEditOrCancel(agendamento);
+    
+    if (!allowed) {
       toast({
         variant: "destructive",
         title: "Não é possível cancelar",
-        description: "Apenas agendamentos com status 'Agendado' ou 'Confirmado' podem ser cancelados.",
+        description: reason,
       });
       return;
     }
@@ -335,26 +359,39 @@ export default function PainelClienteMeusAgendamentos() {
                           </div>
 
                           {/* Action Buttons */}
-                          {['agendado', 'confirmado'].includes(agendamento.status) && (
-                            <div className="flex gap-2 pt-2">
-                              <Button
-                                size="sm"
-                                onClick={() => handleEditAgendamento(agendamento)}
-                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg transition-all duration-300"
-                              >
-                                <Edit className="w-4 h-4 mr-1" />
-                                Editar
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleDeleteAgendamento(agendamento)}
-                                className="flex-1 rounded-xl px-4 py-2 text-sm bg-gradient-to-r from-red-500 to-red-600 text-white shadow-lg transition-all duration-300"
-                              >
-                                <Trash2 className="w-4 h-4 mr-1" />
-                                Cancelar
-                              </Button>
-                            </div>
-                          )}
+                          {['agendado', 'confirmado'].includes(agendamento.status) && (() => {
+                            const { allowed } = canEditOrCancel(agendamento);
+                            return (
+                              <div className="flex gap-2 pt-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleEditAgendamento(agendamento)}
+                                  disabled={!allowed}
+                                  className={`flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 ${
+                                    allowed 
+                                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
+                                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <Edit className="w-4 h-4 mr-1" />
+                                  Editar
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleDeleteAgendamento(agendamento)}
+                                  disabled={!allowed}
+                                  className={`flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 ${
+                                    allowed 
+                                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
+                                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                                  }`}
+                                >
+                                  <Trash2 className="w-4 h-4 mr-1" />
+                                  Cancelar
+                                </Button>
+                              </div>
+                            );
+                          })()}
                         </CardContent>
                       </Card>
                     </motion.div>
