@@ -43,9 +43,9 @@ const handler = async (req: Request): Promise<Response> => {
         data,
         hora,
         status,
-        cliente:painel_clientes!cliente_id(id, nome, email, whatsapp),
-        barbeiro:painel_barbeiros!barbeiro_id(id, nome),
-        servico:painel_servicos!servico_id(id, nome, preco, duracao)
+        cliente:client_profiles!painel_agendamentos_cliente_id_fkey(id, nome, email, whatsapp),
+        barbeiro:painel_barbeiros!painel_agendamentos_barbeiro_id_fkey(id, nome),
+        servico:painel_servicos!painel_agendamentos_servico_id_fkey(id, nome, preco, duracao)
       `)
       .in('data', [today, tomorrow])
       .in('status', ['agendado', 'confirmado'])
