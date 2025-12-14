@@ -188,6 +188,7 @@ Deno.serve(async (req) => {
       .upsert({
         id: authData.user.id,
         nome: nome.trim(),
+        email: email.trim().toLowerCase(), // Salvar email no perfil
         whatsapp: whatsapp.trim(),
         data_nascimento: data_nascimento,
         updated_at: new Date().toISOString()
