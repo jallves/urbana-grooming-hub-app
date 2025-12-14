@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -16,6 +16,125 @@ const TotemProductPaymentCard: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
 
+  // Função de sucesso definida primeiro com useCallback
+  const handlePaymentSuccess = useCallback(async (transactionData?: {
+    nsu?: string;
+    autorizacao?: string;
+    bandeira?: string;
+  }) => {
+    if (!sale || !barber) return;
+    
+    try {
+      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
+      console.log('   📝 Transaction Data:', transactionData);
+      
+      // 1. Buscar itens da venda
+      const { data: saleItems, error: itemsError } = await supabase
+        .from('vendas_itens')
+        .select('*')
+        .eq('venda_id', sale.id)
+        .eq('tipo', 'PRODUTO');
+
+      if (itemsError) {
+        console.error('Erro ao buscar itens:', itemsError);
+        setError({
+          title: 'Erro ao processar venda',
+          message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
+        });
+        return;
+      }
+
+      // 2. Atualizar estoque de cada produto
+      if (saleItems && saleItems.length > 0) {
+        for (const item of saleItems) {
+          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+            p_product_id: item.ref_id,
+            p_quantity: item.quantidade
+          });
+
+          if (stockError) {
+            console.error('Erro ao atualizar estoque:', stockError);
+          }
+        }
+      }
+
+      // 3. Preparar itens para o ERP (formato CheckoutItem)
+      const erpItems = saleItems?.map(item => ({
+        type: 'product' as const,
+        id: item.ref_id,
+        name: item.nome,
+        quantity: item.quantidade,
+        price: Number(item.preco_unit),
+        discount: 0
+      })) || [];
+
+      // Normalizar payment method para valores corretos do ENUM
+      const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
+
+      console.log('💰 Integrando venda de produtos com ERP Financeiro e comissões...', {
+        client_id: sale.cliente_id,
+        barber_id: barber.staff_id,
+        items_count: erpItems.length,
+        payment_method_original: cardType,
+        payment_method_normalized: normalizedPaymentMethod,
+        total: sale.total
+      });
+
+      // 4. Chamar edge function para criar registros financeiros (produtos + comissões)
+      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+        'create-financial-transaction',
+        {
+          body: {
+            client_id: sale.cliente_id,
+            barber_id: barber.staff_id,
+            items: erpItems,
+            payment_method: normalizedPaymentMethod,
+            discount_amount: Number(sale.desconto) || 0,
+            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'} - Barbeiro: ${barber.nome}`,
+            transaction_data: transactionData
+          }
+        }
+      );
+
+      if (erpError) {
+        console.error('❌ Erro ao integrar com ERP:', erpError);
+        console.log('⚠️ Continuando finalização sem integração ERP');
+      } else {
+        console.log('✅ ERP Financeiro integrado com sucesso (produtos):', erpResult);
+      }
+
+      // 5. Atualizar venda para PAGA
+      const { error: updateError } = await supabase
+        .from('vendas')
+        .update({
+          status: 'PAGA',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', sale.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar venda:', updateError);
+        setError({
+          title: 'Erro ao finalizar pagamento',
+          message: 'O pagamento foi aprovado, mas houve um erro ao finalizar a venda. Procure um atendente.'
+        });
+        return;
+      }
+      
+      toast.success('Pagamento aprovado!');
+      navigate('/totem/product-payment-success', { 
+        state: { sale, client, transactionData } 
+      });
+    } catch (err) {
+      console.error('Erro ao processar pagamento:', err);
+      setError({
+        title: 'Erro inesperado',
+        message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
+      });
+      setIsProcessing(false);
+    }
+  }, [sale, client, cardType, barber, navigate]);
+
   // Hook TEF Android - conexão real com PayGo
   const {
     isAndroidAvailable,
@@ -26,7 +145,11 @@ const TotemProductPaymentCard: React.FC = () => {
   } = useTEFAndroid({
     onSuccess: async (resultado) => {
       console.log('✅ [TEF Produto] Pagamento aprovado:', resultado);
-      await handlePaymentSuccess(resultado);
+      await handlePaymentSuccess({
+        nsu: resultado.nsu,
+        autorizacao: resultado.autorizacao,
+        bandeira: resultado.bandeira
+      });
     },
     onError: (erro) => {
       console.error('❌ [TEF Produto] Erro no pagamento:', erro);
@@ -41,6 +164,36 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   });
 
+  // Função para iniciar pagamento
+  const iniciarPagamentoReal = useCallback(async () => {
+    if (!isAndroidAvailable || !isPinpadConnected || !sale) {
+      return;
+    }
+
+    console.log('💳 [TEF Produto] Iniciando pagamento:', {
+      tipo: cardType,
+      valor: sale.total,
+      venda_id: sale.id
+    });
+
+    setIsProcessing(true);
+
+    const success = await iniciarPagamentoTEF({
+      ordemId: sale.id,
+      valor: sale.total,
+      tipo: cardType === 'debit' ? 'debit' : 'credit',
+      parcelas: 1
+    });
+
+    if (!success) {
+      console.error('❌ [TEF Produto] Falha ao iniciar TEF');
+      toast.error('Erro ao iniciar pagamento', {
+        description: 'Verifique a conexão com o pinpad'
+      });
+      setIsProcessing(false);
+    }
+  }, [isAndroidAvailable, isPinpadConnected, sale, cardType, iniciarPagamentoTEF]);
+
   // Iniciar pagamento quando tiver cardType e TEF disponível
   useEffect(() => {
     console.log('💳 [TotemProductPaymentCard] ========== ESTADO TEF ==========');
@@ -50,7 +203,6 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('💳 [TotemProductPaymentCard] isProcessing:', isProcessing);
     console.log('💳 [TotemProductPaymentCard] tefProcessing:', tefProcessing);
     console.log('💳 [TotemProductPaymentCard] sale:', sale?.id);
-    console.log('💳 [TotemProductPaymentCard] window.TEF:', typeof window.TEF);
     console.log('💳 [TotemProductPaymentCard] ==========================================');
     
     if (!sale || !client || !barber) {
@@ -66,7 +218,7 @@ const TotemProductPaymentCard: React.FC = () => {
     } else {
       console.log('💳 [TotemProductPaymentCard] ⚠️ Condições não atendidas para pagamento');
     }
-  }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType]);
+  }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType, isProcessing, tefProcessing, navigate, iniciarPagamentoReal]);
 
   // Fallback: verificar sessionStorage para resultado pendente do PayGo
   useEffect(() => {
@@ -110,157 +262,14 @@ const TotemProductPaymentCard: React.FC = () => {
     // Verificar periodicamente enquanto está processando
     const interval = setInterval(checkStoredResult, 1000);
     return () => clearInterval(interval);
-  }, [isProcessing]);
+  }, [isProcessing, handlePaymentSuccess]);
 
-  const iniciarPagamentoReal = async () => {
-    if (!isAndroidAvailable || !isPinpadConnected) {
-      return;
-    }
-
-    console.log('💳 [TEF Produto] Iniciando pagamento:', {
-      tipo: cardType,
-      valor: sale.total,
-      venda_id: sale.id
-    });
-
-    setIsProcessing(true);
-
-    const success = await iniciarPagamentoTEF({
-      ordemId: sale.id,
-      valor: sale.total,
-      tipo: cardType === 'debit' ? 'debit' : 'credit',
-      parcelas: 1
-    });
-
-    if (!success) {
-      console.error('❌ [TEF Produto] Falha ao iniciar TEF');
-      toast.error('Erro ao iniciar pagamento', {
-        description: 'Verifique a conexão com o pinpad'
-      });
-      setIsProcessing(false);
-    }
-  };
+  // Nota: iniciarPagamentoReal e handlePaymentSuccess definidos acima via useCallback
 
   const handleCancelPayment = () => {
     cancelarPagamentoTEF();
     setIsProcessing(false);
     navigate(-1);
-  };
-
-  const handlePaymentSuccess = async (transactionData?: {
-    nsu?: string;
-    autorizacao?: string;
-    bandeira?: string;
-  }) => {
-    try {
-      console.log('✅ Pagamento no cartão aprovado! Finalizando venda...');
-      console.log('   📝 Transaction Data:', transactionData);
-      
-      // 1. Buscar itens da venda
-      const { data: saleItems, error: itemsError } = await supabase
-        .from('vendas_itens')
-        .select('*')
-        .eq('venda_id', sale.id)
-        .eq('tipo', 'PRODUTO');
-
-      if (itemsError) {
-        console.error('Erro ao buscar itens:', itemsError);
-        setError({
-          title: 'Erro ao processar venda',
-          message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
-        });
-        return;
-      }
-
-      // 2. Atualizar estoque de cada produto
-      if (saleItems && saleItems.length > 0) {
-        for (const item of saleItems) {
-          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
-            p_product_id: item.ref_id,
-            p_quantity: item.quantidade
-          });
-
-          if (stockError) {
-            console.error('Erro ao atualizar estoque:', stockError);
-          }
-        }
-      }
-
-      // 3. Preparar itens para o ERP (formato CheckoutItem)
-      const erpItems = saleItems.map(item => ({
-        type: 'product' as const,
-        id: item.ref_id,
-        name: item.nome,
-        quantity: item.quantidade,
-        price: Number(item.preco_unit),
-        discount: 0
-      }))
-
-      // Normalizar payment method para valores corretos do ENUM
-      const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card'
-
-      console.log('💰 Integrando venda de produtos com ERP Financeiro e comissões...', {
-        client_id: sale.cliente_id,
-        barber_id: barber.staff_id,
-        items_count: erpItems.length,
-        payment_method_original: cardType,
-        payment_method_normalized: normalizedPaymentMethod,
-        total: sale.total
-      })
-
-      // 4. Chamar edge function para criar registros financeiros (produtos + comissões)
-      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
-        'create-financial-transaction',
-        {
-          body: {
-            client_id: sale.cliente_id,
-            barber_id: barber.staff_id,
-            items: erpItems,
-            payment_method: normalizedPaymentMethod,
-            discount_amount: Number(sale.desconto) || 0,
-            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'} - Barbeiro: ${barber.nome}`,
-            transaction_data: transactionData // Incluir dados TEF
-          }
-        }
-      )
-
-      if (erpError) {
-        console.error('❌ Erro ao integrar com ERP:', erpError)
-        console.log('⚠️ Continuando finalização sem integração ERP')
-      } else {
-        console.log('✅ ERP Financeiro integrado com sucesso (produtos):', erpResult)
-      }
-
-      // 5. Atualizar venda para PAGA
-      const { error } = await supabase
-        .from('vendas')
-        .update({
-          status: 'PAGA',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', sale.id);
-
-      if (error) {
-        console.error('Erro ao atualizar venda:', error);
-        setError({
-          title: 'Erro ao finalizar pagamento',
-          message: 'O pagamento foi aprovado, mas houve um erro ao finalizar a venda. Procure um atendente.'
-        });
-        return;
-      }
-      
-      toast.success('Pagamento aprovado!');
-      navigate('/totem/product-payment-success', { 
-        state: { sale, client, transactionData } 
-      });
-    } catch (error) {
-      console.error('Erro ao processar pagamento:', error);
-      setError({
-        title: 'Erro inesperado',
-        message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
-      });
-      setIsProcessing(false);
-    }
   };
 
   if (!sale) return null;

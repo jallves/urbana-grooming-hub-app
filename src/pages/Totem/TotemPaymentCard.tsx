@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -17,6 +17,96 @@ const TotemPaymentCard: React.FC = () => {
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Refs para acesso em callbacks
+  const currentPaymentIdRef = useRef<string | null>(null);
+  const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
+  
+  // Atualizar refs
+  useEffect(() => {
+    currentPaymentIdRef.current = currentPaymentId;
+  }, [currentPaymentId]);
+  
+  useEffect(() => {
+    paymentTypeRef.current = paymentType;
+  }, [paymentType]);
+
+  // Função de finalização - definida com useCallback para estar disponível
+  const finalizePayment = useCallback(async (paymentId: string, transactionData: {
+    nsu?: string;
+    autorizacao?: string;
+    bandeira?: string;
+  }) => {
+    try {
+      console.log('✅ [CARD] Finalizando pagamento...');
+      console.log('   📝 Payment ID:', paymentId);
+      console.log('   📝 Transaction Data:', transactionData);
+      
+      // Atualizar status do pagamento com dados da transação
+      const { error: paymentError } = await supabase
+        .from('totem_payments')
+        .update({
+          status: 'completed',
+          paid_at: new Date().toISOString(),
+          ...(transactionData.nsu && { nsu: transactionData.nsu }),
+          ...(transactionData.autorizacao && { authorization_code: transactionData.autorizacao })
+        })
+        .eq('id', paymentId);
+
+      if (paymentError) {
+        console.error('❌ [CARD] Erro ao atualizar pagamento:', paymentError);
+        throw paymentError;
+      }
+
+      // Finalizar venda
+      if (isDirect) {
+        console.log('📡 [CARD] Chamando totem-direct-sale...');
+        await supabase.functions.invoke('totem-direct-sale', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            payment_id: paymentId
+          }
+        });
+      } else {
+        // Atualizar estoque dos produtos
+        if (selectedProducts && selectedProducts.length > 0) {
+          for (const product of selectedProducts) {
+            await supabase.rpc('decrease_product_stock', {
+              p_product_id: product.product_id,
+              p_quantity: product.quantidade
+            });
+          }
+        }
+
+        // Finalizar checkout de serviço
+        await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            session_id: session_id,
+            payment_id: paymentId
+          }
+        });
+      }
+
+      toast.success('Pagamento aprovado!');
+      navigate('/totem/payment-success', { 
+        state: { 
+          appointment, 
+          client,
+          total,
+          paymentMethod: paymentTypeRef.current,
+          isDirect,
+          transactionData
+        } 
+      });
+    } catch (error) {
+      console.error('❌ [CARD] Erro ao finalizar:', error);
+      toast.error('Erro ao processar pagamento');
+      setProcessing(false);
+    }
+  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
   // Hook TEF Android
   const {
@@ -28,12 +118,15 @@ const TotemPaymentCard: React.FC = () => {
   } = useTEFAndroid({
     onSuccess: async (resultado) => {
       console.log('✅ [TEF] Pagamento aprovado:', resultado);
-      if (currentPaymentId) {
-        await finalizePayment(currentPaymentId, {
+      const paymentId = currentPaymentIdRef.current;
+      if (paymentId) {
+        await finalizePayment(paymentId, {
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
           bandeira: resultado.bandeira
         });
+      } else {
+        console.error('❌ [TEF] currentPaymentId não disponível!');
       }
     },
     onError: (erro) => {
@@ -80,9 +173,10 @@ const TotemPaymentCard: React.FC = () => {
             sessionStorage.removeItem('lastTefResult');
             sessionStorage.removeItem('lastTefResultTime');
             
-            if (resultado.status === 'aprovado' && currentPaymentId) {
+            const paymentId = currentPaymentIdRef.current;
+            if (resultado.status === 'aprovado' && paymentId) {
               console.log('✅ [CARD] Pagamento aprovado via fallback, finalizando...');
-              finalizePayment(currentPaymentId, {
+              finalizePayment(paymentId, {
                 nsu: resultado.nsu || resultado.transactionNsu,
                 autorizacao: resultado.autorizacao || resultado.authorizationCode,
                 bandeira: resultado.bandeira || resultado.cardName
@@ -103,7 +197,7 @@ const TotemPaymentCard: React.FC = () => {
     // Verificar periodicamente enquanto está processando
     const interval = setInterval(checkStoredResult, 1000);
     return () => clearInterval(interval);
-  }, [processing, currentPaymentId]);
+  }, [processing, finalizePayment]);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     // Verificar se TEF está disponível
@@ -179,80 +273,7 @@ const TotemPaymentCard: React.FC = () => {
     toast.info('Pagamento cancelado');
   };
 
-  const finalizePayment = async (paymentId: string, transactionData: {
-    nsu?: string;
-    autorizacao?: string;
-    bandeira?: string;
-  }) => {
-    try {
-      console.log('✅ [CARD] Finalizando pagamento...');
-      console.log('   📝 Transaction Data:', transactionData);
-      
-      // Atualizar status do pagamento com dados da transação
-      const { error: paymentError } = await supabase
-        .from('totem_payments')
-        .update({
-          status: 'completed',
-          paid_at: new Date().toISOString(),
-          ...(transactionData.nsu && { nsu: transactionData.nsu }),
-          ...(transactionData.autorizacao && { authorization_code: transactionData.autorizacao })
-        })
-        .eq('id', paymentId);
-
-      if (paymentError) {
-        console.error('❌ [CARD] Erro ao atualizar pagamento:', paymentError);
-        throw paymentError;
-      }
-
-      // Finalizar venda
-      if (isDirect) {
-        console.log('📡 [CARD] Chamando totem-direct-sale...');
-        await supabase.functions.invoke('totem-direct-sale', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            payment_id: paymentId
-          }
-        });
-      } else {
-        // Atualizar estoque dos produtos
-        if (selectedProducts && selectedProducts.length > 0) {
-          for (const product of selectedProducts) {
-            await supabase.rpc('decrease_product_stock', {
-              p_product_id: product.product_id,
-              p_quantity: product.quantidade
-            });
-          }
-        }
-
-        // Finalizar checkout de serviço
-        await supabase.functions.invoke('totem-checkout', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            session_id: session_id,
-            payment_id: paymentId
-          }
-        });
-      }
-
-      toast.success('Pagamento aprovado!');
-      navigate('/totem/payment-success', { 
-        state: { 
-          appointment, 
-          client,
-          total,
-          paymentMethod: paymentType,
-          isDirect,
-          transactionData
-        } 
-      });
-    } catch (error) {
-      console.error('❌ [CARD] Erro ao finalizar:', error);
-      toast.error('Erro ao processar pagamento');
-      setProcessing(false);
-    }
-  };
+  // Nota: finalizePayment já está definida no início do componente via useCallback
 
   // Tela de erro quando TEF não está disponível
   if (!isAndroidAvailable || !isPinpadConnected) {
