@@ -40,13 +40,13 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
   const isPastAppointment = isPast(appointmentDateTime);
   const isAfter1Hour = isAfter(now, oneHourAfter); // Passou 1 hora do horário
   
-  // Barbeiro pode editar sem limite de horário (diferente do cliente)
-  // Para status "agendado" ou "confirmado":
-  // - Pode editar se ainda não passou
-  // - Depois de 1h do horário: mostra botão "Ausente"
-  const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && !isAfter1Hour;
+  // Barbeiro:
+  // - Pode EDITAR agendamentos futuros
+  // - NÃO pode cancelar (só admin/cliente)
+  // - Pode marcar como AUSENTE após 1h do horário
+  const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
   const canMarkAbsent = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isAfter1Hour;
-  const canCancel = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && !isAfter1Hour;
+  const canCancel = false; // Barbeiro NÃO pode cancelar
 
   const getStatusBadge = () => {
     const badges = {
