@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppointmentCompletion } from './hooks/useAppointmentCompletion';
+import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 
 export interface PainelAgendamento {
   id: string;
@@ -417,7 +418,12 @@ export const useClientAppointments = () => {
   }, []);
 
   // Atualiza agendamento (data, hora, barbeiro, serviço)
-  const handleUpdateAppointment = useCallback(async (appointmentId: string, data: any) => {
+  const handleUpdateAppointment = useCallback(async (appointmentId: string, data: any, previousData?: {
+    date?: string;
+    time?: string;
+    staffName?: string;
+    serviceName?: string;
+  }) => {
     try {
       console.log('📝 [Update] Atualizando agendamento:', appointmentId, data);
       
@@ -436,7 +442,30 @@ export const useClientAppointments = () => {
 
       console.log('✅ [Update] Agendamento atualizado com sucesso');
       
-      // Atualiza lista após edição (o real-time também vai atualizar, mas fazemos aqui para feedback imediato)
+      // Determinar tipo de alteração
+      let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
+      if (previousData?.date !== data.data || previousData?.time !== data.hora?.substring(0,5)) {
+        updateType = 'reschedule';
+      } else if (previousData?.staffName && data.barbeiro_id) {
+        updateType = 'change_barber';
+      } else if (previousData?.serviceName && data.servico_id) {
+        updateType = 'change_service';
+      }
+
+      // Enviar e-mail de atualização
+      console.log('📧 [Update] Enviando e-mail de atualização...');
+      try {
+        await sendAppointmentUpdateEmail({
+          appointmentId,
+          previousData,
+          updateType,
+          updatedBy: 'admin'
+        });
+      } catch (emailError) {
+        console.error('⚠️ [Update] Erro ao enviar e-mail (não crítico):', emailError);
+      }
+      
+      // Atualiza lista após edição
       await fetchAppointments();
       
       toast.success('✅ Agendamento atualizado com sucesso!');

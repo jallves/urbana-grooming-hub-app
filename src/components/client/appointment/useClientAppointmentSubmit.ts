@@ -6,6 +6,9 @@ import { toast } from '@/hooks/use-toast';
 import { Service } from '@/types/appointment';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+
 
 interface UseClientAppointmentSubmitProps {
   appointmentId?: string;
@@ -82,6 +85,18 @@ export const useClientAppointmentSubmit = ({
       
       // Insert or update appointment
       if (appointmentId) {
+        // Buscar dados anteriores para o e-mail
+        const { data: previousAppointment } = await supabase
+          .from('painel_agendamentos')
+          .select(`
+            data,
+            hora,
+            painel_barbeiros(nome),
+            painel_servicos(nome)
+          `)
+          .eq('id', appointmentId)
+          .single();
+
         const { error } = await supabase
           .from('painel_agendamentos')
           .update(painelData)
@@ -89,6 +104,24 @@ export const useClientAppointmentSubmit = ({
           .eq('cliente_id', clientId); // Ensure client can only update own appointments
           
         if (error) throw error;
+
+        // Enviar e-mail de atualização
+        console.log('📧 [Cliente] Enviando e-mail de atualização...');
+        try {
+          await sendAppointmentUpdateEmail({
+            appointmentId,
+            previousData: {
+              date: previousAppointment?.data,
+              time: previousAppointment?.hora?.substring(0, 5),
+              staffName: (previousAppointment as any)?.painel_barbeiros?.nome,
+              serviceName: (previousAppointment as any)?.painel_servicos?.nome
+            },
+            updateType: 'reschedule',
+            updatedBy: 'client'
+          });
+        } catch (emailError) {
+          console.error('⚠️ Erro ao enviar e-mail de atualização:', emailError);
+        }
         
         toast({
           title: "✅ Agendamento Atualizado!",
@@ -96,11 +129,23 @@ export const useClientAppointmentSubmit = ({
           duration: 5000,
         });
       } else {
-        const { error } = await supabase
+        const { data: newAppointment, error } = await supabase
           .from('painel_agendamentos')
-          .insert(painelData);
+          .insert(painelData)
+          .select()
+          .single();
           
         if (error) throw error;
+        
+        // Enviar e-mail de confirmação
+        if (newAppointment?.id) {
+          console.log('📧 [Cliente] Enviando e-mail de confirmação...');
+          try {
+            await sendAppointmentConfirmationEmail(newAppointment.id);
+          } catch (emailError) {
+            console.error('⚠️ Erro ao enviar e-mail de confirmação:', emailError);
+          }
+        }
         
         toast({
           title: "✅ Agendamento Concluído!",
