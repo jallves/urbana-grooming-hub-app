@@ -37,6 +37,7 @@ interface SecurityLog {
   details: Record<string, any> | null;
   ip_address: string | null;
   created_at: string;
+  admin_name?: string;
   admin_email?: string;
 }
 
@@ -118,27 +119,28 @@ export const SecurityLogViewer = () => {
 
       if (error) throw error;
 
-      // Buscar emails dos admins
+      // Buscar nomes dos admins (admin_id é o id da tabela admin_users)
       const adminIds = [...new Set((data || []).map(log => log.admin_id).filter(Boolean))];
       
-      let adminEmails: Record<string, string> = {};
+      let adminInfo: Record<string, { name: string; email: string }> = {};
       if (adminIds.length > 0) {
         const { data: admins } = await supabase
           .from('admin_users')
-          .select('user_id, email')
-          .in('user_id', adminIds);
+          .select('id, name, email')
+          .in('id', adminIds);
         
         if (admins) {
-          adminEmails = admins.reduce((acc, admin) => {
-            if (admin.user_id) acc[admin.user_id] = admin.email;
+          adminInfo = admins.reduce((acc, admin) => {
+            acc[admin.id] = { name: admin.name, email: admin.email };
             return acc;
-          }, {} as Record<string, string>);
+          }, {} as Record<string, { name: string; email: string }>);
         }
       }
 
       const logsWithEmail = (data || []).map(log => ({
         ...log,
-        admin_email: log.admin_id ? adminEmails[log.admin_id] : 'Sistema',
+        admin_name: log.admin_id ? adminInfo[log.admin_id]?.name : 'Sistema',
+        admin_email: log.admin_id ? adminInfo[log.admin_id]?.email : 'Sistema',
         details: log.details as Record<string, any> | null,
       }));
 
@@ -193,15 +195,17 @@ export const SecurityLogViewer = () => {
         async (payload) => {
           console.log('📝 Novo log de segurança recebido:', payload);
           
-          // Buscar email do admin
+          // Buscar dados do admin (admin_id é o id da tabela admin_users)
+          let adminName = 'Sistema';
           let adminEmail = 'Sistema';
           if (payload.new.admin_id) {
             const { data: admin } = await supabase
               .from('admin_users')
-              .select('email')
-              .eq('user_id', payload.new.admin_id)
+              .select('name, email')
+              .eq('id', payload.new.admin_id)
               .single();
             
+            adminName = admin?.name || 'Usuário';
             adminEmail = admin?.email || 'Usuário';
           }
           
@@ -214,6 +218,7 @@ export const SecurityLogViewer = () => {
             details: payload.new.details as Record<string, any> | null,
             ip_address: payload.new.ip_address,
             created_at: payload.new.created_at,
+            admin_name: adminName,
             admin_email: adminEmail
           };
           
@@ -456,7 +461,7 @@ export const SecurityLogViewer = () => {
                       <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {log.admin_email || 'Desconhecido'}
+                          {log.admin_name || log.admin_email || 'Desconhecido'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
