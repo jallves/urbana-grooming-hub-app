@@ -68,6 +68,50 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType]);
 
+  // Fallback: verificar sessionStorage para resultado pendente do PayGo
+  useEffect(() => {
+    if (!isProcessing) return;
+    
+    const checkStoredResult = () => {
+      try {
+        const storedResult = sessionStorage.getItem('lastTefResult');
+        const storedTime = sessionStorage.getItem('lastTefResultTime');
+        
+        if (storedResult && storedTime) {
+          const resultAge = Date.now() - parseInt(storedTime, 10);
+          // Se o resultado foi salvo nos últimos 30 segundos
+          if (resultAge < 30000) {
+            const resultado = JSON.parse(storedResult);
+            console.log('🔄 [PRODUCT-CARD] Recuperando resultado do sessionStorage:', resultado);
+            
+            // Limpar storage para evitar reprocessamento
+            sessionStorage.removeItem('lastTefResult');
+            sessionStorage.removeItem('lastTefResultTime');
+            
+            if (resultado.status === 'aprovado') {
+              console.log('✅ [PRODUCT-CARD] Pagamento aprovado via fallback, finalizando...');
+              handlePaymentSuccess({
+                nsu: resultado.nsu || resultado.transactionNsu,
+                autorizacao: resultado.autorizacao || resultado.authorizationCode,
+                bandeira: resultado.bandeira || resultado.cardName
+              });
+            } else if (resultado.status === 'cancelado' || resultado.status === 'negado') {
+              console.log('❌ [PRODUCT-CARD] Pagamento negado/cancelado via fallback');
+              setIsProcessing(false);
+              toast.error('Pagamento não aprovado', { description: resultado.mensagem || resultado.resultMessage });
+            }
+          }
+        }
+      } catch (e) {
+        console.error('❌ [PRODUCT-CARD] Erro ao verificar sessionStorage:', e);
+      }
+    };
+    
+    // Verificar periodicamente enquanto está processando
+    const interval = setInterval(checkStoredResult, 1000);
+    return () => clearInterval(interval);
+  }, [isProcessing]);
+
   const iniciarPagamentoReal = async () => {
     if (!isAndroidAvailable || !isPinpadConnected) {
       return;

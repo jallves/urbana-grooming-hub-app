@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   isAndroidTEFAvailable,
@@ -34,12 +34,118 @@ interface UseTEFAndroidReturn {
   verificarConexao: () => TEFPinpadStatus | null;
 }
 
+// Flag global para evitar processamento duplicado
+let globalLastProcessedResult: string | null = null;
+let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
+
 export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroidReturn {
   const [isAndroidAvailable, setIsAndroidAvailable] = useState(false);
   const [isPinpadConnected, setIsPinpadConnected] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [pinpadStatus, setPinpadStatus] = useState<TEFPinpadStatus | null>(null);
   const [androidVersion, setAndroidVersion] = useState<string | null>(null);
+  
+  // Refs para manter callbacks atualizados
+  const optionsRef = useRef(options);
+  const processingRef = useRef(false);
+  
+  // Atualizar refs quando options mudar
+  useEffect(() => {
+    optionsRef.current = options;
+  }, [options]);
+  
+  useEffect(() => {
+    processingRef.current = isProcessing;
+  }, [isProcessing]);
+
+  // Registrar callback global persistente para receber resposta do PayGo
+  useEffect(() => {
+    console.log('[useTEFAndroid] Registrando callback global onTefResultado');
+    
+    // Handler principal para receber resultado do PayGo
+    const handleTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[useTEFAndroid] ═══════════════════════════════════════');
+      console.log('[useTEFAndroid] RESULTADO PAYGO RECEBIDO VIA CALLBACK GLOBAL');
+      console.log('[useTEFAndroid] Dados:', JSON.stringify(resultado, null, 2));
+      console.log('[useTEFAndroid] isProcessing:', processingRef.current);
+      console.log('[useTEFAndroid] ═══════════════════════════════════════');
+      
+      // Normalizar resultado
+      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+      console.log('[useTEFAndroid] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
+      
+      // Evitar processamento duplicado
+      const resultKey = JSON.stringify(normalizedResult);
+      if (globalLastProcessedResult === resultKey) {
+        console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata');
+        return;
+      }
+      globalLastProcessedResult = resultKey;
+      
+      // Atualizar estado
+      setIsProcessing(false);
+      
+      // Chamar callback interno se existir
+      if (globalResultCallback) {
+        console.log('[useTEFAndroid] Chamando callback interno registrado');
+        globalResultCallback(normalizedResult);
+        globalResultCallback = null;
+      }
+      
+      // Chamar callbacks do options
+      const currentOptions = optionsRef.current;
+      switch (normalizedResult.status) {
+        case 'aprovado':
+          console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
+          toast.success('Pagamento aprovado!', {
+            description: normalizedResult.nsu ? `NSU: ${normalizedResult.nsu}` : undefined
+          });
+          currentOptions.onSuccess?.(normalizedResult);
+          break;
+
+        case 'negado':
+          console.log('[useTEFAndroid] ❌ Pagamento NEGADO');
+          toast.error('Pagamento negado', {
+            description: normalizedResult.mensagem || 'Tente novamente'
+          });
+          currentOptions.onError?.(normalizedResult.mensagem || 'Pagamento negado');
+          break;
+
+        case 'cancelado':
+          console.log('[useTEFAndroid] ⚠️ Pagamento CANCELADO');
+          toast.info('Pagamento cancelado');
+          currentOptions.onCancelled?.();
+          break;
+
+        case 'erro':
+          console.log('[useTEFAndroid] ❌ ERRO no pagamento');
+          toast.error('Erro no pagamento', {
+            description: normalizedResult.mensagem
+          });
+          currentOptions.onError?.(normalizedResult.mensagem || 'Erro desconhecido');
+          break;
+      }
+    };
+    
+    // Registrar como callback global no window
+    (window as any).onTefResultado = handleTefResultado;
+    
+    // Também ouvir evento customizado como backup
+    const handleCustomEvent = (event: CustomEvent) => {
+      console.log('[useTEFAndroid] CustomEvent tefPaymentResult recebido:', event.detail);
+      if (event.detail) {
+        handleTefResultado(event.detail);
+      }
+    };
+    
+    window.addEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+    
+    return () => {
+      console.log('[useTEFAndroid] Limpando callback global');
+      window.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+      // Não remover window.onTefResultado para manter compatibilidade
+    };
+  }, []);
 
   // Verificar disponibilidade do Android TEF
   useEffect(() => {
@@ -51,18 +157,14 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       setIsAndroidAvailable(available);
       
       if (available) {
-        // IMPORTANTE: Se window.TEF existe, PayGo está disponível
-        // O PayGo gerencia o pinpad internamente
         const status = verificarPinpad();
         console.log('[useTEFAndroid] Pinpad status:', JSON.stringify(status));
         setPinpadStatus(status);
         
-        // Se window.TEF existe e PayGo está instalado, consideramos conectado
         const connected = status?.conectado ?? false;
         setIsPinpadConnected(connected);
         console.log('[useTEFAndroid] isPinpadConnected:', connected);
         
-        // Verificar também via isReady se disponível
         if (window.TEF?.isReady) {
           try {
             const ready = window.TEF.isReady();
@@ -80,10 +182,8 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       console.log('[useTEFAndroid] =====================================');
     };
 
-    // Verificar imediatamente
     checkAvailability();
 
-    // Verificar novamente após delays progressivos
     const timeout1 = setTimeout(checkAvailability, 500);
     const timeout2 = setTimeout(checkAvailability, 1000);
     const timeout3 = setTimeout(checkAvailability, 2000);
@@ -124,7 +224,6 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         console.log('[useTEFAndroid] Android TEF pronto, versão:', version);
         setAndroidVersion(version);
         
-        // Verificar pinpad quando Android estiver pronto
         const status = verificarPinpad();
         setPinpadStatus(status);
         setIsPinpadConnected(status?.conectado || false);
@@ -156,9 +255,20 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       return false;
     }
 
+    // Limpar resultado anterior
+    globalLastProcessedResult = null;
+    
     setIsProcessing(true);
+    console.log('[useTEFAndroid] Iniciando pagamento TEF:', params);
 
     return new Promise((resolve) => {
+      // Registrar callback interno para resolver a promise
+      globalResultCallback = (resultado) => {
+        console.log('[useTEFAndroid] Promise resolvida com resultado:', resultado.status);
+        resolve(resultado.status === 'aprovado');
+      };
+      
+      // Chamar Android TEF
       const success = iniciarPagamentoAndroid(
         {
           ordemId: params.ordemId,
@@ -167,53 +277,22 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           parcelas: params.parcelas
         },
         (resultado) => {
-          setIsProcessing(false);
-
-          switch (resultado.status) {
-            case 'aprovado':
-              toast.success('Pagamento aprovado!', {
-                description: `NSU: ${resultado.nsu}`
-              });
-              options.onSuccess?.(resultado);
-              resolve(true);
-              break;
-
-            case 'negado':
-              toast.error('Pagamento negado', {
-                description: resultado.mensagem || 'Tente novamente'
-              });
-              options.onError?.(resultado.mensagem || 'Pagamento negado');
-              resolve(false);
-              break;
-
-            case 'cancelado':
-              toast.info('Pagamento cancelado');
-              options.onCancelled?.();
-              resolve(false);
-              break;
-
-            case 'erro':
-              toast.error('Erro no pagamento', {
-                description: resultado.mensagem
-              });
-              options.onError?.(resultado.mensagem || 'Erro desconhecido');
-              resolve(false);
-              break;
-
-            default:
-              toast.error('Status desconhecido');
-              resolve(false);
-          }
+          // Este callback é chamado pela bridge - pode não ser necessário
+          // pois o callback global vai receber o resultado
+          console.log('[useTEFAndroid] Callback da bridge recebido:', resultado);
         }
       );
 
       if (!success) {
         setIsProcessing(false);
+        globalResultCallback = null;
         toast.error('Falha ao iniciar pagamento');
         resolve(false);
+      } else {
+        console.log('[useTEFAndroid] Pagamento iniciado, aguardando resposta do PayGo...');
       }
     });
-  }, [isAndroidAvailable, isPinpadConnected, isProcessing, options]);
+  }, [isAndroidAvailable, isPinpadConnected, isProcessing]);
 
   // Cancelar pagamento
   const cancelarPagamento = useCallback(() => {
@@ -244,5 +323,57 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     iniciarPagamento,
     cancelarPagamento,
     verificarConexao
+  };
+}
+
+/**
+ * Normaliza o resultado do PayGo para o formato esperado
+ */
+function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
+  // Se já tem status formatado, usar diretamente
+  if (raw.status && typeof raw.status === 'string') {
+    return {
+      status: raw.status as TEFResultado['status'],
+      valor: typeof raw.valor === 'number' ? raw.valor : 
+             typeof raw.amount === 'number' ? raw.amount : undefined,
+      bandeira: (raw.bandeira || raw.cardName || '') as string,
+      nsu: (raw.nsu || raw.transactionNsu || '') as string,
+      autorizacao: (raw.autorizacao || raw.authorizationCode || '') as string,
+      codigoResposta: raw.transactionResult?.toString(),
+      mensagem: (raw.mensagem || raw.resultMessage || '') as string,
+      comprovanteCliente: (raw.comprovanteCliente || raw.cardholderReceipt || '') as string,
+      comprovanteLojista: (raw.comprovanteLojista || raw.merchantReceipt || '') as string,
+      ordemId: raw.ordemId as string,
+      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now()
+    };
+  }
+  
+  // Converter de formato PayGo bruto
+  const transactionResult = typeof raw.transactionResult === 'number' 
+    ? raw.transactionResult 
+    : parseInt(raw.transactionResult as string || '-99', 10);
+  
+  let status: TEFResultado['status'];
+  if (transactionResult === 0) {
+    status = 'aprovado';
+  } else if (transactionResult >= 1 && transactionResult <= 99) {
+    status = 'negado';
+  } else if (transactionResult === -1) {
+    status = 'cancelado';
+  } else {
+    status = 'erro';
+  }
+  
+  return {
+    status,
+    valor: typeof raw.amount === 'number' ? raw.amount : undefined,
+    bandeira: (raw.cardName || '') as string,
+    nsu: (raw.transactionNsu || '') as string,
+    autorizacao: (raw.authorizationCode || '') as string,
+    codigoResposta: transactionResult.toString(),
+    mensagem: (raw.resultMessage || '') as string,
+    comprovanteCliente: (raw.cardholderReceipt || '') as string,
+    comprovanteLojista: (raw.merchantReceipt || '') as string,
+    timestamp: Date.now()
   };
 }

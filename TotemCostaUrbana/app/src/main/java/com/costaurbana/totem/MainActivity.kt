@@ -248,20 +248,34 @@ class MainActivity : AppCompatActivity() {
             val jsonString = jsonParams.toString()
             addLog("📤 Notificando WebView: $status")
             
-            // JavaScript com retry mechanism
+            // JavaScript com retry mechanism e fallback de navegação
             val js = """
                 (function() {
                     console.log('[Android] ═══════════════════════════════════════');
                     console.log('[Android] PayGo RESPONSE RECEIVED');
+                    console.log('[Android] Status: $status');
                     console.log('[Android] Data:', JSON.stringify($jsonString, null, 2));
                     console.log('[Android] ═══════════════════════════════════════');
                     
                     var resultado = $jsonString;
                     var notified = false;
+                    var maxRetries = 5;
+                    var retryCount = 0;
+                    
+                    // Salvar resultado imediatamente para recuperação
+                    try {
+                        sessionStorage.setItem('lastTefResult', JSON.stringify(resultado));
+                        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+                        console.log('[Android] Resultado salvo no sessionStorage');
+                    } catch(e) {
+                        console.error('[Android] Erro ao salvar no sessionStorage:', e);
+                    }
                     
                     // Função para tentar notificar
                     function tryNotify() {
                         if (notified) return true;
+                        retryCount++;
+                        console.log('[Android] Tentativa ' + retryCount + ' de notificação...');
                         
                         // Método 1: Callback direto
                         if (typeof window.onTefResultado === 'function') {
@@ -275,15 +289,18 @@ class MainActivity : AppCompatActivity() {
                                 console.error('[Android] ❌ Erro em onTefResultado:', e);
                             }
                         } else {
-                            console.warn('[Android] ⚠️ window.onTefResultado não definido');
+                            console.warn('[Android] ⚠️ window.onTefResultado não definido (tentativa ' + retryCount + ')');
                         }
                         
-                        // Método 2: CustomEvent
+                        // Método 2: CustomEvent (sempre disparar como backup)
                         try {
-                            window.dispatchEvent(new CustomEvent('tefPaymentResult', { 
+                            var event = new CustomEvent('tefPaymentResult', { 
                                 detail: resultado,
-                                bubbles: true
-                            }));
+                                bubbles: true,
+                                cancelable: false
+                            });
+                            window.dispatchEvent(event);
+                            document.dispatchEvent(event);
                             console.log('[Android] CustomEvent tefPaymentResult disparado');
                         } catch(e) {
                             console.error('[Android] Erro no CustomEvent:', e);
@@ -292,28 +309,50 @@ class MainActivity : AppCompatActivity() {
                         return notified;
                     }
                     
-                    // Tentar imediatamente
-                    if (!tryNotify()) {
-                        // Retry após 500ms
-                        setTimeout(function() {
-                            if (!tryNotify()) {
-                                // Retry final após 1s
-                                setTimeout(function() {
-                                    if (!tryNotify()) {
-                                        console.error('[Android] ❌ Falha ao notificar após retries');
-                                        // Fallback: navegar diretamente se aprovado
-                                        if (resultado.status === 'aprovado') {
-                                            console.log('[Android] Fallback: forçando navegação para sucesso');
-                                            // Salvar resultado no sessionStorage para recuperação
-                                            try {
-                                                sessionStorage.setItem('lastTefResult', JSON.stringify(resultado));
-                                            } catch(e) {}
-                                        }
-                                    }
-                                }, 1000);
+                    // Função de fallback: forçar navegação
+                    function forceNavigation() {
+                        console.log('[Android] ⚠️ Executando fallback de navegação...');
+                        if (resultado.status === 'aprovado') {
+                            console.log('[Android] Pagamento aprovado - navegando para sucesso');
+                            // Verificar se estamos em rota de produto ou serviço
+                            var currentPath = window.location.pathname;
+                            var targetPath = '/totem/payment-success';
+                            if (currentPath.includes('product')) {
+                                targetPath = '/totem/product-payment-success';
                             }
-                        }, 500);
+                            console.log('[Android] Redirecionando para: ' + targetPath);
+                            // Usar history API se disponível
+                            if (window.history && window.history.pushState) {
+                                window.history.pushState({
+                                    paymentResult: resultado,
+                                    fromPayGo: true
+                                }, '', targetPath);
+                                window.dispatchEvent(new PopStateEvent('popstate', { state: { paymentResult: resultado } }));
+                            }
+                            // Fallback: recarregar na rota correta
+                            setTimeout(function() {
+                                if (window.location.pathname.includes('payment-card') || 
+                                    window.location.pathname.includes('payment-pix')) {
+                                    window.location.href = targetPath + '?fromPayGo=true&status=' + resultado.status;
+                                }
+                            }, 500);
+                        } else if (resultado.status === 'cancelado' || resultado.status === 'negado') {
+                            console.log('[Android] Pagamento cancelado/negado - voltando ao checkout');
+                        }
                     }
+                    
+                    // Tentar notificar com retries agressivos
+                    function attemptNotification() {
+                        if (!tryNotify() && retryCount < maxRetries) {
+                            setTimeout(attemptNotification, 300);
+                        } else if (!notified) {
+                            console.error('[Android] ❌ Todas as tentativas falharam - executando fallback');
+                            forceNavigation();
+                        }
+                    }
+                    
+                    // Iniciar tentativas
+                    attemptNotification();
                 })();
             """.trimIndent()
             

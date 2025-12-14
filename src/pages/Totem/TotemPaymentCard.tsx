@@ -60,6 +60,51 @@ const TotemPaymentCard: React.FC = () => {
     });
   }, [isAndroidAvailable, isPinpadConnected, tefProcessing]);
 
+  // Fallback: verificar sessionStorage para resultado pendente do PayGo
+  useEffect(() => {
+    if (!processing) return;
+    
+    const checkStoredResult = () => {
+      try {
+        const storedResult = sessionStorage.getItem('lastTefResult');
+        const storedTime = sessionStorage.getItem('lastTefResultTime');
+        
+        if (storedResult && storedTime) {
+          const resultAge = Date.now() - parseInt(storedTime, 10);
+          // Se o resultado foi salvo nos últimos 30 segundos
+          if (resultAge < 30000) {
+            const resultado = JSON.parse(storedResult);
+            console.log('🔄 [CARD] Recuperando resultado do sessionStorage:', resultado);
+            
+            // Limpar storage para evitar reprocessamento
+            sessionStorage.removeItem('lastTefResult');
+            sessionStorage.removeItem('lastTefResultTime');
+            
+            if (resultado.status === 'aprovado' && currentPaymentId) {
+              console.log('✅ [CARD] Pagamento aprovado via fallback, finalizando...');
+              finalizePayment(currentPaymentId, {
+                nsu: resultado.nsu || resultado.transactionNsu,
+                autorizacao: resultado.autorizacao || resultado.authorizationCode,
+                bandeira: resultado.bandeira || resultado.cardName
+              });
+            } else if (resultado.status === 'cancelado' || resultado.status === 'negado') {
+              console.log('❌ [CARD] Pagamento negado/cancelado via fallback');
+              setProcessing(false);
+              setPaymentType(null);
+              toast.error('Pagamento não aprovado', { description: resultado.mensagem || resultado.resultMessage });
+            }
+          }
+        }
+      } catch (e) {
+        console.error('❌ [CARD] Erro ao verificar sessionStorage:', e);
+      }
+    };
+    
+    // Verificar periodicamente enquanto está processando
+    const interval = setInterval(checkStoredResult, 1000);
+    return () => clearInterval(interval);
+  }, [processing, currentPaymentId]);
+
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     // Verificar se TEF está disponível
     if (!isAndroidAvailable || !isPinpadConnected) {
