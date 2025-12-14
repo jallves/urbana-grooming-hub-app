@@ -714,20 +714,6 @@ export const ContasAPagar: React.FC = () => {
           <CardContent className="p-3 sm:p-4 lg:p-6">
             {payables && payables.length > 0 ? (
               <>
-                {/* Seleção em massa para pendentes */}
-                {pendingRecords.length > 0 && (
-                  <div className="flex items-center gap-3 mb-4 p-3 bg-gray-50 rounded-lg border border-gray-200">
-                    <Checkbox
-                      id="select-all"
-                      checked={selectedRecords.size === pendingRecords.length && pendingRecords.length > 0}
-                      onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                    />
-                    <label htmlFor="select-all" className="text-sm font-medium text-gray-700 cursor-pointer">
-                      Selecionar todos os pendentes ({pendingRecords.length})
-                    </label>
-                  </div>
-                )}
-
                 {/* Layout em Cards para Mobile/Tablet */}
                 <div className="block lg:hidden space-y-3">
                   {payables.map((record) => (
@@ -869,21 +855,25 @@ export const ContasAPagar: React.FC = () => {
                 </div>
 
                 {/* Layout em Tabela para Desktop */}
-                <div className="hidden lg:block overflow-x-auto">
-                  <Table className="text-xs sm:text-sm">
+                <div className="hidden lg:block">
+                  <Table className="text-xs">
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="w-10"></TableHead>
-                        <TableHead className="whitespace-nowrap">Número</TableHead>
-                        <TableHead className="whitespace-nowrap">Tipo</TableHead>
-                        <TableHead className="whitespace-nowrap">Descrição</TableHead>
-                        <TableHead className="whitespace-nowrap">Categoria</TableHead>
-                        <TableHead className="whitespace-nowrap">Data Trans.</TableHead>
-                        <TableHead className="whitespace-nowrap">Data Pag.</TableHead>
-                        <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">Status</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">Fluxo</TableHead>
-                        <TableHead className="text-center whitespace-nowrap">Ações</TableHead>
+                        <TableHead className="w-24">Número</TableHead>
+                        <TableHead className="w-20">Tipo</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead className="w-24">Categoria</TableHead>
+                        <TableHead className="w-24">Data</TableHead>
+                        <TableHead className="w-24 text-right">Valor</TableHead>
+                        <TableHead className="w-20 text-center">Status</TableHead>
+                        <TableHead className="w-10 text-center">
+                          <Checkbox
+                            checked={selectedRecords.size === pendingRecords.length && pendingRecords.length > 0}
+                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
+                            title="Selecionar todos pendentes"
+                          />
+                        </TableHead>
+                        <TableHead className="w-24 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -892,60 +882,28 @@ export const ContasAPagar: React.FC = () => {
                           key={record.id}
                           className={selectedRecords.has(record.id) ? 'bg-green-50' : ''}
                         >
-                          <TableCell>
-                            {record.status === 'pending' && (
-                              <Checkbox
-                                checked={selectedRecords.has(record.id)}
-                                onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
-                              />
-                            )}
-                          </TableCell>
                           <TableCell className="font-mono text-xs">
-                            {record.transaction_number}
+                            {record.transaction_number.slice(-8)}
                           </TableCell>
-                          <TableCell className="text-sm">
-                            <Badge variant="outline" className={
+                          <TableCell>
+                            <Badge variant="outline" className={`text-xs ${
                               record.transaction_type === 'commission' 
                                 ? 'bg-blue-100 text-blue-700' 
                                 : 'bg-orange-100 text-orange-700'
-                            }>
+                            }`}>
                               {getTypeLabel(record.transaction_type)}
                             </Badge>
                           </TableCell>
-                          <TableCell className="max-w-xs text-sm">
-                            <div className="flex flex-col gap-1">
-                              <span className="font-medium">{record.description}</span>
-                              {record.metadata?.service_name && (
-                                <span className="text-xs text-muted-foreground">
-                                  🔧 Serviço: {record.metadata.service_name}
-                                </span>
-                              )}
-                              {record.metadata?.commission_rate && (
-                                <span className="text-xs text-muted-foreground">
-                                  💰 Taxa: {record.metadata.commission_rate}%
-                                </span>
-                              )}
-                              {record.metadata?.service_amount && (
-                                <span className="text-xs text-muted-foreground">
-                                  💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
-                                </span>
-                              )}
+                          <TableCell>
+                            <div className="truncate max-w-[200px]" title={record.description}>
+                              {record.description}
                             </div>
                           </TableCell>
-                          <TableCell className="text-sm">
+                          <TableCell className="text-xs">
                             {getCategoryLabel(record.category)}
                           </TableCell>
-                          <TableCell className="text-sm">
-                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                          </TableCell>
-                          <TableCell className="text-sm">
-                            {record.payment_date ? (
-                              <span className="text-green-700 font-medium">
-                                {format(new Date(record.payment_date), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 text-xs">Pendente</span>
-                            )}
+                          <TableCell className="text-xs">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
                           </TableCell>
                           <TableCell className="text-right font-semibold text-red-600">
                             R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -954,42 +912,34 @@ export const ContasAPagar: React.FC = () => {
                             {getStatusBadge(record.status)}
                           </TableCell>
                           <TableCell className="text-center">
-                            {record.status === 'completed' ? (
-                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                                <CheckCircle2 className="h-3 w-3 mr-1" />
-                                Registrado
-                              </Badge>
+                            {record.status === 'pending' ? (
+                              <Checkbox
+                                checked={selectedRecords.has(record.id)}
+                                onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
+                              />
                             ) : (
-                              <span className="text-gray-400 text-xs">-</span>
+                              <span title="Pago">
+                                <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
+                              </span>
                             )}
                           </TableCell>
                           <TableCell className="text-center">
-                            <div className="flex justify-center gap-2">
-                              {record.transaction_type === 'commission' && record.status === 'pending' && (
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                                  onClick={() => handleMarkAsPaid(record.id)}
-                                  disabled={markAsPaidMutation.isPending}
-                                >
-                                  <CheckCircle className="h-4 w-4 mr-1" />
-                                  Marcar como Pago
-                                </Button>
-                              )}
+                            <div className="flex justify-center gap-1">
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 onClick={() => handleEdit(record)}
                               >
-                                <Pencil className="h-4 w-4" />
+                                <Pencil className="h-3.5 w-3.5" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
+                                className="h-7 w-7 p-0"
                                 onClick={() => handleDelete(record.id)}
                               >
-                                <Trash2 className="h-4 w-4 text-destructive" />
+                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
                               </Button>
                             </div>
                           </TableCell>
