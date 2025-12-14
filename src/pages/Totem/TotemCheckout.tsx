@@ -801,47 +801,47 @@ const TotemCheckout: React.FC = () => {
       </div>
       
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4 md:mb-6 z-10">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 z-10">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
-          size="lg"
-          className="h-10 sm:h-12 md:h-14 lg:h-16 px-3 sm:px-4 md:px-6 lg:px-8 text-sm sm:text-base md:text-lg lg:text-xl text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100"
+          size="sm"
+          className="h-9 sm:h-10 md:h-12 px-2 sm:px-3 md:px-4 text-xs sm:text-sm md:text-base text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 mr-1 sm:mr-2 md:mr-3" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="text-center flex-1">
-          <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl xl:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold mb-1">
+          <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
             Olá, {client?.nome?.split(' ')[0]}! ✨
           </h1>
-          <p className="text-xs sm:text-sm md:text-base lg:text-lg text-urbana-gray-light">
+          <p className="text-[10px] sm:text-xs md:text-sm text-urbana-gray-light">
             Revise seu atendimento e escolha a forma de pagamento
           </p>
         </div>
-        <div className="w-12 sm:w-20 md:w-32 lg:w-48"></div>
+        <div className="w-10 sm:w-16 md:w-24"></div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 z-10 flex items-start justify-center overflow-y-auto pb-4">
-        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 md:gap-6 px-2 sm:px-4">
+      <div className="flex-1 z-10 flex items-start justify-center overflow-hidden pb-2">
+        <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 md:gap-4 px-1 sm:px-2 h-full">
           
           {/* Left Column - Services & Products */}
-          <div className="flex flex-col gap-3 sm:gap-4">
+          <div className="flex flex-col gap-2 sm:gap-3 overflow-hidden">
             {/* Add Extra Services Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30">
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
+            <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center shadow-lg shadow-urbana-gold/30">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-urbana-black" />
                 </div>
-                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light">
                   Adicionar Serviços
                 </h2>
               </div>
               
               <div className="flex gap-2">
                 <Select onValueChange={handleAddExtraService} disabled={isUpdating}>
-                  <SelectTrigger className="flex-1 h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
+                  <SelectTrigger className="flex-1 h-9 sm:h-10 md:h-11 text-xs sm:text-sm md:text-base text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                     <SelectValue placeholder="Selecione um serviço" />
                   </SelectTrigger>
                   <SelectContent className="bg-urbana-black-soft backdrop-blur-xl border-urbana-gold/30">
@@ -861,7 +861,7 @@ const TotemCheckout: React.FC = () => {
                   <Button
                     onClick={handleRecalculate}
                     disabled={isUpdating}
-                    className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold text-urbana-black font-bold hover:from-urbana-gold-dark hover:via-urbana-gold hover:to-urbana-gold-light shadow-lg shadow-urbana-gold/30 animate-pulse"
+                    className="h-9 sm:h-10 md:h-11 px-2 sm:px-3 text-xs sm:text-sm bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold text-urbana-black font-bold hover:from-urbana-gold-dark hover:via-urbana-gold hover:to-urbana-gold-light shadow-lg shadow-urbana-gold/30 animate-pulse"
                   >
                     {isUpdating ? (
                       <div className="w-4 h-4 border-2 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
@@ -874,7 +874,7 @@ const TotemCheckout: React.FC = () => {
 
               {/* List of added extra services */}
               {extraServices.length > 0 && (
-                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                <div className="mt-2 space-y-1.5 max-h-24 overflow-y-auto">
                   {extraServices.map((service, index) => (
                     <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-urbana-black/40 rounded-lg border border-urbana-gold/20">
                       <div className="flex items-center gap-2">
@@ -904,18 +904,18 @@ const TotemCheckout: React.FC = () => {
             </Card>
 
             {/* Add Products Card */}
-            <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
-              <div className="flex items-center gap-2 mb-3">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-urbana-gold-vibrant to-urbana-gold flex items-center justify-center shadow-lg shadow-urbana-gold-vibrant/30">
-                  <Plus className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-black" />
+            <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-urbana-gold-vibrant to-urbana-gold flex items-center justify-center shadow-lg shadow-urbana-gold-vibrant/30">
+                  <Plus className="w-3 h-3 sm:w-4 sm:h-4 text-urbana-black" />
                 </div>
-                <h2 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light">
                   Adicionar Produtos
                 </h2>
               </div>
               
               <Select onValueChange={handleAddProduct} disabled={isUpdating}>
-                <SelectTrigger className="w-full h-10 sm:h-12 md:h-14 text-sm sm:text-base md:text-lg text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
+                <SelectTrigger className="w-full h-9 sm:h-10 md:h-11 text-xs sm:text-sm md:text-base text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-urbana-gold/40 hover:border-urbana-gold/60 transition-colors">
                   <SelectValue placeholder="Selecione um produto" />
                 </SelectTrigger>
                 <SelectContent className="bg-urbana-black-soft backdrop-blur-xl border-urbana-gold/30">
@@ -934,28 +934,28 @@ const TotemCheckout: React.FC = () => {
 
               {/* List of added products */}
               {selectedProducts.length > 0 && (
-                <div className="mt-3 space-y-2 max-h-40 overflow-y-auto">
+                <div className="mt-2 space-y-1.5 max-h-24 overflow-y-auto">
                   {selectedProducts.map((product, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 sm:p-3 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
-                      <div className="flex items-center gap-2 flex-1">
-                        <CheckCircle2 className="w-4 h-4 text-urbana-gold-vibrant flex-shrink-0" />
-                        <span className="text-xs sm:text-sm md:text-base text-urbana-light font-medium truncate">
+                    <div key={index} className="flex items-center justify-between p-1.5 sm:p-2 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
+                      <div className="flex items-center gap-1.5 flex-1">
+                        <CheckCircle2 className="w-3 h-3 text-urbana-gold-vibrant flex-shrink-0" />
+                        <span className="text-[10px] sm:text-xs md:text-sm text-urbana-light font-medium truncate">
                           {product.nome}
                         </span>
-                        <span className="text-xs text-urbana-light/60">x{product.quantidade}</span>
+                        <span className="text-[9px] sm:text-[10px] text-urbana-light/60">x{product.quantidade}</span>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm sm:text-base md:text-lg text-urbana-gold-vibrant font-bold whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs sm:text-sm text-urbana-gold-vibrant font-bold whitespace-nowrap">
                           R$ {(product.preco * product.quantidade).toFixed(2)}
                         </span>
                         <Button
                           onClick={() => handleRemoveProduct(index)}
                           variant="ghost"
                           size="sm"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-7 w-7 p-0"
+                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-6 w-6 p-0"
                           disabled={isUpdating}
                         >
-                          <Trash2 className="w-3 h-3 sm:w-4 sm:h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </div>
@@ -963,114 +963,105 @@ const TotemCheckout: React.FC = () => {
                 </div>
               )}
             </Card>
+          </div>
 
-            {/* Summary Card */}
-            {resumo && (
-              <Card className="p-4 sm:p-5 md:p-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10">
-                <h2 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold mb-4 pb-3 border-b-2 border-urbana-gold/40">
-                  Resumo do Atendimento
-                </h2>
+          {/* Center Column - Summary Card */}
+          {resumo && (
+            <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10 overflow-hidden flex flex-col">
+              <h2 className="text-sm sm:text-base md:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold mb-2 pb-2 border-b-2 border-urbana-gold/40">
+                Resumo do Atendimento
+              </h2>
 
-                <div className="space-y-3">
-                  {/* Original Service */}
-                  <div className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
-                    <div className="flex items-center gap-2 flex-1 min-w-0">
-                      <div className="w-2 h-2 rounded-full bg-urbana-gold animate-pulse flex-shrink-0" />
-                      <div className="min-w-0 flex-1">
-                        <p className="text-xs sm:text-sm md:text-base font-semibold text-urbana-light truncate">
-                          {resumo.original_service.nome}
-                        </p>
-                        <p className="text-[10px] sm:text-xs text-urbana-gray-light">Principal</p>
-                      </div>
-                    </div>
-                    <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold whitespace-nowrap ml-2">
-                      R$ {resumo.original_service.preco.toFixed(2)}
+              <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[calc(100vh-350px)]">
+                {/* Original Service */}
+                <div className="flex items-center justify-between py-1.5 border-b border-urbana-gray/30">
+                  <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                    <div className="w-1.5 h-1.5 rounded-full bg-urbana-gold animate-pulse flex-shrink-0" />
+                    <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-urbana-light truncate">
+                      {resumo.original_service.nome}
                     </p>
                   </div>
+                  <p className="text-xs sm:text-sm font-bold text-urbana-gold whitespace-nowrap ml-2">
+                    R$ {resumo.original_service.preco.toFixed(2)}
+                  </p>
+                </div>
 
-                  {/* Extra Services */}
-                  {resumo.extra_services.map((service, index) => (
-                    <div key={index} className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-urbana-gold-light animate-pulse flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs sm:text-sm md:text-base font-semibold text-urbana-light truncate">
-                            {service.nome}
-                          </p>
-                          <p className="text-[10px] sm:text-xs text-urbana-gray-light">Extra</p>
-                        </div>
-                      </div>
-                      <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold whitespace-nowrap ml-2">
-                        R$ {service.preco.toFixed(2)}
+                {/* Extra Services */}
+                {resumo.extra_services.map((service, index) => (
+                  <div key={index} className="flex items-center justify-between py-1.5 border-b border-urbana-gray/30">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-urbana-gold-light animate-pulse flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-urbana-light truncate">
+                        {service.nome}
                       </p>
                     </div>
-                  ))}
+                    <p className="text-xs sm:text-sm font-bold text-urbana-gold whitespace-nowrap ml-2">
+                      R$ {service.preco.toFixed(2)}
+                    </p>
+                  </div>
+                ))}
 
-                  {/* Products */}
-                  {selectedProducts.map((product, index) => (
-                    <div key={`product-${index}`} className="flex items-center justify-between py-3 border-b border-urbana-gray/30">
-                      <div className="flex items-center gap-2 flex-1 min-w-0">
-                        <div className="w-2 h-2 rounded-full bg-urbana-gold-vibrant animate-pulse flex-shrink-0" />
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs sm:text-sm md:text-base font-semibold text-urbana-light truncate">
-                            {product.nome} x{product.quantidade}
-                          </p>
-                          <p className="text-[10px] sm:text-xs text-urbana-gray-light">Produto</p>
-                        </div>
-                      </div>
-                      <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold-vibrant whitespace-nowrap ml-2">
-                        R$ {(product.preco * product.quantidade).toFixed(2)}
+                {/* Products */}
+                {selectedProducts.map((product, index) => (
+                  <div key={`product-${index}`} className="flex items-center justify-between py-1.5 border-b border-urbana-gray/30">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <div className="w-1.5 h-1.5 rounded-full bg-urbana-gold-vibrant animate-pulse flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-urbana-light truncate">
+                        {product.nome} x{product.quantidade}
                       </p>
                     </div>
-                  ))}
+                    <p className="text-xs sm:text-sm font-bold text-urbana-gold-vibrant whitespace-nowrap ml-2">
+                      R$ {(product.preco * product.quantidade).toFixed(2)}
+                    </p>
+                  </div>
+                ))}
 
-                  {/* Totals */}
-                  <div className="space-y-3 pt-4 mt-4 border-t-2 border-urbana-gold/40">
-                    <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
-                      <span className="text-urbana-light/80 font-medium">Subtotal:</span>
-                      <span className="text-urbana-light font-bold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
+                {/* Totals */}
+                <div className="space-y-2 pt-2 mt-2 border-t-2 border-urbana-gold/40">
+                  <div className="flex items-center justify-between text-xs sm:text-sm">
+                    <span className="text-urbana-light/80 font-medium">Subtotal:</span>
+                    <span className="text-urbana-light font-bold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
+                  </div>
+                  
+                  {resumo.discount > 0 && (
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-urbana-light/80 font-medium">Desconto:</span>
+                      <span className="text-green-400 font-bold">- R$ {resumo.discount.toFixed(2)}</span>
                     </div>
-                    
-                    {resumo.discount > 0 && (
-                      <div className="flex items-center justify-between text-sm sm:text-base md:text-lg">
-                        <span className="text-urbana-light/80 font-medium">Desconto:</span>
-                        <span className="text-green-400 font-bold">- R$ {resumo.discount.toFixed(2)}</span>
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between p-4 sm:p-5 md:p-6 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-2xl border-3 border-urbana-gold shadow-2xl shadow-urbana-gold/40 mt-3">
-                      <span className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-urbana-light drop-shadow-lg">TOTAL:</span>
-                      <span className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold animate-pulse drop-shadow-2xl">
-                        R$ {(resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}
-                      </span>
-                    </div>
+                  )}
+                  
+                  <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30 mt-2">
+                    <span className="text-sm sm:text-base md:text-lg font-black text-urbana-light">TOTAL:</span>
+                    <span className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+                      R$ {(resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}
+                    </span>
                   </div>
                 </div>
-              </Card>
-            )}
-          </div>
+              </div>
+            </Card>
+          )}
 
           {/* Right Column - Payment */}
           <div className="flex flex-col gap-3 sm:gap-4 lg:sticky lg:top-0">
-            <Card className="p-4 sm:p-5 md:p-6 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10 flex flex-col min-h-[400px]">
-              <h3 className="text-base sm:text-lg md:text-xl lg:text-2xl font-bold text-urbana-light mb-3 sm:mb-4 text-center">
+            <Card className="p-3 sm:p-4 md:p-5 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-2xl shadow-urbana-gold/10">
+              <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-urbana-light mb-2 sm:mb-3 text-center">
                 Forma de Pagamento
               </h3>
 
-              <div className="flex-1 grid grid-cols-1 gap-3 sm:gap-4">
+              <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {/* PIX Button */}
                 <button
                   onClick={() => handlePaymentMethod('pix')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
-                      <DollarSign className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+                  <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-urbana-gold/20 backdrop-blur-sm flex items-center justify-center">
+                      <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-urbana-gold" />
                     </div>
-                    <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold">PIX</span>
-                    <span className="text-[10px] sm:text-xs md:text-sm text-urbana-gray-light">Instantâneo</span>
+                    <span className="text-lg sm:text-xl md:text-2xl font-black text-urbana-gold">PIX</span>
+                    <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Instantâneo</span>
                   </div>
                 </button>
 
@@ -1078,15 +1069,15 @@ const TotemCheckout: React.FC = () => {
                 <button
                   onClick={() => handlePaymentMethod('card')}
                   disabled={processing || needsRecalculation || isUpdating}
-                  className="group relative h-full min-h-[120px] bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                  <div className="relative h-full flex flex-col items-center justify-center gap-2 sm:gap-3">
-                    <div className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-2xl bg-urbana-gold/20 backdrop-blur-sm group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
-                      <CreditCard className="w-6 h-6 sm:w-8 sm:h-8 md:w-10 md:h-10 text-urbana-gold" />
+                  <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
+                    <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-urbana-gold/20 backdrop-blur-sm flex items-center justify-center">
+                      <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-urbana-gold" />
                     </div>
-                    <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold">CARTÃO</span>
-                    <span className="text-[10px] sm:text-xs md:text-sm text-urbana-gray-light">Crédito/Débito</span>
+                    <span className="text-lg sm:text-xl md:text-2xl font-black text-urbana-gold">CARTÃO</span>
+                    <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Débito/Crédito</span>
                   </div>
                 </button>
               </div>
