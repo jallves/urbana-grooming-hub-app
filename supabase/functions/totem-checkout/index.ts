@@ -1,5 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
+import { toBrazilISOString } from '../_shared/brazilDateTime.ts'
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -396,7 +397,7 @@ Deno.serve(async (req) => {
           .from('totem_payments')
           .update({ 
             status: 'completed',
-            paid_at: new Date().toISOString(),
+            paid_at: toBrazilISOString(),
             ...(transaction_data?.nsu && { nsu: transaction_data.nsu }),
             ...(transaction_data?.autorizacao && { authorization_code: transaction_data.autorizacao })
           })
@@ -466,7 +467,7 @@ Deno.serve(async (req) => {
         .from('totem_sessions')
         .update({ 
           status: 'completed',
-          check_out_time: new Date().toISOString()
+          check_out_time: toBrazilISOString()
         })
         .eq('id', session_id)
 
@@ -476,7 +477,7 @@ Deno.serve(async (req) => {
         .from('vendas')
         .update({ 
           status: 'PAGA',
-          updated_at: new Date().toISOString()
+          updated_at: toBrazilISOString()
         })
         .eq('id', venda_id)
 
@@ -574,7 +575,7 @@ Deno.serve(async (req) => {
         .update({ 
           status: 'concluido',
           status_totem: 'FINALIZADO',
-          updated_at: new Date().toISOString()
+          updated_at: toBrazilISOString()
         })
         .eq('id', venda.agendamento_id)
       
@@ -596,7 +597,7 @@ Deno.serve(async (req) => {
           agendamento_id: venda.agendamento_id,
           venda_id: venda_id,
           total: venda.total,
-          timestamp: new Date().toISOString()
+          timestamp: toBrazilISOString()
         }
       })
 

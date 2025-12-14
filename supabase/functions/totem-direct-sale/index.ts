@@ -1,34 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { getBrazilDateTime, toBrazilISOString } from '../_shared/brazilDateTime.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-// Função auxiliar para obter data/hora no timezone do Brasil
-function getBrazilDateTime() {
-  const now = new Date();
-  // Converter para timezone do Brasil (UTC-3)
-  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  
-  // Formatar data como YYYY-MM-DD
-  const year = brazilTime.getFullYear();
-  const month = String(brazilTime.getMonth() + 1).padStart(2, '0');
-  const day = String(brazilTime.getDate()).padStart(2, '0');
-  const date = `${year}-${month}-${day}`;
-  
-  // Formatar hora como HH:MM:SS
-  const hours = String(brazilTime.getHours()).padStart(2, '0');
-  const minutes = String(brazilTime.getMinutes()).padStart(2, '0');
-  const seconds = String(brazilTime.getSeconds()).padStart(2, '0');
-  const time = `${hours}:${minutes}:${seconds}`;
-  
-  return {
-    date,
-    datetime: `${date}T${time}`,
-    formatted: `${day}/${month}/${year} ${time}`
-  };
 }
 
 serve(async (req) => {
@@ -51,7 +27,7 @@ serve(async (req) => {
       const { error: paymentError } = await supabase
         .from('totem_payments')
         .update({ 
-          paid_at: new Date().toISOString(),
+          paid_at: toBrazilISOString(),
           status: 'completed'
         })
         .eq('id', payment_id)
