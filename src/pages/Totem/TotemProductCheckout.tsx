@@ -102,7 +102,7 @@ const TotemProductCheckout: React.FC = () => {
   if (!cart) return null;
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-2 sm:p-3 md:p-4 font-poppins overflow-hidden">
       {/* Background image */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -120,36 +120,36 @@ const TotemProductCheckout: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-3 sm:mb-4 z-10">
+      <div className="flex items-center justify-between mb-2 sm:mb-3 z-10">
         <Button
           onClick={() => navigate(-1)}
           variant="ghost"
-          size="lg"
-          className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
+          size="sm"
+          className="h-9 sm:h-10 md:h-12 px-2 sm:px-3 md:px-4 text-xs sm:text-sm md:text-base text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"
         >
-          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
+          <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 mr-1 sm:mr-2" />
           <span className="hidden sm:inline">Voltar</span>
         </Button>
         
-        <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light animate-shimmer" style={{ backgroundSize: '200% auto' }}>
-          Checkout
+        <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light">
+          Checkout de Produtos
         </h1>
         
-        <div className="w-16 sm:w-24"></div>
+        <div className="w-10 sm:w-16 md:w-24"></div>
       </div>
 
-      {/* Content */}
-      <div className="flex-1 overflow-y-auto z-10 space-y-4">
-        {/* Barber Info */}
+      {/* Content - Grid layout */}
+      <div className="flex-1 overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
+        {/* Left Column - Barber Info */}
         {barber && (
-          <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
-            <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 flex items-center gap-2">
-              <User className="w-6 h-6 text-urbana-gold" />
-              Barbeiro Selecionado
+          <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
+              <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
+              Barbeiro
             </h2>
             
-            <div className="flex items-center gap-4 p-4 bg-urbana-gold/10 backdrop-blur-sm rounded-lg border border-urbana-gold/30">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-urbana-gold">
+            <div className="flex items-center gap-3 p-2 sm:p-3 bg-urbana-gold/10 backdrop-blur-sm rounded-lg border border-urbana-gold/30">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden border-2 border-urbana-gold flex-shrink-0">
                 {barber.image_url ? (
                   <img 
                     src={barber.image_url} 
@@ -158,17 +158,17 @@ const TotemProductCheckout: React.FC = () => {
                   />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center bg-urbana-gold/20">
-                    <User className="w-8 h-8 text-urbana-gold" />
+                    <User className="w-5 h-5 text-urbana-gold" />
                   </div>
                 )}
               </div>
               
-              <div className="flex-1">
-                <p className="text-xl font-bold text-urbana-light">{barber.nome}</p>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm sm:text-base font-bold text-urbana-light truncate">{barber.nome}</p>
                 {barber.especialidade && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <Award className="w-4 h-4 text-urbana-gold" />
-                    <p className="text-sm text-urbana-light/70">{barber.especialidade}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <Award className="w-3 h-3 text-urbana-gold flex-shrink-0" />
+                    <p className="text-[10px] sm:text-xs text-urbana-light/70 truncate">{barber.especialidade}</p>
                   </div>
                 )}
               </div>
@@ -176,59 +176,59 @@ const TotemProductCheckout: React.FC = () => {
           </Card>
         )}
 
-        {/* Order Summary */}
-        <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
-          <h2 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 flex items-center gap-2">
-            <Package className="w-6 h-6 text-urbana-gold" />
+        {/* Center Column - Order Summary */}
+        <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
+          <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
+            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
             Resumo do Pedido
           </h2>
 
-          <div className="space-y-3">
+          <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[calc(100vh-280px)]">
             {(cart as CartItem[]).map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-white/5 backdrop-blur-md rounded-lg border border-urbana-gold/20">
-                <div className="flex-1">
-                  <p className="font-bold text-urbana-light">{item.product.nome}</p>
-                  <p className="text-sm text-urbana-light/60">
+              <div key={index} className="flex items-center justify-between p-2 bg-white/5 backdrop-blur-md rounded-lg border border-urbana-gold/20">
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs sm:text-sm font-bold text-urbana-light truncate">{item.product.nome}</p>
+                  <p className="text-[10px] sm:text-xs text-urbana-light/60">
                     {item.quantity}x R$ {item.product.preco.toFixed(2)}
                   </p>
                 </div>
-                <p className="text-lg font-bold text-urbana-gold">
+                <p className="text-sm sm:text-base font-bold text-urbana-gold whitespace-nowrap ml-2">
                   R$ {(item.product.preco * item.quantity).toFixed(2)}
                 </p>
               </div>
             ))}
+          </div>
 
-            <div className="pt-4 border-t-2 border-urbana-gold/30">
-              <div className="flex items-center justify-between">
-                <p className="text-xl font-bold text-urbana-light">Total</p>
-                <p className="text-3xl font-black text-urbana-gold">
-                  R$ {cartTotal.toFixed(2)}
-                </p>
-              </div>
+          <div className="pt-2 mt-2 border-t-2 border-urbana-gold/30">
+            <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30">
+              <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL:</p>
+              <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+                R$ {cartTotal.toFixed(2)}
+              </p>
             </div>
           </div>
         </Card>
 
-        {/* Payment Methods */}
-        <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
-          <h3 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 text-center">
+        {/* Right Column - Payment Methods */}
+        <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30">
+          <h3 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 sm:mb-3 text-center">
             Forma de Pagamento
           </h3>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-2 sm:gap-3">
             {/* PIX Button */}
             <button
               onClick={() => handlePayment('pix')}
               disabled={isProcessing}
-              className="group relative h-40 bg-urbana-black/30 backdrop-blur-xl active:bg-urbana-black/40 border-2 border-urbana-gold/30 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative h-full flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
-                  <DollarSign className="w-10 h-10 text-urbana-gold" />
+              <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-urbana-gold/20 backdrop-blur-sm flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-urbana-gold" />
                 </div>
-                <span className="text-3xl font-black text-urbana-gold">PIX</span>
-                <span className="text-sm text-urbana-gray-light">Instantâneo</span>
+                <span className="text-lg sm:text-xl md:text-2xl font-black text-urbana-gold">PIX</span>
+                <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Instantâneo</span>
               </div>
             </button>
 
@@ -236,23 +236,23 @@ const TotemProductCheckout: React.FC = () => {
             <button
               onClick={() => handlePayment('card')}
               disabled={isProcessing}
-              className="group relative h-40 bg-urbana-black/30 backdrop-blur-xl active:bg-urbana-black/40 border-2 border-urbana-gold/30 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+              className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <div className="relative h-full flex flex-col items-center justify-center gap-3">
-                <div className="w-16 h-16 rounded-2xl bg-urbana-gold/20 group-hover:bg-urbana-gold/30 flex items-center justify-center transition-colors duration-300 group-hover:scale-110 transform">
-                  <CreditCard className="w-10 h-10 text-urbana-gold" />
+              <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-urbana-gold/20 backdrop-blur-sm flex items-center justify-center">
+                  <CreditCard className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-urbana-gold" />
                 </div>
-                <span className="text-3xl font-black text-urbana-gold">CARTÃO</span>
-                <span className="text-sm text-urbana-gray-light">Crédito/Débito</span>
+                <span className="text-lg sm:text-xl md:text-2xl font-black text-urbana-gold">CARTÃO</span>
+                <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Débito/Crédito</span>
               </div>
             </button>
           </div>
 
           {isProcessing && (
-            <div className="mt-6 flex items-center justify-center gap-3 text-urbana-gold">
-              <Loader2 className="w-6 h-6 animate-spin" />
-              <span className="text-lg">Processando...</span>
+            <div className="mt-3 flex items-center justify-center gap-2 text-urbana-gold">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              <span className="text-sm">Processando...</span>
             </div>
           )}
         </Card>
