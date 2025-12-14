@@ -75,23 +75,37 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
   const onSubmit = async (data: ClientFormData) => {
     try {
       setIsLoading(true);
+      console.log('Iniciando atualização do cliente:', { clientId, data });
 
       if (clientId) {
         // Atualizar client_profiles (tabela real)
-        const { error } = await supabase
+        const updateData = {
+          nome: data.nome,
+          email: data.email || null,
+          whatsapp: data.whatsapp,
+          data_nascimento: data.data_nascimento || null,
+          updated_at: new Date().toISOString(),
+        };
+        
+        console.log('Dados a serem atualizados:', updateData);
+        
+        const { data: updatedData, error, count } = await supabase
           .from('client_profiles')
-          .update({
-            nome: data.nome,
-            email: data.email || null,
-            whatsapp: data.whatsapp,
-            data_nascimento: data.data_nascimento || null,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', clientId);
+          .update(updateData)
+          .eq('id', clientId)
+          .select();
+
+        console.log('Resultado da atualização:', { updatedData, error, count });
 
         if (error) {
+          console.error('Erro Supabase:', error);
           throw error;
         }
+        
+        if (!updatedData || updatedData.length === 0) {
+          throw new Error('Nenhum registro foi atualizado. Verifique suas permissões.');
+        }
+        
         toast.success('Cliente atualizado com sucesso!');
       } else {
         // Para criar novo cliente, usar signUp público
