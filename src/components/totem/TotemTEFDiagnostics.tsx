@@ -39,6 +39,8 @@ interface TotemTEFDiagnosticsProps {
   onClose: () => void;
 }
 
+const AUTO_REFRESH_INTERVAL = 2000; // 2 segundos para tempo real
+
 export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
   isOpen,
   onClose
@@ -49,6 +51,7 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
   const [isTestingPayment, setIsTestingPayment] = useState(false);
   const [lastCheck, setLastCheck] = useState<Date | null>(null);
   const [manualPinpadStatus, setManualPinpadStatus] = useState<TEFPinpadStatus | null>(null);
+  const [autoRefresh, setAutoRefresh] = useState(true);
 
   const {
     isAndroidAvailable,
@@ -80,6 +83,26 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
       handleRefresh();
     }
   }, [isOpen]);
+
+  // Auto-refresh em tempo real
+  useEffect(() => {
+    if (!isOpen || !autoRefresh) return;
+
+    const interval = setInterval(() => {
+      // Atualização silenciosa (sem toast)
+      const status = verificarConexao();
+      setManualPinpadStatus(status);
+      
+      if (isAndroidTEFAvailable()) {
+        const androidLogs = getLogsAndroid();
+        setLogs(androidLogs);
+      }
+      
+      setLastCheck(new Date());
+    }, AUTO_REFRESH_INTERVAL);
+
+    return () => clearInterval(interval);
+  }, [isOpen, autoRefresh, verificarConexao]);
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
@@ -167,12 +190,22 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
   );
 
   return (
-    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-2xl max-h-[90vh] bg-urbana-black border-urbana-gold/30">
+    <Dialog open={isOpen} onOpenChange={() => { /* Não fecha ao clicar fora */ }}>
+      <DialogContent 
+        className="max-w-2xl max-h-[90vh] bg-urbana-black border-urbana-gold/30"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-urbana-gold">
             <Terminal className="w-5 h-5" />
             Diagnóstico TEF PayGo
+            {autoRefresh && (
+              <Badge variant="outline" className="ml-2 text-green-400 border-green-400/30 animate-pulse">
+                AO VIVO
+              </Badge>
+            )}
           </DialogTitle>
         </DialogHeader>
 
@@ -236,12 +269,22 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
                   <StatusIcon connected={isPinpadConnected} />
                 </div>
 
-                {/* Última verificação */}
-                {lastCheck && (
-                  <p className="text-xs text-urbana-light/40 text-center">
-                    Última verificação: {lastCheck.toLocaleTimeString()}
-                  </p>
-                )}
+                {/* Auto-refresh toggle */}
+                <div className="flex items-center justify-between p-3 bg-urbana-black/50 rounded-lg border border-urbana-gold/10">
+                  <div className="flex items-center gap-3">
+                    <RefreshCw className={`w-5 h-5 text-urbana-gold ${autoRefresh ? 'animate-spin' : ''}`} />
+                    <div>
+                      <p className="text-sm font-medium text-urbana-light">Atualização em Tempo Real</p>
+                      <p className="text-xs text-urbana-light/60">
+                        {lastCheck ? `Última: ${lastCheck.toLocaleTimeString()}` : 'Aguardando...'}
+                      </p>
+                    </div>
+                  </div>
+                  <Switch
+                    checked={autoRefresh}
+                    onCheckedChange={setAutoRefresh}
+                  />
+                </div>
               </CardContent>
             </Card>
 
