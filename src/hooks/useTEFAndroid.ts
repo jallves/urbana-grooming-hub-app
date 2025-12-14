@@ -59,8 +59,20 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
   }, [isProcessing]);
 
   // Registrar callback global persistente para receber resposta do PayGo
+  // IMPORTANTE: Este hook NÃO deve processar resultados quando usado apenas para iniciar pagamentos
+  // O processamento de resultados deve ser feito pelo useTEFPaymentResult para evitar conflitos
   useEffect(() => {
-    console.log('[useTEFAndroid] Registrando callback global onTefResultado');
+    const currentOptions = optionsRef.current;
+    const hasCallbacks = currentOptions.onSuccess || currentOptions.onError || currentOptions.onCancelled;
+    
+    // Se não tem callbacks, não registrar handler para evitar conflito com useTEFPaymentResult
+    if (!hasCallbacks) {
+      console.log('[useTEFAndroid] Nenhum callback definido - não registrando handler de resultado');
+      console.log('[useTEFAndroid] O resultado será processado por outro hook (ex: useTEFPaymentResult)');
+      return;
+    }
+    
+    console.log('[useTEFAndroid] Registrando callback global onTefResultado (callbacks definidos)');
     
     // Handler principal para receber resultado do PayGo
     const handleTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
@@ -92,37 +104,27 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         globalResultCallback = null;
       }
       
-      // Chamar callbacks do options
-      const currentOptions = optionsRef.current;
+      // Chamar callbacks do options (sem mostrar toasts - deixa para quem consome)
+      const opts = optionsRef.current;
       switch (normalizedResult.status) {
         case 'aprovado':
-          console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
-          toast.success('Pagamento aprovado!', {
-            description: normalizedResult.nsu ? `NSU: ${normalizedResult.nsu}` : undefined
-          });
-          currentOptions.onSuccess?.(normalizedResult);
+          console.log('[useTEFAndroid] ✅ Pagamento APROVADO');
+          opts.onSuccess?.(normalizedResult);
           break;
 
         case 'negado':
           console.log('[useTEFAndroid] ❌ Pagamento NEGADO');
-          toast.error('Pagamento negado', {
-            description: normalizedResult.mensagem || 'Tente novamente'
-          });
-          currentOptions.onError?.(normalizedResult.mensagem || 'Pagamento negado');
+          opts.onError?.(normalizedResult.mensagem || 'Pagamento negado');
           break;
 
         case 'cancelado':
           console.log('[useTEFAndroid] ⚠️ Pagamento CANCELADO');
-          toast.info('Pagamento cancelado');
-          currentOptions.onCancelled?.();
+          opts.onCancelled?.();
           break;
 
         case 'erro':
           console.log('[useTEFAndroid] ❌ ERRO no pagamento');
-          toast.error('Erro no pagamento', {
-            description: normalizedResult.mensagem
-          });
-          currentOptions.onError?.(normalizedResult.mensagem || 'Erro desconhecido');
+          opts.onError?.(normalizedResult.mensagem || 'Erro desconhecido');
           break;
       }
     };
