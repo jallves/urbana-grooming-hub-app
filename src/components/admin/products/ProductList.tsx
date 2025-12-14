@@ -149,38 +149,44 @@ const ProductList: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3 sm:gap-4">
             {filteredProducts.map((product) => (
-              <Card key={product.id} className="hover:shadow-md transition-all overflow-hidden">
+              <Card key={product.id} className="hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
                 {/* Imagem do Produto */}
-                {product.imagens && product.imagens.length > 0 ? (
-                  <div className="aspect-[4/3] bg-muted overflow-hidden">
+                <div className="aspect-square bg-muted overflow-hidden flex-shrink-0">
+                  {product.imagens && product.imagens.length > 0 ? (
                     <img 
                       src={product.imagens[0]} 
                       alt={product.nome}
                       className="w-full h-full object-cover"
                       onError={(e) => {
-                        console.error('Erro ao carregar imagem:', product.imagens[0]);
                         e.currentTarget.style.display = 'none';
-                        e.currentTarget.parentElement!.innerHTML = '<div class="w-full h-full flex items-center justify-center"><svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" /></svg></div>';
+                        const parent = e.currentTarget.parentElement;
+                        if (parent) {
+                          parent.classList.add('flex', 'items-center', 'justify-center');
+                          const icon = document.createElement('div');
+                          icon.innerHTML = '<svg class="w-10 h-10 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
+                          parent.appendChild(icon);
+                        }
                       }}
                     />
-                  </div>
-                ) : (
-                  <div className="aspect-[4/3] bg-muted flex items-center justify-center">
-                    <Package className="h-8 w-8 text-muted-foreground opacity-30" />
-                  </div>
-                )}
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Package className="h-10 w-10 text-muted-foreground/40" />
+                    </div>
+                  )}
+                </div>
                 
-                <div className="p-2 sm:p-2.5">
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="font-medium text-[10px] sm:text-xs truncate mr-1 leading-tight">
+                {/* Conteúdo do Card */}
+                <div className="p-2.5 sm:p-3 flex flex-col flex-1">
+                  <div className="flex items-start justify-between gap-1 mb-2">
+                    <h3 className="font-medium text-xs sm:text-sm line-clamp-2 leading-tight flex-1">
                       {product.nome}
                     </h3>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 flex-shrink-0">
-                          <MoreVertical className="h-3 w-3" />
+                        <Button variant="ghost" size="sm" className="h-6 w-6 p-0 flex-shrink-0 -mr-1 -mt-0.5">
+                          <MoreVertical className="h-3.5 w-3.5" />
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
@@ -202,23 +208,23 @@ const ProductList: React.FC = () => {
                     </DropdownMenu>
                   </div>
                   
-                  <div className="space-y-0.5 text-[10px] sm:text-xs">
-                    <div className="flex justify-between">
+                  <div className="space-y-1 text-xs mt-auto">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Preço:</span>
                       <span className="text-primary font-semibold">
                         R$ {Number(product.preco || 0).toFixed(2)}
                       </span>
                     </div>
                     
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                       <span className="text-muted-foreground">Estoque:</span>
                       <span className="font-medium">{product.estoque}</span>
                     </div>
                     
-                    <div className="flex justify-between items-center">
+                    <div className="pt-1">
                       <Badge 
                         variant={product.is_active ? "default" : "outline"}
-                        className="text-[8px] sm:text-[10px] px-1.5 py-0"
+                        className="text-[10px] px-2 py-0.5"
                       >
                         {product.is_active ? "Ativo" : "Inativo"}
                       </Badge>
