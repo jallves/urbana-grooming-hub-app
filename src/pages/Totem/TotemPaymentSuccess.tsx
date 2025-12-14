@@ -77,19 +77,21 @@ const TotemPaymentSuccess: React.FC = () => {
         return;
       }
 
-      // Montar lista completa de itens para o e-mail
-      const items: Array<{ name: string; quantity?: number; price: number }> = [];
+      // Montar lista completa de itens para o e-mail com tipo explícito
+      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
 
       // 1. Serviço principal
       if (resumo?.original_service) {
         items.push({
           name: resumo.original_service.nome,
-          price: resumo.original_service.preco
+          price: resumo.original_service.preco,
+          type: 'service'
         });
       } else if (appointment?.servico) {
         items.push({
           name: appointment.servico.nome,
-          price: appointment.servico.preco || 0
+          price: appointment.servico.preco || 0,
+          type: 'service'
         });
       }
 
@@ -98,14 +100,16 @@ const TotemPaymentSuccess: React.FC = () => {
         resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
           items.push({
             name: service.nome,
-            price: service.preco
+            price: service.preco,
+            type: 'service'
           });
         });
       } else if (extraServices && extraServices.length > 0) {
         extraServices.forEach((service: ExtraService) => {
           items.push({
             name: service.nome,
-            price: service.preco
+            price: service.preco,
+            type: 'service'
           });
         });
       }
@@ -116,14 +120,15 @@ const TotemPaymentSuccess: React.FC = () => {
           items.push({
             name: product.nome,
             quantity: product.quantidade,
-            price: product.preco * product.quantidade
+            price: product.preco * product.quantidade,
+            type: 'product'
           });
         });
       }
 
       // Se não conseguiu montar itens, usar fallback
       if (items.length === 0) {
-        items.push({ name: 'Serviço', price: total });
+        items.push({ name: 'Serviço', price: total, type: 'service' });
       }
 
       console.log('[PaymentSuccess] Itens para e-mail:', items);
