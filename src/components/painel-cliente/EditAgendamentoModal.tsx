@@ -11,6 +11,7 @@ import { motion } from 'framer-motion';
 import { format, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 
 interface Agendamento {
   id: string;
@@ -208,6 +209,14 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     setLoading(true);
 
     try {
+      // Guardar dados anteriores para o e-mail de atualização
+      const previousData = {
+        date: agendamento?.data,
+        time: agendamento?.hora?.substring(0, 5),
+        staffName: agendamento?.painel_barbeiros?.nome,
+        serviceName: agendamento?.painel_servicos?.nome
+      };
+
       const updateData: any = {
         data: formData.data,
         hora: formData.hora
@@ -227,6 +236,29 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         .eq('id', agendamento?.id);
 
       if (error) throw error;
+
+      // Determinar tipo de atualização
+      let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
+      if (formData.data !== previousData.date || formData.hora !== previousData.time) {
+        updateType = 'reschedule';
+      } else if (formData.barbeiro_id) {
+        updateType = 'change_barber';
+      } else if (formData.servico_id) {
+        updateType = 'change_service';
+      }
+
+      // Enviar e-mail de atualização
+      console.log('📧 [EditAgendamentoModal] Enviando e-mail de atualização...');
+      try {
+        await sendAppointmentUpdateEmail({
+          appointmentId: agendamento!.id,
+          previousData,
+          updateType,
+          updatedBy: 'client'
+        });
+      } catch (emailError) {
+        console.error('⚠️ Erro ao enviar e-mail de atualização:', emailError);
+      }
 
       toast({
         title: "✅ Alterado com sucesso!",
