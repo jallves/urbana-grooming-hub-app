@@ -10,7 +10,8 @@ import {
   Activity,
   ArrowUpCircle,
   ArrowDownCircle,
-  Filter
+  Filter,
+  Landmark
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -32,7 +33,39 @@ const FinancialDashboard: React.FC = () => {
   useEffect(() => {
     queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
     queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+    queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
   }, [refreshFinancials, queryClient]);
+
+  // Query para SALDO BANCÁRIO TOTAL (tudo que entrou - tudo que saiu desde o início)
+  const { data: totalBalanceData } = useQuery({
+    queryKey: ['total-balance-erp'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('financial_records')
+        .select('transaction_type, net_amount, status')
+        .eq('status', 'completed');
+
+      if (error) {
+        console.error('Erro ao buscar saldo total:', error);
+        throw error;
+      }
+
+      const totalRevenue = data
+        ?.filter(t => t.transaction_type === 'revenue')
+        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+
+      const totalExpense = data
+        ?.filter(t => t.transaction_type === 'expense' || t.transaction_type === 'commission')
+        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+
+      return {
+        totalRevenue,
+        totalExpense,
+        balance: totalRevenue - totalExpense
+      };
+    },
+    refetchInterval: 10000,
+  });
   
   // Query para dados anuais dos cards superiores
   const { data: yearlyMetrics, isLoading } = useQuery({
@@ -235,8 +268,8 @@ const FinancialDashboard: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Cards de Resumo Anual */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      {/* Cards de Resumo Anual - Linha 1: Receita, Despesas, Comissões */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Receita Total Anual */}
         <Card className="bg-white border-gray-300 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
@@ -255,7 +288,7 @@ const FinancialDashboard: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Despesas Totais Anual (SEM comissões) */}
+        {/* Despesas Totais Anual */}
         <Card className="bg-white border-gray-300 shadow-sm">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
             <CardTitle className="text-xs sm:text-sm font-medium text-gray-700">
@@ -287,6 +320,27 @@ const FinancialDashboard: React.FC = () => {
             </div>
             <p className="text-xs text-gray-600 mt-1">
               Contas a Pagar (comissões)
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Cards de Resumo - Linha 2: Saldo Bancário + Lucro Líquido */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+        {/* Saldo Bancário - Saldo Total para Conciliação */}
+        <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-slate-700 shadow-sm">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
+            <CardTitle className="text-xs sm:text-sm font-medium text-white">
+              Saldo Bancário
+            </CardTitle>
+            <Landmark className="h-4 w-4 text-white" />
+          </CardHeader>
+          <CardContent className="p-3 sm:p-4 pt-0">
+            <div className={`text-xl sm:text-2xl font-bold ${(totalBalanceData?.balance || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+              R$ {(totalBalanceData?.balance || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+            </div>
+            <p className="text-xs text-slate-300 mt-1">
+              Saldo total para conciliação
             </p>
           </CardContent>
         </Card>
