@@ -13,6 +13,7 @@ import { useAvailabilityCheck } from '@/hooks/totem/useAvailabilityCheck';
 import { useRetryOperation } from '@/components/totem/RetryOperation';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
@@ -322,6 +323,13 @@ const TotemNovoAgendamento: React.FC = () => {
       }
 
       console.log('✅ Agendamento criado com sucesso:', result.id);
+
+      // Enviar e-mail de confirmação (em background)
+      sendAppointmentConfirmationEmail(result.id).then(sent => {
+        if (sent) {
+          console.log('📧 E-mail de confirmação enviado!');
+        }
+      });
 
       toast.success('✅ Agendamento criado com sucesso!', {
         description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,

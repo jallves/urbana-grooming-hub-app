@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addDays, addWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 
 interface NextAppointmentSchedulerProps {
   clientId: string;
@@ -63,17 +64,25 @@ export const NextAppointmentScheduler: React.FC<NextAppointmentSchedulerProps> =
       const day = String(selectedDate.getDate()).padStart(2, '0');
       const dataLocal = `${year}-${month}-${day}`;
       
-      const { error } = await supabase.from('painel_agendamentos').insert({
+      const { data: appointmentData, error } = await supabase.from('painel_agendamentos').insert({
         cliente_id: clientId,
         barbeiro_id: barberId,
         servico_id: serviceId,
         data: dataLocal,
         hora: timeToUse,
         status: 'agendado',
-        observacoes: 'Agendamento via Totem - Retorno programado',
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Enviar e-mail de confirmação (em background)
+      if (appointmentData?.id) {
+        sendAppointmentConfirmationEmail(appointmentData.id).then(sent => {
+          if (sent) {
+            console.log('📧 E-mail de confirmação enviado!');
+          }
+        });
+      }
 
       setScheduled(true);
       

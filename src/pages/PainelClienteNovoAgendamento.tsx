@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import SuccessConfirmationDialog from '@/components/client/appointment/SuccessConfirmationDialog';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 
 interface Service {
   id: string;
@@ -349,6 +350,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       }
 
       console.log('✅ Agendamento criado com sucesso!', appointmentData);
+
+      // Enviar e-mail de confirmação (em background)
+      if (appointmentData?.id) {
+        sendAppointmentConfirmationEmail(appointmentData.id).then(sent => {
+          if (sent) {
+            console.log('📧 E-mail de confirmação enviado!');
+          }
+        });
+      }
 
       // Sucesso! Mostrar modal de confirmação
       if (progressToast) toast.dismiss(progressToast);
