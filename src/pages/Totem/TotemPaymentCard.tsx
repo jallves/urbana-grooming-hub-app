@@ -6,6 +6,8 @@ import { ArrowLeft, CreditCard, Loader2, CheckCircle2, AlertTriangle, WifiOff } 
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentCard: React.FC = () => {
@@ -17,10 +19,12 @@ const TotemPaymentCard: React.FC = () => {
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paymentStarted, setPaymentStarted] = useState(false);
   
   // Refs para acesso em callbacks
   const currentPaymentIdRef = useRef<string | null>(null);
   const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
+  const finalizingRef = useRef(false);
   
   // Atualizar refs
   useEffect(() => {
@@ -31,16 +35,27 @@ const TotemPaymentCard: React.FC = () => {
     paymentTypeRef.current = paymentType;
   }, [paymentType]);
 
-  // Função de finalização - definida com useCallback para estar disponível
+  // Função de finalização
   const finalizePayment = useCallback(async (paymentId: string, transactionData: {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
   }) => {
+    // Evitar finalização duplicada
+    if (finalizingRef.current) {
+      console.log('[CARD] ⚠️ Finalização já em andamento, ignorando');
+      return;
+    }
+    finalizingRef.current = true;
+    
     try {
-      console.log('✅ [CARD] Finalizando pagamento...');
-      console.log('   📝 Payment ID:', paymentId);
-      console.log('   📝 Transaction Data:', transactionData);
+      console.log('✅ [CARD] ═══════════════════════════════════════');
+      console.log('✅ [CARD] FINALIZANDO PAGAMENTO');
+      console.log('✅ [CARD] Payment ID:', paymentId);
+      console.log('✅ [CARD] NSU:', transactionData.nsu);
+      console.log('✅ [CARD] Autorização:', transactionData.autorizacao);
+      console.log('✅ [CARD] Bandeira:', transactionData.bandeira);
+      console.log('✅ [CARD] ═══════════════════════════════════════');
       
       // Atualizar status do pagamento com dados da transação
       const { error: paymentError } = await supabase
@@ -90,7 +105,9 @@ const TotemPaymentCard: React.FC = () => {
         });
       }
 
+      console.log('✅ [CARD] Pagamento finalizado com sucesso!');
       toast.success('Pagamento aprovado!');
+      
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -105,10 +122,69 @@ const TotemPaymentCard: React.FC = () => {
       console.error('❌ [CARD] Erro ao finalizar:', error);
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
+      finalizingRef.current = false;
     }
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
 
-  // Hook TEF Android
+  // Handler para resultado do TEF
+  const handleTEFResult = useCallback((resultado: TEFResultado) => {
+    console.log('📞 [CARD] handleTEFResult chamado:', resultado.status);
+    
+    const paymentId = currentPaymentIdRef.current;
+    
+    switch (resultado.status) {
+      case 'aprovado':
+        console.log('✅ [CARD] Pagamento APROVADO pelo PayGo');
+        if (paymentId) {
+          finalizePayment(paymentId, {
+            nsu: resultado.nsu,
+            autorizacao: resultado.autorizacao,
+            bandeira: resultado.bandeira
+          });
+        } else {
+          console.error('❌ [CARD] currentPaymentId não disponível!');
+          toast.error('Erro interno - ID do pagamento não encontrado');
+          setProcessing(false);
+        }
+        break;
+        
+      case 'negado':
+        console.log('❌ [CARD] Pagamento NEGADO pelo PayGo');
+        toast.error('Pagamento negado', { description: resultado.mensagem || 'Tente novamente' });
+        setError(resultado.mensagem || 'Pagamento negado');
+        setProcessing(false);
+        setPaymentType(null);
+        setPaymentStarted(false);
+        break;
+        
+      case 'cancelado':
+        console.log('⚠️ [CARD] Pagamento CANCELADO');
+        toast.info('Pagamento cancelado');
+        setProcessing(false);
+        setPaymentType(null);
+        setPaymentStarted(false);
+        break;
+        
+      case 'erro':
+        console.log('❌ [CARD] ERRO no pagamento');
+        toast.error('Erro no pagamento', { description: resultado.mensagem });
+        setError(resultado.mensagem || 'Erro desconhecido');
+        setProcessing(false);
+        setPaymentType(null);
+        setPaymentStarted(false);
+        break;
+    }
+  }, [finalizePayment]);
+
+  // Hook dedicado para receber resultado do PayGo
+  useTEFPaymentResult({
+    enabled: paymentStarted && processing,
+    onResult: handleTEFResult,
+    pollingInterval: 500,
+    maxWaitTime: 180000 // 3 minutos
+  });
+
+  // Hook TEF Android (para iniciar pagamento)
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -116,31 +192,21 @@ const TotemPaymentCard: React.FC = () => {
     iniciarPagamento: iniciarPagamentoTEF,
     cancelarPagamento: cancelarPagamentoTEF
   } = useTEFAndroid({
-    onSuccess: async (resultado) => {
-      console.log('✅ [TEF] Pagamento aprovado:', resultado);
-      const paymentId = currentPaymentIdRef.current;
-      if (paymentId) {
-        await finalizePayment(paymentId, {
-          nsu: resultado.nsu,
-          autorizacao: resultado.autorizacao,
-          bandeira: resultado.bandeira
-        });
-      } else {
-        console.error('❌ [TEF] currentPaymentId não disponível!');
-      }
-    },
+    onSuccess: handleTEFResult,
     onError: (erro) => {
       console.error('❌ [TEF] Erro no pagamento:', erro);
       toast.error('Pagamento negado', { description: erro });
       setError(erro);
       setProcessing(false);
       setPaymentType(null);
+      setPaymentStarted(false);
     },
     onCancelled: () => {
       console.log('⚠️ [TEF] Pagamento cancelado');
       toast.info('Pagamento cancelado');
       setProcessing(false);
       setPaymentType(null);
+      setPaymentStarted(false);
     }
   });
 
@@ -149,55 +215,11 @@ const TotemPaymentCard: React.FC = () => {
     console.log('🔌 [CARD] Status TEF Android:', {
       isAndroidAvailable,
       isPinpadConnected,
-      tefProcessing
+      tefProcessing,
+      processing,
+      paymentStarted
     });
-  }, [isAndroidAvailable, isPinpadConnected, tefProcessing]);
-
-  // Fallback: verificar sessionStorage para resultado pendente do PayGo
-  useEffect(() => {
-    if (!processing) return;
-    
-    const checkStoredResult = () => {
-      try {
-        const storedResult = sessionStorage.getItem('lastTefResult');
-        const storedTime = sessionStorage.getItem('lastTefResultTime');
-        
-        if (storedResult && storedTime) {
-          const resultAge = Date.now() - parseInt(storedTime, 10);
-          // Se o resultado foi salvo nos últimos 30 segundos
-          if (resultAge < 30000) {
-            const resultado = JSON.parse(storedResult);
-            console.log('🔄 [CARD] Recuperando resultado do sessionStorage:', resultado);
-            
-            // Limpar storage para evitar reprocessamento
-            sessionStorage.removeItem('lastTefResult');
-            sessionStorage.removeItem('lastTefResultTime');
-            
-            const paymentId = currentPaymentIdRef.current;
-            if (resultado.status === 'aprovado' && paymentId) {
-              console.log('✅ [CARD] Pagamento aprovado via fallback, finalizando...');
-              finalizePayment(paymentId, {
-                nsu: resultado.nsu || resultado.transactionNsu,
-                autorizacao: resultado.autorizacao || resultado.authorizationCode,
-                bandeira: resultado.bandeira || resultado.cardName
-              });
-            } else if (resultado.status === 'cancelado' || resultado.status === 'negado') {
-              console.log('❌ [CARD] Pagamento negado/cancelado via fallback');
-              setProcessing(false);
-              setPaymentType(null);
-              toast.error('Pagamento não aprovado', { description: resultado.mensagem || resultado.resultMessage });
-            }
-          }
-        }
-      } catch (e) {
-        console.error('❌ [CARD] Erro ao verificar sessionStorage:', e);
-      }
-    };
-    
-    // Verificar periodicamente enquanto está processando
-    const interval = setInterval(checkStoredResult, 1000);
-    return () => clearInterval(interval);
-  }, [processing, finalizePayment]);
+  }, [isAndroidAvailable, isPinpadConnected, tefProcessing, processing, paymentStarted]);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
     // Verificar se TEF está disponível
@@ -208,13 +230,18 @@ const TotemPaymentCard: React.FC = () => {
       return;
     }
 
-    console.log('💳 [CARD] Iniciando pagamento com cartão:', type);
-    console.log('   💰 Venda ID:', venda_id);
-    console.log('   💵 Total:', total);
+    console.log('💳 [CARD] ═══════════════════════════════════════');
+    console.log('💳 [CARD] INICIANDO PAGAMENTO COM CARTÃO');
+    console.log('💳 [CARD] Tipo:', type);
+    console.log('💳 [CARD] Venda ID:', venda_id);
+    console.log('💳 [CARD] Total:', total);
+    console.log('💳 [CARD] ═══════════════════════════════════════');
     
     setPaymentType(type);
     setProcessing(true);
     setError(null);
+    setPaymentStarted(false);
+    finalizingRef.current = false;
 
     try {
       // Criar registro de pagamento
@@ -238,6 +265,9 @@ const TotemPaymentCard: React.FC = () => {
       console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
       setCurrentPaymentId(payment.id);
 
+      // Marcar que pagamento foi iniciado (ativa o hook de resultado)
+      setPaymentStarted(true);
+
       // Chamar TEF Android (PayGo)
       console.log('🔌 [CARD] Chamando TEF PayGo...');
       const success = await iniciarPagamentoTEF({
@@ -254,6 +284,9 @@ const TotemPaymentCard: React.FC = () => {
         });
         setProcessing(false);
         setPaymentType(null);
+        setPaymentStarted(false);
+      } else {
+        console.log('✅ [CARD] TEF iniciado, aguardando resposta do PayGo...');
       }
 
     } catch (error) {
@@ -263,6 +296,7 @@ const TotemPaymentCard: React.FC = () => {
       });
       setProcessing(false);
       setPaymentType(null);
+      setPaymentStarted(false);
     }
   };
 
@@ -270,10 +304,9 @@ const TotemPaymentCard: React.FC = () => {
     cancelarPagamentoTEF();
     setProcessing(false);
     setPaymentType(null);
+    setPaymentStarted(false);
     toast.info('Pagamento cancelado');
   };
-
-  // Nota: finalizePayment já está definida no início do componente via useCallback
 
   // Tela de erro quando TEF não está disponível
   if (!isAndroidAvailable || !isPinpadConnected) {
@@ -417,60 +450,76 @@ const TotemPaymentCard: React.FC = () => {
               {/* Processing State */}
               <div className="flex flex-col items-center justify-center py-6 sm:py-8 space-y-4 sm:space-y-6">
                 {/* Status TEF */}
-                <div className="bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/15 to-urbana-gold/20 border-2 border-urbana-gold/40 rounded-xl p-3 sm:p-4 w-full">
-                  <div className="flex items-center justify-center gap-2">
+                <div className="bg-gradient-to-r from-green-500/15 to-green-600/10 border border-green-500/40 rounded-xl p-4 w-full">
+                  <div className="flex items-center justify-center gap-2 text-green-400">
                     <div className="relative">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-ping absolute" />
                       <div className="w-2 h-2 bg-green-500 rounded-full" />
                     </div>
-                    <p className="text-sm sm:text-base md:text-lg font-bold text-urbana-gold">
-                      Aguardando pagamento no PayGo...
+                    <p className="text-base font-bold">
+                      ✅ PayGo Integrado - Aguardando pagamento no pinpad
                     </p>
                   </div>
                 </div>
 
-                <div className="relative">
-                  <Loader2 className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold animate-spin" />
-                  <div className="absolute inset-0 w-16 h-16 sm:w-20 sm:h-20 bg-urbana-gold/20 rounded-full blur-xl animate-pulse" />
-                </div>
-                
-                <div className="text-center space-y-2 sm:space-y-3">
-                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-light">
-                    Processando pagamento...
-                  </p>
-                  <div className="inline-block px-4 py-2 bg-urbana-gold/10 rounded-lg border border-urbana-gold/30">
-                    <p className="text-base sm:text-lg md:text-xl text-urbana-gold font-bold">
-                      {paymentType === 'credit' ? 'Cartão de Crédito' : 'Cartão de Débito'}
-                    </p>
+                <div className="relative w-28 h-28 sm:w-32 sm:h-32 md:w-36 md:h-36">
+                  <div className="absolute inset-0 rounded-full bg-gradient-to-br from-urbana-gold/30 to-urbana-gold-vibrant/30 flex items-center justify-center shadow-lg shadow-urbana-gold/20">
+                    <CreditCard className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 text-urbana-gold" />
                   </div>
-                  <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light animate-pulse mt-2">
-                    Siga as instruções na maquininha
+                  <Loader2 className="absolute inset-0 w-full h-full text-urbana-gold/40 animate-spin" />
+                </div>
+
+                <div className="text-center space-y-2 sm:space-y-3">
+                  <h3 className="text-2xl sm:text-3xl md:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+                    Processando Pagamento
+                  </h3>
+                  <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold/90">
+                    {paymentType === 'credit' ? 'CRÉDITO' : 'DÉBITO'}
                   </p>
+                  <p className="text-lg sm:text-xl text-urbana-light/80">
+                    Aproxime ou insira seu cartão na máquina
+                  </p>
+                </div>
+
+                {/* Progress Steps */}
+                <div className="flex items-center justify-center gap-2 sm:gap-3 mt-4">
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                    <span className="text-xs sm:text-sm text-urbana-light">TEF</span>
+                  </div>
+                  <div className="w-6 sm:w-8 h-0.5 bg-urbana-gold/30" />
+                  <div className="flex items-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                    <span className="text-xs sm:text-sm text-urbana-light">Pinpad</span>
+                  </div>
+                  <div className="w-6 sm:w-8 h-0.5 bg-urbana-gold/30" />
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-urbana-gold rounded-full animate-pulse" />
+                    <span className="text-xs sm:text-sm text-urbana-light">Pagamento</span>
+                  </div>
                 </div>
 
                 {/* Cancel Button */}
                 <Button
                   onClick={handleCancelPayment}
                   variant="outline"
-                  className="mt-4 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  className="mt-4 sm:mt-6 border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
                   Cancelar pagamento
                 </Button>
-
-                {/* Progress Steps */}
-                <div className="flex items-center gap-2 sm:gap-3 mt-4">
-                  <div className="flex items-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-                    <span className="text-xs sm:text-sm text-urbana-light">Conectado</span>
-                  </div>
-                  <div className="w-6 sm:w-8 h-0.5 bg-urbana-gold/30" />
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-urbana-gold rounded-full animate-pulse" />
-                    <span className="text-xs sm:text-sm text-urbana-light">Aguardando</span>
-                  </div>
-                </div>
               </div>
             </>
+          )}
+
+          {/* Error Display */}
+          {error && (
+            <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3">
+              <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+              <div>
+                <p className="text-red-400 font-medium">Erro no pagamento</p>
+                <p className="text-red-300/70 text-sm">{error}</p>
+              </div>
+            </div>
           )}
         </Card>
       </div>
