@@ -3,7 +3,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Edit, Trash2 } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, User, Scissors, Plus, Edit, Trash2, AlertCircle, Phone } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -372,35 +372,46 @@ export default function PainelClienteMeusAgendamentos() {
 
                           {/* Action Buttons */}
                           {['agendado', 'confirmado'].includes(agendamento.status) && (() => {
-                            const { allowed } = canEditOrCancel(agendamento);
+                            const { allowed, reason } = canEditOrCancel(agendamento);
                             return (
-                              <div className="flex gap-2 pt-2">
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleEditAgendamento(agendamento)}
-                                  disabled={!allowed}
-                                  className={`flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 ${
-                                    allowed 
-                                      ? 'bg-gradient-to-r from-blue-500 to-blue-600 text-white' 
-                                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                  }`}
-                                >
-                                  <Edit className="w-4 h-4 mr-1" />
-                                  Editar
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => handleDeleteAgendamento(agendamento)}
-                                  disabled={!allowed}
-                                  className={`flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 ${
-                                    allowed 
-                                      ? 'bg-gradient-to-r from-red-500 to-red-600 text-white' 
-                                      : 'bg-gray-600 text-gray-400 cursor-not-allowed'
-                                  }`}
-                                >
-                                  <Trash2 className="w-4 h-4 mr-1" />
-                                  Cancelar
-                                </Button>
+                              <div className="space-y-3 pt-2">
+                                {/* Mensagem quando não pode editar/cancelar */}
+                                {!allowed && (
+                                  <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 border border-amber-500/30">
+                                    <AlertCircle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                                    <div className="flex-1">
+                                      <p className="text-xs text-amber-300 leading-relaxed">
+                                        {reason}
+                                      </p>
+                                      <p className="text-xs text-amber-400/80 mt-1 flex items-center gap-1">
+                                        <Phone className="h-3 w-3" />
+                                        Entre em contato com a barbearia.
+                                      </p>
+                                    </div>
+                                  </div>
+                                )}
+                                
+                                {/* Botões */}
+                                {allowed && (
+                                  <div className="flex gap-2">
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleEditAgendamento(agendamento)}
+                                      className="flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 bg-gradient-to-r from-blue-500 to-blue-600 text-white hover:from-blue-600 hover:to-blue-700"
+                                    >
+                                      <Edit className="w-4 h-4 mr-1" />
+                                      Editar
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      onClick={() => handleDeleteAgendamento(agendamento)}
+                                      className="flex-1 rounded-xl px-4 py-2 text-sm shadow-lg transition-all duration-300 bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-1" />
+                                      Cancelar
+                                    </Button>
+                                  </div>
+                                )}
                               </div>
                             );
                           })()}
