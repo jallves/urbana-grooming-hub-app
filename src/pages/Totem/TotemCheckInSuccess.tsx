@@ -1,13 +1,15 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, User, Scissors, Sparkles, Crown, ArrowRight } from 'lucide-react';
-import costaUrbanaLogo from '@/assets/costa-urbana-logo.png';
+import { CheckCircle, User, Scissors, Sparkles, Crown, Clock, Home } from 'lucide-react';
+import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { Button } from '@/components/ui/button';
 
 const TotemCheckInSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { client, appointment } = location.state || {};
+  const [countdown, setCountdown] = useState(10);
 
   useEffect(() => {
     // Add totem-mode class for touch optimization
@@ -18,163 +20,195 @@ const TotemCheckInSuccess: React.FC = () => {
       return;
     }
 
-    // Redirect to waiting screen after 3 seconds
-    const timer = setTimeout(() => {
-      navigate('/totem/waiting', {
-        state: { client, appointment, session: location.state?.session }
+    // Countdown timer - decrementa a cada segundo
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          navigate('/totem/home');
+          return 0;
+        }
+        return prev - 1;
       });
-    }, 3000);
+    }, 1000);
 
     return () => {
-      clearTimeout(timer);
+      clearInterval(countdownInterval);
       document.documentElement.classList.remove('totem-mode');
     };
   }, [navigate, client, appointment]);
+
+  const handleGoHome = () => {
+    navigate('/totem/home');
+  };
 
   if (!client || !appointment) {
     return null;
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden">
-      {/* Background image */}
-      <div className="absolute inset-0 z-0">
-        <img 
-          src={barbershopBg} 
-          alt="Barbearia" 
-          className="w-full h-full object-cover"
-        />
-        {/* Dark overlay for better text readability */}
-        <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-brown/75 to-urbana-black/80" />
+    <div 
+      className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-4 sm:p-6 md:p-8 font-poppins relative overflow-hidden"
+      style={{
+        backgroundImage: `url(${barbershopBg})`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat'
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/90 via-urbana-black/85 to-urbana-brown/80" />
+
+      {/* Premium background effects */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-emerald-500/15 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/15 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
 
-      {/* Premium background effects with enhanced depth */}
-      <div className="absolute inset-0 overflow-hidden z-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-emerald-500/20 rounded-full blur-3xl opacity-60" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-urbana-gold/20 rounded-full blur-3xl opacity-50" />
-        <div className="absolute top-1/3 right-1/3 w-64 h-64 bg-emerald-400/10 rounded-full blur-2xl opacity-40" />
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-full h-full opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: 'radial-gradient(circle at 2px 2px, rgba(16, 185, 129, 0.1) 1px, transparent 0)',
-            backgroundSize: '40px 40px'
-          }} />
-        </div>
-      </div>
-
-      <div className="text-center space-y-8 sm:space-y-10 md:space-y-12 max-w-3xl z-10">
-        {/* Success Icon with premium effect - no pulsing */}
-        <div className="flex justify-center animate-scale-in">
-          <div className="relative group">
-            {/* Multiple glow layers for depth */}
-            <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 blur-3xl opacity-50" />
-            <div className="absolute -inset-12 bg-emerald-500/30 blur-3xl opacity-30" />
-            <div className="absolute -inset-4 bg-emerald-400/20 blur-2xl opacity-40" />
-            
-            {/* Icon container with enhanced styling */}
-            <div className="relative w-32 h-32 sm:w-40 sm:h-40 md:w-48 md:h-48 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 flex items-center justify-center shadow-2xl border-4 border-emerald-400/30">
-              <CheckCircle className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 text-white drop-shadow-2xl" strokeWidth={3} />
-              
-              {/* Sparkles without pulsing */}
-              <Sparkles className="absolute top-4 right-4 w-6 h-6 text-white opacity-80" />
-              <Sparkles className="absolute bottom-4 left-4 w-4 h-4 text-emerald-200 opacity-80" />
-              <Sparkles className="absolute top-8 left-8 w-3 h-3 text-emerald-100 opacity-60" />
+      <div className="text-center space-y-6 sm:space-y-8 max-w-2xl z-10 relative">
+        
+        {/* Logo com cantos decorativos - PADRÃO DO TOTEM */}
+        <div className="flex justify-center mb-4 animate-scale-in">
+          <div className="relative">
+            <div className="absolute -inset-4 bg-gradient-to-br from-urbana-gold via-urbana-gold-vibrant to-transparent blur-2xl opacity-30" />
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24 p-4 rounded-2xl bg-urbana-black-soft/80 backdrop-blur-sm border-2 border-urbana-gold/50 shadow-2xl overflow-hidden">
+              <img 
+                src={costaUrbanaLogo} 
+                alt="Costa Urbana" 
+                className="w-full h-full object-contain"
+              />
+              {/* Cantos decorativos */}
+              <div className="absolute -top-1 -left-1 w-4 h-4 border-t-2 border-l-2 border-urbana-gold rounded-tl-lg" />
+              <div className="absolute -top-1 -right-1 w-4 h-4 border-t-2 border-r-2 border-urbana-gold rounded-tr-lg" />
+              <div className="absolute -bottom-1 -left-1 w-4 h-4 border-b-2 border-l-2 border-urbana-gold rounded-bl-lg" />
+              <div className="absolute -bottom-1 -right-1 w-4 h-4 border-b-2 border-r-2 border-urbana-gold rounded-br-lg" />
             </div>
-            
-            {/* Static ring effect */}
-            <div className="absolute inset-0 rounded-full border-2 border-emerald-400/20" />
           </div>
         </div>
 
-        {/* Success Message with gradient text */}
-        <div className="space-y-6 sm:space-y-8 animate-fade-up" style={{ animationDelay: '0.2s' }}>
-          {/* Crown badge */}
+        {/* Success Icon */}
+        <div className="flex justify-center animate-scale-in" style={{ animationDelay: '0.1s' }}>
+          <div className="relative">
+            <div className="absolute -inset-6 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 blur-2xl opacity-40" />
+            <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 flex items-center justify-center shadow-2xl border-4 border-emerald-400/30">
+              <CheckCircle className="w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 text-white" strokeWidth={2.5} />
+              <Sparkles className="absolute top-2 right-2 w-5 h-5 text-white/80" />
+            </div>
+          </div>
+        </div>
+
+        {/* Success Message */}
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <div className="flex justify-center">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+            <div className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500/20 border border-emerald-500/40 rounded-full">
               <Crown className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs sm:text-sm text-emerald-400 font-medium uppercase tracking-wider">Check-in Premium</span>
+              <span className="text-xs sm:text-sm text-emerald-400 font-bold uppercase tracking-wider">Check-in Confirmado</span>
             </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300 animate-shimmer leading-tight" style={{ backgroundSize: '200% auto' }}>
-            Check-in Confirmado!
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-green-400 to-emerald-300">
+            Bem-vindo, {client.nome.split(' ')[0]}!
           </h1>
           
-          {/* Personalized Welcome Message */}
-          <div className="space-y-3">
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-              Seja bem-vindo, {client.nome.split(' ')[0]}!
-            </h2>
-            <p className="text-lg sm:text-xl md:text-2xl text-urbana-light/80 font-light">
-              É uma honra tê-lo conosco hoje! ✨
-            </p>
-          </div>
-          
-          {/* Client info card */}
-          <div className="inline-block p-6 sm:p-8 bg-white/5 backdrop-blur-2xl border-2 border-urbana-gold/30 rounded-2xl shadow-[0_8px_32px_rgba(0,0,0,0.4)]">
-            <div className="space-y-4">
-              <div className="flex items-center justify-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
-                  <User className="w-6 h-6 text-urbana-gold" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm text-urbana-light/60">Cliente VIP</p>
-                  <p className="text-2xl sm:text-3xl font-bold text-urbana-gold">
-                    {client.nome}
-                  </p>
-                </div>
-              </div>
-              
-              <div className="h-px bg-urbana-gold/20" />
-              
-              <div className="flex items-center justify-center gap-3 sm:gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                  <Scissors className="w-6 h-6 text-emerald-400" />
-                </div>
-                <div className="text-left">
-                  <p className="text-sm text-urbana-light/60">Profissional</p>
-                  <p className="text-xl sm:text-2xl font-bold text-emerald-400">
-                    {appointment.barbeiro?.nome}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Service badge with premium styling */}
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold/30 to-urbana-gold/20 border-2 border-urbana-gold/50 rounded-2xl backdrop-blur-sm shadow-lg">
-            <Sparkles className="w-5 h-5 text-urbana-gold opacity-80" />
-            <span className="text-xl sm:text-2xl font-bold text-urbana-gold">
-              {appointment.servico?.nome}
-            </span>
-            <Sparkles className="w-5 h-5 text-urbana-gold opacity-80" />
-          </div>
-        </div>
-
-        {/* Auto redirect with elegant progress */}
-        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.6s' }}>
-          <div className="flex items-center justify-center gap-3 text-urbana-light/70">
-            <span className="text-base sm:text-lg font-light">Preparando experiência premium</span>
-            <ArrowRight className="w-5 h-5 opacity-80" />
-          </div>
-          
-          {/* Progress bar */}
-          <div className="max-w-md mx-auto h-1 bg-urbana-gray/20 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-emerald-400 via-green-500 to-emerald-400 rounded-full animate-[slideRight_3s_ease-in-out]" />
-          </div>
-          
-          <p className="text-sm sm:text-base text-urbana-light/50">
-            Acompanhe sua posição na fila em tempo real
+          <p className="text-lg sm:text-xl text-urbana-light/80">
+            Aguarde confortavelmente, você será chamado em breve ✨
           </p>
         </div>
 
-          {/* Logo footer */}
-          <div className="pt-8 animate-fade-in" style={{ animationDelay: '0.9s' }}>
-            <div className="inline-flex items-center gap-3 px-4 py-2 bg-white/5 backdrop-blur-sm border border-urbana-gold/20 rounded-full shadow-lg">
-            <img src={costaUrbanaLogo} alt="Costa Urbana" className="w-8 h-8 object-contain" />
-            <span className="text-xs text-urbana-light/60 font-medium uppercase tracking-wider">
-              Sistema Premium de Gestão
+        {/* Info Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 animate-fade-in" style={{ animationDelay: '0.3s' }}>
+          {/* Client Card */}
+          <div className="p-4 sm:p-5 bg-urbana-black/60 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-urbana-gold" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs text-urbana-light/50 uppercase tracking-wider">Cliente</p>
+                <p className="text-lg sm:text-xl font-bold text-urbana-gold truncate">{client.nome}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Barber Card */}
+          <div className="p-4 sm:p-5 bg-urbana-black/60 backdrop-blur-xl border-2 border-emerald-500/30 rounded-xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center">
+                <Scissors className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-400" />
+              </div>
+              <div className="text-left">
+                <p className="text-xs text-urbana-light/50 uppercase tracking-wider">Profissional</p>
+                <p className="text-lg sm:text-xl font-bold text-emerald-400 truncate">{appointment.barbeiro?.nome}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Service Badge */}
+        <div className="animate-fade-in" style={{ animationDelay: '0.4s' }}>
+          <div className="inline-flex items-center gap-3 px-5 py-3 bg-urbana-gold/10 border-2 border-urbana-gold/40 rounded-xl backdrop-blur-sm">
+            <Sparkles className="w-5 h-5 text-urbana-gold" />
+            <span className="text-lg sm:text-xl font-bold text-urbana-gold">
+              {appointment.servico?.nome}
             </span>
           </div>
+        </div>
+
+        {/* Countdown Section */}
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: '0.5s' }}>
+          {/* Countdown Circle */}
+          <div className="flex justify-center">
+            <div className="relative w-20 h-20 sm:w-24 sm:h-24">
+              {/* Background circle */}
+              <svg className="w-full h-full transform -rotate-90">
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="45%"
+                  fill="none"
+                  stroke="rgba(212, 165, 116, 0.2)"
+                  strokeWidth="4"
+                />
+                {/* Progress circle */}
+                <circle
+                  cx="50%"
+                  cy="50%"
+                  r="45%"
+                  fill="none"
+                  stroke="url(#countdownGradient)"
+                  strokeWidth="4"
+                  strokeLinecap="round"
+                  strokeDasharray={`${(countdown / 10) * 283} 283`}
+                  className="transition-all duration-1000 ease-linear"
+                />
+                <defs>
+                  <linearGradient id="countdownGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" stopColor="#D4A574" />
+                    <stop offset="100%" stopColor="#E8C49A" />
+                  </linearGradient>
+                </defs>
+              </svg>
+              {/* Countdown number */}
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="text-2xl sm:text-3xl font-black text-urbana-gold">{countdown}</span>
+              </div>
+            </div>
+          </div>
+          
+          <div className="flex items-center justify-center gap-2 text-urbana-light/60">
+            <Clock className="w-4 h-4" />
+            <span className="text-sm sm:text-base">Voltando à tela inicial em {countdown} segundos</span>
+          </div>
+
+          {/* Go Home Button */}
+          <Button
+            onClick={handleGoHome}
+            className="px-6 py-3 h-auto bg-urbana-gold/20 hover:bg-urbana-gold/30 border-2 border-urbana-gold/50 text-urbana-gold font-bold rounded-xl transition-all duration-200 touch-manipulation"
+            style={{ WebkitTapHighlightColor: 'transparent' }}
+          >
+            <Home className="w-5 h-5 mr-2" />
+            Voltar ao Início
+          </Button>
         </div>
       </div>
     </div>
