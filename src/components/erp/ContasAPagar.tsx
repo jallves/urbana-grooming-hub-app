@@ -822,23 +822,17 @@ export const ContasAPagar: React.FC = () => {
             <CardContent className="p-0">
               {filteredPayables.length > 0 ? (
                 <div className="overflow-x-auto">
-                  <Table className="text-xs">
+                  <Table className="text-xs w-full table-fixed">
                     <TableHeader>
                       <TableRow className="bg-gray-50">
-                        <TableHead className="w-8 text-center p-2">
-                          <Checkbox
-                            checked={selectedRecords.size === pendingFilteredRecords.length && pendingFilteredRecords.length > 0}
-                            onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                          />
-                        </TableHead>
-                        <TableHead className="p-2 w-16">Tipo</TableHead>
-                        <TableHead className="p-2">Descrição</TableHead>
-                        <TableHead className="p-2 w-28">Barbeiro</TableHead>
-                        <TableHead className="p-2 w-24">Categoria</TableHead>
-                        <TableHead className="p-2 w-20">Data</TableHead>
-                        <TableHead className="p-2 w-24 text-right">Valor</TableHead>
-                        <TableHead className="p-2 w-16 text-center">Status</TableHead>
-                        <TableHead className="p-2 w-16 text-center">Ações</TableHead>
+                        <TableHead className="p-2 w-[70px]">Tipo</TableHead>
+                        <TableHead className="p-2 w-[30%] min-w-[200px]">Descrição</TableHead>
+                        <TableHead className="p-2 w-[140px]">Barbeiro</TableHead>
+                        <TableHead className="p-2 w-[150px]">Categoria</TableHead>
+                        <TableHead className="p-2 w-[80px]">Data</TableHead>
+                        <TableHead className="p-2 w-[90px] text-right">Valor</TableHead>
+                        <TableHead className="p-2 w-[60px] text-center">Status</TableHead>
+                        <TableHead className="p-2 w-[90px] text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -847,18 +841,8 @@ export const ContasAPagar: React.FC = () => {
                           key={record.id}
                           className={selectedRecords.has(record.id) ? 'bg-green-50' : ''}
                         >
-                          <TableCell className="p-2 text-center">
-                            {record.status === 'pending' ? (
-                              <Checkbox
-                                checked={selectedRecords.has(record.id)}
-                                onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
-                              />
-                            ) : (
-                              <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
-                            )}
-                          </TableCell>
                           <TableCell className="p-2">
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 whitespace-nowrap ${
                               record.transaction_type === 'commission' 
                                 ? 'bg-blue-50 text-blue-700 border-blue-200' 
                                 : 'bg-orange-50 text-orange-700 border-orange-200'
@@ -867,34 +851,37 @@ export const ContasAPagar: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="p-2">
-                            <div className="truncate max-w-[180px]" title={record.description}>
+                            <div className="truncate" title={record.description}>
                               {record.description}
                             </div>
                           </TableCell>
                           <TableCell className="p-2">
-                            <span className="truncate block max-w-[100px]" title={getBarberName(record)}>
+                            <span className="truncate block" title={getBarberName(record)}>
                               {getBarberName(record)}
                             </span>
                           </TableCell>
                           <TableCell className="p-2 text-[10px]">
-                            {getCategoryLabel(record.category)}
+                            <span className="truncate block" title={getCategoryLabel(record.category)}>
+                              {getCategoryLabel(record.category)}
+                            </span>
                           </TableCell>
-                          <TableCell className="p-2 text-[10px]">
+                          <TableCell className="p-2 text-[10px] whitespace-nowrap">
                             {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
                           </TableCell>
-                          <TableCell className="p-2 text-right font-semibold text-red-600">
+                          <TableCell className="p-2 text-right font-semibold text-red-600 whitespace-nowrap">
                             R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
                           <TableCell className="p-2 text-center">
                             {getStatusBadge(record.status)}
                           </TableCell>
                           <TableCell className="p-2 text-center">
-                            <div className="flex justify-center gap-0.5">
+                            <div className="flex justify-center items-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={() => handleEdit(record)}
+                                title="Editar"
                               >
                                 <Pencil className="h-3 w-3" />
                               </Button>
@@ -903,9 +890,19 @@ export const ContasAPagar: React.FC = () => {
                                 size="sm"
                                 className="h-6 w-6 p-0"
                                 onClick={() => handleDelete(record.id)}
+                                title="Excluir"
                               >
                                 <Trash2 className="h-3 w-3 text-destructive" />
                               </Button>
+                              {record.status === 'pending' ? (
+                                <Checkbox
+                                  checked={selectedRecords.has(record.id)}
+                                  onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
+                                  className="ml-1"
+                                />
+                              ) : (
+                                <CheckCircle2 className="h-4 w-4 text-green-600 ml-1" />
+                              )}
                             </div>
                           </TableCell>
                         </TableRow>
