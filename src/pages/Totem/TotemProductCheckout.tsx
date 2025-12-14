@@ -122,7 +122,9 @@ const TotemProductCheckout: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-2 sm:mb-3 z-10">
         <Button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/totem/products', { 
+            state: { client, cart, barber } 
+          })}
           variant="ghost"
           size="sm"
           className="h-9 sm:h-10 md:h-12 px-2 sm:px-3 md:px-4 text-xs sm:text-sm md:text-base text-urbana-light active:text-urbana-gold active:bg-urbana-gold/20 transition-all duration-100 active:scale-95"

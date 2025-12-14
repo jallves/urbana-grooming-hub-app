@@ -296,7 +296,10 @@ const TotemProductPaymentCard: React.FC = () => {
     cancelarPagamentoTEF();
     setIsProcessing(false);
     setPaymentStarted(false);
-    navigate(-1);
+    // Voltar para seleção de tipo de cartão (débito/crédito)
+    navigate('/totem/product-card-type', { 
+      state: { client, cart: location.state?.cart, barber, sale } 
+    });
   };
 
   if (!sale) return null;
@@ -347,7 +350,9 @@ const TotemProductPaymentCard: React.FC = () => {
                 Tentar Novamente
               </Button>
               <Button 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate('/totem/product-card-type', { 
+                  state: { client, cart: location.state?.cart, barber, sale } 
+                })} 
                 variant="outline"
                 className="w-full border-gray-500 text-gray-300"
               >

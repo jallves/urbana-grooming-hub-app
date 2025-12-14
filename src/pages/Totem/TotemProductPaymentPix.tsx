@@ -293,7 +293,10 @@ const TotemProductPaymentPix: React.FC = () => {
     setIsProcessing(false);
     setPaymentStarted(false);
     isProcessingRef.current = false;
-    navigate(-1);
+    // Voltar para o checkout de produtos onde mostra as opções de pagamento
+    navigate('/totem/product-checkout', { 
+      state: { client, cart: location.state?.cart, barber } 
+    });
   };
 
   if (!sale) return null;
@@ -342,7 +345,9 @@ const TotemProductPaymentPix: React.FC = () => {
                 Tentar Novamente
               </Button>
               <Button 
-                onClick={() => navigate(-1)} 
+                onClick={() => navigate('/totem/product-checkout', { 
+                  state: { client, cart: location.state?.cart, barber } 
+                })} 
                 variant="outline"
                 className="w-full border-gray-500 text-gray-300"
               >
