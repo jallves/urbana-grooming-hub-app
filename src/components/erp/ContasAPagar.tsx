@@ -670,12 +670,18 @@ export const ContasAPagar: React.FC = () => {
   return (
     <>
       <Tabs defaultValue="lancamentos" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 mb-4">
-          <TabsTrigger value="lancamentos" className="text-sm">
+        <TabsList className="grid w-full grid-cols-2 mb-4 h-auto p-1 bg-gray-100">
+          <TabsTrigger 
+            value="lancamentos" 
+            className="text-sm py-2.5 bg-amber-100 text-amber-800 border border-amber-200 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-amber-300 data-[state=active]:shadow-sm"
+          >
             <DollarSign className="h-4 w-4 mr-2" />
             Lançamentos
           </TabsTrigger>
-          <TabsTrigger value="comissoes" className="text-sm">
+          <TabsTrigger 
+            value="comissoes" 
+            className="text-sm py-2.5 bg-blue-100 text-blue-800 border border-blue-200 data-[state=active]:bg-blue-200 data-[state=active]:text-blue-900 data-[state=active]:border-blue-300 data-[state=active]:shadow-sm"
+          >
             <Users className="h-4 w-4 mr-2" />
             Comissões Pagas
           </TabsTrigger>
