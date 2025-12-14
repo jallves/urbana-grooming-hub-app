@@ -16,7 +16,7 @@ interface EmailConfirmationRequest {
   staffName: string;
   appointmentDate: string;
   appointmentTime: string;
-  servicePrice: number;
+  servicePrice: number | string;
   serviceDuration: string;
 }
 
@@ -119,11 +119,15 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    // Formatação do preço
-    const formattedPrice = servicePrice.toFixed(2).replace('.', ',');
+    // Formatação do preço (aceita número ou string)
+    const priceNumber = typeof servicePrice === 'string' ? parseFloat(servicePrice) : servicePrice;
+    const formattedPrice = isNaN(priceNumber) ? '0,00' : priceNumber.toFixed(2).replace('.', ',');
 
     // URL da logo
     const logoUrl = 'https://barbeariacostaurbana.com.br/images/logo-barbearia-costa-urbana.png';
+
+    console.log('📧 Enviando e-mail de confirmação para:', clientEmail);
+    console.log('📅 Data:', appointmentDate, '⏰ Hora:', appointmentTime);
 
     const emailResponse = await resend.emails.send({
       from: "Barbearia Costa Urbana <noreply@barbeariacostaurbana.com.br>",

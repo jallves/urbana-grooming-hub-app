@@ -11,6 +11,7 @@ import { ptBR } from 'date-fns/locale';
 import { z } from 'zod';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 
 interface ClientAppointmentCreateDialogProps {
   isOpen: boolean;
@@ -454,6 +455,15 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       }
 
       console.log('✅ Agendamento criado:', appointmentData);
+
+      // Enviar e-mail de confirmação (em background)
+      if (appointmentData?.id) {
+        sendAppointmentConfirmationEmail(appointmentData.id).then(sent => {
+          if (sent) {
+            console.log('📧 E-mail de confirmação enviado!');
+          }
+        });
+      }
 
       if (progressToast) toast.dismiss(progressToast);
       
