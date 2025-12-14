@@ -1,17 +1,15 @@
-
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Save, X, Loader2 } from 'lucide-react';
+import { Calendar, Clock, Save, X, Loader2, User, Scissors, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { motion } from 'framer-motion';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+import { cn } from '@/lib/utils';
 
 interface Agendamento {
   id: string;
@@ -33,6 +31,7 @@ interface Agendamento {
 interface Barbeiro {
   id: string;
   nome: string;
+  staff_id?: string;
 }
 
 interface Servico {
@@ -40,6 +39,11 @@ interface Servico {
   nome: string;
   preco: number;
   duracao: number;
+}
+
+interface TimeSlot {
+  time: string;
+  available: boolean;
 }
 
 interface EditAgendamentoModalProps {
@@ -51,42 +55,38 @@ interface EditAgendamentoModalProps {
 
 export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onUpdate }: EditAgendamentoModalProps) {
   const { toast } = useToast();
-  const { getAvailableTimeSlots } = useAppointmentValidation();
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
-  const [availableTimeSlots, setAvailableTimeSlots] = useState<{ time: string; available: boolean }[]>([]);
-  const [currentBarberId, setCurrentBarberId] = useState<string>('');
-  const [currentServiceDuration, setCurrentServiceDuration] = useState<number>(30);
+  const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   
-  const [formData, setFormData] = useState({
-    data: '',
-    hora: '',
-    barbeiro_id: '',
-    servico_id: ''
-  });
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedTime, setSelectedTime] = useState<string>('');
+  const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>('');
+  const [selectedServicoId, setSelectedServicoId] = useState<string>('');
+  const [currentBarbeiroId, setCurrentBarbeiroId] = useState<string>('');
+  const [currentServicoId, setCurrentServicoId] = useState<string>('');
+  const [currentServiceDuration, setCurrentServiceDuration] = useState<number>(30);
 
   // Carregar dados do agendamento quando abrir
   useEffect(() => {
     const loadAgendamentoData = async () => {
       if (agendamento && isOpen) {
-        // Buscar o barbeiro_id e servico_id do agendamento
         const { data } = await supabase
           .from('painel_agendamentos')
           .select('barbeiro_id, servico_id, painel_servicos(duracao)')
           .eq('id', agendamento.id)
-          .single();
+          .maybeSingle();
         
         if (data) {
-          setCurrentBarberId(data.barbeiro_id);
+          setCurrentBarbeiroId(data.barbeiro_id);
+          setCurrentServicoId(data.servico_id);
           setCurrentServiceDuration(data.painel_servicos?.duracao || 30);
-          setFormData({
-            data: agendamento.data,
-            hora: agendamento.hora,
-            barbeiro_id: '',
-            servico_id: ''
-          });
+          setSelectedDate(agendamento.data);
+          setSelectedTime(agendamento.hora?.substring(0, 5) || '');
+          setSelectedBarbeiroId(''); // Vazio = manter atual
+          setSelectedServicoId(''); // Vazio = manter atual
         }
       }
     };
@@ -94,59 +94,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     loadAgendamentoData();
   }, [agendamento, isOpen]);
 
-  // Buscar horários disponíveis quando data, barbeiro ou serviço mudar
-  useEffect(() => {
-    const fetchAvailableSlots = async () => {
-      if (!formData.data || !agendamento) return;
-      
-      const barberId = formData.barbeiro_id || currentBarberId;
-      if (!barberId) return;
-      
-      // Verificar duração do serviço (usar novo se selecionado, senão usar atual)
-      let duration = currentServiceDuration;
-      if (formData.servico_id) {
-        const selectedService = servicos.find(s => s.id === formData.servico_id);
-        if (selectedService) {
-          duration = selectedService.duracao;
-        }
-      }
-      
-      setLoadingSlots(true);
-      try {
-        const selectedDate = new Date(formData.data + 'T12:00:00');
-        const slots = await getAvailableTimeSlots(barberId, selectedDate, duration);
-        
-        // Filtrar apenas horários disponíveis
-        // Também incluir o horário atual do agendamento se for o mesmo dia
-        const filteredSlots = slots.filter(slot => {
-          if (slot.available) return true;
-          // Permitir o horário atual do agendamento (já está reservado para este agendamento)
-          if (agendamento.data === formData.data && slot.time === agendamento.hora) {
-            return true;
-          }
-          return false;
-        }).map(slot => ({
-          ...slot,
-          available: slot.available || (agendamento.data === formData.data && slot.time === agendamento.hora)
-        }));
-        
-        setAvailableTimeSlots(filteredSlots);
-        
-        // Se o horário selecionado não está mais disponível, limpar
-        if (formData.hora && !filteredSlots.find(s => s.time === formData.hora && s.available)) {
-          setFormData(prev => ({ ...prev, hora: '' }));
-        }
-      } catch (error) {
-        console.error('Erro ao buscar horários:', error);
-        setAvailableTimeSlots([]);
-      } finally {
-        setLoadingSlots(false);
-      }
-    };
-    
-    fetchAvailableSlots();
-  }, [formData.data, formData.barbeiro_id, formData.servico_id, currentBarberId, currentServiceDuration, agendamento, servicos, getAvailableTimeSlots]);
-
+  // Carregar barbeiros e serviços
   useEffect(() => {
     if (isOpen) {
       fetchBarbeiros();
@@ -154,10 +102,17 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     }
   }, [isOpen]);
 
+  // Buscar horários disponíveis quando data, barbeiro ou serviço mudar
+  useEffect(() => {
+    if (selectedDate && (selectedBarbeiroId || currentBarbeiroId)) {
+      fetchAvailableSlots();
+    }
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServicoId]);
+
   const fetchBarbeiros = async () => {
     const { data } = await supabase
       .from('painel_barbeiros')
-      .select('*')
+      .select('id, nome, staff_id')
       .eq('is_active', true)
       .eq('available_for_booking', true);
     if (data) setBarbeiros(data);
@@ -166,35 +121,129 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const fetchServicos = async () => {
     const { data } = await supabase
       .from('painel_servicos')
-      .select('*, service_staff!inner(staff_id)')
+      .select('id, nome, preco, duracao')
       .eq('is_active', true)
       .gt('preco', 0);
     
-    if (data) {
-      // Remove duplicates (serviços com múltiplos barbeiros)
-      const uniqueServices = data.reduce((acc: any[], curr: any) => {
-        if (!acc.find(s => s.id === curr.id)) {
-          acc.push(curr);
-        }
-        return acc;
-      }, []);
-      setServicos(uniqueServices);
-    }
+    if (data) setServicos(data);
   };
 
-  // Gerar datas disponíveis com base nas regras de negócio
+  const fetchAvailableSlots = useCallback(async () => {
+    if (!selectedDate) return;
+    
+    const barbeiroId = selectedBarbeiroId || currentBarbeiroId;
+    if (!barbeiroId) return;
+
+    // Determinar duração do serviço
+    let duration = currentServiceDuration;
+    if (selectedServicoId) {
+      const service = servicos.find(s => s.id === selectedServicoId);
+      if (service) duration = service.duracao;
+    }
+
+    setLoadingSlots(true);
+    console.log('🕐 [EditAgendamentoModal] Buscando horários:', {
+      barbeiroId,
+      date: selectedDate,
+      duration,
+      excludeId: agendamento?.id
+    });
+
+    try {
+      const date = new Date(selectedDate + 'T12:00:00');
+      const now = new Date();
+      const currentHour = now.getHours();
+      const currentMinute = now.getMinutes();
+      const isCurrentDay = isToday(date);
+
+      // Configurar slots de 08:30 às 20:00
+      const allSlots: TimeSlot[] = [];
+      const FIRST_SLOT_HOUR = 8;
+      const FIRST_SLOT_MINUTE = 30;
+      const CLOSING_HOUR = 20;
+
+      const closingTotalMinutes = CLOSING_HOUR * 60;
+      const lastSlotTotalMinutes = closingTotalMinutes - duration;
+
+      for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
+        for (let minute of [0, 30]) {
+          if (hour === FIRST_SLOT_HOUR && minute < FIRST_SLOT_MINUTE) {
+            continue;
+          }
+
+          const slotTotalMinutes = hour * 60 + minute;
+
+          if (slotTotalMinutes > lastSlotTotalMinutes) {
+            continue;
+          }
+
+          // Se for hoje, só incluir horários futuros (30 min à frente)
+          if (isCurrentDay) {
+            const currentTotalMinutes = currentHour * 60 + currentMinute;
+            if (slotTotalMinutes <= currentTotalMinutes + 30) {
+              continue;
+            }
+          }
+
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          allSlots.push({ time: timeString, available: false });
+        }
+      }
+
+      // Verificar disponibilidade usando check_barber_slot_availability
+      const slotsWithAvailability = await Promise.all(
+        allSlots.map(async (slot) => {
+          const { data, error } = await supabase
+            .rpc('check_barber_slot_availability', {
+              p_barbeiro_id: barbeiroId,
+              p_date: selectedDate,
+              p_time: slot.time,
+              p_duration: duration,
+              p_exclude_appointment_id: agendamento?.id || null
+            });
+
+          if (error) {
+            console.error('❌ Erro ao verificar slot:', slot.time, error);
+            return { ...slot, available: false };
+          }
+
+          return { ...slot, available: data === true };
+        })
+      );
+
+      const availableCount = slotsWithAvailability.filter(s => s.available).length;
+      console.log('✅ [EditAgendamentoModal] Slots disponíveis:', availableCount);
+
+      setAvailableSlots(slotsWithAvailability);
+
+      // Se o horário selecionado não está mais disponível, limpar (exceto se for o mesmo do agendamento)
+      if (selectedTime) {
+        const isCurrentSlot = agendamento?.data === selectedDate && 
+                             agendamento?.hora?.substring(0, 5) === selectedTime;
+        const isAvailable = slotsWithAvailability.find(s => s.time === selectedTime && s.available);
+        
+        if (!isCurrentSlot && !isAvailable) {
+          setSelectedTime('');
+        }
+      }
+    } catch (error) {
+      console.error('Erro ao buscar horários:', error);
+      setAvailableSlots([]);
+    } finally {
+      setLoadingSlots(false);
+    }
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServiceDuration, agendamento, servicos]);
+
+  // Gerar datas disponíveis
   const gerarDatasDisponiveis = () => {
     const datas = [];
     const now = new Date();
     const currentHour = now.getHours();
     
-    // Se já passou das 20h, começar de amanhã
     const startDay = currentHour >= 20 ? 1 : 0;
     
     for (let i = startDay; i <= 30; i++) {
       const data = addDays(new Date(), i);
-      
-      // Domingo agora funciona (09:00-13:00)
       datas.push({
         value: format(data, 'yyyy-MM-dd'),
         label: format(data, "EEEE, dd 'de' MMMM", { locale: ptBR })
@@ -204,12 +253,36 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     return datas;
   };
 
+  const handleDateChange = (value: string) => {
+    setSelectedDate(value);
+    setSelectedTime(''); // Limpar horário ao mudar data
+  };
+
+  const handleBarbeiroChange = (value: string) => {
+    setSelectedBarbeiroId(value);
+    setSelectedTime(''); // Limpar horário ao mudar barbeiro
+  };
+
+  const handleServicoChange = (value: string) => {
+    setSelectedServicoId(value);
+    setSelectedTime(''); // Limpar horário ao mudar serviço
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    if (!selectedTime) {
+      toast({
+        variant: "destructive",
+        title: "Selecione um horário",
+        description: "Por favor, selecione um horário disponível.",
+      });
+      return;
+    }
+    
     setLoading(true);
 
     try {
-      // Guardar dados anteriores para o e-mail de atualização
       const previousData = {
         date: agendamento?.data,
         time: agendamento?.hora?.substring(0, 5),
@@ -218,16 +291,15 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       };
 
       const updateData: any = {
-        data: formData.data,
-        hora: formData.hora
+        data: selectedDate,
+        hora: selectedTime + ':00'
       };
 
-      // Só incluir barbeiro_id e servico_id se foram selecionados
-      if (formData.barbeiro_id) {
-        updateData.barbeiro_id = formData.barbeiro_id;
+      if (selectedBarbeiroId) {
+        updateData.barbeiro_id = selectedBarbeiroId;
       }
-      if (formData.servico_id) {
-        updateData.servico_id = formData.servico_id;
+      if (selectedServicoId) {
+        updateData.servico_id = selectedServicoId;
       }
 
       const { error } = await supabase
@@ -239,16 +311,15 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
 
       // Determinar tipo de atualização
       let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
-      if (formData.data !== previousData.date || formData.hora !== previousData.time) {
+      if (selectedDate !== previousData.date || selectedTime !== previousData.time) {
         updateType = 'reschedule';
-      } else if (formData.barbeiro_id) {
+      } else if (selectedBarbeiroId) {
         updateType = 'change_barber';
-      } else if (formData.servico_id) {
+      } else if (selectedServicoId) {
         updateType = 'change_service';
       }
 
       // Enviar e-mail de atualização
-      console.log('📧 [EditAgendamentoModal] Enviando e-mail de atualização...');
       try {
         await sendAppointmentUpdateEmail({
           appointmentId: agendamento!.id,
@@ -257,12 +328,12 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
           updatedBy: 'client'
         });
       } catch (emailError) {
-        console.error('⚠️ Erro ao enviar e-mail de atualização:', emailError);
+        console.error('⚠️ Erro ao enviar e-mail:', emailError);
       }
 
       toast({
         title: "✅ Alterado com sucesso!",
-        description: "Seu agendamento foi atualizado com sucesso.",
+        description: "Seu agendamento foi atualizado.",
         duration: 4000,
       });
 
@@ -283,149 +354,161 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   if (!agendamento) return null;
 
   const datasDisponiveis = gerarDatasDisponiveis();
-  const horariosDisponiveis = availableTimeSlots.filter(s => s.available).map(s => s.time);
+  const availableSlotsFiltered = availableSlots.filter(s => s.available);
+  const effectiveBarbeiroId = selectedBarbeiroId || currentBarbeiroId;
+  const selectedBarbeiro = barbeiros.find(b => b.id === effectiveBarbeiroId) || 
+                          { nome: agendamento.painel_barbeiros.nome };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] bg-slate-900 border-slate-700 text-white">
-        <DialogHeader>
-          <DialogTitle className="text-2xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto bg-slate-900 border-slate-700 text-white">
+        <DialogHeader className="pb-4 border-b border-slate-700">
+          <DialogTitle className="text-xl font-bold bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
             Editar Agendamento
           </DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label className="text-white flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-purple-400" />
-                Data
-              </Label>
-              <Select 
-                value={formData.data} 
-                onValueChange={(value) => {
-                  setFormData(prev => ({ ...prev, data: value, hora: '' })); // Limpar hora ao mudar data
-                }}
-              >
-                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  <SelectValue placeholder="Selecione uma data" />
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
-                  {datasDisponiveis.map((data) => (
-                    <SelectItem key={data.value} value={data.value} className="text-white">
-                      {data.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <Label className="text-white flex items-center gap-2">
-                <Clock className="h-4 w-4 text-purple-400" />
-                Hora
-              </Label>
-              <Select 
-                value={formData.hora} 
-                onValueChange={(value) => setFormData(prev => ({ ...prev, hora: value }))}
-                disabled={!formData.data || loadingSlots}
-              >
-                <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                  {loadingSlots ? (
-                    <div className="flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span>Carregando...</span>
-                    </div>
-                  ) : (
-                    <SelectValue 
-                      placeholder={
-                        !formData.data 
-                          ? "Selecione uma data primeiro" 
-                          : horariosDisponiveis.length === 0 
-                            ? "Nenhum horário disponível" 
-                            : "Selecione um horário"
-                      } 
-                    />
-                  )}
-                </SelectTrigger>
-                <SelectContent className="bg-slate-800 border-slate-600">
-                  {horariosDisponiveis.length > 0 ? (
-                    horariosDisponiveis.map((hora) => (
-                      <SelectItem key={hora} value={hora} className="text-white">
-                        {hora}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <div className="p-2 text-gray-500 text-sm text-center">
-                      {!formData.data ? 'Selecione uma data primeiro' : 'Nenhum horário disponível'}
-                    </div>
-                  )}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
+        <form onSubmit={handleSubmit} className="space-y-5 pt-2">
+          {/* Barbeiro */}
           <div className="space-y-2">
-            <Label className="text-white">Barbeiro (Opcional)</Label>
-            <Select
-              value={formData.barbeiro_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, barbeiro_id: value }))}
-            >
-              <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder="Manter barbeiro atual ou selecionar novo" />
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <User className="h-4 w-4 text-purple-400" />
+              Barbeiro
+            </Label>
+            <Select value={selectedBarbeiroId} onValueChange={handleBarbeiroChange}>
+              <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder={`Manter: ${agendamento.painel_barbeiros.nome}`} />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {barbeiros.map((barbeiro) => (
                   <SelectItem key={barbeiro.id} value={barbeiro.id} className="text-white">
                     {barbeiro.nome}
+                    {barbeiro.id === currentBarbeiroId && ' (atual)'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
+          {/* Serviço */}
           <div className="space-y-2">
-            <Label className="text-white">Serviço (Opcional)</Label>
-            <Select
-              value={formData.servico_id}
-              onValueChange={(value) => setFormData(prev => ({ ...prev, servico_id: value }))}
-            >
-              <SelectTrigger className="bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder="Manter serviço atual ou selecionar novo" />
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <Scissors className="h-4 w-4 text-purple-400" />
+              Serviço
+            </Label>
+            <Select value={selectedServicoId} onValueChange={handleServicoChange}>
+              <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder={`Manter: ${agendamento.painel_servicos.nome}`} />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {servicos.map((servico) => (
                   <SelectItem key={servico.id} value={servico.id} className="text-white">
-                    {servico.nome} - R$ {servico.preco.toFixed(2)}
+                    {servico.nome} - R$ {servico.preco.toFixed(2)} ({servico.duracao}min)
+                    {servico.id === currentServicoId && ' (atual)'}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <div className="flex gap-3 pt-4">
+          {/* Data */}
+          <div className="space-y-2">
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <Calendar className="h-4 w-4 text-purple-400" />
+              Data
+            </Label>
+            <Select value={selectedDate} onValueChange={handleDateChange}>
+              <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
+                <SelectValue placeholder="Selecione uma data" />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-600 max-h-60">
+                {datasDisponiveis.map((data) => (
+                  <SelectItem key={data.value} value={data.value} className="text-white">
+                    {data.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Horários Disponíveis */}
+          <div className="space-y-2">
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <Clock className="h-4 w-4 text-purple-400" />
+              Horário Disponível
+              {loadingSlots && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+            </Label>
+            
+            {!selectedDate ? (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-slate-800/50 border border-slate-700">
+                <AlertCircle className="h-4 w-4 text-slate-400" />
+                <span className="text-sm text-slate-400">
+                  Selecione uma data para ver horários disponíveis
+                </span>
+              </div>
+            ) : loadingSlots ? (
+              <div className="flex items-center justify-center p-6">
+                <Loader2 className="h-6 w-6 animate-spin text-purple-400" />
+              </div>
+            ) : availableSlotsFiltered.length === 0 ? (
+              <div className="flex items-center gap-2 p-4 rounded-lg bg-red-500/10 border border-red-500/20">
+                <AlertCircle className="h-4 w-4 text-red-400" />
+                <span className="text-sm text-red-400">
+                  Nenhum horário disponível para esta data. Tente outra data.
+                </span>
+              </div>
+            ) : (
+              <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
+                {availableSlotsFiltered.map((slot) => (
+                  <button
+                    key={slot.time}
+                    type="button"
+                    onClick={() => setSelectedTime(slot.time)}
+                    className={cn(
+                      "h-10 px-2 text-sm rounded-lg font-medium transition-all duration-200",
+                      selectedTime === slot.time 
+                        ? "bg-gradient-to-r from-purple-500 to-pink-500 text-white ring-2 ring-purple-400 ring-offset-2 ring-offset-slate-900" 
+                        : "bg-slate-800 text-slate-200 border border-slate-600 hover:border-purple-400/50 hover:bg-slate-700"
+                    )}
+                  >
+                    {slot.time}
+                  </button>
+                ))}
+              </div>
+            )}
+            
+            {selectedTime && (
+              <div className="flex items-center gap-2 mt-2 text-sm text-purple-400">
+                <CheckCircle2 className="h-4 w-4" />
+                Horário selecionado: <span className="font-semibold">{selectedTime}</span>
+              </div>
+            )}
+          </div>
+
+          {/* Botões */}
+          <div className="flex gap-3 pt-4 border-t border-slate-700">
             <Button
               type="submit"
-              disabled={loading}
-              className="flex-1 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
+              disabled={loading || !selectedTime}
+              className="flex-1 h-11 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white"
             >
               {loading ? (
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
-                />
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  Salvando...
+                </>
               ) : (
-                <Save className="h-4 w-4 mr-2" />
+                <>
+                  <Save className="h-4 w-4 mr-2" />
+                  Salvar Alterações
+                </>
               )}
-              {loading ? 'Salvando...' : 'Salvar Alterações'}
             </Button>
             
             <Button
               type="button"
-              variant="outline"
               onClick={onClose}
-              className="flex-1 border-slate-600 text-white hover:bg-slate-800"
+              className="flex-1 h-11 bg-slate-700 hover:bg-slate-600 text-white border-0"
             >
               <X className="h-4 w-4 mr-2" />
               Cancelar
