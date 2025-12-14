@@ -1229,6 +1229,62 @@ export type Database = {
           },
         ]
       }
+      commission_payments: {
+        Row: {
+          barber_id: string
+          barber_name: string
+          commission_count: number
+          created_at: string
+          financial_record_ids: string[]
+          id: string
+          notes: string | null
+          payment_date: string
+          period_end: string
+          period_start: string
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          barber_id: string
+          barber_name: string
+          commission_count?: number
+          created_at?: string
+          financial_record_ids?: string[]
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          period_end: string
+          period_start: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          barber_id?: string
+          barber_name?: string
+          commission_count?: number
+          created_at?: string
+          financial_record_ids?: string[]
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          period_end?: string
+          period_start?: string
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "commission_payments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       configuration_backups: {
         Row: {
           backup_data: Json

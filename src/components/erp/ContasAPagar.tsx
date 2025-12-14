@@ -6,9 +6,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { format, parseISO } from 'date-fns';
+import { Input } from '@/components/ui/input';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, CreditCard, Plus, Pencil, Trash2, CheckCircle2, CheckSquare } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, Pencil, Trash2, CheckCircle2, CheckSquare, Filter, Users, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
@@ -26,6 +29,10 @@ import {
 
 interface PaymentRecord {
   payment_method: string;
+}
+
+interface StaffRecord {
+  name: string;
 }
 
 interface FinancialRecord {
@@ -46,6 +53,7 @@ interface FinancialRecord {
   payment_records: PaymentRecord[];
   barber_id?: string;
   appointment_id?: string;
+  staff?: StaffRecord;
   metadata?: {
     service_name?: string;
     product_name?: string;
@@ -58,6 +66,21 @@ interface FinancialRecord {
   };
 }
 
+interface CommissionPayment {
+  id: string;
+  barber_id: string;
+  barber_name: string;
+  total_amount: number;
+  commission_count: number;
+  period_start: string;
+  period_end: string;
+  payment_date: string;
+  status: string;
+  notes?: string;
+  financial_record_ids: string[];
+  created_at: string;
+}
+
 export const ContasAPagar: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -67,11 +90,31 @@ export const ContasAPagar: React.FC = () => {
   const [recordToPay, setRecordToPay] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [batchPaymentDialogOpen, setBatchPaymentDialogOpen] = useState(false);
+  
+  // Filtros
+  const [filterBarber, setFilterBarber] = useState<string>('all');
+  const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [filterDateStart, setFilterDateStart] = useState<string>('');
+  const [filterDateEnd, setFilterDateEnd] = useState<string>('');
+  
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync, isSyncing } = useCashFlowSync();
 
-  // Sincronização removida - causava erros de query e duplicação de registros
-  // A sincronização agora deve ser feita manualmente quando necessário
+  // Buscar lista de barbeiros
+  const { data: barbers } = useQuery({
+    queryKey: ['barbers-list'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id, name')
+        .eq('role', 'barber')
+        .eq('is_active', true)
+        .order('name');
+      if (error) throw error;
+      return data || [];
+    }
+  });
 
   const { data: payables, isLoading } = useQuery({
     queryKey: ['contas-pagar'],
@@ -86,30 +129,73 @@ export const ContasAPagar: React.FC = () => {
         .in('transaction_type', ['expense', 'commission'])
         .order('transaction_date', { ascending: false })
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(500);
 
       if (error) throw error;
-      
-      // Concatenar nome do barbeiro na descrição quando for comissão
-      const processed = data?.map(record => {
-        const anyRecord = record as any;
-        if (record.transaction_type === 'commission' && anyRecord.staff && anyRecord.staff.name) {
-          return {
-            ...record,
-            description: `Comissão do Barbeiro ${anyRecord.staff.name}`
-          };
-        }
-        return record;
-      });
-      
-      return processed as FinancialRecord[];
+      return data as FinancialRecord[];
     },
     refetchInterval: 10000
   });
 
+  // Buscar pagamentos consolidados de comissões
+  const { data: commissionPayments, isLoading: isLoadingCommissions } = useQuery({
+    queryKey: ['commission-payments'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('commission_payments')
+        .select('*')
+        .order('payment_date', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return data as CommissionPayment[];
+    },
+    refetchInterval: 10000
+  });
+
+  // Aplicar filtros
+  const filteredPayables = useMemo(() => {
+    if (!payables) return [];
+    
+    return payables.filter(record => {
+      // Filtro por barbeiro
+      if (filterBarber !== 'all' && record.barber_id !== filterBarber) {
+        return false;
+      }
+      
+      // Filtro por categoria
+      if (filterCategory !== 'all' && record.category !== filterCategory) {
+        return false;
+      }
+      
+      // Filtro por status
+      if (filterStatus !== 'all' && record.status !== filterStatus) {
+        return false;
+      }
+      
+      // Filtro por data início
+      if (filterDateStart && record.transaction_date < filterDateStart) {
+        return false;
+      }
+      
+      // Filtro por data fim
+      if (filterDateEnd && record.transaction_date > filterDateEnd) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [payables, filterBarber, filterCategory, filterStatus, filterDateStart, filterDateEnd]);
+
+  // Categorias únicas para filtro
+  const uniqueCategories = useMemo(() => {
+    if (!payables) return [];
+    const cats = new Set(payables.map(r => r.category));
+    return Array.from(cats);
+  }, [payables]);
+
   const markAsPaidMutation = useMutation({
     mutationFn: async (recordId: string) => {
-      // Buscar o registro para sincronizar
       const { data: record, error: fetchError } = await supabase
         .from('financial_records')
         .select('*')
@@ -132,15 +218,8 @@ export const ContasAPagar: React.FC = () => {
 
       if (error) throw error;
 
-      // 🔄 SINCRONIZAÇÃO COM BARBER_COMMISSIONS (se for comissão)
       if (record.transaction_type === 'commission' && record.appointment_id) {
-        console.log('🔄 Sincronizando comissão com barber_commissions...', { 
-          appointment_id: record.appointment_id,
-          barber_id: record.barber_id 
-        });
-
-        // Atualizar status na tabela barber_commissions
-        const { error: commissionError } = await supabase
+        await supabase
           .from('barber_commissions')
           .update({ 
             status: 'paid',
@@ -149,21 +228,9 @@ export const ContasAPagar: React.FC = () => {
           })
           .eq('appointment_id', record.appointment_id)
           .eq('barber_id', record.barber_id);
-
-        if (commissionError) {
-          console.error('⚠️ Erro ao sincronizar com barber_commissions:', commissionError);
-        } else {
-          console.log('✅ Comissão sincronizada com barber_commissions');
-        }
       }
 
-      // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
-      const transactionType = (record.transaction_type === 'revenue' || 
-                               record.transaction_type === 'expense' || 
-                               record.transaction_type === 'commission') 
-                               ? record.transaction_type 
-                               : 'expense';
-      
+      const transactionType = record.transaction_type as 'revenue' | 'expense' | 'commission';
       const metadata = typeof record.metadata === 'object' && record.metadata !== null 
         ? record.metadata as Record<string, any>
         : {};
@@ -182,13 +249,11 @@ export const ContasAPagar: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['commissions'] }); // Atualizar painel dos barbeiros
-      toast.success('Pagamento registrado e sincronizado com o painel dos barbeiros!');
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      toast.success('Pagamento registrado!');
     },
     onError: (error: any) => {
-      toast.error('Erro ao marcar como paga', {
-        description: error.message
-      });
+      toast.error('Erro ao marcar como paga', { description: error.message });
     }
   });
 
@@ -238,7 +303,6 @@ export const ContasAPagar: React.FC = () => {
       const netAmount = values.gross_amount - (values.discount_amount || 0) - (values.tax_amount || 0);
       const paymentDate = values.status === 'completed' ? new Date().toISOString() : null;
 
-      // Buscar o registro atual antes de atualizar
       const { data: currentRecord } = await supabase
         .from('financial_records')
         .select('*')
@@ -269,19 +333,13 @@ export const ContasAPagar: React.FC = () => {
 
       if (error) throw error;
 
-      // 🔄 SINCRONIZAÇÃO COM BARBER_COMMISSIONS (se for comissão e mudou para 'completed')
       if (values.transaction_type === 'commission' && 
           values.status === 'completed' && 
           currentRecord?.status !== 'completed' &&
           currentRecord?.appointment_id &&
           currentRecord?.barber_id) {
         
-        console.log('🔄 Sincronizando comissão editada com barber_commissions...', { 
-          appointment_id: currentRecord.appointment_id,
-          barber_id: currentRecord.barber_id 
-        });
-
-        const { error: commissionError } = await supabase
+        await supabase
           .from('barber_commissions')
           .update({ 
             status: 'paid',
@@ -290,16 +348,8 @@ export const ContasAPagar: React.FC = () => {
           })
           .eq('appointment_id', currentRecord.appointment_id)
           .eq('barber_id', currentRecord.barber_id);
-
-        if (commissionError) {
-          console.error('⚠️ Erro ao sincronizar com barber_commissions:', commissionError);
-        } else {
-          console.log('✅ Comissão editada sincronizada com barber_commissions');
-        }
       }
 
-      // 🔄 INTEGRAÇÃO COM FLUXO DE CAIXA
-      // Se foi marcado como pago, sincronizar automaticamente com o fluxo de caixa
       if (values.status === 'completed') {
         await syncToCashFlowAsync({
           financialRecordId: id,
@@ -319,8 +369,8 @@ export const ContasAPagar: React.FC = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['commissions'] }); // Atualizar painel dos barbeiros
-      toast.success('Lançamento atualizado e sincronizado com o painel dos barbeiros!');
+      queryClient.invalidateQueries({ queryKey: ['commissions'] });
+      toast.success('Lançamento atualizado!');
       setFormOpen(false);
       setEditingRecord(null);
     },
@@ -336,7 +386,7 @@ export const ContasAPagar: React.FC = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Lançamento excluído com sucesso!');
+      toast.success('Lançamento excluído!');
       setDeleteDialogOpen(false);
       setRecordToDelete(null);
     },
@@ -359,9 +409,9 @@ export const ContasAPagar: React.FC = () => {
   };
 
   // Seleção múltipla
-  const pendingRecords = useMemo(() => {
-    return payables?.filter(r => r.status === 'pending') || [];
-  }, [payables]);
+  const pendingFilteredRecords = useMemo(() => {
+    return filteredPayables.filter(r => r.status === 'pending');
+  }, [filteredPayables]);
 
   const handleSelectRecord = (recordId: string, checked: boolean) => {
     setSelectedRecords(prev => {
@@ -377,35 +427,42 @@ export const ContasAPagar: React.FC = () => {
 
   const handleSelectAll = (checked: boolean) => {
     if (checked) {
-      setSelectedRecords(new Set(pendingRecords.map(r => r.id)));
+      setSelectedRecords(new Set(pendingFilteredRecords.map(r => r.id)));
     } else {
       setSelectedRecords(new Set());
     }
   };
 
   const selectedTotal = useMemo(() => {
-    return payables
-      ?.filter(r => selectedRecords.has(r.id))
-      .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
-  }, [payables, selectedRecords]);
+    return filteredPayables
+      .filter(r => selectedRecords.has(r.id))
+      .reduce((sum, r) => sum + Number(r.net_amount), 0);
+  }, [filteredPayables, selectedRecords]);
 
+  // Pagamento em lote com criação de registro consolidado
   const batchPayMutation = useMutation({
     mutationFn: async (recordIds: string[]) => {
       const paymentDate = new Date().toISOString();
       
-      for (const recordId of recordIds) {
-        // Buscar o registro
-        const { data: record, error: fetchError } = await supabase
-          .from('financial_records')
-          .select('*')
-          .eq('id', recordId)
-          .single();
+      // Buscar todos os registros selecionados
+      const { data: records, error: fetchError } = await supabase
+        .from('financial_records')
+        .select('*, staff:barber_id(name)')
+        .in('id', recordIds);
 
-        if (fetchError) {
-          console.error('Erro ao buscar registro:', fetchError);
-          continue;
-        }
+      if (fetchError) throw fetchError;
+      if (!records || records.length === 0) throw new Error('Nenhum registro encontrado');
 
+      // Agrupar por barbeiro para comissões
+      const commissionsByBarber = new Map<string, {
+        barberId: string;
+        barberName: string;
+        records: typeof records;
+        total: number;
+        dates: string[];
+      }>();
+
+      for (const record of records) {
         // Atualizar status
         const { error } = await supabase
           .from('financial_records')
@@ -415,7 +472,7 @@ export const ContasAPagar: React.FC = () => {
             payment_date: paymentDate,
             updated_at: paymentDate,
           })
-          .eq('id', recordId);
+          .eq('id', record.id);
 
         if (error) {
           console.error('Erro ao atualizar registro:', error);
@@ -433,21 +490,37 @@ export const ContasAPagar: React.FC = () => {
             })
             .eq('appointment_id', record.appointment_id)
             .eq('barber_id', record.barber_id);
+
+          // Agrupar para registro consolidado
+          if (record.barber_id) {
+            const existing = commissionsByBarber.get(record.barber_id);
+            const anyRecord = record as any;
+            const barberName = anyRecord.staff?.name || 'Barbeiro';
+            
+            if (existing) {
+              existing.records.push(record);
+              existing.total += Number(record.net_amount);
+              existing.dates.push(record.transaction_date);
+            } else {
+              commissionsByBarber.set(record.barber_id, {
+                barberId: record.barber_id,
+                barberName: barberName,
+                records: [record],
+                total: Number(record.net_amount),
+                dates: [record.transaction_date]
+              });
+            }
+          }
         }
 
         // Sincronizar com fluxo de caixa
-        const transactionType = (record.transaction_type === 'revenue' || 
-                                 record.transaction_type === 'expense' || 
-                                 record.transaction_type === 'commission') 
-                                 ? record.transaction_type 
-                                 : 'expense';
-        
+        const transactionType = record.transaction_type as 'revenue' | 'expense' | 'commission';
         const metadata = typeof record.metadata === 'object' && record.metadata !== null 
           ? record.metadata as Record<string, any>
           : {};
 
         await syncToCashFlowAsync({
-          financialRecordId: recordId,
+          financialRecordId: record.id,
           transactionType: transactionType,
           amount: record.net_amount,
           description: record.description,
@@ -457,25 +530,49 @@ export const ContasAPagar: React.FC = () => {
           metadata: metadata
         });
       }
+
+      // Criar registros consolidados para cada barbeiro
+      for (const [barberId, data] of commissionsByBarber) {
+        const sortedDates = data.dates.sort();
+        const periodStart = sortedDates[0];
+        const periodEnd = sortedDates[sortedDates.length - 1];
+
+        const { error: insertError } = await supabase
+          .from('commission_payments')
+          .insert({
+            barber_id: barberId,
+            barber_name: data.barberName,
+            total_amount: data.total,
+            commission_count: data.records.length,
+            period_start: periodStart,
+            period_end: periodEnd,
+            payment_date: paymentDate,
+            status: 'paid',
+            financial_record_ids: data.records.map(r => r.id)
+          });
+
+        if (insertError) {
+          console.error('Erro ao criar pagamento consolidado:', insertError);
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['commission-payments'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
-      toast.success(`${selectedRecords.size} pagamentos registrados com sucesso!`);
+      toast.success(`${selectedRecords.size} pagamentos registrados!`);
       setSelectedRecords(new Set());
       setBatchPaymentDialogOpen(false);
     },
     onError: (error: any) => {
-      toast.error('Erro ao processar pagamentos em lote', {
-        description: error.message
-      });
+      toast.error('Erro ao processar pagamentos', { description: error.message });
     }
   });
 
   const handleBatchPayment = () => {
     if (selectedRecords.size === 0) {
-      toast.error('Selecione pelo menos um registro para pagar');
+      toast.error('Selecione pelo menos um registro');
       return;
     }
     setBatchPaymentDialogOpen(true);
@@ -497,7 +594,7 @@ export const ContasAPagar: React.FC = () => {
       description: record.description,
       transaction_date: new Date(record.transaction_date),
       status: record.status,
-      payment_method: record.payment_records?.[0]?.payment_method || record.metadata?.payment_method,
+      payment_method: record.metadata?.payment_method,
       notes: record.metadata?.notes,
     });
     setFormOpen(true);
@@ -521,65 +618,50 @@ export const ContasAPagar: React.FC = () => {
     setEditingRecord(null);
   };
 
-  // Calcular totais
-  const totals = React.useMemo(() => {
-    if (!payables) return { total: 0, pending: 0, completed: 0, commissions: 0, expenses: 0 };
-    
-    return {
-      total: payables.reduce((sum, r) => sum + Number(r.net_amount), 0),
-      pending: payables
-        .filter(r => r.status === 'pending')
-        .reduce((sum, r) => sum + Number(r.net_amount), 0),
-      completed: payables
-        .filter(r => r.status === 'completed')
-        .reduce((sum, r) => sum + Number(r.net_amount), 0),
-      commissions: payables
-        .filter(r => r.transaction_type === 'commission')
-        .reduce((sum, r) => sum + Number(r.net_amount), 0),
-      expenses: payables
-        .filter(r => r.transaction_type === 'expense')
-        .reduce((sum, r) => sum + Number(r.net_amount), 0)
-    };
-  }, [payables]);
-
   const getStatusBadge = (status: string) => {
-    const variants: Record<string, { label: string; className: string }> = {
-      completed: { label: 'Pago', className: 'bg-green-100 text-green-700 border-green-300' },
-      pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-      canceled: { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' }
-    };
-
-    const config = variants[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
-
-    return (
-      <Badge variant="outline" className={config.className}>
-        {config.label}
-      </Badge>
-    );
+    switch (status) {
+      case 'completed':
+        return <Badge className="bg-green-100 text-green-700 text-[10px]">Pago</Badge>;
+      case 'pending':
+        return <Badge className="bg-yellow-100 text-yellow-700 text-[10px]">Pendente</Badge>;
+      default:
+        return <Badge variant="secondary" className="text-[10px]">{status}</Badge>;
+    }
   };
 
   const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      expense: 'Despesa',
-      commission: 'Comissão'
-    };
-    return labels[type] || type;
+    return type === 'commission' ? 'Comissão' : 'Despesa';
   };
 
-  const getPaymentMethodLabel = (method: string) => {
-    const labels: Record<string, string> = {
-      cash: 'Dinheiro',
-      debit: 'Débito',
-      credit: 'Crédito',
-      pix: 'PIX',
-      transfer: 'Transferência'
-    };
-    return labels[method] || method;
+  const getBarberName = (record: FinancialRecord) => {
+    if (record.staff?.name) {
+      return record.staff.name;
+    }
+    // Extrair do description se for comissão
+    if (record.transaction_type === 'commission' && record.description.includes('Barbeiro')) {
+      const match = record.description.match(/Barbeiro\s+(.+)/);
+      return match ? match[1] : '-';
+    }
+    return '-';
   };
+
+  const clearFilters = () => {
+    setFilterBarber('all');
+    setFilterCategory('all');
+    setFilterStatus('all');
+    setFilterDateStart('');
+    setFilterDateEnd('');
+  };
+
+  const totals = useMemo(() => {
+    const pending = filteredPayables.filter(r => r.status === 'pending').reduce((sum, r) => sum + Number(r.net_amount), 0);
+    const paid = filteredPayables.filter(r => r.status === 'completed').reduce((sum, r) => sum + Number(r.net_amount), 0);
+    return { pending, paid, total: pending + paid };
+  }, [filteredPayables]);
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-48">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
@@ -587,359 +669,242 @@ export const ContasAPagar: React.FC = () => {
 
   return (
     <>
-      <div className="space-y-3 sm:space-y-4">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-          <h2 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h2>
-          <div className="flex gap-2 w-full sm:w-auto">
-            {selectedRecords.size > 0 && (
-              <Button 
-                onClick={handleBatchPayment} 
-                className="flex-1 sm:flex-none bg-green-600 hover:bg-green-700"
-                disabled={batchPayMutation.isPending}
-              >
-                {batchPayMutation.isPending ? (
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                ) : (
-                  <CheckSquare className="h-4 w-4 mr-2" />
-                )}
-                <span className="hidden sm:inline">Pagar Selecionados ({selectedRecords.size})</span>
-                <span className="sm:hidden">Pagar ({selectedRecords.size})</span>
-              </Button>
-            )}
-            <Button onClick={() => setFormOpen(true)} className="flex-1 sm:flex-none">
-              <Plus className="h-4 w-4 mr-2" />
-              <span className="hidden sm:inline">Novo Lançamento</span>
-              <span className="sm:hidden">Novo</span>
-            </Button>
-          </div>
-        </div>
+      <Tabs defaultValue="lancamentos" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 mb-4">
+          <TabsTrigger value="lancamentos" className="text-sm">
+            <DollarSign className="h-4 w-4 mr-2" />
+            Lançamentos
+          </TabsTrigger>
+          <TabsTrigger value="comissoes" className="text-sm">
+            <Users className="h-4 w-4 mr-2" />
+            Comissões Pagas
+          </TabsTrigger>
+        </TabsList>
 
-        {/* Barra de seleção */}
-        {selectedRecords.size > 0 && (
-          <Card className="bg-green-50 border-green-200">
-            <CardContent className="py-3 px-4">
-              <div className="flex items-center justify-between flex-wrap gap-2">
-                <div className="flex items-center gap-3">
-                  <CheckSquare className="h-5 w-5 text-green-600" />
-                  <span className="font-medium text-green-800">
-                    {selectedRecords.size} {selectedRecords.size === 1 ? 'item selecionado' : 'itens selecionados'}
-                  </span>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-lg font-bold text-green-700">
-                    Total: R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                  </span>
+        {/* Aba Lançamentos */}
+        <TabsContent value="lancamentos" className="space-y-4">
+          {/* Cards de Resumo */}
+          <div className="grid grid-cols-3 gap-3">
+            <Card className="bg-yellow-50 border-yellow-200">
+              <CardContent className="p-3">
+                <p className="text-xs text-yellow-700">Pendente</p>
+                <p className="text-lg font-bold text-yellow-700">
+                  R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-green-50 border-green-200">
+              <CardContent className="p-3">
+                <p className="text-xs text-green-700">Pago</p>
+                <p className="text-lg font-bold text-green-700">
+                  R$ {totals.paid.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </CardContent>
+            </Card>
+            <Card className="bg-gray-50 border-gray-200">
+              <CardContent className="p-3">
+                <p className="text-xs text-gray-700">Total</p>
+                <p className="text-lg font-bold text-gray-700">
+                  R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Filtros */}
+          <Card className="border-gray-200">
+            <CardContent className="p-3">
+              <div className="flex items-center gap-2 mb-3">
+                <Filter className="h-4 w-4 text-gray-600" />
+                <span className="text-sm font-medium">Filtros</span>
+                <Button variant="ghost" size="sm" onClick={clearFilters} className="ml-auto text-xs">
+                  Limpar
+                </Button>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2">
+                <Select value={filterBarber} onValueChange={setFilterBarber}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Barbeiro" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Barbeiros</SelectItem>
+                    {barbers?.map(b => (
+                      <SelectItem key={b.id} value={b.id}>{b.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterCategory} onValueChange={setFilterCategory}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Categoria" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todas Categorias</SelectItem>
+                    {uniqueCategories.map(cat => (
+                      <SelectItem key={cat} value={cat}>{getCategoryLabel(cat)}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Todos Status</SelectItem>
+                    <SelectItem value="pending">Pendente</SelectItem>
+                    <SelectItem value="completed">Pago</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Input
+                  type="date"
+                  value={filterDateStart}
+                  onChange={(e) => setFilterDateStart(e.target.value)}
+                  className="h-8 text-xs"
+                  placeholder="Data início"
+                />
+
+                <Input
+                  type="date"
+                  value={filterDateEnd}
+                  onChange={(e) => setFilterDateEnd(e.target.value)}
+                  className="h-8 text-xs"
+                  placeholder="Data fim"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Ações em lote */}
+          {selectedRecords.size > 0 && (
+            <Card className="border-green-200 bg-green-50">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between">
+                  <div className="text-sm">
+                    <span className="font-medium">{selectedRecords.size}</span> selecionado(s) • 
+                    <span className="font-bold text-green-700 ml-1">
+                      R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                    </span>
+                  </div>
                   <Button 
-                    variant="ghost" 
                     size="sm"
-                    onClick={() => setSelectedRecords(new Set())}
-                    className="text-green-700 hover:text-green-800 hover:bg-green-100"
+                    onClick={handleBatchPayment}
+                    className="bg-green-600 hover:bg-green-700"
+                    disabled={batchPayMutation.isPending}
                   >
-                    Limpar seleção
+                    {batchPayMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    ) : (
+                      <CheckSquare className="h-4 w-4 mr-2" />
+                    )}
+                    Pagar Selecionados
                   </Button>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        )}
+              </CardContent>
+            </Card>
+          )}
 
-        {/* Cards de Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-          <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-xs sm:text-sm font-medium text-red-700 flex items-center gap-1 sm:gap-2">
-                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Total a Pagar</span>
-                <span className="sm:hidden">Total</span>
-              </CardTitle>
+          {/* Tabela de Lançamentos */}
+          <Card className="border-gray-200">
+            <CardHeader className="p-3 pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                  Contas a Pagar ({filteredPayables.length})
+                </CardTitle>
+                <Button size="sm" onClick={() => setFormOpen(true)} className="h-8 text-xs">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Nova
+                </Button>
+              </div>
             </CardHeader>
-            <CardContent>
-              <div className="text-base sm:text-2xl font-bold text-red-700">
-                R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-xs sm:text-sm font-medium text-yellow-700 flex items-center gap-1 sm:gap-2">
-                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                Pendente
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-base sm:text-2xl font-bold text-yellow-700">
-                R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 border-blue-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-xs sm:text-sm font-medium text-blue-700 flex items-center gap-1 sm:gap-2">
-                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span className="hidden sm:inline">Comissões</span>
-                <span className="sm:hidden">Comis.</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-base sm:text-2xl font-bold text-blue-700">
-                R$ {totals.commissions.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="bg-gradient-to-br from-orange-50 to-red-50 border-orange-200">
-            <CardHeader className="pb-2 sm:pb-3">
-              <CardTitle className="text-xs sm:text-sm font-medium text-orange-700 flex items-center gap-1 sm:gap-2">
-                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
-                Despesas
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-base sm:text-2xl font-bold text-orange-700">
-                R$ {totals.expenses.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* Tabela de Contas a Pagar */}
-        <Card className="bg-white border-gray-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
-              Despesas e Comissões Recentes
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-4 lg:p-6">
-            {payables && payables.length > 0 ? (
-              <>
-                {/* Layout em Cards para Mobile/Tablet */}
-                <div className="block lg:hidden space-y-3">
-                  {payables.map((record) => (
-                    <div 
-                      key={record.id} 
-                      className={`border rounded-lg p-3 space-y-3 transition-colors ${
-                        selectedRecords.has(record.id) 
-                          ? 'bg-green-50 border-green-300' 
-                          : 'bg-gray-50 border-gray-200'
-                      }`}
-                    >
-                      {/* Header do Card */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-start gap-3 flex-1 min-w-0">
-                          {record.status === 'pending' && (
-                            <Checkbox
-                              checked={selectedRecords.has(record.id)}
-                              onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
-                              className="mt-1"
-                            />
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <Badge variant="outline" className={`mb-2 ${
-                              record.transaction_type === 'commission' 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-orange-100 text-orange-700'
-                            }`}>
-                              {getTypeLabel(record.transaction_type)}
-                            </Badge>
-                            <p className="font-medium text-sm text-gray-900 truncate">
-                              {record.description}
-                            </p>
-                            <p className="text-xs text-gray-600 font-mono mt-1">
-                              #{record.transaction_number}
-                            </p>
-                          </div>
-                        </div>
-                        {getStatusBadge(record.status)}
-                      </div>
-
-                      {/* Metadados */}
-                      {(record.metadata?.service_name || record.metadata?.commission_rate || record.metadata?.service_amount) && (
-                        <div className="space-y-1.5">
-                          {record.metadata?.service_name && (
-                            <p className="text-xs text-gray-600">
-                              🔧 Serviço: {record.metadata.service_name}
-                            </p>
-                          )}
-                          {record.metadata?.commission_rate && (
-                            <p className="text-xs text-gray-600">
-                              💰 Taxa: {record.metadata.commission_rate}%
-                            </p>
-                          )}
-                          {record.metadata?.service_amount && (
-                            <p className="text-xs text-gray-600">
-                              💵 Valor base: R$ {Number(record.metadata.service_amount).toFixed(2)}
-                            </p>
-                          )}
-                        </div>
-                      )}
-
-                      {/* Informações */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-                        <div>
-                          <p className="text-xs text-gray-600">Categoria</p>
-                          <p className="text-sm font-medium text-gray-700 mt-0.5">
-                            {getCategoryLabel(record.category)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Valor</p>
-                          <p className="text-sm font-bold text-red-600 mt-0.5">
-                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Datas */}
-                      <div className="grid grid-cols-2 gap-2 pt-2 border-t border-gray-200">
-                        <div>
-                          <p className="text-xs text-gray-600">Data Trans.</p>
-                          <p className="text-sm font-medium text-gray-700">
-                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-600">Data Pag.</p>
-                          {record.payment_date ? (
-                            <p className="text-sm font-medium text-green-700">
-                              {format(new Date(record.payment_date), 'dd/MM/yy HH:mm', { locale: ptBR })}
-                            </p>
-                          ) : (
-                            <span className="text-gray-400 text-xs">Pendente</span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Status do Fluxo */}
-                      {record.status === 'completed' && (
-                        <div className="pt-2 border-t border-gray-200">
-                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-300">
-                            <CheckCircle2 className="h-3 w-3 mr-1" />
-                            Fluxo Registrado
-                          </Badge>
-                        </div>
-                      )}
-
-                      {/* Ações */}
-                      <div className="flex gap-2 pt-2 border-t border-gray-200">
-                        {record.transaction_type === 'commission' && record.status === 'pending' && (
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            className="flex-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
-                            onClick={() => handleMarkAsPaid(record.id)}
-                            disabled={markAsPaidMutation.isPending}
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Marcar Pago
-                          </Button>
-                        )}
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEdit(record)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDelete(record.id)}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Layout em Tabela para Desktop */}
-                <div className="hidden lg:block">
+            <CardContent className="p-0">
+              {filteredPayables.length > 0 ? (
+                <div className="overflow-x-auto">
                   <Table className="text-xs">
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-24">Número</TableHead>
-                        <TableHead className="w-20">Tipo</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead className="w-24">Categoria</TableHead>
-                        <TableHead className="w-24">Data</TableHead>
-                        <TableHead className="w-24 text-right">Valor</TableHead>
-                        <TableHead className="w-20 text-center">Status</TableHead>
-                        <TableHead className="w-10 text-center">
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="w-8 text-center p-2">
                           <Checkbox
-                            checked={selectedRecords.size === pendingRecords.length && pendingRecords.length > 0}
+                            checked={selectedRecords.size === pendingFilteredRecords.length && pendingFilteredRecords.length > 0}
                             onCheckedChange={(checked) => handleSelectAll(checked as boolean)}
-                            title="Selecionar todos pendentes"
                           />
                         </TableHead>
-                        <TableHead className="w-24 text-center">Ações</TableHead>
+                        <TableHead className="p-2 w-16">Tipo</TableHead>
+                        <TableHead className="p-2">Descrição</TableHead>
+                        <TableHead className="p-2 w-28">Barbeiro</TableHead>
+                        <TableHead className="p-2 w-24">Categoria</TableHead>
+                        <TableHead className="p-2 w-20">Data</TableHead>
+                        <TableHead className="p-2 w-24 text-right">Valor</TableHead>
+                        <TableHead className="p-2 w-16 text-center">Status</TableHead>
+                        <TableHead className="p-2 w-16 text-center">Ações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {payables.map((record) => (
+                      {filteredPayables.map((record) => (
                         <TableRow 
                           key={record.id}
                           className={selectedRecords.has(record.id) ? 'bg-green-50' : ''}
                         >
-                          <TableCell className="font-mono text-xs">
-                            {record.transaction_number.slice(-8)}
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline" className={`text-xs ${
-                              record.transaction_type === 'commission' 
-                                ? 'bg-blue-100 text-blue-700' 
-                                : 'bg-orange-100 text-orange-700'
-                            }`}>
-                              {getTypeLabel(record.transaction_type)}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <div className="truncate max-w-[200px]" title={record.description}>
-                              {record.description}
-                            </div>
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {getCategoryLabel(record.category)}
-                          </TableCell>
-                          <TableCell className="text-xs">
-                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
-                          </TableCell>
-                          <TableCell className="text-right font-semibold text-red-600">
-                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            {getStatusBadge(record.status)}
-                          </TableCell>
-                          <TableCell className="text-center">
+                          <TableCell className="p-2 text-center">
                             {record.status === 'pending' ? (
                               <Checkbox
                                 checked={selectedRecords.has(record.id)}
                                 onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
                               />
                             ) : (
-                              <span title="Pago">
-                                <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
-                              </span>
+                              <CheckCircle2 className="h-4 w-4 text-green-600 mx-auto" />
                             )}
                           </TableCell>
-                          <TableCell className="text-center">
-                            <div className="flex justify-center gap-1">
+                          <TableCell className="p-2">
+                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 ${
+                              record.transaction_type === 'commission' 
+                                ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                                : 'bg-orange-50 text-orange-700 border-orange-200'
+                            }`}>
+                              {getTypeLabel(record.transaction_type)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <div className="truncate max-w-[180px]" title={record.description}>
+                              {record.description}
+                            </div>
+                          </TableCell>
+                          <TableCell className="p-2">
+                            <span className="truncate block max-w-[100px]" title={getBarberName(record)}>
+                              {getBarberName(record)}
+                            </span>
+                          </TableCell>
+                          <TableCell className="p-2 text-[10px]">
+                            {getCategoryLabel(record.category)}
+                          </TableCell>
+                          <TableCell className="p-2 text-[10px]">
+                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="p-2 text-right font-semibold text-red-600">
+                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="p-2 text-center">
+                            {getStatusBadge(record.status)}
+                          </TableCell>
+                          <TableCell className="p-2 text-center">
+                            <div className="flex justify-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0"
+                                className="h-6 w-6 p-0"
                                 onClick={() => handleEdit(record)}
                               >
-                                <Pencil className="h-3.5 w-3.5" />
+                                <Pencil className="h-3 w-3" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-7 w-7 p-0"
+                                className="h-6 w-6 p-0"
                                 onClick={() => handleDelete(record.id)}
                               >
-                                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                                <Trash2 className="h-3 w-3 text-destructive" />
                               </Button>
                             </div>
                           </TableCell>
@@ -948,15 +913,85 @@ export const ContasAPagar: React.FC = () => {
                     </TableBody>
                   </Table>
                 </div>
-              </>
-            ) : (
-              <div className="text-center text-gray-500 py-8">
-                Nenhuma despesa ou comissão encontrada
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8 text-sm">
+                  Nenhum registro encontrado
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Aba Comissões Pagas */}
+        <TabsContent value="comissoes" className="space-y-4">
+          <Card className="border-gray-200">
+            <CardHeader className="p-3 pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                Pagamentos de Comissões Consolidados
+              </CardTitle>
+              <p className="text-xs text-gray-500 mt-1">
+                Registro consolidado de pagamentos de comissões por barbeiro
+              </p>
+            </CardHeader>
+            <CardContent className="p-0">
+              {isLoadingCommissions ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                </div>
+              ) : commissionPayments && commissionPayments.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table className="text-xs">
+                    <TableHeader>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="p-2">Barbeiro</TableHead>
+                        <TableHead className="p-2 w-20 text-center">Qtd.</TableHead>
+                        <TableHead className="p-2 w-28 text-right">Valor Total</TableHead>
+                        <TableHead className="p-2 w-24">Período</TableHead>
+                        <TableHead className="p-2 w-28">Data Pagamento</TableHead>
+                        <TableHead className="p-2 w-16 text-center">Status</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {commissionPayments.map((payment) => (
+                        <TableRow key={payment.id}>
+                          <TableCell className="p-2 font-medium">
+                            {payment.barber_name}
+                          </TableCell>
+                          <TableCell className="p-2 text-center">
+                            <Badge variant="outline" className="text-[10px]">
+                              {payment.commission_count} comissões
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="p-2 text-right font-bold text-green-700">
+                            R$ {payment.total_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="p-2 text-[10px]">
+                            {format(parseISO(payment.period_start), 'dd/MM', { locale: ptBR })} - {format(parseISO(payment.period_end), 'dd/MM/yy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="p-2 text-[10px]">
+                            {format(parseISO(payment.payment_date), 'dd/MM/yy HH:mm', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="p-2 text-center">
+                            <Badge className="bg-green-100 text-green-700 text-[10px]">
+                              <CheckCircle2 className="h-3 w-3 mr-1" />
+                              Pago
+                            </Badge>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="text-center text-gray-500 py-8 text-sm">
+                  Nenhum pagamento consolidado registrado
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <FinancialRecordForm
         open={formOpen}
@@ -971,7 +1006,7 @@ export const ContasAPagar: React.FC = () => {
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
+              Tem certeza que deseja excluir este lançamento?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -994,7 +1029,7 @@ export const ContasAPagar: React.FC = () => {
               Confirmar Pagamento
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Tem certeza que deseja marcar este lançamento como pago? Esta ação será registrada no fluxo de caixa.
+              Marcar como pago? Será registrado no fluxo de caixa.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1003,28 +1038,29 @@ export const ContasAPagar: React.FC = () => {
               onClick={confirmPayment}
               className="bg-green-600 text-white hover:bg-green-700"
             >
-              Confirmar Pagamento
+              Confirmar
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Dialog para pagamento em lote */}
       <AlertDialog open={batchPaymentDialogOpen} onOpenChange={setBatchPaymentDialogOpen}>
         <AlertDialogContent className="sm:max-w-md">
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <CheckSquare className="h-5 w-5 text-green-600" />
-              Confirmar Pagamento em Lote
+              Pagamento em Lote
             </AlertDialogTitle>
             <AlertDialogDescription className="space-y-3">
-              <p>Você está prestes a marcar <strong>{selectedRecords.size}</strong> {selectedRecords.size === 1 ? 'lançamento' : 'lançamentos'} como pago(s).</p>
+              <p>Pagar <strong>{selectedRecords.size}</strong> lançamento(s)?</p>
               <div className="bg-green-50 border border-green-200 rounded-lg p-3">
                 <p className="text-sm text-green-800">
-                  <strong>Valor total:</strong> R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                  <strong>Total:</strong> R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                 </p>
               </div>
-              <p className="text-sm">Esta ação será registrada no fluxo de caixa e não pode ser desfeita.</p>
+              <p className="text-xs text-gray-500">
+                Comissões serão agrupadas por barbeiro na aba "Comissões Pagas".
+              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
