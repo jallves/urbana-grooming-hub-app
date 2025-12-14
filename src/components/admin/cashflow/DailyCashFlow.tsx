@@ -52,7 +52,7 @@ const DailyCashFlow: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <>
         {[1, 2, 3].map((i) => (
           <Card key={i} className="bg-white border-gray-300">
             <CardContent className="p-3 sm:p-4">
@@ -63,12 +63,12 @@ const DailyCashFlow: React.FC = () => {
             </CardContent>
           </Card>
         ))}
-      </div>
+      </>
     );
   }
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+    <>
       {/* Receita do Dia */}
       <Card className="bg-white border-gray-300 shadow-sm">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 p-3 sm:p-4">
@@ -124,7 +124,7 @@ const DailyCashFlow: React.FC = () => {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </>
   );
 };
 
