@@ -262,13 +262,16 @@ class MainActivity : AppCompatActivity() {
                     var maxRetries = 5;
                     var retryCount = 0;
                     
-                    // Salvar resultado imediatamente para recuperação
+                    // Salvar resultado em AMBOS sessionStorage E localStorage para recuperação
+                    // localStorage é mais persistente e sobrevive a recarregamentos
                     try {
                         sessionStorage.setItem('lastTefResult', JSON.stringify(resultado));
                         sessionStorage.setItem('lastTefResultTime', Date.now().toString());
-                        console.log('[Android] Resultado salvo no sessionStorage');
+                        localStorage.setItem('lastTefResult', JSON.stringify(resultado));
+                        localStorage.setItem('lastTefResultTime', Date.now().toString());
+                        console.log('[Android] Resultado salvo no sessionStorage E localStorage');
                     } catch(e) {
-                        console.error('[Android] Erro ao salvar no sessionStorage:', e);
+                        console.error('[Android] Erro ao salvar no storage:', e);
                     }
                     
                     // Função para tentar notificar

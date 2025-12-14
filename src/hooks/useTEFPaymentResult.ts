@@ -112,6 +112,7 @@ export function useTEFPaymentResult({
   }, [enabled]);
   
   // Função para processar resultado (com proteção contra duplicatas)
+  // CRÍTICO: NÃO depender de enabled - processar SEMPRE que receber resultado
   const processResult = useCallback((resultado: TEFResultado | Record<string, unknown>, source: string) => {
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     console.log('[useTEFPaymentResult] 📥 PROCESSANDO RESULTADO');
@@ -121,21 +122,9 @@ export function useTEFPaymentResult({
     console.log('[useTEFPaymentResult] Dados brutos:', JSON.stringify(resultado, null, 2));
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     
-    // IMPORTANTE: Verificar se enabled está true no momento do callback
-    // usando a ref para ter o valor mais atual
-    if (!enabledRef.current) {
-      console.log('[useTEFPaymentResult] ⚠️ Resultado recebido mas hook DESATIVADO - salvando para depois');
-      // Salvar no sessionStorage para tentar processar depois
-      try {
-        const normalized = normalizePayGoResult(resultado as Record<string, unknown>);
-        sessionStorage.setItem('lastTefResult', JSON.stringify(normalized));
-        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
-        console.log('[useTEFPaymentResult] ✅ Resultado salvo no sessionStorage para recuperação posterior');
-      } catch (e) {
-        console.error('[useTEFPaymentResult] Erro ao salvar no sessionStorage:', e);
-      }
-      return;
-    }
+    // REMOVIDO: Verificação de enabled
+    // O resultado do PayGo SEMPRE deve ser processado quando chegar
+    // Não importa se o hook está "enabled" ou não
     
     if (processedRef.current) {
       console.log('[useTEFPaymentResult] ⚠️ Resultado já processado, ignorando');
@@ -162,18 +151,30 @@ export function useTEFPaymentResult({
     processedRef.current = true;
     lastReceivedResult = normalized;
     
-    // Limpar sessionStorage
+    // Limpar storage (sessionStorage E localStorage)
     try {
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
     } catch (e) {
-      console.warn('[useTEFPaymentResult] Erro ao limpar sessionStorage:', e);
+      console.warn('[useTEFPaymentResult] Erro ao limpar storage:', e);
     }
     
-    // Chamar callback
+    // Chamar callback - SEMPRE
     console.log('[useTEFPaymentResult] 📞 Chamando onResultRef.current...');
-    onResultRef.current(normalized);
-    console.log('[useTEFPaymentResult] ✅ Callback chamado com sucesso');
+    console.log('[useTEFPaymentResult] onResultRef.current existe?', !!onResultRef.current);
+    
+    if (onResultRef.current) {
+      try {
+        onResultRef.current(normalized);
+        console.log('[useTEFPaymentResult] ✅ Callback chamado com sucesso');
+      } catch (e) {
+        console.error('[useTEFPaymentResult] ❌ ERRO ao chamar callback:', e);
+      }
+    } else {
+      console.error('[useTEFPaymentResult] ❌ onResultRef.current é null/undefined!');
+    }
   }, []);
   
   // Registrar callback global no window
@@ -196,16 +197,49 @@ export function useTEFPaymentResult({
     
     console.log('[useTEFPaymentResult] Callback registrado com sucesso');
     
+    // Verificar se há resultado pendente no storage ao montar
+    // Isso captura resultados que chegaram antes do React estar pronto
+    // Verificar tanto sessionStorage quanto localStorage
+    setTimeout(() => {
+      try {
+        // Tentar sessionStorage primeiro
+        let storedResult = sessionStorage.getItem('lastTefResult');
+        let storedTime = sessionStorage.getItem('lastTefResultTime');
+        
+        // Se não encontrou, tentar localStorage (mais persistente)
+        if (!storedResult) {
+          storedResult = localStorage.getItem('lastTefResult');
+          storedTime = localStorage.getItem('lastTefResultTime');
+          if (storedResult) {
+            console.log('[useTEFPaymentResult] Resultado encontrado no localStorage!');
+          }
+        }
+        
+        if (storedResult && storedTime && !processedRef.current) {
+          const resultAge = Date.now() - parseInt(storedTime, 10);
+          
+          // Aceitar resultados dos últimos 60 segundos (aumentado para dar mais tempo)
+          if (resultAge < 60000) {
+            console.log('[useTEFPaymentResult] 📞 Resultado pendente encontrado no storage ao montar!');
+            console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
+            
+            const resultado = JSON.parse(storedResult);
+            processResult(resultado, 'Storage on Mount');
+          }
+        }
+      } catch (e) {
+        console.error('[useTEFPaymentResult] Erro ao verificar storage ao montar:', e);
+      }
+    }, 100);
+    
     return () => {
       // Não remover o callback ao desmontar
       console.log('[useTEFPaymentResult] Componente desmontando, mantendo callback');
     };
   }, [processResult]); // Depende apenas de processResult que é estável
   
-  // Listener para CustomEvent
+  // Listener para CustomEvent - SEMPRE ativo
   useEffect(() => {
-    if (!enabled) return;
-    
     const handleCustomEvent = (event: CustomEvent) => {
       console.log('[useTEFPaymentResult] 📞 CustomEvent tefPaymentResult RECEBIDO');
       if (event.detail) {
@@ -220,12 +254,10 @@ export function useTEFPaymentResult({
       window.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
       document.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
     };
-  }, [enabled, processResult]);
+  }, [processResult]);
   
-  // Listener para storage event (quando Android salva no sessionStorage)
+  // Listener para storage event - SEMPRE ativo
   useEffect(() => {
-    if (!enabled) return;
-    
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === 'lastTefResult' && event.newValue) {
         console.log('[useTEFPaymentResult] 📞 Storage event RECEBIDO');
@@ -243,15 +275,15 @@ export function useTEFPaymentResult({
     return () => {
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, [enabled, processResult]);
+  }, [processResult]);
   
-  // Polling do sessionStorage (fallback mais robusto)
+  // Polling do storage (fallback mais robusto)
   useEffect(() => {
     if (!enabled) return;
     
-    console.log('[useTEFPaymentResult] Iniciando polling do sessionStorage');
+    console.log('[useTEFPaymentResult] Iniciando polling do storage');
     
-    const checkSessionStorage = () => {
+    const checkStorage = () => {
       if (processedRef.current) return;
       
       // Verificar timeout
@@ -262,19 +294,25 @@ export function useTEFPaymentResult({
       }
       
       try {
-        const storedResult = sessionStorage.getItem('lastTefResult');
-        const storedTime = sessionStorage.getItem('lastTefResultTime');
+        // Verificar sessionStorage primeiro, depois localStorage
+        let storedResult = sessionStorage.getItem('lastTefResult');
+        let storedTime = sessionStorage.getItem('lastTefResultTime');
+        
+        if (!storedResult) {
+          storedResult = localStorage.getItem('lastTefResult');
+          storedTime = localStorage.getItem('lastTefResultTime');
+        }
         
         if (storedResult && storedTime) {
           const resultAge = Date.now() - parseInt(storedTime, 10);
           
           // Aceitar resultados dos últimos 60 segundos
           if (resultAge < 60000) {
-            console.log('[useTEFPaymentResult] 📞 SessionStorage POLLING encontrou resultado');
+            console.log('[useTEFPaymentResult] 📞 Storage POLLING encontrou resultado');
             console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
             
             const resultado = JSON.parse(storedResult);
-            processResult(resultado, 'SessionStorage Polling');
+            processResult(resultado, 'Storage Polling');
           }
         }
       } catch (e) {
@@ -283,10 +321,10 @@ export function useTEFPaymentResult({
     };
     
     // Verificar imediatamente
-    checkSessionStorage();
+    checkStorage();
     
     // Polling periódico
-    const interval = setInterval(checkSessionStorage, pollingInterval);
+    const interval = setInterval(checkStorage, pollingInterval);
     
     return () => {
       clearInterval(interval);
