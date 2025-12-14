@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO, startOfMonth, endOfMonth } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, Pencil, Trash2, CheckCircle2, CheckSquare, Filter, Users, Calendar } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, Pencil, Trash2, CheckCircle2, CheckSquare, Filter, Users, Calendar, CreditCard } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
@@ -848,55 +848,82 @@ export const ContasAPagar: React.FC = () => {
                           className={selectedRecords.has(record.id) ? 'bg-green-50' : ''}
                         >
                           <TableCell className="p-2">
-                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 whitespace-nowrap ${
+                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 whitespace-nowrap font-medium ${
                               record.transaction_type === 'commission' 
-                                ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                                : 'bg-orange-50 text-orange-700 border-orange-200'
+                                ? 'bg-gradient-to-r from-blue-50 to-indigo-50 text-blue-700 border-blue-200' 
+                                : 'bg-gradient-to-r from-orange-50 to-amber-50 text-orange-700 border-orange-200'
                             }`}>
-                              {getTypeLabel(record.transaction_type)}
+                              {record.transaction_type === 'commission' ? '💰' : '📋'} {getTypeLabel(record.transaction_type)}
                             </Badge>
                           </TableCell>
                           <TableCell className="p-2">
-                            <div className="truncate" title={record.description}>
-                              {record.description}
+                            <div className="flex flex-col gap-0.5">
+                              <span className="font-medium text-gray-900 truncate" title={record.description}>
+                                {record.description}
+                              </span>
+                              {record.metadata?.service_name && (
+                                <span className="text-[10px] text-gray-500">
+                                  🔧 {record.metadata.service_name}
+                                </span>
+                              )}
+                              {record.metadata?.product_name && (
+                                <span className="text-[10px] text-gray-500">
+                                  📦 {record.metadata.product_name}
+                                </span>
+                              )}
                             </div>
                           </TableCell>
                           <TableCell className="p-2">
-                            <span className="truncate block" title={getBarberName(record)}>
-                              {getBarberName(record)}
-                            </span>
+                            {getBarberName(record) !== '-' ? (
+                              <Badge variant="outline" className="bg-gradient-to-r from-purple-50 to-pink-50 text-purple-700 border-purple-200 text-[10px] px-2 py-0.5 font-medium">
+                                👤 {getBarberName(record)}
+                              </Badge>
+                            ) : (
+                              <span className="text-gray-400 text-xs">-</span>
+                            )}
                           </TableCell>
-                          <TableCell className="p-2 text-[10px]">
-                            <span className="truncate block" title={getCategoryLabel(record.category)}>
-                              {getCategoryLabel(record.category)}
-                            </span>
+                          <TableCell className="p-2">
+                            <Badge variant="outline" className="bg-gradient-to-r from-slate-50 to-gray-50 text-slate-700 border-slate-200 text-[10px] px-2 py-0.5">
+                              📁 {getCategoryLabel(record.category)}
+                            </Badge>
                           </TableCell>
-                          <TableCell className="p-2 text-[10px] whitespace-nowrap">
-                            {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
+                          <TableCell className="p-2">
+                            <Badge variant="outline" className="bg-gradient-to-r from-cyan-50 to-sky-50 text-cyan-700 border-cyan-200 text-[10px] px-2 py-0.5">
+                              📅 {format(parseISO(record.transaction_date + 'T00:00:00'), 'dd/MM/yy', { locale: ptBR })}
+                            </Badge>
                           </TableCell>
-                          <TableCell className="p-2 text-right font-semibold text-red-600 whitespace-nowrap">
-                            R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          <TableCell className="p-2 text-right">
+                            <Badge className="bg-gradient-to-r from-red-100 to-rose-100 text-red-700 border border-red-200 text-xs px-2 py-0.5 font-bold">
+                              R$ {record.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </Badge>
                           </TableCell>
                           <TableCell className="p-2 text-center">
-                            {getStatusBadge(record.status)}
+                            {record.status === 'completed' ? (
+                              <Badge className="bg-gradient-to-r from-green-100 to-emerald-100 text-green-700 border border-green-200 text-[10px] px-2 py-0.5">
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                Pago
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-700 border border-yellow-200 text-[10px] px-2 py-0.5">
+                                ⏳ Pendente
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell className="p-2 text-center">
                             <div className="flex justify-center items-center gap-0.5">
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                className="h-6 w-6 p-0 hover:bg-blue-50"
                                 onClick={() => handleEdit(record)}
-                                title="Editar"
                               >
-                                <Pencil className="h-3 w-3" />
+                                <Pencil className="h-3 w-3 text-blue-600" />
                               </Button>
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="h-6 w-6 p-0"
+                                className="h-6 w-6 p-0 hover:bg-red-50"
                                 onClick={() => handleDelete(record.id)}
-                                title="Excluir"
                               >
                                 <Trash2 className="h-3 w-3 text-destructive" />
                               </Button>
@@ -904,7 +931,7 @@ export const ContasAPagar: React.FC = () => {
                                 <Checkbox
                                   checked={selectedRecords.has(record.id)}
                                   onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
-                                  className="ml-1"
+                                  className="ml-1 border-green-400 data-[state=checked]:bg-green-600"
                                 />
                               ) : (
                                 <CheckCircle2 className="h-4 w-4 text-green-600 ml-1" />
