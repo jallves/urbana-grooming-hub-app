@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
@@ -10,6 +9,7 @@ import ClientDateTimePicker from './ClientDateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
+import { CalendarIcon, User, Scissors } from 'lucide-react';
 
 interface ClientAppointmentModalProps {
   isOpen: boolean;
@@ -51,10 +51,11 @@ const ClientAppointmentModal: React.FC<ClientAppointmentModalProps> = ({
     await handleSubmit(data, selectedService);
   };
 
-  // Get form values for StaffSelect
+  // Get form values for components
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
   const selectedStaffId = form.watch('staff_id');
+  const selectedServiceId = form.watch('service_id');
   
   if (!client) {
     return null;
@@ -62,42 +63,56 @@ const ClientAppointmentModal: React.FC<ClientAppointmentModalProps> = ({
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle className="text-xl font-bold text-center">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-card border-border">
+        <DialogHeader className="pb-4 border-b border-border">
+          <DialogTitle className="text-xl font-bold flex items-center gap-2">
+            <CalendarIcon className="h-5 w-5 text-primary" />
             {appointmentId ? 'Editar Agendamento' : 'Novo Agendamento'}
           </DialogTitle>
         </DialogHeader>
         
-        <div className="mb-6 p-4 bg-gradient-to-r from-amber-50 to-amber-100 rounded-lg border border-amber-200">
-          <p className="text-sm text-gray-700 mb-1">Cliente:</p>
-          <p className="font-semibold text-gray-900 text-lg">{client.name}</p>
-          {client.phone && (
-            <p className="text-sm text-gray-600 mt-1">📱 {client.phone}</p>
-          )}
-          {client.email && (
-            <p className="text-sm text-gray-600">✉️ {client.email}</p>
-          )}
+        {/* Card do Cliente */}
+        <div className="p-4 bg-primary/5 rounded-lg border border-primary/20">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center">
+              <User className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="font-semibold text-foreground">{client.name}</p>
+              <div className="flex gap-3 text-sm text-muted-foreground">
+                {client.phone && <span>📱 {client.phone}</span>}
+                {client.email && <span>✉️ {client.email}</span>}
+              </div>
+            </div>
+          </div>
         </div>
         
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-5">
+            {/* 1. Seleção de Barbeiro PRIMEIRO */}
+            <div className="space-y-2">
+              <ClientStaffSelect 
+                staffMembers={staffMembers} 
+                form={form} 
+                selectedDate={selectedDate}
+                selectedTime={selectedTime}
+                serviceDuration={selectedService?.duration}
+                appointmentId={appointmentId}
+              />
+            </div>
+            
+            {/* 2. Seleção de Serviço */}
             <ServiceSelect services={services} form={form} />
             
+            {/* 3. Seleção de Data e Horário (depende do barbeiro e serviço) */}
             <ClientDateTimePicker 
               form={form}
               barberId={selectedStaffId}
               serviceDuration={selectedService?.duration}
+              appointmentId={appointmentId}
             />
             
-            <ClientStaffSelect 
-              staffMembers={staffMembers} 
-              form={form} 
-              selectedDate={selectedDate}
-              selectedTime={selectedTime}
-              serviceDuration={selectedService?.duration}
-            />
-            
+            {/* 4. Notas */}
             <NotesField form={form} />
             
             <AppointmentFormActions 
