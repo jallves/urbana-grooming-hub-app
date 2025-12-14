@@ -1,16 +1,6 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
-
-// Função auxiliar para obter data/hora no timezone do Brasil
-function getBrazilDateTime() {
-  const now = new Date();
-  // Converter para timezone do Brasil (UTC-3)
-  const brazilTime = new Date(now.toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  return {
-    date: brazilTime.toISOString().split('T')[0], // YYYY-MM-DD
-    datetime: brazilTime.toISOString()
-  };
-}
+import { getBrazilDateTime } from '../_shared/brazilDateTime.ts'
 
 /**
  * Edge Function: create-financial-transaction
