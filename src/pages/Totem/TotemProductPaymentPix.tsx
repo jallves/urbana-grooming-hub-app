@@ -18,6 +18,7 @@ const TotemProductPaymentPix: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(true); // Delay inicial para verificar conexão
   
   const finalizingRef = useRef(false);
   const isProcessingRef = useRef(false);
@@ -208,6 +209,15 @@ const TotemProductPaymentPix: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
+  // Delay inicial para verificar conexão TEF (evita flash da tela de erro)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 1500); // Aguarda 1.5s para TEF inicializar
+    
+    return () => clearTimeout(timer);
+  }, []);
+
   // Função para iniciar pagamento
   const iniciarPagamentoReal = useCallback(async () => {
     if (!isAndroidAvailable || !isPinpadConnected || !sale) {
@@ -296,8 +306,8 @@ const TotemProductPaymentPix: React.FC = () => {
     );
   }
 
-  // Tela quando TEF não está disponível
-  if (!isAndroidAvailable || !isPinpadConnected) {
+  // Tela quando TEF não está disponível (APENAS após delay)
+  if (!isCheckingConnection && (!isAndroidAvailable || !isPinpadConnected)) {
     return (
       <div className="fixed inset-0 w-screen h-screen flex flex-col p-6 font-poppins overflow-hidden relative">
         <div className="absolute inset-0 z-0">
