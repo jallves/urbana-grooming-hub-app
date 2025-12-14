@@ -20,6 +20,7 @@ import { format, addDays, parseISO, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useBarberAvailableSlots } from '@/hooks/barber/useBarberAvailableSlots';
 import { Loader2 } from 'lucide-react';
+import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 
 interface BarberEditAppointmentModalProps {
   isOpen: boolean;
@@ -143,6 +144,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       return;
     }
 
+    // Guardar dados anteriores para o e-mail
+    const previousData = {
+      date: appointment?.data,
+      time: appointment?.hora?.substring(0, 5),
+      staffName: undefined, // Barbeiro não muda
+      serviceName: appointment?.painel_servicos?.nome
+    };
+
     setSaving(true);
     try {
       const { error } = await supabase
@@ -156,6 +165,30 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         .eq('id', appointmentId);
 
       if (error) throw error;
+
+      // Determinar tipo de alteração
+      const newDate = format(selectedDate, 'yyyy-MM-dd');
+      const newTime = selectedTime.substring(0, 5);
+      let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
+      
+      if (previousData.date !== newDate || previousData.time !== newTime) {
+        updateType = 'reschedule';
+      } else if (previousData.serviceName !== selectedService.nome) {
+        updateType = 'change_service';
+      }
+
+      // Enviar e-mail de atualização
+      console.log('📧 [BarberEdit] Enviando e-mail de atualização...');
+      try {
+        await sendAppointmentUpdateEmail({
+          appointmentId,
+          previousData,
+          updateType,
+          updatedBy: 'barber'
+        });
+      } catch (emailError) {
+        console.error('⚠️ [BarberEdit] Erro ao enviar e-mail (não crítico):', emailError);
+      }
 
       toast.success('✅ Agendamento atualizado!', {
         description: `Nova data: ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}`
