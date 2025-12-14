@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Delete, Phone } from 'lucide-react';
@@ -64,58 +64,60 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 }) => {
   const [value, setValue] = useState<string>('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
+  const lastEventTime = useRef<number>(0);
+  const DEBOUNCE_MS = 150; // Tempo mínimo entre cliques
   const maxLength = mode === 'pin' ? pinLength : phoneLength;
   const minLength = maxLength;
 
-  // Handler otimizado para touch - usa onTouchStart para resposta imediata
-  const handleKeyPress = (num: number, e?: React.TouchEvent | React.MouseEvent) => {
-    // Previne o comportamento padrão e eventos duplicados
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
+  // Verifica se deve processar o evento (debounce)
+  const shouldProcessEvent = useCallback(() => {
+    const now = Date.now();
+    if (now - lastEventTime.current < DEBOUNCE_MS) {
+      return false;
     }
+    lastEventTime.current = now;
+    return true;
+  }, []);
+
+  // Handler com debounce para evitar duplicação
+  const handleKeyPress = useCallback((num: number) => {
+    if (!shouldProcessEvent() || loading) return;
     
-    if (value.length < maxLength && !loading) {
-      setValue(prev => prev + num.toString());
-      // Feedback visual imediato
-      setActiveKey(num.toString());
-      setTimeout(() => setActiveKey(null), 100);
-    }
-  };
+    setValue(prev => {
+      if (prev.length < maxLength) {
+        return prev + num.toString();
+      }
+      return prev;
+    });
+    
+    // Feedback visual
+    setActiveKey(num.toString());
+    setTimeout(() => setActiveKey(null), 100);
+  }, [shouldProcessEvent, loading, maxLength]);
 
-  const handleBackspace = (e?: React.TouchEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (!loading) {
-      setValue(prev => prev.slice(0, -1));
-      setActiveKey('backspace');
-      setTimeout(() => setActiveKey(null), 100);
-    }
-  };
+  const handleBackspace = useCallback(() => {
+    if (!shouldProcessEvent() || loading) return;
+    
+    setValue(prev => prev.slice(0, -1));
+    setActiveKey('backspace');
+    setTimeout(() => setActiveKey(null), 100);
+  }, [shouldProcessEvent, loading]);
 
-  const handleClear = (e?: React.TouchEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (!loading) {
-      setValue('');
-      setActiveKey('clear');
-      setTimeout(() => setActiveKey(null), 100);
-    }
-  };
+  const handleClear = useCallback(() => {
+    if (!shouldProcessEvent() || loading) return;
+    
+    setValue('');
+    setActiveKey('clear');
+    setTimeout(() => setActiveKey(null), 100);
+  }, [shouldProcessEvent, loading]);
 
-  const handleSubmit = async (e?: React.TouchEvent | React.MouseEvent) => {
-    if (e) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-    if (value.length >= minLength && !loading) {
+  const handleSubmit = useCallback(async () => {
+    if (!shouldProcessEvent() || loading) return;
+    
+    if (value.length >= minLength) {
       await onSubmit(value);
     }
-  };
+  }, [shouldProcessEvent, loading, value, minLength, onSubmit]);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key >= '0' && e.key <= '9') {
@@ -262,8 +264,7 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
                 key={num}
-                onTouchStart={(e) => handleKeyPress(num, e)}
-                onMouseDown={(e) => handleKeyPress(num, e)}
+                onClick={() => handleKeyPress(num)}
                 disabled={loading}
                 className={cn(
                   "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
@@ -280,8 +281,7 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 
             {/* Botão Limpar */}
             <button
-              onTouchStart={(e) => handleClear(e)}
-              onMouseDown={(e) => handleClear(e)}
+              onClick={handleClear}
               disabled={loading}
               className={cn(
                 "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-xs sm:text-sm md:text-base font-bold text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
@@ -297,8 +297,7 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 
             {/* Botão 0 */}
             <button
-              onTouchStart={(e) => handleKeyPress(0, e)}
-              onMouseDown={(e) => handleKeyPress(0, e)}
+              onClick={() => handleKeyPress(0)}
               disabled={loading}
               className={cn(
                 "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
@@ -314,8 +313,7 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 
             {/* Botão Backspace */}
             <button
-              onTouchStart={(e) => handleBackspace(e)}
-              onMouseDown={(e) => handleBackspace(e)}
+              onClick={handleBackspace}
               disabled={loading}
               className={cn(
                 "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] flex items-center justify-center text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
@@ -330,10 +328,9 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
             </button>
           </div>
 
-          {/* Botão ENTRAR/BUSCAR em destaque - otimizado para touch */}
+          {/* Botão ENTRAR/BUSCAR em destaque */}
           <Button
-            onTouchStart={(e) => handleSubmit(e)}
-            onMouseDown={(e) => handleSubmit(e)}
+            onClick={handleSubmit}
             disabled={value.length < minLength || loading}
             className="w-full h-16 sm:h-18 md:h-22 min-h-[64px] text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold text-urbana-black hover:from-urbana-gold-vibrant hover:to-urbana-gold disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-75 shadow-2xl shadow-urbana-gold/40 rounded-xl select-none touch-manipulation active:scale-[0.98]"
             style={{ WebkitTapHighlightColor: 'transparent' }}
@@ -341,11 +338,10 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
             {getSubmitButtonText()}
           </Button>
 
-          {/* Botão Cancelar (opcional) - otimizado para touch */}
+          {/* Botão Cancelar (opcional) */}
           {onCancel && (
             <Button
-              onTouchStart={(e) => { e.preventDefault(); onCancel(); }}
-              onMouseDown={(e) => { e.preventDefault(); onCancel(); }}
+              onClick={onCancel}
               variant="ghost"
               disabled={loading}
               className="w-full h-14 sm:h-16 min-h-[56px] text-base sm:text-lg text-urbana-light/60 hover:text-urbana-light hover:bg-urbana-gold/10 select-none touch-manipulation"
