@@ -370,13 +370,13 @@ const TotemPaymentCard: React.FC = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex items-center justify-center z-10 overflow-y-auto py-2">
-        <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-4 sm:space-y-6 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] rounded-3xl">
+      <div className="flex-1 flex items-center justify-center z-10 py-2">
+        <Card className="w-full max-w-lg sm:max-w-xl md:max-w-2xl p-3 sm:p-5 md:p-6 space-y-3 sm:space-y-4 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 shadow-[0_8px_32px_rgba(212,175,55,0.3)] rounded-2xl">
           
           {/* Amount Display */}
-          <div className="text-center space-y-2 sm:space-y-3 p-4 sm:p-5 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-xl border-2 border-urbana-gold/30">
-            <p className="text-base sm:text-lg md:text-xl text-urbana-light/70 font-medium">Valor total</p>
-            <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+          <div className="text-center space-y-1 sm:space-y-2 p-3 sm:p-4 bg-gradient-to-r from-urbana-gold/10 via-urbana-gold-vibrant/10 to-urbana-gold/10 rounded-xl border-2 border-urbana-gold/30">
+            <p className="text-sm sm:text-base md:text-lg text-urbana-light/70 font-medium">Valor total</p>
+            <p className="text-2xl sm:text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
               R$ {total?.toFixed(2)}
             </p>
           </div>
@@ -384,24 +384,24 @@ const TotemPaymentCard: React.FC = () => {
           {!processing ? (
             <>
               {/* Card Type Selection */}
-              <div className="space-y-5 sm:space-y-6">
-                <h3 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-light via-urbana-gold-light to-urbana-light text-center">
+              <div className="space-y-3 sm:space-y-4">
+                <h3 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-light via-urbana-gold-light to-urbana-light text-center">
                   Escolha o tipo de cartão
                 </h3>
                 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4">
                   {/* Credit Card */}
                   <button
                     onClick={() => handlePaymentType('credit')}
-                    className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
+                    className="group relative h-28 sm:h-32 md:h-36 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
-                    <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center">
-                        <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+                    <div className="relative h-full flex flex-col items-center justify-center gap-2 p-2">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
+                        <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-urbana-gold" />
                       </div>
                       <div className="text-center">
-                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold block">CRÉDITO</span>
-                        <span className="text-xs sm:text-sm text-urbana-gray-light">Parcelamento disponível</span>
+                        <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold block">CRÉDITO</span>
+                        <span className="text-[10px] sm:text-xs text-urbana-gray-light">Parcelamento disponível</span>
                       </div>
                     </div>
                   </button>
@@ -409,15 +409,15 @@ const TotemPaymentCard: React.FC = () => {
                   {/* Debit Card */}
                   <button
                     onClick={() => handlePaymentType('debit')}
-                    className="group relative h-32 sm:h-36 md:h-40 lg:h-44 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 overflow-hidden"
+                    className="group relative h-28 sm:h-32 md:h-36 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 overflow-hidden"
                   >
-                    <div className="relative h-full flex flex-col items-center justify-center gap-3 sm:gap-4">
-                      <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-18 md:h-18 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/20 flex items-center justify-center">
-                        <CreditCard className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold" />
+                    <div className="relative h-full flex flex-col items-center justify-center gap-2 p-2">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-xl bg-urbana-gold/20 flex items-center justify-center">
+                        <CreditCard className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-urbana-gold" />
                       </div>
                       <div className="text-center">
-                        <span className="text-2xl sm:text-3xl md:text-4xl font-black text-urbana-gold block">DÉBITO</span>
-                        <span className="text-xs sm:text-sm text-urbana-gray-light">Pagamento à vista</span>
+                        <span className="text-xl sm:text-2xl md:text-3xl font-black text-urbana-gold block">DÉBITO</span>
+                        <span className="text-[10px] sm:text-xs text-urbana-gray-light">Pagamento à vista</span>
                       </div>
                     </div>
                   </button>
@@ -425,8 +425,8 @@ const TotemPaymentCard: React.FC = () => {
               </div>
 
               {/* Info */}
-              <div className="text-center pt-4">
-                <p className="text-base sm:text-lg md:text-xl text-urbana-gray-light">
+              <div className="text-center pt-2">
+                <p className="text-sm sm:text-base md:text-lg text-urbana-gray-light">
                   Após selecionar, siga as instruções na maquininha
                 </p>
               </div>
