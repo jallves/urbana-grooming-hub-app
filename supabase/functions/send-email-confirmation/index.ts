@@ -122,64 +122,73 @@ const handler = async (req: Request): Promise<Response> => {
     // Formatação do preço
     const formattedPrice = servicePrice.toFixed(2).replace('.', ',');
 
+    // URL da logo
+    const logoUrl = 'https://barbeariacostaurbana.com.br/images/logo-barbearia-costa-urbana.png';
+
     const emailResponse = await resend.emails.send({
-      from: "Costa Urbana Barbearia <noreply@barbeariacostaurbana.com.br>",
+      from: "Barbearia Costa Urbana <noreply@barbeariacostaurbana.com.br>",
       to: [clientEmail],
-      subject: "🎉 Agendamento Confirmado - Costa Urbana Barbearia",
+      subject: "✅ Agendamento Confirmado - Barbearia Costa Urbana",
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
           <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px; color: #D4A574;">🎉 Agendamento Confirmado!</h1>
-            <p style="margin: 10px 0 0; font-size: 16px;">Costa Urbana Barbearia</p>
+            <img src="${logoUrl}" alt="Barbearia Costa Urbana" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #D4A574;" />
+            <h1 style="margin: 0; font-size: 24px; color: #D4A574;">✅ Agendamento Confirmado!</h1>
+            <p style="margin: 8px 0 0; font-size: 14px; color: #ccc;">Barbearia Costa Urbana</p>
           </div>
           
-          <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
+          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <p style="font-size: 18px; color: #333; margin-bottom: 20px;">
-              Olá <strong>${clientName}</strong>! Seu horário está marcado:
-            </p>
+              Olá <strong style="color: #D4A574;">${clientName}</strong>! 👋 Seu horário está garantido!</p>
             
-            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #D4A574; margin: 20px 0;">
+            <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #D4A574; margin: 20px 0;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">📅 Data:</td>
-                  <td style="padding: 8px 0; color: #333;">${appointmentDate}</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold; width: 40%;">📅 Data:</td>
+                  <td style="padding: 10px 0; color: #333; font-size: 16px;">${appointmentDate}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">🕒 Horário:</td>
-                  <td style="padding: 8px 0; color: #333;">${appointmentTime}</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold;">🕒 Horário:</td>
+                  <td style="padding: 10px 0; color: #D4A574; font-size: 20px; font-weight: bold;">${appointmentTime}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">✂️ Serviço:</td>
-                  <td style="padding: 8px 0; color: #333;">${serviceName}</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold;">✂️ Serviço:</td>
+                  <td style="padding: 10px 0; color: #333;">${serviceName}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">👨‍💼 Profissional:</td>
-                  <td style="padding: 8px 0; color: #333;">${staffName}</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold;">👨‍💼 Profissional:</td>
+                  <td style="padding: 10px 0; color: #333;">${staffName}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">⏱️ Duração:</td>
-                  <td style="padding: 8px 0; color: #333;">${serviceDuration} minutos</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold;">⏱️ Duração:</td>
+                  <td style="padding: 10px 0; color: #333;">${serviceDuration} minutos</td>
                 </tr>
                 <tr>
-                  <td style="padding: 8px 0; color: #555; font-weight: bold;">💰 Valor:</td>
-                  <td style="padding: 8px 0; color: #333;">R$ ${formattedPrice}</td>
+                  <td style="padding: 10px 0; color: #555; font-weight: bold;">💰 Valor:</td>
+                  <td style="padding: 10px 0; color: #333; font-weight: bold;">R$ ${formattedPrice}</td>
                 </tr>
               </table>
             </div>
             
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <div style="background: #e8f5e9; border: 1px solid #4caf50; padding: 15px; border-radius: 8px; margin: 20px 0;">
+              <p style="margin: 0; color: #2e7d32;">
+                🔔 <strong>Você receberá um lembrete</strong> 3 horas antes do seu horário!
+              </p>
+            </div>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 8px; margin: 20px 0;">
               <p style="margin: 0; color: #856404; font-weight: bold;">
                 ⚠️ <strong>Importante:</strong> Chegue com 10 minutos de antecedência. Pontualidade é estilo! 😎
               </p>
             </div>
             
-            <div style="text-align: center; margin-top: 30px;">
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
               <p style="color: #666; margin: 5px 0;">📞 Dúvidas? Entre em contato conosco!</p>
-              <p style="color: #D4A574; font-weight: bold; font-size: 18px; margin: 15px 0;">
-                Nos vemos em breve! 🔥
+              <p style="color: #D4A574; font-weight: bold; font-size: 16px; margin: 15px 0;">
+                Nos vemos em breve! ✂️
               </p>
-              <p style="color: #888; font-style: italic;">
-                Costa Urbana Barbearia ✂️
+              <p style="color: #999; font-size: 12px; font-style: italic;">
+                Barbearia Costa Urbana
               </p>
             </div>
           </div>

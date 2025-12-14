@@ -2281,6 +2281,7 @@ export type Database = {
           data: string
           hora: string
           id: string
+          lembrete_enviado: string | null
           qr_checkin: string | null
           servico_id: string
           status: string
@@ -2294,6 +2295,7 @@ export type Database = {
           data: string
           hora: string
           id?: string
+          lembrete_enviado?: string | null
           qr_checkin?: string | null
           servico_id: string
           status?: string
@@ -2309,6 +2311,7 @@ export type Database = {
           data?: string
           hora?: string
           id?: string
+          lembrete_enviado?: string | null
           qr_checkin?: string | null
           servico_id?: string
           status?: string
@@ -4462,6 +4465,7 @@ export type Database = {
           data: string
           hora: string
           id: string
+          lembrete_enviado: string | null
           qr_checkin: string | null
           servico_id: string
           status: string
