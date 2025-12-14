@@ -9,6 +9,7 @@ import { TotemLayout, TotemContentContainer, TotemGrid } from '@/components/tote
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemButton } from '@/components/totem/TotemButton';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
 
 interface TimeSlot {
   hora: string;
@@ -281,6 +282,28 @@ const TotemDataHora: React.FC = () => {
 
       console.log('✅ Agendamento criado:', response.data);
       toast.success('Agendamento criado com sucesso!');
+      
+      // Enviar e-mail de confirmação
+      console.log('📧 [TotemDataHora] Enviando e-mail de confirmação...');
+      try {
+        const emailSent = await sendConfirmationEmailDirect({
+          clientName: client.nome,
+          clientEmail: client.email || '',
+          serviceName: service.nome,
+          staffName: barber.nome,
+          appointmentDate: dataLocal,
+          appointmentTime: selectedTime,
+          servicePrice: service.preco,
+          serviceDuration: service.duracao
+        });
+        if (emailSent) {
+          console.log('✅ [TotemDataHora] E-mail enviado com sucesso!');
+        } else {
+          console.log('📧 [TotemDataHora] E-mail não enviado (cliente sem e-mail válido)');
+        }
+      } catch (emailError) {
+        console.error('❌ [TotemDataHora] Erro ao enviar e-mail:', emailError);
+      }
       
       navigate('/totem/agendamento-sucesso', {
         state: {
