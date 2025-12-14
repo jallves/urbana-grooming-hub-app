@@ -11,7 +11,12 @@ interface ClientAppointmentEditDialogProps {
   isOpen: boolean;
   onClose: () => void;
   appointmentId: string;
-  onUpdate: (id: string, data: any) => Promise<boolean>;
+  onUpdate: (id: string, data: any, previousData?: {
+    date?: string;
+    time?: string;
+    staffName?: string;
+    serviceName?: string;
+  }) => Promise<boolean>;
 }
 
 const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = ({
@@ -124,9 +129,18 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         servico_id: formData.servico_id
       };
 
+      // Dados anteriores para o e-mail de atualização
+      const previousData = {
+        date: appointment.data,
+        time: appointment.hora?.substring(0, 5),
+        staffName: appointment.painel_barbeiros?.nome,
+        serviceName: appointment.painel_servicos?.nome
+      };
+
       console.log('📝 Atualizando agendamento:', appointmentId, updateData);
+      console.log('📝 Dados anteriores:', previousData);
       
-      const success = await onUpdate(appointmentId, updateData);
+      const success = await onUpdate(appointmentId, updateData, previousData);
       if (success) {
         toast.success('✅ Agendamento atualizado com sucesso!');
         onClose();

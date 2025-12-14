@@ -7,6 +7,9 @@ import { Service } from '@/types/appointment';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+
 
 interface UseAppointmentFormSubmitProps {
   appointmentId?: string;
@@ -90,6 +93,18 @@ export const useAppointmentFormSubmit = ({
           // Atualizar na tabela painel_agendamentos
           const realId = appointmentId.replace('painel_', '');
           
+          // Buscar dados anteriores para o e-mail
+          const { data: previousAppointment } = await supabase
+            .from('painel_agendamentos')
+            .select(`
+              data,
+              hora,
+              painel_barbeiros(nome),
+              painel_servicos(nome)
+            `)
+            .eq('id', realId)
+            .single();
+          
           // Garantir que a data seja formatada sem conversão de timezone
           const year = startDate.getFullYear();
           const month = String(startDate.getMonth() + 1).padStart(2, '0');
@@ -135,6 +150,24 @@ export const useAppointmentFormSubmit = ({
             });
             setIsLoading(false);
             return;
+          }
+
+          // Enviar e-mail de atualização
+          console.log('📧 [Admin] Enviando e-mail de atualização para agendamento painel:', realId);
+          try {
+            await sendAppointmentUpdateEmail({
+              appointmentId: realId,
+              previousData: {
+                date: previousAppointment?.data,
+                time: previousAppointment?.hora?.substring(0, 5),
+                staffName: (previousAppointment as any)?.painel_barbeiros?.nome,
+                serviceName: (previousAppointment as any)?.painel_servicos?.nome
+              },
+              updateType: 'general',
+              updatedBy: 'admin'
+            });
+          } catch (emailError) {
+            console.error('⚠️ Erro ao enviar e-mail de atualização:', emailError);
           }
         } else {
           // Atualizar na tabela appointments
