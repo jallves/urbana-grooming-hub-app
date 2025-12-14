@@ -4340,27 +4340,16 @@ export type Database = {
         Returns: boolean
       }
       check_barber_auth_exists: { Args: { p_email: string }; Returns: boolean }
-      check_barber_slot_availability:
-        | {
-            Args: {
-              p_barbeiro_id: string
-              p_date: string
-              p_duration: number
-              p_exclude_appointment_id?: string
-              p_time: string
-            }
-            Returns: boolean
-          }
-        | {
-            Args: {
-              p_barbeiro_id: string
-              p_date: string
-              p_duration: number
-              p_exclude_appointment_id?: string
-              p_time: string
-            }
-            Returns: boolean
-          }
+      check_barber_slot_availability: {
+        Args: {
+          p_barbeiro_id: string
+          p_date: string
+          p_duration: number
+          p_exclude_appointment_id?: string
+          p_time: string
+        }
+        Returns: boolean
+      }
       check_client_appointment_conflict: {
         Args: {
           p_client_id: string

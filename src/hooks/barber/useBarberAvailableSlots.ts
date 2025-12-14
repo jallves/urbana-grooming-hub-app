@@ -18,6 +18,13 @@ export const useBarberAvailableSlots = () => {
     excludeAppointmentId?: string
   ) => {
     setLoading(true);
+    console.log('🕐 [BarberSlots] Buscando slots:', {
+      barberId,
+      date: format(date, 'yyyy-MM-dd'),
+      serviceDuration,
+      excludeAppointmentId
+    });
+    
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
       const now = new Date();
@@ -37,6 +44,13 @@ export const useBarberAvailableSlots = () => {
       // Calcular o último horário possível baseado na duração do serviço
       const closingTotalMinutes = CLOSING_HOUR * 60 + CLOSING_MINUTE;
       const lastSlotTotalMinutes = closingTotalMinutes - serviceDuration;
+      
+      console.log('🕐 [BarberSlots] Configuração:', {
+        isCurrentDay,
+        currentHour,
+        currentMinute,
+        lastSlotTotalMinutes
+      });
       
       for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
         for (let minute of [0, 30]) {
@@ -67,6 +81,8 @@ export const useBarberAvailableSlots = () => {
         }
       }
 
+      console.log('🕐 [BarberSlots] Slots gerados:', allSlots.length);
+
       // Verificar disponibilidade de cada horário
       const slotsWithAvailability = await Promise.all(
         allSlots.map(async (slot) => {
@@ -80,7 +96,7 @@ export const useBarberAvailableSlots = () => {
             });
 
           if (error) {
-            console.error('Erro ao verificar disponibilidade:', error);
+            console.error('❌ [BarberSlots] Erro ao verificar disponibilidade:', error);
             return { ...slot, available: false };
           }
 
@@ -88,9 +104,12 @@ export const useBarberAvailableSlots = () => {
         })
       );
 
+      const availableCount = slotsWithAvailability.filter(s => s.available).length;
+      console.log('✅ [BarberSlots] Slots disponíveis:', availableCount, 'de', slotsWithAvailability.length);
+
       setSlots(slotsWithAvailability);
     } catch (error) {
-      console.error('Erro ao buscar horários disponíveis:', error);
+      console.error('❌ [BarberSlots] Erro ao buscar horários disponíveis:', error);
       setSlots([]);
     } finally {
       setLoading(false);
