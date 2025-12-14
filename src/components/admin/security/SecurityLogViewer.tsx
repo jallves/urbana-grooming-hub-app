@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -18,11 +18,15 @@ import {
   Plus,
   LogOut,
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  CheckCircle,
+  XCircle,
+  Radio
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useToast } from '@/hooks/use-toast';
+import { toast as sonnerToast } from 'sonner';
 
 interface SecurityLog {
   id: string;
@@ -44,17 +48,21 @@ const actionIcons: Record<string, typeof Eye> = {
   login: LogOut,
   logout: LogOut,
   settings: Settings,
-  cancel: AlertTriangle,
+  cancel: XCircle,
+  complete: CheckCircle,
+  absent: AlertTriangle,
 };
 
 const actionColors: Record<string, string> = {
-  view: 'bg-blue-100 text-blue-800',
-  create: 'bg-green-100 text-green-800',
-  update: 'bg-amber-100 text-amber-800',
-  delete: 'bg-red-100 text-red-800',
-  login: 'bg-purple-100 text-purple-800',
-  logout: 'bg-gray-100 text-gray-800',
-  cancel: 'bg-orange-100 text-orange-800',
+  view: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300',
+  create: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  update: 'bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300',
+  delete: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  login: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300',
+  logout: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300',
+  cancel: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300',
+  complete: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300',
+  absent: 'bg-slate-100 text-slate-800 dark:bg-slate-900/30 dark:text-slate-300',
 };
 
 const entityLabels: Record<string, string> = {
@@ -62,6 +70,9 @@ const entityLabels: Record<string, string> = {
   appointment: 'Agendamento',
   barber: 'Barbeiro',
   service: 'Serviço',
+  staff: 'Funcionário',
+  product: 'Produto',
+  financial: 'Financeiro',
   financial_transaction: 'Transação Financeira',
   settings: 'Configurações',
   barber_access: 'Acesso Barbeiro',
@@ -77,6 +88,8 @@ const actionLabels: Record<string, string> = {
   login: 'Entrou',
   logout: 'Saiu',
   cancel: 'Cancelou',
+  complete: 'Concluiu',
+  absent: 'Marcou Ausente',
   grant: 'Concedeu acesso',
   revoke: 'Revogou acesso',
 };
@@ -86,14 +99,20 @@ export const SecurityLogViewer = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterEntity, setFilterEntity] = useState<string>('all');
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const { toast } = useToast();
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
+      // Buscar logs dos últimos 30 dias
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
       const { data, error } = await supabase
         .from('admin_activity_log')
         .select('*')
+        .gte('created_at', thirtyDaysAgo.toISOString())
         .order('created_at', { ascending: false })
         .limit(500);
 
@@ -134,7 +153,7 @@ export const SecurityLogViewer = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const cleanupOldLogs = async () => {
     try {
@@ -157,9 +176,66 @@ export const SecurityLogViewer = () => {
     }
   };
 
+  // Configurar realtime para atualizações automáticas
   useEffect(() => {
     fetchLogs();
-  }, []);
+    
+    // Inscrever-se para atualizações em tempo real
+    const channel = supabase
+      .channel('security-logs-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_activity_log'
+        },
+        async (payload) => {
+          console.log('📝 Novo log de segurança recebido:', payload);
+          
+          // Buscar email do admin
+          let adminEmail = 'Sistema';
+          if (payload.new.admin_id) {
+            const { data: admin } = await supabase
+              .from('admin_users')
+              .select('email')
+              .eq('user_id', payload.new.admin_id)
+              .single();
+            
+            adminEmail = admin?.email || 'Usuário';
+          }
+          
+          const newLog: SecurityLog = {
+            id: payload.new.id,
+            admin_id: payload.new.admin_id,
+            action: payload.new.action,
+            entity: payload.new.entity,
+            entity_id: payload.new.entity_id,
+            details: payload.new.details as Record<string, any> | null,
+            ip_address: payload.new.ip_address,
+            created_at: payload.new.created_at,
+            admin_email: adminEmail
+          };
+          
+          // Adicionar novo log no topo da lista
+          setLogs(prevLogs => [newLog, ...prevLogs.slice(0, 499)]);
+          
+          // Notificação visual
+          sonnerToast.info('🔔 Novo log registrado', {
+            description: `${actionLabels[newLog.action] || newLog.action} em ${entityLabels[newLog.entity] || newLog.entity}`,
+            duration: 3000,
+          });
+        }
+      )
+      .subscribe((status) => {
+        console.log('📡 Status realtime security logs:', status);
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchLogs]);
 
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
@@ -181,7 +257,7 @@ export const SecurityLogViewer = () => {
   };
 
   const getActionBadgeClass = (action: string) => {
-    return actionColors[action] || 'bg-gray-100 text-gray-800';
+    return actionColors[action] || 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
   };
 
   return (
@@ -189,13 +265,21 @@ export const SecurityLogViewer = () => {
       {/* Header */}
       <Card className="border-l-4 border-l-indigo-500">
         <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-indigo-100 rounded-lg">
-                <Shield className="h-6 w-6 text-indigo-600" />
+              <div className="p-2 bg-indigo-100 dark:bg-indigo-900/30 rounded-lg">
+                <Shield className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
               </div>
               <div>
-                <CardTitle className="text-xl">Log de Segurança</CardTitle>
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-xl">Log de Segurança</CardTitle>
+                  {isRealtimeConnected && (
+                    <Badge variant="outline" className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 border-green-300 animate-pulse">
+                      <Radio className="h-3 w-3 mr-1" />
+                      Tempo Real
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">
                   Registro de todas as ações administrativas (últimos 30 dias)
                 </p>
@@ -252,55 +336,68 @@ export const SecurityLogViewer = () => {
       </Card>
 
       {/* Estatísticas */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card className="bg-blue-50">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <Card className="bg-blue-50 dark:bg-blue-950/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Eye className="h-5 w-5 text-blue-600" />
+              <Eye className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               <div>
-                <p className="text-2xl font-bold text-blue-700">
+                <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
                   {logs.filter(l => l.action === 'view').length}
                 </p>
-                <p className="text-xs text-blue-600">Visualizações</p>
+                <p className="text-xs text-blue-600 dark:text-blue-400">Visualizações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50">
+        <Card className="bg-green-50 dark:bg-green-950/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Plus className="h-5 w-5 text-green-600" />
+              <Plus className="h-5 w-5 text-green-600 dark:text-green-400" />
               <div>
-                <p className="text-2xl font-bold text-green-700">
+                <p className="text-2xl font-bold text-green-700 dark:text-green-300">
                   {logs.filter(l => l.action === 'create').length}
                 </p>
-                <p className="text-xs text-green-600">Criações</p>
+                <p className="text-xs text-green-600 dark:text-green-400">Criações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-amber-50">
+        <Card className="bg-amber-50 dark:bg-amber-950/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Edit className="h-5 w-5 text-amber-600" />
+              <Edit className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               <div>
-                <p className="text-2xl font-bold text-amber-700">
+                <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">
                   {logs.filter(l => l.action === 'update').length}
                 </p>
-                <p className="text-xs text-amber-600">Atualizações</p>
+                <p className="text-xs text-amber-600 dark:text-amber-400">Atualizações</p>
               </div>
             </div>
           </CardContent>
         </Card>
-        <Card className="bg-red-50">
+        <Card className="bg-red-50 dark:bg-red-950/30">
           <CardContent className="pt-4">
             <div className="flex items-center gap-2">
-              <Trash2 className="h-5 w-5 text-red-600" />
+              <Trash2 className="h-5 w-5 text-red-600 dark:text-red-400" />
               <div>
-                <p className="text-2xl font-bold text-red-700">
-                  {logs.filter(l => l.action === 'delete' || l.action === 'cancel').length}
+                <p className="text-2xl font-bold text-red-700 dark:text-red-300">
+                  {logs.filter(l => l.action === 'delete').length}
                 </p>
-                <p className="text-xs text-red-600">Exclusões/Cancelamentos</p>
+                <p className="text-xs text-red-600 dark:text-red-400">Exclusões</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-orange-50 dark:bg-orange-950/30">
+          <CardContent className="pt-4">
+            <div className="flex items-center gap-2">
+              <XCircle className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+              <div>
+                <p className="text-2xl font-bold text-orange-700 dark:text-orange-300">
+                  {logs.filter(l => l.action === 'cancel' || l.action === 'complete' || l.action === 'absent').length}
+                </p>
+                <p className="text-xs text-orange-600 dark:text-orange-400">Status</p>
               </div>
             </div>
           </CardContent>
@@ -328,6 +425,7 @@ export const SecurityLogViewer = () => {
               <div className="text-center py-10 text-muted-foreground">
                 <Shield className="h-12 w-12 mx-auto mb-3 opacity-50" />
                 <p>Nenhum log encontrado</p>
+                <p className="text-sm mt-1">As ações serão registradas automaticamente</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -355,14 +453,14 @@ export const SecurityLogViewer = () => {
                         )}
                       </div>
                       
-                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
                           {log.admin_email || 'Desconhecido'}
                         </span>
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {format(parseISO(log.created_at), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                          {format(parseISO(log.created_at), "dd/MM/yyyy 'às' HH:mm:ss", { locale: ptBR })}
                         </span>
                       </div>
                       
@@ -386,13 +484,13 @@ export const SecurityLogViewer = () => {
       </Card>
 
       {/* Informação sobre retenção */}
-      <Card className="bg-amber-50 border-amber-200">
+      <Card className="bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-800">
         <CardContent className="pt-4">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5" />
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
             <div>
-              <p className="font-medium text-amber-800">Política de Retenção</p>
-              <p className="text-sm text-amber-700">
+              <p className="font-medium text-amber-800 dark:text-amber-300">Política de Retenção</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
                 Os logs de segurança são mantidos por 30 dias. Após esse período, são automaticamente 
                 removidos para otimizar o armazenamento do banco de dados.
               </p>
