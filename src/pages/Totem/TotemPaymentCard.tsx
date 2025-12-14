@@ -239,15 +239,8 @@ const TotemPaymentCard: React.FC = () => {
     setPaymentType(type);
     setProcessing(true);
     setError(null);
-    finalizingRef.current = false;
-    
-    // IMPORTANTE: Ativar listener de resultado ANTES de iniciar pagamento
-    // para garantir que não perdemos a resposta do PayGo
     setPaymentStarted(true);
-
-    // Aguardar próximo ciclo do React para garantir que o hook useTEFPaymentResult
-    // registrou o window.onTefResultado antes de chamar o TEF
-    await new Promise(resolve => setTimeout(resolve, 100));
+    finalizingRef.current = false;
 
     try {
       // Criar registro de pagamento
@@ -270,12 +263,9 @@ const TotemPaymentCard: React.FC = () => {
 
       console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
       setCurrentPaymentId(payment.id);
-      // IMPORTANTE: Atualizar ref IMEDIATAMENTE para garantir disponibilidade no callback
       currentPaymentIdRef.current = payment.id;
 
       // Chamar TEF Android (PayGo)
-      console.log('🔌 [CARD] Chamando TEF PayGo...');
-      console.log('🔌 [CARD] paymentStarted já é true, listener deve estar ativo');
       
       const success = await iniciarPagamentoTEF({
         ordemId: payment.id,

@@ -90,16 +90,17 @@ export function useTEFPaymentResult({
   maxWaitTime = 120000 // 2 minutos
 }: UseTEFPaymentResultOptions) {
   const onResultRef = useRef(onResult);
+  const enabledRef = useRef(enabled);
   const startTimeRef = useRef<number>(Date.now());
   const processedRef = useRef(false);
   
-  // Atualizar ref quando callback mudar
+  // Atualizar refs quando props mudarem
   useEffect(() => {
     onResultRef.current = onResult;
   }, [onResult]);
   
-  // Reset quando enabled mudar
   useEffect(() => {
+    enabledRef.current = enabled;
     if (enabled) {
       console.log('[useTEFPaymentResult] ✅ Hook ATIVADO - aguardando resultado do PayGo');
       startTimeRef.current = Date.now();
@@ -112,6 +113,21 @@ export function useTEFPaymentResult({
   
   // Função para processar resultado (com proteção contra duplicatas)
   const processResult = useCallback((resultado: TEFResultado | Record<string, unknown>, source: string) => {
+    // IMPORTANTE: Verificar se enabled está true no momento do callback
+    // usando a ref para ter o valor mais atual
+    if (!enabledRef.current) {
+      console.log('[useTEFPaymentResult] ⚠️ Resultado recebido mas hook DESATIVADO - salvando para depois');
+      // Salvar no sessionStorage para tentar processar depois
+      try {
+        const normalized = normalizePayGoResult(resultado as Record<string, unknown>);
+        sessionStorage.setItem('lastTefResult', JSON.stringify(normalized));
+        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+      } catch (e) {
+        console.error('[useTEFPaymentResult] Erro ao salvar no sessionStorage:', e);
+      }
+      return;
+    }
+    
     if (processedRef.current) {
       console.log('[useTEFPaymentResult] ⚠️ Resultado já processado, ignorando');
       return;
@@ -148,19 +164,18 @@ export function useTEFPaymentResult({
   }, []);
   
   // Registrar callback global no window
-  // IMPORTANTE: Este é o receptor PRINCIPAL de resultados do PayGo
+  // IMPORTANTE: SEMPRE registrar, independente de enabled
+  // Isso garante que não perdemos o resultado do PayGo
   useEffect(() => {
-    if (!enabled) return;
-    
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
-    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado');
-    console.log('[useTEFPaymentResult] Este é o receptor PRINCIPAL de resultados');
+    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado (SEMPRE ATIVO)');
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     
-    // Sempre sobrescrever para garantir que este hook é o receptor
+    // SEMPRE registrar o callback, não depender de enabled
     (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
       console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
       console.log('[useTEFPaymentResult] 📞 window.onTefResultado CHAMADO');
+      console.log('[useTEFPaymentResult] enabled atual:', enabledRef.current);
       console.log('[useTEFPaymentResult] Dados:', JSON.stringify(resultado, null, 2));
       console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
       processResult(resultado, 'window.onTefResultado');
@@ -169,10 +184,10 @@ export function useTEFPaymentResult({
     console.log('[useTEFPaymentResult] Callback registrado com sucesso');
     
     return () => {
-      // Não remover o callback ao desmontar para manter compatibilidade
-      console.log('[useTEFPaymentResult] Hook desativado, mantendo callback');
+      // Não remover o callback ao desmontar
+      console.log('[useTEFPaymentResult] Componente desmontando, mantendo callback');
     };
-  }, [enabled, processResult]);
+  }, [processResult]); // Depende apenas de processResult que é estável
   
   // Listener para CustomEvent
   useEffect(() => {
