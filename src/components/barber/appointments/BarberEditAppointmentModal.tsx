@@ -342,18 +342,18 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2">
                     {availableSlots.map((slot) => (
-                      <Button
+                      <button
                         key={slot.time}
-                        variant={selectedTime === slot.time ? "default" : "outline"}
-                        className={`h-9 text-xs sm:text-sm touch-manipulation ${
+                        type="button"
+                        className={`h-9 px-2 text-xs sm:text-sm rounded-md font-medium transition-colors touch-manipulation ${
                           selectedTime === slot.time 
-                            ? "bg-urbana-gold text-black hover:bg-urbana-gold/90" 
-                            : "border-gray-600 text-gray-300 hover:bg-gray-700"
+                            ? "bg-urbana-gold text-black" 
+                            : "bg-gray-700 text-gray-200 border border-gray-600"
                         }`}
                         onClick={() => setSelectedTime(slot.time)}
                       >
                         {slot.time}
-                      </Button>
+                      </button>
                     ))}
                   </div>
                 )}
