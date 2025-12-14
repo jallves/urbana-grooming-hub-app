@@ -64,6 +64,12 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   useEffect(() => {
     if (selectedDate && selectedService) {
+      console.log('🔍 [BarberEditModal] Chamando fetchAvailableSlots:', {
+        barberId,
+        selectedDate,
+        duracao: selectedService.duracao,
+        appointmentId
+      });
       fetchAvailableSlots(
         barberId,
         selectedDate,
@@ -96,10 +102,21 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         return;
       }
 
+      console.log('📋 [BarberEditModal] Agendamento carregado:', {
+        id: data.id,
+        data: data.data,
+        hora: data.hora,
+        servico: data.painel_servicos
+      });
+
       setAppointment(data);
       setSelectedDate(parseISO(data.data));
       setSelectedTime(data.hora);
-      setSelectedService(data.painel_servicos);
+      
+      // Garantir que o serviço tenha o campo duracao
+      if (data.painel_servicos) {
+        setSelectedService(data.painel_servicos);
+      }
     } catch (error) {
       console.error('Erro ao buscar agendamento:', error);
       toast.error('Erro ao carregar agendamento');
