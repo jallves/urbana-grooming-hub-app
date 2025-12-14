@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -6,6 +6,8 @@ import { ArrowLeft, CheckCircle2, Loader2, WifiOff, QrCode } from 'lucide-react'
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentPix: React.FC = () => {
@@ -16,130 +18,36 @@ const TotemPaymentPix: React.FC = () => {
   const [processing, setProcessing] = useState(false);
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [paymentStarted, setPaymentStarted] = useState(false);
   
   const isProcessingRef = useRef(false);
+  const finalizingRef = useRef(false);
+  const currentPaymentIdRef = useRef<string | null>(null);
 
-  // Hook TEF Android
-  const {
-    isAndroidAvailable,
-    isPinpadConnected,
-    iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF
-  } = useTEFAndroid({
-    onSuccess: async (resultado) => {
-      console.log('✅ [PIX-TEF] Pagamento aprovado:', resultado);
-      if (currentPaymentId) {
-        await finalizePayment(currentPaymentId, {
-          nsu: resultado.nsu,
-          autorizacao: resultado.autorizacao
-        });
-      }
-    },
-    onError: (erro) => {
-      console.error('❌ [PIX-TEF] Erro no pagamento:', erro);
-      toast.error('Pagamento PIX falhou', { description: erro });
-      setError(erro);
-      setProcessing(false);
-    },
-    onCancelled: () => {
-      console.log('⚠️ [PIX-TEF] Pagamento cancelado');
-      toast.info('Pagamento cancelado');
-      setProcessing(false);
-    }
-  });
-
-  // Iniciar pagamento PIX via TEF quando componente montar
+  // Atualizar ref
   useEffect(() => {
-    if (!venda_id || !total) {
-      console.error('❌ [PIX] Dados incompletos');
-      toast.error('Dados de pagamento incompletos');
-      navigate('/totem/home');
-      return;
-    }
+    currentPaymentIdRef.current = currentPaymentId;
+  }, [currentPaymentId]);
 
-    if (!isAndroidAvailable || !isPinpadConnected) {
-      console.log('⚠️ [PIX] TEF não disponível, aguardando...');
-      return;
-    }
-
-    if (isProcessingRef.current) {
-      return;
-    }
-
-    iniciarPagamentoPix();
-  }, [isAndroidAvailable, isPinpadConnected, venda_id, total]);
-
-  const iniciarPagamentoPix = async () => {
-    if (isProcessingRef.current) return;
-    isProcessingRef.current = true;
-    
-    console.log('💚 [PIX] Iniciando pagamento PIX via TEF PayGo...');
-    console.log('   💰 Venda ID:', venda_id);
-    console.log('   💵 Total:', total);
-    
-    setProcessing(true);
-    setError(null);
-
-    try {
-      // Criar registro de pagamento
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: session_id,
-          payment_method: 'pix',
-          amount: total,
-          status: 'processing',
-          transaction_id: `PIX${Date.now()}`
-        })
-        .select()
-        .single();
-
-      if (paymentError) {
-        console.error('❌ [PIX] Erro ao criar registro:', paymentError);
-        throw paymentError;
-      }
-
-      console.log('✅ [PIX] Registro criado:', payment.id);
-      setCurrentPaymentId(payment.id);
-
-      // Chamar TEF Android para PIX (PayGo gera QR code no próprio pinpad)
-      console.log('🔌 [PIX] Chamando TEF PayGo para PIX...');
-      const success = await iniciarPagamentoTEF({
-        ordemId: payment.id,
-        valor: total,
-        tipo: 'pix',
-        parcelas: 1
-      });
-
-      if (!success) {
-        console.error('❌ [PIX] Falha ao iniciar TEF');
-        toast.error('Erro ao iniciar pagamento PIX');
-        setProcessing(false);
-        isProcessingRef.current = false;
-      }
-
-    } catch (error) {
-      console.error('❌ [PIX] Erro:', error);
-      toast.error('Erro ao processar pagamento');
-      setProcessing(false);
-      isProcessingRef.current = false;
-    }
-  };
-
-  const handleCancelPayment = () => {
-    cancelarPagamentoTEF();
-    setProcessing(false);
-    isProcessingRef.current = false;
-    toast.info('Pagamento cancelado');
-    navigate('/totem/checkout', { state: location.state });
-  };
-
-  const finalizePayment = async (paymentId: string, transactionData: {
+  // Função para finalizar pagamento
+  const finalizePayment = useCallback(async (paymentId: string, transactionData: {
     nsu?: string;
     autorizacao?: string;
   }) => {
+    // Evitar finalização duplicada
+    if (finalizingRef.current) {
+      console.log('[PIX] ⚠️ Finalização já em andamento');
+      return;
+    }
+    finalizingRef.current = true;
+    
     try {
-      console.log('✅ [PIX] Finalizando pagamento...');
+      console.log('✅ [PIX] ═══════════════════════════════════════');
+      console.log('✅ [PIX] FINALIZANDO PAGAMENTO PIX');
+      console.log('✅ [PIX] Payment ID:', paymentId);
+      console.log('✅ [PIX] NSU:', transactionData.nsu);
+      console.log('✅ [PIX] Autorização:', transactionData.autorizacao);
+      console.log('✅ [PIX] ═══════════════════════════════════════');
       
       // Atualizar status do pagamento
       await supabase
@@ -183,7 +91,9 @@ const TotemPaymentPix: React.FC = () => {
         });
       }
 
+      console.log('✅ [PIX] Pagamento finalizado com sucesso!');
       toast.success('Pagamento PIX confirmado!');
+      
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -199,7 +109,182 @@ const TotemPaymentPix: React.FC = () => {
       console.error('❌ [PIX] Erro ao finalizar:', error);
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
+      finalizingRef.current = false;
     }
+  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
+
+  // Handler para resultado do TEF
+  const handleTEFResult = useCallback((resultado: TEFResultado) => {
+    console.log('📞 [PIX] handleTEFResult chamado:', resultado.status);
+    
+    const paymentId = currentPaymentIdRef.current;
+    
+    switch (resultado.status) {
+      case 'aprovado':
+        console.log('✅ [PIX] Pagamento APROVADO pelo PayGo');
+        if (paymentId) {
+          finalizePayment(paymentId, {
+            nsu: resultado.nsu,
+            autorizacao: resultado.autorizacao
+          });
+        } else {
+          console.error('❌ [PIX] currentPaymentId não disponível!');
+          toast.error('Erro interno - ID do pagamento não encontrado');
+          setProcessing(false);
+        }
+        break;
+        
+      case 'negado':
+        console.log('❌ [PIX] Pagamento NEGADO pelo PayGo');
+        toast.error('Pagamento PIX negado', { description: resultado.mensagem || 'Tente novamente' });
+        setError(resultado.mensagem || 'Pagamento negado');
+        setProcessing(false);
+        setPaymentStarted(false);
+        break;
+        
+      case 'cancelado':
+        console.log('⚠️ [PIX] Pagamento CANCELADO');
+        toast.info('Pagamento cancelado');
+        setProcessing(false);
+        setPaymentStarted(false);
+        break;
+        
+      case 'erro':
+        console.log('❌ [PIX] ERRO no pagamento');
+        toast.error('Erro no pagamento PIX', { description: resultado.mensagem });
+        setError(resultado.mensagem || 'Erro desconhecido');
+        setProcessing(false);
+        setPaymentStarted(false);
+        break;
+    }
+  }, [finalizePayment]);
+
+  // Hook dedicado para receber resultado do PayGo
+  useTEFPaymentResult({
+    enabled: paymentStarted && processing,
+    onResult: handleTEFResult,
+    pollingInterval: 500,
+    maxWaitTime: 180000 // 3 minutos
+  });
+
+  // Hook TEF Android
+  const {
+    isAndroidAvailable,
+    isPinpadConnected,
+    iniciarPagamento: iniciarPagamentoTEF,
+    cancelarPagamento: cancelarPagamentoTEF
+  } = useTEFAndroid({
+    onSuccess: handleTEFResult,
+    onError: (erro) => {
+      console.error('❌ [PIX-TEF] Erro no pagamento:', erro);
+      toast.error('Pagamento PIX falhou', { description: erro });
+      setError(erro);
+      setProcessing(false);
+      setPaymentStarted(false);
+    },
+    onCancelled: () => {
+      console.log('⚠️ [PIX-TEF] Pagamento cancelado');
+      toast.info('Pagamento cancelado');
+      setProcessing(false);
+      setPaymentStarted(false);
+    }
+  });
+
+  // Iniciar pagamento PIX via TEF quando componente montar
+  useEffect(() => {
+    if (!venda_id || !total) {
+      console.error('❌ [PIX] Dados incompletos');
+      toast.error('Dados de pagamento incompletos');
+      navigate('/totem/home');
+      return;
+    }
+
+    if (!isAndroidAvailable || !isPinpadConnected) {
+      console.log('⚠️ [PIX] TEF não disponível, aguardando...');
+      return;
+    }
+
+    if (isProcessingRef.current) {
+      return;
+    }
+
+    iniciarPagamentoPix();
+  }, [isAndroidAvailable, isPinpadConnected, venda_id, total]);
+
+  const iniciarPagamentoPix = async () => {
+    if (isProcessingRef.current) return;
+    isProcessingRef.current = true;
+    
+    console.log('💚 [PIX] ═══════════════════════════════════════');
+    console.log('💚 [PIX] INICIANDO PAGAMENTO PIX VIA TEF PAYGO');
+    console.log('💚 [PIX] Venda ID:', venda_id);
+    console.log('💚 [PIX] Total:', total);
+    console.log('💚 [PIX] ═══════════════════════════════════════');
+    
+    setProcessing(true);
+    setError(null);
+    finalizingRef.current = false;
+
+    try {
+      // Criar registro de pagamento
+      const { data: payment, error: paymentError } = await supabase
+        .from('totem_payments')
+        .insert({
+          session_id: session_id,
+          payment_method: 'pix',
+          amount: total,
+          status: 'processing',
+          transaction_id: `PIX${Date.now()}`
+        })
+        .select()
+        .single();
+
+      if (paymentError) {
+        console.error('❌ [PIX] Erro ao criar registro:', paymentError);
+        throw paymentError;
+      }
+
+      console.log('✅ [PIX] Registro criado:', payment.id);
+      setCurrentPaymentId(payment.id);
+      
+      // Marcar que pagamento foi iniciado (ativa o hook de resultado)
+      setPaymentStarted(true);
+
+      // Chamar TEF Android para PIX (PayGo gera QR code no próprio pinpad)
+      console.log('🔌 [PIX] Chamando TEF PayGo para PIX...');
+      const success = await iniciarPagamentoTEF({
+        ordemId: payment.id,
+        valor: total,
+        tipo: 'pix',
+        parcelas: 1
+      });
+
+      if (!success) {
+        console.error('❌ [PIX] Falha ao iniciar TEF');
+        toast.error('Erro ao iniciar pagamento PIX');
+        setProcessing(false);
+        setPaymentStarted(false);
+        isProcessingRef.current = false;
+      } else {
+        console.log('✅ [PIX] TEF iniciado, aguardando resposta do PayGo...');
+      }
+
+    } catch (error) {
+      console.error('❌ [PIX] Erro:', error);
+      toast.error('Erro ao processar pagamento');
+      setProcessing(false);
+      setPaymentStarted(false);
+      isProcessingRef.current = false;
+    }
+  };
+
+  const handleCancelPayment = () => {
+    cancelarPagamentoTEF();
+    setProcessing(false);
+    setPaymentStarted(false);
+    isProcessingRef.current = false;
+    toast.info('Pagamento cancelado');
+    navigate('/totem/checkout', { state: location.state });
   };
 
   // Tela de erro quando TEF não está disponível
@@ -216,7 +301,7 @@ const TotemPaymentPix: React.FC = () => {
             <WifiOff className="w-20 h-20 text-red-500 mx-auto mb-6" />
             <h2 className="text-2xl font-bold text-white mb-4">Pinpad Não Conectado</h2>
             <p className="text-gray-300 mb-6">
-              A maquininha não está conectada. Verifique a conexão USB para realizar pagamentos PIX.
+              A maquininha não está conectada. Verifique a conexão para realizar pagamentos PIX.
             </p>
             <div className="space-y-3">
               <Button 
@@ -270,7 +355,7 @@ const TotemPaymentPix: React.FC = () => {
           </h1>
           <p className="text-xs sm:text-sm md:text-base text-green-400 mt-1 flex items-center justify-center gap-1">
             <CheckCircle2 className="w-3 h-3" />
-            Pinpad conectado
+            PayGo conectado
           </p>
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
@@ -288,7 +373,7 @@ const TotemPaymentPix: React.FC = () => {
                 <div className="w-2 h-2 bg-green-400 rounded-full" />
               </div>
               <p className="text-base sm:text-lg font-bold text-green-400">
-                Aguardando pagamento PIX...
+                ✅ PayGo Integrado - Aguardando pagamento PIX...
               </p>
             </div>
           </div>
@@ -319,6 +404,24 @@ const TotemPaymentPix: React.FC = () => {
             <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
               R$ {total?.toFixed(2)}
             </p>
+          </div>
+
+          {/* Progress Steps */}
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+              <span className="text-xs sm:text-sm text-urbana-light">TEF</span>
+            </div>
+            <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
+            <div className="flex items-center gap-1.5">
+              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+              <span className="text-xs sm:text-sm text-urbana-light">QR Code</span>
+            </div>
+            <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
+            <div className="flex items-center gap-1.5">
+              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-400 rounded-full animate-pulse" />
+              <span className="text-xs sm:text-sm text-urbana-light">Pagamento</span>
+            </div>
           </div>
 
           {/* Loader */}
