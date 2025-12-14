@@ -113,6 +113,14 @@ export function useTEFPaymentResult({
   
   // Função para processar resultado (com proteção contra duplicatas)
   const processResult = useCallback((resultado: TEFResultado | Record<string, unknown>, source: string) => {
+    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+    console.log('[useTEFPaymentResult] 📥 PROCESSANDO RESULTADO');
+    console.log('[useTEFPaymentResult] Fonte:', source);
+    console.log('[useTEFPaymentResult] enabledRef.current:', enabledRef.current);
+    console.log('[useTEFPaymentResult] processedRef.current:', processedRef.current);
+    console.log('[useTEFPaymentResult] Dados brutos:', JSON.stringify(resultado, null, 2));
+    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+    
     // IMPORTANTE: Verificar se enabled está true no momento do callback
     // usando a ref para ter o valor mais atual
     if (!enabledRef.current) {
@@ -122,6 +130,7 @@ export function useTEFPaymentResult({
         const normalized = normalizePayGoResult(resultado as Record<string, unknown>);
         sessionStorage.setItem('lastTefResult', JSON.stringify(normalized));
         sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+        console.log('[useTEFPaymentResult] ✅ Resultado salvo no sessionStorage para recuperação posterior');
       } catch (e) {
         console.error('[useTEFPaymentResult] Erro ao salvar no sessionStorage:', e);
       }
@@ -137,14 +146,16 @@ export function useTEFPaymentResult({
     const resultKey = `${normalized.status}-${normalized.nsu}-${normalized.timestamp}`;
     
     if (globalLastProcessedResultKey === resultKey) {
-      console.log('[useTEFPaymentResult] ⚠️ Resultado duplicado, ignorando');
+      console.log('[useTEFPaymentResult] ⚠️ Resultado duplicado (key match), ignorando');
       return;
     }
     
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
-    console.log('[useTEFPaymentResult] ✅ RESULTADO RECEBIDO via:', source);
+    console.log('[useTEFPaymentResult] ✅ RESULTADO ACEITO PARA PROCESSAMENTO');
+    console.log('[useTEFPaymentResult] Via:', source);
     console.log('[useTEFPaymentResult] Status:', normalized.status);
     console.log('[useTEFPaymentResult] NSU:', normalized.nsu);
+    console.log('[useTEFPaymentResult] Autorização:', normalized.autorizacao);
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     
     globalLastProcessedResultKey = resultKey;
@@ -160,7 +171,9 @@ export function useTEFPaymentResult({
     }
     
     // Chamar callback
+    console.log('[useTEFPaymentResult] 📞 Chamando onResultRef.current...');
     onResultRef.current(normalized);
+    console.log('[useTEFPaymentResult] ✅ Callback chamado com sucesso');
   }, []);
   
   // Registrar callback global no window
