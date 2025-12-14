@@ -1,25 +1,29 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CheckCircle, ShoppingBag, Sparkles } from 'lucide-react';
+import { CheckCircle, ShoppingBag, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sale, client } = location.state || {};
+  const { sale, client, transactionData } = location.state || {};
 
   useEffect(() => {
     if (!sale || !client) {
       navigate('/totem/home');
+      return;
     }
 
     const timer = setTimeout(() => {
       navigate('/totem/home');
-    }, 5000);
+    }, 8000);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [sale, client, navigate]);
+
+  if (!sale || !client) return null;
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex items-center justify-center p-4 font-poppins relative overflow-hidden">
@@ -39,40 +43,59 @@ const TotemProductPaymentSuccess: React.FC = () => {
         <div className="absolute bottom-1/4 left-1/4 w-96 h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl opacity-40" />
       </div>
 
-      <div className="relative text-center space-y-8 max-w-2xl z-10">
+      <div className="relative text-center space-y-6 max-w-2xl z-10">
         <div className="flex justify-center animate-scale-in">
           <div className="relative">
             <div className="absolute -inset-8 bg-gradient-to-br from-emerald-400 to-green-500 blur-3xl opacity-50" />
-            <div className="relative w-40 h-40 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
-              <CheckCircle className="w-20 h-20 text-white" strokeWidth={3} />
+            <div className="relative w-32 h-32 md:w-40 md:h-40 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+              <CheckCircle className="w-16 h-16 md:w-20 md:h-20 text-white" strokeWidth={3} />
             </div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-green-400">
             Compra Finalizada!
           </h1>
           
-          <p className="text-2xl text-urbana-light">
+          <p className="text-xl md:text-2xl text-urbana-light">
             Obrigado, {client?.nome?.split(' ')[0]}!
           </p>
 
-          <div className="inline-flex items-center gap-3 px-6 py-3 bg-urbana-gold/20 border-2 border-urbana-gold/50 rounded-xl">
-            <ShoppingBag className="w-6 h-6 text-urbana-gold" />
-            <span className="text-xl font-bold text-urbana-gold">
-              R$ {sale?.total?.toFixed(2)}
-            </span>
+          <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-urbana-light/60">Data:</span>
+              <span className="text-urbana-light">{format(new Date(), "dd/MM/yyyy HH:mm")}</span>
+            </div>
+            
+            {transactionData?.nsu && (
+              <div className="flex justify-between text-sm">
+                <span className="text-urbana-light/60">NSU:</span>
+                <span className="text-urbana-light">{transactionData.nsu}</span>
+              </div>
+            )}
+            
+            <div className="flex justify-between pt-2 border-t border-urbana-gold/30">
+              <span className="text-lg font-bold text-urbana-light">TOTAL:</span>
+              <span className="text-xl font-black text-urbana-gold">
+                R$ {sale?.total?.toFixed(2)}
+              </span>
+            </div>
           </div>
         </div>
 
         <Button
           onClick={() => navigate('/totem/home')}
           size="lg"
-          className="bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black font-bold text-lg px-8"
+          className="h-14 px-8 text-lg bg-gradient-to-r from-urbana-gold to-urbana-gold-dark text-urbana-black font-bold"
         >
+          <Home className="w-5 h-5 mr-2" />
           Voltar ao Início
         </Button>
+        
+        <p className="text-base text-urbana-gold font-bold">
+          Costa Urbana Barbearia ✂️
+        </p>
       </div>
     </div>
   );

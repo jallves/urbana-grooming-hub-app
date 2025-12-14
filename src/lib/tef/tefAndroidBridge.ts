@@ -66,6 +66,35 @@ let pinpadDisconnectedCallback: (() => void) | null = null;
 let pinpadErrorCallback: TEFPinpadCallback | null = null;
 let androidReadyCallback: ((version: string) => void) | null = null;
 
+// Flag para evitar processamento duplicado
+let lastProcessedResult: string | null = null;
+
+/**
+ * Inicializa listener global para resultados do PayGo
+ * Chamado automaticamente quando o módulo é carregado
+ */
+function initGlobalPaymentListener() {
+  // Listener para CustomEvent (backup)
+  window.addEventListener('tefPaymentResult', ((event: CustomEvent) => {
+    console.log('[TEFBridge] CustomEvent tefPaymentResult recebido:', event.detail);
+    
+    if (resultCallback && event.detail) {
+      const resultKey = JSON.stringify(event.detail);
+      if (lastProcessedResult !== resultKey) {
+        lastProcessedResult = resultKey;
+        resultCallback(event.detail);
+      }
+    }
+  }) as EventListener);
+
+  console.log('[TEFBridge] Global payment listener inicializado');
+}
+
+// Inicializar listener ao carregar módulo
+if (typeof window !== 'undefined') {
+  initGlobalPaymentListener();
+}
+
 /**
  * Verifica se estamos rodando dentro do WebView Android com TEF
  */
@@ -102,15 +131,40 @@ export function iniciarPagamentoAndroid(
     return false;
   }
   
+  // Limpar resultado anterior
+  lastProcessedResult = null;
+  
   // Registrar callback
   resultCallback = onResult;
   
-  // Registrar handler global para receber resultado
-  window.onTefResultado = (resultado: TEFResultado) => {
-    console.log('[TEFBridge] Resultado recebido:', resultado);
+  // Registrar handler global para receber resultado do PayGo
+  // Este handler é chamado pelo Android via evaluateJavascript
+  window.onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    console.log('[TEFBridge] RESULTADO DO PAYGO RECEBIDO');
+    console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+    
+    // Normalizar resultado (pode vir como resposta PayGo ou já formatado)
+    const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+    console.log('[TEFBridge] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    
+    // Evitar processamento duplicado
+    const resultKey = JSON.stringify(normalizedResult);
+    if (lastProcessedResult === resultKey) {
+      console.log('[TEFBridge] Resultado já processado, ignorando duplicata');
+      return;
+    }
+    lastProcessedResult = resultKey;
+    
     if (resultCallback) {
-      resultCallback(resultado);
-      resultCallback = null;
+      console.log('[TEFBridge] Chamando callback registrado...');
+      const callback = resultCallback;
+      resultCallback = null; // Limpar antes de chamar para evitar chamadas duplas
+      callback(normalizedResult);
+      console.log('[TEFBridge] ✅ Callback executado com sucesso!');
+    } else {
+      console.warn('[TEFBridge] ⚠️ Nenhum callback registrado!');
     }
   };
   
@@ -123,12 +177,66 @@ export function iniciarPagamentoAndroid(
     });
     
     console.log('[TEFBridge] Iniciando pagamento:', jsonParams);
+    console.log('[TEFBridge] Callback registrado:', resultCallback ? 'SIM' : 'NÃO');
     window.TEF!.iniciarPagamento(jsonParams);
     return true;
   } catch (error) {
     console.error('[TEFBridge] Erro ao iniciar pagamento:', error);
+    resultCallback = null;
     return false;
   }
+}
+
+/**
+ * Normaliza o resultado do PayGo para o formato esperado
+ */
+function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
+  // Se já tem status formatado, usar diretamente
+  if (raw.status && typeof raw.status === 'string') {
+    return {
+      status: raw.status as TEFResultado['status'],
+      valor: typeof raw.valor === 'number' ? raw.valor : 
+             typeof raw.amount === 'number' ? raw.amount : undefined,
+      bandeira: (raw.bandeira || raw.cardName || '') as string,
+      nsu: (raw.nsu || raw.transactionNsu || '') as string,
+      autorizacao: (raw.autorizacao || raw.authorizationCode || '') as string,
+      codigoResposta: raw.transactionResult?.toString(),
+      mensagem: (raw.mensagem || raw.resultMessage || '') as string,
+      comprovanteCliente: (raw.comprovanteCliente || raw.cardholderReceipt || '') as string,
+      comprovanteLojista: (raw.comprovanteLojista || raw.merchantReceipt || '') as string,
+      ordemId: raw.ordemId as string,
+      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now()
+    };
+  }
+  
+  // Converter de formato PayGo bruto
+  const transactionResult = typeof raw.transactionResult === 'number' 
+    ? raw.transactionResult 
+    : parseInt(raw.transactionResult as string || '-99', 10);
+  
+  let status: TEFResultado['status'];
+  if (transactionResult === 0) {
+    status = 'aprovado';
+  } else if (transactionResult >= 1 && transactionResult <= 99) {
+    status = 'negado';
+  } else if (transactionResult === -1) {
+    status = 'cancelado';
+  } else {
+    status = 'erro';
+  }
+  
+  return {
+    status,
+    valor: typeof raw.amount === 'number' ? raw.amount : undefined,
+    bandeira: (raw.cardName || '') as string,
+    nsu: (raw.transactionNsu || '') as string,
+    autorizacao: (raw.authorizationCode || '') as string,
+    codigoResposta: transactionResult.toString(),
+    mensagem: (raw.resultMessage || '') as string,
+    comprovanteCliente: (raw.cardholderReceipt || '') as string,
+    comprovanteLojista: (raw.merchantReceipt || '') as string,
+    timestamp: Date.now()
+  };
 }
 
 /**
