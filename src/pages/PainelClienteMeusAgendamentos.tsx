@@ -12,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoModal';
 import { useToast } from '@/hooks/use-toast';
 import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
+import { sendAppointmentCancellationEmail } from '@/hooks/useSendAppointmentCancellationEmail';
 
 interface Agendamento {
   id: string;
@@ -151,6 +152,17 @@ export default function PainelClienteMeusAgendamentos() {
         .eq('cliente_id', cliente?.id);
 
       if (error) throw error;
+
+      // Enviar e-mail de cancelamento
+      console.log('📧 [Cliente] Enviando e-mail de cancelamento...');
+      try {
+        await sendAppointmentCancellationEmail({
+          appointmentId: agendamento.id,
+          cancelledBy: 'client'
+        });
+      } catch (emailError) {
+        console.error('⚠️ Erro ao enviar e-mail de cancelamento:', emailError);
+      }
 
       toast({
         title: "Agendamento cancelado!",

@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useAppointmentCompletion } from './hooks/useAppointmentCompletion';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+import { sendAppointmentCancellationEmail } from '@/hooks/useSendAppointmentCancellationEmail';
 
 export interface PainelAgendamento {
   id: string;
@@ -269,6 +270,19 @@ export const useClientAppointments = () => {
             client_name: appointment.painel_clientes?.nome
           }
         });
+      }
+
+      // Enviar e-mail de cancelamento se for cancelamento
+      if (newStatus === 'cancelado') {
+        console.log('📧 [Admin] Enviando e-mail de cancelamento...');
+        try {
+          await sendAppointmentCancellationEmail({
+            appointmentId,
+            cancelledBy: 'admin'
+          });
+        } catch (emailError) {
+          console.error('⚠️ [Admin] Erro ao enviar e-mail de cancelamento:', emailError);
+        }
       }
 
       const successMessage = newStatus === 'cancelado' 
