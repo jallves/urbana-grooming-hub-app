@@ -13,7 +13,7 @@ import { useAvailabilityCheck } from '@/hooks/totem/useAvailabilityCheck';
 import { useRetryOperation } from '@/components/totem/RetryOperation';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
-import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface Service {
@@ -345,27 +345,37 @@ const TotemNovoAgendamento: React.FC = () => {
         client: clientData
       };
 
-      // Enviar e-mail de confirmação e AGUARDAR antes de navegar
+      // Enviar e-mail de confirmação usando dados já disponíveis
       // Usar Promise com timeout para garantir que não bloqueia indefinidamente
-      console.log('📧 Iniciando envio de e-mail de confirmação...');
+      console.log('📧 [Totem] Iniciando envio de e-mail de confirmação...');
+      console.log('📧 [Totem] Cliente:', clientData.nome, '- Email:', clientData.email);
       try {
         // Timeout de 10 segundos para o envio do e-mail
-        const emailPromise = sendAppointmentConfirmationEmail(result.id);
+        const emailPromise = sendConfirmationEmailDirect({
+          clientName: clientData.nome,
+          clientEmail: clientData.email || '',
+          serviceName: selectedService.nome,
+          staffName: selectedBarber.nome,
+          appointmentDate: dataLocal,
+          appointmentTime: selectedTime,
+          servicePrice: selectedService.preco,
+          serviceDuration: selectedService.duracao
+        });
         const timeoutPromise = new Promise<boolean>((resolve) => {
           setTimeout(() => {
-            console.log('⏰ Timeout no envio do e-mail, continuando navegação...');
+            console.log('⏰ [Totem] Timeout no envio do e-mail, continuando navegação...');
             resolve(false);
           }, 10000);
         });
 
         const emailSent = await Promise.race([emailPromise, timeoutPromise]);
         if (emailSent) {
-          console.log('📧 E-mail de confirmação enviado com sucesso!');
+          console.log('✅ [Totem] E-mail de confirmação enviado com sucesso!');
         } else {
-          console.log('📧 E-mail não enviado (cliente sem e-mail válido, timeout ou erro)');
+          console.log('📧 [Totem] E-mail não enviado (cliente sem e-mail válido, timeout ou erro)');
         }
       } catch (emailError) {
-        console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
+        console.error('❌ [Totem] Erro ao enviar e-mail de confirmação:', emailError);
       }
 
       // Navegar APENAS após tentativa de envio do e-mail
