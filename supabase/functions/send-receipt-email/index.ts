@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
     `).join('');
 
     const emailResponse = await resend.emails.send({
-      from: "Costa Urbana Barbearia <onboarding@resend.dev>",
+      from: "Costa Urbana Barbearia <noreply@barbeariacostaurbana.com.br>",
       to: [clientEmail],
       subject: `${emoji} ${title} - Costa Urbana Barbearia`,
       html: `

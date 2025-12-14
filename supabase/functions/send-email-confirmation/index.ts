@@ -123,14 +123,14 @@ const handler = async (req: Request): Promise<Response> => {
     const formattedPrice = servicePrice.toFixed(2).replace('.', ',');
 
     const emailResponse = await resend.emails.send({
-      from: "Urbana Barbearia <onboarding@resend.dev>",
+      from: "Costa Urbana Barbearia <noreply@barbeariacostaurbana.com.br>",
       to: [clientEmail],
-      subject: "🎉 Agendamento Confirmado - Urbana Barbearia",
+      subject: "🎉 Agendamento Confirmado - Costa Urbana Barbearia",
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; background: linear-gradient(135deg, #8B4513, #D2691E); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">🎉 Agendamento Confirmado!</h1>
-            <p style="margin: 10px 0 0; font-size: 16px;">Urbana Barbearia</p>
+          <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px; color: #D4A574;">🎉 Agendamento Confirmado!</h1>
+            <p style="margin: 10px 0 0; font-size: 16px;">Costa Urbana Barbearia</p>
           </div>
           
           <div style="background: #f9f9f9; padding: 30px; border-radius: 0 0 10px 10px;">
@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
               Olá <strong>${clientName}</strong>! Seu horário está marcado:
             </p>
             
-            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #D2691E; margin: 20px 0;">
+            <div style="background: white; padding: 20px; border-radius: 8px; border-left: 4px solid #D4A574; margin: 20px 0;">
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px 0; color: #555; font-weight: bold;">📅 Data:</td>
@@ -175,11 +175,11 @@ const handler = async (req: Request): Promise<Response> => {
             
             <div style="text-align: center; margin-top: 30px;">
               <p style="color: #666; margin: 5px 0;">📞 Dúvidas? Entre em contato conosco!</p>
-              <p style="color: #D2691E; font-weight: bold; font-size: 18px; margin: 15px 0;">
+              <p style="color: #D4A574; font-weight: bold; font-size: 18px; margin: 15px 0;">
                 Nos vemos em breve! 🔥
               </p>
               <p style="color: #888; font-style: italic;">
-                Urbana Barbearia - Onde o estilo encontra a tradição
+                Costa Urbana Barbearia ✂️
               </p>
             </div>
           </div>
