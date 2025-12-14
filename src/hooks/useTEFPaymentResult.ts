@@ -148,23 +148,29 @@ export function useTEFPaymentResult({
   }, []);
   
   // Registrar callback global no window
+  // IMPORTANTE: Este é o receptor PRINCIPAL de resultados do PayGo
   useEffect(() => {
     if (!enabled) return;
     
-    console.log('[useTEFPaymentResult] Registrando window.onTefResultado');
+    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado');
+    console.log('[useTEFPaymentResult] Este é o receptor PRINCIPAL de resultados');
+    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     
-    const originalCallback = (window as any).onTefResultado;
-    
+    // Sempre sobrescrever para garantir que este hook é o receptor
     (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
       console.log('[useTEFPaymentResult] 📞 window.onTefResultado CHAMADO');
+      console.log('[useTEFPaymentResult] Dados:', JSON.stringify(resultado, null, 2));
+      console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
       processResult(resultado, 'window.onTefResultado');
     };
     
+    console.log('[useTEFPaymentResult] Callback registrado com sucesso');
+    
     return () => {
-      // Restaurar callback original se existia
-      if (originalCallback) {
-        (window as any).onTefResultado = originalCallback;
-      }
+      // Não remover o callback ao desmontar para manter compatibilidade
+      console.log('[useTEFPaymentResult] Hook desativado, mantendo callback');
     };
   }, [enabled, processResult]);
   

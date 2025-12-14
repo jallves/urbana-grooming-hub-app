@@ -121,10 +121,14 @@ export function verificarPinpad(): TEFPinpadStatus | null {
 
 /**
  * Inicia um pagamento TEF através do app Android
+ * 
+ * IMPORTANTE: Este método NÃO sobrescreve window.onTefResultado para evitar
+ * conflito com useTEFPaymentResult que é o receptor principal.
+ * Se nenhum hook estiver escutando, o resultado será armazenado no sessionStorage.
  */
 export function iniciarPagamentoAndroid(
   params: TEFPaymentParams,
-  onResult: TEFResultCallback
+  onResult?: TEFResultCallback
 ): boolean {
   if (!isAndroidTEFAvailable()) {
     console.warn('[TEFBridge] TEF Android não disponível');
@@ -134,39 +138,45 @@ export function iniciarPagamentoAndroid(
   // Limpar resultado anterior
   lastProcessedResult = null;
   
-  // Registrar callback
-  resultCallback = onResult;
+  // Registrar callback interno (backup)
+  if (onResult) {
+    resultCallback = onResult;
+  }
   
-  // Registrar handler global para receber resultado do PayGo
-  // Este handler é chamado pelo Android via evaluateJavascript
-  window.onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
-    console.log('[TEFBridge] ═══════════════════════════════════════');
-    console.log('[TEFBridge] RESULTADO DO PAYGO RECEBIDO');
-    console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
-    
-    // Normalizar resultado (pode vir como resposta PayGo ou já formatado)
-    const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
-    console.log('[TEFBridge] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
-    console.log('[TEFBridge] ═══════════════════════════════════════');
-    
-    // Evitar processamento duplicado
-    const resultKey = JSON.stringify(normalizedResult);
-    if (lastProcessedResult === resultKey) {
-      console.log('[TEFBridge] Resultado já processado, ignorando duplicata');
-      return;
-    }
-    lastProcessedResult = resultKey;
-    
-    if (resultCallback) {
-      console.log('[TEFBridge] Chamando callback registrado...');
-      const callback = resultCallback;
-      resultCallback = null; // Limpar antes de chamar para evitar chamadas duplas
-      callback(normalizedResult);
-      console.log('[TEFBridge] ✅ Callback executado com sucesso!');
-    } else {
-      console.warn('[TEFBridge] ⚠️ Nenhum callback registrado!');
-    }
-  };
+  // NÃO sobrescrever window.onTefResultado aqui!
+  // O hook useTEFPaymentResult é responsável por registrar o listener
+  // Apenas garantir que existe um fallback se nenhum hook estiver ativo
+  if (!window.onTefResultado) {
+    console.log('[TEFBridge] Registrando fallback onTefResultado');
+    window.onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+      console.log('[TEFBridge] RESULTADO DO PAYGO RECEBIDO (FALLBACK)');
+      console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+      
+      // Normalizar resultado
+      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+      console.log('[TEFBridge] Resultado normalizado:', normalizedResult.status);
+      
+      // Salvar no sessionStorage para que useTEFPaymentResult possa capturar via polling
+      try {
+        sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
+        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+        console.log('[TEFBridge] ✅ Resultado salvo no sessionStorage');
+      } catch (e) {
+        console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
+      }
+      
+      // Disparar evento customizado como backup adicional
+      const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
+      window.dispatchEvent(event);
+      document.dispatchEvent(event);
+      console.log('[TEFBridge] ✅ CustomEvent tefPaymentResult disparado');
+      
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+    };
+  } else {
+    console.log('[TEFBridge] window.onTefResultado já registrado por outro hook');
+  }
   
   try {
     const jsonParams = JSON.stringify({
@@ -177,7 +187,6 @@ export function iniciarPagamentoAndroid(
     });
     
     console.log('[TEFBridge] Iniciando pagamento:', jsonParams);
-    console.log('[TEFBridge] Callback registrado:', resultCallback ? 'SIM' : 'NÃO');
     window.TEF!.iniciarPagamento(jsonParams);
     return true;
   } catch (error) {
