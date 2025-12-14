@@ -324,18 +324,7 @@ const TotemNovoAgendamento: React.FC = () => {
 
       console.log('✅ Agendamento criado com sucesso:', result.id);
 
-      // Enviar e-mail de confirmação (aguardar para garantir envio antes de navegar)
-      try {
-        const emailSent = await sendAppointmentConfirmationEmail(result.id);
-        if (emailSent) {
-          console.log('📧 E-mail de confirmação enviado!');
-        } else {
-          console.log('📧 E-mail não enviado (cliente sem e-mail válido ou erro)');
-        }
-      } catch (emailError) {
-        console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
-      }
-
+      // Mostrar toast de sucesso imediatamente
       toast.success('✅ Agendamento criado com sucesso!', {
         description: `${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })} às ${selectedTime}`,
         duration: 5000,
@@ -348,13 +337,41 @@ const TotemNovoAgendamento: React.FC = () => {
         }
       });
 
-      navigate('/totem/agendamento-sucesso', {
-        state: {
-          appointment: result,
-          service: selectedService,
-          barber: selectedBarber,
-          client: clientData
+      // Preparar dados para navegação ANTES de enviar e-mail
+      const navigationState = {
+        appointment: result,
+        service: selectedService,
+        barber: selectedBarber,
+        client: clientData
+      };
+
+      // Enviar e-mail de confirmação e AGUARDAR antes de navegar
+      // Usar Promise com timeout para garantir que não bloqueia indefinidamente
+      console.log('📧 Iniciando envio de e-mail de confirmação...');
+      try {
+        // Timeout de 10 segundos para o envio do e-mail
+        const emailPromise = sendAppointmentConfirmationEmail(result.id);
+        const timeoutPromise = new Promise<boolean>((resolve) => {
+          setTimeout(() => {
+            console.log('⏰ Timeout no envio do e-mail, continuando navegação...');
+            resolve(false);
+          }, 10000);
+        });
+
+        const emailSent = await Promise.race([emailPromise, timeoutPromise]);
+        if (emailSent) {
+          console.log('📧 E-mail de confirmação enviado com sucesso!');
+        } else {
+          console.log('📧 E-mail não enviado (cliente sem e-mail válido, timeout ou erro)');
         }
+      } catch (emailError) {
+        console.error('❌ Erro ao enviar e-mail de confirmação:', emailError);
+      }
+
+      // Navegar APENAS após tentativa de envio do e-mail
+      console.log('🚀 Navegando para tela de sucesso...');
+      navigate('/totem/agendamento-sucesso', {
+        state: navigationState
       });
     } catch (error: any) {
       console.error('❌ Erro fatal ao criar agendamento:', error);
