@@ -8,15 +8,18 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface ReceiptItem {
+  name: string;
+  quantity?: number;
+  price: number;
+  type?: 'service' | 'product';
+}
+
 interface ReceiptEmailRequest {
   clientName: string;
   clientEmail: string;
   transactionType: 'service' | 'product';
-  items: Array<{
-    name: string;
-    quantity?: number;
-    price: number;
-  }>;
+  items: ReceiptItem[];
   total: number;
   paymentMethod: string;
   transactionDate: string;
@@ -67,8 +70,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const formattedTotal = total.toFixed(2).replace('.', ',');
     const isService = transactionType === 'service';
-    const title = isService ? 'Comprovante de Serviço' : 'Comprovante de Compra';
-    const emoji = isService ? '✂️' : '🛍️';
+    const title = 'Comprovante de Atendimento';
+    const emoji = '✂️';
 
     const paymentMethodText = {
       'credit': 'Cartão de Crédito',
@@ -77,16 +80,55 @@ const handler = async (req: Request): Promise<Response> => {
       'cash': 'Dinheiro'
     }[paymentMethod] || paymentMethod;
 
-    const itemsHtml = items.map(item => `
-      <tr>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #333;">
-          ${item.name}${item.quantity && item.quantity > 1 ? ` (x${item.quantity})` : ''}
-        </td>
-        <td style="padding: 10px; border-bottom: 1px solid #eee; color: #333; text-align: right;">
-          R$ ${item.price.toFixed(2).replace('.', ',')}
-        </td>
-      </tr>
-    `).join('');
+    // Separar itens por tipo (serviços e produtos)
+    const services = items.filter((item, index) => index === 0 || !item.quantity || item.quantity === 1);
+    const products = items.filter(item => item.quantity && item.quantity > 0 && items.indexOf(item) > 0);
+    
+    // Calcular subtotais
+    const servicesSubtotal = items.reduce((sum, item) => {
+      // Primeiro item é sempre o serviço principal
+      const isProduct = item.quantity && item.quantity > 0 && items.indexOf(item) > 0;
+      return isProduct ? sum : sum + item.price;
+    }, 0);
+    
+    const productsSubtotal = items.reduce((sum, item) => {
+      const isProduct = item.quantity && item.quantity > 0 && items.indexOf(item) > 0;
+      return isProduct ? sum + item.price : sum;
+    }, 0);
+
+    // Gerar HTML dos itens de serviço
+    const servicesHtml = items
+      .filter((item, index) => {
+        const isProduct = item.quantity && item.quantity > 1;
+        return !isProduct || index === 0;
+      })
+      .map(item => `
+        <tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
+            ${item.name}
+          </td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap;">
+            R$ ${item.price.toFixed(2).replace('.', ',')}
+          </td>
+        </tr>
+      `).join('');
+
+    // Gerar HTML dos produtos (se houver)
+    const productsHtml = items
+      .filter(item => item.quantity && item.quantity > 0 && items.indexOf(item) > 0)
+      .map(item => `
+        <tr>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
+            ${item.name} ${item.quantity && item.quantity > 1 ? `<span style="color: #666;">(${item.quantity}x)</span>` : ''}
+          </td>
+          <td style="padding: 10px 12px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap;">
+            R$ ${item.price.toFixed(2).replace('.', ',')}
+          </td>
+        </tr>
+      `).join('');
+
+    // Verificar se tem produtos
+    const hasProducts = productsHtml.length > 0;
 
     const emailResponse = await resend.emails.send({
       from: "Costa Urbana Barbearia <noreply@barbeariacostaurbana.com.br>",
@@ -101,7 +143,7 @@ const handler = async (req: Request): Promise<Response> => {
           
           <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
             <p style="font-size: 16px; color: #333; margin-bottom: 20px;">
-              Olá <strong>${clientName}</strong>! Segue o comprovante da sua ${isService ? 'visita' : 'compra'}:
+              Olá <strong>${clientName}</strong>! Segue o comprovante da sua visita:
             </p>
             
             <div style="background: #f9f9f9; padding: 20px; border-radius: 8px; border-left: 4px solid #D4A574; margin: 20px 0;">
@@ -129,15 +171,49 @@ const handler = async (req: Request): Promise<Response> => {
               </table>
             </div>
 
-            <h3 style="color: #1a1a2e; margin: 20px 0 10px; border-bottom: 2px solid #D4A574; padding-bottom: 10px;">
-              ${isService ? '📋 Serviços' : '📦 Produtos'}
+            <!-- SERVIÇOS -->
+            <h3 style="color: #1a1a2e; margin: 20px 0 10px; border-bottom: 2px solid #D4A574; padding-bottom: 10px; font-size: 16px;">
+              ✂️ SERVIÇOS
             </h3>
             
-            <table style="width: 100%; border-collapse: collapse;">
-              ${itemsHtml}
-              <tr style="background: #1a1a2e;">
-                <td style="padding: 15px; color: white; font-weight: bold; font-size: 16px;">TOTAL</td>
-                <td style="padding: 15px; color: #D4A574; font-weight: bold; font-size: 18px; text-align: right;">
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <thead>
+                <tr style="background: #f0f0f0;">
+                  <th style="padding: 10px 12px; text-align: left; color: #333; font-size: 12px; font-weight: bold; text-transform: uppercase;">Descrição</th>
+                  <th style="padding: 10px 12px; text-align: right; color: #333; font-size: 12px; font-weight: bold; text-transform: uppercase;">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${servicesHtml}
+              </tbody>
+            </table>
+
+            ${hasProducts ? `
+            <!-- PRODUTOS -->
+            <h3 style="color: #1a1a2e; margin: 20px 0 10px; border-bottom: 2px solid #D4A574; padding-bottom: 10px; font-size: 16px;">
+              🛍️ PRODUTOS
+            </h3>
+            
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+              <thead>
+                <tr style="background: #f0f0f0;">
+                  <th style="padding: 10px 12px; text-align: left; color: #333; font-size: 12px; font-weight: bold; text-transform: uppercase;">Descrição</th>
+                  <th style="padding: 10px 12px; text-align: right; color: #333; font-size: 12px; font-weight: bold; text-transform: uppercase;">Valor</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${productsHtml}
+              </tbody>
+            </table>
+            ` : ''}
+
+            <!-- TOTAL -->
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+              <tr style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
+                <td style="padding: 15px; color: white; font-weight: bold; font-size: 16px; border-radius: 6px 0 0 6px;">
+                  TOTAL
+                </td>
+                <td style="padding: 15px; color: #D4A574; font-weight: bold; font-size: 20px; text-align: right; border-radius: 0 6px 6px 0;">
                   R$ ${formattedTotal}
                 </td>
               </tr>

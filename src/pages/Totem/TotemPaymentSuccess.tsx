@@ -6,18 +6,58 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
 
+interface ExtraService {
+  service_id?: string;
+  nome: string;
+  preco: number;
+}
+
+interface SelectedProduct {
+  product_id: string;
+  nome: string;
+  preco: number;
+  quantidade: number;
+}
+
+interface CheckoutResumo {
+  original_service: {
+    nome: string;
+    preco: number;
+  };
+  extra_services: Array<{
+    nome: string;
+    preco: number;
+  }>;
+  subtotal: number;
+  discount: number;
+  total: number;
+}
+
 const TotemPaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toast } = useToast();
   const emailSentRef = useRef(false);
-  const { appointment, client, total, paymentMethod, isDirect, transactionData } = location.state || {};
+  const { 
+    appointment, 
+    client, 
+    total, 
+    paymentMethod, 
+    isDirect, 
+    transactionData,
+    selectedProducts = [] as SelectedProduct[],
+    extraServices = [] as ExtraService[],
+    resumo
+  } = location.state || {};
 
   useEffect(() => {
     // Add totem-mode class for touch optimization
     document.documentElement.classList.add('totem-mode');
     
-    console.log('[PaymentSuccess] Dados recebidos:', { appointment, client, total, paymentMethod, isDirect, transactionData });
+    console.log('[PaymentSuccess] Dados recebidos:', { 
+      appointment, client, total, paymentMethod, isDirect, transactionData,
+      selectedProducts, extraServices, resumo
+    });
     
     if (!total || !client) {
       console.warn('[PaymentSuccess] Dados incompletos, redirecionando...');
@@ -25,7 +65,7 @@ const TotemPaymentSuccess: React.FC = () => {
       return;
     }
 
-    // Enviar comprovante por e-mail
+    // Enviar comprovante por e-mail com todos os itens
     const sendEmailReceipt = async () => {
       if (emailSentRef.current) return;
       emailSentRef.current = true;
@@ -37,9 +77,56 @@ const TotemPaymentSuccess: React.FC = () => {
         return;
       }
 
-      const items = appointment?.servico 
-        ? [{ name: appointment.servico.nome, price: total }]
-        : [{ name: 'Serviço', price: total }];
+      // Montar lista completa de itens para o e-mail
+      const items: Array<{ name: string; quantity?: number; price: number }> = [];
+
+      // 1. Serviço principal
+      if (resumo?.original_service) {
+        items.push({
+          name: resumo.original_service.nome,
+          price: resumo.original_service.preco
+        });
+      } else if (appointment?.servico) {
+        items.push({
+          name: appointment.servico.nome,
+          price: appointment.servico.preco || 0
+        });
+      }
+
+      // 2. Serviços extras
+      if (resumo?.extra_services && resumo.extra_services.length > 0) {
+        resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
+          items.push({
+            name: service.nome,
+            price: service.preco
+          });
+        });
+      } else if (extraServices && extraServices.length > 0) {
+        extraServices.forEach((service: ExtraService) => {
+          items.push({
+            name: service.nome,
+            price: service.preco
+          });
+        });
+      }
+
+      // 3. Produtos
+      if (selectedProducts && selectedProducts.length > 0) {
+        selectedProducts.forEach((product: SelectedProduct) => {
+          items.push({
+            name: product.nome,
+            quantity: product.quantidade,
+            price: product.preco * product.quantidade
+          });
+        });
+      }
+
+      // Se não conseguiu montar itens, usar fallback
+      if (items.length === 0) {
+        items.push({ name: 'Serviço', price: total });
+      }
+
+      console.log('[PaymentSuccess] Itens para e-mail:', items);
 
       const result = await sendReceiptEmail({
         clientName: client.nome,
@@ -81,7 +168,7 @@ const TotemPaymentSuccess: React.FC = () => {
       clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast]);
+  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo]);
 
   if (!total || !client) {
     return null;

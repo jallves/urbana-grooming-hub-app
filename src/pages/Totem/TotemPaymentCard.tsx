@@ -13,7 +13,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [], isDirect = false } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], extraServices = [], resumo, isDirect = false } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [paymentType, setPaymentType] = useState<'credit' | 'debit' | null>(null);
@@ -107,7 +107,10 @@ const TotemPaymentCard: React.FC = () => {
           total,
           paymentMethod: paymentTypeRef.current,
           isDirect,
-          transactionData
+          transactionData,
+          selectedProducts,
+          extraServices,
+          resumo
         } 
       });
     } catch (error) {
