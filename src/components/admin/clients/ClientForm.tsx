@@ -82,6 +82,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           .from('client_profiles')
           .update({
             nome: data.nome,
+            email: data.email || null, // Salvar email no perfil
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null,
             updated_at: new Date().toISOString(),
@@ -123,6 +124,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           .from('client_profiles')
           .update({
             nome: data.nome,
+            email: data.email || null, // Salvar email no perfil
             whatsapp: data.whatsapp,
             data_nascimento: data.data_nascimento || null
           })
