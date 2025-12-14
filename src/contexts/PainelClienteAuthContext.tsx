@@ -91,7 +91,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           const clienteData: Cliente = {
             id: profile.id,
             nome: profile.nome,
-            email: user.email || '',
+            email: profile.email || user.email || '',
             whatsapp: profile.whatsapp,
             data_nascimento: profile.data_nascimento,
             created_at: profile.created_at
@@ -194,6 +194,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         .from('client_profiles')
         .update({
           nome: dados.nome,
+          email: dados.email, // Salvar email no perfil
           whatsapp: dados.whatsapp,
           data_nascimento: dados.data_nascimento,
           updated_at: new Date().toISOString()
@@ -226,7 +227,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         setCliente({
           id: profile.id,
           nome: profile.nome,
-          email: user.email || '',
+          email: profile.email || user.email || '',
           whatsapp: profile.whatsapp,
           data_nascimento: profile.data_nascimento,
           created_at: profile.created_at
