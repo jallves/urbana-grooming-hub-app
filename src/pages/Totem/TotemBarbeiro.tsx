@@ -187,7 +187,8 @@ const TotemBarbeiro: React.FC = () => {
             {barbers.map((barber) => (
               <TotemCard
                 key={barber.id}
-                icon={User}
+                imageUrl={barber.foto_url}
+                imageFallbackIcon={User}
                 variant={selectedBarber?.id === barber.id ? 'selected' : 'default'}
                 onClick={() => handleBarberSelect(barber)}
               >

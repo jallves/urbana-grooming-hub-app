@@ -10,6 +10,8 @@ interface TotemCardProps {
   onClick?: () => void;
   variant?: TotemCardVariant;
   icon?: LucideIcon;
+  imageUrl?: string;
+  imageFallbackIcon?: LucideIcon;
   infoIcon?: LucideIcon;
   onInfoClick?: () => void;
   className?: string;
@@ -37,6 +39,8 @@ export const TotemCard: React.FC<TotemCardProps> = ({
   onClick,
   variant = 'default',
   icon: Icon,
+  imageUrl,
+  imageFallbackIcon: FallbackIcon,
   infoIcon: InfoIcon,
   onInfoClick,
   className,
@@ -104,29 +108,60 @@ export const TotemCard: React.FC<TotemCardProps> = ({
       )}
       style={{ animationDelay }}
     >
-          {/* Header com ícones (se fornecidos) */}
-          {(Icon || InfoIcon) && (
-            <div className="flex items-center justify-between mb-6">
-              {/* Ícone Principal */}
-              {Icon && (
-                <div className={cn(
-                  'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full backdrop-blur-sm border-2 flex items-center justify-center shadow-lg',
-                  variant === 'success' 
-                    ? 'bg-green-500/20 border-green-500/50 shadow-green-500/20'
-                    : variant === 'error'
-                    ? 'bg-red-500/20 border-red-500/50 shadow-red-500/20'
-                    : 'bg-urbana-gold/20 border-urbana-gold/50 shadow-urbana-gold/20'
-                )}>
-                  <Icon className={cn(
-                    'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 drop-shadow-lg',
-                    variant === 'success' 
-                      ? 'text-green-400'
-                      : variant === 'error'
-                      ? 'text-red-400'
-                      : 'text-urbana-gold'
-                  )} />
+      {/* Header com ícones ou imagem (se fornecidos) */}
+      {(Icon || imageUrl || FallbackIcon || InfoIcon) && (
+        <div className="flex items-center justify-between mb-6">
+          {/* Imagem ou Ícone Principal */}
+          {imageUrl ? (
+            <div className={cn(
+              'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full border-2 overflow-hidden shadow-lg',
+              variant === 'selected'
+                ? 'border-urbana-gold shadow-urbana-gold/30'
+                : 'border-urbana-gold/50 shadow-urbana-gold/20'
+            )}>
+              <img 
+                src={imageUrl} 
+                alt="Foto" 
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Hide image on error, show fallback icon
+                  e.currentTarget.style.display = 'none';
+                  const fallback = e.currentTarget.nextElementSibling;
+                  if (fallback) (fallback as HTMLElement).style.display = 'flex';
+                }}
+              />
+              {FallbackIcon && (
+                <div className="w-full h-full bg-urbana-gold/20 items-center justify-center hidden">
+                  <FallbackIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-urbana-gold drop-shadow-lg" />
                 </div>
               )}
+            </div>
+          ) : Icon ? (
+            <div className={cn(
+              'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full backdrop-blur-sm border-2 flex items-center justify-center shadow-lg',
+              variant === 'success' 
+                ? 'bg-green-500/20 border-green-500/50 shadow-green-500/20'
+                : variant === 'error'
+                ? 'bg-red-500/20 border-red-500/50 shadow-red-500/20'
+                : 'bg-urbana-gold/20 border-urbana-gold/50 shadow-urbana-gold/20'
+            )}>
+              <Icon className={cn(
+                'w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 drop-shadow-lg',
+                variant === 'success' 
+                  ? 'text-green-400'
+                  : variant === 'error'
+                  ? 'text-red-400'
+                  : 'text-urbana-gold'
+              )} />
+            </div>
+          ) : FallbackIcon ? (
+            <div className={cn(
+              'w-12 h-12 sm:w-14 sm:h-14 md:w-16 md:h-16 rounded-full backdrop-blur-sm border-2 flex items-center justify-center shadow-lg',
+              'bg-urbana-gold/20 border-urbana-gold/50 shadow-urbana-gold/20'
+            )}>
+              <FallbackIcon className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8 text-urbana-gold drop-shadow-lg" />
+            </div>
+          ) : null}
 
           {/* Ícone de Informação */}
           {InfoIcon && (
