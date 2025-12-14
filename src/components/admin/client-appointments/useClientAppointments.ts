@@ -1,7 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useAppointmentCompletion } from './hooks/useAppointmentCompletion';
 
 export interface PainelAgendamento {
   id: string;
@@ -50,6 +50,7 @@ export interface PainelAgendamento {
 export const useClientAppointments = () => {
   const [appointments, setAppointments] = useState<PainelAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const { completing, completeAppointment } = useAppointmentCompletion();
 
   // Função para buscar agendamentos
   const fetchAppointments = useCallback(async () => {
@@ -194,6 +195,24 @@ export const useClientAppointments = () => {
         currentStatus = 'concluido';
       }
 
+      // *** CONCLUIR USANDO EDGE FUNCTION ***
+      if (newStatus === 'concluido') {
+        console.log('🎯 [ADMIN] Finalizando agendamento via edge function:', appointmentId);
+        
+        const success = await completeAppointment(appointmentId);
+        
+        if (success) {
+          // Atualiza localmente
+          setAppointments(prev =>
+            prev.map(a =>
+              a.id === appointmentId ? { ...a, status: 'concluido' } : a
+            )
+          );
+          await fetchAppointments(); // Refetch para garantir sincronização
+        }
+        return;
+      }
+
       // Validações específicas por ação
       if (newStatus === 'cancelado') {
         // Validar se pode cancelar (apenas agendado e check_in_finalizado)
@@ -215,7 +234,7 @@ export const useClientAppointments = () => {
         }
       }
 
-      // Atualizar status
+      // Atualizar status (para outros status que não 'concluido')
       console.log(`📝 [ADMIN] Atualizando painel_agendamentos para ${newStatus}:`, appointmentId);
       
       const { data, error } = await supabase
@@ -253,7 +272,9 @@ export const useClientAppointments = () => {
 
       const successMessage = newStatus === 'cancelado' 
         ? 'Agendamento cancelado com sucesso'
-        : 'Cliente marcado como ausente';
+        : newStatus === 'ausente'
+        ? 'Cliente marcado como ausente'
+        : `Status alterado para ${newStatus}`;
         
       toast.success(successMessage);
       
@@ -270,7 +291,7 @@ export const useClientAppointments = () => {
         description: error.message || 'Tente novamente'
       });
     }
-  }, [appointments]);
+  }, [appointments, completeAppointment, fetchAppointments]);
 
   // Deleta agendamento
   const handleDeleteAppointment = useCallback(async (appointmentId: string) => {
@@ -429,7 +450,7 @@ export const useClientAppointments = () => {
 
   return {
     appointments,
-    isLoading,
+    isLoading: isLoading || completing,
     fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
