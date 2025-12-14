@@ -176,7 +176,8 @@ const TotemPaymentCard: React.FC = () => {
     }
   }, [finalizePayment]);
 
-  // Hook dedicado para receber resultado do PayGo
+  // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
+  // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
   useTEFPaymentResult({
     enabled: paymentStarted && processing,
     onResult: handleTEFResult,
@@ -184,7 +185,8 @@ const TotemPaymentCard: React.FC = () => {
     maxWaitTime: 180000 // 3 minutos
   });
 
-  // Hook TEF Android (para iniciar pagamento)
+  // Hook TEF Android (APENAS para iniciar pagamento - NÃO para receber resultado)
+  // O resultado é recebido exclusivamente pelo useTEFPaymentResult acima
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -192,22 +194,8 @@ const TotemPaymentCard: React.FC = () => {
     iniciarPagamento: iniciarPagamentoTEF,
     cancelarPagamento: cancelarPagamentoTEF
   } = useTEFAndroid({
-    onSuccess: handleTEFResult,
-    onError: (erro) => {
-      console.error('❌ [TEF] Erro no pagamento:', erro);
-      toast.error('Pagamento negado', { description: erro });
-      setError(erro);
-      setProcessing(false);
-      setPaymentType(null);
-      setPaymentStarted(false);
-    },
-    onCancelled: () => {
-      console.log('⚠️ [TEF] Pagamento cancelado');
-      toast.info('Pagamento cancelado');
-      setProcessing(false);
-      setPaymentType(null);
-      setPaymentStarted(false);
-    }
+    // NÃO passamos callbacks aqui para evitar processamento duplicado
+    // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
   // Log status do TEF ao montar
