@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Edit, Trash2, Mail, MessageCircle, Calendar, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
@@ -24,10 +24,12 @@ interface ClientTableProps {
 }
 
 const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, compact = false }) => {
-  const formatDate = (dateString: string | null) => {
+  const formatDate = (dateString: string | null, isDateOnly = false) => {
     if (!dateString) return '-';
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: ptBR });
+      // Para datas apenas (YYYY-MM-DD), usar parseISO para evitar problemas de timezone
+      const date = isDateOnly ? parseISO(dateString) : new Date(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: ptBR });
     } catch {
       return '-';
     }
@@ -144,7 +146,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 {client.data_nascimento ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
                     <Calendar className="h-4 w-4 flex-shrink-0" />
-                    <span className={compact ? "text-xs" : "text-sm"}>{formatDate(client.data_nascimento)}</span>
+                    <span className={compact ? "text-xs" : "text-sm"}>{formatDate(client.data_nascimento, true)}</span>
                   </div>
                 ) : (
                   <span className="text-muted-foreground">-</span>
