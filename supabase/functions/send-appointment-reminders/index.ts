@@ -24,11 +24,12 @@ const handler = async (req: Request): Promise<Response> => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Calcular janela de tempo: agendamentos entre agora + 3 horas e agora + 3.5 horas
-    // Isso garante que enviamos apenas uma vez por hora
+    // Calcular janela de tempo: agendamentos entre agora + 2h50min e agora + 3h10min
+    // Isso garante que capturamos agendamentos com horários quebrados (ex: 14:15, 14:25)
+    // O cron roda a cada 5 minutos, então a janela de 20 minutos cobre todos os casos
     const now = new Date();
-    const reminderStart = new Date(now.getTime() + REMINDER_HOURS_BEFORE * 60 * 60 * 1000);
-    const reminderEnd = new Date(reminderStart.getTime() + 30 * 60 * 1000); // 30 min window
+    const reminderStart = new Date(now.getTime() + (REMINDER_HOURS_BEFORE * 60 - 10) * 60 * 1000); // 2h50min
+    const reminderEnd = new Date(now.getTime() + (REMINDER_HOURS_BEFORE * 60 + 10) * 60 * 1000); // 3h10min
 
     const today = now.toISOString().split('T')[0];
     const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0];

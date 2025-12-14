@@ -26,7 +26,7 @@ verify_jwt = false
 [functions.send-appointment-reminders]
 verify_jwt = false
 [functions.send-appointment-reminders.cron]
-schedule = "0 * * * *"
+schedule = "*/5 * * * *"
 
 [functions.send-test-notification]
 verify_jwt = false
