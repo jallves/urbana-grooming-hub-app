@@ -524,18 +524,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             {/* Step 1: Service Selection */}
             {step === 'service' && (
               <div>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Escolha o Serviço</h2>
-                  <p className="text-white/60">Selecione o serviço que deseja realizar</p>
+                <div className="mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Escolha o Serviço</h2>
+                  <p className="text-white/60 text-sm sm:text-base">Selecione o serviço que deseja realizar</p>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
-                    <div className="col-span-full text-center text-white py-12 px-2">
+                    <div className="col-span-full text-center text-white py-8 sm:py-12 px-2">
                       <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
                       Carregando serviços...
                     </div>
                   ) : services.length === 0 ? (
-                    <div className="col-span-full text-center text-white/60 py-12 px-2">
+                    <div className="col-span-full text-center text-white/60 py-8 sm:py-12 px-2">
                       Nenhum serviço disponível
                     </div>
                   ) : (
@@ -548,10 +548,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         animationDelay={`${index * 0.1}s`}
                       >
                         <TotemCardTitle>{service.nome}</TotemCardTitle>
-                        <p className="text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold mt-3">
+                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold mt-2 sm:mt-3">
                           R$ {service.preco.toFixed(2)}
                         </p>
-                        <p className="text-base sm:text-lg text-white/60 mt-2">
+                        <p className="text-sm sm:text-base text-white/60 mt-1 sm:mt-2">
                           {service.duracao} minutos
                         </p>
                       </TotemCard>
@@ -564,18 +564,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             {/* Step 2: Barber Selection */}
             {step === 'barber' && (
               <div>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Escolha o Profissional</h2>
-                  <p className="text-white/60">Selecione o profissional de sua preferência</p>
+                <div className="mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Escolha o Profissional</h2>
+                  <p className="text-white/60 text-sm sm:text-base">Selecione o profissional de sua preferência</p>
                 </div>
-                <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
-                    <div className="col-span-full text-center text-white py-12 px-2">
+                    <div className="col-span-full text-center text-white py-8 sm:py-12 px-2">
                       <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
                       Carregando profissionais...
                     </div>
                   ) : barbers.length === 0 ? (
-                    <div className="col-span-full text-center text-white/60 py-12 px-2">
+                    <div className="col-span-full text-center text-white/60 py-8 sm:py-12 px-2">
                       Nenhum profissional disponível
                     </div>
                   ) : (
@@ -587,7 +587,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         variant="default"
                         animationDelay={`${index * 0.1}s`}
                       >
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full mx-auto mb-3 overflow-hidden border-3 border-urbana-gold/60 bg-gradient-to-br from-urbana-black-soft to-urbana-black shadow-lg">
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 sm:mb-3 overflow-hidden border-2 sm:border-3 border-urbana-gold/60 bg-gradient-to-br from-urbana-black-soft to-urbana-black shadow-lg">
                           {barber.image_url ? (
                             <img
                               src={barber.image_url}
@@ -596,7 +596,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <User className="w-12 h-12 sm:w-14 sm:h-14 text-urbana-gold/60" />
+                              <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold/60" />
                             </div>
                           )}
                         </div>
@@ -611,25 +611,25 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             {/* Step 3: Date & Time Selection */}
             {step === 'datetime' && (
               <div>
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-white mb-2">Escolha Data e Horário</h2>
-                  <p className="text-white/60">Selecione a melhor data e horário para você</p>
+                <div className="mb-4 sm:mb-6">
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Escolha Data e Horário</h2>
+                  <p className="text-white/60 text-sm sm:text-base">Selecione a melhor data e horário para você</p>
                 </div>
 
                 {/* Date Selection */}
-                <div className="mb-8">
-                  <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                    <CalendarIcon className="w-5 h-5 text-urbana-gold" />
+                <div className="mb-6 sm:mb-8">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                    <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                     Data
                   </h3>
-                  <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {loading ? (
-                      <div className="col-span-full text-center text-white py-8">
+                      <div className="col-span-full text-center text-white py-6 sm:py-8">
                         <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
                         Carregando datas...
                       </div>
                     ) : availableDates.length === 0 ? (
-                      <div className="col-span-full text-center text-white/60 py-8">
+                      <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                         Nenhuma data disponível
                       </div>
                     ) : (
@@ -639,15 +639,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           onClick={() => handleDateSelect(date)}
                           variant={selectedDate?.toDateString() === date.toDateString() ? 'selected' : 'default'}
                           animationDelay={`${index * 0.05}s`}
+                          className="!min-h-[80px] sm:!min-h-[100px]"
                         >
                           <div className="text-center">
-                            <p className="text-sm text-white/60 capitalize">
-                              {format(date, 'EEEE', { locale: ptBR })}
+                            <p className="text-xs sm:text-sm text-white/60 capitalize">
+                              {format(date, 'EEE', { locale: ptBR })}
                             </p>
-                            <p className="text-2xl font-bold text-white">
+                            <p className="text-lg sm:text-2xl font-bold text-white">
                               {format(date, 'dd')}
                             </p>
-                            <p className="text-sm text-white/80 capitalize">
+                            <p className="text-xs sm:text-sm text-white/80 capitalize">
                               {format(date, 'MMM', { locale: ptBR })}
                             </p>
                           </div>
@@ -659,19 +660,19 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
                 {/* Time Selection */}
                 {selectedDate && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                      <Clock className="w-5 h-5 text-urbana-gold" />
+                  <div className="mb-6 sm:mb-8">
+                    <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
+                      <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                       Horário
                     </h3>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {loading ? (
-                        <div className="col-span-full text-center text-white py-8">
+                        <div className="col-span-full text-center text-white py-6 sm:py-8">
                           <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
                           Carregando horários...
                         </div>
                       ) : timeSlots.filter(slot => slot.available).length === 0 ? (
-                        <div className="col-span-full text-center text-white/60 py-8">
+                        <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                           Nenhum horário disponível
                         </div>
                       ) : (
@@ -683,9 +684,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                               onClick={() => setSelectedTime(slot.time)}
                               variant={selectedTime === slot.time ? 'selected' : 'default'}
                               animationDelay={`${index * 0.02}s`}
+                              className="!min-h-[60px] sm:!min-h-[70px] !p-3 sm:!p-4"
                             >
                               <div className="text-center">
-                                <p className="text-lg font-bold text-white">
+                                <p className="text-sm sm:text-base font-bold text-white">
                                   {slot.time}
                                 </p>
                               </div>
@@ -698,73 +700,73 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
                 {/* Summary & Confirm */}
                 {selectedDate && selectedTime && (
-                  <div className="mt-8">
+                  <div className="mt-6 sm:mt-8">
                     <Card className="bg-urbana-black/40 border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20">
-                      <CardHeader className="bg-urbana-gold/20 border-b border-urbana-gold/30">
-                        <CardTitle className="text-white text-xl flex items-center gap-2">
-                          <Check className="w-5 h-5" />
+                      <CardHeader className="bg-urbana-gold/20 border-b border-urbana-gold/30 p-3 sm:p-4">
+                        <CardTitle className="text-white text-base sm:text-xl flex items-center gap-2">
+                          <Check className="w-4 h-4 sm:w-5 sm:h-5" />
                           Confirme seu Agendamento
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-4 pt-6">
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
-                            <Scissors className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div>
-                              <p className="text-xs text-white/60 mb-1">Serviço</p>
-                              <p className="font-semibold">{selectedService?.nome}</p>
-                              <p className="text-sm text-urbana-gold mt-1">R$ {selectedService?.preco.toFixed(2)}</p>
+                      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-4 sm:pt-6">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
+                            <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Serviço</p>
+                              <p className="font-semibold text-sm sm:text-base truncate">{selectedService?.nome}</p>
+                              <p className="text-xs sm:text-sm text-urbana-gold mt-0.5 sm:mt-1">R$ {selectedService?.preco.toFixed(2)}</p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
+                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
                             {selectedBarber?.image_url ? (
                               <img 
                                 src={selectedBarber.image_url} 
                                 alt={selectedBarber.nome}
-                                className="w-12 h-12 rounded-full object-cover border-2 border-urbana-gold/50 shrink-0"
+                                className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-urbana-gold/50 shrink-0"
                                 onError={(e) => {
                                   e.currentTarget.style.display = 'none';
                                 }}
                               />
                             ) : (
-                              <User className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
+                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
                             )}
-                            <div>
-                              <p className="text-xs text-white/60 mb-1">Profissional</p>
-                              <p className="font-semibold">{selectedBarber?.nome}</p>
+                            <div className="min-w-0">
+                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Profissional</p>
+                              <p className="font-semibold text-sm sm:text-base truncate">{selectedBarber?.nome}</p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
-                            <CalendarIcon className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div>
-                              <p className="text-xs text-white/60 mb-1">Data</p>
-                              <p className="font-semibold capitalize">
-                                {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
+                            <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Data</p>
+                              <p className="font-semibold text-sm sm:text-base capitalize">
+                                {format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR })}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-3 text-white bg-urbana-black/30 p-4 rounded-lg border border-urbana-gold/20">
-                            <Clock className="w-5 h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div>
-                              <p className="text-xs text-white/60 mb-1">Horário</p>
-                              <p className="font-semibold text-lg">{selectedTime}</p>
-                              <p className="text-xs text-white/60 mt-1">{selectedService?.duracao} minutos</p>
+                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
+                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
+                            <div className="min-w-0">
+                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Horário</p>
+                              <p className="font-semibold text-sm sm:text-lg">{selectedTime}</p>
+                              <p className="text-xs text-white/60 mt-0.5 sm:mt-1">{selectedService?.duracao} min</p>
                             </div>
                           </div>
                         </div>
                         <Button
                           onClick={handleConfirm}
                           disabled={creating || isValidating}
-                          className="w-full mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-6 text-lg shadow-lg shadow-urbana-gold/30 transition-all duration-300"
+                          className="w-full mt-3 sm:mt-4 bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold py-4 sm:py-6 text-base sm:text-lg shadow-lg shadow-urbana-gold/30 transition-all duration-300 touch-manipulation"
                         >
                           {creating || isValidating ? (
                             <span className="flex items-center justify-center gap-2">
-                              <div className="w-5 h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
+                              <div className="w-4 h-4 sm:w-5 sm:h-5 border-3 border-black/30 border-t-black rounded-full animate-spin" />
                               Confirmando...
                             </span>
                           ) : (
                             <>
-                              <Check className="w-5 h-5 mr-2 inline" />
+                              <Check className="w-4 h-4 sm:w-5 sm:h-5 mr-2 inline" />
                               Confirmar Agendamento
                             </>
                           )}
