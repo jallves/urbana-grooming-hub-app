@@ -103,7 +103,7 @@ export const TotemCard: React.FC<TotemCardProps> = ({
       onClick={handleClick}
       className={cn(
         getVariantStyles(),
-        'p-6 sm:p-8 md:p-10 min-h-[140px] sm:min-h-[160px] animate-scale-in',
+        'p-4 sm:p-6 md:p-8 min-h-[120px] sm:min-h-[140px] md:min-h-[160px] animate-scale-in touch-manipulation',
         className
       )}
       style={{ animationDelay }}
@@ -189,7 +189,7 @@ export const TotemCardTitle: React.FC<{
   className?: string;
 }> = ({ children, className }) => (
   <h3 className={cn(
-    'text-xl sm:text-2xl md:text-3xl font-bold text-white drop-shadow-lg',
+    'text-base sm:text-xl md:text-2xl font-bold text-white drop-shadow-lg leading-tight',
     className
   )}>
     {children}
@@ -204,7 +204,7 @@ export const TotemCardPrice: React.FC<{
   className?: string;
 }> = ({ value, className }) => (
   <p className={cn(
-    'text-3xl sm:text-4xl md:text-5xl font-bold text-urbana-gold drop-shadow-lg mt-3',
+    'text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold drop-shadow-lg mt-2 sm:mt-3',
     className
   )}>
     R$ {value.toFixed(2)}

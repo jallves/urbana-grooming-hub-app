@@ -48,21 +48,21 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
       'w-full',
       'max-w-7xl',
       'mx-auto',
-      // Padding vertical - aumentado para PWA desktop (igual ao barbeiro)
-      'pt-6 sm:pt-8 lg:pt-12',
-      'pb-6 sm:pb-8 lg:pb-12',
-      // Padding horizontal - aumentado para PWA desktop (igual ao barbeiro)
-      'px-6 md:px-8 lg:px-12',
+      // Padding vertical - responsivo para mobile
+      'pt-4 sm:pt-6 lg:pt-12',
+      'pb-4 sm:pb-6 lg:pb-12',
+      // Padding horizontal - responsivo para mobile
+      'px-3 sm:px-6 md:px-8 lg:px-12',
       className
     )}>
       {/* Cabeçalho Unificado - Sem logo, apenas saudação */}
       {!hideHeader && (
-        <div className="mb-8 sm:mb-10 lg:mb-12 pb-6 sm:pb-8 border-b border-urbana-gold/20">
+        <div className="mb-4 sm:mb-8 lg:mb-12 pb-4 sm:pb-6 lg:pb-8 border-b border-urbana-gold/20">
           <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
               Olá, {cliente?.nome?.split(' ')[0] || 'Cliente'}!
             </h1>
-            <p className="text-urbana-light/70 text-sm sm:text-base lg:text-lg drop-shadow-md mt-1 sm:mt-2">
+            <p className="text-urbana-light/70 text-xs sm:text-sm lg:text-lg drop-shadow-md mt-1 sm:mt-2">
               Bem-vindo à Barbearia Costa Urbana
             </p>
           </div>
