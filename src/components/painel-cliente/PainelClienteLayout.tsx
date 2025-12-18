@@ -271,33 +271,19 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Área com scroll próprio otimizada para PWA iOS */}
+      {/* Main Content - Área com scroll próprio */}
       <main 
-        className="absolute z-10 pwa-scroll-container touch-scroll safe-left safe-right"
+        className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden pt-[72px] pb-[92px] md:pt-[72px] md:pb-0 md:pl-64 lg:pl-72 xl:pl-80"
         style={{
-          top: 'calc(var(--header-height, 64px) + env(safe-area-inset-top, 0px))',
-          bottom: 'calc(var(--mobile-nav-height, 80px) + env(safe-area-inset-bottom, 0px) + 12px)',
-          left: 0,
-          right: 0,
+          WebkitOverflowScrolling: 'touch',
+          paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))',
+          paddingBottom: 'calc(92px + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        {/* Desktop: ajusta para sidebar */}
-        <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80">
-          <div className="w-full max-w-[1800px] mx-auto pb-4 md:pb-0">
-            <Outlet />
-          </div>
+        <div className="w-full max-w-[1800px] mx-auto">
+          <Outlet />
         </div>
       </main>
-
-      {/* Desktop: ajusta top e bottom do main */}
-      <style>{`
-        @media (min-width: 768px) {
-          main {
-            top: 72px !important;
-            bottom: 0 !important;
-          }
-        }
-      `}</style>
     </div>
   );
 };
