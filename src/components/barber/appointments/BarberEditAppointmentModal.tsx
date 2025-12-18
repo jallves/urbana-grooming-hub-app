@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -16,10 +16,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Calendar } from '@/components/ui/calendar';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { format, addDays, parseISO, isBefore, startOfDay } from 'date-fns';
+import { format, addDays, parseISO, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useBarberAvailableSlots } from '@/hooks/barber/useBarberAvailableSlots';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock } from 'lucide-react';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 
 interface BarberEditAppointmentModalProps {
@@ -52,6 +52,10 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedService, setSelectedService] = useState<PainelServico | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
+  
+  // Armazena dados originais do agendamento
+  const [originalDate, setOriginalDate] = useState<Date | null>(null);
+  const [originalTime, setOriginalTime] = useState<string>('');
   
   const { slots, loading: slotsLoading, fetchAvailableSlots } = useBarberAvailableSlots();
 
@@ -110,8 +114,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       });
 
       setAppointment(data);
-      setSelectedDate(parseISO(data.data));
+      
+      const appointmentDate = parseISO(data.data);
+      setSelectedDate(appointmentDate);
       setSelectedTime(data.hora);
+      
+      // Salvar dados originais
+      setOriginalDate(appointmentDate);
+      setOriginalTime(data.hora?.substring(0, 5) || data.hora);
       
       // Garantir que o serviço tenha o campo duracao
       if (data.painel_servicos) {
@@ -240,6 +250,17 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     setShowConfirmDialog(true);
   };
 
+  // Verifica se a data selecionada é a mesma do agendamento original
+  const isOriginalDate = useMemo(() => {
+    if (!selectedDate || !originalDate) return false;
+    return isSameDay(selectedDate, originalDate);
+  }, [selectedDate, originalDate]);
+
+  // Normaliza o horário original para comparação (remove segundos se houver)
+  const normalizedOriginalTime = useMemo(() => {
+    return originalTime?.substring(0, 5) || '';
+  }, [originalTime]);
+
   const availableSlots = slots.filter(slot => slot.available);
   const today = startOfDay(new Date());
 
@@ -259,13 +280,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="bg-gray-800 border-gray-700 text-white w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-white text-lg sm:text-xl">Editar Agendamento</DialogTitle>
         </DialogHeader>
 
         {appointment && (
-          <div className="space-y-4 sm:space-y-6">
+          <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
             {/* Info do Cliente - Responsivo */}
             <div className="p-3 sm:p-4 bg-gray-700/50 rounded-lg border border-gray-600">
               <p className="text-xs sm:text-sm text-gray-400 mb-1">Cliente</p>
@@ -277,6 +298,17 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </p>
             </div>
 
+            {/* Info do Agendamento Original */}
+            <div className="p-3 sm:p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+              <div className="flex items-center gap-2 mb-1">
+                <Clock className="h-4 w-4 text-blue-400" />
+                <p className="text-xs sm:text-sm text-blue-400 font-medium">Horário Original</p>
+              </div>
+              <p className="text-white text-sm sm:text-base">
+                {originalDate && format(originalDate, "dd/MM/yyyy", { locale: ptBR })} às {normalizedOriginalTime}
+              </p>
+            </div>
+
             {/* Seleção de Serviço - Responsivo */}
             <div className="space-y-2">
               <Label className="text-gray-300 text-sm">Serviço</Label>
@@ -284,10 +316,10 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 value={selectedService?.id}
                 onValueChange={handleServiceChange}
               >
-                <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white h-10 text-sm sm:text-base">
+                <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white h-10 text-sm sm:text-base w-full">
                   <SelectValue placeholder="Selecione um serviço" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700">
+                <SelectContent className="bg-gray-800 border-gray-700 max-w-[90vw]">
                   {services.map(service => (
                     <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base">
                       {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
@@ -300,14 +332,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             {/* Calendário - Responsivo */}
             <div className="space-y-2">
               <Label className="text-gray-300 text-sm">Data</Label>
-              <div className="border border-gray-600 rounded-lg p-2 sm:p-4 bg-gray-700/30">
+              <div className="border border-gray-600 rounded-lg p-2 sm:p-4 bg-gray-700/30 overflow-x-hidden">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
                   disabled={(date) => isBefore(date, today)}
                   locale={ptBR}
-                  className="text-white mx-auto"
+                  className="text-white mx-auto pointer-events-auto"
                   classNames={{
                     months: "space-y-2",
                     month: "space-y-2",
@@ -315,9 +347,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                     caption_label: "text-sm sm:text-base font-medium",
                     nav: "space-x-1 flex items-center",
                     nav_button: "h-7 w-7 sm:h-8 sm:w-8",
-                    head_row: "flex",
+                    head_row: "flex justify-center",
                     head_cell: "text-gray-400 rounded-md w-8 sm:w-9 font-normal text-[10px] sm:text-xs",
-                    row: "flex w-full mt-1",
+                    row: "flex w-full mt-1 justify-center",
                     cell: "relative p-0 text-center text-xs sm:text-sm focus-within:relative focus-within:z-20",
                     day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm",
                   }}
@@ -327,8 +359,19 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
             {/* Horários Disponíveis - Mobile First */}
             {selectedDate && selectedService && (
-              <div className="space-y-2">
+              <div className="space-y-2 overflow-x-hidden">
                 <Label className="text-gray-300 text-sm">Horário Disponível</Label>
+                
+                {/* Legenda quando é o mesmo dia */}
+                {isOriginalDate && (
+                  <div className="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg border border-gray-600">
+                    <div className="w-4 h-4 rounded border-2 border-blue-400 bg-blue-400/20 flex-shrink-0" />
+                    <span className="text-xs text-gray-300">
+                      Horário original do agendamento: <strong className="text-blue-400">{normalizedOriginalTime}</strong>
+                    </span>
+                  </div>
+                )}
+                
                 {slotsLoading ? (
                   <div className="flex justify-center py-4">
                     <Loader2 className="h-6 w-6 animate-spin text-urbana-gold" />
@@ -341,20 +384,33 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-1.5 sm:gap-2">
-                    {availableSlots.map((slot) => (
-                      <button
-                        key={slot.time}
-                        type="button"
-                        className={`h-9 px-2 text-xs sm:text-sm rounded-md font-medium transition-colors touch-manipulation ${
-                          selectedTime === slot.time 
-                            ? "bg-urbana-gold text-black" 
-                            : "bg-gray-700 text-gray-200 border border-gray-600"
-                        }`}
-                        onClick={() => setSelectedTime(slot.time)}
-                      >
-                        {slot.time}
-                      </button>
-                    ))}
+                    {availableSlots.map((slot) => {
+                      const slotTimeNormalized = slot.time.substring(0, 5);
+                      const isOriginalSlot = isOriginalDate && slotTimeNormalized === normalizedOriginalTime;
+                      const isSelected = selectedTime === slot.time;
+                      
+                      return (
+                        <button
+                          key={slot.time}
+                          type="button"
+                          className={`
+                            h-9 px-2 text-xs sm:text-sm rounded-md font-medium transition-colors touch-manipulation relative
+                            ${isSelected 
+                              ? "bg-urbana-gold text-black" 
+                              : isOriginalSlot
+                                ? "bg-blue-400/20 text-blue-300 border-2 border-blue-400"
+                                : "bg-gray-700 text-gray-200 border border-gray-600"
+                            }
+                          `}
+                          onClick={() => setSelectedTime(slot.time)}
+                        >
+                          {slot.time}
+                          {isOriginalSlot && !isSelected && (
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full" />
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -384,7 +440,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       {/* Dialog de confirmação para salvar - Responsivo */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md">
+        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md overflow-x-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-white text-base sm:text-lg">
               Confirmar alterações?
