@@ -43,7 +43,7 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    // Container principal - viewport fixo
+    // Container principal - viewport fixo com safe areas
     <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
@@ -59,50 +59,54 @@ const PainelClienteLayout: React.FC = () => {
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
 
-      {/* Animated background effects */}
+      {/* Animated background effects - responsivo */}
       <div className="absolute inset-0 overflow-hidden z-0 pointer-events-none">
-        <div className="absolute top-1/4 right-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
-        <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
+        <div className="absolute top-1/4 right-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-urbana-gold/10 rounded-full blur-3xl animate-pulse-slow" />
+        <div className="absolute bottom-1/4 left-1/4 w-48 h-48 sm:w-64 sm:h-64 md:w-80 md:h-80 lg:w-96 lg:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Header FIXO - Absoluto dentro do container fixo */}
+      {/* Header FIXO - Com safe areas para iOS */}
       <header 
         className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        style={{ 
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+        }}
       >
-        <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
+        <div className="w-full px-2 sm:px-4 md:px-6 lg:px-8 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
               <div className="relative">
-                <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
+                <div className="relative p-0.5 sm:p-1 bg-urbana-black/30 backdrop-blur-sm rounded-lg sm:rounded-xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                    className="h-10 w-10 sm:h-12 sm:w-12 md:h-14 md:w-14 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
               <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
-                  Barbearia Costa Urbana
+                <h1 className="text-sm sm:text-lg md:text-xl font-bold text-urbana-light drop-shadow-lg leading-tight">
+                  Costa Urbana
                 </h1>
-                <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
+                <p className="text-[10px] sm:text-xs text-urbana-light/70 hidden sm:block">Painel do Cliente</p>
               </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
               <Button
                 variant="ghost"
                 size="sm"
-                className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
+                className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300"
               >
                 <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
+                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-urbana-gold rounded-full animate-pulse" />
               </Button>
               
-              <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
+              <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-urbana-black/30 rounded-xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
-                <span className="text-xs sm:text-sm text-urbana-light font-medium">
+                <span className="text-xs text-urbana-light font-medium">
                   {cliente?.nome?.split(' ')[0]}
                 </span>
               </div>
@@ -112,7 +116,7 @@ const PainelClienteLayout: React.FC = () => {
                 size="sm"
                 onClick={handleLogout}
                 disabled={isLoggingOut}
-                className={`text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 border border-transparent hover:border-red-500/20 ${
+                className={`text-urbana-light hover:text-red-400 hover:bg-red-500/10 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300 border border-transparent hover:border-red-500/20 ${
                   isLoggingOut ? 'opacity-50 cursor-not-allowed' : ''
                 }`}
               >
@@ -123,13 +127,17 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
+      {/* Mobile Navigation FIXO - Com safe-area para iOS */}
       <nav 
         className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
-        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
+        style={{ 
+          paddingBottom: 'max(env(safe-area-inset-bottom, 8px), 8px)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+        }}
       >
-        <div className="w-full px-1">
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+        <div className="w-full px-2">
+          <div className="grid grid-cols-4 gap-1 py-2">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -141,8 +149,8 @@ const PainelClienteLayout: React.FC = () => {
                   onClick={() => navigate(item.path)}
                   className={`
                     w-full h-auto flex flex-col items-center justify-center 
-                    p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
-                    relative overflow-hidden min-h-[60px] sm:min-h-[70px]
+                    p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300 
+                    relative overflow-hidden min-h-[52px] sm:min-h-[60px]
                     ${isActive 
                       ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                       : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -150,18 +158,18 @@ const PainelClienteLayout: React.FC = () => {
                   `}
                 >
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-lg sm:rounded-xl" />
                   )}
                   
-                  <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
+                  <div className="relative z-10 flex flex-col items-center gap-0.5 sm:gap-1">
                     <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-xs sm:text-sm font-medium leading-tight text-center">
+                    <span className="text-[10px] sm:text-xs font-medium leading-tight text-center">
                       {item.label}
                     </span>
                   </div>
                   
                   {isActive && (
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
+                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
                   )}
                 </Button>
               );
@@ -273,14 +281,14 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </nav>
 
-      {/* Main Content - Área com scroll próprio */}
+      {/* Main Content - Área com scroll próprio e safe areas */}
       <main 
-        className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
+        className="absolute z-10 overflow-y-auto overflow-x-hidden"
         style={{
-          top: '72px',
-          bottom: '110px',
-          left: 0,
-          right: 0,
+          top: 'calc(64px + env(safe-area-inset-top, 0px))',
+          bottom: 'calc(70px + env(safe-area-inset-bottom, 0px))',
+          left: 'env(safe-area-inset-left, 0px)',
+          right: 'env(safe-area-inset-right, 0px)',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
@@ -291,11 +299,12 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </main>
 
-      {/* Desktop: ajusta bottom do main */}
+      {/* Desktop: ajusta bottom do main para remover espaço do nav mobile */}
       <style>{`
         @media (min-width: 768px) {
           main {
             bottom: 0 !important;
+            top: 72px !important;
           }
         }
       `}</style>
