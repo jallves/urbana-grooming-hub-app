@@ -4,8 +4,12 @@ import FinancialEvolutionChart from './dashboard/FinancialEvolutionChart';
 import PendingAccountsWidget from './dashboard/PendingAccountsWidget';
 import TopBarbersWidget from './dashboard/TopBarbersWidget';
 import QuickActionsGrid from './dashboard/QuickActionsGrid';
+import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
 
 export default function AdminDashboard() {
+  // Enable real-time updates for dashboard data
+  useDashboardRealtime();
+
   return (
     <div className="flex flex-col space-y-3 sm:space-y-4 lg:space-y-6 p-2 sm:p-3 lg:p-6 bg-gray-50 min-h-screen">
       {/* Header Section - Mobile First */}
