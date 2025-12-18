@@ -729,118 +729,19 @@
 
 /* iOS Specific Fixes */
 @supports (-webkit-touch-callout: none) {
-  /* iOS safe area support - NÃO adicionar padding ao body diretamente */
-  /* Os componentes de layout tratam safe areas individualmente */
+  /* iOS safe area support */
+  body {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  
+  /* REMOVIDO: position: fixed no body/html pois quebra position: fixed dos elementos filhos */
+  /* Agora permitindo scroll natural no body para que position: fixed funcione corretamente */
   
   #root {
     -webkit-overflow-scrolling: touch;
     min-height: 100vh;
-    min-height: -webkit-fill-available;
-    min-height: 100dvh;
   }
-}
-
-/* ========================================
-   iOS PWA CRITICAL FIXES - SCROLL & LAYOUT
-   ======================================== */
-
-/* CSS Variables para cálculos de altura dinâmica */
-:root {
-  --header-height: 64px;
-  --header-height-with-safe: calc(64px + env(safe-area-inset-top, 0px));
-  --mobile-nav-height: 80px;
-  --mobile-nav-height-with-safe: calc(80px + env(safe-area-inset-bottom, 0px));
-}
-
-@media (min-width: 640px) {
-  :root {
-    --header-height: 68px;
-    --header-height-with-safe: calc(68px + env(safe-area-inset-top, 0px));
-  }
-}
-
-@media (min-width: 768px) {
-  :root {
-    --header-height: 72px;
-    --header-height-with-safe: 72px;
-    --mobile-nav-height: 0px;
-    --mobile-nav-height-with-safe: 0px;
-  }
-}
-
-/* PWA iOS - Scroll Container Fix */
-.pwa-scroll-container {
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-  scroll-behavior: smooth;
-}
-
-/* PWA iOS - Main Content Area Fix */
-.pwa-main-content {
-  position: absolute;
-  left: 0;
-  right: 0;
-  top: var(--header-height-with-safe);
-  bottom: var(--mobile-nav-height-with-safe);
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-  overscroll-behavior-y: contain;
-}
-
-@media (min-width: 768px) {
-  .pwa-main-content {
-    top: var(--header-height);
-    bottom: 0;
-  }
-}
-
-/* PWA iOS - Fixed Header Fix */
-.pwa-header-fixed {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  padding-top: env(safe-area-inset-top, 0px);
-}
-
-/* PWA iOS - Fixed Bottom Nav Fix */
-.pwa-bottom-nav-fixed {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  z-index: 50;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-}
-
-/* iOS Standalone Mode Specific Fixes */
-@media (display-mode: standalone) {
-  /* Scroll suave no PWA iOS */
-  .pwa-scroll-container {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
-  }
-}
-
-/* Prevent scroll bounce on iOS */
-.prevent-bounce {
-  overscroll-behavior: none;
-  -webkit-overscroll-behavior: none;
-}
-
-/* iOS PWA - Ensure touch events work properly */
-.touch-scroll {
-  touch-action: pan-y;
-  -webkit-touch-callout: none;
-}
-
-/* Fix para conteúdo cortado no iOS */
-.ios-content-fix {
-  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* Android Specific Optimizations */

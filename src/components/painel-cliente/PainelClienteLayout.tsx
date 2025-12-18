@@ -43,8 +43,8 @@ const PainelClienteLayout: React.FC = () => {
   ];
 
   return (
-    // Container principal - viewport fixo com suporte PWA iOS
-    <div className="fixed inset-0 w-full h-full font-poppins overflow-hidden">
+    // Container principal - viewport fixo
+    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 
@@ -65,9 +65,10 @@ const PainelClienteLayout: React.FC = () => {
         <div className="absolute bottom-1/4 left-1/4 w-64 h-64 sm:w-80 sm:h-80 md:w-96 md:h-96 bg-urbana-gold-vibrant/10 rounded-full blur-3xl animate-pulse-slow" style={{ animationDelay: '1s' }} />
       </div>
       
-      {/* Header FIXO - com safe area top */}
+      {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl pwa-header-fixed"
+        className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
+        style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex items-center justify-between">
@@ -122,9 +123,10 @@ const PainelClienteLayout: React.FC = () => {
         </div>
       </header>
 
-      {/* Mobile Navigation FIXO - com safe area bottom */}
+      {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl pwa-bottom-nav-fixed"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 12px)' }}
       >
         <div className="w-full px-1">
           <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
@@ -273,15 +275,30 @@ const PainelClienteLayout: React.FC = () => {
 
       {/* Main Content - Área com scroll próprio */}
       <main 
-        className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden pt-[72px] pb-[92px] md:pt-[72px] md:pb-0 md:pl-64 lg:pl-72 xl:pl-80"
+        className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
-          WebkitOverflowScrolling: 'touch',
+          top: '72px',
+          bottom: '110px',
+          left: 0,
+          right: 0,
         }}
       >
-        <div className="w-full max-w-[1800px] mx-auto pb-4 md:pb-8">
-          <Outlet />
+        {/* Desktop: ajusta para sidebar */}
+        <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80">
+          <div className="w-full max-w-[1800px] mx-auto">
+            <Outlet />
+          </div>
         </div>
       </main>
+
+      {/* Desktop: ajusta bottom do main */}
+      <style>{`
+        @media (min-width: 768px) {
+          main {
+            bottom: 0 !important;
+          }
+        }
+      `}</style>
     </div>
   );
 };
