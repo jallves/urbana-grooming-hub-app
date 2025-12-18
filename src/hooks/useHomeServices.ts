@@ -55,8 +55,7 @@ export const useHomeServices = () => {
           .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
           .eq('is_active', true)
           .eq('show_on_home', true)
-          .order('display_order', { ascending: true })
-          .limit(6);
+          .order('display_order', { ascending: true });
 
         if (!mounted) return;
 
@@ -112,8 +111,7 @@ export const useHomeServices = () => {
         .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
         .eq('is_active', true)
         .eq('show_on_home', true)
-        .order('display_order', { ascending: true })
-        .limit(6);
+        .order('display_order', { ascending: true });
 
       if (fetchError) {
         console.error('[Services] Erro no refetch:', fetchError.message);
