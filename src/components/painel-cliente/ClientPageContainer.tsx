@@ -48,11 +48,13 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
       'w-full',
       'max-w-7xl',
       'mx-auto',
-      // Padding vertical - responsivo para mobile
-      'pt-4 sm:pt-6 lg:pt-12',
-      'pb-4 sm:pb-6 lg:pb-12',
-      // Padding horizontal - responsivo para mobile
-      'px-3 sm:px-6 md:px-8 lg:px-12',
+      // Padding vertical - responsivo para mobile/PWA
+      'pt-3 sm:pt-4 md:pt-6 lg:pt-12',
+      'pb-6 sm:pb-8 lg:pb-12',
+      // Padding horizontal - otimizado para mobile PWA
+      'px-3 sm:px-4 md:px-6 lg:px-8 xl:px-12',
+      // iOS content fix
+      'ios-content-fix',
       className
     )}>
       {/* Cabeçalho Unificado - Sem logo, apenas saudação */}
