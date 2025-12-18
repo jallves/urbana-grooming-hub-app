@@ -21,8 +21,8 @@ export default defineConfig(({ mode }) => ({
         type: 'module'
       },
       manifest: {
-        name: 'Costa Urbana Barbearia',
-        short_name: 'Costa Urbana',
+        name: 'Barbearia Costa Urbana',
+        short_name: 'Barbearia Costa Urbana',
         description: 'Sistema de Gestão e Totem de Autoatendimento',
         theme_color: '#DAA520',
         background_color: '#1A1410',
