@@ -46,8 +46,9 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
       'max-w-7xl',
       'mx-auto',
       // Padding vertical - responsivo para mobile
+      // pb maior no mobile para dar espaço acima do rodapé fixo
       'pt-3 sm:pt-4 md:pt-6 lg:pt-8',
-      'pb-3 sm:pb-4 md:pb-6 lg:pb-8',
+      'pb-24 sm:pb-28 md:pb-6 lg:pb-8',
       // Padding horizontal - responsivo para mobile
       'px-3 sm:px-4 md:px-6 lg:px-8',
       className
