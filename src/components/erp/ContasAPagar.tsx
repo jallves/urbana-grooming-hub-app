@@ -462,9 +462,12 @@ export const ContasAPagar: React.FC = () => {
         dates: string[];
       }>();
 
+      let successCount = 0;
+      let errorMessages: string[] = [];
+
       for (const record of records) {
         // Atualizar status
-        const { error } = await supabase
+        const { error, data: updatedData } = await supabase
           .from('financial_records')
           .update({ 
             status: 'completed',
@@ -472,12 +475,23 @@ export const ContasAPagar: React.FC = () => {
             payment_date: paymentDate,
             updated_at: paymentDate,
           })
-          .eq('id', record.id);
+          .eq('id', record.id)
+          .select();
 
         if (error) {
           console.error('Erro ao atualizar registro:', error);
+          errorMessages.push(`Registro ${record.id}: ${error.message}`);
           continue;
         }
+
+        // Verificar se o update realmente aconteceu (RLS pode bloquear silenciosamente)
+        if (!updatedData || updatedData.length === 0) {
+          console.error('Update não retornou dados - possivelmente bloqueado por RLS');
+          errorMessages.push(`Registro ${record.id}: Permissão negada (RLS)`);
+          continue;
+        }
+
+        successCount++;
 
         // Sincronizar com barber_commissions se for comissão
         if (record.transaction_type === 'commission' && record.appointment_id) {
@@ -531,6 +545,11 @@ export const ContasAPagar: React.FC = () => {
         });
       }
 
+      // Se nenhum registro foi atualizado com sucesso, lança erro
+      if (successCount === 0) {
+        throw new Error(`Nenhum pagamento foi processado. Verifique suas permissões. Erros: ${errorMessages.join(', ')}`);
+      }
+
       // Criar registros consolidados para cada barbeiro
       for (const [barberId, data] of commissionsByBarber) {
         const sortedDates = data.dates.sort();
@@ -555,17 +574,26 @@ export const ContasAPagar: React.FC = () => {
           console.error('Erro ao criar pagamento consolidado:', insertError);
         }
       }
+
+      return { successCount, totalCount: records.length };
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
       queryClient.invalidateQueries({ queryKey: ['commission-payments'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
       queryClient.invalidateQueries({ queryKey: ['commissions'] });
-      toast.success(`${selectedRecords.size} pagamentos registrados!`);
+      
+      if (data && data.successCount < data.totalCount) {
+        toast.warning(`${data.successCount} de ${data.totalCount} pagamentos registrados. Alguns falharam.`);
+      } else {
+        toast.success(`${selectedRecords.size} pagamentos registrados com sucesso!`);
+      }
+      
       setSelectedRecords(new Set());
       setBatchPaymentDialogOpen(false);
     },
     onError: (error: any) => {
+      console.error('Erro no pagamento em lote:', error);
       toast.error('Erro ao processar pagamentos', { description: error.message });
     }
   });
