@@ -819,24 +819,8 @@
 
 /* iOS Standalone Mode Specific Fixes */
 @media (display-mode: standalone) {
-  /* Previne rubber-banding no PWA iOS */
-  html, body {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  #root {
-    position: fixed;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-  
-  /* O scroll acontece APENAS dentro do main content */
+  /* Scroll suave no PWA iOS */
   .pwa-scroll-container {
-    /* Força scroll suave no iOS PWA */
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
