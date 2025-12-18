@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Globe, Image, Star, Settings } from 'lucide-react';
+import { Image, Star } from 'lucide-react';
 import BannerManager from '@/components/admin/settings/media/BannerManager';
 import GalleryManager from '@/components/admin/settings/media/GalleryManager';
 import FeaturedServicesManager from '@/components/admin/settings/site/FeaturedServicesManager';
-import GeneralSettingsManager from '@/components/admin/settings/site/GeneralSettingsManager';
 import { BannerImage, GalleryImage } from '@/types/settings';
 
 const AdminSiteSettings: React.FC = () => {
@@ -22,7 +21,7 @@ const AdminSiteSettings: React.FC = () => {
         {/* Tabs */}
         <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Tabs defaultValue="banners" className="w-full">
-            <TabsList className="grid w-full grid-cols-4 mb-4 sm:mb-6 bg-gray-100 border border-gray-200 p-0.5 sm:p-1 gap-0.5 sm:gap-1">
+            <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 bg-gray-100 border border-gray-200 p-0.5 sm:p-1 gap-0.5 sm:gap-1">
               <TabsTrigger 
                 value="banners" 
                 className="bg-gradient-to-r from-pink-600 to-rose-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
@@ -43,13 +42,6 @@ const AdminSiteSettings: React.FC = () => {
               >
                 <Star className="h-3 w-3 sm:h-4 sm:w-4" />
                 <span>Destaque</span>
-              </TabsTrigger>
-              <TabsTrigger 
-                value="general"
-                className="bg-gradient-to-r from-slate-600 to-gray-600 text-white font-raleway font-semibold py-1.5 sm:py-2 lg:py-3 px-1 sm:px-2 rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
-              >
-                <Settings className="h-3 w-3 sm:h-4 sm:w-4" />
-                <span>Config</span>
               </TabsTrigger>
             </TabsList>
 
@@ -101,19 +93,6 @@ const AdminSiteSettings: React.FC = () => {
               </div>
             </TabsContent>
 
-            <TabsContent value="general" className="space-y-4">
-              <div className="bg-white rounded-lg border border-gray-200 p-4 sm:p-6">
-                <div className="mb-6">
-                  <h2 className="text-lg sm:text-xl font-playfair font-bold text-gray-900 mb-2">
-                    ⚙️ Configurações Gerais
-                  </h2>
-                  <p className="text-sm text-gray-600 font-raleway">
-                    Configure informações básicas, redes sociais e textos do site
-                  </p>
-                </div>
-                <GeneralSettingsManager />
-              </div>
-            </TabsContent>
           </Tabs>
         </div>
       </div>
