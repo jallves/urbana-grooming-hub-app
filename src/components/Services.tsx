@@ -108,7 +108,7 @@ const Services: React.FC = () => {
   if (isLoading) {
     return (
       <section id="services" className="relative w-full py-8 md:py-12 lg:py-16 text-urbana-light overflow-hidden">
-        <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
+          <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-6xl md:text-7xl font-playfair font-bold mb-6 text-urbana-gold">
               Nossos Serviços
@@ -132,7 +132,7 @@ const Services: React.FC = () => {
   if (status === 'error') {
     return (
       <section id="services" className="relative w-full py-8 md:py-12 lg:py-16 text-urbana-light overflow-hidden">
-        <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
+        <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-6xl md:text-7xl font-playfair font-bold mb-6 text-urbana-gold">
               Nossos Serviços
@@ -179,7 +179,7 @@ const Services: React.FC = () => {
         backgroundSize: '60px 60px'
       }} />
 
-      <div className="w-full max-w-7xl mx-auto relative z-10 px-4 md:px-6 lg:px-8">
+      <div className="w-full relative z-10 px-4 md:px-6 lg:px-8">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 30 }}
