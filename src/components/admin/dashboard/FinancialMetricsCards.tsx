@@ -116,7 +116,9 @@ const FinancialMetricsCards: React.FC = () => {
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       trend: metrics?.revenueTrend || 0,
-      subtitle: `${metrics?.pendingReceivables ? `R$ ${(metrics.pendingReceivables || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: metrics?.pendingReceivables && metrics.pendingReceivables > 0
+        ? `R$ ${metrics.pendingReceivables.toFixed(2)} a receber`
+        : '✓ Tudo recebido',
       alert: (metrics?.overdueReceivables || 0) > 0 ? `${metrics?.overdueReceivables} vencida(s)` : null,
     },
     {
@@ -126,7 +128,9 @@ const FinancialMetricsCards: React.FC = () => {
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       trend: metrics?.expenseTrend || 0,
-      subtitle: `${metrics?.pendingPayables ? `R$ ${(metrics.pendingPayables || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: metrics?.pendingPayables && metrics.pendingPayables > 0
+        ? `R$ ${metrics.pendingPayables.toFixed(2)} a pagar`
+        : '✓ Todas as despesas pagas',
       alert: (metrics?.overduePayables || 0) > 0 ? `${metrics?.overduePayables} vencida(s)` : null,
     },
     {
@@ -139,12 +143,14 @@ const FinancialMetricsCards: React.FC = () => {
       subtitle: `Margem: ${metrics && metrics.revenue ? ((metrics.profit / metrics.revenue) * 100).toFixed(1) : '0'}%`,
     },
     {
-      title: 'Comissões',
+      title: 'Comissões do Mês',
       value: `R$ ${(metrics?.commissions || 0).toFixed(2)}`,
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
-      subtitle: `${metrics?.pendingCommissions ? `R$ ${(metrics.pendingCommissions || 0).toFixed(2)} pendente` : 'Nenhuma pendência'}`,
+      subtitle: metrics?.pendingCommissions && metrics.pendingCommissions > 0
+        ? `R$ ${metrics.pendingCommissions.toFixed(2)} a pagar aos barbeiros`
+        : '✓ Todas as comissões pagas',
     },
   ];
 
