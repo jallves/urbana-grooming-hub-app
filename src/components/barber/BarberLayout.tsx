@@ -270,14 +270,22 @@ const BarberLayout: React.FC = () => {
 
       {/* Main Content - Área com scroll próprio */}
       <main 
-        className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden pt-[72px] pb-[92px] md:pt-[72px] md:pb-0 md:pl-64 lg:pl-72 xl:pl-80"
+        className="absolute inset-0 z-10 overflow-y-auto overflow-x-hidden md:pl-64 lg:pl-72 xl:pl-80"
         style={{
           WebkitOverflowScrolling: 'touch',
           paddingTop: 'calc(72px + env(safe-area-inset-top, 0px))',
           paddingBottom: 'calc(92px + env(safe-area-inset-bottom, 0px))',
         }}
       >
-        <div className="w-full max-w-[1800px] mx-auto">
+        {/* Desktop: remove padding bottom */}
+        <style>{`
+          @media (min-width: 768px) {
+            main {
+              padding-bottom: 0 !important;
+            }
+          }
+        `}</style>
+        <div className="w-full max-w-[1800px] mx-auto pb-4 md:pb-8">
           <Outlet />
         </div>
       </main>
