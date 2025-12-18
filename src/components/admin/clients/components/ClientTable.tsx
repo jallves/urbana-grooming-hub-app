@@ -41,45 +41,42 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
   };
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden overflow-x-auto">
+    <div className="rounded-lg border border-border overflow-hidden">
       <Table className={cn(compact && 'text-sm')}>
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className={cn(
-              "font-semibold text-foreground",
+              "font-semibold text-foreground w-[180px] lg:w-[220px]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nome
             </TableHead>
-            {/* Email - escondido em tablets compactos */}
             <TableHead className={cn(
-              "font-semibold text-foreground",
-              compact ? "hidden xl:table-cell px-3 py-2" : "px-4 py-3"
+              "font-semibold text-foreground min-w-[200px]",
+              compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Email
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground",
+              "font-semibold text-foreground w-[150px]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               WhatsApp
             </TableHead>
-            {/* Nascimento - escondido em tablets */}
             <TableHead className={cn(
-              "font-semibold text-foreground hidden lg:table-cell",
+              "font-semibold text-foreground hidden lg:table-cell w-[120px]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nascimento
             </TableHead>
-            {/* Cadastrado em - escondido em tablets */}
             <TableHead className={cn(
-              "font-semibold text-foreground hidden xl:table-cell",
+              "font-semibold text-foreground hidden xl:table-cell w-[120px]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
-              Cadastrado em
+              Cadastro
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground text-right",
+              "font-semibold text-foreground text-right w-[100px]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Ações
@@ -108,37 +105,46 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                       {client.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="truncate max-w-[120px] lg:max-w-[180px]">{client.nome}</span>
+                  <span className="truncate max-w-[140px] lg:max-w-[180px]" title={client.nome}>
+                    {client.nome}
+                  </span>
                 </div>
               </TableCell>
-              {/* Email - escondido em tablets compactos */}
-              <TableCell className={cn(
-                compact ? "hidden xl:table-cell px-3 py-2" : "px-4 py-3"
-              )}>
+              <TableCell className={compact ? "px-3 py-2" : "px-4 py-3"}>
                 {client.email ? (
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <Mail className="h-4 w-4 flex-shrink-0" />
-                    <span className="truncate max-w-[150px]">{client.email}</span>
+                    <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
+                    <a 
+                      href={`mailto:${client.email}`}
+                      className="text-foreground hover:text-primary hover:underline transition-colors break-all"
+                      title={client.email}
+                    >
+                      {client.email}
+                    </a>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">-</span>
+                  <span className="text-muted-foreground italic">Não informado</span>
                 )}
               </TableCell>
               <TableCell className={compact ? "px-3 py-2" : "px-4 py-3"}>
                 <div className="flex items-center gap-2">
                   <MessageCircle className={cn(
-                    "text-primary flex-shrink-0",
+                    "text-green-600 flex-shrink-0",
                     compact ? "h-3.5 w-3.5" : "h-4 w-4"
                   )} />
-                  <span className={cn(
-                    "font-mono",
-                    compact ? "text-xs" : "text-sm"
-                  )}>
+                  <a 
+                    href={`https://wa.me/55${client.whatsapp.replace(/\D/g, '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className={cn(
+                      "font-mono hover:text-green-600 hover:underline transition-colors",
+                      compact ? "text-xs" : "text-sm"
+                    )}
+                  >
                     {formatPhone(client.whatsapp)}
-                  </span>
+                  </a>
                 </div>
               </TableCell>
-              {/* Nascimento - escondido em tablets */}
               <TableCell className={cn(
                 "hidden lg:table-cell",
                 compact ? "px-3 py-2" : "px-4 py-3"
@@ -149,10 +155,9 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                     <span className={compact ? "text-xs" : "text-sm"}>{formatDate(client.data_nascimento, true)}</span>
                   </div>
                 ) : (
-                  <span className="text-muted-foreground">-</span>
+                  <span className="text-muted-foreground italic text-sm">-</span>
                 )}
               </TableCell>
-              {/* Cadastrado em - escondido em tablets */}
               <TableCell className={cn(
                 "hidden xl:table-cell",
                 compact ? "px-3 py-2" : "px-4 py-3"
