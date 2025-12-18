@@ -116,12 +116,16 @@ const BarberLayout: React.FC = () => {
       </header>
 
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
+      {/* iOS PWA: altura maior para acomodar safe-area do iPhone */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl safe-bottom"
-        style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 8px)' }}
+        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ 
+          paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
+          paddingTop: '8px'
+        }}
       >
-        <div className="w-full px-1">
-          <div className="grid grid-cols-4 gap-1 py-2 sm:py-3">
+        <div className="w-full px-2">
+          <div className="grid grid-cols-4 gap-1.5">
             {navigationItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -133,8 +137,8 @@ const BarberLayout: React.FC = () => {
                   onClick={() => navigate(item.path)}
                   className={`
                     w-full h-auto flex flex-col items-center justify-center 
-                    p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300 
-                    relative overflow-hidden min-h-[60px] sm:min-h-[70px]
+                    py-2.5 px-1 rounded-xl transition-all duration-300 
+                    relative overflow-hidden min-h-[56px]
                     ${isActive 
                       ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                       : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -142,18 +146,18 @@ const BarberLayout: React.FC = () => {
                   `}
                 >
                   {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl sm:rounded-2xl" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl" />
                   )}
                   
-                  <div className="relative z-10 flex flex-col items-center gap-1 sm:gap-1.5">
-                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                    <span className="text-xs sm:text-sm font-medium leading-tight text-center">
+                  <div className="relative z-10 flex flex-col items-center gap-1">
+                    <Icon className="h-5 w-5" />
+                    <span className="text-[11px] font-medium leading-tight text-center">
                       {item.label}
                     </span>
                   </div>
                   
                   {isActive && (
-                    <div className="absolute -top-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
+                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
                   )}
                 </Button>
               );
@@ -271,18 +275,19 @@ const BarberLayout: React.FC = () => {
       </nav>
 
       {/* Main Content - Área com scroll próprio */}
+      {/* iOS PWA: bottom maior para não esconder conteúdo atrás do rodapé */}
       <main 
         className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
           top: '72px',
-          bottom: '90px',
+          bottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
           left: 0,
           right: 0,
         }}
       >
         {/* Desktop: ajusta para sidebar */}
         <div className="w-full h-full md:pl-64 lg:pl-72 xl:pl-80">
-          <div className="w-full max-w-[1800px] mx-auto">
+          <div className="w-full max-w-[1800px] mx-auto pb-4">
             <Outlet />
           </div>
         </div>
