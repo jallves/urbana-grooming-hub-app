@@ -39,9 +39,6 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
 }) => {
   const { cliente } = usePainelClienteAuth();
 
-  // Debug: verificar se o header está sendo renderizado
-  console.log('🔍 ClientPageContainer - hideHeader:', hideHeader, 'cliente:', cliente?.nome);
-
   return (
     <div className={cn(
       // Largura e centralização
@@ -49,20 +46,20 @@ export const ClientPageContainer: React.FC<ClientPageContainerProps> = ({
       'max-w-7xl',
       'mx-auto',
       // Padding vertical - responsivo para mobile
-      'pt-4 sm:pt-6 lg:pt-12',
-      'pb-4 sm:pb-6 lg:pb-12',
+      'pt-3 sm:pt-4 md:pt-6 lg:pt-8',
+      'pb-3 sm:pb-4 md:pb-6 lg:pb-8',
       // Padding horizontal - responsivo para mobile
-      'px-3 sm:px-6 md:px-8 lg:px-12',
+      'px-3 sm:px-4 md:px-6 lg:px-8',
       className
     )}>
       {/* Cabeçalho Unificado - Sem logo, apenas saudação */}
       {!hideHeader && (
-        <div className="mb-4 sm:mb-8 lg:mb-12 pb-4 sm:pb-6 lg:pb-8 border-b border-urbana-gold/20">
+        <div className="mb-3 sm:mb-4 md:mb-6 lg:mb-8 pb-3 sm:pb-4 md:pb-6 border-b border-urbana-gold/20">
           <div>
-            <h1 className="text-xl sm:text-2xl lg:text-4xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
+            <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
               Olá, {cliente?.nome?.split(' ')[0] || 'Cliente'}!
             </h1>
-            <p className="text-urbana-light/70 text-xs sm:text-sm lg:text-lg drop-shadow-md mt-1 sm:mt-2">
+            <p className="text-urbana-light/70 text-[11px] sm:text-xs md:text-sm lg:text-base drop-shadow-md mt-0.5 sm:mt-1">
               Bem-vindo à Barbearia Costa Urbana
             </p>
           </div>
