@@ -36,9 +36,9 @@ const BarberLayout: React.FC = () => {
 
   return (
     // Container principal - viewport fixo com suporte PWA iOS
-    <div className="fixed inset-0 w-full h-full font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-full h-full font-poppins overflow-hidden bg-urbana-black">
       {/* Background fixo da barbearia */}
-      <div className="absolute inset-0 z-0">
+      <div className="absolute inset-0 z-0 bg-urbana-black">
         <img 
           src={barbershopBg} 
           alt="Barbearia Costa Urbana Background" 
