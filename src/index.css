@@ -824,19 +824,6 @@
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
   }
-  
-  /* PWA iOS - Melhor scroll no main content */
-  main {
-    -webkit-overflow-scrolling: touch;
-    overscroll-behavior-y: contain;
-  }
-  
-  /* PWA iOS - Previne seleção acidental de texto */
-  .pwa-header-fixed,
-  .pwa-bottom-nav-fixed {
-    -webkit-user-select: none;
-    user-select: none;
-  }
 }
 
 /* Prevent scroll bounce on iOS */
