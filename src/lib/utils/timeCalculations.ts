@@ -141,30 +141,51 @@ export const getNextAvailableTime = (startTime: string, serviceDuration: number)
 /**
  * Verifica se um horário já passou há mais de 10 minutos (apenas para o dia atual)
  * Permite agendamento até 10 minutos APÓS o horário (ex: horário 19:00 disponível até 19:10)
+ * 
+ * IMPORTANTE: Compara usando ano/mês/dia diretamente para evitar problemas de timezone
  */
 export const isPastTime = (date: Date, time: string): boolean => {
   const now = new Date();
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
   
-  const selectedDay = new Date(date);
-  selectedDay.setHours(0, 0, 0, 0);
+  // Extrair componentes de data diretamente (evita problemas de timezone)
+  const selectedYear = date.getFullYear();
+  const selectedMonth = date.getMonth();
+  const selectedDay = date.getDate();
+  
+  const todayYear = now.getFullYear();
+  const todayMonth = now.getMonth();
+  const todayDay = now.getDate();
   
   // Se não é hoje, nunca é passado
-  if (selectedDay.getTime() !== today.getTime()) {
+  const isToday = selectedYear === todayYear && selectedMonth === todayMonth && selectedDay === todayDay;
+  
+  if (!isToday) {
     return false;
   }
   
   // É hoje - verificar hora
   const [hours, minutes] = time.split(':').map(Number);
-  const selectedDateTime = new Date(date);
-  selectedDateTime.setHours(hours, minutes, 0, 0);
+  
+  // Criar data/hora do slot usando componentes locais
+  const selectedDateTime = new Date(selectedYear, selectedMonth, selectedDay, hours, minutes, 0, 0);
   
   // Permitir agendamento até 10 minutos DEPOIS do horário passar
   // Ex: horário 19:00 disponível de 19:00 até 19:10
   const minTime = new Date(now.getTime() - 10 * 60 * 1000);
   
-  return selectedDateTime < minTime;
+  const isPast = selectedDateTime < minTime;
+  
+  if (isPast) {
+    console.log('🕐 isPastTime:', {
+      time,
+      selectedDateTime: selectedDateTime.toISOString(),
+      minTime: minTime.toISOString(),
+      now: now.toISOString(),
+      isPast
+    });
+  }
+  
+  return isPast;
 };
 
 /**

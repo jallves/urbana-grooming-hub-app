@@ -1,6 +1,5 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format, addMinutes, parse, startOfDay, isAfter, isBefore } from 'date-fns';
 import { toast } from 'sonner';
 import { 
   hasTimeOverlap, 
@@ -106,7 +105,11 @@ export const useAppointmentValidation = () => {
     excludeAppointmentId?: string
   ): Promise<ValidationResult> => {
     try {
-      const dateStr = format(date, 'yyyy-MM-dd');
+      // Formatação segura da data para evitar problemas de timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
 
       const { data: isAvailable, error: rpcError } = await supabase.rpc('check_unified_slot_availability', {
         p_staff_id: staffId,
@@ -167,18 +170,37 @@ export const useAppointmentValidation = () => {
     setIsValidating(true);
 
     try {
+      // Formatação segura da data para logs
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
       console.log('🔐 Iniciando validação completa:', {
         barberId,
-        date: format(date, 'yyyy-MM-dd'),
+        date: dateStr,
         time,
         serviceDuration,
         excludeAppointmentId
       });
 
       // 1. Validar se não é horário passado (para dia atual)
+      console.log('🕐 Verificando se horário passou:', {
+        dateStr,
+        dateYear: year,
+        dateMonth: month,
+        dateDay: day,
+        time,
+        nowDate: new Date().toISOString()
+      });
+      
       const pastTimeCheck = validateNotPastTime(date, time);
       if (!pastTimeCheck.valid) {
-        console.error('❌ Horário passado detectado');
+        console.error('❌ Horário passado detectado:', {
+          date: dateStr,
+          time,
+          error: pastTimeCheck.error
+        });
         toast.error(pastTimeCheck.error);
         return pastTimeCheck;
       }
@@ -226,18 +248,23 @@ export const useAppointmentValidation = () => {
     setIsValidating(true);
 
     try {
-      const dateStr = format(date, 'yyyy-MM-dd');
-      const today = format(new Date(), 'yyyy-MM-dd');
-      const isToday = dateStr === today;
+      // Formatação segura da data para evitar problemas de timezone
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStr = `${year}-${month}-${day}`;
+      
+      const now = new Date();
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      const isToday = dateStr === todayStr;
       
       // Usar horário local do Brasil (não UTC)
-      const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       
       console.log('🔍 getAvailableTimeSlots (OTIMIZADO):', {
         dateStr,
-        today,
+        todayStr,
         isToday,
         currentTime: `${currentHour}:${currentMinute}`,
         timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,

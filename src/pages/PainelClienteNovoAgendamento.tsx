@@ -332,13 +332,21 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       progressToast = toast.loading('📝 Criando agendamento...');
 
       // 2. Criar agendamento na tabela CORRETA (painel_agendamentos)
+      // Formatação segura da data para evitar problemas de timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+
+      console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
+
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
         .insert({
           cliente_id: cliente.id,
           barbeiro_id: selectedBarber.id,
           servico_id: selectedService.id,
-          data: format(selectedDate, 'yyyy-MM-dd'),
+          data: dataLocal,
           hora: selectedTime,
           status: 'agendado'
         })
