@@ -116,18 +116,39 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `).join('');
 
+    // Função para determinar emoji baseado no nome do produto
+    const getProductEmoji = (productName: string): string => {
+      const name = productName.toLowerCase();
+      if (name.includes('pomada') || name.includes('cera')) return '🫙';
+      if (name.includes('shampoo') || name.includes('xampu')) return '🧴';
+      if (name.includes('óleo') || name.includes('oleo')) return '💧';
+      if (name.includes('balm') || name.includes('bálsamo')) return '✨';
+      if (name.includes('condicionador')) return '🧴';
+      if (name.includes('gel')) return '💈';
+      if (name.includes('creme')) return '🧴';
+      if (name.includes('toalha')) return '🧣';
+      if (name.includes('pente') || name.includes('escova')) return '🪥';
+      if (name.includes('navalha') || name.includes('gilete')) return '🪒';
+      if (name.includes('tesoura')) return '✂️';
+      if (name.includes('perfume') || name.includes('colônia') || name.includes('colonia')) return '🌸';
+      if (name.includes('desodorante')) return '🧊';
+      if (name.includes('loção') || name.includes('locao')) return '🧴';
+      return '📦'; // emoji padrão para produtos não identificados
+    };
+
     // Gerar HTML dos produtos (formato mobile-first em lista)
     const productsHtml = products.map(item => {
       const qty = item.quantity || 1;
       const unitPrice = item.unitPrice || (item.price / qty);
       const subtotal = item.price || (unitPrice * qty);
+      const emoji = getProductEmoji(item.name);
       
-      console.log(`📦 Produto: ${item.name}, Qtd: ${qty}, Unit: ${unitPrice}, Total: ${subtotal}`);
+      console.log(`📦 Produto: ${item.name}, Qtd: ${qty}, Unit: ${unitPrice}, Total: ${subtotal}, Emoji: ${emoji}`);
       
       return `
       <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
         <div style="margin-bottom: 8px;">
-          <span style="color: #333; font-weight: 600; font-size: 14px;">🛍️ ${item.name}</span>
+          <span style="color: #333; font-weight: 600; font-size: 14px;">${emoji} ${item.name}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
           <span style="color: #888; font-size: 13px;">${qty} un. × R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
