@@ -113,7 +113,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       let query = supabase
         .from('painel_barbeiros')
-        .select('id, nome, image_url')
+        .select('id, nome, image_url, staff_id')
         .eq('is_active', true)
         .eq('available_for_booking', true)
         .order('nome');
@@ -129,10 +129,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       if (error) throw error;
       
-      // Mapear dados - usar id como staff_id para compatibilidade
+      // Mapear dados - usar staff_id real para compatibilidade com RPCs
       const mappedBarbers = (data || []).map(b => ({
         id: b.id,
-        staff_id: b.id, // No modelo unificado, staff_id = id
+        staff_id: (b as any).staff_id || b.id, // Usar staff_id real se disponível
         nome: b.nome,
         image_url: b.image_url
       }));

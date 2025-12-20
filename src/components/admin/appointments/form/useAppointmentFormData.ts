@@ -96,7 +96,19 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
         .eq('is_active', true)
         .order('nome');
       if (error) throw new Error(error.message);
-      return (data || []).map(b => ({ id: b.id, name: b.nome, email: b.email, phone: b.telefone, image_url: b.image_url, specialties: b.specialties, experience: b.experience, commission_rate: b.commission_rate, is_active: b.is_active, role: b.role })) as StaffMember[];
+      return (data || []).map(b => ({ 
+        id: b.id, 
+        name: b.nome, 
+        email: b.email, 
+        phone: b.telefone, 
+        image_url: b.image_url, 
+        specialties: b.specialties, 
+        experience: b.experience, 
+        commission_rate: b.commission_rate, 
+        is_active: b.is_active, 
+        role: b.role,
+        staff_id: b.staff_id // Incluir staff_id para uso nas RPCs
+      })) as (StaffMember & { staff_id?: string })[];
     },
   });
 

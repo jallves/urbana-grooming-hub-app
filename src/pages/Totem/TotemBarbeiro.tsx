@@ -59,7 +59,7 @@ const TotemBarbeiro: React.FC = () => {
 
       let query = supabase
         .from('painel_barbeiros')
-        .select('id, nome, specialties, image_url, is_active')
+        .select('id, nome, specialties, image_url, is_active, staff_id')
         .eq('is_active', true)
         .eq('available_for_booking', true)
         .order('nome');
@@ -81,7 +81,8 @@ const TotemBarbeiro: React.FC = () => {
         nome: b.nome,
         especialidade: b.specialties || undefined,
         foto_url: b.image_url || undefined,
-        ativo: b.is_active
+        ativo: b.is_active,
+        staff_id: (b as any).staff_id || b.id // Incluir staff_id para uso nas funções RPC
       }));
 
       setBarbers(mappedBarbers);
