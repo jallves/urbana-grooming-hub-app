@@ -44,10 +44,10 @@ const TotemLogin: React.FC = () => {
   return (
     <TotemPinKeypad
       title="Autenticação de Acesso"
-      subtitle="Insira o PIN de segurança para acessar o sistema"
+      subtitle="Digite o PIN para ter acesso ao totem"
       pinLength={4}
       onSubmit={handlePinSubmit}
-      showDemoPin={true}
+      showDemoPin={false}
     />
   );
 };
