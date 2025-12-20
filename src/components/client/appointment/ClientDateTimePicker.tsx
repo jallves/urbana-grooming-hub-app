@@ -51,81 +51,52 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
 
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const isCurrentDay = isToday(selectedDate);
+
+      // Primeiro tentar verificar se barberId é um staff_id diretamente
+      // Se a busca como staff_id falhar, tentar buscar como painel_barbeiros.id
+      let staffIdToUse = barberId;
       
-      // Configurar slots de 08:30 às 20:00
-      const allSlots: TimeSlot[] = [];
-      const FIRST_SLOT_HOUR = 8;
-      const FIRST_SLOT_MINUTE = 30;
-      const CLOSING_HOUR = 20;
-      const CLOSING_MINUTE = 0;
+      // Verificar se existe na tabela working_hours com este ID como staff_id
+      const { data: workingHoursCheck } = await supabase
+        .from('working_hours')
+        .select('staff_id')
+        .eq('staff_id', barberId)
+        .limit(1);
       
-      const closingTotalMinutes = CLOSING_HOUR * 60 + CLOSING_MINUTE;
-      const lastSlotTotalMinutes = closingTotalMinutes - serviceDuration;
-      
-      for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
-        for (let minute of [0, 30]) {
-          if (hour === FIRST_SLOT_HOUR && minute < FIRST_SLOT_MINUTE) {
-            continue;
-          }
-          
-          const slotTotalMinutes = hour * 60 + minute;
-          
-          if (slotTotalMinutes > lastSlotTotalMinutes) {
-            continue;
-          }
-          
-          // Se for hoje, só incluir horários futuros (30 min à frente)
-          if (isCurrentDay) {
-            const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
-              continue;
-            }
-          }
-          
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          allSlots.push({ time: timeString, available: false });
+      if (!workingHoursCheck || workingHoursCheck.length === 0) {
+        // Não é um staff_id válido, tentar buscar staff_id do painel_barbeiros
+        const { data: barbeiroData } = await supabase
+          .from('painel_barbeiros')
+          .select('staff_id')
+          .eq('id', barberId)
+          .maybeSingle();
+
+        if (barbeiroData?.staff_id) {
+          staffIdToUse = barbeiroData.staff_id;
+          console.log('🔄 [Cliente] Convertido painel_barbeiros.id para staff_id:', staffIdToUse);
         }
       }
 
-      // Buscar painel_barbeiros id a partir do staff_id
-      const { data: barbeiroData, error: barbeiroError } = await supabase
-        .from('painel_barbeiros')
-        .select('id')
-        .eq('staff_id', barberId)
-        .maybeSingle();
+      console.log('🔍 [Cliente] Usando staff_id para RPC:', staffIdToUse);
 
-      if (barbeiroError) {
-        console.error('❌ Erro ao buscar barbeiro:', barbeiroError);
+      // Usar a RPC otimizada que retorna todos os slots de uma vez
+      const { data: slotsData, error: rpcError } = await supabase.rpc('get_available_time_slots_optimized', {
+        p_staff_id: staffIdToUse,
+        p_date: formattedDate,
+        p_service_duration: serviceDuration
+      });
+
+      if (rpcError) {
+        console.error('❌ Erro ao buscar slots:', rpcError);
+        setAvailableSlots([]);
+        return;
       }
 
-      const painelBarbeiroId = barbeiroData?.id || barberId;
-      
-      console.log('🔍 [Cliente] Usando barbeiro ID:', painelBarbeiroId, 'para verificar slots');
-
-      // Verificar disponibilidade de cada horário usando a função RPC
-      const slotsWithAvailability = await Promise.all(
-        allSlots.map(async (slot) => {
-          const { data, error } = await supabase
-            .rpc('check_barber_slot_availability', {
-              p_barbeiro_id: painelBarbeiroId,
-              p_date: formattedDate,
-              p_time: slot.time,
-              p_duration: serviceDuration,
-              p_exclude_appointment_id: appointmentId || null
-            });
-
-          if (error) {
-            console.error('❌ Erro ao verificar slot:', slot.time, error);
-            return { ...slot, available: false };
-          }
-
-          return { ...slot, available: data === true };
-        })
-      );
+      // Converter dados do banco para o formato local
+      const slotsWithAvailability: TimeSlot[] = (slotsData || []).map((slot: any) => ({
+        time: typeof slot.time_slot === 'string' ? slot.time_slot : slot.time_slot.substring(0, 5),
+        available: slot.is_available
+      }));
 
       const availableCount = slotsWithAvailability.filter(s => s.available).length;
       console.log('✅ [Cliente] Slots disponíveis:', availableCount);

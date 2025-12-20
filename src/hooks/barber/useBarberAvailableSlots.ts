@@ -27,82 +27,53 @@ export const useBarberAvailableSlots = () => {
     
     try {
       const formattedDate = format(date, 'yyyy-MM-dd');
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const isCurrentDay = isToday(date);
       
-      // Buscar todos os horários possíveis (8:30 às 20h, intervalos de 30min)
-      // REGRA: Primeiro atendimento às 08:30 (preparação de 08:00-08:30)
-      // REGRA: Último slot = 20:00 - duração do serviço (ex: 60min -> último slot 19:00)
-      const allSlots: TimeSlot[] = [];
-      const FIRST_SLOT_HOUR = 8;
-      const FIRST_SLOT_MINUTE = 30;
-      const CLOSING_HOUR = 20;
-      const CLOSING_MINUTE = 0;
+      // Primeiro, determinar qual tipo de ID foi recebido
+      // Tentar como painel_barbeiros.id primeiro
+      let painelBarbeiroId = barberId;
       
-      // Calcular o último horário possível baseado na duração do serviço
-      const closingTotalMinutes = CLOSING_HOUR * 60 + CLOSING_MINUTE;
-      const lastSlotTotalMinutes = closingTotalMinutes - serviceDuration;
+      // Verificar se é um painel_barbeiros.id válido
+      const { data: barbeiroCheck } = await supabase
+        .from('painel_barbeiros')
+        .select('id, staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
       
-      console.log('🕐 [BarberSlots] Configuração:', {
-        isCurrentDay,
-        currentHour,
-        currentMinute,
-        lastSlotTotalMinutes
-      });
-      
-      for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
-        for (let minute of [0, 30]) {
-          // Pular 08:00 - primeiro slot é 08:30
-          if (hour === FIRST_SLOT_HOUR && minute < FIRST_SLOT_MINUTE) {
-            continue;
-          }
+      if (!barbeiroCheck) {
+        // Não é painel_barbeiros.id, pode ser staff_id
+        // Tentar buscar painel_barbeiros por staff_id
+        const { data: barbeiroByStaff } = await supabase
+          .from('painel_barbeiros')
+          .select('id, staff_id')
+          .eq('staff_id', barberId)
+          .maybeSingle();
           
-          const slotTotalMinutes = hour * 60 + minute;
-          
-          // Pular se o serviço não couber antes do fechamento
-          if (slotTotalMinutes > lastSlotTotalMinutes) {
-            continue;
-          }
-          
-          // Se for hoje, só incluir horários futuros (pelo menos 30min à frente)
-          if (isCurrentDay) {
-            const currentTotalMinutes = currentHour * 60 + currentMinute;
-            
-            // Pular se o horário já passou ou está muito próximo (menos de 30min)
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
-              continue;
-            }
-          }
-          
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          allSlots.push({ time: timeString, available: false });
+        if (barbeiroByStaff) {
+          painelBarbeiroId = barbeiroByStaff.id;
+          console.log('🔄 [BarberSlots] Convertido staff_id para painel_barbeiros.id:', painelBarbeiroId);
         }
       }
 
-      console.log('🕐 [BarberSlots] Slots gerados:', allSlots.length);
+      console.log('🔍 [BarberSlots] Usando painel_barbeiros.id:', painelBarbeiroId);
 
-      // Verificar disponibilidade de cada horário
-      const slotsWithAvailability = await Promise.all(
-        allSlots.map(async (slot) => {
-          const { data, error } = await supabase
-            .rpc('check_barber_slot_availability', {
-              p_barbeiro_id: barberId,
-              p_date: formattedDate,
-              p_time: slot.time,
-              p_duration: serviceDuration,
-              p_exclude_appointment_id: excludeAppointmentId || null
-            });
+      // Usar a RPC get_barbeiro_horarios_disponiveis que espera painel_barbeiros.id
+      const { data: slotsData, error } = await supabase.rpc('get_barbeiro_horarios_disponiveis', {
+        p_barbeiro_id: painelBarbeiroId,
+        p_data: formattedDate,
+        p_duracao_minutos: serviceDuration
+      });
 
-          if (error) {
-            console.error('❌ [BarberSlots] Erro ao verificar disponibilidade:', error);
-            return { ...slot, available: false };
-          }
+      if (error) {
+        console.error('❌ [BarberSlots] Erro ao buscar slots:', error);
+        setSlots([]);
+        return;
+      }
 
-          return { ...slot, available: data === true };
-        })
-      );
+      // Converter dados do banco para o formato TimeSlot
+      const slotsWithAvailability: TimeSlot[] = (slotsData || []).map((slot: any) => ({
+        time: typeof slot.horario === 'string' ? slot.horario.substring(0, 5) : slot.horario,
+        available: slot.disponivel
+      }));
 
       const availableCount = slotsWithAvailability.filter(s => s.available).length;
       console.log('✅ [BarberSlots] Slots disponíveis:', availableCount, 'de', slotsWithAvailability.length);
