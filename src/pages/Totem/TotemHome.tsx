@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff, Terminal } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
@@ -173,19 +173,6 @@ const TotemHome: React.FC = () => {
           <Settings className="w-4 h-4" />
         </Button>
         
-        {/* Debug Console Button - Só aparece no Android */}
-        {isAndroidAvailable && (
-          <Button
-            onClick={() => navigate('/totem/tef-debug')}
-            variant="ghost"
-            size="sm"
-            className="h-8 w-8 sm:h-8 sm:w-8 p-0 text-urbana-light/30 hover:text-blue-400 hover:bg-blue-500/10 transition-all duration-200 rounded-lg"
-            style={{ touchAction: 'manipulation' }}
-            title="Console de Debug TEF"
-          >
-            <Terminal className="w-4 h-4" />
-          </Button>
-        )}
       </div>
 
       {/* Logout Button */}
