@@ -53,8 +53,8 @@ const QuickActionsGrid: React.FC = () => {
       action: () => navigate('/admin/barbeiros'),
     },
     {
-      title: 'Produtos',
-      description: 'Estoque e vendas',
+      title: 'Produtos/Serviços',
+      description: 'Estoque, vendas e serviços',
       icon: Package,
       color: 'text-cyan-600',
       bgColor: 'bg-cyan-50',

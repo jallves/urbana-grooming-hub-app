@@ -35,7 +35,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Clientes', icon: Users, href: '/admin/clientes', color: 'from-orange-500 to-red-500' },
     { title: 'Funcionários', icon: UserCheck, href: '/admin/funcionarios', color: 'from-pink-500 to-rose-500' },
     { title: 'Barbeiros', icon: Scissors, href: '/admin/barbeiros', color: 'from-indigo-500 to-blue-500' },
-    { title: 'Produtos', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
+    { title: 'Produtos/Serviços', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
     { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600', requiredModule: 'financeiro' },
     { title: 'Gestão do Site', icon: Globe, href: '/admin/site', color: 'from-blue-500 to-indigo-500' },
     { title: 'Aniversários', icon: Cake, href: '/admin/aniversarios', color: 'from-purple-500 to-indigo-500' },
