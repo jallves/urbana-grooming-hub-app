@@ -102,11 +102,14 @@ const handler = async (req: Request): Promise<Response> => {
     const servicesSubtotal = services.reduce((sum, item) => sum + item.price, 0);
     const productsSubtotal = products.reduce((sum, item) => sum + item.price, 0);
 
-    // Gerar HTML dos serviços
+    // Gerar HTML dos serviços (formato nota fiscal)
     const servicesHtml = services.map(item => `
       <tr>
         <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
-          ${item.name}
+          ✂️ ${item.name}
+        </td>
+        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 13px;">
+          1x
         </td>
         <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap; font-weight: 500;">
           R$ ${item.price.toFixed(2).replace('.', ',')}
@@ -114,17 +117,23 @@ const handler = async (req: Request): Promise<Response> => {
       </tr>
     `).join('');
 
-    // Gerar HTML dos produtos
-    const productsHtml = products.map(item => `
+    // Gerar HTML dos produtos (formato nota fiscal com quantidade e valor unitário)
+    const productsHtml = products.map(item => {
+      const qty = item.quantity || 1;
+      const unitPrice = item.price / qty;
+      return `
       <tr>
         <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
-          ${item.name} ${item.quantity && item.quantity > 1 ? `<span style="color: #888; font-weight: normal;">(${item.quantity}x)</span>` : ''}
+          🛍️ ${item.name}
+        </td>
+        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 13px;">
+          ${qty}x R$ ${unitPrice.toFixed(2).replace('.', ',')}
         </td>
         <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap; font-weight: 500;">
           R$ ${item.price.toFixed(2).replace('.', ',')}
         </td>
       </tr>
-    `).join('');
+    `}).join('');
 
     // Verificar o que tem
     const hasServices = services.length > 0;
@@ -184,6 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
                 <thead>
                   <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
                     <th style="padding: 12px 15px; text-align: left; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Descrição</th>
+                    <th style="padding: 12px 15px; text-align: center; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Qtd</th>
                     <th style="padding: 12px 15px; text-align: right; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor</th>
                   </tr>
                 </thead>
@@ -192,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </tbody>
                 <tfoot>
                   <tr style="background: #f5f5f5;">
-                    <td style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Serviços</td>
+                    <td colspan="2" style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Serviços</td>
                     <td style="padding: 12px 15px; color: #333; text-align: right; font-weight: 600; font-size: 14px;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</td>
                   </tr>
                 </tfoot>
@@ -211,7 +221,8 @@ const handler = async (req: Request): Promise<Response> => {
                 <thead>
                   <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
                     <th style="padding: 12px 15px; text-align: left; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Descrição</th>
-                    <th style="padding: 12px 15px; text-align: right; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor</th>
+                    <th style="padding: 12px 15px; text-align: center; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Qtd x Unit</th>
+                    <th style="padding: 12px 15px; text-align: right; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -219,7 +230,7 @@ const handler = async (req: Request): Promise<Response> => {
                 </tbody>
                 <tfoot>
                   <tr style="background: #f5f5f5;">
-                    <td style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Produtos</td>
+                    <td colspan="2" style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Produtos</td>
                     <td style="padding: 12px 15px; color: #333; text-align: right; font-weight: 600; font-size: 14px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</td>
                   </tr>
                 </tfoot>

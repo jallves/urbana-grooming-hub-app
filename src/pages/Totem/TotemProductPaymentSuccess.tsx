@@ -32,12 +32,33 @@ const TotemProductPaymentSuccess: React.FC = () => {
         return;
       }
 
-      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = sale.items?.map((item: any) => ({
-        name: item.produto?.nome || item.name || 'Produto',
-        quantity: item.quantidade || item.quantity || 1,
-        price: (item.preco_unitario || item.price || 0) * (item.quantidade || item.quantity || 1),
-        type: 'product' as const
-      })) || [{ name: 'Produtos', price: sale.total, type: 'product' as const }];
+      // Montar itens corretamente com nome, quantidade e preço
+      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
+      
+      if (sale.items && sale.items.length > 0) {
+        sale.items.forEach((item: any) => {
+          const productName = item.produto?.nome || item.name || item.nome || 'Produto';
+          const quantity = item.quantidade || item.quantity || 1;
+          const unitPrice = item.preco_unitario || item.price || item.preco || 0;
+          
+          items.push({
+            name: productName,
+            quantity: quantity,
+            price: unitPrice * quantity,
+            type: 'product' as const
+          });
+          
+          console.log('[ProductPaymentSuccess] Item mapeado:', { productName, quantity, unitPrice, total: unitPrice * quantity });
+        });
+      } else {
+        // Fallback se não tiver itens detalhados
+        items.push({ 
+          name: 'Compra de Produtos', 
+          quantity: 1,
+          price: sale.total, 
+          type: 'product' as const 
+        });
+      }
 
       console.log('[ProductPaymentSuccess] Itens para e-mail:', items);
 
