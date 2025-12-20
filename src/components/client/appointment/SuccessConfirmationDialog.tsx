@@ -1,11 +1,12 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Calendar, Clock, User, Scissors, Info, AlertCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PainelClienteCard, PainelClienteCardHeader, PainelClienteCardTitle, PainelClienteCardDescription, PainelClienteCardContent } from '@/components/painel-cliente/PainelClienteCard';
+import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface SuccessConfirmationDialogProps {
   isOpen: boolean;
@@ -30,7 +31,13 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-transparent border-none">
+      <DialogContent className="sm:max-w-[600px] p-0 overflow-hidden bg-transparent border-none" aria-describedby="success-dialog-description">
+        <VisuallyHidden>
+          <DialogTitle>Agendamento Confirmado</DialogTitle>
+          <DialogDescription id="success-dialog-description">
+            Seu agendamento foi confirmado com sucesso
+          </DialogDescription>
+        </VisuallyHidden>
         <PainelClienteCard variant="success" className="w-full">
           {/* Header com ícone de sucesso */}
           <PainelClienteCardHeader className="text-center pb-4">
