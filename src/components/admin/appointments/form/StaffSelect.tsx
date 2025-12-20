@@ -35,27 +35,11 @@ const StaffSelect: React.FC<StaffSelectProps> = ({
   const selectedServiceId = form.watch('service_id');
 
   const checkStaffAvailability = async () => {
-    console.log('🔍 Verificando disponibilidade dos barbeiros da tabela staff...');
+    console.log('🔍 Verificando disponibilidade dos barbeiros...');
     
-    // Primeiro, filtrar barbeiros vinculados ao serviço selecionado
-    let filteredStaff = staffMembers;
-
-    if (selectedServiceId) {
-      try {
-        const { data: serviceStaff, error } = await supabase
-          .from('service_staff')
-          .select('staff_id')
-          .eq('service_id', selectedServiceId);
-
-        if (!error && serviceStaff && serviceStaff.length > 0) {
-          const staffIds = serviceStaff.map(s => s.staff_id);
-          filteredStaff = staffMembers.filter(staff => staffIds.includes(staff.id));
-          console.log(`📋 Barbeiros vinculados ao serviço: ${filteredStaff.length}`);
-        }
-      } catch (error) {
-        console.error('Erro ao filtrar barbeiros por serviço:', error);
-      }
-    }
+    // No modelo unificado, todos os barbeiros podem fazer todos os serviços
+    const filteredStaff = staffMembers;
+    console.log(`📋 Total de barbeiros: ${filteredStaff.length}`);
     
     if (!selectedDate || !selectedTime || !filteredStaff.length) {
       console.log('⚠️ Parâmetros insuficientes - mostrando todos como disponíveis');

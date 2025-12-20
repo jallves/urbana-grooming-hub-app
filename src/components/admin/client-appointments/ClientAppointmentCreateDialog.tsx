@@ -164,28 +164,19 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     try {
       const { data, error } = await supabase
         .from('painel_servicos')
-        .select(`
-          *,
-          service_staff!inner(staff_id)
-        `)
+        .select('id, nome, preco, duracao')
         .eq('is_active', true)
         .gt('preco', 0)
         .order('nome');
 
       if (error) throw error;
       
-      // Remove duplicates
-      const uniqueServices = (data || []).reduce((acc: Service[], curr: any) => {
-        if (!acc.find(s => s.id === curr.id)) {
-          acc.push({
-            id: curr.id,
-            nome: curr.nome,
-            preco: curr.preco,
-            duracao: curr.duracao
-          });
-        }
-        return acc;
-      }, []);
+      const uniqueServices: Service[] = (data || []).map(s => ({
+        id: s.id,
+        nome: s.nome,
+        preco: s.preco,
+        duracao: s.duracao
+      }));
       
       setServices(uniqueServices);
     } catch (error) {
@@ -208,30 +199,28 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     
     setLoading(true);
     try {
-      const { data: serviceStaff, error: staffError } = await supabase
-        .from('service_staff')
-        .select('staff_id')
-        .eq('service_id', selectedService.id);
-
-      if (staffError) throw staffError;
-
-      if (!serviceStaff || serviceStaff.length === 0) {
-        setBarbers([]);
-        toast.error('Nenhum barbeiro disponível para este serviço');
-        return;
-      }
-
-      const staffIds = serviceStaff.map(s => s.staff_id);
-
+      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
       const { data, error } = await supabase
         .from('painel_barbeiros')
-        .select('id, staff_id, nome, image_url')
+        .select('id, nome, image_url')
         .eq('is_active', true)
-        .in('staff_id', staffIds)
         .order('nome');
 
       if (error) throw error;
-      setBarbers(data || []);
+      
+      // Mapear dados - usar id como staff_id para compatibilidade
+      const mappedBarbers = (data || []).map(b => ({
+        id: b.id,
+        staff_id: b.id, // No modelo unificado, staff_id = id
+        nome: b.nome,
+        image_url: b.image_url
+      }));
+      
+      setBarbers(mappedBarbers);
+      
+      if (mappedBarbers.length === 0) {
+        toast.info('Nenhum barbeiro disponível no momento');
+      }
     } catch (error) {
       console.error('Erro ao carregar barbeiros:', error);
       toast.error('Erro ao carregar barbeiros');
