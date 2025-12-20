@@ -39,7 +39,7 @@ const TotemCheckout: React.FC = () => {
   const [needsRecalculation, setNeedsRecalculation] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number }>>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number; imagem?: string }>>([]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -344,11 +344,15 @@ const TotemCheckout: React.FC = () => {
             : p
         ));
       } else {
+        const productImage = product.imagens && Array.isArray(product.imagens) && product.imagens.length > 0 
+          ? product.imagens[0] 
+          : undefined;
         setSelectedProducts([...selectedProducts, {
           product_id: product.id,
           nome: product.nome,
           preco: product.preco,
-          quantidade: 1
+          quantidade: 1,
+          imagem: productImage
         }]);
       }
       
@@ -941,12 +945,25 @@ const TotemCheckout: React.FC = () => {
                 <div className="mt-2 space-y-1.5 max-h-24 overflow-y-auto">
                   {selectedProducts.map((product, index) => (
                     <div key={index} className="flex items-center justify-between p-1.5 sm:p-2 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
-                      <div className="flex items-center gap-1.5 flex-1">
-                        <CheckCircle2 className="w-3 h-3 text-urbana-gold-vibrant flex-shrink-0" />
-                        <span className="text-[10px] sm:text-xs md:text-sm text-urbana-light font-medium truncate">
-                          {product.nome}
-                        </span>
-                        <span className="text-[9px] sm:text-[10px] text-urbana-light/60">x{product.quantidade}</span>
+                      <div className="flex items-center gap-2 flex-1 min-w-0">
+                        {/* Product Thumbnail */}
+                        {product.imagem ? (
+                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md overflow-hidden bg-urbana-black/50 border border-urbana-gold-vibrant/30 flex-shrink-0">
+                            <img 
+                              src={product.imagem} 
+                              alt={product.nome}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                        ) : (
+                          <CheckCircle2 className="w-4 h-4 text-urbana-gold-vibrant flex-shrink-0" />
+                        )}
+                        <div className="flex flex-col min-w-0">
+                          <span className="text-[10px] sm:text-xs md:text-sm text-urbana-light font-medium truncate">
+                            {product.nome}
+                          </span>
+                          <span className="text-[9px] sm:text-[10px] text-urbana-light/60">x{product.quantidade}</span>
+                        </div>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-xs sm:text-sm text-urbana-gold-vibrant font-bold whitespace-nowrap">
@@ -1007,12 +1024,34 @@ const TotemCheckout: React.FC = () => {
 
                 {/* Products */}
                 {selectedProducts.map((product, index) => (
-                  <div key={`product-${index}`} className="flex items-center justify-between py-1.5 border-b border-urbana-gray/30">
-                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                      <div className="w-1.5 h-1.5 rounded-full bg-urbana-gold-vibrant animate-pulse flex-shrink-0" />
-                      <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-urbana-light truncate">
-                        {product.nome} x{product.quantidade}
-                      </p>
+                  <div key={`product-${index}`} className="flex items-center justify-between py-2 border-b border-urbana-gray/30">
+                    <div className="flex items-center gap-2 flex-1 min-w-0">
+                      {/* Product Image */}
+                      {product.imagem ? (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden bg-urbana-black/50 border border-urbana-gold/30 flex-shrink-0">
+                          <img 
+                            src={product.imagem} 
+                            alt={product.nome}
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none';
+                              e.currentTarget.parentElement?.classList.add('flex', 'items-center', 'justify-center');
+                            }}
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-urbana-gold-vibrant/20 border border-urbana-gold-vibrant/30 flex items-center justify-center flex-shrink-0">
+                          <div className="w-2 h-2 rounded-full bg-urbana-gold-vibrant animate-pulse" />
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0">
+                        <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-urbana-light truncate">
+                          {product.nome}
+                        </p>
+                        <span className="text-[9px] sm:text-[10px] text-urbana-light/60">
+                          Qtd: {product.quantidade}
+                        </span>
+                      </div>
                     </div>
                     <p className="text-xs sm:text-sm font-bold text-urbana-gold-vibrant whitespace-nowrap ml-2">
                       R$ {(product.preco * product.quantidade).toFixed(2)}
