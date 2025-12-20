@@ -33,14 +33,17 @@ const TotemProductPaymentSuccess: React.FC = () => {
       }
 
       // Montar itens corretamente com nome, quantidade, preço unitário e total
+      // Os dados vêm de vendas_itens com campos: nome, quantidade, preco_unit, total
       const items: Array<{ name: string; quantity: number; unitPrice: number; price: number; type: 'service' | 'product' }> = [];
       
       if (sale.items && sale.items.length > 0) {
         sale.items.forEach((item: any) => {
-          const productName = item.produto?.nome || item.name || item.nome || 'Produto';
+          // Campos da tabela vendas_itens: nome, quantidade, preco_unit, total
+          const productName = item.nome || item.produto?.nome || item.name || 'Produto';
           const quantity = item.quantidade || item.quantity || 1;
-          const unitPrice = item.preco_unitario || item.price || item.preco || 0;
-          const subtotal = unitPrice * quantity;
+          // preco_unit é o campo correto da tabela vendas_itens
+          const unitPrice = Number(item.preco_unit) || item.preco_unitario || item.unitPrice || item.price || item.preco || 0;
+          const subtotal = item.total || (unitPrice * quantity);
           
           items.push({
             name: productName,
@@ -63,7 +66,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
         });
       }
 
-      console.log('[ProductPaymentSuccess] Itens para e-mail:', items);
+      console.log('[ProductPaymentSuccess] Itens para e-mail:', JSON.stringify(items, null, 2));
 
       const result = await sendReceiptEmail({
         clientName: client.nome,
