@@ -32,29 +32,32 @@ const TotemProductPaymentSuccess: React.FC = () => {
         return;
       }
 
-      // Montar itens corretamente com nome, quantidade e preço
-      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
+      // Montar itens corretamente com nome, quantidade, preço unitário e total
+      const items: Array<{ name: string; quantity: number; unitPrice: number; price: number; type: 'service' | 'product' }> = [];
       
       if (sale.items && sale.items.length > 0) {
         sale.items.forEach((item: any) => {
           const productName = item.produto?.nome || item.name || item.nome || 'Produto';
           const quantity = item.quantidade || item.quantity || 1;
           const unitPrice = item.preco_unitario || item.price || item.preco || 0;
+          const subtotal = unitPrice * quantity;
           
           items.push({
             name: productName,
             quantity: quantity,
-            price: unitPrice * quantity,
+            unitPrice: unitPrice,
+            price: subtotal,
             type: 'product' as const
           });
           
-          console.log('[ProductPaymentSuccess] Item mapeado:', { productName, quantity, unitPrice, total: unitPrice * quantity });
+          console.log('[ProductPaymentSuccess] Item mapeado:', { productName, quantity, unitPrice, subtotal });
         });
       } else {
         // Fallback se não tiver itens detalhados
         items.push({ 
           name: 'Compra de Produtos', 
           quantity: 1,
+          unitPrice: sale.total,
           price: sale.total, 
           type: 'product' as const 
         });

@@ -11,6 +11,7 @@ const corsHeaders = {
 interface ReceiptItem {
   name: string;
   quantity?: number;
+  unitPrice?: number;
   price: number;
   type?: 'service' | 'product';
 }
@@ -105,33 +106,25 @@ const handler = async (req: Request): Promise<Response> => {
     // Gerar HTML dos serviços (formato nota fiscal)
     const servicesHtml = services.map(item => `
       <tr>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
-          ✂️ ${item.name}
-        </td>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 13px;">
-          1x
-        </td>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap; font-weight: 500;">
-          R$ ${item.price.toFixed(2).replace('.', ',')}
-        </td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; font-size: 13px; white-space: nowrap;">✂️ ${item.name}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 12px; white-space: nowrap;">1</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: right; font-size: 12px; white-space: nowrap;">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 13px; white-space: nowrap; font-weight: 600;">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
       </tr>
     `).join('');
 
-    // Gerar HTML dos produtos (formato nota fiscal com quantidade e valor unitário)
+    // Gerar HTML dos produtos (formato nota fiscal com quantidade e valor unitário separados)
     const productsHtml = products.map(item => {
       const qty = item.quantity || 1;
-      const unitPrice = item.price / qty;
+      // Usar unitPrice se disponível, senão calcular
+      const unitPrice = item.unitPrice || (item.price / qty);
+      const subtotal = unitPrice * qty;
       return `
       <tr>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; font-size: 14px;">
-          🛍️ ${item.name}
-        </td>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 13px;">
-          ${qty}x R$ ${unitPrice.toFixed(2).replace('.', ',')}
-        </td>
-        <td style="padding: 12px 15px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 14px; white-space: nowrap; font-weight: 500;">
-          R$ ${item.price.toFixed(2).replace('.', ',')}
-        </td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; font-size: 13px; white-space: nowrap;">🛍️ ${item.name}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 12px; white-space: nowrap;">${qty}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: right; font-size: 12px; white-space: nowrap;">R$ ${unitPrice.toFixed(2).replace('.', ',')}</td>
+        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 13px; white-space: nowrap; font-weight: 600;">R$ ${subtotal.toFixed(2).replace('.', ',')}</td>
       </tr>
     `}).join('');
 
@@ -144,7 +137,7 @@ const handler = async (req: Request): Promise<Response> => {
       to: [clientEmail],
       subject: `✂️ ${title} - Barbearia Costa Urbana`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
+        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
           <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 12px 12px 0 0;">
             <img src="${logoUrl}" alt="Barbearia Costa Urbana" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #D4A574;" />
             <h1 style="margin: 0; font-size: 24px; color: #D4A574; letter-spacing: 1px;">✂️ ${title}</h1>
@@ -189,12 +182,13 @@ const handler = async (req: Request): Promise<Response> => {
                 ✂️ SERVIÇOS
               </h3>
               
-              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden;">
+              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden; table-layout: fixed;">
                 <thead>
                   <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
-                    <th style="padding: 12px 15px; text-align: left; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Descrição</th>
-                    <th style="padding: 12px 15px; text-align: center; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Qtd</th>
-                    <th style="padding: 12px 15px; text-align: right; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Valor</th>
+                    <th style="padding: 10px; text-align: left; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 45%;">Descrição</th>
+                    <th style="padding: 10px; text-align: center; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 15%;">Qtd</th>
+                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Unit.</th>
+                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -202,8 +196,8 @@ const handler = async (req: Request): Promise<Response> => {
                 </tbody>
                 <tfoot>
                   <tr style="background: #f5f5f5;">
-                    <td colspan="2" style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Serviços</td>
-                    <td style="padding: 12px 15px; color: #333; text-align: right; font-weight: 600; font-size: 14px;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</td>
+                    <td colspan="3" style="padding: 10px; color: #666; font-weight: 600; font-size: 12px;">Subtotal Serviços</td>
+                    <td style="padding: 10px; color: #333; text-align: right; font-weight: 600; font-size: 13px;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</td>
                   </tr>
                 </tfoot>
               </table>
@@ -217,12 +211,13 @@ const handler = async (req: Request): Promise<Response> => {
                 🛍️ PRODUTOS
               </h3>
               
-              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden;">
+              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden; table-layout: fixed;">
                 <thead>
                   <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
-                    <th style="padding: 12px 15px; text-align: left; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Descrição</th>
-                    <th style="padding: 12px 15px; text-align: center; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Qtd x Unit</th>
-                    <th style="padding: 12px 15px; text-align: right; color: #555; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">Total</th>
+                    <th style="padding: 10px; text-align: left; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 45%;">Descrição</th>
+                    <th style="padding: 10px; text-align: center; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 15%;">Qtd</th>
+                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Unit.</th>
+                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Subtotal</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -230,8 +225,8 @@ const handler = async (req: Request): Promise<Response> => {
                 </tbody>
                 <tfoot>
                   <tr style="background: #f5f5f5;">
-                    <td colspan="2" style="padding: 12px 15px; color: #666; font-weight: 600; font-size: 13px;">Subtotal Produtos</td>
-                    <td style="padding: 12px 15px; color: #333; text-align: right; font-weight: 600; font-size: 14px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</td>
+                    <td colspan="3" style="padding: 10px; color: #666; font-weight: 600; font-size: 12px;">Subtotal Produtos</td>
+                    <td style="padding: 10px; color: #333; text-align: right; font-weight: 600; font-size: 13px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</td>
                   </tr>
                 </tfoot>
               </table>
