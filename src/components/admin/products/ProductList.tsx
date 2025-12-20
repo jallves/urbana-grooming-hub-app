@@ -8,7 +8,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Search, Plus, MoreVertical, Package, Image as ImageIcon } from 'lucide-react';
 import ProductForm from './ProductForm';
-import SeedProductsButton from './SeedProductsButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -126,7 +125,6 @@ const ProductList: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            <SeedProductsButton />
             <Button 
               onClick={handleCreateProduct} 
               className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"

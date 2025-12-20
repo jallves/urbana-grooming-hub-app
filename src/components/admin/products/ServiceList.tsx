@@ -8,7 +8,6 @@ import { Search, Plus, Scissors, Edit, Trash2, MoreVertical, Clock } from 'lucid
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ServiceForm from './ServiceForm';
-import SeedServicesButton from './SeedServicesButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -138,7 +137,6 @@ const ServiceList: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
-            <SeedServicesButton />
             <Button 
               onClick={handleCreateService}
               className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
