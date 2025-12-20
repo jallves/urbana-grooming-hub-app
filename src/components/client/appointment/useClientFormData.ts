@@ -47,51 +47,51 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
     },
   });
 
-  // Fetch serviços (apenas os vinculados a barbeiros)
+  // Fetch serviços ativos do painel_servicos
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'],
+    queryKey: ['painel_servicos'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('services')
-        .select(`
-          *,
-          service_staff!inner(staff_id)
-        `)
+        .from('painel_servicos')
+        .select('*')
         .eq('is_active', true)
-        .gt('price', 0)
-        .order('name');
+        .gt('preco', 0)
+        .order('nome');
       if (error) throw new Error(error.message);
       
-      // Remove duplicates (serviços com múltiplos barbeiros)
-      const uniqueServices = data?.reduce((acc, curr) => {
-        if (!acc.find(s => s.id === curr.id)) {
-          acc.push({
-            id: curr.id,
-            name: curr.name,
-            price: curr.price,
-            duration: curr.duration,
-            description: curr.description,
-            is_active: curr.is_active
-          });
-        }
-        return acc;
-      }, [] as Service[]);
-      
-      return uniqueServices || [];
+      return (data || []).map(s => ({
+        id: s.id,
+        name: s.nome,
+        price: Number(s.preco),
+        duration: s.duracao,
+        description: s.descricao,
+        is_active: s.is_active
+      })) as Service[];
     },
   });
 
-  // Fetch staff (barbeiros)
+  // Fetch staff (barbeiros) do painel_barbeiros
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['painel_barbeiros'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
       if (error) throw new Error(error.message);
-      return data as StaffMember[];
+      return (data || []).map(b => ({
+        id: b.id,
+        name: b.nome,
+        email: b.email,
+        phone: b.telefone,
+        image_url: b.image_url,
+        specialties: b.specialties,
+        experience: b.experience,
+        commission_rate: b.commission_rate,
+        is_active: b.is_active,
+        role: b.role
+      })) as StaffMember[];
     },
   });
 
@@ -124,15 +124,17 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + duration);
 
+      const dateStr = startTime.toISOString().split('T')[0];
+      const timeStr = time;
+      
       const availability = await Promise.all(
         staffMembers.map(async (staff) => {
           let query = supabase
-            .from('appointments')
-            .select('id, start_time, end_time')
-            .eq('staff_id', staff.id)
-            .eq('status', 'scheduled')
-            .gte('start_time', startTime.toISOString().split('T')[0])
-            .lte('start_time', new Date(startTime.getTime() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]);
+            .from('painel_agendamentos')
+            .select('id, data, hora, servico:painel_servicos(duracao)')
+            .eq('barbeiro_id', staff.id)
+            .eq('status', 'agendado')
+            .eq('data', dateStr);
 
           if (appointmentId) {
             query = query.neq('id', appointmentId);
@@ -142,9 +144,13 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
           if (error) return { staff, available: false };
 
           const hasConflict = appointments?.some(appt => {
-            const appStart = new Date(appt.start_time);
-            const appEnd = new Date(appt.end_time);
-            return startTime < appEnd && endTime > appStart;
+            const [apptHours, apptMinutes] = appt.hora.split(':').map(Number);
+            const apptStart = new Date(startTime);
+            apptStart.setHours(apptHours, apptMinutes, 0, 0);
+            const apptDuration = (appt.servico as any)?.duracao || 60;
+            const apptEnd = new Date(apptStart);
+            apptEnd.setMinutes(apptEnd.getMinutes() + apptDuration);
+            return startTime < apptEnd && endTime > apptStart;
           });
 
           return { staff, available: !hasConflict };

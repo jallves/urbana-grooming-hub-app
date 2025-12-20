@@ -62,16 +62,17 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
     },
   });
 
-  // Fetch serviços
+  // Fetch serviços do painel_servicos
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['client-services'],
+    queryKey: ['painel_servicos'],
     queryFn: async () => {
       console.log('🔍 Cliente: Buscando serviços...');
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .gt('preco', 0)
+        .order('nome');
       
       if (error) {
         console.error('❌ Erro ao buscar serviços:', error);
@@ -79,29 +80,47 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
       }
       
       console.log('✅ Serviços encontrados:', data?.length || 0);
-      return data as Service[];
+      return (data || []).map(s => ({
+        id: s.id,
+        name: s.nome,
+        price: Number(s.preco),
+        duration: s.duracao,
+        description: s.descricao,
+        is_active: s.is_active
+      })) as Service[];
     },
   });
 
-  // Fetch staff (barbeiros) - usando a tabela staff correta
+  // Fetch staff (barbeiros) do painel_barbeiros
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['client-staff'],
+    queryKey: ['painel_barbeiros'],
     queryFn: async () => {
-      console.log('🔍 Cliente: Buscando barbeiros da tabela staff...');
+      console.log('🔍 Cliente: Buscando barbeiros...');
       
       const { data, error } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
       
       if (error) {
-        console.error('❌ Erro ao buscar staff:', error);
+        console.error('❌ Erro ao buscar barbeiros:', error);
         throw new Error(error.message);
       }
       
-      console.log('✅ Staff encontrados:', data?.length || 0, data);
-      return data as StaffMember[];
+      console.log('✅ Barbeiros encontrados:', data?.length || 0, data);
+      return (data || []).map(b => ({
+        id: b.id,
+        name: b.nome,
+        email: b.email || '',
+        phone: b.telefone,
+        role: b.role || 'barber',
+        is_active: b.is_active,
+        image_url: b.image_url,
+        specialties: b.specialties,
+        experience: b.experience,
+        commission_rate: b.commission_rate
+      })) as StaffMember[];
     },
   });
 
@@ -114,11 +133,11 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
       console.log('🔍 Cliente: Buscando dados do agendamento:', appointmentId);
       
       const { data, error } = await supabase
-        .from('appointments')
+        .from('painel_agendamentos')
         .select(`
           *,
-          services(*),
-          staff(*)
+          servico:painel_servicos(*),
+          barbeiro:painel_barbeiros(*)
         `)
         .eq('id', appointmentId)
         .single();
@@ -137,19 +156,20 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
   // Popular formulário com dados existentes
   useEffect(() => {
     if (appointmentData) {
-      const startTime = new Date(appointmentData.start_time);
-      const timeString = startTime.toTimeString().slice(0, 5);
+      const timeString = appointmentData.hora;
+      const dateStr = appointmentData.data;
+      const dateObj = new Date(dateStr + 'T12:00:00');
       
       form.reset({
-        service_id: appointmentData.service_id,
-        staff_id: appointmentData.staff_id || '',
-        date: startTime,
+        service_id: appointmentData.servico_id,
+        staff_id: appointmentData.barbeiro_id || '',
+        date: dateObj,
         time: timeString,
-        notes: appointmentData.notes || '',
+        notes: '',
       });
 
       if (services) {
-        const service = services.find(s => s.id === appointmentData.service_id);
+        const service = services.find(s => s.id === appointmentData.servico_id);
         setSelectedService(service || null);
       }
     }

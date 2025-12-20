@@ -95,25 +95,12 @@ const TotemNovoAgendamento: React.FC = () => {
   const fetchServices = async () => {
     const result = await executeWithRetry(
       async () => {
-        // Buscar apenas serviços com preço > 0 e que tenham barbeiros vinculados
-        const { data: servicesWithStaff, error: staffError } = await supabase
-          .from('service_staff')
-          .select('service_id');
-
-        if (staffError) throw staffError;
-
-        const serviceIdsWithStaff = [...new Set(servicesWithStaff?.map(s => s.service_id) || [])];
-
-        if (serviceIdsWithStaff.length === 0) {
-          return [];
-        }
-
+        // Buscar todos os serviços ativos com preço > 0
         const { data, error } = await supabase
           .from('painel_servicos')
           .select('*')
           .eq('is_active', true)
           .gt('preco', 0)
-          .in('id', serviceIdsWithStaff)
           .order('nome');
 
         if (error) throw error;
@@ -134,54 +121,23 @@ const TotemNovoAgendamento: React.FC = () => {
 
     const result = await executeWithRetry(
       async () => {
-        // 1. Buscar barbeiros vinculados ao serviço
-        const { data: serviceStaff, error: serviceStaffError } = await supabase
-          .from('service_staff')
-          .select('staff_id')
-          .eq('service_id', selectedService.id);
-
-        if (serviceStaffError) throw serviceStaffError;
-
-        if (!serviceStaff || serviceStaff.length === 0) {
-          return [];
-        }
-
-        const linkedStaffIds = serviceStaff.map(s => s.staff_id);
-
-        // 2. Buscar IDs dos barbeiros disponíveis (available_for_booking = true)
-        const { data: availableBarbers, error: barbersError } = await supabase
+        // Buscar barbeiros ativos disponíveis para agendamento
+        const { data: barbersData, error: barbersError } = await supabase
           .from('painel_barbeiros')
-          .select('staff_id')
+          .select('*')
           .eq('is_active', true)
           .eq('available_for_booking', true)
-          .in('staff_id', linkedStaffIds);
+          .order('nome');
 
         if (barbersError) throw barbersError;
 
-        if (!availableBarbers || availableBarbers.length === 0) {
-          return [];
-        }
-
-        const availableStaffIds = availableBarbers.map(b => b.staff_id);
-
-        // 3. Buscar dados dos barbeiros da tabela staff
-        const { data: staffData, error: staffError } = await supabase
-          .from('staff')
-          .select('id, name, email, specialties, image_url, experience')
-          .in('id', availableStaffIds)
-          .eq('is_active', true)
-          .eq('role', 'barber')
-          .order('name');
-
-        if (staffError) throw staffError;
-
         // Transformar para o formato esperado pelo componente
-        return (staffData || []).map(s => ({
-          id: s.id,
-          nome: s.name,
-          specialties: s.specialties,
-          image_url: s.image_url,
-          experience: s.experience
+        return (barbersData || []).map(b => ({
+          id: b.id,
+          nome: b.nome,
+          specialties: b.specialties,
+          image_url: b.image_url,
+          experience: b.experience
         }));
       },
       'carregar barbeiros'
@@ -192,7 +148,7 @@ const TotemNovoAgendamento: React.FC = () => {
       
       if (result.length === 0) {
         toast.info('Nenhum barbeiro disponível', {
-          description: 'Este serviço ainda não tem barbeiros vinculados.'
+          description: 'Não há barbeiros disponíveis no momento.'
         });
       }
     }
