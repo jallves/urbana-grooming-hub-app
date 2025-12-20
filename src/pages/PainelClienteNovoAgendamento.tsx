@@ -105,13 +105,27 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     
     setLoading(true);
     try {
-      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
-      const { data, error } = await supabase
+      // Verificar se há barbeiros específicos vinculados a este serviço
+      const { data: serviceStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', selectedService.id);
+
+      let query = supabase
         .from('painel_barbeiros')
         .select('id, nome, image_url')
         .eq('is_active', true)
         .eq('available_for_booking', true)
         .order('nome');
+
+      // Se há barbeiros vinculados, filtrar apenas eles
+      if (!staffError && serviceStaff && serviceStaff.length > 0) {
+        const staffIds = serviceStaff.map(s => s.staff_id);
+        query = query.in('id', staffIds);
+      }
+      // Se não há vínculo, mostrar todos os barbeiros
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -126,7 +140,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       setBarbers(mappedBarbers);
       
       if (mappedBarbers.length === 0) {
-        toast.info('Nenhum barbeiro disponível no momento');
+        toast.info('Nenhum barbeiro disponível para este serviço');
       }
     } catch (error) {
       console.error('Erro ao carregar barbeiros:', error);

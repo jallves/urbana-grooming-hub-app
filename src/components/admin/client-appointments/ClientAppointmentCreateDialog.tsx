@@ -199,19 +199,33 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     
     setLoading(true);
     try {
-      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
-      const { data, error } = await supabase
+      // Verificar se há barbeiros específicos vinculados a este serviço
+      const { data: serviceStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', selectedService.id);
+
+      let query = supabase
         .from('painel_barbeiros')
         .select('id, nome, image_url')
         .eq('is_active', true)
         .order('nome');
+
+      // Se há barbeiros vinculados, filtrar apenas eles
+      if (!staffError && serviceStaff && serviceStaff.length > 0) {
+        const staffIds = serviceStaff.map(s => s.staff_id);
+        query = query.in('id', staffIds);
+      }
+      // Se não há vínculo, mostrar todos os barbeiros
+
+      const { data, error } = await query;
 
       if (error) throw error;
       
       // Mapear dados - usar id como staff_id para compatibilidade
       const mappedBarbers = (data || []).map(b => ({
         id: b.id,
-        staff_id: b.id, // No modelo unificado, staff_id = id
+        staff_id: b.id,
         nome: b.nome,
         image_url: b.image_url
       }));
@@ -219,7 +233,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       setBarbers(mappedBarbers);
       
       if (mappedBarbers.length === 0) {
-        toast.info('Nenhum barbeiro disponível no momento');
+        toast.info('Nenhum barbeiro disponível para este serviço');
       }
     } catch (error) {
       console.error('Erro ao carregar barbeiros:', error);
