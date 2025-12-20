@@ -89,26 +89,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
     } : undefined,
   });
   
-  // Watch price and commission fields for automatic calculation
+  // Watch price and commission fields for display purposes
   const price = form.watch('price');
   const commissionValue = form.watch('commission_value');
   const commissionPercentage = form.watch('commission_percentage');
   
-  // Calculate commission percentage when value changes
+  // Flag to prevent infinite loops during calculation
+  const isCalculatingRef = React.useRef(false);
+  
+  // Recalculate percentage when price changes (keep value, update percentage)
   React.useEffect(() => {
-    if (commissionValue !== null && commissionValue !== undefined && price > 0) {
+    if (isCalculatingRef.current) return;
+    if (price > 0 && commissionValue && commissionValue > 0) {
+      isCalculatingRef.current = true;
       const percentage = (commissionValue / price) * 100;
       form.setValue('commission_percentage', parseFloat(percentage.toFixed(2)), { shouldValidate: false });
+      setTimeout(() => { isCalculatingRef.current = false; }, 0);
     }
-  }, [commissionValue, price]);
-  
-  // Calculate commission value when percentage changes
-  React.useEffect(() => {
-    if (commissionPercentage !== null && commissionPercentage !== undefined && price > 0) {
-      const value = (price * commissionPercentage) / 100;
-      form.setValue('commission_value', parseFloat(value.toFixed(2)), { shouldValidate: false });
-    }
-  }, [commissionPercentage, price]);
+  }, [price]); // Only when price changes
   
   const { formState } = form;
   const { isSubmitting } = formState;
@@ -363,11 +361,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
                           value={field.value || ''}
                           className="pl-10"
                           onChange={(e) => {
-                            field.onChange(e);
-                            // Clear the percentage field to trigger recalculation
                             const val = parseFloat(e.target.value) || 0;
-                            if (val > 0 && price > 0) {
-                              const percentage = (val / price) * 100;
+                            field.onChange(val);
+                            // Calculate percentage based on value
+                            const currentPrice = form.getValues('price');
+                            if (currentPrice > 0) {
+                              const percentage = (val / currentPrice) * 100;
                               form.setValue('commission_percentage', parseFloat(percentage.toFixed(2)), { shouldValidate: false });
                             }
                           }}
@@ -400,11 +399,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
                           value={field.value || ''}
                           className="pr-8"
                           onChange={(e) => {
-                            field.onChange(e);
-                            // Clear the value field to trigger recalculation
                             const percentage = parseFloat(e.target.value) || 0;
-                            if (percentage > 0 && price > 0) {
-                              const value = (price * percentage) / 100;
+                            field.onChange(percentage);
+                            // Calculate value based on percentage
+                            const currentPrice = form.getValues('price');
+                            if (currentPrice > 0) {
+                              const value = (currentPrice * percentage) / 100;
                               form.setValue('commission_value', parseFloat(value.toFixed(2)), { shouldValidate: false });
                             }
                           }}
