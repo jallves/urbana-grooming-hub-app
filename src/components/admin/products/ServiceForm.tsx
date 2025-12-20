@@ -28,9 +28,9 @@ interface ServiceFormData {
 
 interface StaffMember {
   id: string;
-  name: string;
-  email: string;
-  role: string;
+  nome: string;
+  email: string | null;
+  role: string | null;
 }
 
 const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, onSuccess }) => {
@@ -58,11 +58,10 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
   const loadStaff = async () => {
     try {
       const { data, error } = await supabase
-        .from('staff')
-        .select('id, name, email, role')
+        .from('painel_barbeiros')
+        .select('id, nome, email, role')
         .eq('is_active', true)
-        .eq('role', 'barber')
-        .order('name');
+        .order('nome');
 
       if (error) throw error;
       setAllStaff(data || []);
@@ -326,7 +325,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                           htmlFor={`staff-${staff.id}`}
                           className="text-sm font-normal cursor-pointer flex-1"
                         >
-                          {staff.name}
+                          {staff.nome}
                         </Label>
                       </div>
                     ))
@@ -335,8 +334,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
               </ScrollArea>
               <p className="text-xs text-muted-foreground">
                 {selectedStaffIds.length === 0 
-                  ? 'Nenhum barbeiro selecionado. Este serviço não aparecerá no agendamento.'
-                  : `${selectedStaffIds.length} barbeiro(s) selecionado(s)`
+                  ? 'Nenhum selecionado = Todos os barbeiros podem fazer este serviço.'
+                  : `${selectedStaffIds.length} barbeiro(s) selecionado(s). Apenas estes poderão fazer o serviço.`
                 }
               </p>
             </div>

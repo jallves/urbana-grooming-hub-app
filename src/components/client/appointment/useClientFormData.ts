@@ -110,9 +110,34 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
       const date = form.getValues('date');
       const time = form.getValues('time');
       const duration = selectedService?.duration || 60;
+      const serviceId = form.getValues('service_id');
 
-      if (!date || !time || !staffMembers?.length) {
-        setAvailableStaff(staffMembers || []);
+      if (!staffMembers?.length) {
+        setAvailableStaff([]);
+        setUnavailableStaff([]);
+        return;
+      }
+
+      // Filtrar barbeiros por serviço se houver vínculo
+      let filteredStaff = staffMembers;
+      if (serviceId) {
+        try {
+          const { data: serviceStaff, error } = await supabase
+            .from('service_staff')
+            .select('staff_id')
+            .eq('service_id', serviceId);
+
+          if (!error && serviceStaff && serviceStaff.length > 0) {
+            const staffIds = serviceStaff.map(s => s.staff_id);
+            filteredStaff = staffMembers.filter(staff => staffIds.includes(staff.id));
+          }
+        } catch (error) {
+          console.error('Erro ao filtrar barbeiros por serviço:', error);
+        }
+      }
+
+      if (!date || !time) {
+        setAvailableStaff(filteredStaff);
         setUnavailableStaff([]);
         return;
       }
@@ -128,7 +153,7 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
       const timeStr = time;
       
       const availability = await Promise.all(
-        staffMembers.map(async (staff) => {
+        filteredStaff.map(async (staff) => {
           let query = supabase
             .from('painel_agendamentos')
             .select('id, data, hora, servico:painel_servicos(duracao)')
@@ -187,6 +212,7 @@ export const useClientFormData = (defaultDate: Date = new Date(), appointmentId?
   }, [
     form.watch('date'),
     form.watch('time'),
+    form.watch('service_id'),
     selectedService,
     staffMembers,
     appointmentId,

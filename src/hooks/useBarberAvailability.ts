@@ -32,15 +32,29 @@ export const useBarberAvailability = () => {
     setIsLoading(true);
     
     try {
-      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
-      // Buscar barbeiros ativos da tabela painel_barbeiros
-      console.log('1. Buscando barbeiros ativos...');
-      const { data: allBarbers, error: barbersError } = await supabase
+      // Verificar se há barbeiros específicos vinculados a este serviço
+      const { data: serviceStaff, error: staffError } = await supabase
+        .from('service_staff')
+        .select('staff_id')
+        .eq('service_id', serviceId);
+
+      let query = supabase
         .from('painel_barbeiros')
         .select('*')
         .eq('is_active', true)
         .eq('available_for_booking', true)
         .order('nome');
+
+      // Se há barbeiros vinculados, filtrar apenas eles
+      if (!staffError && serviceStaff && serviceStaff.length > 0) {
+        const staffIds = serviceStaff.map(s => s.staff_id);
+        query = query.in('id', staffIds);
+        console.log('Barbeiros vinculados ao serviço:', staffIds.length);
+      } else {
+        console.log('Sem vínculo específico - buscando todos os barbeiros ativos');
+      }
+
+      const { data: allBarbers, error: barbersError } = await query;
 
       if (barbersError) {
         console.error('Erro ao buscar barbeiros:', barbersError);
