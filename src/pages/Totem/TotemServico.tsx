@@ -45,35 +45,22 @@ const TotemServico: React.FC = () => {
   const loadServices = async () => {
     setLoading(true);
     try {
-      // Buscar apenas serviços vinculados a barbeiros
-      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
-      const response = await supabase
+      // Buscar todos os serviços ativos
+      const { data, error } = await supabase
         .from('painel_servicos')
-        .select(`
-          id, 
-          nome, 
-          preco, 
-          duracao,
-          service_staff!inner(staff_id)
-        `)
+        .select('id, nome, preco, duracao')
         .eq('is_active', true)
         .gt('preco', 0)
         .order('nome');
 
-      if (response.error) throw response.error;
+      if (error) throw error;
 
-      // Remove duplicates (serviços com múltiplos barbeiros)
-      const uniqueServices = (response.data || []).reduce((acc: Service[], curr: any) => {
-        if (!acc.find(s => s.id === curr.id)) {
-          acc.push({
-            id: curr.id,
-            nome: curr.nome,
-            preco: curr.preco,
-            duracao: curr.duracao
-          });
-        }
-        return acc;
-      }, []);
+      const uniqueServices: Service[] = (data || []).map(s => ({
+        id: s.id,
+        nome: s.nome,
+        preco: s.preco,
+        duracao: s.duracao
+      }));
 
       setServices(uniqueServices);
     } catch (error) {

@@ -26,48 +26,21 @@ export const useBarberAvailability = () => {
     time: string,
     duration: number
   ) => {
-    console.log('=== INICIANDO BUSCA DE BARBEIROS DA TABELA STAFF ===');
+    console.log('=== INICIANDO BUSCA DE BARBEIROS ===');
     console.log('Parâmetros:', { serviceId, date, time, duration });
     
     setIsLoading(true);
     
     try {
-      // 1. Buscar barbeiros vinculados ao serviço
-      console.log('1. Buscando barbeiros vinculados ao serviço...');
-      const { data: serviceStaff, error: serviceStaffError } = await supabase
-        .from('service_staff')
-        .select('staff_id')
-        .eq('service_id', serviceId);
-
-      if (serviceStaffError) {
-        console.error('Erro ao buscar barbeiros do serviço:', serviceStaffError);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os barbeiros para este serviço.",
-          variant: "destructive",
-        });
-        setAvailableBarbers([]);
-        return;
-      }
-
-      if (!serviceStaff || serviceStaff.length === 0) {
-        console.log('Nenhum barbeiro vinculado a este serviço');
-        setAvailableBarbers([]);
-        return;
-      }
-
-      const linkedStaffIds = serviceStaff.map(s => s.staff_id);
-      console.log('Barbeiros vinculados ao serviço:', linkedStaffIds);
-
-      // 2. Buscar dados completos dos barbeiros vinculados
-      console.log('2. Buscando dados dos barbeiros vinculados...');
+      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
+      // Buscar barbeiros ativos da tabela painel_barbeiros
+      console.log('1. Buscando barbeiros ativos...');
       const { data: allBarbers, error: barbersError } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
-        .in('id', linkedStaffIds)
         .eq('is_active', true)
-        .eq('role', 'barber')
-        .order('name');
+        .eq('available_for_booking', true)
+        .order('nome');
 
       if (barbersError) {
         console.error('Erro ao buscar barbeiros:', barbersError);
@@ -83,7 +56,7 @@ export const useBarberAvailability = () => {
       console.log('Barbeiros encontrados:', allBarbers?.length || 0);
       
       if (!allBarbers || allBarbers.length === 0) {
-        console.log('Nenhum barbeiro ativo vinculado a este serviço');
+        console.log('Nenhum barbeiro ativo');
         setAvailableBarbers([]);
         return;
       }
@@ -113,7 +86,7 @@ export const useBarberAvailability = () => {
       }
 
       // Verificar conflitos com agendamentos existentes
-      console.log('4. Verificando conflitos de agendamento...');
+      console.log('3. Verificando conflitos de agendamento...');
       const availableBarbersList: AvailableBarber[] = [];
       
       const startDateTime = new Date(date);
@@ -122,33 +95,33 @@ export const useBarberAvailability = () => {
       const endDateTime = new Date(startDateTime);
       endDateTime.setMinutes(endDateTime.getMinutes() + duration);
 
-      console.log(`Verificando conflitos entre: ${startDateTime.toISOString()} e ${endDateTime.toISOString()}`);
+      const dateStr = date.toISOString().split('T')[0];
+      console.log(`Verificando conflitos para data: ${dateStr}, horário: ${time}`);
 
       for (const barber of allBarbers) {
-        console.log(`Verificando barbeiro: ${barber.name} (${barber.id})`);
+        console.log(`Verificando barbeiro: ${barber.nome} (${barber.id})`);
         
-        // Buscar agendamentos conflitantes
+        // Buscar agendamentos conflitantes na tabela painel_agendamentos
         const { data: conflicts, error: conflictError } = await supabase
-          .from('appointments')
-          .select('id, start_time, end_time, status')
-          .eq('staff_id', barber.id)
-          .in('status', ['scheduled', 'confirmed'])
-          .gte('start_time', date.toISOString().split('T')[0] + 'T00:00:00')
-          .lt('start_time', date.toISOString().split('T')[0] + 'T23:59:59');
+          .from('painel_agendamentos')
+          .select('id, data, hora, servico:painel_servicos(duracao)')
+          .eq('barbeiro_id', barber.id)
+          .eq('status', 'agendado')
+          .eq('data', dateStr);
 
         if (conflictError) {
-          console.error(`Erro ao verificar conflitos para ${barber.name}:`, conflictError);
+          console.error(`Erro ao verificar conflitos para ${barber.nome}:`, conflictError);
           // Em caso de erro, considerar disponível
           availableBarbersList.push({
             id: barber.id,
-            name: barber.name || 'Sem nome',
+            name: barber.nome || 'Sem nome',
             email: barber.email || '',
-            phone: barber.phone || '',
+            phone: barber.telefone || '',
             image_url: barber.image_url || '',
             specialties: barber.specialties || '',
             experience: barber.experience || '',
-            role: barber.role || 'barber',
-            is_active: barber.is_active
+            role: barber.role || 'barbeiro',
+            is_active: barber.is_active ?? true
           });
           continue;
         }
@@ -157,14 +130,18 @@ export const useBarberAvailability = () => {
         let hasConflict = false;
         if (conflicts && conflicts.length > 0) {
           hasConflict = conflicts.some(appointment => {
-            const appStart = new Date(appointment.start_time);
-            const appEnd = new Date(appointment.end_time);
+            const [appHours, appMinutes] = appointment.hora.split(':').map(Number);
+            const appStart = new Date(startDateTime);
+            appStart.setHours(appHours, appMinutes, 0, 0);
+            const appDuration = (appointment.servico as any)?.duracao || 60;
+            const appEnd = new Date(appStart);
+            appEnd.setMinutes(appEnd.getMinutes() + appDuration);
             
             // Verificar sobreposição
             const overlap = startDateTime < appEnd && endDateTime > appStart;
             
             if (overlap) {
-              console.log(`✗ Conflito para ${barber.name}: ${appStart.toLocaleTimeString()} - ${appEnd.toLocaleTimeString()}`);
+              console.log(`✗ Conflito para ${barber.nome}: ${appStart.toLocaleTimeString()} - ${appEnd.toLocaleTimeString()}`);
             }
             
             return overlap;
@@ -174,18 +151,18 @@ export const useBarberAvailability = () => {
         if (!hasConflict) {
           availableBarbersList.push({
             id: barber.id,
-            name: barber.name || 'Sem nome',
+            name: barber.nome || 'Sem nome',
             email: barber.email || '',
-            phone: barber.phone || '',
+            phone: barber.telefone || '',
             image_url: barber.image_url || '',
             specialties: barber.specialties || '',
             experience: barber.experience || '',
-            role: barber.role || 'barber',
-            is_active: barber.is_active
+            role: barber.role || 'barbeiro',
+            is_active: barber.is_active ?? true
           });
-          console.log(`✓ Barbeiro ${barber.name} disponível`);
+          console.log(`✓ Barbeiro ${barber.nome} disponível`);
         } else {
-          console.log(`✗ Barbeiro ${barber.name} não disponível (conflito)`);
+          console.log(`✗ Barbeiro ${barber.nome} não disponível (conflito)`);
         }
       }
       

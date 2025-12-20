@@ -51,47 +51,33 @@ const TotemBarbeiro: React.FC = () => {
     
     setLoading(true);
     try {
-      // Buscar apenas barbeiros vinculados ao serviço selecionado
-      const { data: serviceStaff, error: staffError } = await supabase
-        .from('service_staff')
-        .select('staff_id')
-        .eq('service_id', service.id);
-
-      if (staffError) throw staffError;
-
-      if (!serviceStaff || serviceStaff.length === 0) {
-        setBarbers([]);
-        toast.error('Nenhum barbeiro disponível para este serviço', {
-          description: 'Procure a recepção para mais informações.'
-        });
-        return;
-      }
-
-      const staffIds = serviceStaff.map(s => s.staff_id);
-
-      // Buscar dados dos barbeiros vinculados
-      // @ts-ignore - Evitar inferência profunda de tipos do Supabase
-      const response = await supabase
+      // Buscar todos os barbeiros ativos disponíveis para agendamento
+      // No modelo unificado, todos os barbeiros podem fazer todos os serviços
+      const { data, error } = await supabase
         .from('painel_barbeiros')
-        .select('id, nome, specialties, image_url, is_active, staff_id')
+        .select('id, nome, specialties, image_url, is_active')
         .eq('is_active', true)
         .eq('available_for_booking', true)
-        .in('staff_id', staffIds)
         .order('nome');
 
-      if (response.error) throw response.error;
+      if (error) throw error;
 
       // Mapear dados do Supabase para o tipo Barber
-      const mappedBarbers: Barber[] = (response.data || []).map(b => ({
+      const mappedBarbers: Barber[] = (data || []).map(b => ({
         id: b.id,
         nome: b.nome,
         especialidade: b.specialties || undefined,
         foto_url: b.image_url || undefined,
-        ativo: b.is_active,
-        staff_id: b.staff_id || undefined
+        ativo: b.is_active
       }));
 
       setBarbers(mappedBarbers);
+      
+      if (mappedBarbers.length === 0) {
+        toast.info('Nenhum barbeiro disponível no momento', {
+          description: 'Por favor, procure a recepção.'
+        });
+      }
     } catch (error) {
       console.error('Erro ao carregar barbeiros:', error);
       toast.error('Erro ao carregar barbeiros', {
