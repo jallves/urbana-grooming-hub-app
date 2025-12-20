@@ -12,36 +12,9 @@ export interface Service {
   is_active?: boolean;
 }
 
-const defaultServices: Service[] = [
-  {
-    id: '1',
-    name: 'Corte de Cabelo',
-    description: 'Corte moderno e personalizado para seu estilo',
-    price: 45.00,
-    duration: 30,
-    is_active: true
-  },
-  {
-    id: '2',
-    name: 'Barba',
-    description: 'Aparar e modelar a barba com técnicas tradicionais',
-    price: 35.00,
-    duration: 20,
-    is_active: true
-  },
-  {
-    id: '3',
-    name: 'Corte + Barba',
-    description: 'Pacote completo de corte de cabelo e barba',
-    price: 70.00,
-    duration: 45,
-    is_active: true
-  }
-];
-
 export const useHomeServices = () => {
-  const [status, setStatus] = useState<Status>('success');
-  const [data, setData] = useState<Service[]>(defaultServices);
+  const [status, setStatus] = useState<Status>('loading');
+  const [data, setData] = useState<Service[]>([]);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -61,10 +34,12 @@ export const useHomeServices = () => {
 
         if (fetchError) {
           console.error('[Services] Erro ao carregar:', fetchError.message);
-        } else if (services && services.length > 0) {
-          console.log('[Services] ✅ Carregados (show_on_home):', services.length);
+          setStatus('error');
+          setError(fetchError.message);
+        } else {
+          console.log('[Services] ✅ Carregados (show_on_home):', services?.length || 0);
           // Mapeia os campos do painel_servicos para o formato esperado
-          const mappedServices: Service[] = services.map(s => ({
+          const mappedServices: Service[] = (services || []).map(s => ({
             id: s.id,
             name: s.nome,
             description: s.descricao,
@@ -73,6 +48,7 @@ export const useHomeServices = () => {
             is_active: s.is_active
           }));
           setData(mappedServices);
+          setStatus('success');
         }
       } catch (err: any) {
         if (!mounted) return;
@@ -115,8 +91,8 @@ export const useHomeServices = () => {
 
       if (fetchError) {
         console.error('[Services] Erro no refetch:', fetchError.message);
-      } else if (services && services.length > 0) {
-        const mappedServices: Service[] = services.map(s => ({
+      } else {
+        const mappedServices: Service[] = (services || []).map(s => ({
           id: s.id,
           name: s.nome,
           description: s.descricao,
