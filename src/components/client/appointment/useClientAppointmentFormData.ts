@@ -45,36 +45,55 @@ export const useClientAppointmentFormData = (defaultDate: Date = new Date(), cli
     },
   });
 
-  // Fetch services (same as admin form)
+  // Fetch services do painel_servicos
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'], // Same key as admin form
+    queryKey: ['painel_servicos'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .gt('preco', 0)
+        .order('nome');
       
       if (error) throw new Error(error.message);
-      return data as Service[];
+      return (data || []).map(s => ({
+        id: s.id,
+        name: s.nome,
+        price: Number(s.preco),
+        duration: s.duracao,
+        description: s.descricao,
+        is_active: s.is_active
+      })) as Service[];
     },
   });
 
-  // Fetch staff (same as admin form)
+  // Fetch staff do painel_barbeiros
   const { data: staffMembers, isLoading: isLoadingStaff, error: staffError } = useQuery({
-    queryKey: ['staff'], // Same key as admin form
+    queryKey: ['painel_barbeiros'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('staff')
+        .from('painel_barbeiros')
         .select('*')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
       
       if (error) {
         throw new Error(error.message);
       }
       
-      return data as StaffMember[];
+      return (data || []).map(b => ({
+        id: b.id,
+        name: b.nome,
+        email: b.email,
+        phone: b.telefone,
+        image_url: b.image_url,
+        specialties: b.specialties,
+        experience: b.experience,
+        commission_rate: b.commission_rate,
+        is_active: b.is_active,
+        role: b.role
+      })) as StaffMember[];
     },
   });
 

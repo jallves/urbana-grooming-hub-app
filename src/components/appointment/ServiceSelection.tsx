@@ -32,30 +32,25 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
   
   const fetchServices = async () => {
     try {
-      // Buscar apenas serviços com preço > 0 e que tenham barbeiros vinculados
-      const { data: servicesWithStaff, error: staffError } = await supabase
-        .from('service_staff')
-        .select('service_id');
-
-      if (staffError) throw staffError;
-
-      const serviceIdsWithStaff = [...new Set(servicesWithStaff?.map(s => s.service_id) || [])];
-
-      if (serviceIdsWithStaff.length === 0) {
-        setServices([]);
-        return;
-      }
-
       const { data, error } = await supabase
-        .from('services')
+        .from('painel_servicos')
         .select('*')
         .eq('is_active', true)
-        .gt('price', 0)
-        .in('id', serviceIdsWithStaff)
-        .order('name');
+        .gt('preco', 0)
+        .order('nome');
 
       if (error) throw error;
-      setServices(data || []);
+      
+      const mappedServices = (data || []).map(s => ({
+        id: s.id,
+        name: s.nome,
+        price: Number(s.preco),
+        duration: s.duracao,
+        description: s.descricao,
+        is_active: s.is_active
+      }));
+      
+      setServices(mappedServices);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
       toast({
@@ -69,10 +64,9 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
 
   const fetchStaff = async () => {
     const { data, error } = await supabase
-      .from('staff')
+      .from('painel_barbeiros')
       .select('*')
-      .eq('is_active', true)
-      .eq('role', 'barber');
+      .eq('is_active', true);
 
     if (error) {
       console.error('Erro ao carregar profissionais:', error);
@@ -82,36 +76,26 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
         variant: "destructive",
       });
     } else {
-      setStaff(data || []);
+      const mappedStaff = (data || []).map(b => ({
+        id: b.id,
+        name: b.nome,
+        email: b.email,
+        phone: b.telefone,
+        image_url: b.image_url,
+        specialties: b.specialties,
+        experience: b.experience,
+        commission_rate: b.commission_rate,
+        is_active: b.is_active,
+        role: b.role
+      }));
+      setStaff(mappedStaff);
     }
   };
 
   const filterStaffByService = async (serviceId: string) => {
-    try {
-      // Buscar barbeiros vinculados ao serviço
-      const { data: serviceStaff, error } = await supabase
-        .from('service_staff')
-        .select('staff_id')
-        .eq('service_id', serviceId);
-
-      if (error) {
-        console.error('Erro ao filtrar barbeiros:', error);
-        setFilteredStaff([]);
-        return;
-      }
-
-      if (!serviceStaff || serviceStaff.length === 0) {
-        setFilteredStaff([]);
-        return;
-      }
-
-      const linkedStaffIds = serviceStaff.map(s => s.staff_id);
-      const filtered = staff.filter(s => linkedStaffIds.includes(s.id));
-      setFilteredStaff(filtered);
-    } catch (error) {
-      console.error('Erro ao filtrar barbeiros:', error);
-      setFilteredStaff([]);
-    }
+    // No modelo unificado, todos os barbeiros podem fazer todos os serviços
+    // Então simplesmente mostramos todos os barbeiros ativos
+    setFilteredStaff(staff);
   };
   
   return (
@@ -159,11 +143,6 @@ const ServiceSelection: React.FC<ServiceSelectionProps> = ({ formData, handleSel
             ))}
           </SelectContent>
         </Select>
-        {formData.service && filteredStaff.length === 0 && (
-          <p className="text-xs text-yellow-600 mt-1">
-            Este serviço ainda não tem barbeiros vinculados.
-          </p>
-        )}
       </div>
     </>
   );

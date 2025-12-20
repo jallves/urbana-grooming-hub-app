@@ -62,44 +62,33 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     enabled: !!appointmentId,
   });
 
-  // Fetch services (apenas os vinculados a barbeiros)
+  // Fetch services do painel_servicos
   const { data: services, isLoading: isLoadingServices } = useQuery({
-    queryKey: ['services'],
+    queryKey: ['painel_servicos'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('painel_servicos')
-        .select(`
-          *,
-          service_staff!inner(staff_id)
-        `)
+        .select('*')
         .eq('is_active', true)
         .gt('preco', 0)
         .order('nome');
       
       if (error) throw new Error(error.message);
       
-      // Remove duplicates (serviços com múltiplos barbeiros)
-      const uniqueServices = (data || []).reduce((acc, curr) => {
-        if (!acc.find(s => s.id === curr.id)) {
-          acc.push({
-            id: curr.id,
-            name: curr.nome,
-            price: curr.preco,
-            duration: curr.duracao,
-            description: curr.descricao,
-            is_active: curr.is_active
-          });
-        }
-        return acc;
-      }, [] as Service[]);
-      
-      return uniqueServices;
+      return (data || []).map(s => ({
+        id: s.id,
+        name: s.nome,
+        price: Number(s.preco),
+        duration: s.duracao,
+        description: s.descricao,
+        is_active: s.is_active
+      })) as Service[];
     },
   });
 
-  // Fetch staff
+  // Fetch staff do painel_barbeiros
   const { data: staffMembers, isLoading: isLoadingStaff } = useQuery({
-    queryKey: ['staff'],
+    queryKey: ['painel_barbeiros'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('painel_barbeiros')
@@ -111,9 +100,9 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     },
   });
 
-  // Fetch clients
+  // Fetch clients do painel_clientes
   const { data: clients, isLoading: isLoadingClients } = useQuery({
-    queryKey: ['clients'],
+    queryKey: ['painel_clientes'],
     queryFn: async () => {
       const { data, error } = await supabase
         .from('painel_clientes')
