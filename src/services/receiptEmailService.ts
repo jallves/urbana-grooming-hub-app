@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 interface ReceiptItem {
   name: string;
   quantity?: number;
+  unitPrice?: number;
   price: number;
   type?: 'service' | 'product';
 }
