@@ -8,6 +8,7 @@ import { Search, Plus, Scissors, Edit, Trash2, MoreVertical, Clock } from 'lucid
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ServiceForm from './ServiceForm';
+import SeedServicesButton from './SeedServicesButton';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -136,14 +137,17 @@ const ServiceList: React.FC = () => {
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
-          <Button 
-            onClick={handleCreateService}
-            className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
-          >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-            <span className="hidden sm:inline">Novo Serviço</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          <div className="flex gap-2">
+            <SeedServicesButton />
+            <Button 
+              onClick={handleCreateService}
+              className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+            >
+              <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Novo Serviço</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+          </div>
         </div>
       </div>
 
