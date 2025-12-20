@@ -36,14 +36,27 @@ const TotemProductPaymentSuccess: React.FC = () => {
       // Os dados vêm de vendas_itens com campos: nome, quantidade, preco_unit, total
       const items: Array<{ name: string; quantity: number; unitPrice: number; price: number; type: 'service' | 'product' }> = [];
       
+      console.log('[ProductPaymentSuccess] sale.items raw:', JSON.stringify(sale.items, null, 2));
+      
       if (sale.items && sale.items.length > 0) {
         sale.items.forEach((item: any) => {
+          console.log('[ProductPaymentSuccess] Processando item:', item);
+          
           // Campos da tabela vendas_itens: nome, quantidade, preco_unit, total
-          const productName = item.nome || item.produto?.nome || item.name || 'Produto';
-          const quantity = item.quantidade || item.quantity || 1;
-          // preco_unit é o campo correto da tabela vendas_itens
-          const unitPrice = Number(item.preco_unit) || item.preco_unitario || item.unitPrice || item.price || item.preco || 0;
-          const subtotal = item.total || (unitPrice * quantity);
+          const productName = item.nome || item.name || 'Produto';
+          const quantity = Number(item.quantidade) || Number(item.quantity) || 1;
+          // preco_unit é o campo correto da tabela vendas_itens (string no banco, converter para number)
+          const unitPrice = Number(item.preco_unit) || Number(item.unitPrice) || 0;
+          const subtotal = Number(item.total) || (unitPrice * quantity);
+          
+          console.log('[ProductPaymentSuccess] Valores extraídos:', { 
+            productName, 
+            quantity, 
+            unitPrice, 
+            subtotal,
+            raw_preco_unit: item.preco_unit,
+            raw_total: item.total
+          });
           
           items.push({
             name: productName,
@@ -52,8 +65,6 @@ const TotemProductPaymentSuccess: React.FC = () => {
             price: subtotal,
             type: 'product' as const
           });
-          
-          console.log('[ProductPaymentSuccess] Item mapeado:', { productName, quantity, unitPrice, subtotal });
         });
       } else {
         // Fallback se não tiver itens detalhados
@@ -66,7 +77,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
         });
       }
 
-      console.log('[ProductPaymentSuccess] Itens para e-mail:', JSON.stringify(items, null, 2));
+      console.log('[ProductPaymentSuccess] Itens finais para e-mail:', JSON.stringify(items, null, 2));
 
       const result = await sendReceiptEmail({
         clientName: client.nome,

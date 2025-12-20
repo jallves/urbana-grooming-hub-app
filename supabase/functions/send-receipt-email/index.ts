@@ -103,29 +103,37 @@ const handler = async (req: Request): Promise<Response> => {
     const servicesSubtotal = services.reduce((sum, item) => sum + item.price, 0);
     const productsSubtotal = products.reduce((sum, item) => sum + item.price, 0);
 
-    // Gerar HTML dos serviços (formato nota fiscal)
+    // Gerar HTML dos serviços (formato mobile-first em lista)
     const servicesHtml = services.map(item => `
-      <tr>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; font-size: 13px; white-space: nowrap;">✂️ ${item.name}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 12px; white-space: nowrap;">1</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: right; font-size: 12px; white-space: nowrap;">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 13px; white-space: nowrap; font-weight: 600;">R$ ${item.price.toFixed(2).replace('.', ',')}</td>
-      </tr>
+      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+          <span style="color: #333; font-weight: 600; font-size: 14px;">✂️ ${item.name}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #888; font-size: 12px;">1 x R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #1a1a2e; font-weight: 700; font-size: 15px;">R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+        </div>
+      </div>
     `).join('');
 
-    // Gerar HTML dos produtos (formato nota fiscal com quantidade e valor unitário separados)
+    // Gerar HTML dos produtos (formato mobile-first em lista)
     const productsHtml = products.map(item => {
       const qty = item.quantity || 1;
-      // Usar unitPrice se disponível, senão calcular
       const unitPrice = item.unitPrice || (item.price / qty);
-      const subtotal = unitPrice * qty;
+      const subtotal = item.price || (unitPrice * qty);
+      
+      console.log(`📦 Produto: ${item.name}, Qtd: ${qty}, Unit: ${unitPrice}, Total: ${subtotal}`);
+      
       return `
-      <tr>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; font-size: 13px; white-space: nowrap;">🛍️ ${item.name}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: center; font-size: 12px; white-space: nowrap;">${qty}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #888; text-align: right; font-size: 12px; white-space: nowrap;">R$ ${unitPrice.toFixed(2).replace('.', ',')}</td>
-        <td style="padding: 8px 10px; border-bottom: 1px solid #eee; color: #333; text-align: right; font-size: 13px; white-space: nowrap; font-weight: 600;">R$ ${subtotal.toFixed(2).replace('.', ',')}</td>
-      </tr>
+      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+          <span style="color: #333; font-weight: 600; font-size: 14px;">🛍️ ${item.name}</span>
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="color: #888; font-size: 12px;">${qty} x R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #1a1a2e; font-weight: 700; font-size: 15px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
+        </div>
+      </div>
     `}).join('');
 
     // Verificar o que tem
@@ -137,127 +145,97 @@ const handler = async (req: Request): Promise<Response> => {
       to: [clientEmail],
       subject: `✂️ ${title} - Barbearia Costa Urbana`,
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 700px; margin: 0 auto; padding: 20px; background: #f5f5f5;">
-          <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 30px; border-radius: 12px 12px 0 0;">
-            <img src="${logoUrl}" alt="Barbearia Costa Urbana" style="width: 100px; height: 100px; border-radius: 50%; margin-bottom: 15px; border: 3px solid #D4A574;" />
-            <h1 style="margin: 0; font-size: 24px; color: #D4A574; letter-spacing: 1px;">✂️ ${title}</h1>
-            <p style="margin: 10px 0 0; font-size: 14px; color: #ccc;">Barbearia Costa Urbana</p>
-          </div>
-          
-          <div style="background: white; padding: 30px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
-            <p style="font-size: 16px; color: #333; margin-bottom: 25px;">
-              Olá <strong style="color: #1a1a2e;">${clientName}</strong>! Segue o comprovante da sua visita:
-            </p>
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="utf-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
+          <div style="max-width: 480px; margin: 0 auto; padding: 16px;">
             
-            <!-- INFORMAÇÕES DA TRANSAÇÃO -->
-            <div style="background: linear-gradient(135deg, #f9f9f9, #f0f0f0); padding: 20px; border-radius: 10px; border-left: 4px solid #D4A574; margin-bottom: 25px;">
-              <table style="width: 100%; border-collapse: collapse;">
-                <tr>
-                  <td style="padding: 10px 0; color: #666; font-weight: 600; width: 140px; vertical-align: top;">📅 Data:</td>
-                  <td style="padding: 10px 0; color: #333; font-weight: 500;">${transactionDate}</td>
-                </tr>
+            <!-- HEADER -->
+            <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 24px 16px; border-radius: 12px 12px 0 0;">
+              <img src="${logoUrl}" alt="Logo" style="width: 70px; height: 70px; border-radius: 50%; margin-bottom: 12px; border: 2px solid #D4A574;" />
+              <h1 style="margin: 0; font-size: 18px; color: #D4A574;">✂️ ${title}</h1>
+              <p style="margin: 8px 0 0; font-size: 12px; color: #ccc;">Barbearia Costa Urbana</p>
+            </div>
+            
+            <!-- CONTENT -->
+            <div style="background: white; padding: 20px 16px; border-radius: 0 0 12px 12px;">
+              
+              <p style="font-size: 14px; color: #333; margin: 0 0 20px;">
+                Olá <strong>${clientName}</strong>! Segue seu comprovante:
+              </p>
+              
+              <!-- INFO BOX -->
+              <div style="background: #f8f8f8; padding: 14px; border-radius: 8px; border-left: 3px solid #D4A574; margin-bottom: 20px;">
+                <div style="margin-bottom: 8px;">
+                  <span style="color: #666; font-size: 12px;">📅 Data:</span>
+                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${transactionDate}</span>
+                </div>
                 ${barberName ? `
-                <tr>
-                  <td style="padding: 10px 0; color: #666; font-weight: 600; width: 140px; vertical-align: top;">👨‍💼 Profissional:</td>
-                  <td style="padding: 10px 0; color: #333; font-weight: 500;">${barberName}</td>
-                </tr>
+                <div style="margin-bottom: 8px;">
+                  <span style="color: #666; font-size: 12px;">👨‍💼 Profissional:</span>
+                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${barberName}</span>
+                </div>
                 ` : ''}
-                <tr>
-                  <td style="padding: 10px 0; color: #666; font-weight: 600; width: 140px; vertical-align: top;">💳 Pagamento:</td>
-                  <td style="padding: 10px 0; color: #333; font-weight: 500;">${paymentMethodText}</td>
-                </tr>
+                <div style="margin-bottom: ${nsu ? '8px' : '0'};">
+                  <span style="color: #666; font-size: 12px;">💳 Pagamento:</span>
+                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${paymentMethodText}</span>
+                </div>
                 ${nsu ? `
-                <tr>
-                  <td style="padding: 10px 0; color: #666; font-weight: 600; width: 140px; vertical-align: top;">🔢 NSU:</td>
-                  <td style="padding: 10px 0; color: #333; font-weight: 500;">${nsu}</td>
-                </tr>
+                <div>
+                  <span style="color: #666; font-size: 12px;">🔢 NSU:</span>
+                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${nsu}</span>
+                </div>
                 ` : ''}
-              </table>
-            </div>
+              </div>
 
-            ${hasServices ? `
-            <!-- SERVIÇOS -->
-            <div style="margin-bottom: 25px;">
-              <h3 style="color: #1a1a2e; margin: 0 0 15px; padding-bottom: 10px; font-size: 16px; border-bottom: 2px solid #D4A574; display: flex; align-items: center;">
-                ✂️ SERVIÇOS
-              </h3>
-              
-              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden; table-layout: fixed;">
-                <thead>
-                  <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
-                    <th style="padding: 10px; text-align: left; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 45%;">Descrição</th>
-                    <th style="padding: 10px; text-align: center; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 15%;">Qtd</th>
-                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Unit.</th>
-                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${servicesHtml}
-                </tbody>
-                <tfoot>
-                  <tr style="background: #f5f5f5;">
-                    <td colspan="3" style="padding: 10px; color: #666; font-weight: 600; font-size: 12px;">Subtotal Serviços</td>
-                    <td style="padding: 10px; color: #333; text-align: right; font-weight: 600; font-size: 13px;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            ` : ''}
+              ${hasServices ? `
+              <!-- SERVIÇOS -->
+              <div style="margin-bottom: 20px;">
+                <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
+                  ✂️ SERVIÇOS
+                </h3>
+                ${servicesHtml}
+                <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #f0f0f0; border-radius: 6px; margin-top: 8px;">
+                  <span style="color: #666; font-size: 13px; font-weight: 600;">Subtotal Serviços</span>
+                  <span style="color: #333; font-size: 14px; font-weight: 700;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+              ` : ''}
 
-            ${hasProducts ? `
-            <!-- PRODUTOS -->
-            <div style="margin-bottom: 25px;">
-              <h3 style="color: #1a1a2e; margin: 0 0 15px; padding-bottom: 10px; font-size: 16px; border-bottom: 2px solid #D4A574; display: flex; align-items: center;">
-                🛍️ PRODUTOS
-              </h3>
-              
-              <table style="width: 100%; border-collapse: collapse; background: #fafafa; border-radius: 8px; overflow: hidden; table-layout: fixed;">
-                <thead>
-                  <tr style="background: linear-gradient(135deg, #e8e8e8, #f0f0f0);">
-                    <th style="padding: 10px; text-align: left; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 45%;">Descrição</th>
-                    <th style="padding: 10px; text-align: center; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 15%;">Qtd</th>
-                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Unit.</th>
-                    <th style="padding: 10px; text-align: right; color: #555; font-size: 10px; font-weight: 700; text-transform: uppercase; width: 20%;">Subtotal</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${productsHtml}
-                </tbody>
-                <tfoot>
-                  <tr style="background: #f5f5f5;">
-                    <td colspan="3" style="padding: 10px; color: #666; font-weight: 600; font-size: 12px;">Subtotal Produtos</td>
-                    <td style="padding: 10px; color: #333; text-align: right; font-weight: 600; font-size: 13px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
-            ` : ''}
+              ${hasProducts ? `
+              <!-- PRODUTOS -->
+              <div style="margin-bottom: 20px;">
+                <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
+                  🛍️ PRODUTOS
+                </h3>
+                ${productsHtml}
+                <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #f0f0f0; border-radius: 6px; margin-top: 8px;">
+                  <span style="color: #666; font-size: 13px; font-weight: 600;">Subtotal Produtos</span>
+                  <span style="color: #333; font-size: 14px; font-weight: 700;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+              ` : ''}
 
-            <!-- TOTAL GERAL -->
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-              <tr style="background: linear-gradient(135deg, #1a1a2e, #16213e);">
-                <td style="padding: 18px 20px; color: white; font-weight: 700; font-size: 18px; letter-spacing: 1px;">
-                  TOTAL
-                </td>
-                <td style="padding: 18px 20px; color: #D4A574; font-weight: 800; font-size: 24px; text-align: right; letter-spacing: 0.5px;">
-                  R$ ${formattedTotal}
-                </td>
-              </tr>
-            </table>
+              <!-- TOTAL -->
+              <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: white; font-weight: 700; font-size: 16px;">TOTAL</span>
+                <span style="color: #D4A574; font-weight: 800; font-size: 22px;">R$ ${formattedTotal}</span>
+              </div>
 
-            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
-              <p style="color: #666; margin: 5px 0; font-size: 15px;">
-                Obrigado pela preferência! 🙏
-              </p>
-              <p style="color: #D4A574; font-weight: bold; font-size: 18px; margin: 15px 0;">
-                Barbearia Costa Urbana ✂️
-              </p>
-              <p style="color: #999; font-size: 12px; font-style: italic; margin-top: 15px;">
-                Este é um comprovante eletrônico gerado automaticamente.
-              </p>
+              <!-- FOOTER -->
+              <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee;">
+                <p style="color: #666; margin: 0 0 8px; font-size: 13px;">Obrigado pela preferência! 🙏</p>
+                <p style="color: #D4A574; font-weight: bold; font-size: 15px; margin: 0;">Barbearia Costa Urbana ✂️</p>
+                <p style="color: #999; font-size: 10px; margin: 12px 0 0;">Comprovante eletrônico gerado automaticamente.</p>
+              </div>
             </div>
           </div>
-        </div>
+        </body>
+        </html>
       `,
     });
 
