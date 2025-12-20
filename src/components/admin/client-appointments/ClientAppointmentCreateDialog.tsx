@@ -438,6 +438,12 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       console.log('3️⃣ Inserindo no banco de dados...');
 
+      // Formatação segura da data para evitar problemas de timezone
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+
       // Criar agendamento
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
@@ -445,7 +451,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           cliente_id: selectedClient.id,
           barbeiro_id: selectedBarber.id,
           servico_id: selectedService.id,
-          data: format(selectedDate, 'yyyy-MM-dd'),
+          data: dataLocal,
           hora: selectedTime,
           status: 'agendado'
         })
