@@ -105,13 +105,13 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Gerar HTML dos serviços (formato mobile-first em lista)
     const servicesHtml = services.map(item => `
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+        <div style="margin-bottom: 8px;">
           <span style="color: #333; font-weight: 600; font-size: 14px;">✂️ ${item.name}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #888; font-size: 12px;">1 x R$ ${item.price.toFixed(2).replace('.', ',')}</span>
-          <span style="color: #1a1a2e; font-weight: 700; font-size: 15px;">R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #888; font-size: 13px;">1 un. × R$&nbsp;${item.price.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px;">R$&nbsp;${item.price.toFixed(2).replace('.', ',')}</span>
         </div>
       </div>
     `).join('');
@@ -125,13 +125,13 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`📦 Produto: ${item.name}, Qtd: ${qty}, Unit: ${unitPrice}, Total: ${subtotal}`);
       
       return `
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 12px; margin-bottom: 8px;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px;">
+      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
+        <div style="margin-bottom: 8px;">
           <span style="color: #333; font-weight: 600; font-size: 14px;">🛍️ ${item.name}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #888; font-size: 12px;">${qty} x R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
-          <span style="color: #1a1a2e; font-weight: 700; font-size: 15px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #888; font-size: 13px;">${qty} un. × R$&nbsp;${unitPrice.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px;">R$&nbsp;${subtotal.toFixed(2).replace('.', ',')}</span>
         </div>
       </div>
     `}).join('');
@@ -194,36 +194,36 @@ const handler = async (req: Request): Promise<Response> => {
 
               ${hasServices ? `
               <!-- SERVIÇOS -->
-              <div style="margin-bottom: 20px;">
+              <div style="margin-bottom: 24px;">
                 <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
                   ✂️ SERVIÇOS
                 </h3>
                 ${servicesHtml}
-                <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #f0f0f0; border-radius: 6px; margin-top: 8px;">
-                  <span style="color: #666; font-size: 13px; font-weight: 600;">Subtotal Serviços</span>
-                  <span style="color: #333; font-size: 14px; font-weight: 700;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</span>
+                <div style="display: flex; justify-content: space-between; padding: 12px 14px; background: #f0f0f0; border-radius: 6px; margin-top: 12px;">
+                  <span style="color: #555; font-size: 13px; font-weight: 600;">Subtotal Serviços</span>
+                  <span style="color: #333; font-size: 15px; font-weight: 700;">R$&nbsp;${servicesSubtotal.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
               ` : ''}
 
               ${hasProducts ? `
               <!-- PRODUTOS -->
-              <div style="margin-bottom: 20px;">
+              <div style="margin-bottom: 24px;">
                 <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
                   🛍️ PRODUTOS
                 </h3>
                 ${productsHtml}
-                <div style="display: flex; justify-content: space-between; padding: 10px 12px; background: #f0f0f0; border-radius: 6px; margin-top: 8px;">
-                  <span style="color: #666; font-size: 13px; font-weight: 600;">Subtotal Produtos</span>
-                  <span style="color: #333; font-size: 14px; font-weight: 700;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</span>
+                <div style="display: flex; justify-content: space-between; padding: 12px 14px; background: #f0f0f0; border-radius: 6px; margin-top: 12px;">
+                  <span style="color: #555; font-size: 13px; font-weight: 600;">Subtotal Produtos</span>
+                  <span style="color: #333; font-size: 15px; font-weight: 700;">R$&nbsp;${productsSubtotal.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
               ` : ''}
 
               <!-- TOTAL -->
-              <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 10px; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
-                <span style="color: white; font-weight: 700; font-size: 16px;">TOTAL</span>
-                <span style="color: #D4A574; font-weight: 800; font-size: 22px;">R$ ${formattedTotal}</span>
+              <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 10px; padding: 18px 16px; display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                <span style="color: white; font-weight: 700; font-size: 17px; letter-spacing: 0.5px;">TOTAL</span>
+                <span style="color: #D4A574; font-weight: 800; font-size: 24px;">R$&nbsp;${formattedTotal}</span>
               </div>
 
               <!-- FOOTER -->
