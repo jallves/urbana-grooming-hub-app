@@ -54,14 +54,20 @@ const ForceSignOutUser: React.FC = () => {
         throw usersError;
       }
 
-      // Buscar dados de email do auth para cada user_id
+      // Buscar dados de email do auth para cada user_id usando Edge Function
       let targetUser = null;
       let targetUserRole = null;
 
       if (userRoles) {
         for (const userRole of userRoles) {
-          const { data: authData } = await supabase.auth.admin.getUserById(userRole.user_id);
-          if (authData?.user?.email?.toLowerCase() === searchEmail.toLowerCase()) {
+          const { data: authData, error: authError } = await supabase.functions.invoke('admin-auth-operations', {
+            body: { 
+              operation: 'get_user_by_id',
+              user_id: userRole.user_id 
+            }
+          });
+          
+          if (!authError && authData?.user?.email?.toLowerCase() === searchEmail.toLowerCase()) {
             targetUser = authData.user;
             targetUserRole = userRole.role;
             break;
