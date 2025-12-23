@@ -210,9 +210,10 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
       if (clientError) {
         console.error('[ClientAuthContext] Erro ao criar registro de cliente:', clientError);
-        // Reverter criação do usuário se falhar
-        await supabase.auth.admin.deleteUser(authData.user.id).catch(() => {});
-        return { error: 'Erro ao finalizar cadastro' };
+        // Reverter criação do usuário se falhar - não podemos usar admin API no cliente
+        // O usuário órfão será tratado manualmente se necessário
+        console.warn('[ClientAuthContext] Usuário criado mas registro de cliente falhou. Pode precisar de limpeza manual.');
+        return { error: 'Erro ao finalizar cadastro. Entre em contato com o suporte.' };
       }
 
       // Criar role de client

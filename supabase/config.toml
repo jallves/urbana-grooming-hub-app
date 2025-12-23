@@ -52,3 +52,6 @@ verify_jwt = false
 [functions.send-appointment-cancellation-email]
 verify_jwt = false
 
+[functions.admin-auth-operations]
+verify_jwt = true
+

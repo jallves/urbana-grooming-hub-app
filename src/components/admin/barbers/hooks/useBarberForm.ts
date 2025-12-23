@@ -145,7 +145,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     }
   };
 
-  // Função para cadastrar/redefinir senha do barbeiro (via e-mail)
+  // Função para cadastrar/redefinir senha do barbeiro (via Edge Function segura)
   const handlePasswordChange = async (password: string) => {
     const email = form.getValues('email');
     if (!email) {
@@ -154,41 +154,63 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
     }
     setIsPasswordLoading(true);
 
-    let response;
-    if (isEditing) {
-      // Buscar usuário pelo e-mail: listUsers + local find
-      const { data, error: listError } = await supabase.auth.admin.listUsers({ perPage: 1000, page: 1 });
-      if (listError) {
-        toast.error('Erro ao buscar usuários', { description: listError.message });
-        setIsPasswordLoading(false);
-        return;
-      }
-      const user = data?.users?.find((u: any) => u.email === email);
-      if (!user) {
-        toast.error('Usuário não encontrado para esse e-mail');
-        setIsPasswordLoading(false);
-        return;
-      }
+    try {
+      if (isEditing) {
+        // Buscar usuário pelo e-mail usando Edge Function
+        const { data: findData, error: findError } = await supabase.functions.invoke('admin-auth-operations', {
+          body: { 
+            operation: 'find_user_by_email',
+            email 
+          }
+        });
 
-      response = await supabase.auth.admin.updateUserById(user.id, { password });
-      if (response.error) {
-        toast.error('Erro ao redefinir senha', { description: response.error.message });
+        if (findError) {
+          toast.error('Erro ao buscar usuários', { description: findError.message });
+          setIsPasswordLoading(false);
+          return;
+        }
+
+        if (!findData?.user) {
+          toast.error('Usuário não encontrado para esse e-mail');
+          setIsPasswordLoading(false);
+          return;
+        }
+
+        // Atualizar senha usando Edge Function
+        const { data: updateData, error: updateError } = await supabase.functions.invoke('admin-auth-operations', {
+          body: { 
+            operation: 'update_user_password',
+            user_id: findData.user.id,
+            password 
+          }
+        });
+
+        if (updateError || !updateData?.success) {
+          toast.error('Erro ao redefinir senha', { description: updateError?.message || updateData?.error });
+        } else {
+          toast.success('Senha redefinida com sucesso!');
+        }
       } else {
-        toast.success('Senha redefinida com sucesso!');
+        // Cadastro de novo usuário usando Edge Function
+        const { data: createData, error: createError } = await supabase.functions.invoke('admin-auth-operations', {
+          body: { 
+            operation: 'create_user',
+            email,
+            password,
+            email_confirm: true
+          }
+        });
+
+        if (createError || !createData?.success) {
+          toast.error('Erro ao criar usuário no Auth', { description: createError?.message || createData?.error });
+        } else {
+          toast.success('Senha cadastrada e e-mail enviado!');
+        }
       }
-    } else {
-      // Cadastro de novo usuário (envia e-mail, se não existir)
-      response = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-      });
-      if (response.error) {
-        toast.error('Erro ao criar usuário no Auth', { description: response.error.message });
-      } else {
-        toast.success('Senha cadastrada e e-mail enviado!');
-      }
+    } catch (error: any) {
+      toast.error('Erro na operação', { description: error.message });
     }
+    
     setIsPasswordLoading(false);
   };
 
