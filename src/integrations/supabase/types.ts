@@ -4274,6 +4274,24 @@ export type Database = {
           updated_at: string | null
           whatsapp: string | null
         }
+        Insert: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string | null
+          nome?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          data_nascimento?: string | null
+          email?: string | null
+          id?: string | null
+          nome?: string | null
+          updated_at?: string | null
+          whatsapp?: string | null
+        }
         Relationships: []
       }
       vw_agendamentos_sem_financeiro: {
