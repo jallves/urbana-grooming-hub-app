@@ -185,6 +185,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "appointment_extra_services_added_by_fkey"
+            columns: ["added_by"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointment_extra_services_appointment_id_fkey"
             columns: ["appointment_id"]
             isOneToOne: false
@@ -379,6 +386,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appointments_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       audit_log: {
@@ -533,6 +547,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "barber_availability_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       barber_commissions: {
@@ -587,6 +608,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
           {
@@ -700,6 +728,13 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: true
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barbers_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -1089,6 +1124,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "client_reviews_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       client_sessions: {
@@ -1227,6 +1269,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "comissoes_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       commission_payments: {
@@ -1281,6 +1330,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "commission_payments_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -1658,6 +1714,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "finance_transactions_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       financial_records: {
@@ -1756,6 +1819,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
           {
@@ -2464,6 +2534,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "fk_painel_barbeiros_staff"
+            columns: ["staff_id"]
+            isOneToOne: true
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       painel_clientes_legacy: {
@@ -3145,6 +3222,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "service_staff_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       services: {
@@ -3357,6 +3441,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "staff_module_access_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       staff_services: {
@@ -3397,6 +3488,13 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_services_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -3481,6 +3579,13 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "support_tickets_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -3689,6 +3794,13 @@ export type Database = {
             columns: ["staff_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "time_off_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -4107,6 +4219,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "vendas_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "vendas_cliente_id_fkey"
             columns: ["cliente_id"]
             isOneToOne: false
@@ -4226,6 +4345,13 @@ export type Database = {
             referencedRelation: "staff"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "working_hours_staff_id_fkey"
+            columns: ["staff_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
     }
@@ -4247,6 +4373,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -4291,6 +4424,30 @@ export type Database = {
           nome?: string | null
           updated_at?: string | null
           whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      staff_public_booking: {
+        Row: {
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          name: string | null
+          specialties: string | null
+        }
+        Insert: {
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          specialties?: string | null
+        }
+        Update: {
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          name?: string | null
+          specialties?: string | null
         }
         Relationships: []
       }
@@ -4358,6 +4515,13 @@ export type Database = {
             columns: ["barber_id"]
             isOneToOne: false
             referencedRelation: "staff"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "barber_commissions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "staff_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -4835,6 +4999,15 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_staff_for_booking: {
+        Args: never
+        Returns: {
+          id: string
+          image_url: string
+          name: string
+          specialties: string
+        }[]
       }
       get_staff_module_access: {
         Args: { staff_id_param: string }
