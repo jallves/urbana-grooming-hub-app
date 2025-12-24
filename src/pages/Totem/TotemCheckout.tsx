@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CreditCard, DollarSign, Plus, Trash2, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Plus, Minus, Trash2, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
@@ -39,7 +39,7 @@ const TotemCheckout: React.FC = () => {
   const [needsRecalculation, setNeedsRecalculation] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
-  const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number; imagem?: string }>>([]);
+  const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number; imagem?: string; estoque?: number }>>([]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -343,6 +343,9 @@ const TotemCheckout: React.FC = () => {
             ? { ...p, quantidade: p.quantidade + 1 }
             : p
         ));
+        toast.success('Quantidade atualizada!', {
+          description: `${product.nome} - ${existingProduct.quantidade + 1} unidades`
+        });
       } else {
         const productImage = product.imagens && Array.isArray(product.imagens) && product.imagens.length > 0 
           ? product.imagens[0] 
@@ -352,32 +355,60 @@ const TotemCheckout: React.FC = () => {
           nome: product.nome,
           preco: product.preco,
           quantidade: 1,
-          imagem: productImage
+          imagem: productImage,
+          estoque: product.estoque
         }]);
+        toast.success('Produto adicionado!', {
+          description: `${product.nome} - R$ ${product.preco.toFixed(2)}`
+        });
       }
-      
-      toast.success('Produto adicionado!', {
-        description: `${product.nome} - R$ ${product.preco.toFixed(2)}`
-      });
     }
   };
 
-  const handleRemoveProduct = (index: number) => {
-    const removedProduct = selectedProducts[index];
+  const handleIncreaseProductQuantity = (productId: string) => {
+    const product = selectedProducts.find(p => p.product_id === productId);
+    const availableProduct = availableProducts.find(p => p.id === productId);
     
-    if (removedProduct.quantidade > 1) {
-      setSelectedProducts(selectedProducts.map((p, i) =>
-        i === index
-          ? { ...p, quantidade: p.quantidade - 1 }
+    if (product && availableProduct) {
+      if (product.quantidade >= availableProduct.estoque) {
+        toast.error('Estoque insuficiente', {
+          description: `Disponível: ${availableProduct.estoque} unidades`
+        });
+        return;
+      }
+      
+      setSelectedProducts(selectedProducts.map(p =>
+        p.product_id === productId
+          ? { ...p, quantidade: p.quantidade + 1 }
           : p
       ));
-    } else {
-      setSelectedProducts(selectedProducts.filter((_, i) => i !== index));
-      toast.info('Produto removido', {
-        description: removedProduct.nome
-      });
     }
   };
+
+  const handleDecreaseProductQuantity = (productId: string) => {
+    const product = selectedProducts.find(p => p.product_id === productId);
+    
+    if (product) {
+      if (product.quantidade <= 1) {
+        // Remover produto
+        setSelectedProducts(selectedProducts.filter(p => p.product_id !== productId));
+        toast.info('Produto removido', {
+          description: product.nome
+        });
+      } else {
+        setSelectedProducts(selectedProducts.map(p =>
+          p.product_id === productId
+            ? { ...p, quantidade: p.quantidade - 1 }
+            : p
+        ));
+      }
+    }
+  };
+
+  // Cálculo automático do total de produtos
+  const productsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+  const extraServicesTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
+  const calculatedTotal = (resumo?.total || 0) + productsTotal;
 
   const startCheckout = async () => {
     if (!loading) {
@@ -940,15 +971,15 @@ const TotemCheckout: React.FC = () => {
                 </SelectContent>
               </Select>
 
-              {/* List of added products */}
+              {/* List of added products with quantity controls */}
               {selectedProducts.length > 0 && (
-                <div className="mt-2 space-y-1.5 max-h-24 overflow-y-auto">
-                  {selectedProducts.map((product, index) => (
-                    <div key={index} className="flex items-center justify-between p-1.5 sm:p-2 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
+                <div className="mt-2 space-y-1.5 max-h-32 overflow-y-auto">
+                  {selectedProducts.map((product) => (
+                    <div key={product.product_id} className="flex items-center justify-between p-2 sm:p-3 bg-urbana-black/40 rounded-lg border border-urbana-gold-vibrant/20">
                       <div className="flex items-center gap-2 flex-1 min-w-0">
                         {/* Product Thumbnail */}
                         {product.imagem ? (
-                          <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-md overflow-hidden bg-urbana-black/50 border border-urbana-gold-vibrant/30 flex-shrink-0">
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md overflow-hidden bg-urbana-black/50 border border-urbana-gold-vibrant/30 flex-shrink-0">
                             <img 
                               src={product.imagem} 
                               alt={product.nome}
@@ -956,31 +987,68 @@ const TotemCheckout: React.FC = () => {
                             />
                           </div>
                         ) : (
-                          <CheckCircle2 className="w-4 h-4 text-urbana-gold-vibrant flex-shrink-0" />
+                          <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-md bg-urbana-gold-vibrant/20 flex items-center justify-center flex-shrink-0">
+                            <CheckCircle2 className="w-4 h-4 text-urbana-gold-vibrant" />
+                          </div>
                         )}
                         <div className="flex flex-col min-w-0">
-                          <span className="text-[10px] sm:text-xs md:text-sm text-urbana-light font-medium truncate">
+                          <span className="text-xs sm:text-sm text-urbana-light font-medium truncate">
                             {product.nome}
                           </span>
-                          <span className="text-[9px] sm:text-[10px] text-urbana-light/60">x{product.quantidade}</span>
+                          <span className="text-[10px] sm:text-xs text-urbana-gold-vibrant font-bold">
+                            R$ {product.preco.toFixed(2)} un.
+                          </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="text-xs sm:text-sm text-urbana-gold-vibrant font-bold whitespace-nowrap">
+                      
+                      {/* Quantity Controls */}
+                      <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1 bg-urbana-black/60 rounded-lg border border-urbana-gold/30 p-1">
+                          <Button
+                            onClick={() => handleDecreaseProductQuantity(product.product_id)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-urbana-light hover:text-red-400 hover:bg-red-500/10"
+                            disabled={isUpdating}
+                          >
+                            {product.quantidade <= 1 ? (
+                              <Trash2 className="w-3.5 h-3.5" />
+                            ) : (
+                              <Minus className="w-3.5 h-3.5" />
+                            )}
+                          </Button>
+                          
+                          <span className="w-8 text-center text-sm sm:text-base font-bold text-urbana-gold">
+                            {product.quantidade}
+                          </span>
+                          
+                          <Button
+                            onClick={() => handleIncreaseProductQuantity(product.product_id)}
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 w-7 p-0 text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10"
+                            disabled={isUpdating || (product.estoque !== undefined && product.quantidade >= product.estoque)}
+                          >
+                            <Plus className="w-3.5 h-3.5" />
+                          </Button>
+                        </div>
+                        
+                        <span className="text-sm sm:text-base text-urbana-gold-vibrant font-bold whitespace-nowrap min-w-[70px] text-right">
                           R$ {(product.preco * product.quantidade).toFixed(2)}
                         </span>
-                        <Button
-                          onClick={() => handleRemoveProduct(index)}
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10 h-6 w-6 p-0"
-                          disabled={isUpdating}
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </Button>
                       </div>
                     </div>
                   ))}
+                  
+                  {/* Products Subtotal */}
+                  <div className="flex items-center justify-between pt-2 mt-2 border-t border-urbana-gold-vibrant/30">
+                    <span className="text-xs sm:text-sm text-urbana-light/70 font-medium">
+                      Subtotal Produtos ({selectedProducts.reduce((sum, p) => sum + p.quantidade, 0)} itens):
+                    </span>
+                    <span className="text-sm sm:text-base text-urbana-gold-vibrant font-bold">
+                      R$ {productsTotal.toFixed(2)}
+                    </span>
+                  </div>
                 </div>
               )}
             </Card>
