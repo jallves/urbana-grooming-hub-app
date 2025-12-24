@@ -410,11 +410,12 @@ const TotemCheckout: React.FC = () => {
   const extraServicesTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
   
   // O total REAL é: serviço principal + serviços extras (locais) + produtos
-  const baseServicePrice = resumo?.original_service?.preco || 0;
+  // IMPORTANTE: Usar appointment.servico?.preco como fallback caso resumo ainda não tenha carregado
+  const baseServicePrice = resumo?.original_service?.preco || appointment?.servico?.preco || 0;
   const grandTotal = baseServicePrice + extraServicesTotal + productsTotal;
   
-  // Total para display (usa o resumo se não tiver serviços extras locais ainda sincronizados)
-  const displayTotal = (resumo?.total || baseServicePrice) + extraServicesTotal - (resumo?.extra_services?.reduce((sum, s) => sum + s.preco, 0) || 0) + productsTotal;
+  // Flag para saber se podemos processar pagamento (tem dados mínimos)
+  const canProcessPayment = vendaId && sessionId && grandTotal > 0;
 
   const startCheckout = async () => {
     if (!loading) {
@@ -685,11 +686,24 @@ const TotemCheckout: React.FC = () => {
     console.log('   💰 Venda ID:', vendaId);
     console.log('   🎫 Session ID:', sessionId);
     console.log('   💵 Grand Total (calculado):', finalTotal);
+    console.log('   💈 Base Service Price:', baseServicePrice);
+    console.log('   ➕ Extra Services Total:', extraServicesTotal);
+    console.log('   🛒 Products Total:', productsTotal);
+    console.log('   📦 Resumo:', resumo);
+    console.log('   🎫 Appointment:', appointment);
     
-    if (!vendaId || !sessionId) {
-      console.error('❌ [PAYMENT] Dados do checkout ausentes:', { vendaId, sessionId });
+    if (!vendaId) {
+      console.error('❌ [PAYMENT] Venda ID ausente');
       toast.error('Erro', {
-        description: 'Dados do checkout não encontrados. Aguarde o carregamento.'
+        description: 'Venda não encontrada. Aguarde o carregamento do checkout.'
+      });
+      return;
+    }
+    
+    if (!sessionId) {
+      console.error('❌ [PAYMENT] Session ID ausente');
+      toast.error('Erro', {
+        description: 'Sessão não encontrada. Volte e tente novamente.'
       });
       return;
     }
@@ -697,7 +711,7 @@ const TotemCheckout: React.FC = () => {
     if (finalTotal <= 0) {
       console.error('❌ [PAYMENT] Total inválido:', finalTotal);
       toast.error('Erro', {
-        description: 'Total do pagamento é inválido.'
+        description: 'O valor total é zero. Adicione serviços ou produtos.'
       });
       return;
     }
@@ -1132,7 +1146,7 @@ const TotemCheckout: React.FC = () => {
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-urbana-light/80 font-medium">Subtotal:</span>
                     <span className="text-urbana-light font-bold">
-                      R$ {(resumo.original_service.preco + extraServicesTotal + productsTotal).toFixed(2)}
+                      R$ {grandTotal.toFixed(2)}
                     </span>
                   </div>
                   
@@ -1146,7 +1160,7 @@ const TotemCheckout: React.FC = () => {
                   <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30 mt-2">
                     <span className="text-sm sm:text-base md:text-lg font-black text-urbana-light">TOTAL:</span>
                     <span className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-                      R$ {(resumo.original_service.preco + extraServicesTotal + productsTotal - resumo.discount).toFixed(2)}
+                      R$ {grandTotal.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1160,13 +1174,37 @@ const TotemCheckout: React.FC = () => {
               <h3 className="text-sm sm:text-base md:text-lg lg:text-xl font-bold text-urbana-light mb-2 sm:mb-3 text-center">
                 Forma de Pagamento
               </h3>
+              
+              {/* Status indicator */}
+              {!canProcessPayment && (
+                <div className="mb-3 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                  <p className="text-xs text-yellow-400 text-center">
+                    {!vendaId ? '⏳ Carregando checkout...' : 
+                     !sessionId ? '⏳ Carregando sessão...' : 
+                     grandTotal <= 0 ? '⚠️ Adicione serviços ou produtos' : 
+                     'Aguarde...'}
+                  </p>
+                </div>
+              )}
+              
+              {/* Total display */}
+              <div className="mb-3 p-2 bg-urbana-gold/10 border border-urbana-gold/30 rounded-lg text-center">
+                <p className="text-xs text-urbana-light/70">Total a pagar:</p>
+                <p className="text-xl sm:text-2xl font-black text-urbana-gold">
+                  R$ {grandTotal.toFixed(2)}
+                </p>
+              </div>
 
               <div className="grid grid-cols-2 gap-2 sm:gap-3">
                 {/* PIX Button */}
                 <button
                   onClick={() => handlePaymentMethod('pix')}
-                  disabled={processing || isUpdating}
-                  className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  disabled={processing || isUpdating || !canProcessPayment}
+                  className={`group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 rounded-xl transition-all duration-100 active:scale-98 overflow-hidden ${
+                    canProcessPayment && !processing && !isUpdating
+                      ? 'border-urbana-gold/50 active:border-urbana-gold cursor-pointer'
+                      : 'border-urbana-gray/30 opacity-50 cursor-not-allowed'
+                  }`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
@@ -1181,8 +1219,12 @@ const TotemCheckout: React.FC = () => {
                 {/* Card Button */}
                 <button
                   onClick={() => handlePaymentMethod('card')}
-                  disabled={processing || isUpdating}
-                  className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+                  disabled={processing || isUpdating || !canProcessPayment}
+                  className={`group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 rounded-xl transition-all duration-100 active:scale-98 overflow-hidden ${
+                    canProcessPayment && !processing && !isUpdating
+                      ? 'border-urbana-gold/50 active:border-urbana-gold cursor-pointer'
+                      : 'border-urbana-gray/30 opacity-50 cursor-not-allowed'
+                  }`}
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                   <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
@@ -1194,6 +1236,16 @@ const TotemCheckout: React.FC = () => {
                   </div>
                 </button>
               </div>
+              
+              {/* Debug info - hidden in production */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-2 p-2 bg-gray-800/50 rounded text-[10px] text-gray-400 space-y-1">
+                  <p>vendaId: {vendaId || 'null'}</p>
+                  <p>sessionId: {sessionId || 'null'}</p>
+                  <p>grandTotal: {grandTotal}</p>
+                  <p>canProcess: {canProcessPayment ? 'true' : 'false'}</p>
+                </div>
+              )}
             </Card>
           </div>
         </div>
