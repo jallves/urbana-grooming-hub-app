@@ -370,17 +370,42 @@ Deno.serve(async (req) => {
           throw new Error('Erro ao criar comissão')
         }
 
-        // Criar também na tabela de comissões do barbeiro
-        await supabase
-          .from('barber_commissions')
-          .insert({
-            barber_id,
-            appointment_id,
-            amount: commissionAmount,
-            commission_rate: commissionRate,
-            status: 'pending',
-            appointment_source: appointment_id ? 'painel' : 'totem'
-          })
+        // Verificar se é serviço extra (isExtra) - se não for, o trigger já cria a comissão
+        const isExtraService = service.isExtra === true
+        
+        // Se for serviço extra OU não tiver appointment_id (venda direta), criar em barber_commissions
+        // Serviço principal com appointment_id já é criado pelo trigger calculate_commission_painel
+        if (isExtraService || !appointment_id) {
+          // Verificar se já existe para evitar duplicação
+          const { data: existingCommission } = await supabase
+            .from('barber_commissions')
+            .select('id')
+            .eq('appointment_id', appointment_id)
+            .eq('barber_id', barber_id)
+            .eq('amount', commissionAmount)
+            .eq('item_name', serviceName)
+            .maybeSingle()
+          
+          if (!existingCommission) {
+            await supabase
+              .from('barber_commissions')
+              .insert({
+                barber_id,
+                appointment_id,
+                amount: commissionAmount,
+                commission_rate: commissionRate,
+                status: 'pending',
+                appointment_source: 'totem_appointment',
+                commission_type: 'service',
+                item_name: serviceName
+              })
+            console.log('✅ Comissão criada em barber_commissions:', serviceName, commissionAmount)
+          } else {
+            console.log('⚠️ Comissão já existe em barber_commissions, pulando:', serviceName)
+          }
+        } else {
+          console.log('ℹ️ Serviço principal - comissão já criada pelo trigger, pulando barber_commissions')
+        }
 
         console.log('✅ Comissão criada:', {
           id: commissionRecord.id,
@@ -640,25 +665,42 @@ Deno.serve(async (req) => {
               type: commissionType
             })
 
-            // Criar registro em barber_commissions
-            const { error: barberCommissionError } = await supabase
+            // Verificar se já existe comissão para evitar duplicação
+            const { data: existingProductCommission } = await supabase
               .from('barber_commissions')
-              .insert({
-                barber_id,
-                appointment_id,
-                amount: commissionAmount,
-                commission_rate: commissionRate || 0,
-                status: 'pending',
-                appointment_source: appointment_id ? 'totem_appointment' : 'totem_product'
-              })
+              .select('id')
+              .eq('appointment_id', appointment_id)
+              .eq('barber_id', barber_id)
+              .eq('amount', commissionAmount)
+              .eq('item_name', productName)
+              .maybeSingle()
+            
+            if (!existingProductCommission) {
+              // Criar registro em barber_commissions com item_name e commission_type
+              const { error: barberCommissionError } = await supabase
+                .from('barber_commissions')
+                .insert({
+                  barber_id,
+                  appointment_id,
+                  amount: commissionAmount,
+                  commission_rate: commissionRate || 0,
+                  status: 'pending',
+                  appointment_source: appointment_id ? 'totem_appointment' : 'totem_product',
+                  commission_type: 'product',
+                  item_name: productName
+                })
 
-            if (barberCommissionError) {
-              console.error('❌ Erro ao criar barber_commission:', barberCommissionError)
+              if (barberCommissionError) {
+                console.error('❌ Erro ao criar barber_commission:', barberCommissionError)
+              } else {
+                console.log('✅ Barber commission criada:', {
+                  amount: commissionAmount,
+                  rate: commissionRate,
+                  item_name: productName
+                })
+              }
             } else {
-              console.log('✅ Barber commission criada:', {
-                amount: commissionAmount,
-                rate: commissionRate
-              })
+              console.log('⚠️ Comissão de produto já existe, pulando:', productName)
             }
           }
         }
