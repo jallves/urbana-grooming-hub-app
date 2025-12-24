@@ -403,10 +403,16 @@ const TotemPaymentCard: React.FC = () => {
           <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
             Pagamento com Cartão
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-green-400 mt-0.5 flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
-            PayGo conectado
-          </p>
+          {isAndroidAvailable && isPinpadConnected ? (
+            <p className="text-xs sm:text-sm md:text-base text-green-400 mt-0.5 flex items-center justify-center gap-1">
+              <CheckCircle2 className="w-3 h-3" />
+              PayGo conectado
+            </p>
+          ) : (
+            <p className="text-xs sm:text-sm md:text-base text-urbana-gold mt-0.5">
+              Modo demonstração
+            </p>
+          )}
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
