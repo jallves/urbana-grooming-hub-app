@@ -736,34 +736,50 @@ const TotemCheckout: React.FC = () => {
       console.log('   🛒 Produtos:', productsTotal);
       console.log('   💰 Total final:', finalTotal);
       
-      // 🔒 Salvar produtos ANTES do pagamento
+      // 🔒 Salvar produtos ANTES do pagamento (com verificação de duplicatas)
       if (selectedProducts.length > 0) {
         console.log('💾 Salvando produtos em vendas_itens ANTES do pagamento');
         
-        const productItems = selectedProducts.map(product => ({
-          venda_id: vendaId,
-          tipo: 'PRODUTO',
-          ref_id: product.product_id,
-          nome: product.nome,
-          quantidade: product.quantidade,
-          preco_unit: product.preco,
-          total: product.preco * product.quantidade
-        }));
-
-        const { error: itemsError } = await supabase
+        // Verificar produtos já existentes para evitar duplicatas
+        const { data: existingProducts } = await supabase
           .from('vendas_itens')
-          .insert(productItems);
+          .select('ref_id')
+          .eq('venda_id', vendaId)
+          .eq('tipo', 'PRODUTO');
+        
+        const existingProductIds = new Set(existingProducts?.map(p => p.ref_id) || []);
+        
+        // Filtrar apenas produtos que ainda não foram adicionados
+        const newProducts = selectedProducts.filter(p => !existingProductIds.has(p.product_id));
+        
+        if (newProducts.length > 0) {
+          const productItems = newProducts.map(product => ({
+            venda_id: vendaId,
+            tipo: 'PRODUTO',
+            ref_id: product.product_id,
+            nome: product.nome,
+            quantidade: product.quantidade,
+            preco_unit: product.preco,
+            total: product.preco * product.quantidade
+          }));
 
-        if (itemsError) {
-          console.error('❌ Erro ao salvar produtos:', itemsError);
-          toast.error('Erro ao adicionar produtos', {
-            description: 'Tente novamente'
-          });
-          setProcessing(false);
-          return;
+          const { error: itemsError } = await supabase
+            .from('vendas_itens')
+            .insert(productItems);
+
+          if (itemsError) {
+            console.error('❌ Erro ao salvar produtos:', itemsError);
+            toast.error('Erro ao adicionar produtos', {
+              description: 'Tente novamente'
+            });
+            setProcessing(false);
+            return;
+          }
+
+          console.log('✅ Produtos salvos com sucesso:', newProducts.length);
+        } else {
+          console.log('ℹ️ Produtos já existem na venda, pulando inserção');
         }
-
-        console.log('✅ Produtos salvos com sucesso');
       }
 
       // Atualizar total da venda no banco
