@@ -678,39 +678,37 @@ const TotemCheckout: React.FC = () => {
   };
 
   const handlePaymentMethod = async (method: 'pix' | 'card') => {
+    // Usa o grandTotal já calculado automaticamente (baseServicePrice + extraServicesTotal + productsTotal)
+    const finalTotal = grandTotal;
+    
     console.log('💳 [PAYMENT] Iniciando pagamento:', method);
     console.log('   💰 Venda ID:', vendaId);
     console.log('   🎫 Session ID:', sessionId);
-    console.log('   💵 Total:', resumo?.total);
+    console.log('   💵 Grand Total (calculado):', finalTotal);
     
-    if (!vendaId || !sessionId || !resumo) {
-      console.error('❌ [PAYMENT] Dados do checkout ausentes:', { vendaId, sessionId, resumo });
+    if (!vendaId || !sessionId) {
+      console.error('❌ [PAYMENT] Dados do checkout ausentes:', { vendaId, sessionId });
       toast.error('Erro', {
-        description: 'Dados do checkout não encontrados'
+        description: 'Dados do checkout não encontrados. Aguarde o carregamento.'
       });
       return;
     }
 
-    // NÃO mais verifica needsRecalculation - cálculo é automático
+    if (finalTotal <= 0) {
+      console.error('❌ [PAYMENT] Total inválido:', finalTotal);
+      toast.error('Erro', {
+        description: 'Total do pagamento é inválido.'
+      });
+      return;
+    }
 
     setProcessing(true);
     
     try {
-      // Calcular total REAL incluindo serviços extras locais e produtos
-      const extraServicesTotalLocal = extraServices.reduce((sum, s) => sum + s.preco, 0);
-      const productsTotalLocal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
-      
-      // O resumo.total inclui o serviço principal + extras que já foram sincronizados
-      // Mas os serviços extras adicionados DEPOIS precisam ser somados separadamente
-      // Para evitar duplicação, calculamos baseado no serviço original + extras locais + produtos
-      const baseTotal = resumo.original_service.preco;
-      const resumoExtrasTotal = resumo.extra_services.reduce((sum, s) => sum + s.preco, 0);
-      const finalTotal = baseTotal + extraServicesTotalLocal + productsTotalLocal;
-      
       console.log('📊 Cálculo do total final:');
-      console.log('   💈 Serviço base:', baseTotal);
-      console.log('   ➕ Extras locais:', extraServicesTotalLocal);
-      console.log('   🛒 Produtos:', productsTotalLocal);
+      console.log('   💈 Serviço base:', baseServicePrice);
+      console.log('   ➕ Extras:', extraServicesTotal);
+      console.log('   🛒 Produtos:', productsTotal);
       console.log('   💰 Total final:', finalTotal);
       
       // 🔒 Salvar produtos ANTES do pagamento
