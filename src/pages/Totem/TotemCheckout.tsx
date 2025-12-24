@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CreditCard, DollarSign, Plus, Minus, Trash2, CheckCircle2, Sparkles, XCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Plus, Minus, Trash2, CheckCircle2, XCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
@@ -36,7 +36,7 @@ const TotemCheckout: React.FC = () => {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [availableServices, setAvailableServices] = useState<any[]>([]);
   const [extraServices, setExtraServices] = useState<Array<{ service_id: string; nome: string; preco: number }>>([]);
-  const [needsRecalculation, setNeedsRecalculation] = useState(false);
+  // needsRecalculation removido - cálculo agora é automático
   const [isUpdating, setIsUpdating] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number; imagem?: string; estoque?: number }>>([]);
@@ -239,7 +239,7 @@ const TotemCheckout: React.FC = () => {
         setVendaId(venda.id);
         setSessionId(session.id);
         setResumo(resumoData);
-        setNeedsRecalculation(false);
+        // Cálculo automático - não precisa de needsRecalculation
         
         console.log('✅ Checkout carregado - Venda:', venda.id, 'Total: R$', venda.total);
         console.log('📋 Resumo:', resumoData);
@@ -292,7 +292,7 @@ const TotemCheckout: React.FC = () => {
         nome: service.nome,
         preco: service.preco
       }]);
-      setNeedsRecalculation(true);
+      // NÃO mais precisa de needsRecalculation - cálculo é automático
       toast.success('Serviço adicionado!', {
         description: `${service.nome} - R$ ${service.preco.toFixed(2)}`
       });
@@ -322,7 +322,7 @@ const TotemCheckout: React.FC = () => {
     console.log('✅ Serviço extra removido com sucesso');
 
     setExtraServices(extraServices.filter((_, i) => i !== index));
-    setNeedsRecalculation(true);
+    // NÃO mais precisa de needsRecalculation - cálculo é automático
     toast.info('Serviço removido', {
       description: removedService.nome
     });
@@ -405,16 +405,22 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
-  // Cálculo automático do total de produtos
+  // Cálculo automático do total - SEMPRE recalcula com base nos valores atuais
   const productsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
   const extraServicesTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
-  const calculatedTotal = (resumo?.total || 0) + productsTotal;
+  
+  // O total REAL é: serviço principal + serviços extras (locais) + produtos
+  const baseServicePrice = resumo?.original_service?.preco || 0;
+  const grandTotal = baseServicePrice + extraServicesTotal + productsTotal;
+  
+  // Total para display (usa o resumo se não tiver serviços extras locais ainda sincronizados)
+  const displayTotal = (resumo?.total || baseServicePrice) + extraServicesTotal - (resumo?.extra_services?.reduce((sum, s) => sum + s.preco, 0) || 0) + productsTotal;
 
   const startCheckout = async () => {
     if (!loading) {
       setLoading(true);
     }
-    setIsUpdating(needsRecalculation);
+    // isUpdating já é gerenciado pelo loading
     
     try {
       console.log('🛒 [CHECKOUT] Iniciando checkout...');
@@ -525,7 +531,7 @@ const TotemCheckout: React.FC = () => {
             setVendaId(venda.id);
             setSessionId(session.id);
             setResumo(resumoData);
-            setNeedsRecalculation(false);
+            // Cálculo automático - não precisa de needsRecalculation
             
             if (isUpdating) {
               toast.success('Total atualizado!', {
@@ -556,7 +562,7 @@ const TotemCheckout: React.FC = () => {
       setVendaId(data.venda_id);
       setSessionId(data.session_id);
       setResumo(data.resumo);
-      setNeedsRecalculation(false);
+      // Cálculo automático - não precisa de needsRecalculation
       
       if (isUpdating) {
         toast.success('Total atualizado!', {
@@ -654,7 +660,7 @@ const TotemCheckout: React.FC = () => {
 
           setVendaId(venda.id);
           setResumo(resumoData);
-          setNeedsRecalculation(false);
+          // Cálculo automático - não precisa de needsRecalculation
           
           toast.success('Total atualizado!', {
             description: `Novo total: R$ ${venda.total.toFixed(2)}`
@@ -685,18 +691,29 @@ const TotemCheckout: React.FC = () => {
       return;
     }
 
-    if (needsRecalculation) {
-      console.warn('⚠️ [PAYMENT] Total precisa ser atualizado');
-      toast.warning('Atualize o total primeiro', {
-        description: 'Clique em "Atualizar Total" para recalcular com os novos serviços'
-      });
-      return;
-    }
+    // NÃO mais verifica needsRecalculation - cálculo é automático
 
     setProcessing(true);
     
     try {
-      // 🔒 CORREÇÃO CRÍTICA: Salvar produtos ANTES do pagamento
+      // Calcular total REAL incluindo serviços extras locais e produtos
+      const extraServicesTotalLocal = extraServices.reduce((sum, s) => sum + s.preco, 0);
+      const productsTotalLocal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+      
+      // O resumo.total inclui o serviço principal + extras que já foram sincronizados
+      // Mas os serviços extras adicionados DEPOIS precisam ser somados separadamente
+      // Para evitar duplicação, calculamos baseado no serviço original + extras locais + produtos
+      const baseTotal = resumo.original_service.preco;
+      const resumoExtrasTotal = resumo.extra_services.reduce((sum, s) => sum + s.preco, 0);
+      const finalTotal = baseTotal + extraServicesTotalLocal + productsTotalLocal;
+      
+      console.log('📊 Cálculo do total final:');
+      console.log('   💈 Serviço base:', baseTotal);
+      console.log('   ➕ Extras locais:', extraServicesTotalLocal);
+      console.log('   🛒 Produtos:', productsTotalLocal);
+      console.log('   💰 Total final:', finalTotal);
+      
+      // 🔒 Salvar produtos ANTES do pagamento
       if (selectedProducts.length > 0) {
         console.log('💾 Salvando produtos em vendas_itens ANTES do pagamento');
         
@@ -723,31 +740,28 @@ const TotemCheckout: React.FC = () => {
           return;
         }
 
-        // Atualizar total da venda
-        const productsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
-        const newTotal = resumo.total + productsTotal;
-
-        const { error: updateError } = await supabase
-          .from('vendas')
-          .update({
-            subtotal: newTotal,
-            total: newTotal
-          })
-          .eq('id', vendaId);
-
-        if (updateError) {
-          console.error('❌ Erro ao atualizar total:', updateError);
-        }
-
-        console.log('✅ Produtos salvos com sucesso - Novo total:', newTotal);
+        console.log('✅ Produtos salvos com sucesso');
       }
-      
-      const totalWithProducts = resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+
+      // Atualizar total da venda no banco
+      const { error: updateError } = await supabase
+        .from('vendas')
+        .update({
+          subtotal: finalTotal,
+          total: finalTotal
+        })
+        .eq('id', vendaId);
+
+      if (updateError) {
+        console.error('❌ Erro ao atualizar total:', updateError);
+      } else {
+        console.log('✅ Total atualizado no banco:', finalTotal);
+      }
 
       console.log('✅ [PAYMENT] Navegando para tela de pagamento:', method);
       console.log('   💰 Venda ID:', vendaId);
       console.log('   🎫 Session ID:', sessionId);
-      console.log('   💵 Total com produtos:', totalWithProducts);
+      console.log('   💵 Total final:', finalTotal);
 
       if (method === 'pix') {
         navigate('/totem/payment-pix', {
@@ -756,7 +770,7 @@ const TotemCheckout: React.FC = () => {
             session_id: sessionId,
             appointment: appointment,
             client: client,
-            total: totalWithProducts,
+            total: finalTotal,
             selectedProducts: selectedProducts,
             extraServices: extraServices,
             resumo: resumo
@@ -769,7 +783,7 @@ const TotemCheckout: React.FC = () => {
             session_id: sessionId,
             appointment: appointment,
             client: client,
-            total: totalWithProducts,
+            total: finalTotal,
             selectedProducts: selectedProducts,
             extraServices: extraServices,
             resumo: resumo
@@ -896,19 +910,7 @@ const TotemCheckout: React.FC = () => {
                   </SelectContent>
                 </Select>
                 
-                {needsRecalculation && (
-                  <Button
-                    onClick={handleRecalculate}
-                    disabled={isUpdating}
-                    className="h-9 sm:h-10 md:h-11 px-2 sm:px-3 text-xs sm:text-sm bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold text-urbana-black font-bold hover:from-urbana-gold-dark hover:via-urbana-gold hover:to-urbana-gold-light shadow-lg shadow-urbana-gold/30 animate-pulse"
-                  >
-                    {isUpdating ? (
-                      <div className="w-4 h-4 border-2 border-urbana-black/30 border-t-urbana-black rounded-full animate-spin" />
-                    ) : (
-                      <Sparkles className="w-4 h-4 sm:w-5 sm:h-5" />
-                    )}
-                  </Button>
-                )}
+                {/* Botão de recalcular removido - cálculo agora é automático */}
               </div>
 
               {/* List of added extra services */}
@@ -1127,11 +1129,13 @@ const TotemCheckout: React.FC = () => {
                   </div>
                 ))}
 
-                {/* Totals */}
+                {/* Totals - Cálculo automático */}
                 <div className="space-y-2 pt-2 mt-2 border-t-2 border-urbana-gold/40">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
                     <span className="text-urbana-light/80 font-medium">Subtotal:</span>
-                    <span className="text-urbana-light font-bold">R$ {(resumo.subtotal + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}</span>
+                    <span className="text-urbana-light font-bold">
+                      R$ {(resumo.original_service.preco + extraServicesTotal + productsTotal).toFixed(2)}
+                    </span>
                   </div>
                   
                   {resumo.discount > 0 && (
@@ -1144,7 +1148,7 @@ const TotemCheckout: React.FC = () => {
                   <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30 mt-2">
                     <span className="text-sm sm:text-base md:text-lg font-black text-urbana-light">TOTAL:</span>
                     <span className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-                      R$ {(resumo.total + selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0)).toFixed(2)}
+                      R$ {(resumo.original_service.preco + extraServicesTotal + productsTotal - resumo.discount).toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -1163,7 +1167,7 @@ const TotemCheckout: React.FC = () => {
                 {/* PIX Button */}
                 <button
                   onClick={() => handlePaymentMethod('pix')}
-                  disabled={processing || needsRecalculation || isUpdating}
+                  disabled={processing || isUpdating}
                   className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -1179,7 +1183,7 @@ const TotemCheckout: React.FC = () => {
                 {/* Card Button */}
                 <button
                   onClick={() => handlePaymentMethod('card')}
-                  disabled={processing || needsRecalculation || isUpdating}
+                  disabled={processing || isUpdating}
                   className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
                 >
                   <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
