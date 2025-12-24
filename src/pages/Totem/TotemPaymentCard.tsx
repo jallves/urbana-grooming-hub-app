@@ -21,6 +21,11 @@ const TotemPaymentCard: React.FC = () => {
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
+  // Estado para simulação (quando TEF não disponível)
+  const [isSimulating, setIsSimulating] = useState(false);
+  const [simulationTimeLeft, setSimulationTimeLeft] = useState(5);
+  const [simulationStatus, setSimulationStatus] = useState<'processing' | 'approved'>('processing');
+  
   // Ref para evitar finalização duplicada
   const finalizingRef = useRef(false);
   const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
@@ -214,30 +219,31 @@ const TotemPaymentCard: React.FC = () => {
   }, [isAndroidAvailable, isPinpadConnected, tefProcessing, processing, paymentStarted, isCheckingConnection]);
 
   const handlePaymentType = async (type: 'credit' | 'debit') => {
-    // Verificar se TEF está disponível
-    if (!isAndroidAvailable || !isPinpadConnected) {
-      toast.error('PayGo não detectado', {
-        description: 'Verifique se o aplicativo PayGo está instalado'
-      });
-      return;
-    }
-
     console.log('💳 [CARD] ═══════════════════════════════════════');
     console.log('💳 [CARD] INICIANDO PAGAMENTO COM CARTÃO');
     console.log('💳 [CARD] Tipo:', type);
     console.log('💳 [CARD] Venda ID:', venda_id);
     console.log('💳 [CARD] Total:', total);
+    console.log('💳 [CARD] TEF disponível:', isAndroidAvailable && isPinpadConnected);
     console.log('💳 [CARD] ═══════════════════════════════════════');
     
     setPaymentType(type);
     setProcessing(true);
     setError(null);
-    setPaymentStarted(true);
     finalizingRef.current = false;
 
+    // Se TEF não disponível, usar simulação
+    if (!isAndroidAvailable || !isPinpadConnected) {
+      console.log('🎭 [CARD] TEF não disponível, iniciando modo simulação...');
+      setIsSimulating(true);
+      setSimulationStatus('processing');
+      setSimulationTimeLeft(5);
+      return;
+    }
+
+    setPaymentStarted(true);
+
     try {
-      // Criar registro de pagamento PRIMEIRO e aguardar sincronização
-      console.log('💳 [CARD] Criando registro de pagamento...');
       const { data: payment, error: paymentError } = await supabase
         .from('totem_payments')
         .insert({
@@ -250,15 +256,10 @@ const TotemPaymentCard: React.FC = () => {
         .select()
         .single();
 
-      if (paymentError) {
-        console.error('❌ [CARD] Erro ao criar registro de pagamento:', paymentError);
-        throw paymentError;
-      }
+      if (paymentError) throw paymentError;
 
-      console.log('✅ [CARD] Registro de pagamento criado:', payment.id);
+      console.log('✅ [CARD] Registro criado:', payment.id);
 
-      // Chamar TEF Android (PayGo)
-      console.log('💳 [CARD] Iniciando TEF Android...');
       const success = await iniciarPagamentoTEF({
         ordemId: payment.id,
         valor: total,
@@ -267,72 +268,110 @@ const TotemPaymentCard: React.FC = () => {
       });
 
       if (!success) {
-        console.error('❌ [CARD] Falha ao iniciar TEF');
-        toast.error('Erro ao iniciar pagamento', {
-          description: 'Verifique se o PayGo está funcionando corretamente'
-        });
+        toast.error('Erro ao iniciar pagamento');
         setProcessing(false);
         setPaymentType(null);
         setPaymentStarted(false);
-      } else {
-        console.log('✅ [CARD] TEF iniciado, aguardando resposta do PayGo...');
       }
 
     } catch (error) {
       console.error('❌ Erro no pagamento:', error);
-      toast.error('Erro no pagamento', {
-        description: 'Ocorreu um erro ao processar o pagamento.'
-      });
+      toast.error('Erro no pagamento');
       setProcessing(false);
       setPaymentType(null);
       setPaymentStarted(false);
     }
   };
 
+  // Timer para simulação
+  useEffect(() => {
+    if (!isSimulating || simulationStatus !== 'processing') return;
+
+    const interval = setInterval(() => {
+      setSimulationTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(interval);
+          setSimulationStatus('approved');
+          
+          setTimeout(() => {
+            finalizePayment({
+              nsu: `SIM${Date.now()}`,
+              autorizacao: `AUTH${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+              bandeira: paymentType === 'credit' ? 'VISA' : 'MASTERCARD'
+            });
+          }, 1500);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [isSimulating, simulationStatus, finalizePayment, paymentType]);
+
   const handleCancelPayment = () => {
-    cancelarPagamentoTEF();
+    if (isSimulating) {
+      setIsSimulating(false);
+      setSimulationStatus('processing');
+    } else {
+      cancelarPagamentoTEF();
+    }
     setProcessing(false);
     setPaymentType(null);
     setPaymentStarted(false);
     toast.info('Pagamento cancelado');
   };
 
-  // Tela de erro quando TEF não está disponível (APENAS após delay de verificação)
-  if (!isCheckingConnection && (!isAndroidAvailable || !isPinpadConnected)) {
+  // Tela de simulação
+  if (isSimulating && paymentType) {
+    const paymentTypeLabel = paymentType === 'credit' ? 'Crédito' : 'Débito';
+    
     return (
-      <div className="fixed inset-0 w-screen h-screen flex flex-col p-6 font-poppins overflow-hidden relative">
+      <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 font-poppins overflow-hidden relative">
         <div className="absolute inset-0 z-0">
           <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-urbana-black/80" />
+          <div className="absolute inset-0 bg-urbana-black/60" />
         </div>
 
         <div className="flex-1 flex items-center justify-center z-10">
-          <Card className="max-w-lg p-8 bg-black/50 backdrop-blur-xl border-2 border-red-500/50 text-center">
-            <WifiOff className="w-20 h-20 text-red-500 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-white mb-4">PayGo Não Detectado</h2>
-            <p className="text-gray-300 mb-6">
-              O aplicativo PayGo Integrado não foi detectado. Verifique se está instalado e configurado corretamente.
-            </p>
-            <div className="space-y-3">
-              <Button 
-                onClick={() => window.location.reload()} 
-                className="w-full bg-urbana-gold hover:bg-urbana-gold-dark"
-              >
-                Tentar Novamente
-              </Button>
-              <Button 
-                onClick={() => navigate('/totem/checkout', { state: location.state })} 
-                variant="outline"
-                className="w-full border-gray-500 text-gray-300"
-              >
-                Voltar
-              </Button>
-            </div>
+          <Card className="w-full max-w-xl p-6 bg-black/30 backdrop-blur-xl border-2 border-urbana-gold/30 text-center rounded-2xl">
+            {simulationStatus === 'processing' ? (
+              <>
+                <h2 className="text-2xl font-bold text-urbana-gold mb-4">Pagamento {paymentTypeLabel}</h2>
+                
+                <div className="relative w-32 h-32 mx-auto my-6 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center animate-pulse">
+                  <CreditCard className="w-16 h-16 text-urbana-black" />
+                </div>
+
+                <p className="text-3xl font-bold text-urbana-gold mb-4">R$ {total?.toFixed(2)}</p>
+                
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-urbana-gold" />
+                  <span className="text-gray-300">Processando... ({simulationTimeLeft}s)</span>
+                </div>
+
+                <p className="text-sm text-gray-400 mb-4">Modo simulação - Aprovação automática</p>
+
+                <Button onClick={handleCancelPayment} variant="outline" className="border-red-500/50 text-red-400">
+                  Cancelar
+                </Button>
+              </>
+            ) : (
+              <div className="py-8">
+                <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-gradient-to-br from-emerald-400 to-green-500 flex items-center justify-center">
+                  <CheckCircle2 className="w-12 h-12 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-green-400">Pagamento Aprovado!</h3>
+                <p className="text-gray-300 mt-2">Finalizando...</p>
+              </div>
+            )}
           </Card>
         </div>
       </div>
     );
   }
+
+  // Renderização principal - Seleção de tipo de cartão
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
