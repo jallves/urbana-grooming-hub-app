@@ -418,6 +418,15 @@ Deno.serve(async (req) => {
         throw new Error('Venda não encontrada')
       }
 
+      // 🔒 VERIFICAR SE JÁ EXISTE TRANSAÇÃO FINANCEIRA PARA ESTA VENDA (idempotência)
+      const { data: existingTransactions } = await supabase
+        .from('financial_records')
+        .select('id')
+        .eq('appointment_id', venda.agendamento_id)
+        .limit(1)
+
+      const hasFinancialRecords = existingTransactions && existingTransactions.length > 0
+
       // Verificar se venda já foi finalizada
       if (venda.status === 'PAGA' || venda.status === 'FINALIZADA') {
         console.log('⚠️ Venda já foi finalizada anteriormente')
@@ -425,7 +434,8 @@ Deno.serve(async (req) => {
           JSON.stringify({
             success: true,
             message: 'Checkout já foi finalizado anteriormente',
-            already_completed: true
+            already_completed: true,
+            has_financial_records: hasFinancialRecords
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
@@ -542,30 +552,36 @@ Deno.serve(async (req) => {
       }
       const normalizedPaymentMethod = paymentMethodMap[paymentMethodRaw] || paymentMethodRaw
 
-      console.log('🔄 Payment method normalizado:', payment.payment_method, '->', normalizedPaymentMethod)
+      console.log('🔄 Payment method normalizado:', payment?.payment_method, '->', normalizedPaymentMethod)
 
-      // 7. Chamar edge function para criar registros financeiros completos
-      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
-        'create-financial-transaction',
-        {
-          body: {
-            appointment_id: venda.agendamento_id,
-            client_id: venda.cliente_id,
-            barber_id: barber_staff_id,
-            items: erpItems,
-            payment_method: normalizedPaymentMethod,
-            discount_amount: Number(venda.desconto) || 0,
-            notes: `Checkout Totem - Sessão ${session_id}`
-          }
-        }
-      )
-
-      if (erpError) {
-        console.error('❌ Erro ao integrar com ERP:', erpError)
-        // Não bloquear finalização por erro no ERP, apenas logar
-        console.log('⚠️ Continuando finalização sem integração ERP')
+      // 🔒 IDEMPOTÊNCIA: Só chamar ERP se não existir transação financeira
+      if (hasFinancialRecords) {
+        console.log('⚠️ Transações financeiras já existem para este agendamento - PULANDO integração ERP')
       } else {
-        console.log('✅ ERP Financeiro integrado com sucesso:', erpResult)
+        // 7. Chamar edge function para criar registros financeiros completos
+        console.log('💰 Criando transações financeiras...')
+        const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+          'create-financial-transaction',
+          {
+            body: {
+              appointment_id: venda.agendamento_id,
+              client_id: venda.cliente_id,
+              barber_id: barber_staff_id,
+              items: erpItems,
+              payment_method: normalizedPaymentMethod,
+              discount_amount: Number(venda.desconto) || 0,
+              notes: `Checkout Totem - Sessão ${session_id}`
+            }
+          }
+        )
+
+        if (erpError) {
+          console.error('❌ Erro ao integrar com ERP:', erpError)
+          // Não bloquear finalização por erro no ERP, apenas logar
+          console.log('⚠️ Continuando finalização sem integração ERP')
+        } else {
+          console.log('✅ ERP Financeiro integrado com sucesso:', erpResult)
+        }
       }
 
       // 8. Atualizar agendamento para CONCLUÍDO
