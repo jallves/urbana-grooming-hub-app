@@ -4783,7 +4783,7 @@ export type Database = {
       }
       clean_expired_client_sessions: { Args: never; Returns: undefined }
       cleanup_all_sessions: { Args: never; Returns: undefined }
-      cleanup_expired_sessions: { Args: never; Returns: number }
+      cleanup_expired_sessions: { Args: never; Returns: undefined }
       cleanup_inactive_sessions: {
         Args: never
         Returns: {
