@@ -410,12 +410,19 @@ const TotemCheckout: React.FC = () => {
   const extraServicesTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
   
   // O total REAL é: serviço principal + serviços extras (locais) + produtos
-  // IMPORTANTE: Usar appointment.servico?.preco como fallback caso resumo ainda não tenha carregado
-  const baseServicePrice = resumo?.original_service?.preco || appointment?.servico?.preco || 0;
+  // IMPORTANTE: Usar múltiplos fallbacks para garantir que o preço base seja obtido
+  const baseServicePrice = 
+    resumo?.original_service?.preco || 
+    appointment?.servico?.preco || 
+    (appointment as any)?.servico_preco ||
+    0;
+    
   const grandTotal = baseServicePrice + extraServicesTotal + productsTotal;
   
-  // Flag para saber se podemos processar pagamento (tem dados mínimos)
-  const canProcessPayment = vendaId && sessionId && grandTotal > 0;
+  // Flag para saber se podemos processar pagamento
+  // CORREÇÃO: Permitir pagamento se tiver vendaId E sessionId E (grandTotal > 0 OU tem produtos selecionados)
+  const hasItemsToProcess = grandTotal > 0 || selectedProducts.length > 0 || extraServices.length > 0;
+  const canProcessPayment = Boolean(vendaId && sessionId && hasItemsToProcess);
 
   const startCheckout = async () => {
     if (!loading) {
@@ -679,18 +686,21 @@ const TotemCheckout: React.FC = () => {
   };
 
   const handlePaymentMethod = async (method: 'pix' | 'card') => {
-    // Usa o grandTotal já calculado automaticamente (baseServicePrice + extraServicesTotal + productsTotal)
-    const finalTotal = grandTotal;
+    // Recalcular o total AQUI para garantir valores atualizados
+    const currentProductsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
+    const currentExtrasTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
+    const currentBasePrice = resumo?.original_service?.preco || appointment?.servico?.preco || (appointment as any)?.servico_preco || 0;
+    const finalTotal = currentBasePrice + currentExtrasTotal + currentProductsTotal;
     
     console.log('💳 [PAYMENT] Iniciando pagamento:', method);
     console.log('   💰 Venda ID:', vendaId);
     console.log('   🎫 Session ID:', sessionId);
-    console.log('   💵 Grand Total (calculado):', finalTotal);
-    console.log('   💈 Base Service Price:', baseServicePrice);
-    console.log('   ➕ Extra Services Total:', extraServicesTotal);
-    console.log('   🛒 Products Total:', productsTotal);
-    console.log('   📦 Resumo:', resumo);
-    console.log('   🎫 Appointment:', appointment);
+    console.log('   💵 Final Total (recalculado):', finalTotal);
+    console.log('   💈 Base Service Price:', currentBasePrice);
+    console.log('   ➕ Extra Services Total:', currentExtrasTotal);
+    console.log('   🛒 Products Total:', currentProductsTotal);
+    console.log('   📦 Selected Products:', selectedProducts);
+    console.log('   📋 Extra Services:', extraServices);
     
     if (!vendaId) {
       console.error('❌ [PAYMENT] Venda ID ausente');
@@ -708,10 +718,11 @@ const TotemCheckout: React.FC = () => {
       return;
     }
 
-    if (finalTotal <= 0) {
-      console.error('❌ [PAYMENT] Total inválido:', finalTotal);
+    // CORREÇÃO: Permitir se tiver produtos OU extras OU serviço base
+    if (finalTotal <= 0 && selectedProducts.length === 0 && extraServices.length === 0) {
+      console.error('❌ [PAYMENT] Sem itens para pagar');
       toast.error('Erro', {
-        description: 'O valor total é zero. Adicione serviços ou produtos.'
+        description: 'Adicione serviços ou produtos para continuar.'
       });
       return;
     }
@@ -1181,9 +1192,16 @@ const TotemCheckout: React.FC = () => {
                   <p className="text-xs text-yellow-400 text-center">
                     {!vendaId ? '⏳ Carregando checkout...' : 
                      !sessionId ? '⏳ Carregando sessão...' : 
-                     grandTotal <= 0 ? '⚠️ Adicione serviços ou produtos' : 
-                     'Aguarde...'}
+                     '⚠️ Adicione serviços ou produtos'}
                   </p>
+                </div>
+              )}
+              
+              {/* Debug info em desenvolvimento */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mb-2 p-1 bg-gray-800/50 rounded text-[8px] text-gray-400">
+                  vendaId: {vendaId ? '✓' : '✗'} | sessionId: {sessionId ? '✓' : '✗'} | 
+                  total: {grandTotal} | produtos: {selectedProducts.length}
                 </div>
               )}
               
