@@ -242,9 +242,11 @@ Deno.serve(async (req) => {
       }
 
       if (servicos_extras && servicos_extras.length > 0) {
-        servicos_extras.forEach((extra: any) => {
+        // 🔒 IMPORTANTE: Processar CADA serviço extra, mesmo se for igual ao principal
+        for (let i = 0; i < servicos_extras.length; i++) {
+          const extra = servicos_extras[i]
           const servico = extra.painel_servicos
-          console.log('➕ Adicionando extra ao checkout:', servico.nome, 'R$', servico.preco)
+          console.log(`➕ Adicionando serviço extra #${i + 1} ao checkout:`, servico.nome, 'R$', servico.preco)
           
           itens.push({
             venda_id: venda.id,
@@ -255,7 +257,8 @@ Deno.serve(async (req) => {
             preco_unit: servico.preco,
             total: servico.preco
           })
-        })
+        }
+        console.log(`📦 Total de serviços extras adicionados: ${servicos_extras.length}`)
       }
 
       // Adicionar extras fornecidos (se houver)
