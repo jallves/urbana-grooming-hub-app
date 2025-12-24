@@ -248,7 +248,7 @@ Deno.serve(async (req) => {
           
           itens.push({
             venda_id: venda.id,
-            tipo: 'SERVICO',
+            tipo: 'SERVICO_EXTRA',
             ref_id: extra.service_id,
             nome: servico.nome,
             quantidade: 1,
@@ -520,12 +520,13 @@ Deno.serve(async (req) => {
 
       // 6. Preparar itens para o ERP (formato CheckoutItem)
       const erpItems = vendaItens.map(item => ({
-        type: item.tipo === 'SERVICO' ? 'service' : 'product',
+        type: item.tipo === 'SERVICO' || item.tipo === 'SERVICO_EXTRA' ? 'service' : 'product',
         id: item.ref_id,
         name: item.nome,
         quantity: item.quantidade,
         price: Number(item.preco_unit),
-        discount: 0
+        discount: 0,
+        isExtra: item.tipo === 'SERVICO_EXTRA'
       }))
 
       // Determinar payment_method a partir do pagamento ou usar default
