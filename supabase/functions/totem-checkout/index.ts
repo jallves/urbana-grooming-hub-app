@@ -494,7 +494,54 @@ Deno.serve(async (req) => {
         })
         .eq('id', venda_id)
 
-      // 4. Buscar itens da venda para integrar com ERP Financeiro
+      // 🔒 CORREÇÃO CRÍTICA: Re-sincronizar serviços extras antes de finalizar
+      // Isso garante que serviços adicionados APÓS o início do checkout sejam incluídos
+      console.log('🔄 Re-sincronizando serviços extras para agendamento:', venda.agendamento_id)
+      
+      const { data: servicos_extras_atuais } = await supabase
+        .from('appointment_extra_services')
+        .select(`
+          service_id,
+          painel_servicos!inner (
+            id,
+            nome,
+            preco
+          )
+        `)
+        .eq('appointment_id', venda.agendamento_id)
+
+      // Buscar itens atuais da venda
+      const { data: vendaItensAtuais } = await supabase
+        .from('vendas_itens')
+        .select('*')
+        .eq('venda_id', venda_id)
+
+      // Verificar se há serviços extras que ainda não estão na venda
+      if (servicos_extras_atuais && servicos_extras_atuais.length > 0) {
+        const extrasJaNaVenda = vendaItensAtuais?.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => i.ref_id) || []
+        
+        for (const extra of servicos_extras_atuais) {
+          if (!extrasJaNaVenda.includes(extra.service_id)) {
+            const servico = extra.painel_servicos
+            console.log('⚠️ Serviço extra faltando na venda, adicionando:', servico.nome)
+            
+            // Adicionar serviço extra faltante
+            await supabase
+              .from('vendas_itens')
+              .insert({
+                venda_id: venda_id,
+                tipo: 'SERVICO_EXTRA',
+                ref_id: extra.service_id,
+                nome: servico.nome,
+                quantidade: 1,
+                preco_unit: servico.preco,
+                total: servico.preco
+              })
+          }
+        }
+      }
+
+      // 4. Buscar itens da venda para integrar com ERP Financeiro (APÓS sincronização)
       console.log('📦 Buscando itens da venda para ERP...')
       const { data: vendaItens, error: itensError } = await supabase
         .from('vendas_itens')
@@ -507,6 +554,20 @@ Deno.serve(async (req) => {
       }
 
       console.log('✅ Itens da venda encontrados:', vendaItens.length)
+
+      // Recalcular total da venda com itens atualizados
+      const novoSubtotal = vendaItens.reduce((sum, item) => sum + Number(item.total), 0)
+      if (novoSubtotal !== Number(venda.subtotal)) {
+        console.log('🔄 Atualizando total da venda:', venda.subtotal, '->', novoSubtotal)
+        await supabase
+          .from('vendas')
+          .update({ subtotal: novoSubtotal, total: novoSubtotal - Number(venda.desconto || 0) })
+          .eq('id', venda_id)
+        
+        // Atualizar objeto venda local
+        venda.subtotal = novoSubtotal
+        venda.total = novoSubtotal - Number(venda.desconto || 0)
+      }
 
       // 5. Buscar barbeiro staff_id
       const { data: barbeiro, error: barbeiroError } = await supabase
