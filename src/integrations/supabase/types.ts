@@ -212,6 +212,13 @@ export type Database = {
             referencedRelation: "painel_servicos"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "appointment_extra_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public_booking"
+            referencedColumns: ["id"]
+          },
         ]
       }
       appointment_history: {
@@ -297,6 +304,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "vw_agendamentos_sem_financeiro"
             referencedColumns: ["agendamento_id"]
+          },
+          {
+            foreignKeyName: "appointment_ratings_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "barbers_public_booking"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "appointment_ratings_barber_id_fkey"
@@ -2451,6 +2465,13 @@ export type Database = {
             foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
             columns: ["barbeiro_id"]
             isOneToOne: false
+            referencedRelation: "barbers_public_booking"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
             referencedRelation: "painel_barbeiros"
             referencedColumns: ["id"]
           },
@@ -2473,6 +2494,13 @@ export type Database = {
             columns: ["servico_id"]
             isOneToOne: false
             referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_servico_id_fkey"
+            columns: ["servico_id"]
+            isOneToOne: false
+            referencedRelation: "services_public_booking"
             referencedColumns: ["id"]
           },
         ]
@@ -3180,6 +3208,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "service_id_mapping_painel_servicos_id_fkey"
+            columns: ["painel_servicos_id"]
+            isOneToOne: false
+            referencedRelation: "services_public_booking"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "service_id_mapping_services_id_fkey"
             columns: ["services_id"]
             isOneToOne: false
@@ -3213,6 +3248,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "service_staff_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public_booking"
             referencedColumns: ["id"]
           },
           {
@@ -3481,6 +3523,13 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services_public_booking"
             referencedColumns: ["id"]
           },
           {
@@ -4356,6 +4405,33 @@ export type Database = {
       }
     }
     Views: {
+      barbers_public_booking: {
+        Row: {
+          available_for_booking: boolean | null
+          id: string | null
+          image_url: string | null
+          is_active: boolean | null
+          nome: string | null
+          specialties: string | null
+        }
+        Insert: {
+          available_for_booking?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          nome?: string | null
+          specialties?: string | null
+        }
+        Update: {
+          available_for_booking?: boolean | null
+          id?: string | null
+          image_url?: string | null
+          is_active?: boolean | null
+          nome?: string | null
+          specialties?: string | null
+        }
+        Relationships: []
+      }
       commission_report: {
         Row: {
           average_rate: number | null
@@ -4427,6 +4503,33 @@ export type Database = {
         }
         Relationships: []
       }
+      services_public_booking: {
+        Row: {
+          descricao: string | null
+          duracao: number | null
+          id: string | null
+          is_active: boolean | null
+          nome: string | null
+          preco: number | null
+        }
+        Insert: {
+          descricao?: string | null
+          duracao?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          nome?: string | null
+          preco?: number | null
+        }
+        Update: {
+          descricao?: string | null
+          duracao?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          nome?: string | null
+          preco?: number | null
+        }
+        Relationships: []
+      }
       staff_public_booking: {
         Row: {
           id: string | null
@@ -4469,6 +4572,13 @@ export type Database = {
           venda_total: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
+            columns: ["barbeiro_id"]
+            isOneToOne: false
+            referencedRelation: "barbers_public_booking"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "painel_agendamentos_barbeiro_id_fkey"
             columns: ["barbeiro_id"]
@@ -4920,6 +5030,15 @@ export type Database = {
           horario: string
         }[]
       }
+      get_barbers_for_booking: {
+        Args: never
+        Returns: {
+          id: string
+          image_url: string
+          nome: string
+          specialties: string
+        }[]
+      }
       get_birthday_clients: {
         Args: { target_month?: number }
         Returns: {
@@ -4999,6 +5118,16 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      get_services_for_booking: {
+        Args: never
+        Returns: {
+          descricao: string
+          duracao: number
+          id: string
+          nome: string
+          preco: number
+        }[]
       }
       get_staff_for_booking: {
         Args: never
