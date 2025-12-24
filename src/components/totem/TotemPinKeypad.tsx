@@ -1,4 +1,4 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Delete, Phone } from 'lucide-react';
@@ -25,30 +25,17 @@ interface TotemPinKeypadProps {
  * TotemPinKeypad - Teclado numérico PADRÃO do Totem com logo e cantos decorativos
  * Usado em TODAS as telas: Login, Check-in, Checkout, Produtos, Novo Agendamento
  * 
+ * OTIMIZADO PARA TOUCH: 
+ * - Resposta instantânea via onTouchStart/onPointerDown
+ * - Debounce reduzido para 80ms
+ * - Feedback visual imediato
+ * - Prevenção de eventos duplicados
+ * 
  * Modos disponíveis:
  * - 'pin': Para autenticação (4 dígitos)
  * - 'phone': Para busca de cliente (11 dígitos)
  * 
  * Segue o design system em docs/TOTEM_DESIGN_SYSTEM.md
- * 
- * @example PIN
- * ```tsx
- * <TotemPinKeypad
- *   mode="pin"
- *   title="Autenticação de Acesso"
- *   onSubmit={(pin) => login(pin)}
- * />
- * ```
- * 
- * @example TELEFONE
- * ```tsx
- * <TotemPinKeypad
- *   mode="phone"
- *   title="Buscar Cliente"
- *   subtitle="Digite o número de telefone"
- *   onSubmit={(phone) => searchClient(phone)}
- * />
- * ```
  */
 export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
   mode = 'pin',
@@ -65,24 +52,55 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
   const [value, setValue] = useState<string>('');
   const [activeKey, setActiveKey] = useState<string | null>(null);
   const lastEventTime = useRef<number>(0);
-  const DEBOUNCE_MS = 150; // Tempo mínimo entre cliques
+  const isProcessing = useRef<boolean>(false);
+  const DEBOUNCE_MS = 80; // Reduzido de 150ms para 80ms - resposta mais rápida
   const maxLength = mode === 'pin' ? pinLength : phoneLength;
   const minLength = maxLength;
 
-  // Verifica se deve processar o evento (debounce)
+  // Preload para evitar delay inicial
+  useEffect(() => {
+    // Força o navegador a preparar as animações
+    const buttons = document.querySelectorAll('[data-keypad-button]');
+    buttons.forEach(btn => {
+      (btn as HTMLElement).style.willChange = 'transform, background-color';
+    });
+    
+    return () => {
+      buttons.forEach(btn => {
+        (btn as HTMLElement).style.willChange = 'auto';
+      });
+    };
+  }, []);
+
+  // Verifica se deve processar o evento (debounce otimizado)
   const shouldProcessEvent = useCallback(() => {
     const now = Date.now();
-    if (now - lastEventTime.current < DEBOUNCE_MS) {
+    if (isProcessing.current || now - lastEventTime.current < DEBOUNCE_MS) {
       return false;
     }
+    isProcessing.current = true;
     lastEventTime.current = now;
+    // Reset processing flag após um curto delay
+    requestAnimationFrame(() => {
+      isProcessing.current = false;
+    });
     return true;
   }, []);
 
-  // Handler com debounce para evitar duplicação
-  const handleKeyPress = useCallback((num: number) => {
+  // Handler INSTANTÂNEO para touch - resposta imediata
+  const handleKeyPress = useCallback((num: number, e?: React.SyntheticEvent) => {
+    // Prevenir comportamento padrão e propagação imediatamente
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!shouldProcessEvent() || loading) return;
     
+    // Feedback visual INSTANTÂNEO
+    setActiveKey(num.toString());
+    
+    // Atualizar valor
     setValue(prev => {
       if (prev.length < maxLength) {
         return prev + num.toString();
@@ -90,28 +108,42 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
       return prev;
     });
     
-    // Feedback visual
-    setActiveKey(num.toString());
-    setTimeout(() => setActiveKey(null), 100);
+    // Remover feedback visual
+    setTimeout(() => setActiveKey(null), 80);
   }, [shouldProcessEvent, loading, maxLength]);
 
-  const handleBackspace = useCallback(() => {
+  const handleBackspace = useCallback((e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!shouldProcessEvent() || loading) return;
     
-    setValue(prev => prev.slice(0, -1));
     setActiveKey('backspace');
-    setTimeout(() => setActiveKey(null), 100);
+    setValue(prev => prev.slice(0, -1));
+    setTimeout(() => setActiveKey(null), 80);
   }, [shouldProcessEvent, loading]);
 
-  const handleClear = useCallback(() => {
+  const handleClear = useCallback((e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!shouldProcessEvent() || loading) return;
     
-    setValue('');
     setActiveKey('clear');
-    setTimeout(() => setActiveKey(null), 100);
+    setValue('');
+    setTimeout(() => setActiveKey(null), 80);
   }, [shouldProcessEvent, loading]);
 
-  const handleSubmit = useCallback(async () => {
+  const handleSubmit = useCallback(async (e?: React.SyntheticEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
     if (!shouldProcessEvent() || loading) return;
     
     if (value.length >= minLength) {
@@ -259,21 +291,28 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
             </div>
           )}
 
-          {/* Teclado Numérico otimizado para touch - PADRÃO */}
+          {/* Teclado Numérico ULTRA OTIMIZADO para touch */}
           <div className="grid grid-cols-3 gap-2 sm:gap-3 touch-manipulation">
             {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((num) => (
               <button
                 key={num}
-                onClick={() => handleKeyPress(num)}
+                data-keypad-button
+                onPointerDown={(e) => handleKeyPress(num, e)}
+                onTouchStart={(e) => { e.preventDefault(); handleKeyPress(num, e); }}
                 disabled={loading}
                 className={cn(
-                  "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
-                  "transition-all duration-75",
+                  "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation cursor-pointer",
+                  "transition-transform duration-[50ms] ease-out",
                   activeKey === num.toString()
                     ? "border-urbana-gold bg-urbana-gold/30 scale-95"
-                    : "border-urbana-gold/40 hover:border-urbana-gold/60 hover:bg-urbana-gold/10 active:bg-urbana-gold/30 active:border-urbana-gold active:scale-95"
+                    : "border-urbana-gold/40 hover:border-urbana-gold/60 hover:bg-urbana-gold/10"
                 )}
-                style={{ WebkitTapHighlightColor: 'transparent' }}
+                style={{ 
+                  WebkitTapHighlightColor: 'transparent',
+                  touchAction: 'manipulation',
+                  userSelect: 'none',
+                  WebkitUserSelect: 'none'
+                }}
               >
                 {num}
               </button>
@@ -281,74 +320,115 @@ export const TotemPinKeypad: React.FC<TotemPinKeypadProps> = ({
 
             {/* Botão Limpar */}
             <button
-              onClick={handleClear}
+              data-keypad-button
+              onPointerDown={handleClear}
+              onTouchStart={(e) => { e.preventDefault(); handleClear(e); }}
               disabled={loading}
               className={cn(
-                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-xs sm:text-sm md:text-base font-bold text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
-                "transition-all duration-75",
+                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-xs sm:text-sm md:text-base font-bold text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation cursor-pointer",
+                "transition-transform duration-[50ms] ease-out",
                 activeKey === 'clear'
                   ? "border-urbana-gray bg-urbana-gray/30 scale-95"
-                  : "border-urbana-gray/40 hover:border-urbana-gray/60 hover:bg-urbana-gray/10 active:bg-urbana-gray/30 active:scale-95"
+                  : "border-urbana-gray/40 hover:border-urbana-gray/60 hover:bg-urbana-gray/10"
               )}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
             >
               Limpar
             </button>
 
             {/* Botão 0 */}
             <button
-              onClick={() => handleKeyPress(0)}
+              data-keypad-button
+              onPointerDown={(e) => handleKeyPress(0, e)}
+              onTouchStart={(e) => { e.preventDefault(); handleKeyPress(0, e); }}
               disabled={loading}
               className={cn(
-                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
-                "transition-all duration-75",
+                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-urbana-gold bg-transparent border-2 rounded-xl shadow-lg disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation cursor-pointer",
+                "transition-transform duration-[50ms] ease-out",
                 activeKey === '0'
                   ? "border-urbana-gold bg-urbana-gold/30 scale-95"
-                  : "border-urbana-gold/40 hover:border-urbana-gold/60 hover:bg-urbana-gold/10 active:bg-urbana-gold/30 active:border-urbana-gold active:scale-95"
+                  : "border-urbana-gold/40 hover:border-urbana-gold/60 hover:bg-urbana-gold/10"
               )}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
             >
               0
             </button>
 
             {/* Botão Backspace */}
             <button
-              onClick={handleBackspace}
+              data-keypad-button
+              onPointerDown={handleBackspace}
+              onTouchStart={(e) => { e.preventDefault(); handleBackspace(e); }}
               disabled={loading}
               className={cn(
-                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] flex items-center justify-center text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation",
-                "transition-all duration-75",
+                "h-16 sm:h-18 md:h-22 lg:h-26 min-h-[64px] flex items-center justify-center text-urbana-light bg-transparent border-2 rounded-xl disabled:opacity-50 disabled:cursor-not-allowed select-none touch-manipulation cursor-pointer",
+                "transition-transform duration-[50ms] ease-out",
                 activeKey === 'backspace'
                   ? "border-urbana-gray bg-urbana-gray/30 scale-95"
-                  : "border-urbana-gray/40 hover:border-urbana-gray/60 hover:bg-urbana-gray/10 active:bg-urbana-gray/30 active:scale-95"
+                  : "border-urbana-gray/40 hover:border-urbana-gray/60 hover:bg-urbana-gray/10"
               )}
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
             >
               <Delete className="w-6 h-6 sm:w-7 sm:h-7 md:w-8 md:h-8" />
             </button>
           </div>
 
-          {/* Botão ENTRAR/BUSCAR em destaque */}
-          <Button
-            onClick={handleSubmit}
+          {/* Botão ENTRAR/BUSCAR em destaque - OTIMIZADO */}
+          <button
+            data-keypad-button
+            onPointerDown={handleSubmit}
+            onTouchStart={(e) => { e.preventDefault(); handleSubmit(e); }}
             disabled={value.length < minLength || loading}
-            className="w-full h-16 sm:h-18 md:h-22 min-h-[64px] text-lg sm:text-xl md:text-2xl font-black bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold text-urbana-black hover:from-urbana-gold-vibrant hover:to-urbana-gold disabled:from-urbana-gray disabled:to-urbana-gray-light disabled:text-urbana-light/40 transition-all duration-75 shadow-2xl shadow-urbana-gold/40 rounded-xl select-none touch-manipulation active:scale-[0.98]"
-            style={{ WebkitTapHighlightColor: 'transparent' }}
+            className={cn(
+              "w-full h-16 sm:h-18 md:h-22 min-h-[64px] text-lg sm:text-xl md:text-2xl font-black rounded-xl select-none touch-manipulation cursor-pointer",
+              "transition-transform duration-[50ms] ease-out",
+              "shadow-2xl shadow-urbana-gold/40",
+              value.length >= minLength && !loading
+                ? "bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold text-urbana-black active:scale-[0.98]"
+                : "bg-gradient-to-r from-urbana-gray to-urbana-gray-light text-urbana-light/40 cursor-not-allowed"
+            )}
+            style={{ 
+              WebkitTapHighlightColor: 'transparent',
+              touchAction: 'manipulation',
+              userSelect: 'none',
+              WebkitUserSelect: 'none'
+            }}
           >
             {getSubmitButtonText()}
-          </Button>
+          </button>
 
-          {/* Botão Cancelar (opcional) */}
+          {/* Botão Cancelar (opcional) - OTIMIZADO */}
           {onCancel && (
-            <Button
-              onClick={onCancel}
-              variant="ghost"
+            <button
+              data-keypad-button
+              onPointerDown={(e) => { e.preventDefault(); onCancel(); }}
+              onTouchStart={(e) => { e.preventDefault(); onCancel(); }}
               disabled={loading}
-              className="w-full h-14 sm:h-16 min-h-[56px] text-base sm:text-lg text-urbana-light/60 hover:text-urbana-light hover:bg-urbana-gold/10 select-none touch-manipulation"
-              style={{ WebkitTapHighlightColor: 'transparent' }}
+              className="w-full h-14 sm:h-16 min-h-[56px] text-base sm:text-lg text-urbana-light/60 hover:text-urbana-light hover:bg-urbana-gold/10 select-none touch-manipulation cursor-pointer bg-transparent border-none transition-colors duration-100"
+              style={{ 
+                WebkitTapHighlightColor: 'transparent',
+                touchAction: 'manipulation',
+                userSelect: 'none',
+                WebkitUserSelect: 'none'
+              }}
             >
               Cancelar
-            </Button>
+            </button>
           )}
         </Card>
       </div>
