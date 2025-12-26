@@ -477,14 +477,19 @@ class PayGoService(private val context: Context) {
                 savePendingData(responseUri)
             }
             
-            // Verificar se requer confirmação
-            val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
-            val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
-            
-            if (requiresConfirmation && confirmationId != null) {
-                addLog("[RESP] Transação requer confirmação automática")
-                sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
-            }
+        // Verificar se requer confirmação
+        // IMPORTANTE: NÃO confirmar automaticamente!
+        // A confirmação deve ser feita pelo frontend APÓS processar comprovante (email/impressão)
+        // Isso segue a documentação PayGo: aprovação → comprovante → confirmação
+        val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
+        val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
+        
+        if (requiresConfirmation && confirmationId != null) {
+            addLog("[RESP] ⚠️ Transação REQUER confirmação manual pelo frontend")
+            addLog("[RESP] confirmationTransactionId: $confirmationId")
+            // NÃO chamar sendConfirmation aqui - o frontend é responsável
+            // sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+        }
             
             callback(result)
             addLog("[RESP] ✅ Callback executado")
