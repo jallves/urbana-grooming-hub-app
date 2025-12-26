@@ -26,6 +26,9 @@ export interface TEFResultado {
   comprovanteLojista?: string;
   ordemId?: string;
   timestamp?: number;
+  // ID para confirmação manual (quando requiresConfirmation = true)
+  confirmationTransactionId?: string;
+  requiresConfirmation?: boolean;
 }
 
 export interface TEFPinpadStatus {
@@ -40,6 +43,7 @@ declare global {
     TEF?: {
       iniciarPagamento: (jsonParams: string) => void;
       cancelarPagamento: () => void;
+      confirmarTransacao: (confirmationId: string, status: string) => void;
       verificarPinpad: () => string;
       getStatus: () => string;
       verificarPayGo: () => string;
@@ -214,7 +218,10 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
       comprovanteCliente: (raw.comprovanteCliente || raw.cardholderReceipt || '') as string,
       comprovanteLojista: (raw.comprovanteLojista || raw.merchantReceipt || '') as string,
       ordemId: raw.ordemId as string,
-      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now()
+      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now(),
+      // Dados de confirmação
+      confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
     };
   }
   
@@ -244,8 +251,57 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
     mensagem: (raw.resultMessage || '') as string,
     comprovanteCliente: (raw.cardholderReceipt || '') as string,
     comprovanteLojista: (raw.merchantReceipt || '') as string,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    // Dados de confirmação
+    confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+    requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
   };
+}
+
+/**
+ * Confirma uma transação TEF
+ * Deve ser chamado APÓS enviar comprovante por e-mail/imprimir
+ * 
+ * @param confirmationId - ID de confirmação recebido na resposta do PayGo
+ * @param status - Status da confirmação: CONFIRMADO_AUTOMATICO, CONFIRMADO_MANUAL, DESFEITO_MANUAL
+ */
+export function confirmarTransacaoTEF(
+  confirmationId: string,
+  status: 'CONFIRMADO_AUTOMATICO' | 'CONFIRMADO_MANUAL' | 'DESFEITO_MANUAL' = 'CONFIRMADO_AUTOMATICO'
+): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - confirmação simulada');
+    return true; // Em modo simulação, sempre sucesso
+  }
+  
+  if (!confirmationId) {
+    console.warn('[TEFBridge] confirmationId não fornecido');
+    return false;
+  }
+  
+  try {
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    console.log('[TEFBridge] CONFIRMANDO TRANSAÇÃO TEF');
+    console.log('[TEFBridge] confirmationId:', confirmationId);
+    console.log('[TEFBridge] status:', status);
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    
+    window.TEF!.confirmarTransacao(confirmationId, status);
+    
+    console.log('[TEFBridge] ✅ Confirmação enviada com sucesso');
+    return true;
+  } catch (error) {
+    console.error('[TEFBridge] ❌ Erro ao confirmar transação:', error);
+    return false;
+  }
+}
+
+/**
+ * Desfaz uma transação TEF (antes de confirmar)
+ * Usar quando há erro no checkout após aprovação do pagamento
+ */
+export function desfazerTransacaoTEF(confirmationId: string): boolean {
+  return confirmarTransacaoTEF(confirmationId, 'DESFEITO_MANUAL');
 }
 
 /**

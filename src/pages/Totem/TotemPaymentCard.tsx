@@ -7,7 +7,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF, desfazerTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { sendReceiptEmail } from '@/services/receiptEmailService';
+import { format } from 'date-fns';
+import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentCard: React.FC = () => {
@@ -26,6 +29,15 @@ const TotemPaymentCard: React.FC = () => {
   const [simulationTimeLeft, setSimulationTimeLeft] = useState(5);
   const [simulationStatus, setSimulationStatus] = useState<'processing' | 'approved'>('processing');
   
+  // Estado para modal de opções de comprovante
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [pendingTransactionData, setPendingTransactionData] = useState<{
+    nsu?: string;
+    autorizacao?: string;
+    bandeira?: string;
+    confirmationId?: string;
+  } | null>(null);
+  
   // Ref para evitar finalização duplicada
   const finalizingRef = useRef(false);
   const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
@@ -35,32 +47,121 @@ const TotemPaymentCard: React.FC = () => {
     paymentTypeRef.current = paymentType;
   }, [paymentType]);
 
-  // Função de finalização - NÃO depende mais de currentPaymentId
-  // Usa venda_id diretamente do location.state (assim como TotemProductPaymentCard faz)
-  const finalizePayment = useCallback(async (transactionData: {
-    nsu?: string;
-    autorizacao?: string;
-    bandeira?: string;
-  }) => {
-    // Evitar finalização duplicada
-    if (finalizingRef.current) {
-      console.log('[CARD] ⚠️ Finalização já em andamento, ignorando');
-      return;
-    }
-    finalizingRef.current = true;
+  // Função para enviar e-mail de comprovante
+  const handleSendReceiptEmail = useCallback(async (): Promise<boolean> => {
+    if (!client?.email) return false;
     
     try {
-      console.log('✅ [CARD] ═══════════════════════════════════════');
-      console.log('✅ [CARD] FINALIZANDO PAGAMENTO DE SERVIÇO');
-      console.log('✅ [CARD] Venda ID:', venda_id);
-      console.log('✅ [CARD] Session ID:', session_id);
-      console.log('✅ [CARD] NSU:', transactionData.nsu);
-      console.log('✅ [CARD] Autorização:', transactionData.autorizacao);
-      console.log('✅ [CARD] Bandeira:', transactionData.bandeira);
-      console.log('✅ [CARD] ═══════════════════════════════════════');
+      // Montar itens para o e-mail
+      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
 
-      // Atualizar estoque dos produtos (se houver)
-      if (selectedProducts && selectedProducts.length > 0) {
+      // Serviço principal
+      if (resumo?.original_service) {
+        items.push({
+          name: resumo.original_service.nome,
+          price: resumo.original_service.preco,
+          type: 'service'
+        });
+      } else if (appointment?.servico) {
+        items.push({
+          name: appointment.servico.nome,
+          price: appointment.servico.preco || 0,
+          type: 'service'
+        });
+      }
+
+      // Serviços extras
+      if (resumo?.extra_services) {
+        resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
+          items.push({ name: service.nome, price: service.preco, type: 'service' });
+        });
+      } else if (extraServices?.length > 0) {
+        extraServices.forEach((service: { nome: string; preco: number }) => {
+          items.push({ name: service.nome, price: service.preco, type: 'service' });
+        });
+      }
+
+      // Produtos
+      if (selectedProducts?.length > 0) {
+        selectedProducts.forEach((product: { nome: string; preco: number; quantidade: number }) => {
+          items.push({
+            name: product.nome,
+            quantity: product.quantidade,
+            price: product.preco * product.quantidade,
+            type: 'product'
+          });
+        });
+      }
+
+      if (items.length === 0) {
+        items.push({ name: 'Serviço', price: total, type: 'service' });
+      }
+
+      const hasServices = items.some(item => item.type === 'service');
+      const hasProducts = items.some(item => item.type === 'product');
+      let transactionType: 'service' | 'product' | 'mixed' = 'service';
+      if (hasServices && hasProducts) {
+        transactionType = 'mixed';
+      } else if (hasProducts) {
+        transactionType = 'product';
+      }
+
+      const result = await sendReceiptEmail({
+        clientName: client.nome,
+        clientEmail: client.email,
+        transactionType,
+        items,
+        total,
+        paymentMethod: paymentTypeRef.current === 'credit' ? 'Crédito' : 'Débito',
+        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
+        nsu: pendingTransactionData?.nsu,
+        barberName: appointment?.barbeiro?.nome
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('[CARD] Erro ao enviar e-mail:', error);
+      return false;
+    }
+  }, [client, resumo, appointment, extraServices, selectedProducts, total, pendingTransactionData]);
+
+  // Função chamada após comprovante enviado/impresso - finaliza tudo
+  const handleReceiptComplete = useCallback(async () => {
+    if (!pendingTransactionData) return;
+    
+    console.log('✅ [CARD] ═══════════════════════════════════════');
+    console.log('✅ [CARD] COMPROVANTE PROCESSADO - FINALIZANDO');
+    console.log('✅ [CARD] ═══════════════════════════════════════');
+    
+    // 1. Confirmar transação TEF (se houver confirmationId)
+    if (pendingTransactionData.confirmationId) {
+      console.log('[CARD] Confirmando transação TEF:', pendingTransactionData.confirmationId);
+      confirmarTransacaoTEF(pendingTransactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
+    }
+    
+    // 2. Finalizar venda no backend
+    try {
+      if (isDirect) {
+        await supabase.functions.invoke('totem-direct-sale', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            transaction_data: pendingTransactionData
+          }
+        });
+      } else {
+        await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id: venda_id,
+            session_id: session_id,
+            transaction_data: pendingTransactionData
+          }
+        });
+      }
+
+      // Atualizar estoque dos produtos
+      if (selectedProducts?.length > 0) {
         for (const product of selectedProducts) {
           await supabase.rpc('decrease_product_stock', {
             p_product_id: product.product_id,
@@ -69,42 +170,9 @@ const TotemPaymentCard: React.FC = () => {
         }
       }
 
-      // Finalizar venda - usando edge function
-      if (isDirect) {
-        console.log('📡 [CARD] Chamando totem-direct-sale...');
-        const { error: directError } = await supabase.functions.invoke('totem-direct-sale', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            transaction_data: transactionData
-          }
-        });
-        
-        if (directError) {
-          console.error('❌ [CARD] Erro ao finalizar venda direta:', directError);
-          throw directError;
-        }
-      } else {
-        // Finalizar checkout de serviço normal
-        console.log('📡 [CARD] Chamando totem-checkout finish...');
-        const { error: checkoutError } = await supabase.functions.invoke('totem-checkout', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            session_id: session_id,
-            transaction_data: transactionData
-          }
-        });
-        
-        if (checkoutError) {
-          console.error('❌ [CARD] Erro ao finalizar checkout:', checkoutError);
-          throw checkoutError;
-        }
-      }
-
-      console.log('✅ [CARD] Pagamento finalizado com sucesso!');
-      toast.success('Pagamento aprovado!');
+      console.log('✅ [CARD] Checkout finalizado com sucesso!');
       
+      // 3. Navegar para tela de sucesso
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -112,7 +180,7 @@ const TotemPaymentCard: React.FC = () => {
           total,
           paymentMethod: paymentTypeRef.current,
           isDirect,
-          transactionData,
+          transactionData: pendingTransactionData,
           selectedProducts,
           extraServices,
           resumo
@@ -120,31 +188,37 @@ const TotemPaymentCard: React.FC = () => {
       });
     } catch (error) {
       console.error('❌ [CARD] Erro ao finalizar:', error);
-      toast.error('Erro ao processar pagamento');
-      setProcessing(false);
-      finalizingRef.current = false;
+      
+      // Se falhou após confirmar TEF, isso é um problema sério
+      // O pagamento foi confirmado mas o checkout falhou
+      toast.error('Erro ao finalizar checkout', {
+        description: 'O pagamento foi aprovado. Procure a recepção.'
+      });
+      
+      navigate('/totem/home');
     }
-  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
+  }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo]);
 
   // Handler para resultado do TEF
-  // SIMPLIFICADO: NÃO depende de currentPaymentId - usa venda_id diretamente
+  // Agora mostra modal de opções de comprovante antes de confirmar
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [CARD] ═══════════════════════════════════════');
     console.log('📞 [CARD] handleTEFResult CHAMADO');
     console.log('📞 [CARD] Status:', resultado.status);
-    console.log('📞 [CARD] Venda ID:', venda_id);
-    console.log('📞 [CARD] Session ID:', session_id);
+    console.log('📞 [CARD] confirmationId:', resultado.confirmationTransactionId);
     console.log('📞 [CARD] ═══════════════════════════════════════');
     
     switch (resultado.status) {
       case 'aprovado':
-        console.log('✅ [CARD] Pagamento APROVADO pelo PayGo');
-        // Finalizar diretamente com transactionData - SEM depender de paymentId
-        finalizePayment({
+        console.log('✅ [CARD] Pagamento APROVADO - Mostrando opções de comprovante');
+        // Guardar dados da transação e mostrar modal de opções
+        setPendingTransactionData({
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
-          bandeira: resultado.bandeira
+          bandeira: resultado.bandeira,
+          confirmationId: resultado.confirmationTransactionId
         });
+        setShowReceiptModal(true);
         break;
         
       case 'negado':
@@ -173,7 +247,7 @@ const TotemPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, [finalizePayment, venda_id, session_id]);
+  }, [venda_id, session_id]);
 
   // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
   // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
@@ -283,7 +357,7 @@ const TotemPaymentCard: React.FC = () => {
     }
   };
 
-  // Timer para simulação
+  // Timer para simulação - agora mostra modal de opções
   useEffect(() => {
     if (!isSimulating || simulationStatus !== 'processing') return;
 
@@ -294,11 +368,13 @@ const TotemPaymentCard: React.FC = () => {
           setSimulationStatus('approved');
           
           setTimeout(() => {
-            finalizePayment({
+            // Em simulação, mostrar modal de opções também
+            setPendingTransactionData({
               nsu: `SIM${Date.now()}`,
               autorizacao: `AUTH${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
               bandeira: paymentType === 'credit' ? 'VISA' : 'MASTERCARD'
             });
+            setShowReceiptModal(true);
           }, 1500);
           return 0;
         }
@@ -307,7 +383,7 @@ const TotemPaymentCard: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isSimulating, simulationStatus, finalizePayment, paymentType]);
+  }, [isSimulating, simulationStatus, paymentType]);
 
   const handleCancelPayment = () => {
     if (isSimulating) {
@@ -557,6 +633,18 @@ const TotemPaymentCard: React.FC = () => {
           )}
         </Card>
       </div>
+
+      {/* Modal de opções de comprovante */}
+      <TotemReceiptOptionsModal
+        isOpen={showReceiptModal}
+        onClose={() => {}} // Não permitir fechar sem escolher
+        onComplete={handleReceiptComplete}
+        clientName={client?.nome || ''}
+        clientEmail={client?.email}
+        total={total}
+        onSendEmail={handleSendReceiptEmail}
+        isPrintAvailable={false} // Futuro: habilitar quando impressora térmica estiver disponível
+      />
     </div>
   );
 };
