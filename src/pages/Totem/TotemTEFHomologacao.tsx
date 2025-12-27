@@ -530,40 +530,40 @@ export default function TotemTEFHomologacao() {
 
   return (
     <div className="h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
-      {/* Header Profissional */}
-      <header className="flex-shrink-0 bg-urbana-black/80 backdrop-blur-sm border-b border-urbana-gold/20 px-4 py-3 safe-area-inset-top">
+      {/* Header Compacto */}
+      <header className="flex-shrink-0 bg-urbana-black/80 backdrop-blur-sm border-b border-urbana-gold/20 px-2 md:px-4 py-2 safe-area-inset-top">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <Button 
               variant="ghost" 
               size="icon"
               onPointerDown={() => navigate('/totem')}
-              className="text-urbana-gold hover:bg-urbana-gold/10 h-10 w-10"
+              className="text-urbana-gold hover:bg-urbana-gold/10 h-9 w-9"
             >
               <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
-              <h1 className="text-lg md:text-xl font-bold text-urbana-gold flex items-center gap-2">
-                <CreditCard className="h-5 w-5" />
-                PDV Homologação PayGo
+              <h1 className="text-base md:text-lg font-bold text-urbana-gold flex items-center gap-1.5">
+                <CreditCard className="h-4 w-4" />
+                PDV Homologação
               </h1>
-              <p className="text-xs text-urbana-light/60">Terminal para testes de integração TEF</p>
+              <p className="text-[10px] text-urbana-light/60">Terminal TEF PayGo</p>
             </div>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <Badge 
               variant="outline" 
-              className={`text-xs ${isAndroidAvailable ? 'border-green-500 text-green-400' : 'border-red-500 text-red-400'}`}
+              className={`text-[10px] px-1.5 py-0.5 ${isAndroidAvailable ? 'border-green-500 text-green-400' : 'border-red-500 text-red-400'}`}
             >
-              <Smartphone className="h-3 w-3 mr-1" />
+              <Smartphone className="h-3 w-3 mr-0.5" />
               {isAndroidAvailable ? 'TEF' : 'OFF'}
             </Badge>
             <Badge 
               variant="outline" 
-              className={`text-xs ${isPinpadConnected ? 'border-green-500 text-green-400' : 'border-yellow-500 text-yellow-400'}`}
+              className={`text-[10px] px-1.5 py-0.5 ${isPinpadConnected ? 'border-green-500 text-green-400' : 'border-yellow-500 text-yellow-400'}`}
             >
-              {isPinpadConnected ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
+              {isPinpadConnected ? <Wifi className="h-3 w-3 mr-0.5" /> : <WifiOff className="h-3 w-3 mr-0.5" />}
               {isPinpadConnected ? 'PIN' : 'N/C'}
             </Badge>
           </div>
@@ -571,29 +571,29 @@ export default function TotemTEFHomologacao() {
       </header>
 
       {/* Tabs para Mobile/Tablet */}
-      <div className="flex-shrink-0 px-4 pt-3">
+      <div className="flex-shrink-0 px-2 md:px-4 pt-2">
         <div className="flex gap-2">
           <Button
             variant={activeTab === 'pdv' ? 'default' : 'outline'}
             onPointerDown={() => setActiveTab('pdv')}
-            className={`flex-1 h-11 ${activeTab === 'pdv' 
+            className={`flex-1 h-10 ${activeTab === 'pdv' 
               ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
               : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            <DollarSign className="h-4 w-4 mr-2" />
+            <DollarSign className="h-4 w-4 mr-1.5" />
             PDV
           </Button>
           <Button
             variant={activeTab === 'logs' ? 'default' : 'outline'}
             onPointerDown={() => setActiveTab('logs')}
-            className={`flex-1 h-11 ${activeTab === 'logs' 
+            className={`flex-1 h-10 ${activeTab === 'logs' 
               ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
               : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText className="h-4 w-4 mr-1.5" />
             Logs
             {transactionLogs.length > 0 && (
-              <Badge className="ml-2 bg-urbana-black text-urbana-gold text-xs px-1.5">
+              <Badge className="ml-1.5 bg-urbana-black text-urbana-gold text-xs px-1.5">
                 {transactionLogs.length}
               </Badge>
             )}
@@ -602,15 +602,15 @@ export default function TotemTEFHomologacao() {
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="flex-1 overflow-hidden p-4">
+      <div className="flex-1 overflow-hidden p-2 md:p-4">
         {/* PDV Tab */}
         {activeTab === 'pdv' && (
-          <div className="h-full flex flex-col gap-3 max-w-lg mx-auto">
+          <div className="h-full flex flex-col gap-2 md:gap-3 max-w-lg mx-auto">
             {/* Valor Display */}
             <Card className="bg-gradient-to-br from-urbana-black-soft to-urbana-black border-urbana-gold/30 shadow-lg shadow-urbana-gold/5">
-              <CardContent className="p-4">
-                <p className="text-xs text-urbana-light/60 mb-1 uppercase tracking-wider">Valor da transação</p>
-                <div className="text-4xl md:text-5xl font-bold text-urbana-gold text-center py-3 font-mono">
+              <CardContent className="p-3">
+                <p className="text-[10px] text-urbana-light/60 mb-0.5 uppercase tracking-wider">Valor</p>
+                <div className="text-3xl md:text-4xl font-bold text-urbana-gold text-center py-2 font-mono">
                   {formatCurrency(amount)}
                 </div>
               </CardContent>
@@ -618,10 +618,8 @@ export default function TotemTEFHomologacao() {
 
             {/* Método de Pagamento */}
             <Card className="bg-urbana-black-soft/80 border-urbana-gold/30">
-              <CardHeader className="py-2 px-4">
-                <CardTitle className="text-sm text-urbana-gold uppercase tracking-wider">Forma de Pagamento</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0 space-y-3">
+              <CardContent className="p-3 space-y-2">
+                <p className="text-[10px] text-urbana-light/60 uppercase tracking-wider">Forma de Pagamento</p>
                 <div className="grid grid-cols-3 gap-2">
                   {[
                     { id: 'debito', label: 'Débito', icon: CreditCard },
@@ -632,12 +630,12 @@ export default function TotemTEFHomologacao() {
                       key={id}
                       variant={selectedMethod === id ? 'default' : 'outline'}
                       onPointerDown={() => setSelectedMethod(id as PaymentMethod)}
-                      className={`h-14 flex flex-col gap-1 ${selectedMethod === id 
+                      className={`h-12 flex flex-col gap-0.5 ${selectedMethod === id 
                         ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 shadow-lg shadow-urbana-gold/20' 
                         : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
                     >
-                      <Icon className="h-5 w-5" />
-                      <span className="text-xs font-medium">{label}</span>
+                      <Icon className="h-4 w-4" />
+                      <span className="text-[10px] font-medium">{label}</span>
                     </Button>
                   ))}
                 </div>
@@ -645,15 +643,15 @@ export default function TotemTEFHomologacao() {
                 {/* Parcelas */}
                 {selectedMethod === 'credito' && (
                   <div>
-                    <p className="text-xs text-urbana-light/60 mb-2 uppercase tracking-wider">Parcelas</p>
-                    <div className="grid grid-cols-6 gap-1.5">
+                    <p className="text-[10px] text-urbana-light/60 mb-1.5 uppercase tracking-wider">Parcelas</p>
+                    <div className="grid grid-cols-6 gap-1">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                         <Button
                           key={n}
                           size="sm"
                           variant={installments === n ? 'default' : 'outline'}
                           onPointerDown={() => setInstallments(n)}
-                          className={`h-9 text-sm font-medium ${installments === n 
+                          className={`h-8 text-xs font-medium ${installments === n 
                             ? 'bg-urbana-gold text-urbana-black' 
                             : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
                         >
@@ -667,47 +665,43 @@ export default function TotemTEFHomologacao() {
             </Card>
 
             {/* Teclado Numérico */}
-            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30">
-              <CardContent className="p-3">
-                <div className="grid grid-cols-3 gap-2">
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-1">
+              <CardContent className="p-2 h-full">
+                <div className="grid grid-cols-3 gap-1.5 h-full">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
                     <Button
                       key={num}
-                      size="lg"
                       variant="outline"
                       onPointerDown={() => handleNumberClick(num)}
                       disabled={isProcessing}
-                      className="h-14 text-2xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
+                      className="h-full min-h-[48px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
                     >
                       {num}
                     </Button>
                   ))}
                   <Button
-                    size="lg"
                     variant="outline"
                     onPointerDown={handleClear}
                     disabled={isProcessing}
-                    className="h-14 border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
+                    className="h-full min-h-[48px] border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
                   >
-                    <X className="h-6 w-6" />
+                    <X className="h-5 w-5" />
                   </Button>
                   <Button
-                    size="lg"
                     variant="outline"
                     onPointerDown={() => handleNumberClick('0')}
                     disabled={isProcessing}
-                    className="h-14 text-2xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                    className="h-full min-h-[48px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
                   >
                     0
                   </Button>
                   <Button
-                    size="lg"
                     variant="outline"
                     onPointerDown={handleBackspace}
                     disabled={isProcessing}
-                    className="h-14 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
+                    className="h-full min-h-[48px] border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
                   >
-                    <Delete className="h-6 w-6" />
+                    <Delete className="h-5 w-5" />
                   </Button>
                 </div>
               </CardContent>
@@ -715,19 +709,18 @@ export default function TotemTEFHomologacao() {
 
             {/* Botão de Pagamento */}
             <Button
-              size="lg"
               onPointerDown={handleStartTransaction}
               disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
-              className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 transition-all"
+              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 transition-all flex-shrink-0"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="h-6 w-6 mr-3 animate-spin" />
+                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
                   Processando...
                 </>
               ) : (
                 <>
-                  <DollarSign className="h-6 w-6 mr-2" />
+                  <DollarSign className="h-5 w-5 mr-1.5" />
                   PAGAR {formatCurrency(amount)}
                 </>
               )}
@@ -735,30 +728,29 @@ export default function TotemTEFHomologacao() {
 
             {/* Confirmação Pendente */}
             {pendingConfirmation && (
-              <Card className="bg-yellow-500/10 border-yellow-500/50 animate-pulse">
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 mb-3">
-                    <Clock className="h-5 w-5 text-yellow-400" />
-                    <p className="text-yellow-400 font-semibold">Transação aguardando confirmação</p>
+              <Card className="bg-yellow-500/10 border-yellow-500/50 animate-pulse flex-shrink-0">
+                <CardContent className="p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Clock className="h-4 w-4 text-yellow-400" />
+                    <p className="text-yellow-400 font-semibold text-sm">Aguardando confirmação</p>
                   </div>
-                  <div className="bg-urbana-black/30 rounded-lg p-2 mb-3 font-mono text-sm">
-                    <p className="text-urbana-light/70">NSU: <span className="text-white">{pendingConfirmation.nsu}</span></p>
-                    <p className="text-urbana-light/70">Auth: <span className="text-white">{pendingConfirmation.autorizacao}</span></p>
+                  <div className="bg-urbana-black/30 rounded p-2 mb-2 font-mono text-xs">
+                    <p className="text-urbana-light/70">NSU: <span className="text-white">{pendingConfirmation.nsu}</span> | Auth: <span className="text-white">{pendingConfirmation.autorizacao}</span></p>
                   </div>
                   <div className="flex gap-2">
                     <Button
                       onPointerDown={handleConfirmTransaction}
-                      className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-base"
+                      className="flex-1 bg-green-600 hover:bg-green-700 h-10 text-sm"
                     >
-                      <CheckCircle2 className="h-5 w-5 mr-2" />
+                      <CheckCircle2 className="h-4 w-4 mr-1.5" />
                       Confirmar
                     </Button>
                     <Button
                       onPointerDown={handleUndoTransaction}
                       variant="outline"
-                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-12 text-base"
+                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-10 text-sm"
                     >
-                      <XCircle className="h-5 w-5 mr-2" />
+                      <XCircle className="h-4 w-4 mr-1.5" />
                       Desfazer
                     </Button>
                   </div>
@@ -768,12 +760,12 @@ export default function TotemTEFHomologacao() {
 
             {/* Aviso se não conectado */}
             {(!isAndroidAvailable || !isPinpadConnected) && (
-              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-sm text-yellow-400 flex items-center gap-2">
-                  <WifiOff className="h-4 w-4" />
+              <div className="p-2 bg-yellow-500/10 border border-yellow-500/30 rounded-lg flex-shrink-0">
+                <p className="text-xs text-yellow-400 flex items-center gap-1.5">
+                  <WifiOff className="h-3.5 w-3.5" />
                   {!isAndroidAvailable 
-                    ? 'TEF Android não detectado. Execute no dispositivo Android.'
-                    : 'Pinpad não conectado. Verifique a conexão USB.'}
+                    ? 'TEF não detectado. Execute no Android.'
+                    : 'Pinpad desconectado.'}
                 </p>
               </div>
             )}
@@ -782,27 +774,27 @@ export default function TotemTEFHomologacao() {
 
         {/* Logs Tab */}
         {activeTab === 'logs' && (
-          <div className="h-full flex flex-col gap-3">
+          <div className="h-full flex flex-col gap-2">
             {/* Controles de Data */}
             <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-shrink-0">
-              <CardContent className="p-3">
-                <div className="flex items-center justify-between gap-2 mb-3">
+              <CardContent className="p-2">
+                <div className="flex items-center justify-between gap-2 mb-2">
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={() => navigateDate('prev')}
                     disabled={availableDates.indexOf(selectedDate) >= availableDates.length - 1}
-                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9 px-3"
+                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8 px-2"
                   >
                     <ChevronLeft className="h-4 w-4" />
                   </Button>
                   
                   <div className="flex-1 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <Calendar className="h-4 w-4 text-urbana-gold" />
-                      <span className="text-urbana-gold font-semibold">{selectedDayLogs.displayDate}</span>
+                    <div className="flex items-center justify-center gap-1.5">
+                      <Calendar className="h-3.5 w-3.5 text-urbana-gold" />
+                      <span className="text-urbana-gold font-semibold text-sm">{selectedDayLogs.displayDate}</span>
+                      <span className="text-xs text-urbana-light/50">({selectedDate})</span>
                     </div>
-                    <p className="text-xs text-urbana-light/50 mt-0.5">{selectedDate}</p>
                   </div>
                   
                   <Button
@@ -810,109 +802,107 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={() => navigateDate('next')}
                     disabled={availableDates.indexOf(selectedDate) <= 0}
-                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9 px-3"
+                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8 px-2"
                   >
                     <ChevronRight className="h-4 w-4" />
                   </Button>
                 </div>
 
                 {/* Ações de Log */}
-                <div className="flex flex-wrap gap-2">
+                <div className="flex gap-1.5">
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={handleCopyDayLogs}
-                    className="flex-1 min-w-[80px] border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9"
+                    className="flex-1 border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8 text-xs"
                   >
-                    <Copy className="h-3 w-3 mr-1.5" />
+                    <Copy className="h-3 w-3 mr-1" />
                     Copiar
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={handleExportDayLogs}
-                    className="flex-1 min-w-[80px] border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9"
+                    className="flex-1 border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8 text-xs"
                   >
-                    <Download className="h-3 w-3 mr-1.5" />
+                    <Download className="h-3 w-3 mr-1" />
                     Dia
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={handleExportAllLogs}
-                    className="flex-1 min-w-[80px] border-green-500/30 text-green-400 hover:bg-green-500/10 h-9"
+                    className="flex-1 border-green-500/30 text-green-400 hover:bg-green-500/10 h-8 text-xs"
                   >
-                    <FileText className="h-3 w-3 mr-1.5" />
-                    Completo
+                    <FileText className="h-3 w-3 mr-1" />
+                    Tudo
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={handleClearLogs}
-                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-9 px-3"
+                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-8 px-2"
                   >
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
 
-                {/* Status Auto-Refresh */}
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-urbana-gold/10">
-                  <div className="flex items-center gap-2">
-                    <Badge 
-                      variant="outline" 
-                      className={`cursor-pointer transition-all ${autoRefreshLogs 
-                        ? 'border-green-500 text-green-400 animate-pulse' 
-                        : 'border-gray-500 text-gray-400'}`}
-                      onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                    >
-                      <RefreshCw className={`h-3 w-3 mr-1 ${autoRefreshLogs ? 'animate-spin' : ''}`} />
-                      {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-urbana-light/50">
-                    {selectedDayLogs.transactionLogs.length} transações | {selectedDayLogs.androidLogs.length} logs
-                  </div>
+                {/* Status */}
+                <div className="flex items-center justify-between mt-2 pt-2 border-t border-urbana-gold/10">
+                  <Badge 
+                    variant="outline" 
+                    className={`cursor-pointer text-[10px] ${autoRefreshLogs 
+                      ? 'border-green-500 text-green-400 animate-pulse' 
+                      : 'border-gray-500 text-gray-400'}`}
+                    onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                  >
+                    <RefreshCw className={`h-2.5 w-2.5 mr-1 ${autoRefreshLogs ? 'animate-spin' : ''}`} />
+                    {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
+                  </Badge>
+                  <span className="text-[10px] text-urbana-light/50">
+                    {selectedDayLogs.transactionLogs.length} txn | {selectedDayLogs.androidLogs.length} logs
+                  </span>
                 </div>
               </CardContent>
             </Card>
 
             {/* Área de Logs */}
-            <div className="flex-1 overflow-hidden grid grid-rows-2 gap-3">
+            <div className="flex-1 overflow-hidden grid grid-rows-2 gap-2">
               {/* Logs de Transação */}
               <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 overflow-hidden">
-                <CardHeader className="py-2 px-4 border-b border-urbana-gold/10">
-                  <CardTitle className="text-sm text-urbana-gold flex items-center gap-2">
-                    <DollarSign className="h-4 w-4" />
+                <CardHeader className="py-1.5 px-3 border-b border-urbana-gold/10">
+                  <CardTitle className="text-xs text-urbana-gold flex items-center gap-1.5">
+                    <DollarSign className="h-3.5 w-3.5" />
                     Transações
-                    <Badge variant="outline" className="ml-auto text-xs border-urbana-gold/30 text-urbana-gold">
+                    <Badge variant="outline" className="ml-auto text-[10px] border-urbana-gold/30 text-urbana-gold px-1.5">
                       {selectedDayLogs.transactionLogs.length}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-44px)]">
+                <CardContent className="p-0 h-[calc(100%-36px)]">
                   <ScrollArea className="h-full">
                     {selectedDayLogs.transactionLogs.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-8">
-                        <FileText className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">Nenhuma transação neste dia</p>
+                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
+                        <FileText className="h-6 w-6 mb-1 opacity-50" />
+                        <p className="text-xs">Nenhuma transação</p>
                       </div>
                     ) : (
-                      <div className="p-3 space-y-2">
+                      <div className="p-2 space-y-1.5">
                         {selectedDayLogs.transactionLogs.map((log) => (
                           <div 
                             key={log.id} 
-                            className={`p-3 rounded-lg border-l-4 ${getLogBgColor(log.type)}`}
+                            className={`p-2 rounded border-l-4 ${getLogBgColor(log.type)}`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <p className={`text-sm font-medium ${getLogColor(log.type)}`}>
+                              <p className={`text-xs font-medium ${getLogColor(log.type)}`}>
                                 {log.message}
                               </p>
-                              <span className="text-[10px] text-urbana-light/40 font-mono whitespace-nowrap">
+                              <span className="text-[9px] text-urbana-light/40 font-mono whitespace-nowrap">
                                 {log.timestamp.split('T')[1].slice(0, 8)}
                               </span>
                             </div>
                             {log.data && (
-                              <pre className="mt-2 text-[10px] text-urbana-light/60 font-mono bg-urbana-black/30 rounded p-2 overflow-x-auto">
+                              <pre className="mt-1.5 text-[9px] text-urbana-light/60 font-mono bg-urbana-black/30 rounded p-1.5 overflow-x-auto">
                                 {JSON.stringify(log.data, null, 2)}
                               </pre>
                             )}
@@ -927,26 +917,26 @@ export default function TotemTEFHomologacao() {
 
               {/* Logs Android TEF */}
               <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 overflow-hidden">
-                <CardHeader className="py-2 px-4 border-b border-urbana-gold/10">
-                  <CardTitle className="text-sm text-urbana-gold flex items-center gap-2">
-                    <Smartphone className="h-4 w-4" />
-                    Logs Android TEF
-                    <Badge variant="outline" className="ml-auto text-xs border-urbana-gold/30 text-urbana-gold">
+                <CardHeader className="py-1.5 px-3 border-b border-urbana-gold/10">
+                  <CardTitle className="text-xs text-urbana-gold flex items-center gap-1.5">
+                    <Smartphone className="h-3.5 w-3.5" />
+                    Logs Android
+                    <Badge variant="outline" className="ml-auto text-[10px] border-urbana-gold/30 text-urbana-gold px-1.5">
                       {selectedDayLogs.androidLogs.length}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-44px)]">
+                <CardContent className="p-0 h-[calc(100%-36px)]">
                   <ScrollArea className="h-full">
                     {selectedDayLogs.androidLogs.length === 0 ? (
-                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-8">
-                        <Smartphone className="h-8 w-8 mb-2 opacity-50" />
-                        <p className="text-sm">
-                          {isAndroidAvailable ? 'Nenhum log disponível' : 'TEF Android não detectado'}
+                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
+                        <Smartphone className="h-6 w-6 mb-1 opacity-50" />
+                        <p className="text-xs">
+                          {isAndroidAvailable ? 'Nenhum log' : 'TEF não detectado'}
                         </p>
                       </div>
                     ) : (
-                      <div className="p-3 font-mono text-xs space-y-0.5">
+                      <div className="p-2 font-mono text-[10px] space-y-0.5">
                         {selectedDayLogs.androidLogs.map((log, i) => (
                           <div 
                             key={i} 
@@ -963,19 +953,19 @@ export default function TotemTEFHomologacao() {
               </Card>
             </div>
 
-            {/* Info Técnica */}
+            {/* Info Técnica Compacta */}
             <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-shrink-0">
-              <CardContent className="p-3">
-                <div className="grid grid-cols-4 gap-2">
+              <CardContent className="p-2">
+                <div className="grid grid-cols-4 gap-1.5">
                   {[
                     { label: 'App', value: androidVersion || 'N/A' },
-                    { label: 'Pinpad', value: pinpadStatus?.modelo?.slice(0, 10) || 'N/A' },
+                    { label: 'Pinpad', value: pinpadStatus?.modelo?.slice(0, 8) || 'N/A' },
                     { label: 'TEF', value: isAndroidAvailable ? 'OK' : 'OFF' },
                     { label: 'Conexão', value: isPinpadConnected ? 'ON' : 'OFF' }
                   ].map(({ label, value }) => (
-                    <div key={label} className="p-2 bg-urbana-black/50 rounded-lg text-center">
-                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">{label}</p>
-                      <p className="text-xs text-urbana-light font-mono mt-0.5 truncate">{value}</p>
+                    <div key={label} className="p-1.5 bg-urbana-black/50 rounded text-center">
+                      <p className="text-[9px] text-urbana-light/50 uppercase">{label}</p>
+                      <p className="text-[10px] text-urbana-light font-mono truncate">{value}</p>
                     </div>
                   ))}
                 </div>
