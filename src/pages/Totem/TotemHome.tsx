@@ -14,6 +14,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemHome: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { logout } = useTotemAuth();
   const [isIdle, setIsIdle] = useState(true);
   const [showNewFeatures, setShowNewFeatures] = useState(false);
@@ -36,16 +37,24 @@ const TotemHome: React.FC = () => {
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
+    // Abrir modal de diagnóstico TEF se vier do PDV Homologação
+    const state = location.state as { openTEFDiagnostics?: boolean } | null;
+    if (state?.openTEFDiagnostics) {
+      setShowTEFDiagnostics(true);
+      // Limpar o state para não reabrir em navegações futuras
+      window.history.replaceState({}, document.title);
+    }
+    
     // Mostrar modal de novas features na primeira visita
     const hasSeenNewFeatures = localStorage.getItem('totem_seen_new_features');
-    if (!hasSeenNewFeatures) {
+    if (!hasSeenNewFeatures && !state?.openTEFDiagnostics) {
       setTimeout(() => setShowNewFeatures(true), 1000);
     }
     
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, []);
+  }, [location.state]);
 
   const handleCloseNewFeatures = () => {
     setShowNewFeatures(false);
