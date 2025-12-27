@@ -723,9 +723,9 @@ export default function TotemTEFHomologacao() {
                       key={id}
                       variant={selectedMethod === id ? 'default' : 'outline'}
                       onPointerDown={() => setSelectedMethod(id as PaymentMethod)}
-                      className={`h-12 flex flex-col gap-0.5 ${selectedMethod === id 
-                        ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 shadow-lg shadow-urbana-gold/20' 
-                        : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                      className={`h-12 flex flex-col gap-0.5 hover:bg-transparent ${selectedMethod === id 
+                        ? 'bg-urbana-gold text-urbana-black shadow-lg shadow-urbana-gold/20' 
+                        : 'border-urbana-gold/30 text-urbana-gold'}`}
                     >
                       <Icon className="h-4 w-4" />
                       <span className="text-[10px] font-medium">{label}</span>
@@ -738,7 +738,7 @@ export default function TotemTEFHomologacao() {
                   variant="ghost"
                   size="sm"
                   onPointerDown={() => setShowAdvanced(!showAdvanced)}
-                  className="w-full h-7 text-[10px] text-urbana-light/60 hover:text-urbana-gold hover:bg-urbana-gold/5"
+                  className="w-full h-7 text-[10px] text-urbana-light/60 hover:bg-transparent hover:text-urbana-gold"
                 >
                   {showAdvanced ? '▲ Ocultar Opções Avançadas' : '▼ Opções Avançadas (Passo 03)'}
                 </Button>
@@ -759,9 +759,9 @@ export default function TotemTEFHomologacao() {
                             size="sm"
                             variant={authorizer === id ? 'default' : 'outline'}
                             onPointerDown={() => setAuthorizer(id as Authorizer)}
-                            className={`h-8 text-[10px] ${authorizer === id
+                            className={`h-8 text-[10px] hover:bg-transparent ${authorizer === id
                               ? 'bg-urbana-gold text-urbana-black'
-                              : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                              : 'border-urbana-gold/30 text-urbana-gold'}`}
                           >
                             {label}
                           </Button>
@@ -787,9 +787,9 @@ export default function TotemTEFHomologacao() {
                                 setFinancingType(id as FinancingType);
                                 if (id === 'avista') setInstallments(1);
                               }}
-                              className={`h-8 text-[10px] ${financingType === id
+                              className={`h-8 text-[10px] hover:bg-transparent ${financingType === id
                                 ? 'bg-urbana-gold text-urbana-black'
-                                : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                                : 'border-urbana-gold/30 text-urbana-gold'}`}
                             >
                               {label}
                             </Button>
@@ -811,9 +811,9 @@ export default function TotemTEFHomologacao() {
                           size="sm"
                           variant={installments === n ? 'default' : 'outline'}
                           onPointerDown={() => setInstallments(n)}
-                          className={`h-7 text-xs px-2 ${installments === n
+                          className={`h-7 text-xs px-2 hover:bg-transparent ${installments === n
                             ? 'bg-urbana-gold text-urbana-black'
-                            : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                            : 'border-urbana-gold/30 text-urbana-gold'}`}
                         >
                           {n}x
                         </Button>
@@ -831,7 +831,7 @@ export default function TotemTEFHomologacao() {
                   variant="ghost"
                   size="sm"
                   onPointerDown={() => setShowTestValues(!showTestValues)}
-                  className="w-full h-7 text-[10px] text-orange-400 hover:bg-orange-500/10 mb-1"
+                  className="w-full h-7 text-[10px] text-orange-400 hover:bg-transparent mb-1"
                 >
                   🧪 {showTestValues ? '▲ Ocultar' : '▼ Valores de Teste PayGo'}
                 </Button>
@@ -844,7 +844,7 @@ export default function TotemTEFHomologacao() {
                         size="sm"
                         variant="outline"
                         onPointerDown={() => setAmount(test.valor.toString())}
-                        className="h-auto py-1.5 px-2 text-left border-orange-500/20 text-orange-300 hover:bg-orange-500/10 flex flex-col items-start"
+                        className="h-auto py-1.5 px-2 text-left border-orange-500/20 text-orange-300 hover:bg-transparent flex flex-col items-start"
                       >
                         <span className="text-[9px] font-bold">P{test.passo}</span>
                         <span className="text-[8px] text-orange-200/70 truncate w-full">{test.desc}</span>
@@ -865,7 +865,7 @@ export default function TotemTEFHomologacao() {
                       variant="outline"
                       onPointerDown={() => handleNumberClick(num)}
                       disabled={isProcessing}
-                      className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
+                      className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-transparent active:bg-urbana-gold/20"
                     >
                       {num}
                     </Button>
@@ -874,7 +874,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleClear}
                     disabled={isProcessing}
-                    className="h-full min-h-[40px] border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
+                    className="h-full min-h-[40px] border-red-500/30 text-red-400 hover:bg-transparent active:bg-red-500/20"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -882,7 +882,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={() => handleNumberClick('0')}
                     disabled={isProcessing}
-                    className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                    className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-transparent active:bg-urbana-gold/20"
                   >
                     0
                   </Button>
@@ -890,7 +890,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleBackspace}
                     disabled={isProcessing}
-                    className="h-full min-h-[40px] border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
+                    className="h-full min-h-[40px] border-yellow-500/30 text-yellow-400 hover:bg-transparent active:bg-yellow-500/20"
                   >
                     <Delete className="h-5 w-5" />
                   </Button>
@@ -902,7 +902,7 @@ export default function TotemTEFHomologacao() {
             <Button
               onPointerDown={handleStartTransaction}
               disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
-              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 transition-all flex-shrink-0"
+              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-600 hover:to-green-500 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 flex-shrink-0"
             >
               {isProcessing ? (
                 <>
@@ -931,7 +931,7 @@ export default function TotemTEFHomologacao() {
                   <div className="flex gap-2">
                     <Button
                       onPointerDown={handleConfirmTransaction}
-                      className="flex-1 bg-green-600 hover:bg-green-700 h-10 text-sm"
+                      className="flex-1 bg-green-600 hover:bg-green-600 h-10 text-sm"
                     >
                       <CheckCircle2 className="h-4 w-4 mr-1.5" />
                       Confirmar
@@ -939,7 +939,7 @@ export default function TotemTEFHomologacao() {
                     <Button
                       onPointerDown={handleUndoTransaction}
                       variant="outline"
-                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-10 text-sm"
+                      className="flex-1 border-red-500/50 text-red-400 hover:bg-transparent h-10 text-sm"
                     >
                       <XCircle className="h-4 w-4 mr-1.5" />
                       Desfazer
