@@ -106,12 +106,21 @@ export default function TotemTEFHomologacao() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showTestValues, setShowTestValues] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  // Carregar logs do localStorage na inicialização
+  // Função para filtrar logs dos últimos 30 dias
+  const filterLogsLast30Days = (logs: TransactionLog[]): TransactionLog[] => {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return logs.filter(log => new Date(log.timestamp) >= thirtyDaysAgo);
+  };
+
+  // Carregar logs do localStorage na inicialização (mantém apenas últimos 30 dias)
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>(() => {
     try {
       const saved = localStorage.getItem('tef_homologacao_logs');
       if (saved) {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Filtrar apenas logs dos últimos 30 dias
+        return filterLogsLast30Days(parsed);
       }
     } catch (e) {
       console.error('Erro ao carregar logs do localStorage:', e);
@@ -127,14 +136,16 @@ export default function TotemTEFHomologacao() {
   const [isAndroidLogsAtBottom, setIsAndroidLogsAtBottom] = useState(true);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
   
-  // Salvar logs no localStorage sempre que mudarem
+  // Salvar logs no localStorage sempre que mudarem (filtrando logs antigos)
   useEffect(() => {
     try {
-      localStorage.setItem('tef_homologacao_logs', JSON.stringify(transactionLogs));
+      const logsToSave = filterLogsLast30Days(transactionLogs);
+      localStorage.setItem('tef_homologacao_logs', JSON.stringify(logsToSave));
     } catch (e) {
       console.error('Erro ao salvar logs no localStorage:', e);
     }
   }, [transactionLogs]);
+
 
   // Permite abrir direto na aba Logs quando vier do Diagnóstico
   useEffect(() => {
@@ -520,12 +531,13 @@ export default function TotemTEFHomologacao() {
     setPendingConfirmation(null);
   };
 
-  // Limpar logs
+  // Limpar logs (remove do localStorage também)
   const handleClearLogs = () => {
     setTransactionLogs([]);
     limparLogsAndroid();
     setAndroidLogs([]);
-    toast.success('Logs limpos');
+    localStorage.removeItem('tef_homologacao_logs');
+    toast.success('Todos os logs foram excluídos');
   };
 
   // Exportar logs do dia selecionado
