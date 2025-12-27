@@ -200,6 +200,27 @@ function storeTransaction(transaction: TEFTransactionRecord) {
   }
 }
 
+// Aliases (mantém compatibilidade com a versão usada no PDV/relatório)
+const getStoredTEFTransactions = getStoredTransactions;
+const parseTransactionsFromAndroidLogs = parseTransactionsFromLogs;
+const storeTEFTransaction = storeTransaction;
+const mergeUniqueTEFTransactions = (
+  parsed: TEFTransactionRecord[],
+  stored: TEFTransactionRecord[]
+): TEFTransactionRecord[] => {
+  const all = [...parsed, ...stored];
+  const unique = all.filter((txn, index, self) =>
+    index ===
+    self.findIndex(
+      (t) =>
+        t.id === txn.id ||
+        (t.nsuLocal === txn.nsuLocal && t.ordemId === txn.ordemId)
+    )
+  );
+  unique.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+  return unique;
+};
+
 export default function TotemTEFReportHomologacao() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState<TEFTransactionRecord[]>([]);
@@ -218,34 +239,29 @@ export default function TotemTEFReportHomologacao() {
   
   const loadTransactions = () => {
     setIsRefreshing(true);
-    
+
     // 1. Carregar do localStorage
-    const storedTxns = getStoredTransactions();
-    
+    const storedTxns = getStoredTEFTransactions();
+
     // 2. Parsear dos logs do Android (se disponível)
     let parsedTxns: TEFTransactionRecord[] = [];
     if (isAndroidTEFAvailable()) {
       const logs = getLogsAndroid();
-      parsedTxns = parseTransactionsFromLogs(logs);
-      
+      parsedTxns = parseTransactionsFromAndroidLogs(logs);
+
       // Armazenar novas transações
-      parsedTxns.forEach(txn => {
-        if (!storedTxns.find(s => s.nsuLocal === txn.nsuLocal && s.ordemId === txn.ordemId)) {
-          storeTransaction(txn);
+      parsedTxns.forEach((txn) => {
+        // só grava quando existe NSU Local/Host (PayGo) ou ordem
+        if (txn.nsuLocal || txn.nsuHost || txn.ordemId) {
+          storeTEFTransaction(txn);
         }
       });
     }
-    
+
     // Combinar e remover duplicatas
-    const allTxns = [...parsedTxns, ...storedTxns];
-    const uniqueTxns = allTxns.filter((txn, index, self) => 
-      index === self.findIndex(t => t.id === txn.id || (t.nsuLocal === txn.nsuLocal && t.ordemId === txn.ordemId))
-    );
-    
-    // Ordenar por timestamp (mais recente primeiro)
-    uniqueTxns.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-    
+    const uniqueTxns = mergeUniqueTEFTransactions(parsedTxns, storedTxns);
     setTransactions(uniqueTxns);
+
     setIsRefreshing(false);
   };
   
