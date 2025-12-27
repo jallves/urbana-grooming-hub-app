@@ -529,7 +529,7 @@ export default function TotemTEFHomologacao() {
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
       {/* Header Compacto */}
       <header className="flex-shrink-0 bg-urbana-black/80 backdrop-blur-sm border-b border-urbana-gold/20 px-2 md:px-4 py-2 safe-area-inset-top">
         <div className="flex items-center justify-between">
