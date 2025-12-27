@@ -565,10 +565,17 @@ export default function TotemTEFHomologacao() {
     }
   };
 
-  // Extrair NSU Local das transações para a planilha
+  // Extrair NSU Local das transações para a planilha (removendo duplicatas)
   const nsuLocalList = useMemo(() => {
+    const seenNsus = new Set<string>();
     return transactionLogs
       .filter(log => log.type === 'success' && log.data?.nsu)
+      .filter(log => {
+        const nsu = String(log.data?.nsu || '');
+        if (seenNsus.has(nsu)) return false;
+        seenNsus.add(nsu);
+        return true;
+      })
       .map(log => ({
         id: log.id,
         timestamp: log.timestamp,
