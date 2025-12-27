@@ -236,9 +236,18 @@ export default function TotemTEFHomologacao() {
       
       const valorCentavos = parseInt(amount, 10);
       const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
+      const resultadoEsperado = testePasso?.resultado || 'N/A';
+      const timestamp = new Date().toISOString();
       
-      addLog('error', `❌ ERRO NA TRANSAÇÃO: ${erro}`, {
-        passoTeste: testePasso?.passo
+      // Para transações negadas, registrar com dados de comprovação
+      addLog('error', `❌ TRANSAÇÃO NEGADA`, {
+        passoTeste: testePasso?.passo,
+        resultadoEsperado,
+        valor: valorCentavos / 100,
+        motivoNegacao: erro,
+        timestamp,
+        // Sem NSU/Auth porque transações negadas não geram esses dados
+        observacao: 'Transações negadas não geram NSU ou código de autorização'
       });
       
       // Mostrar modal de resultado
@@ -246,8 +255,8 @@ export default function TotemTEFHomologacao() {
         show: true,
         status: 'negado',
         valor: parseInt(amount, 10) / 100,
-        nsu: '',
-        autorizacao: '',
+        nsu: 'N/A (negado)',
+        autorizacao: 'N/A (negado)',
         bandeira: '',
         mensagem: erro,
         passoTeste: testePasso?.passo
