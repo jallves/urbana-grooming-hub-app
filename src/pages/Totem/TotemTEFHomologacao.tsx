@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { 
   RefreshCw, 
   Smartphone, 
@@ -21,7 +20,9 @@ import {
   Banknote,
   QrCode,
   Delete,
-  X
+  X,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -52,7 +53,9 @@ export default function TotemTEFHomologacao() {
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
   const [androidLogs, setAndroidLogs] = useState<string[]>([]);
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(true);
-  const logsEndRef = useRef<HTMLDivElement>(null);
+  const [showLogs, setShowLogs] = useState(false);
+  const transactionLogsEndRef = useRef<HTMLDivElement>(null);
+  const androidLogsEndRef = useRef<HTMLDivElement>(null);
   
   // Dados da última transação para confirmação manual
   const [pendingConfirmation, setPendingConfirmation] = useState<{
@@ -128,12 +131,18 @@ export default function TotemTEFHomologacao() {
     setTransactionLogs(prev => [...prev, log]);
   }, []);
 
-  // Auto-scroll logs
+  // Auto-scroll apenas dentro das ScrollAreas de logs (não afeta a página principal)
   useEffect(() => {
-    if (logsEndRef.current) {
-      logsEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    if (showLogs && transactionLogsEndRef.current) {
+      transactionLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [transactionLogs, androidLogs]);
+  }, [transactionLogs, showLogs]);
+
+  useEffect(() => {
+    if (showLogs && androidLogsEndRef.current) {
+      androidLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    }
+  }, [androidLogs, showLogs]);
 
   // Auto-refresh Android logs
   useEffect(() => {
@@ -326,14 +335,14 @@ export default function TotemTEFHomologacao() {
   };
 
   return (
-    <div className="min-h-screen bg-urbana-black text-white p-4">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+    <div className="h-screen bg-urbana-black text-white flex flex-col overflow-hidden">
+      {/* Header Fixo */}
+      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-urbana-gold/20">
         <div className="flex items-center gap-3">
           <Button 
             variant="ghost" 
             size="icon"
-            onClick={() => navigate('/totem')}
+            onPointerDown={() => navigate('/totem')}
             className="text-urbana-gold hover:bg-urbana-gold/10"
           >
             <ArrowLeft className="h-5 w-5" />
@@ -363,352 +372,350 @@ export default function TotemTEFHomologacao() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Left Column - PDV */}
-        <div className="space-y-4">
-          {/* Valor Display */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardContent className="p-6">
-              <p className="text-sm text-urbana-light/60 mb-2">Valor da transação</p>
-              <div className="text-4xl font-bold text-urbana-gold text-center py-4">
-                {formatCurrency(amount)}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Método de Pagamento */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm text-urbana-gold">Forma de Pagamento</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="grid grid-cols-3 gap-2">
-                <Button
-                  variant={selectedMethod === 'debito' ? 'default' : 'outline'}
-                  onClick={() => setSelectedMethod('debito')}
-                  className={selectedMethod === 'debito' 
-                    ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
-                    : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}
-                >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  Débito
-                </Button>
-                <Button
-                  variant={selectedMethod === 'credito' ? 'default' : 'outline'}
-                  onClick={() => setSelectedMethod('credito')}
-                  className={selectedMethod === 'credito' 
-                    ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
-                    : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}
-                >
-                  <Banknote className="h-4 w-4 mr-2" />
-                  Crédito
-                </Button>
-                <Button
-                  variant={selectedMethod === 'pix' ? 'default' : 'outline'}
-                  onClick={() => setSelectedMethod('pix')}
-                  className={selectedMethod === 'pix' 
-                    ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
-                    : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}
-                >
-                  <QrCode className="h-4 w-4 mr-2" />
-                  PIX
-                </Button>
-              </div>
-
-              {/* Parcelas - apenas para crédito */}
-              {selectedMethod === 'credito' && (
-                <div className="mt-3">
-                  <p className="text-xs text-urbana-light/60 mb-2">Parcelas</p>
-                  <div className="grid grid-cols-6 gap-1">
-                    {[1, 2, 3, 4, 5, 6].map((n) => (
-                      <Button
-                        key={n}
-                        size="sm"
-                        variant={installments === n ? 'default' : 'outline'}
-                        onClick={() => setInstallments(n)}
-                        className={installments === n 
-                          ? 'bg-urbana-gold text-urbana-black text-xs' 
-                          : 'border-urbana-gold/30 text-urbana-gold text-xs hover:bg-urbana-gold/10'}
-                      >
-                        {n}x
-                      </Button>
-                    ))}
-                  </div>
-                  <div className="grid grid-cols-6 gap-1 mt-1">
-                    {[7, 8, 9, 10, 11, 12].map((n) => (
-                      <Button
-                        key={n}
-                        size="sm"
-                        variant={installments === n ? 'default' : 'outline'}
-                        onClick={() => setInstallments(n)}
-                        className={installments === n 
-                          ? 'bg-urbana-gold text-urbana-black text-xs' 
-                          : 'border-urbana-gold/30 text-urbana-gold text-xs hover:bg-urbana-gold/10'}
-                      >
-                        {n}x
-                      </Button>
-                    ))}
-                  </div>
+      {/* Conteúdo Principal - PDV Fixo */}
+      <div className="flex-1 overflow-hidden p-4">
+        <div className="h-full flex flex-col lg:flex-row gap-4">
+          {/* Coluna Esquerda - PDV (sempre visível, sem scroll) */}
+          <div className="flex-shrink-0 lg:w-1/2 space-y-3">
+            {/* Valor Display */}
+            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+              <CardContent className="p-4">
+                <p className="text-sm text-urbana-light/60 mb-1">Valor da transação</p>
+                <div className="text-3xl font-bold text-urbana-gold text-center py-2">
+                  {formatCurrency(amount)}
                 </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* Teclado Numérico */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardContent className="p-4">
-              <div className="grid grid-cols-3 gap-2">
-                {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
+            {/* Método de Pagamento */}
+            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+              <CardHeader className="py-2 px-4">
+                <CardTitle className="text-sm text-urbana-gold">Forma de Pagamento</CardTitle>
+              </CardHeader>
+              <CardContent className="px-4 pb-4 pt-0 space-y-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button
-                    key={num}
+                    variant={selectedMethod === 'debito' ? 'default' : 'outline'}
+                    onPointerDown={() => setSelectedMethod('debito')}
+                    className={selectedMethod === 'debito' 
+                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
+                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
+                  >
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Débito
+                  </Button>
+                  <Button
+                    variant={selectedMethod === 'credito' ? 'default' : 'outline'}
+                    onPointerDown={() => setSelectedMethod('credito')}
+                    className={selectedMethod === 'credito' 
+                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
+                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
+                  >
+                    <Banknote className="h-4 w-4 mr-2" />
+                    Crédito
+                  </Button>
+                  <Button
+                    variant={selectedMethod === 'pix' ? 'default' : 'outline'}
+                    onPointerDown={() => setSelectedMethod('pix')}
+                    className={selectedMethod === 'pix' 
+                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
+                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
+                  >
+                    <QrCode className="h-4 w-4 mr-2" />
+                    PIX
+                  </Button>
+                </div>
+
+                {/* Parcelas - apenas para crédito */}
+                {selectedMethod === 'credito' && (
+                  <div className="mt-2">
+                    <p className="text-xs text-urbana-light/60 mb-1">Parcelas</p>
+                    <div className="grid grid-cols-6 gap-1">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                        <Button
+                          key={n}
+                          size="sm"
+                          variant={installments === n ? 'default' : 'outline'}
+                          onPointerDown={() => setInstallments(n)}
+                          className={installments === n 
+                            ? 'bg-urbana-gold text-urbana-black text-xs h-8' 
+                            : 'border-urbana-gold/30 text-urbana-gold text-xs h-8 hover:bg-urbana-gold/10'}
+                        >
+                          {n}x
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Teclado Numérico Compacto */}
+            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-3 gap-2">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
+                    <Button
+                      key={num}
+                      size="lg"
+                      variant="outline"
+                      onPointerDown={() => handleNumberClick(num)}
+                      disabled={isProcessing}
+                      className="h-12 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                    >
+                      {num}
+                    </Button>
+                  ))}
+                  <Button
                     size="lg"
                     variant="outline"
-                    onClick={() => handleNumberClick(num)}
+                    onPointerDown={handleClear}
                     disabled={isProcessing}
-                    className="h-14 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
+                    className="h-12 border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
                   >
-                    {num}
-                  </Button>
-                ))}
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleClear}
-                  disabled={isProcessing}
-                  className="h-14 border-red-500/30 text-red-400 hover:bg-red-500/10"
-                >
-                  <X className="h-5 w-5" />
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={() => handleNumberClick('0')}
-                  disabled={isProcessing}
-                  className="h-14 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
-                >
-                  0
-                </Button>
-                <Button
-                  size="lg"
-                  variant="outline"
-                  onClick={handleBackspace}
-                  disabled={isProcessing}
-                  className="h-14 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10"
-                >
-                  <Delete className="h-5 w-5" />
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Botão de Pagamento */}
-          <Button
-            size="lg"
-            onClick={handleStartTransaction}
-            disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
-            className="w-full h-16 text-xl bg-green-600 hover:bg-green-700 text-white"
-          >
-            {isProcessing ? (
-              <>
-                <Loader2 className="h-6 w-6 mr-2 animate-spin" />
-                Processando...
-              </>
-            ) : (
-              <>
-                <DollarSign className="h-6 w-6 mr-2" />
-                PAGAR {formatCurrency(amount)}
-              </>
-            )}
-          </Button>
-
-          {/* Confirmação Pendente */}
-          {pendingConfirmation && (
-            <Card className="bg-yellow-500/10 border-yellow-500/50">
-              <CardContent className="p-4">
-                <p className="text-yellow-400 font-medium mb-2">⚠️ Transação aguardando confirmação</p>
-                <p className="text-sm text-yellow-300/70 mb-3">
-                  NSU: {pendingConfirmation.nsu} | Auth: {pendingConfirmation.autorizacao}
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={handleConfirmTransaction}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    Confirmar
+                    <X className="h-5 w-5" />
                   </Button>
                   <Button
-                    onClick={handleUndoTransaction}
+                    size="lg"
                     variant="outline"
-                    className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                    onPointerDown={() => handleNumberClick('0')}
+                    disabled={isProcessing}
+                    className="h-12 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
                   >
-                    <XCircle className="h-4 w-4 mr-2" />
-                    Desfazer
+                    0
+                  </Button>
+                  <Button
+                    size="lg"
+                    variant="outline"
+                    onPointerDown={handleBackspace}
+                    disabled={isProcessing}
+                    className="h-12 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
+                  >
+                    <Delete className="h-5 w-5" />
                   </Button>
                 </div>
               </CardContent>
             </Card>
-          )}
 
-          {/* Aviso se não conectado */}
-          {(!isAndroidAvailable || !isPinpadConnected) && (
-            <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-              <p className="text-sm text-yellow-400">
-                {!isAndroidAvailable 
-                  ? '⚠️ TEF Android não detectado. Execute no dispositivo Android.'
-                  : '⚠️ Pinpad não conectado. Verifique a conexão USB.'}
-              </p>
+            {/* Botão de Pagamento */}
+            <Button
+              size="lg"
+              onPointerDown={handleStartTransaction}
+              disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
+              className="w-full h-14 text-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white disabled:opacity-50"
+            >
+              {isProcessing ? (
+                <>
+                  <Loader2 className="h-6 w-6 mr-2 animate-spin" />
+                  Processando...
+                </>
+              ) : (
+                <>
+                  <DollarSign className="h-6 w-6 mr-2" />
+                  PAGAR {formatCurrency(amount)}
+                </>
+              )}
+            </Button>
+
+            {/* Confirmação Pendente */}
+            {pendingConfirmation && (
+              <Card className="bg-yellow-500/10 border-yellow-500/50">
+                <CardContent className="p-3">
+                  <p className="text-yellow-400 font-medium mb-2 text-sm">⚠️ Transação aguardando confirmação</p>
+                  <p className="text-xs text-yellow-300/70 mb-2">
+                    NSU: {pendingConfirmation.nsu} | Auth: {pendingConfirmation.autorizacao}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      onPointerDown={handleConfirmTransaction}
+                      className="flex-1 bg-green-600 hover:bg-green-700 h-10"
+                    >
+                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      Confirmar
+                    </Button>
+                    <Button
+                      onPointerDown={handleUndoTransaction}
+                      variant="outline"
+                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-10"
+                    >
+                      <XCircle className="h-4 w-4 mr-2" />
+                      Desfazer
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Aviso se não conectado */}
+            {(!isAndroidAvailable || !isPinpadConnected) && (
+              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-sm text-yellow-400">
+                  {!isAndroidAvailable 
+                    ? '⚠️ TEF Android não detectado. Execute no dispositivo Android.'
+                    : '⚠️ Pinpad não conectado. Verifique a conexão USB.'}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Coluna Direita - Logs (colapsável) */}
+          <div className="flex-1 lg:flex lg:flex-col min-h-0">
+            {/* Botão para mostrar/ocultar logs */}
+            <Button
+              variant="outline"
+              onPointerDown={() => setShowLogs(!showLogs)}
+              className="w-full mb-2 border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 lg:hidden"
+            >
+              {showLogs ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
+              {showLogs ? 'Ocultar Logs' : 'Ver Logs'} ({transactionLogs.length + androidLogs.length})
+            </Button>
+
+            {/* Logs Container */}
+            <div className={`flex-1 overflow-hidden ${showLogs ? 'block' : 'hidden lg:block'}`}>
+              <div className="h-full flex flex-col gap-3">
+                {/* Controles de Log */}
+                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-shrink-0">
+                  <CardHeader className="py-2 px-4">
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="text-sm text-urbana-gold">Logs</CardTitle>
+                      <Badge 
+                        variant="outline" 
+                        className={autoRefreshLogs ? 'border-green-500 text-green-400 animate-pulse cursor-pointer' : 'border-gray-500 text-gray-400 cursor-pointer'}
+                        onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                      >
+                        {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-3 pt-0">
+                    <div className="flex gap-2 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onPointerDown={handleCopyLogs}
+                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
+                      >
+                        <Copy className="h-3 w-3 mr-1" />
+                        Copiar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onPointerDown={handleExportLogs}
+                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
+                      >
+                        <Download className="h-3 w-3 mr-1" />
+                        Exportar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onPointerDown={handleClearLogs}
+                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-8"
+                      >
+                        <Trash2 className="h-3 w-3 mr-1" />
+                        Limpar
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onPointerDown={() => {
+                          verificarConexao();
+                          refreshAndroidLogs();
+                        }}
+                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Atualizar
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Logs de Transação */}
+                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-1 min-h-0 overflow-hidden">
+                  <CardHeader className="py-2 px-4">
+                    <CardTitle className="text-xs text-urbana-light/60">Transações ({transactionLogs.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 pt-0 h-[calc(100%-40px)]">
+                    <ScrollArea className="h-full rounded border border-urbana-gold/10 bg-urbana-black p-2">
+                      {transactionLogs.length === 0 ? (
+                        <p className="text-sm text-urbana-light/40 text-center py-4">
+                          Nenhuma transação registrada
+                        </p>
+                      ) : (
+                        <div className="space-y-1 font-mono text-xs">
+                          {transactionLogs.map((log, i) => (
+                            <div key={i} className={getLogColor(log.type)}>
+                              <span className="text-urbana-light/40">[{log.timestamp.split('T')[1].slice(0, 8)}]</span>{' '}
+                              {log.message}
+                              {log.data && (
+                                <div className="ml-4 text-urbana-light/50 text-[10px]">
+                                  {JSON.stringify(log.data)}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          <div ref={transactionLogsEndRef} />
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Logs Android TEF */}
+                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-1 min-h-0 overflow-hidden">
+                  <CardHeader className="py-2 px-4">
+                    <CardTitle className="text-xs text-urbana-light/60">Logs Android TEF ({androidLogs.length})</CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-4 pb-4 pt-0 h-[calc(100%-40px)]">
+                    <ScrollArea className="h-full rounded border border-urbana-gold/10 bg-urbana-black p-2">
+                      {androidLogs.length === 0 ? (
+                        <p className="text-sm text-urbana-light/40 text-center py-4">
+                          {isAndroidAvailable 
+                            ? 'Nenhum log disponível' 
+                            : 'TEF Android não detectado'}
+                        </p>
+                      ) : (
+                        <div className="space-y-0.5 font-mono text-[10px]">
+                          {androidLogs.map((log, i) => (
+                            <div key={i} className={getAndroidLogColor(log)}>
+                              {log}
+                            </div>
+                          ))}
+                          <div ref={androidLogsEndRef} />
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </CardContent>
+                </Card>
+
+                {/* Info Técnica Compacta */}
+                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-shrink-0">
+                  <CardContent className="p-3">
+                    <div className="grid grid-cols-4 gap-2 text-xs">
+                      <div className="p-2 bg-urbana-black/50 rounded text-center">
+                        <p className="text-urbana-light/50 text-[10px]">App</p>
+                        <p className="text-urbana-light font-mono text-[10px]">{androidVersion || 'N/A'}</p>
+                      </div>
+                      <div className="p-2 bg-urbana-black/50 rounded text-center">
+                        <p className="text-urbana-light/50 text-[10px]">Pinpad</p>
+                        <p className="text-urbana-light font-mono text-[10px]">{pinpadStatus?.modelo || 'N/A'}</p>
+                      </div>
+                      <div className="p-2 bg-urbana-black/50 rounded text-center">
+                        <p className="text-urbana-light/50 text-[10px]">TEF</p>
+                        <p className="text-urbana-light font-mono text-[10px]">{isAndroidAvailable ? 'OK' : 'OFF'}</p>
+                      </div>
+                      <div className="p-2 bg-urbana-black/50 rounded text-center">
+                        <p className="text-urbana-light/50 text-[10px]">Conexão</p>
+                        <p className="text-urbana-light font-mono text-[10px]">{isPinpadConnected ? 'ON' : 'OFF'}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
             </div>
-          )}
-        </div>
-
-        {/* Right Column - Logs */}
-        <div className="space-y-4">
-          {/* Controles de Log */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardHeader className="pb-2">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm text-urbana-gold">Logs de Transação</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Badge 
-                    variant="outline" 
-                    className={autoRefreshLogs ? 'border-green-500 text-green-400 animate-pulse' : 'border-gray-500 text-gray-400'}
-                    onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <div className="flex gap-2">
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleCopyLogs}
-                  className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
-                >
-                  <Copy className="h-4 w-4 mr-1" />
-                  Copiar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleExportLogs}
-                  className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
-                >
-                  <Download className="h-4 w-4 mr-1" />
-                  Exportar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={handleClearLogs}
-                  className="border-red-500/30 text-red-400 hover:bg-red-500/10"
-                >
-                  <Trash2 className="h-4 w-4 mr-1" />
-                  Limpar
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    verificarConexao();
-                    refreshAndroidLogs();
-                  }}
-                  className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
-                >
-                  <RefreshCw className="h-4 w-4 mr-1" />
-                  Atualizar
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Logs de Transação */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-urbana-light/60">Transações ({transactionLogs.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-40 rounded border border-urbana-gold/10 bg-urbana-black p-2">
-                {transactionLogs.length === 0 ? (
-                  <p className="text-sm text-urbana-light/40 text-center py-4">
-                    Nenhuma transação registrada
-                  </p>
-                ) : (
-                  <div className="space-y-1 font-mono text-xs">
-                    {transactionLogs.map((log, i) => (
-                      <div key={i} className={getLogColor(log.type)}>
-                        <span className="text-urbana-light/40">[{log.timestamp.split('T')[1].slice(0, 8)}]</span>{' '}
-                        {log.message}
-                        {log.data && (
-                          <div className="ml-4 text-urbana-light/50 text-[10px]">
-                            {JSON.stringify(log.data)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                    <div ref={logsEndRef} />
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Logs Android TEF */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-urbana-light/60">Logs Android TEF ({androidLogs.length})</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ScrollArea className="h-64 rounded border border-urbana-gold/10 bg-urbana-black p-2">
-                {androidLogs.length === 0 ? (
-                  <p className="text-sm text-urbana-light/40 text-center py-4">
-                    {isAndroidAvailable 
-                      ? 'Nenhum log disponível' 
-                      : 'TEF Android não detectado'}
-                  </p>
-                ) : (
-                  <div className="space-y-0.5 font-mono text-[10px]">
-                    {androidLogs.map((log, i) => (
-                      <div key={i} className={getAndroidLogColor(log)}>
-                        {log}
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </ScrollArea>
-            </CardContent>
-          </Card>
-
-          {/* Info Técnica */}
-          <Card className="bg-urbana-black-soft border-urbana-gold/30">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-xs text-urbana-light/60">Informações Técnicas</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 bg-urbana-black/50 rounded">
-                  <p className="text-urbana-light/50">App Version</p>
-                  <p className="text-urbana-light font-mono">{androidVersion || 'N/A'}</p>
-                </div>
-                <div className="p-2 bg-urbana-black/50 rounded">
-                  <p className="text-urbana-light/50">Pinpad</p>
-                  <p className="text-urbana-light font-mono">{pinpadStatus?.modelo || 'N/A'}</p>
-                </div>
-                <div className="p-2 bg-urbana-black/50 rounded">
-                  <p className="text-urbana-light/50">window.TEF</p>
-                  <p className="text-urbana-light font-mono">{isAndroidAvailable ? 'OK' : 'null'}</p>
-                </div>
-                <div className="p-2 bg-urbana-black/50 rounded">
-                  <p className="text-urbana-light/50">Conexão</p>
-                  <p className="text-urbana-light font-mono">{isPinpadConnected ? 'Conectado' : 'Offline'}</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          </div>
         </div>
       </div>
     </div>
