@@ -23,7 +23,8 @@ import {
   Copy,
   Loader2,
   Zap,
-  TestTubes
+  TestTubes,
+  FileSpreadsheet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -339,6 +340,19 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
                 >
                   <TestTubes className="w-4 h-4 mr-2" />
                   Abrir PDV de Homologação PayGo
+                </Button>
+
+                {/* Botão Relatório para Planilha */}
+                <Button
+                  onClick={() => {
+                    onClose();
+                    navigate('/totem/tef-report');
+                  }}
+                  variant="outline"
+                  className="w-full border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Relatório p/ Planilha (NSU Local)
                 </Button>
 
                 {/* Aviso de teste */}
