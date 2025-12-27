@@ -44,6 +44,25 @@ import { toast } from 'sonner';
 import { formatBrazilDate, getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 type PaymentMethod = 'debito' | 'credito' | 'pix';
+type FinancingType = 'avista' | 'parcelado_loja' | 'parcelado_emissor';
+type Authorizer = 'DEMO' | 'REDE' | 'PIX_C6_BANK';
+
+// Valores dos testes obrigatórios PayGo (Android)
+const PAYGO_TEST_VALUES = [
+  { passo: '02', valor: 10000000, desc: 'Venda máxima', resultado: 'Aprovada' },
+  { passo: '04', valor: 100001, desc: 'Venda negada', resultado: 'Negada' },
+  { passo: '08', valor: 10000, desc: 'Parcelado 99x', resultado: 'Aprovada' },
+  { passo: '19', valor: 1234567, desc: 'Venda p/ cancelar', resultado: 'Aprovada' },
+  { passo: '30', valor: 100300, desc: 'Msg máxima', resultado: 'Aprovada' },
+  { passo: '33', valor: 100560, desc: 'Pendente #1', resultado: 'Aprovada' },
+  { passo: '34', valor: 100561, desc: 'Pendente #2', resultado: 'Negada' },
+  { passo: '35', valor: 101200, desc: 'Confirmação', resultado: 'Aprovada' },
+  { passo: '37', valor: 101100, desc: 'Desfazimento', resultado: 'Desfeita' },
+  { passo: '39', valor: 101300, desc: 'Falha mercadoria', resultado: 'Aprovada' },
+  { passo: '45', valor: 102000, desc: 'Contactless', resultado: 'Aprovada' },
+  { passo: '46', valor: 99900, desc: 'Contactless s/senha', resultado: 'Aprovada' },
+  { passo: '53', valor: 50000, desc: 'PIX R$500', resultado: 'Aprovada' },
+];
 
 interface TransactionLog {
   id: string;
@@ -66,7 +85,11 @@ export default function TotemTEFHomologacao() {
   const location = useLocation();
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('debito');
+  const [financingType, setFinancingType] = useState<FinancingType>('avista');
+  const [authorizer, setAuthorizer] = useState<Authorizer>('DEMO');
   const [installments, setInstallments] = useState(1);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [showTestValues, setShowTestValues] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
   const [androidLogs, setAndroidLogs] = useState<{ timestamp: string; message: string }[]>([]);
@@ -337,11 +360,23 @@ export default function TotemTEFHomologacao() {
     const valorReais = parseInt(amount, 10) / 100;
     const orderId = `HOMOLOG_${Date.now()}`;
 
-    addLog('transaction', `🚀 INICIANDO TRANSAÇÃO`, {
+    // Determinar parcelas baseado no tipo de financiamento
+    const parcelas = selectedMethod === 'credito' && financingType !== 'avista' 
+      ? installments 
+      : 1;
+
+    // Encontrar passo do teste se for um valor conhecido
+    const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === parseInt(amount, 10));
+
+    addLog('transaction', `🚀 INICIANDO TRANSAÇÃO ${testePasso ? `(Passo ${testePasso.passo})` : ''}`, {
       orderId,
       valor: valorReais,
       metodo: selectedMethod,
-      parcelas: selectedMethod === 'credito' ? installments : 1
+      autorizador: authorizer,
+      financiamento: financingType,
+      parcelas,
+      passoTeste: testePasso?.passo,
+      resultadoEsperado: testePasso?.resultado
     });
 
     const tipo = selectedMethod === 'debito' ? 'debit' : 
@@ -351,7 +386,7 @@ export default function TotemTEFHomologacao() {
       ordemId: orderId,
       valor: valorReais,
       tipo,
-      parcelas: selectedMethod === 'credito' ? installments : 1
+      parcelas
     });
   };
 
@@ -698,25 +733,123 @@ export default function TotemTEFHomologacao() {
                   ))}
                 </div>
 
-                {/* Parcelas */}
-                {selectedMethod === 'credito' && (
+                {/* Opções Avançadas Toggle */}
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPointerDown={() => setShowAdvanced(!showAdvanced)}
+                  className="w-full h-7 text-[10px] text-urbana-light/60 hover:text-urbana-gold hover:bg-urbana-gold/5"
+                >
+                  {showAdvanced ? '▲ Ocultar Opções Avançadas' : '▼ Opções Avançadas (Passo 03)'}
+                </Button>
+
+                {showAdvanced && (
+                  <>
+                    {/* Autorizador */}
+                    <div>
+                      <p className="text-[10px] text-urbana-light/60 mb-1 uppercase tracking-wider">Autorizador</p>
+                      <div className="grid grid-cols-3 gap-1.5">
+                        {[
+                          { id: 'DEMO', label: 'DEMO' },
+                          { id: 'REDE', label: 'REDE' },
+                          { id: 'PIX_C6_BANK', label: 'PIX C6' }
+                        ].map(({ id, label }) => (
+                          <Button
+                            key={id}
+                            size="sm"
+                            variant={authorizer === id ? 'default' : 'outline'}
+                            onPointerDown={() => setAuthorizer(id as Authorizer)}
+                            className={`h-8 text-[10px] ${authorizer === id
+                              ? 'bg-urbana-gold text-urbana-black'
+                              : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                          >
+                            {label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Tipo de Financiamento (só para crédito) */}
+                    {selectedMethod === 'credito' && (
+                      <div>
+                        <p className="text-[10px] text-urbana-light/60 mb-1 uppercase tracking-wider">Financiamento</p>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[
+                            { id: 'avista', label: 'À Vista' },
+                            { id: 'parcelado_loja', label: 'Parc. Loja' },
+                            { id: 'parcelado_emissor', label: 'Parc. Emissor' }
+                          ].map(({ id, label }) => (
+                            <Button
+                              key={id}
+                              size="sm"
+                              variant={financingType === id ? 'default' : 'outline'}
+                              onPointerDown={() => {
+                                setFinancingType(id as FinancingType);
+                                if (id === 'avista') setInstallments(1);
+                              }}
+                              className={`h-8 text-[10px] ${financingType === id
+                                ? 'bg-urbana-gold text-urbana-black'
+                                : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                            >
+                              {label}
+                            </Button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+
+                {/* Parcelas - Expandido para 99 (Passo 08) */}
+                {selectedMethod === 'credito' && financingType !== 'avista' && (
                   <div>
-                    <p className="text-[10px] text-urbana-light/60 mb-1.5 uppercase tracking-wider">Parcelas</p>
-                    <div className="grid grid-cols-6 gap-1">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
+                    <p className="text-[10px] text-urbana-light/60 mb-1.5 uppercase tracking-wider">Parcelas (até 99x)</p>
+                    <div className="flex flex-wrap gap-1">
+                      {[1, 2, 3, 6, 10, 12, 24, 48, 99].map((n) => (
                         <Button
                           key={n}
                           size="sm"
                           variant={installments === n ? 'default' : 'outline'}
                           onPointerDown={() => setInstallments(n)}
-                          className={`h-8 text-xs font-medium ${installments === n 
-                            ? 'bg-urbana-gold text-urbana-black' 
+                          className={`h-7 text-xs px-2 ${installments === n
+                            ? 'bg-urbana-gold text-urbana-black'
                             : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
                         >
                           {n}x
                         </Button>
                       ))}
                     </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Valores de Teste PayGo */}
+            <Card className="bg-urbana-black-soft/80 border-orange-500/30 flex-shrink-0">
+              <CardContent className="p-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPointerDown={() => setShowTestValues(!showTestValues)}
+                  className="w-full h-7 text-[10px] text-orange-400 hover:bg-orange-500/10 mb-1"
+                >
+                  🧪 {showTestValues ? '▲ Ocultar' : '▼ Valores de Teste PayGo'}
+                </Button>
+                
+                {showTestValues && (
+                  <div className="grid grid-cols-3 gap-1 max-h-32 overflow-auto">
+                    {PAYGO_TEST_VALUES.map((test) => (
+                      <Button
+                        key={test.passo}
+                        size="sm"
+                        variant="outline"
+                        onPointerDown={() => setAmount(test.valor.toString())}
+                        className="h-auto py-1.5 px-2 text-left border-orange-500/20 text-orange-300 hover:bg-orange-500/10 flex flex-col items-start"
+                      >
+                        <span className="text-[9px] font-bold">P{test.passo}</span>
+                        <span className="text-[8px] text-orange-200/70 truncate w-full">{test.desc}</span>
+                      </Button>
+                    ))}
                   </div>
                 )}
               </CardContent>
@@ -732,7 +865,7 @@ export default function TotemTEFHomologacao() {
                       variant="outline"
                       onPointerDown={() => handleNumberClick(num)}
                       disabled={isProcessing}
-                      className="h-full min-h-[48px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
+                      className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
                     >
                       {num}
                     </Button>
@@ -741,7 +874,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleClear}
                     disabled={isProcessing}
-                    className="h-full min-h-[48px] border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
+                    className="h-full min-h-[40px] border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
                   >
                     <X className="h-5 w-5" />
                   </Button>
@@ -749,7 +882,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={() => handleNumberClick('0')}
                     disabled={isProcessing}
-                    className="h-full min-h-[48px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                    className="h-full min-h-[40px] text-xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
                   >
                     0
                   </Button>
@@ -757,7 +890,7 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleBackspace}
                     disabled={isProcessing}
-                    className="h-full min-h-[48px] border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
+                    className="h-full min-h-[40px] border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
                   >
                     <Delete className="h-5 w-5" />
                   </Button>
