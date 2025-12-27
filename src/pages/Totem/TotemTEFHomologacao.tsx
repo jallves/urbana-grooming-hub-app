@@ -48,20 +48,33 @@ type FinancingType = 'avista' | 'parcelado_loja' | 'parcelado_emissor';
 type Authorizer = 'DEMO' | 'REDE' | 'PIX_C6_BANK';
 
 // Valores dos testes obrigatórios PayGo (Android)
-const PAYGO_TEST_VALUES = [
-  { passo: '02', valor: 10000000, desc: 'Venda máxima', resultado: 'Aprovada' },
-  { passo: '04', valor: 100001, desc: 'Venda negada', resultado: 'Negada' },
-  { passo: '08', valor: 10000, desc: 'Parcelado 99x', resultado: 'Aprovada' },
-  { passo: '19', valor: 1234567, desc: 'Venda p/ cancelar', resultado: 'Aprovada' },
-  { passo: '30', valor: 100300, desc: 'Msg máxima', resultado: 'Aprovada' },
-  { passo: '33', valor: 100560, desc: 'Pendente #1', resultado: 'Aprovada' },
-  { passo: '34', valor: 100561, desc: 'Pendente #2', resultado: 'Negada' },
-  { passo: '35', valor: 101200, desc: 'Confirmação', resultado: 'Aprovada' },
-  { passo: '37', valor: 101100, desc: 'Desfazimento', resultado: 'Desfeita' },
-  { passo: '39', valor: 101300, desc: 'Falha mercadoria', resultado: 'Aprovada' },
-  { passo: '45', valor: 102000, desc: 'Contactless', resultado: 'Aprovada' },
-  { passo: '46', valor: 99900, desc: 'Contactless s/senha', resultado: 'Aprovada' },
-  { passo: '53', valor: 50000, desc: 'PIX R$500', resultado: 'Aprovada' },
+const PAYGO_TEST_VALUES: Array<{
+  passo: string;
+  valor: number;
+  desc: string;
+  resultado: string;
+  metodo: PaymentMethod;
+  financiamento?: FinancingType;
+  parcelas?: number;
+  autorizador?: Authorizer;
+}> = [
+  { passo: '02', valor: 10000000, desc: 'Venda máxima R$100k', resultado: 'Aprovada', metodo: 'credito', financiamento: 'avista', autorizador: 'DEMO' },
+  { passo: '03', valor: 5000, desc: 'Crédito à vista', resultado: 'Aprovada', metodo: 'credito', financiamento: 'avista', autorizador: 'DEMO' },
+  { passo: '04', valor: 100001, desc: 'Venda negada', resultado: 'Negada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '06', valor: 5000, desc: 'Crédito', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '07', valor: 5000, desc: 'Débito', resultado: 'Aprovada', metodo: 'debito', autorizador: 'DEMO' },
+  { passo: '08', valor: 10000, desc: 'Parcelado 99x', resultado: 'Aprovada', metodo: 'credito', financiamento: 'parcelado_loja', parcelas: 99, autorizador: 'DEMO' },
+  { passo: '11', valor: 5000, desc: 'PIX QRCode', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
+  { passo: '19', valor: 1234567, desc: 'Venda p/ cancelar', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '30', valor: 100300, desc: 'Msg máxima', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '33', valor: 100560, desc: 'Pendente #1', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '34', valor: 100561, desc: 'Pendente #2', resultado: 'Negada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '35', valor: 101200, desc: 'Confirmação', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '37', valor: 101100, desc: 'Desfazimento', resultado: 'Desfeita', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '39', valor: 101300, desc: 'Falha mercadoria', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '45', valor: 102000, desc: 'Contactless', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '46', valor: 99900, desc: 'Contactless s/senha', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '53', valor: 50000, desc: 'PIX R$500', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
 ];
 
 interface TransactionLog {
@@ -837,17 +850,50 @@ export default function TotemTEFHomologacao() {
                 </Button>
                 
                 {showTestValues && (
-                  <div className="grid grid-cols-3 gap-1 max-h-32 overflow-auto">
+                  <div className="grid grid-cols-3 gap-1 max-h-40 overflow-auto">
                     {PAYGO_TEST_VALUES.map((test) => (
                       <Button
                         key={test.passo}
                         size="sm"
                         variant="outline"
-                        onPointerDown={() => setAmount(test.valor.toString())}
-                        className="h-auto py-1.5 px-2 text-left border-orange-500/20 text-orange-300 hover:bg-transparent flex flex-col items-start"
+                        onPointerDown={() => {
+                          // Configura valor
+                          setAmount(test.valor.toString());
+                          // Configura método de pagamento
+                          setSelectedMethod(test.metodo);
+                          // Configura autorizador
+                          if (test.autorizador) setAuthorizer(test.autorizador);
+                          // Configura financiamento
+                          if (test.financiamento) setFinancingType(test.financiamento);
+                          // Configura parcelas
+                          if (test.parcelas) setInstallments(test.parcelas);
+                          else if (test.financiamento === 'avista') setInstallments(1);
+                          // Abre opções avançadas se necessário
+                          if (test.autorizador && test.autorizador !== 'DEMO') setShowAdvanced(true);
+                          // Log para debug
+                          console.log(`[TEF Homolog] Teste P${test.passo} selecionado:`, {
+                            valor: test.valor / 100,
+                            metodo: test.metodo,
+                            autorizador: test.autorizador,
+                            financiamento: test.financiamento,
+                            parcelas: test.parcelas
+                          });
+                        }}
+                        className={`h-auto py-1.5 px-2 text-left border-orange-500/20 hover:bg-transparent flex flex-col items-start ${
+                          test.metodo === 'pix' ? 'text-cyan-300' : 
+                          test.metodo === 'debito' ? 'text-green-300' : 'text-orange-300'
+                        }`}
                       >
-                        <span className="text-[9px] font-bold">P{test.passo}</span>
-                        <span className="text-[8px] text-orange-200/70 truncate w-full">{test.desc}</span>
+                        <div className="flex items-center gap-1 w-full">
+                          <span className="text-[9px] font-bold">P{test.passo}</span>
+                          <span className={`text-[7px] px-1 rounded ${
+                            test.metodo === 'pix' ? 'bg-cyan-500/20' : 
+                            test.metodo === 'debito' ? 'bg-green-500/20' : 'bg-orange-500/20'
+                          }`}>
+                            {test.metodo === 'pix' ? 'PIX' : test.metodo === 'debito' ? 'DEB' : 'CRE'}
+                          </span>
+                        </div>
+                        <span className="text-[8px] text-urbana-light/70 truncate w-full">{test.desc}</span>
                       </Button>
                     ))}
                   </div>
