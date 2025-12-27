@@ -38,6 +38,9 @@ interface UseTEFAndroidReturn {
 let globalLastProcessedResult: string | null = null;
 let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 
+// Armazenar referência aos options de forma global para persistir entre renders
+let globalOptionsRef: UseTEFAndroidOptions = {};
+
 export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroidReturn {
   const [isAndroidAvailable, setIsAndroidAvailable] = useState(false);
   const [isPinpadConnected, setIsPinpadConnected] = useState(false);
@@ -48,38 +51,39 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
   // Refs para manter callbacks atualizados
   const optionsRef = useRef(options);
   const processingRef = useRef(false);
+  const setIsProcessingRef = useRef(setIsProcessing);
   
   // Atualizar refs quando options mudar
   useEffect(() => {
     optionsRef.current = options;
+    globalOptionsRef = options;
   }, [options]);
   
   useEffect(() => {
     processingRef.current = isProcessing;
   }, [isProcessing]);
-
-  // Registrar callback global persistente para receber resposta do PayGo
-  // IMPORTANTE: Este hook NÃO deve processar resultados quando usado apenas para iniciar pagamentos
-  // O processamento de resultados deve ser feito pelo useTEFPaymentResult para evitar conflitos
+  
   useEffect(() => {
-    const currentOptions = optionsRef.current;
-    const hasCallbacks = currentOptions.onSuccess || currentOptions.onError || currentOptions.onCancelled;
-    
-    // Se não tem callbacks, não registrar handler para evitar conflito com useTEFPaymentResult
-    if (!hasCallbacks) {
-      console.log('[useTEFAndroid] Nenhum callback definido - não registrando handler de resultado');
-      console.log('[useTEFAndroid] O resultado será processado por outro hook (ex: useTEFPaymentResult)');
-      return;
-    }
-    
-    console.log('[useTEFAndroid] Registrando callback global onTefResultado (callbacks definidos)');
+    setIsProcessingRef.current = setIsProcessing;
+  }, [setIsProcessing]);
+
+  // Registrar callback global SEMPRE para receber resposta do PayGo
+  // Este callback deve ser registrado uma única vez e persistir
+  useEffect(() => {
+    console.log('[useTEFAndroid] ═══════════════════════════════════════');
+    console.log('[useTEFAndroid] Inicializando hook com callbacks');
+    console.log('[useTEFAndroid] onSuccess definido:', !!options.onSuccess);
+    console.log('[useTEFAndroid] onError definido:', !!options.onError);
+    console.log('[useTEFAndroid] onCancelled definido:', !!options.onCancelled);
+    console.log('[useTEFAndroid] ═══════════════════════════════════════');
     
     // Handler principal para receber resultado do PayGo
+    // IMPORTANTE: Este handler deve ser registrado SEMPRE e usar refs/globals
     const handleTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
       console.log('[useTEFAndroid] ═══════════════════════════════════════');
       console.log('[useTEFAndroid] RESULTADO PAYGO RECEBIDO VIA CALLBACK GLOBAL');
       console.log('[useTEFAndroid] Dados:', JSON.stringify(resultado, null, 2));
-      console.log('[useTEFAndroid] isProcessing:', processingRef.current);
+      console.log('[useTEFAndroid] isProcessing (ref):', processingRef.current);
       console.log('[useTEFAndroid] ═══════════════════════════════════════');
       
       // Normalizar resultado
@@ -87,50 +91,69 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       console.log('[useTEFAndroid] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
       
       // Evitar processamento duplicado
-      const resultKey = JSON.stringify(normalizedResult);
+      const resultKey = `${normalizedResult.nsu}_${normalizedResult.autorizacao}_${normalizedResult.status}`;
       if (globalLastProcessedResult === resultKey) {
         console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata');
         return;
       }
       globalLastProcessedResult = resultKey;
       
-      // Atualizar estado
-      setIsProcessing(false);
+      // Atualizar estado via ref para garantir que funciona mesmo após re-render
+      console.log('[useTEFAndroid] Atualizando isProcessing para false');
+      setIsProcessingRef.current(false);
       
-      // Chamar callback interno se existir
+      // Chamar callback interno se existir (para resolver promise)
       if (globalResultCallback) {
         console.log('[useTEFAndroid] Chamando callback interno registrado');
         globalResultCallback(normalizedResult);
         globalResultCallback = null;
       }
       
-      // Chamar callbacks do options (sem mostrar toasts - deixa para quem consome)
-      const opts = optionsRef.current;
+      // Chamar callbacks do options usando a referência global
+      const opts = globalOptionsRef;
+      console.log('[useTEFAndroid] Verificando callbacks: onSuccess=', !!opts.onSuccess, 'onError=', !!opts.onError);
+      
       switch (normalizedResult.status) {
         case 'aprovado':
-          console.log('[useTEFAndroid] ✅ Pagamento APROVADO');
-          opts.onSuccess?.(normalizedResult);
+          console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
+          if (opts.onSuccess) {
+            opts.onSuccess(normalizedResult);
+          } else {
+            console.warn('[useTEFAndroid] onSuccess não definido!');
+          }
           break;
 
         case 'negado':
-          console.log('[useTEFAndroid] ❌ Pagamento NEGADO');
-          opts.onError?.(normalizedResult.mensagem || 'Pagamento negado');
+          console.log('[useTEFAndroid] ❌ Pagamento NEGADO - chamando onError');
+          if (opts.onError) {
+            opts.onError(normalizedResult.mensagem || 'Pagamento negado');
+          }
           break;
 
         case 'cancelado':
-          console.log('[useTEFAndroid] ⚠️ Pagamento CANCELADO');
-          opts.onCancelled?.();
+          console.log('[useTEFAndroid] ⚠️ Pagamento CANCELADO - chamando onCancelled');
+          if (opts.onCancelled) {
+            opts.onCancelled();
+          }
           break;
 
         case 'erro':
-          console.log('[useTEFAndroid] ❌ ERRO no pagamento');
-          opts.onError?.(normalizedResult.mensagem || 'Erro desconhecido');
+          console.log('[useTEFAndroid] ❌ ERRO no pagamento - chamando onError');
+          if (opts.onError) {
+            opts.onError(normalizedResult.mensagem || 'Erro desconhecido');
+          }
           break;
       }
     };
     
-    // Registrar como callback global no window
+    // SEMPRE registrar o callback global no window
+    console.log('[useTEFAndroid] Registrando window.onTefResultado');
     (window as any).onTefResultado = handleTefResultado;
+    
+    // Também registrar no window.TEF se existir para garantir
+    if ((window as any).TEF) {
+      console.log('[useTEFAndroid] window.TEF existe, registrando handler adicional');
+    }
     
     // Também ouvir evento customizado como backup
     const handleCustomEvent = (event: CustomEvent) => {
@@ -141,11 +164,37 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     };
     
     window.addEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+    document.addEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+    
+    // Verificar se há resultado pendente no sessionStorage (caso PayGo tenha retornado antes do hook montar)
+    const checkPendingResult = () => {
+      try {
+        const lastResult = sessionStorage.getItem('lastTefResult');
+        const lastTime = sessionStorage.getItem('lastTefResultTime');
+        if (lastResult && lastTime) {
+          const timeDiff = Date.now() - parseInt(lastTime, 10);
+          // Se o resultado foi salvo nos últimos 5 segundos, processar
+          if (timeDiff < 5000) {
+            console.log('[useTEFAndroid] Encontrado resultado pendente no sessionStorage');
+            const pendingResult = JSON.parse(lastResult);
+            sessionStorage.removeItem('lastTefResult');
+            sessionStorage.removeItem('lastTefResultTime');
+            handleTefResultado(pendingResult);
+          }
+        }
+      } catch (e) {
+        console.error('[useTEFAndroid] Erro ao verificar resultado pendente:', e);
+      }
+    };
+    
+    // Verificar após um pequeno delay
+    setTimeout(checkPendingResult, 100);
     
     return () => {
-      console.log('[useTEFAndroid] Limpando callback global');
+      console.log('[useTEFAndroid] Cleanup - removendo event listeners (mas mantendo window.onTefResultado)');
       window.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
-      // Não remover window.onTefResultado para manter compatibilidade
+      document.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+      // NÃO remover window.onTefResultado para manter compatibilidade com retornos tardios
     };
   }, []);
 
