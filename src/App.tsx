@@ -98,6 +98,7 @@ import ForceSignOutUser from './pages/admin/ForceSignOutUser';
 import ResetPassword from './pages/ResetPassword';
 import TotemDiagnostico from './pages/admin/TotemDiagnostico';
 import TotemTEFDebug from './pages/Totem/TotemTEFDebug';
+import TotemTEFHomologacao from './pages/Totem/TotemTEFHomologacao';
 import TotemDebug from './pages/Totem/TotemDebug';
 
 const queryClient = new QueryClient({
@@ -346,6 +347,11 @@ function App() {
                   <Route path="/totem/tef-debug" element={
                     <AdminRedirectGuard>
                       <TotemTEFDebug />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/tef-homologacao" element={
+                    <AdminRedirectGuard>
+                      <TotemTEFHomologacao />
                     </AdminRedirectGuard>
                   } />
                   <Route path="/totem/debug" element={
