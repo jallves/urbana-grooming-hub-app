@@ -817,8 +817,18 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
       .filter(log => (log.type === 'success' || log.type === 'error' || log.type === 'warning') && log.data)
       // Filtrar apenas logs que são transações (têm passoTeste ou valor)
       .filter(log => log.data?.passoTeste || log.data?.valor)
+      // Remover duplicatas: prioriza NSU (quando existe). Se não existir, usa combinação estável.
       .filter(log => {
-        const uniqueKey = `${log.data?.passoTeste || ''}-${log.data?.valor || ''}-${log.id}`;
+        const passo = String(log.data?.passoTeste || '');
+        const valor = String(log.data?.valor ?? '');
+        const nsu = String(log.data?.nsu || '');
+        const autorizacao = String(log.data?.autorizacao || '');
+        const motivo = String(log.data?.motivo || log.data?.motivoNegacao || '');
+
+        const uniqueKey = nsu
+          ? `nsu:${nsu}`
+          : `passo:${passo}|valor:${valor}|auth:${autorizacao}|motivo:${motivo}`;
+
         if (seenIds.has(uniqueKey)) return false;
         seenIds.add(uniqueKey);
         return true;
