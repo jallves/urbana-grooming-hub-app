@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
