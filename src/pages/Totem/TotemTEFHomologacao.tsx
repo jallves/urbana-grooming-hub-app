@@ -1449,13 +1449,22 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
       {/* Modal de Resultado da Transação */}
       {transactionResult?.show && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <Card className={`w-full max-w-md border-2 ${
+          <Card className={`w-full max-w-md border-2 relative ${
             transactionResult.status === 'aprovado' 
               ? 'bg-gradient-to-br from-green-900/90 to-urbana-black border-green-500' 
               : transactionResult.status === 'negado'
               ? 'bg-gradient-to-br from-red-900/90 to-urbana-black border-red-500'
               : 'bg-gradient-to-br from-yellow-900/90 to-urbana-black border-yellow-500'
           }`}>
+            {/* Botão X para fechar */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 h-8 w-8 rounded-full text-urbana-light/60 hover:text-urbana-light hover:bg-white/10 z-10"
+              onClick={closeTransactionResult}
+            >
+              <X className="h-5 w-5" />
+            </Button>
             <CardHeader className="text-center pb-2">
               <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2 ${
                 transactionResult.status === 'aprovado' 
