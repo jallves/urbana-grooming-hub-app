@@ -27,7 +27,9 @@ import {
   FileText,
   Filter,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Hash,
+  Check
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -72,6 +74,9 @@ export default function TotemTEFHomologacao() {
   const [selectedDate, setSelectedDate] = useState<string>(getTodayInBrazil());
   const transactionLogsEndRef = useRef<HTMLDivElement>(null);
   const androidLogsEndRef = useRef<HTMLDivElement>(null);
+  const androidLogsContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
   
   // Dados da última transação para confirmação manual
   const [pendingConfirmation, setPendingConfirmation] = useState<{
@@ -155,11 +160,38 @@ export default function TotemTEFHomologacao() {
     }
   }, [transactionLogs]);
 
+  // Auto-scroll Android logs apenas se não estiver scrollando manualmente
   useEffect(() => {
-    if (androidLogsEndRef.current) {
+    if (androidLogsEndRef.current && !isUserScrolling) {
       androidLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [androidLogs]);
+  }, [androidLogs, isUserScrolling]);
+
+  // Detectar quando usuário está scrollando manualmente
+  useEffect(() => {
+    const container = androidLogsContainerRef.current;
+    if (!container) return;
+
+    let scrollTimeout: NodeJS.Timeout;
+    const handleScroll = () => {
+      setIsUserScrolling(true);
+      clearTimeout(scrollTimeout);
+      // Depois de 3 segundos sem scroll, volta ao auto-scroll
+      scrollTimeout = setTimeout(() => {
+        // Checa se está no final
+        const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
+        if (isAtBottom) {
+          setIsUserScrolling(false);
+        }
+      }, 3000);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
+    };
+  }, []);
 
   // Auto-refresh Android logs
   useEffect(() => {
@@ -528,6 +560,32 @@ export default function TotemTEFHomologacao() {
     return 'text-gray-300';
   };
 
+  // Copiar NSU Local para a planilha
+  const copyNsuLocal = async (nsu: string, logId: string) => {
+    try {
+      await navigator.clipboard.writeText(nsu);
+      setCopiedNsuId(logId);
+      toast.success('NSU Local copiado!');
+      setTimeout(() => setCopiedNsuId(null), 2000);
+    } catch {
+      toast.error('Erro ao copiar');
+    }
+  };
+
+  // Extrair NSU Local das transações para a planilha
+  const nsuLocalList = useMemo(() => {
+    return transactionLogs
+      .filter(log => log.type === 'success' && log.data?.nsu)
+      .map(log => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        nsu: String(log.data?.nsu || ''),
+        autorizacao: String(log.data?.autorizacao || ''),
+        bandeira: String(log.data?.bandeira || ''),
+        valor: log.data?.valor as number | undefined,
+      }));
+  }, [transactionLogs]);
+
   return (
     <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
       {/* Header Compacto */}
@@ -537,7 +595,7 @@ export default function TotemTEFHomologacao() {
             <Button 
               variant="ghost" 
               size="icon"
-              onPointerDown={() => navigate('/totem')}
+              onPointerDown={() => navigate('/totem', { state: { openTEFDiagnostics: true } })}
               className="text-urbana-gold hover:bg-urbana-gold/10 h-9 w-9"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -867,7 +925,7 @@ export default function TotemTEFHomologacao() {
             </Card>
 
             {/* Área de Logs */}
-            <div className="flex-1 overflow-hidden grid grid-rows-2 gap-2">
+            <div className="flex-1 overflow-hidden grid grid-rows-3 gap-2">
               {/* Logs de Transação */}
               <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 overflow-hidden">
                 <CardHeader className="py-1.5 px-3 border-b border-urbana-gold/10">
@@ -926,7 +984,7 @@ export default function TotemTEFHomologacao() {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-36px)]">
+                <CardContent className="p-0 h-[calc(100%-36px)]" ref={androidLogsContainerRef}>
                   <ScrollArea className="h-full">
                     {selectedDayLogs.androidLogs.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
@@ -946,6 +1004,66 @@ export default function TotemTEFHomologacao() {
                           </div>
                         ))}
                         <div ref={androidLogsEndRef} />
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+
+              {/* NSU Local - Planilha Homologação PayGo */}
+              <Card className="bg-urbana-black-soft/80 border-blue-500/30 overflow-hidden">
+                <CardHeader className="py-1.5 px-3 border-b border-blue-500/20 bg-blue-900/10">
+                  <CardTitle className="text-xs text-blue-400 flex items-center gap-1.5">
+                    <Hash className="h-3.5 w-3.5" />
+                    NSU Local (Planilha)
+                    <Badge variant="outline" className="ml-auto text-[10px] border-blue-500/30 text-blue-400 px-1.5">
+                      {nsuLocalList.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 h-[calc(100%-36px)]">
+                  <ScrollArea className="h-full">
+                    {nsuLocalList.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
+                        <Hash className="h-6 w-6 mb-1 opacity-50" />
+                        <p className="text-xs">Nenhum NSU disponível</p>
+                        <p className="text-[9px] text-urbana-light/30 mt-0.5">Execute transações aprovadas</p>
+                      </div>
+                    ) : (
+                      <div className="p-2 space-y-1">
+                        <div className="text-[9px] text-blue-300/70 px-1 mb-1">
+                          Use estes valores para preencher a planilha PayGo
+                        </div>
+                        {nsuLocalList.map((item, index) => (
+                          <div 
+                            key={item.id} 
+                            className="flex items-center justify-between p-1.5 bg-blue-900/20 rounded border border-blue-500/20"
+                          >
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-blue-300/60 font-mono w-6">
+                                #{index + 1}
+                              </span>
+                              <code className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold text-xs">
+                                {item.nsu}
+                              </code>
+                              {item.bandeira && (
+                                <span className="text-[9px] text-urbana-light/40">{item.bandeira}</span>
+                              )}
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 bg-blue-500/10 hover:bg-blue-500/20"
+                              onClick={() => copyNsuLocal(item.nsu, item.id)}
+                            >
+                              {copiedNsuId === item.id ? (
+                                <Check className="h-3 w-3 text-green-400" />
+                              ) : (
+                                <Copy className="h-3 w-3 text-blue-300" />
+                              )}
+                            </Button>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </ScrollArea>
