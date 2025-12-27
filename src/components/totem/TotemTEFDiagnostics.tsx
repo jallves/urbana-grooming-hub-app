@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,7 +22,8 @@ import {
   Download,
   Copy,
   Loader2,
-  Zap
+  Zap,
+  TestTubes
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -45,6 +47,7 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
   isOpen,
   onClose
 }) => {
+  const navigate = useNavigate();
   const [debugMode, setDebugMode] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -325,6 +328,18 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
                     Teste R$ 1,00
                   </Button>
                 </div>
+
+                {/* Botão PDV Homologação */}
+                <Button
+                  onClick={() => {
+                    onClose();
+                    navigate('/totem/tef-homologacao');
+                  }}
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  <TestTubes className="w-4 h-4 mr-2" />
+                  Abrir PDV de Homologação PayGo
+                </Button>
 
                 {/* Aviso de teste */}
                 {(!isAndroidAvailable || !isPinpadConnected) && (
