@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw, Heart } from 'lucide-react';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
@@ -89,6 +89,18 @@ const BarberCommissionsComponent: React.FC = () => {
       return <Badge className="bg-green-500/20 text-green-400 border-green-500/30">Paga</Badge>;
     }
     return <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30">Pendente</Badge>;
+  };
+
+  const getCommissionIcon = (type: string) => {
+    if (type === 'tip') return <Heart className="h-3 w-3 sm:h-4 sm:w-4 text-pink-400 flex-shrink-0" />;
+    if (type === 'product') return <Package className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400 flex-shrink-0" />;
+    return <Scissors className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400 flex-shrink-0" />;
+  };
+
+  const getCommissionLabel = (type: string) => {
+    if (type === 'tip') return 'Gorjeta';
+    if (type === 'product') return 'Produto';
+    return 'Serviço';
   };
 
   if (isLoading) {
@@ -218,27 +230,26 @@ const BarberCommissionsComponent: React.FC = () => {
                     <div className="flex flex-col sm:flex-row items-start justify-between gap-3 sm:gap-4">
                       <div className="flex-1 w-full sm:w-auto">
                         <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                          {commission.commission_type === 'service' ? (
-                            <Scissors className="h-3 w-3 sm:h-4 sm:w-4 text-blue-400 flex-shrink-0" />
-                          ) : (
-                            <Package className="h-3 w-3 sm:h-4 sm:w-4 text-purple-400 flex-shrink-0" />
-                          )}
+                          {getCommissionIcon(commission.commission_type)}
                           <p className="font-medium text-xs sm:text-sm md:text-base text-urbana-light leading-tight">
-                            {commission.item_name || (commission.commission_type === 'service' ? 'Serviço' : 'Produto')}
+                            {commission.item_name || getCommissionLabel(commission.commission_type)}
                           </p>
                         </div>
                         <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/60 mb-2">
                           {formatBrazilDateOnly(commission.created_at)}
                         </p>
                         <div className="flex flex-wrap gap-1.5 sm:gap-2">
-                          <Badge variant={commission.commission_type === 'service' ? 'default' : 'secondary'} className="text-[9px] sm:text-[10px] md:text-xs px-1.5 sm:px-2 py-0.5">
-                            {commission.commission_type === 'service' ? 'Serviço' : 'Produto'}
+                          <Badge 
+                            variant={commission.commission_type === 'tip' ? 'default' : commission.commission_type === 'service' ? 'default' : 'secondary'} 
+                            className={`text-[9px] sm:text-[10px] md:text-xs px-1.5 sm:px-2 py-0.5 ${commission.commission_type === 'tip' ? 'bg-pink-500/20 text-pink-400 border-pink-500/30' : ''}`}
+                          >
+                            {getCommissionLabel(commission.commission_type)}
                           </Badge>
                           {getStatusBadge(commission.status)}
                         </div>
                       </div>
                       <div className="text-left sm:text-right w-full sm:w-auto">
-                        <p className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-gold leading-tight">
+                        <p className={`text-lg sm:text-xl md:text-2xl font-bold leading-tight ${commission.commission_type === 'tip' ? 'text-pink-400' : 'text-urbana-gold'}`}>
                           R$ {Number(commission.amount).toFixed(2)}
                         </p>
                       </div>

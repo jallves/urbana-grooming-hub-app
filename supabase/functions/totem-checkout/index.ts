@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, action, venda_id, session_id, payment_id, transaction_data } = await req.json()
+    const { agendamento_id, extras, action, venda_id, session_id, payment_id, transaction_data, tipAmount } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
@@ -625,6 +625,8 @@ Deno.serve(async (req) => {
       } else {
         // 7. Chamar edge function para criar registros financeiros completos
         console.log('💰 Criando transações financeiras...')
+        console.log('💝 Gorjeta recebida:', tipAmount)
+        
         const { data: erpResult, error: erpError } = await supabase.functions.invoke(
           'create-financial-transaction',
           {
@@ -635,7 +637,8 @@ Deno.serve(async (req) => {
               items: erpItems,
               payment_method: normalizedPaymentMethod,
               discount_amount: Number(venda.desconto) || 0,
-              notes: `Checkout Totem - Sessão ${session_id}`
+              notes: `Checkout Totem - Sessão ${session_id}`,
+              tip_amount: tipAmount || 0
             }
           }
         )
