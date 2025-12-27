@@ -602,10 +602,10 @@ export default function TotemTEFHomologacao() {
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="flex-1 overflow-hidden p-2 md:p-4">
+      <div className="flex-1 overflow-hidden p-2">
         {/* PDV Tab */}
         {activeTab === 'pdv' && (
-          <div className="h-full flex flex-col gap-2 md:gap-3 max-w-lg mx-auto">
+          <div className="h-full flex flex-col gap-2">
             {/* Valor Display */}
             <Card className="bg-gradient-to-br from-urbana-black-soft to-urbana-black border-urbana-gold/30 shadow-lg shadow-urbana-gold/5">
               <CardContent className="p-3">
