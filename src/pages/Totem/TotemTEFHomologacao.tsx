@@ -1492,10 +1492,14 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
             <Button
               variant="ghost"
               size="icon"
-              className="absolute top-2 right-2 h-8 w-8 rounded-full text-urbana-light/60 hover:text-urbana-light hover:bg-white/10 z-10"
-              onClick={closeTransactionResult}
+              className="absolute top-2 right-2 h-10 w-10 rounded-full text-white bg-black/50 hover:bg-black/80 z-10"
+              onPointerDown={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                closeTransactionResult();
+              }}
             >
-              <X className="h-5 w-5" />
+              <X className="h-6 w-6" />
             </Button>
             <CardHeader className="text-center pb-2">
               <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2 ${
