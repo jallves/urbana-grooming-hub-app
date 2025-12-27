@@ -812,26 +812,40 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
 
   // Extrair transações para a planilha (removendo duplicatas)
   const transactionsList = useMemo(() => {
-    const seenNsus = new Set<string>();
+    const seenIds = new Set<string>();
     return transactionLogs
-      .filter(log => (log.type === 'success' || log.type === 'error') && log.data)
+      .filter(log => (log.type === 'success' || log.type === 'error' || log.type === 'warning') && log.data)
+      // Filtrar apenas logs que são transações (têm passoTeste ou valor)
+      .filter(log => log.data?.passoTeste || log.data?.valor)
       .filter(log => {
-        const nsu = String(log.data?.nsu || log.id);
-        if (seenNsus.has(nsu)) return false;
-        seenNsus.add(nsu);
+        const uniqueKey = `${log.data?.passoTeste || ''}-${log.data?.valor || ''}-${log.id}`;
+        if (seenIds.has(uniqueKey)) return false;
+        seenIds.add(uniqueKey);
         return true;
       })
-      .map(log => ({
-        id: log.id,
-        timestamp: log.timestamp,
-        type: log.type,
-        nsu: String(log.data?.nsu || ''),
-        autorizacao: String(log.data?.autorizacao || ''),
-        bandeira: String(log.data?.bandeira || ''),
-        valor: log.data?.valor as number | undefined,
-        passoTeste: log.data?.passoTeste as string | undefined,
-        resultadoEsperado: log.data?.resultadoEsperado as string | undefined,
-      }));
+      .map(log => {
+        // Determinar o status correto baseado no tipo e mensagem
+        let status: 'APROVADO' | 'NEGADO' | 'CANCELADO' = 'NEGADO';
+        if (log.type === 'success') {
+          status = 'APROVADO';
+        } else if (log.type === 'warning' || log.message.includes('CANCELADA') || log.message.includes('cancelada')) {
+          status = 'CANCELADO';
+        }
+        
+        return {
+          id: log.id,
+          timestamp: log.timestamp,
+          type: log.type,
+          status,
+          nsu: String(log.data?.nsu || ''),
+          autorizacao: String(log.data?.autorizacao || ''),
+          bandeira: String(log.data?.bandeira || ''),
+          valor: log.data?.valor as number | undefined,
+          passoTeste: log.data?.passoTeste as string | undefined,
+          resultadoEsperado: log.data?.resultadoEsperado as string | undefined,
+          motivo: String(log.data?.motivo || log.data?.motivoNegacao || ''),
+        };
+      });
   }, [transactionLogs]);
 
   // Manter compatibilidade com nsuLocalList
@@ -1438,12 +1452,16 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                                 <Badge 
                                   variant="outline" 
                                   className={`text-[9px] px-1.5 ${
-                                    item.type === 'success' 
+                                    item.status === 'APROVADO' 
                                       ? 'border-green-500/50 text-green-400 bg-green-500/10' 
+                                      : item.status === 'CANCELADO'
+                                      ? 'border-yellow-500/50 text-yellow-400 bg-yellow-500/10'
                                       : 'border-red-500/50 text-red-400 bg-red-500/10'
                                   }`}
                                 >
-                                  {item.type === 'success' ? '✓ APROVADO' : '✗ NEGADO'}
+                                  {item.status === 'APROVADO' ? '✓ APROVADO' : 
+                                   item.status === 'CANCELADO' ? '⚠ CANCELADO' : 
+                                   '✗ NEGADO'}
                                 </Badge>
                               </div>
                               {item.nsu && (
