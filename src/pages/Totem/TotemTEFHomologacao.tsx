@@ -1658,10 +1658,15 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               
               {/* Botão Fechar */}
               <Button
-                className="w-full bg-urbana-gold text-urbana-black font-bold"
-                onClick={closeTransactionResult}
+                className="w-full bg-urbana-gold text-urbana-black font-bold h-14 text-lg"
+                onPointerDown={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  closeTransactionResult();
+                }}
               >
-                {transactionResult.status === 'aprovado' ? 'Próxima Transação' : 'Tentar Novamente'}
+                <X className="h-5 w-5 mr-2" />
+                {transactionResult.status === 'aprovado' ? 'Fechar / Próxima Transação' : 'Fechar / Tentar Novamente'}
               </Button>
             </CardContent>
           </Card>
