@@ -29,7 +29,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Hash,
-  Check
+  Check,
+  Printer,
+  Receipt
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -129,6 +131,20 @@ export default function TotemTEFHomologacao() {
     autorizacao: string;
   } | null>(null);
 
+  // Modal de resultado da transação
+  const [transactionResult, setTransactionResult] = useState<{
+    show: boolean;
+    status: 'aprovado' | 'negado' | 'cancelado' | 'erro';
+    valor: number;
+    nsu: string;
+    autorizacao: string;
+    bandeira: string;
+    mensagem: string;
+    comprovanteCliente?: string;
+    comprovanteLojista?: string;
+    passoTeste?: string;
+  } | null>(null);
+
   const { 
     isAndroidAvailable, 
     isPinpadConnected, 
@@ -140,13 +156,32 @@ export default function TotemTEFHomologacao() {
     onSuccess: (resultado) => {
       setIsProcessing(false);
       
+      // Encontrar passo do teste pelo valor
+      const valorCentavos = resultado.valor ? Math.round(resultado.valor * 100) : parseInt(amount, 10);
+      const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
+      
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
         autorizacao: resultado.autorizacao,
         bandeira: resultado.bandeira,
         valor: resultado.valor,
+        passoTeste: testePasso?.passo,
         requiresConfirmation: resultado.requiresConfirmation,
         confirmationId: resultado.confirmationTransactionId
+      });
+      
+      // Mostrar modal de resultado
+      setTransactionResult({
+        show: true,
+        status: 'aprovado',
+        valor: resultado.valor || (parseInt(amount, 10) / 100),
+        nsu: resultado.nsu || '',
+        autorizacao: resultado.autorizacao || '',
+        bandeira: resultado.bandeira || '',
+        mensagem: resultado.mensagem || 'Transação aprovada com sucesso',
+        comprovanteCliente: resultado.comprovanteCliente,
+        comprovanteLojista: resultado.comprovanteLojista,
+        passoTeste: testePasso?.passo
       });
       
       if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
@@ -163,22 +198,54 @@ export default function TotemTEFHomologacao() {
         }
       }
       
-      toast.success('Transação aprovada!', {
-        description: `NSU: ${resultado.nsu} | Auth: ${resultado.autorizacao}`
-      });
-      
       refreshAndroidLogs();
     },
     onError: (erro) => {
       setIsProcessing(false);
-      addLog('error', `❌ ERRO NA TRANSAÇÃO: ${erro}`);
-      toast.error('Erro na transação', { description: erro });
+      
+      const valorCentavos = parseInt(amount, 10);
+      const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
+      
+      addLog('error', `❌ ERRO NA TRANSAÇÃO: ${erro}`, {
+        passoTeste: testePasso?.passo
+      });
+      
+      // Mostrar modal de resultado
+      setTransactionResult({
+        show: true,
+        status: 'negado',
+        valor: parseInt(amount, 10) / 100,
+        nsu: '',
+        autorizacao: '',
+        bandeira: '',
+        mensagem: erro,
+        passoTeste: testePasso?.passo
+      });
+      
       refreshAndroidLogs();
     },
     onCancelled: () => {
       setIsProcessing(false);
-      addLog('warning', '⚠️ Transação cancelada pelo usuário');
-      toast.info('Transação cancelada');
+      
+      const valorCentavos = parseInt(amount, 10);
+      const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
+      
+      addLog('warning', '⚠️ Transação cancelada pelo usuário', {
+        passoTeste: testePasso?.passo
+      });
+      
+      // Mostrar modal de resultado
+      setTransactionResult({
+        show: true,
+        status: 'cancelado',
+        valor: parseInt(amount, 10) / 100,
+        nsu: '',
+        autorizacao: '',
+        bandeira: '',
+        mensagem: 'Transação cancelada pelo usuário',
+        passoTeste: testePasso?.passo
+      });
+      
       refreshAndroidLogs();
     }
   });
@@ -613,13 +680,72 @@ export default function TotemTEFHomologacao() {
     }
   };
 
-  // Extrair NSU Local das transações para a planilha (removendo duplicatas)
-  const nsuLocalList = useMemo(() => {
+  // Função para imprimir recibo
+  const handlePrintReceipt = (type: 'cliente' | 'lojista') => {
+    if (!transactionResult) return;
+    
+    const recibo = type === 'cliente' 
+      ? transactionResult.comprovanteCliente 
+      : transactionResult.comprovanteLojista;
+    
+    // Criar conteúdo do recibo
+    const reciboContent = recibo || `
+╔════════════════════════════════════╗
+║     COSTA URBANA BARBEARIA         ║
+║        COMPROVANTE TEF             ║
+╠════════════════════════════════════╣
+║ STATUS: ${transactionResult.status.toUpperCase().padEnd(25)}║
+║ VALOR: R$ ${transactionResult.valor.toFixed(2).padEnd(23)}║
+║ NSU: ${transactionResult.nsu.padEnd(28)}║
+║ AUTH: ${transactionResult.autorizacao.padEnd(27)}║
+║ BANDEIRA: ${(transactionResult.bandeira || 'N/A').padEnd(23)}║
+${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTeste.padEnd(20)}║\n` : ''}╠════════════════════════════════════╣
+║ ${new Date().toLocaleString('pt-BR').padEnd(33)}║
+╚════════════════════════════════════╝
+    `.trim();
+    
+    // Abrir janela de impressão
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Comprovante TEF - ${type === 'cliente' ? 'Cliente' : 'Lojista'}</title>
+            <style>
+              body { font-family: 'Courier New', monospace; padding: 20px; font-size: 12px; }
+              pre { white-space: pre-wrap; word-wrap: break-word; }
+              .header { text-align: center; margin-bottom: 20px; }
+              @media print { body { padding: 0; } }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h3>COMPROVANTE TEF - VIA ${type.toUpperCase()}</h3>
+            </div>
+            <pre>${reciboContent}</pre>
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    } else {
+      toast.error('Não foi possível abrir a janela de impressão');
+    }
+  };
+
+  // Fechar modal de resultado
+  const closeTransactionResult = () => {
+    setTransactionResult(null);
+    setAmount(''); // Limpar valor para próxima transação
+  };
+
+  // Extrair transações para a planilha (removendo duplicatas)
+  const transactionsList = useMemo(() => {
     const seenNsus = new Set<string>();
     return transactionLogs
-      .filter(log => log.type === 'success' && log.data?.nsu)
+      .filter(log => (log.type === 'success' || log.type === 'error') && log.data)
       .filter(log => {
-        const nsu = String(log.data?.nsu || '');
+        const nsu = String(log.data?.nsu || log.id);
         if (seenNsus.has(nsu)) return false;
         seenNsus.add(nsu);
         return true;
@@ -627,12 +753,18 @@ export default function TotemTEFHomologacao() {
       .map(log => ({
         id: log.id,
         timestamp: log.timestamp,
+        type: log.type,
         nsu: String(log.data?.nsu || ''),
         autorizacao: String(log.data?.autorizacao || ''),
         bandeira: String(log.data?.bandeira || ''),
         valor: log.data?.valor as number | undefined,
+        passoTeste: log.data?.passoTeste as string | undefined,
+        resultadoEsperado: log.data?.resultadoEsperado as string | undefined,
       }));
   }, [transactionLogs]);
+
+  // Manter compatibilidade com nsuLocalList
+  const nsuLocalList = transactionsList.filter(t => t.type === 'success' && t.nsu);
 
   return (
     <div className="fixed inset-0 w-screen h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
@@ -1189,58 +1321,100 @@ export default function TotemTEFHomologacao() {
                 </CardContent>
               </Card>
 
-              {/* NSU Local - Planilha Homologação PayGo */}
+              {/* Transações - Planilha Homologação PayGo */}
               <Card className="bg-urbana-black-soft/80 border-blue-500/30 overflow-hidden">
                 <CardHeader className="py-1.5 px-3 border-b border-blue-500/20 bg-blue-900/10">
                   <CardTitle className="text-xs text-blue-400 flex items-center gap-1.5">
-                    <Hash className="h-3.5 w-3.5" />
-                    NSU Local (Planilha)
+                    <Receipt className="h-3.5 w-3.5" />
+                    Transações (Planilha PayGo)
                     <Badge variant="outline" className="ml-auto text-[10px] border-blue-500/30 text-blue-400 px-1.5">
-                      {nsuLocalList.length}
+                      {transactionsList.length}
                     </Badge>
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="p-0 h-[calc(100%-36px)]">
                   <ScrollArea className="h-full">
-                    {nsuLocalList.length === 0 ? (
+                    {transactionsList.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
-                        <Hash className="h-6 w-6 mb-1 opacity-50" />
-                        <p className="text-xs">Nenhum NSU disponível</p>
-                        <p className="text-[9px] text-urbana-light/30 mt-0.5">Execute transações aprovadas</p>
+                        <Receipt className="h-6 w-6 mb-1 opacity-50" />
+                        <p className="text-xs">Nenhuma transação</p>
+                        <p className="text-[9px] text-urbana-light/30 mt-0.5">Execute transações para ver aqui</p>
                       </div>
                     ) : (
-                      <div className="p-2 space-y-1">
+                      <div className="p-2 space-y-1.5">
                         <div className="text-[9px] text-blue-300/70 px-1 mb-1">
-                          Use estes valores para preencher a planilha PayGo
+                          Transações para preencher na planilha PayGo
                         </div>
-                        {nsuLocalList.map((item, index) => (
+                        {transactionsList.map((item, index) => (
                           <div 
                             key={item.id} 
-                            className="flex items-center justify-between p-1.5 bg-blue-900/20 rounded border border-blue-500/20"
+                            className={`p-2 rounded border ${
+                              item.type === 'success' 
+                                ? 'bg-green-900/20 border-green-500/30' 
+                                : 'bg-red-900/20 border-red-500/30'
+                            }`}
                           >
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-blue-300/60 font-mono w-6">
-                                #{index + 1}
-                              </span>
-                              <code className="bg-blue-500/20 text-blue-300 px-2 py-0.5 rounded font-bold text-xs">
-                                {item.nsu}
-                              </code>
-                              {item.bandeira && (
-                                <span className="text-[9px] text-urbana-light/40">{item.bandeira}</span>
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-2">
+                                <span className="text-[10px] text-urbana-light/60 font-mono">
+                                  #{index + 1}
+                                </span>
+                                {item.passoTeste && (
+                                  <Badge variant="outline" className="text-[9px] border-urbana-gold/50 text-urbana-gold px-1">
+                                    P{item.passoTeste}
+                                  </Badge>
+                                )}
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-[9px] px-1.5 ${
+                                    item.type === 'success' 
+                                      ? 'border-green-500/50 text-green-400 bg-green-500/10' 
+                                      : 'border-red-500/50 text-red-400 bg-red-500/10'
+                                  }`}
+                                >
+                                  {item.type === 'success' ? '✓ APROVADO' : '✗ NEGADO'}
+                                </Badge>
+                              </div>
+                              {item.nsu && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 bg-blue-500/10"
+                                  onClick={() => copyNsuLocal(item.nsu, item.id)}
+                                >
+                                  {copiedNsuId === item.id ? (
+                                    <Check className="h-3 w-3 text-green-400" />
+                                  ) : (
+                                    <Copy className="h-3 w-3 text-blue-300" />
+                                  )}
+                                </Button>
                               )}
                             </div>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-5 w-5 bg-blue-500/10 hover:bg-blue-500/20"
-                              onClick={() => copyNsuLocal(item.nsu, item.id)}
-                            >
-                              {copiedNsuId === item.id ? (
-                                <Check className="h-3 w-3 text-green-400" />
-                              ) : (
-                                <Copy className="h-3 w-3 text-blue-300" />
-                              )}
-                            </Button>
+                            <div className="grid grid-cols-3 gap-2 text-[10px]">
+                              <div>
+                                <span className="text-urbana-light/50">Valor:</span>
+                                <span className="ml-1 text-urbana-gold font-bold">
+                                  R$ {(item.valor || 0).toFixed(2)}
+                                </span>
+                              </div>
+                              <div>
+                                <span className="text-urbana-light/50">NSU:</span>
+                                <code className="ml-1 text-blue-300 font-mono">
+                                  {item.nsu || '-'}
+                                </code>
+                              </div>
+                              <div>
+                                <span className="text-urbana-light/50">Auth:</span>
+                                <span className="ml-1 text-urbana-light">
+                                  {item.autorizacao || '-'}
+                                </span>
+                              </div>
+                            </div>
+                            {item.bandeira && (
+                              <div className="mt-1 text-[9px] text-urbana-light/40">
+                                Bandeira: {item.bandeira}
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -1271,6 +1445,116 @@ export default function TotemTEFHomologacao() {
           </div>
         )}
       </div>
+
+      {/* Modal de Resultado da Transação */}
+      {transactionResult?.show && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <Card className={`w-full max-w-md border-2 ${
+            transactionResult.status === 'aprovado' 
+              ? 'bg-gradient-to-br from-green-900/90 to-urbana-black border-green-500' 
+              : transactionResult.status === 'negado'
+              ? 'bg-gradient-to-br from-red-900/90 to-urbana-black border-red-500'
+              : 'bg-gradient-to-br from-yellow-900/90 to-urbana-black border-yellow-500'
+          }`}>
+            <CardHeader className="text-center pb-2">
+              <div className={`mx-auto w-16 h-16 rounded-full flex items-center justify-center mb-2 ${
+                transactionResult.status === 'aprovado' 
+                  ? 'bg-green-500/20' 
+                  : transactionResult.status === 'negado'
+                  ? 'bg-red-500/20'
+                  : 'bg-yellow-500/20'
+              }`}>
+                {transactionResult.status === 'aprovado' ? (
+                  <CheckCircle2 className="h-10 w-10 text-green-400" />
+                ) : transactionResult.status === 'negado' ? (
+                  <XCircle className="h-10 w-10 text-red-400" />
+                ) : (
+                  <XCircle className="h-10 w-10 text-yellow-400" />
+                )}
+              </div>
+              <CardTitle className={`text-xl font-bold ${
+                transactionResult.status === 'aprovado' 
+                  ? 'text-green-400' 
+                  : transactionResult.status === 'negado'
+                  ? 'text-red-400'
+                  : 'text-yellow-400'
+              }`}>
+                {transactionResult.status === 'aprovado' ? 'TRANSAÇÃO APROVADA' : 
+                 transactionResult.status === 'negado' ? 'TRANSAÇÃO NEGADA' : 
+                 'TRANSAÇÃO CANCELADA'}
+              </CardTitle>
+              {transactionResult.passoTeste && (
+                <Badge variant="outline" className="mx-auto mt-1 border-urbana-gold/50 text-urbana-gold">
+                  Passo {transactionResult.passoTeste}
+                </Badge>
+              )}
+            </CardHeader>
+            
+            <CardContent className="space-y-3">
+              {/* Valor */}
+              <div className="text-center">
+                <span className="text-3xl font-bold text-urbana-gold">
+                  R$ {transactionResult.valor.toFixed(2)}
+                </span>
+              </div>
+              
+              {/* Detalhes */}
+              <div className="bg-black/30 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-urbana-light/60">NSU:</span>
+                  <code className="text-blue-300 font-mono">{transactionResult.nsu || '-'}</code>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-urbana-light/60">Autorização:</span>
+                  <span className="text-urbana-light">{transactionResult.autorizacao || '-'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-urbana-light/60">Bandeira:</span>
+                  <span className="text-urbana-light">{transactionResult.bandeira || '-'}</span>
+                </div>
+                {transactionResult.mensagem && (
+                  <div className="pt-2 border-t border-urbana-light/10">
+                    <p className="text-xs text-urbana-light/80">{transactionResult.mensagem}</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Botões de Impressão */}
+              {transactionResult.status === 'aprovado' && (
+                <div className="space-y-2">
+                  <p className="text-xs text-center text-urbana-light/60">Imprimir Comprovante</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button
+                      variant="outline"
+                      className="border-urbana-gold/30 text-urbana-gold"
+                      onClick={() => handlePrintReceipt('cliente')}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Via Cliente
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="border-urbana-gold/30 text-urbana-gold"
+                      onClick={() => handlePrintReceipt('lojista')}
+                    >
+                      <Printer className="h-4 w-4 mr-2" />
+                      Via Lojista
+                    </Button>
+                  </div>
+                </div>
+              )}
+              
+              {/* Botão Fechar */}
+              <Button
+                className="w-full bg-urbana-gold text-urbana-black font-bold"
+                onClick={closeTransactionResult}
+              >
+                {transactionResult.status === 'aprovado' ? 'Próxima Transação' : 'Tentar Novamente'}
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   );
 }
