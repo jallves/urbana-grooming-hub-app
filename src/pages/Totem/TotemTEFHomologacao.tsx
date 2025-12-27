@@ -106,7 +106,18 @@ export default function TotemTEFHomologacao() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showTestValues, setShowTestValues] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
+  // Carregar logs do localStorage na inicialização
+  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('tef_homologacao_logs');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error('Erro ao carregar logs do localStorage:', e);
+    }
+    return [];
+  });
   const [androidLogs, setAndroidLogs] = useState<{ timestamp: string; message: string }[]>([]);
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(true);
   const [activeTab, setActiveTab] = useState<'pdv' | 'logs'>('pdv');
@@ -115,6 +126,15 @@ export default function TotemTEFHomologacao() {
   const androidLogsScrollRef = useRef<HTMLDivElement>(null);
   const [isAndroidLogsAtBottom, setIsAndroidLogsAtBottom] = useState(true);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
+  
+  // Salvar logs no localStorage sempre que mudarem
+  useEffect(() => {
+    try {
+      localStorage.setItem('tef_homologacao_logs', JSON.stringify(transactionLogs));
+    } catch (e) {
+      console.error('Erro ao salvar logs no localStorage:', e);
+    }
+  }, [transactionLogs]);
 
   // Permite abrir direto na aba Logs quando vier do Diagnóstico
   useEffect(() => {
