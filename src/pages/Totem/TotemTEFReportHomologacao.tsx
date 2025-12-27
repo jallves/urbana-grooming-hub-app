@@ -408,8 +408,8 @@ export default function TotemTEFReportHomologacao() {
             <Button 
               variant="ghost" 
               size="icon"
-              className="h-8 w-8"
-              onClick={() => navigate('/totem/tef-diagnostico')}
+              className="h-8 w-8 bg-gray-700 hover:bg-gray-600"
+              onClick={() => navigate('/totem')}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -430,7 +430,7 @@ export default function TotemTEFReportHomologacao() {
               size="sm"
               onClick={loadTransactions}
               disabled={isRefreshing}
-              className="h-7 text-xs"
+              className="h-7 text-xs bg-gray-700 border-gray-600 text-white"
             >
               <RefreshCw className={`h-3 w-3 mr-1 ${isRefreshing ? 'animate-spin' : ''}`} />
               Atualizar
@@ -471,7 +471,7 @@ export default function TotemTEFReportHomologacao() {
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
-            className="h-7 text-xs bg-gray-800 border border-gray-600 rounded px-2"
+            className="h-7 text-xs bg-gray-700 border border-gray-600 rounded px-2 text-white"
           >
             <option value="all">Todos</option>
             <option value="aprovado">Aprovados</option>
@@ -496,7 +496,7 @@ export default function TotemTEFReportHomologacao() {
               variant="outline"
               size="sm"
               onClick={exportToCSV}
-              className="h-7 text-xs"
+              className="h-7 text-xs bg-gray-700 border-gray-600 text-white"
             >
               <Download className="h-3 w-3 mr-1" />
               CSV
@@ -505,7 +505,7 @@ export default function TotemTEFReportHomologacao() {
               variant="outline"
               size="sm"
               onClick={exportNsuList}
-              className="h-7 text-xs"
+              className="h-7 text-xs bg-gray-700 border-gray-600 text-white"
             >
               <FileText className="h-3 w-3 mr-1" />
               NSUs
@@ -514,7 +514,7 @@ export default function TotemTEFReportHomologacao() {
               variant="outline"
               size="sm"
               onClick={addManualTransaction}
-              className="h-7 text-xs"
+              className="h-7 text-xs bg-gray-700 border-gray-600 text-white"
             >
               + Manual
             </Button>
@@ -522,7 +522,7 @@ export default function TotemTEFReportHomologacao() {
               variant="ghost"
               size="sm"
               onClick={clearTransactions}
-              className="h-7 text-xs text-red-400 hover:text-red-300"
+              className="h-7 text-xs bg-red-900/50 text-red-400 hover:bg-red-900/70"
             >
               <Trash2 className="h-3 w-3" />
             </Button>
@@ -588,13 +588,13 @@ export default function TotemTEFReportHomologacao() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="h-6 w-6"
+                                className="h-6 w-6 bg-gray-700 hover:bg-gray-600"
                                 onClick={() => copyNsuLocal(txn.nsuLocal, txn.id)}
                               >
                                 {copiedId === txn.id ? (
                                   <Check className="h-3 w-3 text-green-400" />
                                 ) : (
-                                  <Copy className="h-3 w-3 text-gray-400" />
+                                  <Copy className="h-3 w-3 text-white" />
                                 )}
                               </Button>
                             )}
