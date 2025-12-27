@@ -291,17 +291,19 @@ class PayGoService(private val context: Context) {
             val intent = Intent(ACTION_TRANSACTION, transactionUri).apply {
                 // Bundle Extra dos Dados Automação (chave: "DadosAutomacao")
                 putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
-                
+
                 // Bundle Extra da Personalização (chave: "Personalizacao")
                 putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
-                
+
                 // Bundle Extra do nome do pacote (chave: "package")
                 // "necessário para que o aplicativo PayGo Integrado consiga efetuar a devolutiva"
                 putExtra(EXTRA_PACKAGE, context.packageName)
-                
-                // Flags obrigatórias:
-                // "FLAG_ACTIVITY_NEW_TASK + FLAG_ACTIVITY_CLEAR_TASK"
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                // IMPORTANTE:
+                // Evitar FLAG_ACTIVITY_CLEAR_TASK pois isso pode reiniciar a task da automação
+                // ao retornar do PayGo (efeito observado: volta para a tela inicial do PDV).
+                // Mantemos NEW_TASK para abrir o PayGo corretamente.
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             
             addLog("[TXN] Intent Action: $ACTION_TRANSACTION")
@@ -785,7 +787,9 @@ class PayGoService(private val context: Context) {
                 putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
                 putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
                 putExtra(EXTRA_PACKAGE, context.packageName)
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+
+                // Mesma regra da VENDA: não limpar a task da automação.
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
             }
             
             context.startActivity(intent)
