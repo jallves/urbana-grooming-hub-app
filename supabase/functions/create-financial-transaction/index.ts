@@ -94,7 +94,8 @@ Deno.serve(async (req) => {
       notes,
       transaction_date: providedTransactionDate,
       transaction_datetime: providedTransactionDateTime,
-      error_log_id // ID do log de erro se for um reprocessamento
+      error_log_id, // ID do log de erro se for um reprocessamento
+      tip_amount = 0 // Gorjeta para o barbeiro
     } = requestBody
 
     // Mapear payment_method do totem para os valores corretos do ENUM
@@ -714,19 +715,67 @@ Deno.serve(async (req) => {
       })
     }
 
+    // ==================== PROCESSAR GORJETA ====================
+    if (tip_amount > 0 && barber_id) {
+      console.log('💝 Processando gorjeta:', tip_amount, 'para barbeiro:', barber_id)
+      
+      // Verificar se já existe gorjeta registrada para este agendamento
+      const { data: existingTip } = await supabase
+        .from('barber_commissions')
+        .select('id')
+        .eq('appointment_id', appointment_id)
+        .eq('commission_type', 'tip')
+        .maybeSingle()
+      
+      if (!existingTip) {
+        // Registrar gorjeta como comissão do barbeiro (100% do valor)
+        const { data: tipCommission, error: tipError } = await supabase
+          .from('barber_commissions')
+          .insert({
+            barber_id: barber_id,
+            appointment_id: appointment_id,
+            amount: tip_amount,
+            commission_rate: 100, // 100% vai para o barbeiro
+            status: 'pending',
+            commission_type: 'tip',
+            item_name: 'Gorjeta',
+            appointment_source: 'totem'
+          })
+          .select()
+          .single()
+        
+        if (tipError) {
+          console.error('❌ Erro ao registrar gorjeta:', tipError)
+        } else {
+          console.log('✅ Gorjeta registrada:', tipCommission.id, 'Valor:', tip_amount)
+          
+          createdRecords.push({
+            type: 'tip',
+            name: 'Gorjeta',
+            commission_id: tipCommission.id,
+            amount: tip_amount
+          })
+        }
+      } else {
+        console.log('⚠️ Gorjeta já existe para este agendamento, pulando')
+      }
+    }
+
     // Calcular totais
-    const totalRevenue = createdRecords.reduce((sum, r) => sum + r.amount, 0)
+    const totalRevenue = createdRecords.filter((r: any) => r.type !== 'tip').reduce((sum: number, r: any) => sum + r.amount, 0)
+    const totalTips = tip_amount
     const totalCommissions = serviceItems.length > 0 && barber_id 
       ? serviceItems.reduce((sum: number, s: any) => {
           const netAmount = (s.quantity * s.price) - (s.discount || 0)
           return sum + (netAmount * 0.4)
-        }, 0)
-      : 0
+        }, 0) + totalTips
+      : totalTips
 
     console.log('✅ Transação financeira concluída:', {
       total_items: createdRecords.length,
       services: serviceItems.length,
       products: productItems.length,
+      tip: tip_amount,
       total_revenue: totalRevenue,
       total_commissions: totalCommissions,
       payment_method,

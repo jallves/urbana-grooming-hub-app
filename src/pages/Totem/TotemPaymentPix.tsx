@@ -14,7 +14,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemPaymentPix: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { venda_id, session_id, appointment, client, total, selectedProducts = [], extraServices = [], resumo, isDirect = false } = location.state || {};
+  const { venda_id, session_id, appointment, client, total, selectedProducts = [], extraServices = [], resumo, isDirect = false, tipAmount = 0 } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
   const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
@@ -118,7 +118,8 @@ const TotemPaymentPix: React.FC = () => {
             action: 'finish',
             venda_id: venda_id,
             session_id: session_id,
-            payment_id: paymentId
+            payment_id: paymentId,
+            tipAmount: tipAmount
           }
         });
       }
@@ -151,7 +152,7 @@ const TotemPaymentPix: React.FC = () => {
       setProcessing(false);
       finalizingRef.current = false;
     }
-  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate]);
+  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, tipAmount]);
 
   // Handler para resultado do TEF
   // IMPORTANTE: Usa refs E localStorage para garantir acesso aos valores

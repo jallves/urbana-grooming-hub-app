@@ -3,7 +3,8 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, CreditCard, DollarSign, Plus, Minus, Trash2, CheckCircle2, XCircle } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Plus, Minus, Trash2, CheckCircle2, XCircle, Heart } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { ExtraServicesUpsell } from '@/components/totem/ExtraServicesUpsell';
@@ -40,6 +41,32 @@ const TotemCheckout: React.FC = () => {
   const [isUpdating, setIsUpdating] = useState(false);
   const [availableProducts, setAvailableProducts] = useState<any[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<Array<{ product_id: string; nome: string; preco: number; quantidade: number; imagem?: string; estoque?: number }>>([]);
+  const [tipAmount, setTipAmount] = useState<number>(0);
+  const [tipInputValue, setTipInputValue] = useState<string>('');
+
+  // Formatar valor de gorjeta como moeda brasileira
+  const formatTipInput = (value: string) => {
+    // Remove tudo que não é número
+    const numbers = value.replace(/\D/g, '');
+    
+    // Converte para centavos
+    const cents = parseInt(numbers || '0', 10);
+    
+    // Converte para reais
+    const reais = cents / 100;
+    
+    setTipAmount(reais);
+    
+    // Formata para exibição
+    if (cents === 0) {
+      setTipInputValue('');
+    } else {
+      setTipInputValue(reais.toLocaleString('pt-BR', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      }));
+    }
+  };
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -417,7 +444,7 @@ const TotemCheckout: React.FC = () => {
     (appointment as any)?.servico_preco ||
     0;
     
-  const grandTotal = baseServicePrice + extraServicesTotal + productsTotal;
+  const grandTotal = baseServicePrice + extraServicesTotal + productsTotal + tipAmount;
   
   // Flag para saber se podemos processar pagamento
   // CORREÇÃO: Permitir pagamento se tiver vendaId E sessionId E (grandTotal > 0 OU tem produtos selecionados)
@@ -690,7 +717,8 @@ const TotemCheckout: React.FC = () => {
     const currentProductsTotal = selectedProducts.reduce((sum, p) => sum + (p.preco * p.quantidade), 0);
     const currentExtrasTotal = extraServices.reduce((sum, s) => sum + s.preco, 0);
     const currentBasePrice = resumo?.original_service?.preco || appointment?.servico?.preco || (appointment as any)?.servico_preco || 0;
-    const finalTotal = currentBasePrice + currentExtrasTotal + currentProductsTotal;
+    const currentTip = tipAmount;
+    const finalTotal = currentBasePrice + currentExtrasTotal + currentProductsTotal + currentTip;
     
     console.log('💳 [PAYMENT] Iniciando pagamento:', method);
     console.log('   💰 Venda ID:', vendaId);
@@ -699,6 +727,7 @@ const TotemCheckout: React.FC = () => {
     console.log('   💈 Base Service Price:', currentBasePrice);
     console.log('   ➕ Extra Services Total:', currentExtrasTotal);
     console.log('   🛒 Products Total:', currentProductsTotal);
+    console.log('   💝 Tip Amount:', currentTip);
     console.log('   📦 Selected Products:', selectedProducts);
     console.log('   📋 Extra Services:', extraServices);
     
@@ -812,7 +841,8 @@ const TotemCheckout: React.FC = () => {
             total: finalTotal,
             selectedProducts: selectedProducts,
             extraServices: extraServices,
-            resumo: resumo
+            resumo: resumo,
+            tipAmount: currentTip
           }
         });
       } else {
@@ -825,7 +855,8 @@ const TotemCheckout: React.FC = () => {
             total: finalTotal,
             selectedProducts: selectedProducts,
             extraServices: extraServices,
-            resumo: resumo
+            resumo: resumo,
+            tipAmount: currentTip
           }
         });
       }
@@ -1093,6 +1124,60 @@ const TotemCheckout: React.FC = () => {
                 </div>
               )}
             </Card>
+
+            {/* Tip Card */}
+            <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-pink-500/30 flex-shrink-0">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-pink-500 to-pink-600 flex items-center justify-center shadow-lg shadow-pink-500/30">
+                  <Heart className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
+                </div>
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light">
+                  Gorjeta (Opcional)
+                </h2>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <span className="text-urbana-light font-bold text-lg">R$</span>
+                <Input
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="0,00"
+                  value={tipInputValue}
+                  onChange={(e) => formatTipInput(e.target.value)}
+                  className="flex-1 h-11 text-lg text-urbana-light bg-urbana-black-soft/30 backdrop-blur-md border-2 border-pink-500/40 hover:border-pink-500/60 focus:border-pink-500 transition-colors text-center font-bold"
+                />
+              </div>
+              
+              {/* Quick tip buttons */}
+              <div className="flex gap-2 mt-2">
+                {[5, 10, 20].map((value) => (
+                  <Button
+                    key={value}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setTipAmount(value);
+                      setTipInputValue(value.toLocaleString('pt-BR', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                      }));
+                    }}
+                    className="flex-1 h-9 text-xs sm:text-sm border-pink-500/30 text-pink-400 hover:bg-pink-500/10 hover:text-pink-300"
+                  >
+                    R$ {value}
+                  </Button>
+                ))}
+              </div>
+              
+              {tipAmount > 0 && (
+                <div className="mt-2 p-2 bg-pink-500/10 border border-pink-500/30 rounded-lg">
+                  <p className="text-xs text-center text-pink-300">
+                    💝 Gorjeta de <span className="font-bold">R$ {tipAmount.toFixed(2)}</span> para o barbeiro
+                  </p>
+                </div>
+              )}
+            </Card>
           </div>
 
           {/* Center Column - Summary Card */}
@@ -1168,14 +1253,36 @@ const TotemCheckout: React.FC = () => {
                   </div>
                 ))}
 
+                {/* Tip display in summary */}
+                {tipAmount > 0 && (
+                  <div className="flex items-center justify-between py-1.5 border-b border-pink-500/30">
+                    <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                      <Heart className="w-3 h-3 text-pink-400 flex-shrink-0" />
+                      <p className="text-[10px] sm:text-xs md:text-sm font-semibold text-pink-300">
+                        Gorjeta
+                      </p>
+                    </div>
+                    <p className="text-xs sm:text-sm font-bold text-pink-400 whitespace-nowrap ml-2">
+                      R$ {tipAmount.toFixed(2)}
+                    </p>
+                  </div>
+                )}
+
                 {/* Totals - Cálculo automático */}
                 <div className="space-y-2 pt-2 mt-2 border-t-2 border-urbana-gold/40">
                   <div className="flex items-center justify-between text-xs sm:text-sm">
-                    <span className="text-urbana-light/80 font-medium">Subtotal:</span>
+                    <span className="text-urbana-light/80 font-medium">Subtotal Serviços/Produtos:</span>
                     <span className="text-urbana-light font-bold">
-                      R$ {grandTotal.toFixed(2)}
+                      R$ {(grandTotal - tipAmount).toFixed(2)}
                     </span>
                   </div>
+                  
+                  {tipAmount > 0 && (
+                    <div className="flex items-center justify-between text-xs sm:text-sm">
+                      <span className="text-pink-300/80 font-medium">+ Gorjeta:</span>
+                      <span className="text-pink-400 font-bold">R$ {tipAmount.toFixed(2)}</span>
+                    </div>
+                  )}
                   
                   {resumo.discount > 0 && (
                     <div className="flex items-center justify-between text-xs sm:text-sm">
