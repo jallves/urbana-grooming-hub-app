@@ -90,13 +90,26 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
       console.log('[useTEFAndroid] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
       
-      // Evitar processamento duplicado
-      const resultKey = `${normalizedResult.nsu}_${normalizedResult.autorizacao}_${normalizedResult.status}`;
+      // Evitar processamento duplicado usando chave mais robusta
+      // Para transações aprovadas: usa NSU + autorização
+      // Para outras: usa timestamp + status + valor
+      const timestamp = normalizedResult.timestamp || Date.now();
+      const resultKey = normalizedResult.nsu && normalizedResult.autorizacao
+        ? `${normalizedResult.nsu}_${normalizedResult.autorizacao}`
+        : `${timestamp}_${normalizedResult.status}_${normalizedResult.valor || ''}`;
+      
       if (globalLastProcessedResult === resultKey) {
-        console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata');
+        console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata:', resultKey);
         return;
       }
       globalLastProcessedResult = resultKey;
+      
+      // Limpar chave após 3 segundos para permitir novas transações
+      setTimeout(() => {
+        if (globalLastProcessedResult === resultKey) {
+          globalLastProcessedResult = null;
+        }
+      }, 3000);
       
       // Atualizar estado via ref para garantir que funciona mesmo após re-render
       console.log('[useTEFAndroid] Atualizando isProcessing para false');
