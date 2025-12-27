@@ -240,28 +240,57 @@ export default function TotemTEFHomologacao() {
       const resultadoEsperado = testePasso?.resultado || 'N/A';
       const timestamp = new Date().toISOString();
       
-      // Para transações negadas, registrar com dados de comprovação
-      addLog('error', `❌ TRANSAÇÃO NEGADA`, {
-        passoTeste: testePasso?.passo,
-        resultadoEsperado,
-        valor: valorCentavos / 100,
-        motivoNegacao: erro,
-        timestamp,
-        // Sem NSU/Auth porque transações negadas não geram esses dados
-        observacao: 'Transações negadas não geram NSU ou código de autorização'
-      });
+      // Detectar se é cancelamento (rede não informada, operação cancelada, etc.)
+      const erroLower = erro.toLowerCase();
+      const isCancelamento = erroLower.includes('cancelad') || 
+                             erroLower.includes('rede não informada') ||
+                             erroLower.includes('operação cancelada') ||
+                             erroLower.includes('esc') ||
+                             erroLower.includes('abortado');
       
-      // Mostrar modal de resultado
-      setTransactionResult({
-        show: true,
-        status: 'negado',
-        valor: parseInt(amount, 10) / 100,
-        nsu: 'N/A (negado)',
-        autorizacao: 'N/A (negado)',
-        bandeira: '',
-        mensagem: erro,
-        passoTeste: testePasso?.passo
-      });
+      if (isCancelamento) {
+        // Tratar como OPERAÇÃO CANCELADA (Passo 05 - rede não informada)
+        addLog('warning', `⚠️ OPERAÇÃO CANCELADA`, {
+          passoTeste: testePasso?.passo,
+          resultadoEsperado,
+          valor: valorCentavos / 100,
+          motivo: erro,
+          timestamp,
+          observacao: 'Transação não realizada - rede não informada ou operação cancelada pelo usuário'
+        });
+        
+        setTransactionResult({
+          show: true,
+          status: 'cancelado',
+          valor: parseInt(amount, 10) / 100,
+          nsu: 'N/A (cancelado)',
+          autorizacao: 'N/A (cancelado)',
+          bandeira: '',
+          mensagem: erro.toUpperCase().includes('CANCELAD') ? erro : 'OPERAÇÃO CANCELADA - Rede não informada',
+          passoTeste: testePasso?.passo
+        });
+      } else {
+        // Tratar como TRANSAÇÃO NEGADA (erro do autorizador)
+        addLog('error', `❌ TRANSAÇÃO NEGADA`, {
+          passoTeste: testePasso?.passo,
+          resultadoEsperado,
+          valor: valorCentavos / 100,
+          motivoNegacao: erro,
+          timestamp,
+          observacao: 'Transação negada pelo autorizador - não gera NSU ou código de autorização'
+        });
+        
+        setTransactionResult({
+          show: true,
+          status: 'negado',
+          valor: parseInt(amount, 10) / 100,
+          nsu: 'N/A (negado)',
+          autorizacao: 'N/A (negado)',
+          bandeira: '',
+          mensagem: erro,
+          passoTeste: testePasso?.passo
+        });
+      }
       
       refreshAndroidLogs();
     },
