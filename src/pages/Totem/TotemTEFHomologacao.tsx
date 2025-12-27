@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   RefreshCw, 
   Smartphone, 
@@ -21,8 +22,12 @@ import {
   QrCode,
   Delete,
   X,
-  ChevronDown,
-  ChevronUp
+  Calendar,
+  Clock,
+  FileText,
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -34,14 +39,24 @@ import {
   confirmarTransacaoTEF
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
+import { formatBrazilDate, getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 type PaymentMethod = 'debito' | 'credito' | 'pix';
 
 interface TransactionLog {
+  id: string;
   timestamp: string;
+  date: string; // YYYY-MM-DD para agrupamento
   type: 'info' | 'success' | 'error' | 'warning' | 'transaction';
   message: string;
   data?: Record<string, unknown>;
+}
+
+interface DailyLogGroup {
+  date: string;
+  displayDate: string;
+  transactionLogs: TransactionLog[];
+  androidLogs: { timestamp: string; message: string }[];
 }
 
 export default function TotemTEFHomologacao() {
@@ -51,9 +66,10 @@ export default function TotemTEFHomologacao() {
   const [installments, setInstallments] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
   const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>([]);
-  const [androidLogs, setAndroidLogs] = useState<string[]>([]);
+  const [androidLogs, setAndroidLogs] = useState<{ timestamp: string; message: string }[]>([]);
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(true);
-  const [showLogs, setShowLogs] = useState(false);
+  const [activeTab, setActiveTab] = useState<'pdv' | 'logs'>('pdv');
+  const [selectedDate, setSelectedDate] = useState<string>(getTodayInBrazil());
   const transactionLogsEndRef = useRef<HTMLDivElement>(null);
   const androidLogsEndRef = useRef<HTMLDivElement>(null);
   
@@ -84,7 +100,6 @@ export default function TotemTEFHomologacao() {
         confirmationId: resultado.confirmationTransactionId
       });
       
-      // Se requer confirmação, salvar para confirmar manualmente
       if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
         setPendingConfirmation({
           confirmationId: resultado.confirmationTransactionId,
@@ -93,7 +108,6 @@ export default function TotemTEFHomologacao() {
         });
         addLog('warning', '⚠️ Transação aguardando confirmação manual');
       } else {
-        // Confirmar automaticamente para homologação
         if (resultado.confirmationTransactionId) {
           const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
           addLog('info', confirmed ? '✅ Confirmação automática enviada' : '❌ Erro na confirmação automática');
@@ -120,10 +134,13 @@ export default function TotemTEFHomologacao() {
     }
   });
 
-  // Adicionar log
+  // Adicionar log com data
   const addLog = useCallback((type: TransactionLog['type'], message: string, data?: Record<string, unknown>) => {
+    const now = new Date();
     const log: TransactionLog = {
-      timestamp: new Date().toISOString(),
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: now.toISOString(),
+      date: now.toISOString().split('T')[0],
       type,
       message,
       data
@@ -131,18 +148,18 @@ export default function TotemTEFHomologacao() {
     setTransactionLogs(prev => [...prev, log]);
   }, []);
 
-  // Auto-scroll apenas dentro das ScrollAreas de logs (não afeta a página principal)
+  // Auto-scroll
   useEffect(() => {
-    if (showLogs && transactionLogsEndRef.current) {
+    if (transactionLogsEndRef.current) {
       transactionLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [transactionLogs, showLogs]);
+  }, [transactionLogs]);
 
   useEffect(() => {
-    if (showLogs && androidLogsEndRef.current) {
+    if (androidLogsEndRef.current) {
       androidLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
     }
-  }, [androidLogs, showLogs]);
+  }, [androidLogs]);
 
   // Auto-refresh Android logs
   useEffect(() => {
@@ -167,9 +184,61 @@ export default function TotemTEFHomologacao() {
   const refreshAndroidLogs = () => {
     if (isAndroidTEFAvailable()) {
       const logs = getLogsAndroid();
-      setAndroidLogs(logs);
+      const now = new Date();
+      const formattedLogs = logs.map((log, i) => ({
+        timestamp: now.toISOString(),
+        message: log
+      }));
+      setAndroidLogs(formattedLogs);
     }
   };
+
+  // Agrupar logs por data
+  const dailyLogGroups = useMemo((): DailyLogGroup[] => {
+    const groups: Record<string, DailyLogGroup> = {};
+    
+    // Adicionar logs de transação
+    transactionLogs.forEach(log => {
+      if (!groups[log.date]) {
+        groups[log.date] = {
+          date: log.date,
+          displayDate: formatDateDisplay(log.date),
+          transactionLogs: [],
+          androidLogs: []
+        };
+      }
+      groups[log.date].transactionLogs.push(log);
+    });
+
+    // Adicionar logs Android no dia atual
+    const today = getTodayInBrazil();
+    if (!groups[today]) {
+      groups[today] = {
+        date: today,
+        displayDate: formatDateDisplay(today),
+        transactionLogs: [],
+        androidLogs: []
+      };
+    }
+    groups[today].androidLogs = androidLogs;
+
+    return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date));
+  }, [transactionLogs, androidLogs]);
+
+  // Datas disponíveis
+  const availableDates = useMemo(() => {
+    return dailyLogGroups.map(g => g.date);
+  }, [dailyLogGroups]);
+
+  // Logs do dia selecionado
+  const selectedDayLogs = useMemo(() => {
+    return dailyLogGroups.find(g => g.date === selectedDate) || {
+      date: selectedDate,
+      displayDate: formatDateDisplay(selectedDate),
+      transactionLogs: [],
+      androidLogs: []
+    };
+  }, [dailyLogGroups, selectedDate]);
 
   // Teclado numérico
   const handleNumberClick = (num: string) => {
@@ -194,6 +263,32 @@ export default function TotemTEFHomologacao() {
       style: 'currency', 
       currency: 'BRL' 
     });
+  };
+
+  // Formatar data para exibição
+  function formatDateDisplay(dateStr: string): string {
+    const [year, month, day] = dateStr.split('-');
+    const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (dateStr === today.toISOString().split('T')[0]) {
+      return 'Hoje';
+    } else if (dateStr === yesterday.toISOString().split('T')[0]) {
+      return 'Ontem';
+    }
+    return date.toLocaleDateString('pt-BR', { weekday: 'short', day: '2-digit', month: '2-digit' });
+  }
+
+  // Navegar entre datas
+  const navigateDate = (direction: 'prev' | 'next') => {
+    const currentIndex = availableDates.indexOf(selectedDate);
+    if (direction === 'prev' && currentIndex < availableDates.length - 1) {
+      setSelectedDate(availableDates[currentIndex + 1]);
+    } else if (direction === 'next' && currentIndex > 0) {
+      setSelectedDate(availableDates[currentIndex - 1]);
+    }
   };
 
   // Iniciar transação
@@ -273,44 +368,133 @@ export default function TotemTEFHomologacao() {
     toast.success('Logs limpos');
   };
 
-  // Exportar logs
-  const handleExportLogs = () => {
+  // Exportar logs do dia selecionado
+  const handleExportDayLogs = () => {
+    const dayLogs = selectedDayLogs;
     const allLogs = [
-      '=== LOGS DE HOMOLOGAÇÃO PAYGO ===',
-      `Data: ${new Date().toISOString()}`,
-      `Versão Android: ${androidVersion || 'N/A'}`,
-      `Pinpad: ${pinpadStatus?.modelo || 'N/A'}`,
+      '╔══════════════════════════════════════════════════════════════════╗',
+      '║           RELATÓRIO DE HOMOLOGAÇÃO PAYGO - TEF                  ║',
+      '╚══════════════════════════════════════════════════════════════════╝',
       '',
-      '=== TRANSAÇÕES ===',
-      ...transactionLogs.map(log => 
-        `[${log.timestamp}] [${log.type.toUpperCase()}] ${log.message}${log.data ? '\n  ' + JSON.stringify(log.data, null, 2) : ''}`
-      ),
+      `📅 Data: ${dayLogs.displayDate} (${dayLogs.date})`,
+      `⏰ Exportado em: ${new Date().toLocaleString('pt-BR')}`,
+      `📱 Versão Android: ${androidVersion || 'N/A'}`,
+      `🔌 Pinpad: ${pinpadStatus?.modelo || 'N/A'}`,
       '',
-      '=== LOGS ANDROID TEF ===',
-      ...androidLogs
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '                        TRANSAÇÕES DO DIA                          ',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      dayLogs.transactionLogs.length === 0 
+        ? '  Nenhuma transação registrada neste dia.'
+        : dayLogs.transactionLogs.map(log => {
+            const time = log.timestamp.split('T')[1].slice(0, 12);
+            const typeLabel = {
+              'success': '✅ SUCESSO',
+              'error': '❌ ERRO',
+              'warning': '⚠️ AVISO',
+              'transaction': '💳 TRANSAÇÃO',
+              'info': 'ℹ️ INFO'
+            }[log.type];
+            let line = `[${time}] [${typeLabel}] ${log.message}`;
+            if (log.data) {
+              line += '\n' + JSON.stringify(log.data, null, 2).split('\n').map(l => '          ' + l).join('\n');
+            }
+            return line;
+          }).join('\n\n'),
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '                     LOGS ANDROID TEF                              ',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '',
+      dayLogs.androidLogs.length === 0 
+        ? '  Nenhum log Android disponível para este dia.'
+        : dayLogs.androidLogs.map(log => `  ${log.message}`).join('\n'),
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '                        FIM DO RELATÓRIO                           ',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     ].join('\n');
 
-    const blob = new Blob([allLogs], { type: 'text/plain' });
+    const blob = new Blob([allLogs], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `homologacao-paygo-${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.txt`;
+    a.download = `paygo-homologacao-${dayLogs.date}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     
-    toast.success('Logs exportados');
+    toast.success(`Logs de ${dayLogs.displayDate} exportados`);
   };
 
-  // Copiar logs
-  const handleCopyLogs = () => {
+  // Exportar todos os logs
+  const handleExportAllLogs = () => {
+    const allLogsSections = dailyLogGroups.map(dayLogs => {
+      return [
+        '',
+        `╔══════════════════════════════════════════════════════════════════╗`,
+        `║  ${dayLogs.displayDate.padEnd(20)} (${dayLogs.date})                           ║`,
+        `╚══════════════════════════════════════════════════════════════════╝`,
+        '',
+        '── Transações ──',
+        dayLogs.transactionLogs.length === 0 
+          ? '  Nenhuma transação.'
+          : dayLogs.transactionLogs.map(log => {
+              const time = log.timestamp.split('T')[1].slice(0, 12);
+              let line = `[${time}] [${log.type.toUpperCase()}] ${log.message}`;
+              if (log.data) {
+                line += ' | ' + JSON.stringify(log.data);
+              }
+              return line;
+            }).join('\n'),
+        '',
+        '── Logs Android ──',
+        dayLogs.androidLogs.length === 0 
+          ? '  Nenhum log.'
+          : dayLogs.androidLogs.map(log => `  ${log.message}`).join('\n'),
+      ].join('\n');
+    });
+
     const allLogs = [
-      ...transactionLogs.map(log => 
-        `[${log.timestamp}] [${log.type.toUpperCase()}] ${log.message}${log.data ? ' | ' + JSON.stringify(log.data) : ''}`
-      ),
-      ...androidLogs
+      '╔══════════════════════════════════════════════════════════════════╗',
+      '║       RELATÓRIO COMPLETO DE HOMOLOGAÇÃO PAYGO - TEF             ║',
+      '╚══════════════════════════════════════════════════════════════════╝',
+      '',
+      `⏰ Exportado em: ${new Date().toLocaleString('pt-BR')}`,
+      `📱 Versão Android: ${androidVersion || 'N/A'}`,
+      `🔌 Pinpad: ${pinpadStatus?.modelo || 'N/A'}`,
+      `📊 Total de dias: ${dailyLogGroups.length}`,
+      `📝 Total de transações: ${transactionLogs.length}`,
+      ...allLogsSections,
+      '',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
+      '                        FIM DO RELATÓRIO COMPLETO                  ',
+      '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━',
     ].join('\n');
 
-    navigator.clipboard.writeText(allLogs);
+    const blob = new Blob([allLogs], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `paygo-homologacao-completo-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast.success('Relatório completo exportado');
+  };
+
+  // Copiar logs do dia
+  const handleCopyDayLogs = () => {
+    const dayLogs = selectedDayLogs;
+    const text = [
+      `LOGS ${dayLogs.displayDate}`,
+      '---',
+      ...dayLogs.transactionLogs.map(log => `[${log.timestamp.split('T')[1].slice(0, 8)}] ${log.message}`),
+      '---',
+      ...dayLogs.androidLogs.map(log => log.message)
+    ].join('\n');
+
+    navigator.clipboard.writeText(text);
     toast.success('Logs copiados');
   };
 
@@ -321,6 +505,16 @@ export default function TotemTEFHomologacao() {
       case 'warning': return 'text-yellow-400';
       case 'transaction': return 'text-blue-400';
       default: return 'text-gray-300';
+    }
+  };
+
+  const getLogBgColor = (type: TransactionLog['type']) => {
+    switch (type) {
+      case 'success': return 'bg-green-500/10 border-l-green-500';
+      case 'error': return 'bg-red-500/10 border-l-red-500';
+      case 'warning': return 'bg-yellow-500/10 border-l-yellow-500';
+      case 'transaction': return 'bg-blue-500/10 border-l-blue-500';
+      default: return 'bg-gray-500/10 border-l-gray-500';
     }
   };
 
@@ -335,111 +529,133 @@ export default function TotemTEFHomologacao() {
   };
 
   return (
-    <div className="h-screen bg-urbana-black text-white flex flex-col overflow-hidden">
-      {/* Header Fixo */}
-      <div className="flex-shrink-0 flex items-center justify-between p-4 border-b border-urbana-gold/20">
-        <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onPointerDown={() => navigate('/totem')}
-            className="text-urbana-gold hover:bg-urbana-gold/10"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold text-urbana-gold">Homologação PayGo</h1>
-            <p className="text-sm text-urbana-light/60">PDV para testes de integração TEF</p>
+    <div className="h-screen bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black text-white flex flex-col overflow-hidden">
+      {/* Header Profissional */}
+      <header className="flex-shrink-0 bg-urbana-black/80 backdrop-blur-sm border-b border-urbana-gold/20 px-4 py-3 safe-area-inset-top">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="ghost" 
+              size="icon"
+              onPointerDown={() => navigate('/totem')}
+              className="text-urbana-gold hover:bg-urbana-gold/10 h-10 w-10"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+            <div>
+              <h1 className="text-lg md:text-xl font-bold text-urbana-gold flex items-center gap-2">
+                <CreditCard className="h-5 w-5" />
+                PDV Homologação PayGo
+              </h1>
+              <p className="text-xs text-urbana-light/60">Terminal para testes de integração TEF</p>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-2">
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${isAndroidAvailable ? 'border-green-500 text-green-400' : 'border-red-500 text-red-400'}`}
+            >
+              <Smartphone className="h-3 w-3 mr-1" />
+              {isAndroidAvailable ? 'TEF' : 'OFF'}
+            </Badge>
+            <Badge 
+              variant="outline" 
+              className={`text-xs ${isPinpadConnected ? 'border-green-500 text-green-400' : 'border-yellow-500 text-yellow-400'}`}
+            >
+              {isPinpadConnected ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
+              {isPinpadConnected ? 'PIN' : 'N/C'}
+            </Badge>
           </div>
         </div>
-        
-        <div className="flex items-center gap-2">
-          {/* Status indicators */}
-          <Badge 
-            variant="outline" 
-            className={isAndroidAvailable ? 'border-green-500 text-green-400' : 'border-red-500 text-red-400'}
+      </header>
+
+      {/* Tabs para Mobile/Tablet */}
+      <div className="flex-shrink-0 px-4 pt-3">
+        <div className="flex gap-2">
+          <Button
+            variant={activeTab === 'pdv' ? 'default' : 'outline'}
+            onPointerDown={() => setActiveTab('pdv')}
+            className={`flex-1 h-11 ${activeTab === 'pdv' 
+              ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
+              : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            <Smartphone className="h-3 w-3 mr-1" />
-            {isAndroidAvailable ? 'TEF OK' : 'TEF OFF'}
-          </Badge>
-          <Badge 
-            variant="outline" 
-            className={isPinpadConnected ? 'border-green-500 text-green-400' : 'border-yellow-500 text-yellow-400'}
+            <DollarSign className="h-4 w-4 mr-2" />
+            PDV
+          </Button>
+          <Button
+            variant={activeTab === 'logs' ? 'default' : 'outline'}
+            onPointerDown={() => setActiveTab('logs')}
+            className={`flex-1 h-11 ${activeTab === 'logs' 
+              ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
+              : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            {isPinpadConnected ? <Wifi className="h-3 w-3 mr-1" /> : <WifiOff className="h-3 w-3 mr-1" />}
-            {isPinpadConnected ? 'Pinpad' : 'Desconectado'}
-          </Badge>
+            <FileText className="h-4 w-4 mr-2" />
+            Logs
+            {transactionLogs.length > 0 && (
+              <Badge className="ml-2 bg-urbana-black text-urbana-gold text-xs px-1.5">
+                {transactionLogs.length}
+              </Badge>
+            )}
+          </Button>
         </div>
       </div>
 
-      {/* Conteúdo Principal - PDV Fixo */}
+      {/* Conteúdo Principal */}
       <div className="flex-1 overflow-hidden p-4">
-        <div className="h-full flex flex-col lg:flex-row gap-4">
-          {/* Coluna Esquerda - PDV (sempre visível, sem scroll) */}
-          <div className="flex-shrink-0 lg:w-1/2 space-y-3">
+        {/* PDV Tab */}
+        {activeTab === 'pdv' && (
+          <div className="h-full flex flex-col gap-3 max-w-lg mx-auto">
             {/* Valor Display */}
-            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+            <Card className="bg-gradient-to-br from-urbana-black-soft to-urbana-black border-urbana-gold/30 shadow-lg shadow-urbana-gold/5">
               <CardContent className="p-4">
-                <p className="text-sm text-urbana-light/60 mb-1">Valor da transação</p>
-                <div className="text-3xl font-bold text-urbana-gold text-center py-2">
+                <p className="text-xs text-urbana-light/60 mb-1 uppercase tracking-wider">Valor da transação</p>
+                <div className="text-4xl md:text-5xl font-bold text-urbana-gold text-center py-3 font-mono">
                   {formatCurrency(amount)}
                 </div>
               </CardContent>
             </Card>
 
             {/* Método de Pagamento */}
-            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30">
               <CardHeader className="py-2 px-4">
-                <CardTitle className="text-sm text-urbana-gold">Forma de Pagamento</CardTitle>
+                <CardTitle className="text-sm text-urbana-gold uppercase tracking-wider">Forma de Pagamento</CardTitle>
               </CardHeader>
-              <CardContent className="px-4 pb-4 pt-0 space-y-2">
+              <CardContent className="px-4 pb-4 pt-0 space-y-3">
                 <div className="grid grid-cols-3 gap-2">
-                  <Button
-                    variant={selectedMethod === 'debito' ? 'default' : 'outline'}
-                    onPointerDown={() => setSelectedMethod('debito')}
-                    className={selectedMethod === 'debito' 
-                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
-                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
-                  >
-                    <CreditCard className="h-4 w-4 mr-2" />
-                    Débito
-                  </Button>
-                  <Button
-                    variant={selectedMethod === 'credito' ? 'default' : 'outline'}
-                    onPointerDown={() => setSelectedMethod('credito')}
-                    className={selectedMethod === 'credito' 
-                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
-                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
-                  >
-                    <Banknote className="h-4 w-4 mr-2" />
-                    Crédito
-                  </Button>
-                  <Button
-                    variant={selectedMethod === 'pix' ? 'default' : 'outline'}
-                    onPointerDown={() => setSelectedMethod('pix')}
-                    className={selectedMethod === 'pix' 
-                      ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 h-12' 
-                      : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-12'}
-                  >
-                    <QrCode className="h-4 w-4 mr-2" />
-                    PIX
-                  </Button>
+                  {[
+                    { id: 'debito', label: 'Débito', icon: CreditCard },
+                    { id: 'credito', label: 'Crédito', icon: Banknote },
+                    { id: 'pix', label: 'PIX', icon: QrCode }
+                  ].map(({ id, label, icon: Icon }) => (
+                    <Button
+                      key={id}
+                      variant={selectedMethod === id ? 'default' : 'outline'}
+                      onPointerDown={() => setSelectedMethod(id as PaymentMethod)}
+                      className={`h-14 flex flex-col gap-1 ${selectedMethod === id 
+                        ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 shadow-lg shadow-urbana-gold/20' 
+                        : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
+                    >
+                      <Icon className="h-5 w-5" />
+                      <span className="text-xs font-medium">{label}</span>
+                    </Button>
+                  ))}
                 </div>
 
-                {/* Parcelas - apenas para crédito */}
+                {/* Parcelas */}
                 {selectedMethod === 'credito' && (
-                  <div className="mt-2">
-                    <p className="text-xs text-urbana-light/60 mb-1">Parcelas</p>
-                    <div className="grid grid-cols-6 gap-1">
+                  <div>
+                    <p className="text-xs text-urbana-light/60 mb-2 uppercase tracking-wider">Parcelas</p>
+                    <div className="grid grid-cols-6 gap-1.5">
                       {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map((n) => (
                         <Button
                           key={n}
                           size="sm"
                           variant={installments === n ? 'default' : 'outline'}
                           onPointerDown={() => setInstallments(n)}
-                          className={installments === n 
-                            ? 'bg-urbana-gold text-urbana-black text-xs h-8' 
-                            : 'border-urbana-gold/30 text-urbana-gold text-xs h-8 hover:bg-urbana-gold/10'}
+                          className={`h-9 text-sm font-medium ${installments === n 
+                            ? 'bg-urbana-gold text-urbana-black' 
+                            : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
                         >
                           {n}x
                         </Button>
@@ -450,8 +666,8 @@ export default function TotemTEFHomologacao() {
               </CardContent>
             </Card>
 
-            {/* Teclado Numérico Compacto */}
-            <Card className="bg-urbana-black-soft border-urbana-gold/30">
+            {/* Teclado Numérico */}
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30">
               <CardContent className="p-3">
                 <div className="grid grid-cols-3 gap-2">
                   {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((num) => (
@@ -461,7 +677,7 @@ export default function TotemTEFHomologacao() {
                       variant="outline"
                       onPointerDown={() => handleNumberClick(num)}
                       disabled={isProcessing}
-                      className="h-12 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                      className="h-14 text-2xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20 transition-all"
                     >
                       {num}
                     </Button>
@@ -471,16 +687,16 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleClear}
                     disabled={isProcessing}
-                    className="h-12 border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
+                    className="h-14 border-red-500/30 text-red-400 hover:bg-red-500/10 active:bg-red-500/20"
                   >
-                    <X className="h-5 w-5" />
+                    <X className="h-6 w-6" />
                   </Button>
                   <Button
                     size="lg"
                     variant="outline"
                     onPointerDown={() => handleNumberClick('0')}
                     disabled={isProcessing}
-                    className="h-12 text-xl border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
+                    className="h-14 text-2xl font-semibold border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 active:bg-urbana-gold/20"
                   >
                     0
                   </Button>
@@ -489,9 +705,9 @@ export default function TotemTEFHomologacao() {
                     variant="outline"
                     onPointerDown={handleBackspace}
                     disabled={isProcessing}
-                    className="h-12 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
+                    className="h-14 border-yellow-500/30 text-yellow-400 hover:bg-yellow-500/10 active:bg-yellow-500/20"
                   >
-                    <Delete className="h-5 w-5" />
+                    <Delete className="h-6 w-6" />
                   </Button>
                 </div>
               </CardContent>
@@ -502,11 +718,11 @@ export default function TotemTEFHomologacao() {
               size="lg"
               onPointerDown={handleStartTransaction}
               disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
-              className="w-full h-14 text-xl bg-green-600 hover:bg-green-700 active:bg-green-800 text-white disabled:opacity-50"
+              className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-700 hover:to-green-600 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 transition-all"
             >
               {isProcessing ? (
                 <>
-                  <Loader2 className="h-6 w-6 mr-2 animate-spin" />
+                  <Loader2 className="h-6 w-6 mr-3 animate-spin" />
                   Processando...
                 </>
               ) : (
@@ -519,26 +735,30 @@ export default function TotemTEFHomologacao() {
 
             {/* Confirmação Pendente */}
             {pendingConfirmation && (
-              <Card className="bg-yellow-500/10 border-yellow-500/50">
-                <CardContent className="p-3">
-                  <p className="text-yellow-400 font-medium mb-2 text-sm">⚠️ Transação aguardando confirmação</p>
-                  <p className="text-xs text-yellow-300/70 mb-2">
-                    NSU: {pendingConfirmation.nsu} | Auth: {pendingConfirmation.autorizacao}
-                  </p>
+              <Card className="bg-yellow-500/10 border-yellow-500/50 animate-pulse">
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <Clock className="h-5 w-5 text-yellow-400" />
+                    <p className="text-yellow-400 font-semibold">Transação aguardando confirmação</p>
+                  </div>
+                  <div className="bg-urbana-black/30 rounded-lg p-2 mb-3 font-mono text-sm">
+                    <p className="text-urbana-light/70">NSU: <span className="text-white">{pendingConfirmation.nsu}</span></p>
+                    <p className="text-urbana-light/70">Auth: <span className="text-white">{pendingConfirmation.autorizacao}</span></p>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       onPointerDown={handleConfirmTransaction}
-                      className="flex-1 bg-green-600 hover:bg-green-700 h-10"
+                      className="flex-1 bg-green-600 hover:bg-green-700 h-12 text-base"
                     >
-                      <CheckCircle2 className="h-4 w-4 mr-2" />
+                      <CheckCircle2 className="h-5 w-5 mr-2" />
                       Confirmar
                     </Button>
                     <Button
                       onPointerDown={handleUndoTransaction}
                       variant="outline"
-                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-10"
+                      className="flex-1 border-red-500/50 text-red-400 hover:bg-red-500/10 h-12 text-base"
                     >
-                      <XCircle className="h-4 w-4 mr-2" />
+                      <XCircle className="h-5 w-5 mr-2" />
                       Desfazer
                     </Button>
                   </div>
@@ -548,175 +768,221 @@ export default function TotemTEFHomologacao() {
 
             {/* Aviso se não conectado */}
             {(!isAndroidAvailable || !isPinpadConnected) && (
-              <div className="p-3 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
-                <p className="text-sm text-yellow-400">
+              <div className="p-4 bg-yellow-500/10 border border-yellow-500/30 rounded-lg">
+                <p className="text-sm text-yellow-400 flex items-center gap-2">
+                  <WifiOff className="h-4 w-4" />
                   {!isAndroidAvailable 
-                    ? '⚠️ TEF Android não detectado. Execute no dispositivo Android.'
-                    : '⚠️ Pinpad não conectado. Verifique a conexão USB.'}
+                    ? 'TEF Android não detectado. Execute no dispositivo Android.'
+                    : 'Pinpad não conectado. Verifique a conexão USB.'}
                 </p>
               </div>
             )}
           </div>
+        )}
 
-          {/* Coluna Direita - Logs (colapsável) */}
-          <div className="flex-1 lg:flex lg:flex-col min-h-0">
-            {/* Botão para mostrar/ocultar logs */}
-            <Button
-              variant="outline"
-              onPointerDown={() => setShowLogs(!showLogs)}
-              className="w-full mb-2 border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 lg:hidden"
-            >
-              {showLogs ? <ChevronUp className="h-4 w-4 mr-2" /> : <ChevronDown className="h-4 w-4 mr-2" />}
-              {showLogs ? 'Ocultar Logs' : 'Ver Logs'} ({transactionLogs.length + androidLogs.length})
-            </Button>
-
-            {/* Logs Container */}
-            <div className={`flex-1 overflow-hidden ${showLogs ? 'block' : 'hidden lg:block'}`}>
-              <div className="h-full flex flex-col gap-3">
-                {/* Controles de Log */}
-                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-shrink-0">
-                  <CardHeader className="py-2 px-4">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-sm text-urbana-gold">Logs</CardTitle>
-                      <Badge 
-                        variant="outline" 
-                        className={autoRefreshLogs ? 'border-green-500 text-green-400 animate-pulse cursor-pointer' : 'border-gray-500 text-gray-400 cursor-pointer'}
-                        onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                      >
-                        {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
-                      </Badge>
+        {/* Logs Tab */}
+        {activeTab === 'logs' && (
+          <div className="h-full flex flex-col gap-3">
+            {/* Controles de Data */}
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-shrink-0">
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2 mb-3">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={() => navigateDate('prev')}
+                    disabled={availableDates.indexOf(selectedDate) >= availableDates.length - 1}
+                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9 px-3"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="flex-1 text-center">
+                    <div className="flex items-center justify-center gap-2">
+                      <Calendar className="h-4 w-4 text-urbana-gold" />
+                      <span className="text-urbana-gold font-semibold">{selectedDayLogs.displayDate}</span>
                     </div>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-3 pt-0">
-                    <div className="flex gap-2 flex-wrap">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPointerDown={handleCopyLogs}
-                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
-                      >
-                        <Copy className="h-3 w-3 mr-1" />
-                        Copiar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPointerDown={handleExportLogs}
-                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
-                      >
-                        <Download className="h-3 w-3 mr-1" />
-                        Exportar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPointerDown={handleClearLogs}
-                        className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-8"
-                      >
-                        <Trash2 className="h-3 w-3 mr-1" />
-                        Limpar
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onPointerDown={() => {
-                          verificarConexao();
-                          refreshAndroidLogs();
-                        }}
-                        className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-8"
-                      >
-                        <RefreshCw className="h-3 w-3 mr-1" />
-                        Atualizar
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
+                    <p className="text-xs text-urbana-light/50 mt-0.5">{selectedDate}</p>
+                  </div>
+                  
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={() => navigateDate('next')}
+                    disabled={availableDates.indexOf(selectedDate) <= 0}
+                    className="border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9 px-3"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
 
-                {/* Logs de Transação */}
-                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-1 min-h-0 overflow-hidden">
-                  <CardHeader className="py-2 px-4">
-                    <CardTitle className="text-xs text-urbana-light/60">Transações ({transactionLogs.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 pt-0 h-[calc(100%-40px)]">
-                    <ScrollArea className="h-full rounded border border-urbana-gold/10 bg-urbana-black p-2">
-                      {transactionLogs.length === 0 ? (
-                        <p className="text-sm text-urbana-light/40 text-center py-4">
-                          Nenhuma transação registrada
-                        </p>
-                      ) : (
-                        <div className="space-y-1 font-mono text-xs">
-                          {transactionLogs.map((log, i) => (
-                            <div key={i} className={getLogColor(log.type)}>
-                              <span className="text-urbana-light/40">[{log.timestamp.split('T')[1].slice(0, 8)}]</span>{' '}
-                              {log.message}
-                              {log.data && (
-                                <div className="ml-4 text-urbana-light/50 text-[10px]">
-                                  {JSON.stringify(log.data)}
-                                </div>
-                              )}
+                {/* Ações de Log */}
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={handleCopyDayLogs}
+                    className="flex-1 min-w-[80px] border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9"
+                  >
+                    <Copy className="h-3 w-3 mr-1.5" />
+                    Copiar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={handleExportDayLogs}
+                    className="flex-1 min-w-[80px] border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 h-9"
+                  >
+                    <Download className="h-3 w-3 mr-1.5" />
+                    Dia
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={handleExportAllLogs}
+                    className="flex-1 min-w-[80px] border-green-500/30 text-green-400 hover:bg-green-500/10 h-9"
+                  >
+                    <FileText className="h-3 w-3 mr-1.5" />
+                    Completo
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={handleClearLogs}
+                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-9 px-3"
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                {/* Status Auto-Refresh */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t border-urbana-gold/10">
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className={`cursor-pointer transition-all ${autoRefreshLogs 
+                        ? 'border-green-500 text-green-400 animate-pulse' 
+                        : 'border-gray-500 text-gray-400'}`}
+                      onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                    >
+                      <RefreshCw className={`h-3 w-3 mr-1 ${autoRefreshLogs ? 'animate-spin' : ''}`} />
+                      {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
+                    </Badge>
+                  </div>
+                  <div className="text-xs text-urbana-light/50">
+                    {selectedDayLogs.transactionLogs.length} transações | {selectedDayLogs.androidLogs.length} logs
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Área de Logs */}
+            <div className="flex-1 overflow-hidden grid grid-rows-2 gap-3">
+              {/* Logs de Transação */}
+              <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 overflow-hidden">
+                <CardHeader className="py-2 px-4 border-b border-urbana-gold/10">
+                  <CardTitle className="text-sm text-urbana-gold flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Transações
+                    <Badge variant="outline" className="ml-auto text-xs border-urbana-gold/30 text-urbana-gold">
+                      {selectedDayLogs.transactionLogs.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 h-[calc(100%-44px)]">
+                  <ScrollArea className="h-full">
+                    {selectedDayLogs.transactionLogs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-8">
+                        <FileText className="h-8 w-8 mb-2 opacity-50" />
+                        <p className="text-sm">Nenhuma transação neste dia</p>
+                      </div>
+                    ) : (
+                      <div className="p-3 space-y-2">
+                        {selectedDayLogs.transactionLogs.map((log) => (
+                          <div 
+                            key={log.id} 
+                            className={`p-3 rounded-lg border-l-4 ${getLogBgColor(log.type)}`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <p className={`text-sm font-medium ${getLogColor(log.type)}`}>
+                                {log.message}
+                              </p>
+                              <span className="text-[10px] text-urbana-light/40 font-mono whitespace-nowrap">
+                                {log.timestamp.split('T')[1].slice(0, 8)}
+                              </span>
                             </div>
-                          ))}
-                          <div ref={transactionLogsEndRef} />
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
+                            {log.data && (
+                              <pre className="mt-2 text-[10px] text-urbana-light/60 font-mono bg-urbana-black/30 rounded p-2 overflow-x-auto">
+                                {JSON.stringify(log.data, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                        ))}
+                        <div ref={transactionLogsEndRef} />
+                      </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
 
-                {/* Logs Android TEF */}
-                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-1 min-h-0 overflow-hidden">
-                  <CardHeader className="py-2 px-4">
-                    <CardTitle className="text-xs text-urbana-light/60">Logs Android TEF ({androidLogs.length})</CardTitle>
-                  </CardHeader>
-                  <CardContent className="px-4 pb-4 pt-0 h-[calc(100%-40px)]">
-                    <ScrollArea className="h-full rounded border border-urbana-gold/10 bg-urbana-black p-2">
-                      {androidLogs.length === 0 ? (
-                        <p className="text-sm text-urbana-light/40 text-center py-4">
-                          {isAndroidAvailable 
-                            ? 'Nenhum log disponível' 
-                            : 'TEF Android não detectado'}
+              {/* Logs Android TEF */}
+              <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 overflow-hidden">
+                <CardHeader className="py-2 px-4 border-b border-urbana-gold/10">
+                  <CardTitle className="text-sm text-urbana-gold flex items-center gap-2">
+                    <Smartphone className="h-4 w-4" />
+                    Logs Android TEF
+                    <Badge variant="outline" className="ml-auto text-xs border-urbana-gold/30 text-urbana-gold">
+                      {selectedDayLogs.androidLogs.length}
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-0 h-[calc(100%-44px)]">
+                  <ScrollArea className="h-full">
+                    {selectedDayLogs.androidLogs.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-8">
+                        <Smartphone className="h-8 w-8 mb-2 opacity-50" />
+                        <p className="text-sm">
+                          {isAndroidAvailable ? 'Nenhum log disponível' : 'TEF Android não detectado'}
                         </p>
-                      ) : (
-                        <div className="space-y-0.5 font-mono text-[10px]">
-                          {androidLogs.map((log, i) => (
-                            <div key={i} className={getAndroidLogColor(log)}>
-                              {log}
-                            </div>
-                          ))}
-                          <div ref={androidLogsEndRef} />
-                        </div>
-                      )}
-                    </ScrollArea>
-                  </CardContent>
-                </Card>
-
-                {/* Info Técnica Compacta */}
-                <Card className="bg-urbana-black-soft border-urbana-gold/30 flex-shrink-0">
-                  <CardContent className="p-3">
-                    <div className="grid grid-cols-4 gap-2 text-xs">
-                      <div className="p-2 bg-urbana-black/50 rounded text-center">
-                        <p className="text-urbana-light/50 text-[10px]">App</p>
-                        <p className="text-urbana-light font-mono text-[10px]">{androidVersion || 'N/A'}</p>
                       </div>
-                      <div className="p-2 bg-urbana-black/50 rounded text-center">
-                        <p className="text-urbana-light/50 text-[10px]">Pinpad</p>
-                        <p className="text-urbana-light font-mono text-[10px]">{pinpadStatus?.modelo || 'N/A'}</p>
+                    ) : (
+                      <div className="p-3 font-mono text-xs space-y-0.5">
+                        {selectedDayLogs.androidLogs.map((log, i) => (
+                          <div 
+                            key={i} 
+                            className={`py-0.5 ${getAndroidLogColor(log.message)}`}
+                          >
+                            {log.message}
+                          </div>
+                        ))}
+                        <div ref={androidLogsEndRef} />
                       </div>
-                      <div className="p-2 bg-urbana-black/50 rounded text-center">
-                        <p className="text-urbana-light/50 text-[10px]">TEF</p>
-                        <p className="text-urbana-light font-mono text-[10px]">{isAndroidAvailable ? 'OK' : 'OFF'}</p>
-                      </div>
-                      <div className="p-2 bg-urbana-black/50 rounded text-center">
-                        <p className="text-urbana-light/50 text-[10px]">Conexão</p>
-                        <p className="text-urbana-light font-mono text-[10px]">{isPinpadConnected ? 'ON' : 'OFF'}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
+                    )}
+                  </ScrollArea>
+                </CardContent>
+              </Card>
             </div>
+
+            {/* Info Técnica */}
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-shrink-0">
+              <CardContent className="p-3">
+                <div className="grid grid-cols-4 gap-2">
+                  {[
+                    { label: 'App', value: androidVersion || 'N/A' },
+                    { label: 'Pinpad', value: pinpadStatus?.modelo?.slice(0, 10) || 'N/A' },
+                    { label: 'TEF', value: isAndroidAvailable ? 'OK' : 'OFF' },
+                    { label: 'Conexão', value: isPinpadConnected ? 'ON' : 'OFF' }
+                  ].map(({ label, value }) => (
+                    <div key={label} className="p-2 bg-urbana-black/50 rounded-lg text-center">
+                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">{label}</p>
+                      <p className="text-xs text-urbana-light font-mono mt-0.5 truncate">{value}</p>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );
