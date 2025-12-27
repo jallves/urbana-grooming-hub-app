@@ -751,57 +751,163 @@ export default function TotemTEFHomologacao() {
     }
   };
 
-  // Função para imprimir recibo
+  // Função para gerar recibo diferenciado (Passo 10 - Teste de recibos diferenciados)
+  const generateDifferentiatedReceipt = (type: 'cliente' | 'lojista') => {
+    if (!transactionResult) return '';
+    
+    const dataHora = new Date().toLocaleString('pt-BR');
+    const dataHoraCompacta = new Date().toLocaleString('pt-BR', {
+      day: '2-digit', month: '2-digit', year: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    
+    if (type === 'cliente') {
+      // VIA DO PORTADOR DO CARTÃO - Recibo simplificado para o cliente
+      return `
+╔════════════════════════════════════╗
+║       COSTA URBANA BARBEARIA       ║
+║      CNPJ: 00.000.000/0001-00      ║
+╠════════════════════════════════════╣
+║        VIA DO PORTADOR             ║
+╠════════════════════════════════════╣
+║ ${transactionResult.status.toUpperCase() === 'APROVADO' ? '✓ TRANSAÇÃO APROVADA' : '✗ TRANSAÇÃO ' + transactionResult.status.toUpperCase()}
+║                                    ║
+║ VALOR: R$ ${transactionResult.valor.toFixed(2).padStart(10)}             ║
+║ BANDEIRA: ${(transactionResult.bandeira || 'DEMO').padEnd(15)}        ║
+║ CARTÃO: **** **** **** 0001        ║
+║ TIPO: ${selectedMethod.toUpperCase().padEnd(20)}    ║
+║                                    ║
+║ NSU: ${transactionResult.nsu.padEnd(20)}        ║
+║ AUT: ${transactionResult.autorizacao.padEnd(20)}        ║
+║                                    ║
+║ ${dataHoraCompacta.padStart(34)}║
+╠════════════════════════════════════╣
+║  GUARDE ESTE COMPROVANTE PARA      ║
+║     CONTROLE DE SUA COMPRA         ║
+╚════════════════════════════════════╝
+      `.trim();
+    } else {
+      // VIA DO LOJISTA - Recibo completo com mais informações
+      return `
+╔════════════════════════════════════╗
+║       COSTA URBANA BARBEARIA       ║
+║      CNPJ: 00.000.000/0001-00      ║
+║   EC: 1234567890 - FILIAL: 001     ║
+╠════════════════════════════════════╣
+║         VIA DO LOJISTA             ║
+╠════════════════════════════════════╣
+║ ${transactionResult.status.toUpperCase() === 'APROVADO' ? '✓ TRANSAÇÃO APROVADA' : '✗ TRANSAÇÃO ' + transactionResult.status.toUpperCase()}
+║                                    ║
+║ VALOR: R$ ${transactionResult.valor.toFixed(2).padStart(10)}             ║
+║ BANDEIRA: ${(transactionResult.bandeira || 'DEMO').padEnd(15)}        ║
+║ CARTÃO: **** **** **** 0001        ║
+║ TIPO: ${selectedMethod.toUpperCase().padEnd(20)}    ║
+║ FINANC: ${(financingType === 'avista' ? 'A VISTA' : `PARC ${installments}X`).padEnd(18)}    ║
+║ AUTORIZADOR: ${(authorizer || 'DEMO').padEnd(15)}   ║
+║                                    ║
+║ NSU LOCAL: ${transactionResult.nsu.padEnd(18)}  ║
+║ NSU HOST: ${transactionResult.nsu.padEnd(19)}  ║
+║ COD. AUT: ${transactionResult.autorizacao.padEnd(19)}  ║
+║                                    ║
+${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTeste.padEnd(20)}║\n` : ''}║ TERMINAL: TOTEM-001                ║
+║ OPERADOR: HOMOLOGACAO              ║
+║                                    ║
+║ ${dataHora.padStart(34)}║
+╠════════════════════════════════════╣
+║    CONFIRMO A TRANSAÇÃO ACIMA      ║
+║                                    ║
+║ __________________________________ ║
+║       ASSINATURA DO CLIENTE        ║
+╠════════════════════════════════════╣
+║   GUARDE ESTA VIA PARA CONTROLE    ║
+╚════════════════════════════════════╝
+      `.trim();
+    }
+  };
+
+  // Função para imprimir recibo diferenciado (Passo 10)
   const handlePrintReceipt = (type: 'cliente' | 'lojista') => {
     if (!transactionResult) return;
     
-    const recibo = type === 'cliente' 
-      ? transactionResult.comprovanteCliente 
-      : transactionResult.comprovanteLojista;
+    // Usar comprovante retornado pelo TEF se disponível, senão gerar diferenciado
+    const reciboContent = type === 'cliente' 
+      ? (transactionResult.comprovanteCliente || generateDifferentiatedReceipt('cliente'))
+      : (transactionResult.comprovanteLojista || generateDifferentiatedReceipt('lojista'));
     
-    // Criar conteúdo do recibo
-    const reciboContent = recibo || `
-╔════════════════════════════════════╗
-║     COSTA URBANA BARBEARIA         ║
-║        COMPROVANTE TEF             ║
-╠════════════════════════════════════╣
-║ STATUS: ${transactionResult.status.toUpperCase().padEnd(25)}║
-║ VALOR: R$ ${transactionResult.valor.toFixed(2).padEnd(23)}║
-║ NSU: ${transactionResult.nsu.padEnd(28)}║
-║ AUTH: ${transactionResult.autorizacao.padEnd(27)}║
-║ BANDEIRA: ${(transactionResult.bandeira || 'N/A').padEnd(23)}║
-${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTeste.padEnd(20)}║\n` : ''}╠════════════════════════════════════╣
-║ ${new Date().toLocaleString('pt-BR').padEnd(33)}║
-╚════════════════════════════════════╝
-    `.trim();
+    // Log para homologação
+    addLog('info', `📄 Imprimindo recibo diferenciado - Via ${type.toUpperCase()}`, {
+      tipo: type,
+      valor: transactionResult.valor,
+      nsu: transactionResult.nsu,
+      autorizacao: transactionResult.autorizacao
+    });
     
     // Abrir janela de impressão
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    const printWindow = window.open('', '_blank', 'width=400,height=700');
     if (printWindow) {
       printWindow.document.write(`
         <html>
           <head>
-            <title>Comprovante TEF - ${type === 'cliente' ? 'Cliente' : 'Lojista'}</title>
+            <title>Comprovante TEF - Via ${type === 'cliente' ? 'Portador' : 'Lojista'}</title>
             <style>
-              body { font-family: 'Courier New', monospace; padding: 20px; font-size: 12px; }
-              pre { white-space: pre-wrap; word-wrap: break-word; }
-              .header { text-align: center; margin-bottom: 20px; }
-              @media print { body { padding: 0; } }
+              body { 
+                font-family: 'Courier New', monospace; 
+                padding: 10px; 
+                font-size: 11px;
+                max-width: 300px;
+                margin: 0 auto;
+              }
+              pre { 
+                white-space: pre-wrap; 
+                word-wrap: break-word;
+                margin: 0;
+                line-height: 1.3;
+              }
+              .header { 
+                text-align: center; 
+                margin-bottom: 10px;
+                padding-bottom: 10px;
+                border-bottom: 1px dashed #333;
+              }
+              .via-badge {
+                display: inline-block;
+                padding: 4px 12px;
+                background: ${type === 'cliente' ? '#4CAF50' : '#2196F3'};
+                color: white;
+                border-radius: 4px;
+                font-weight: bold;
+                font-size: 10px;
+              }
+              @media print { 
+                body { padding: 0; max-width: 100%; }
+                .no-print { display: none; }
+              }
             </style>
           </head>
           <body>
             <div class="header">
-              <h3>COMPROVANTE TEF - VIA ${type.toUpperCase()}</h3>
+              <span class="via-badge">VIA ${type === 'cliente' ? 'PORTADOR' : 'LOJISTA'}</span>
             </div>
             <pre>${reciboContent}</pre>
+            <div class="no-print" style="margin-top: 20px; text-align: center;">
+              <button onclick="window.print()" style="padding: 10px 20px; font-size: 14px; cursor: pointer;">
+                🖨️ Imprimir
+              </button>
+            </div>
           </body>
         </html>
       `);
       printWindow.document.close();
-      printWindow.print();
+      
+      // Auto-imprimir após carregar
+      setTimeout(() => {
+        printWindow.print();
+      }, 300);
     } else {
       toast.error('Não foi possível abrir a janela de impressão');
     }
+    
+    toast.success(`Recibo ${type === 'cliente' ? 'do portador' : 'do lojista'} enviado para impressão`);
   };
 
   // Fechar modal de resultado
