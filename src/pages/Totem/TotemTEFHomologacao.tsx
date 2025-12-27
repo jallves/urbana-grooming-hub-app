@@ -74,9 +74,8 @@ export default function TotemTEFHomologacao() {
   const [activeTab, setActiveTab] = useState<'pdv' | 'logs'>('pdv');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayInBrazil());
   const transactionLogsEndRef = useRef<HTMLDivElement>(null);
-  const androidLogsEndRef = useRef<HTMLDivElement>(null);
-  const androidLogsContainerRef = useRef<HTMLDivElement>(null);
-  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const androidLogsScrollRef = useRef<HTMLDivElement>(null);
+  const [isAndroidLogsAtBottom, setIsAndroidLogsAtBottom] = useState(true);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
 
   // Permite abrir direto na aba Logs quando vier do Diagnóstico
@@ -169,37 +168,22 @@ export default function TotemTEFHomologacao() {
     }
   }, [transactionLogs]);
 
-  // Auto-scroll Android logs apenas se não estiver scrollando manualmente
+  // Auto-scroll Android logs somente se o usuário estiver no final
   useEffect(() => {
-    if (androidLogsEndRef.current && !isUserScrolling) {
-      androidLogsEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-    }
-  }, [androidLogs, isUserScrolling]);
+    const el = androidLogsScrollRef.current;
+    if (!el) return;
+    if (!isAndroidLogsAtBottom) return;
 
-  // Detectar quando usuário está scrollando manualmente
-  useEffect(() => {
-    const container = androidLogsContainerRef.current;
-    if (!container) return;
+    // scroll imediato (sem "puxar" quando o usuário está navegando)
+    el.scrollTop = el.scrollHeight;
+  }, [androidLogs, isAndroidLogsAtBottom]);
 
-    let scrollTimeout: NodeJS.Timeout;
-    const handleScroll = () => {
-      setIsUserScrolling(true);
-      clearTimeout(scrollTimeout);
-      // Depois de 3 segundos sem scroll, volta ao auto-scroll
-      scrollTimeout = setTimeout(() => {
-        // Checa se está no final
-        const isAtBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 50;
-        if (isAtBottom) {
-          setIsUserScrolling(false);
-        }
-      }, 3000);
-    };
+  const handleAndroidLogsScroll = useCallback(() => {
+    const el = androidLogsScrollRef.current;
+    if (!el) return;
 
-    container.addEventListener('scroll', handleScroll);
-    return () => {
-      container.removeEventListener('scroll', handleScroll);
-      clearTimeout(scrollTimeout);
-    };
+    const distanceToBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setIsAndroidLogsAtBottom(distanceToBottom < 12);
   }, []);
 
   // Auto-refresh Android logs
@@ -993,8 +977,12 @@ export default function TotemTEFHomologacao() {
                     </Badge>
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="p-0 h-[calc(100%-36px)]" ref={androidLogsContainerRef}>
-                  <ScrollArea className="h-full">
+                <CardContent className="p-0 h-[calc(100%-36px)]">
+                  <div
+                    ref={androidLogsScrollRef}
+                    onScroll={handleAndroidLogsScroll}
+                    className="h-full overflow-auto"
+                  >
                     {selectedDayLogs.androidLogs.length === 0 ? (
                       <div className="flex flex-col items-center justify-center h-full text-urbana-light/40 py-4">
                         <Smartphone className="h-6 w-6 mb-1 opacity-50" />
@@ -1005,17 +993,13 @@ export default function TotemTEFHomologacao() {
                     ) : (
                       <div className="p-2 font-mono text-[10px] space-y-0.5">
                         {selectedDayLogs.androidLogs.map((log, i) => (
-                          <div 
-                            key={i} 
-                            className={`py-0.5 ${getAndroidLogColor(log.message)}`}
-                          >
+                          <div key={i} className={`py-0.5 ${getAndroidLogColor(log.message)}`}>
                             {log.message}
                           </div>
                         ))}
-                        <div ref={androidLogsEndRef} />
                       </div>
                     )}
-                  </ScrollArea>
+                  </div>
                 </CardContent>
               </Card>
 
