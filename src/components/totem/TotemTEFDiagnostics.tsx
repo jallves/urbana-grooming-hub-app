@@ -342,17 +342,17 @@ export const TotemTEFDiagnostics: React.FC<TotemTEFDiagnosticsProps> = ({
                   Abrir PDV de Homologação PayGo
                 </Button>
 
-                {/* Botão Relatório para Planilha */}
+                {/* Botão Relatório para Planilha (agora dentro do PDV > Logs) */}
                 <Button
                   onClick={() => {
                     onClose();
-                    navigate('/totem/tef-report');
+                    navigate('/totem/tef-homologacao', { state: { tab: 'logs' } });
                   }}
                   variant="outline"
                   className="w-full border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10"
                 >
                   <FileSpreadsheet className="w-4 h-4 mr-2" />
-                  Relatório p/ Planilha (NSU Local)
+                  Abrir NSU Local (Planilha) em Logs
                 </Button>
 
                 {/* Aviso de teste */}

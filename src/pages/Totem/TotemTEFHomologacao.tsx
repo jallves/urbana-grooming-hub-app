@@ -31,7 +31,7 @@ import {
   Hash,
   Check
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { 
   isAndroidTEFAvailable, 
@@ -63,6 +63,7 @@ interface DailyLogGroup {
 
 export default function TotemTEFHomologacao() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [amount, setAmount] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<PaymentMethod>('debito');
   const [installments, setInstallments] = useState(1);
@@ -77,7 +78,15 @@ export default function TotemTEFHomologacao() {
   const androidLogsContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
-  
+
+  // Permite abrir direto na aba Logs quando vier do Diagnóstico
+  useEffect(() => {
+    const state = location.state as { tab?: 'pdv' | 'logs' } | null;
+    if (state?.tab) {
+      setActiveTab(state.tab);
+      window.history.replaceState({}, document.title);
+    }
+  }, [location.state]);
   // Dados da última transação para confirmação manual
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     confirmationId: string;
