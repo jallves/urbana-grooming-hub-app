@@ -1530,7 +1530,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                             </div>
                             <div className="text-right">
                               <p className="text-sm font-bold text-red-400">
-                                R$ {tx.valor.toFixed(2)}
+                                R$ {(tx.valor / 100).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </p>
                               <p className="text-[9px] text-red-300/50">
                                 {tx.bandeira || 'DEMO'}
