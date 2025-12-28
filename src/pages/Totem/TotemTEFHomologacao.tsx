@@ -649,11 +649,12 @@ export default function TotemTEFHomologacao() {
 
     setIsProcessing(true);
     const orderId = `CANCEL_${Date.now()}`;
-    const valorCentavos = Math.round(selectedCancelTransaction.valor * 100);
+    // O valor já está em centavos no log
+    const valorCentavos = selectedCancelTransaction.valor;
 
     addLog('transaction', `🔄 INICIANDO CANCELAMENTO (Passo 21)`, {
       orderId,
-      valorOriginal: selectedCancelTransaction.valor,
+      valorCentavos,
       nsuOriginal: selectedCancelTransaction.nsu,
       autorizacaoOriginal: selectedCancelTransaction.autorizacao,
       passoTeste: '21'
@@ -667,14 +668,14 @@ export default function TotemTEFHomologacao() {
         addLog('success', `✅ CANCELAMENTO APROVADO (Passo 21)`, {
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
-          valorCancelado: selectedCancelTransaction.valor,
+          valorCancelado: selectedCancelTransaction.valor / 100,
           passoTeste: '21'
         });
         
         setTransactionResult({
           show: true,
           status: 'aprovado',
-          valor: selectedCancelTransaction.valor,
+          valor: selectedCancelTransaction.valor / 100,
           nsu: resultado.nsu || '',
           autorizacao: resultado.autorizacao || '',
           bandeira: resultado.bandeira || selectedCancelTransaction.bandeira || '',
@@ -694,7 +695,7 @@ export default function TotemTEFHomologacao() {
         setTransactionResult({
           show: true,
           status: 'negado',
-          valor: selectedCancelTransaction.valor,
+          valor: selectedCancelTransaction.valor / 100,
           nsu: resultado.nsu || 'N/A',
           autorizacao: resultado.autorizacao || 'N/A',
           bandeira: '',
