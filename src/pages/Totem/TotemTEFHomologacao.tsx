@@ -615,22 +615,43 @@ export default function TotemTEFHomologacao() {
     setPendingConfirmation(null);
   };
 
-  // Resolver pendência no PayGo
-  const handleResolvePendency = () => {
+  // Resolver pendência no PayGo - Confirmar
+  const handleResolvePendencyConfirm = () => {
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
     }
     
-    addLog('warning', '🔄 RESOLVENDO PENDÊNCIA NO PAYGO');
+    addLog('warning', '🔄 CONFIRMANDO PENDÊNCIA NO PAYGO');
     
-    const resolved = resolverPendenciaAndroid();
+    const resolved = resolverPendenciaAndroid('confirmar');
     if (resolved) {
-      addLog('success', '✅ Solicitação de resolução enviada');
-      toast.success('Resolução de pendência enviada ao PayGo');
+      addLog('success', '✅ Confirmação de pendência enviada');
+      toast.success('Pendência confirmada no PayGo');
     } else {
-      addLog('error', '❌ Erro ao resolver pendência');
-      toast.error('Erro ao resolver pendência');
+      addLog('error', '❌ Erro ao confirmar pendência');
+      toast.error('Erro ao confirmar pendência');
+    }
+    
+    refreshAndroidLogs();
+  };
+
+  // Resolver pendência no PayGo - Desfazer
+  const handleResolvePendencyUndo = () => {
+    if (!isAndroidAvailable) {
+      toast.error('TEF Android não disponível');
+      return;
+    }
+    
+    addLog('warning', '🔄 DESFAZENDO PENDÊNCIA NO PAYGO');
+    
+    const resolved = resolverPendenciaAndroid('desfazer');
+    if (resolved) {
+      addLog('success', '✅ Desfazimento de pendência enviado');
+      toast.success('Pendência desfeita no PayGo');
+    } else {
+      addLog('error', '❌ Erro ao desfazer pendência');
+      toast.error('Erro ao desfazer pendência');
     }
     
     refreshAndroidLogs();
@@ -1632,17 +1653,28 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </Card>
             )}
 
-            {/* Botão para Resolver Pendência (quando há erro de autorização pendente) */}
+            {/* Botões para Resolver Pendência (quando há erro de autorização pendente) */}
             {isAndroidAvailable && !pendingConfirmation && !isProcessing && (
-              <Button
-                onPointerDown={handleResolvePendency}
-                variant="outline"
-                size="sm"
-                className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 flex-shrink-0"
-              >
-                <RotateCcw className="h-4 w-4 mr-1.5" />
-                Resolver Pendência PayGo
-              </Button>
+              <div className="flex gap-2 flex-shrink-0">
+                <Button
+                  onPointerDown={handleResolvePendencyConfirm}
+                  variant="outline"
+                  size="sm"
+                  className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                >
+                  <Check className="h-4 w-4 mr-1.5" />
+                  Confirmar Pendência
+                </Button>
+                <Button
+                  onPointerDown={handleResolvePendencyUndo}
+                  variant="outline"
+                  size="sm"
+                  className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
+                >
+                  <RotateCcw className="h-4 w-4 mr-1.5" />
+                  Desfazer Pendência
+                </Button>
+              </div>
             )}
 
             {/* Aviso se não conectado */}

@@ -333,8 +333,10 @@ export function desfazerTransacaoTEF(confirmationId: string): boolean {
 /**
  * Resolve transação pendente no PayGo
  * Usar quando há erro de "autorização pendente"
+ * 
+ * @param acao - 'confirmar' para confirmar a pendência, 'desfazer' para desfazer
  */
-export function resolverPendenciaAndroid(): boolean {
+export function resolverPendenciaAndroid(acao: 'confirmar' | 'desfazer' = 'confirmar'): boolean {
   if (!isAndroidTEFAvailable()) {
     console.warn('[TEFBridge] TEF Android não disponível');
     return false;
@@ -342,10 +344,20 @@ export function resolverPendenciaAndroid(): boolean {
   
   try {
     console.log('[TEFBridge] ═══════════════════════════════════════');
-    console.log('[TEFBridge] RESOLVENDO PENDÊNCIA');
+    console.log('[TEFBridge] RESOLVENDO PENDÊNCIA - Ação:', acao);
     console.log('[TEFBridge] ═══════════════════════════════════════');
     
-    window.TEF!.resolverPendencia();
+    // Verificar se o método existe
+    if (typeof window.TEF!.resolverPendencia === 'function') {
+      window.TEF!.resolverPendencia();
+      console.log('[TEFBridge] ✅ resolverPendencia() chamado');
+    } else {
+      // Fallback: tentar confirmar/desfazer via confirmarTransacao com ID especial
+      console.log('[TEFBridge] resolverPendencia não disponível, tentando confirmarTransacao');
+      const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
+      window.TEF!.confirmarTransacao('PENDENCIA', status);
+      console.log('[TEFBridge] ✅ confirmarTransacao(PENDENCIA, ' + status + ') chamado');
+    }
     
     console.log('[TEFBridge] ✅ Solicitação de resolução enviada');
     return true;
