@@ -1493,7 +1493,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   </p>
                   
                   {/* Lista de transações canceláveis */}
-                  <ScrollArea className="max-h-40">
+                  <ScrollArea className="h-32 pr-2">
                     <div className="space-y-1.5">
                       {cancellableTransactions.map((tx) => (
                         <div
