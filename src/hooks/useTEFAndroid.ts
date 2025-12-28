@@ -85,11 +85,19 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       console.log('[useTEFAndroid] Dados:', JSON.stringify(resultado, null, 2));
       console.log('[useTEFAndroid] isProcessing (ref):', processingRef.current);
       console.log('[useTEFAndroid] ═══════════════════════════════════════');
-      
+
       // Normalizar resultado
       const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
       console.log('[useTEFAndroid] Resultado normalizado:', JSON.stringify(normalizedResult, null, 2));
-      
+
+      // Se NÃO há operação em andamento e também não há promise aguardando,
+      // não disparar UI/toasts (ex: chamadas administrativas como resolverPendencia).
+      // Mantemos apenas o log para diagnóstico.
+      if (!processingRef.current && !globalResultCallback) {
+        console.log('[useTEFAndroid] Resultado recebido sem operação ativa — ignorando callbacks de UI.');
+        return;
+      }
+
       // Evitar processamento duplicado usando chave mais robusta
       // Para transações aprovadas: usa NSU + autorização
       // Para outras: usa timestamp + status + valor
@@ -97,35 +105,35 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       const resultKey = normalizedResult.nsu && normalizedResult.autorizacao
         ? `${normalizedResult.nsu}_${normalizedResult.autorizacao}`
         : `${timestamp}_${normalizedResult.status}_${normalizedResult.valor || ''}`;
-      
+
       if (globalLastProcessedResult === resultKey) {
         console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata:', resultKey);
         return;
       }
       globalLastProcessedResult = resultKey;
-      
+
       // Limpar chave após 3 segundos para permitir novas transações
       setTimeout(() => {
         if (globalLastProcessedResult === resultKey) {
           globalLastProcessedResult = null;
         }
       }, 3000);
-      
+
       // Atualizar estado via ref para garantir que funciona mesmo após re-render
       console.log('[useTEFAndroid] Atualizando isProcessing para false');
       setIsProcessingRef.current(false);
-      
+
       // Chamar callback interno se existir (para resolver promise)
       if (globalResultCallback) {
         console.log('[useTEFAndroid] Chamando callback interno registrado');
         globalResultCallback(normalizedResult);
         globalResultCallback = null;
       }
-      
+
       // Chamar callbacks do options usando a referência global
       const opts = globalOptionsRef;
       console.log('[useTEFAndroid] Verificando callbacks: onSuccess=', !!opts.onSuccess, 'onError=', !!opts.onError);
-      
+
       switch (normalizedResult.status) {
         case 'aprovado':
           console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
