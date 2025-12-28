@@ -679,30 +679,45 @@ export default function TotemTEFHomologacao() {
     }, 1000);
   };
 
-  // Limpar pendências via transação administrativa (R$0,01)
+  // Limpar pendências via transação administrativa (R$50,00)
   const handleClearPendenciesWithTransaction = async () => {
     if (!isAndroidAvailable || !isPinpadConnected) {
       toast.error('TEF ou Pinpad não disponível');
       return;
     }
-    
+
     console.log('[TotemTEF] ═══════════════════════════════════════');
     console.log('[TotemTEF] LIMPANDO PENDÊNCIAS VIA TRANSAÇÃO');
     console.log('[TotemTEF] ═══════════════════════════════════════');
-    
+
     addLog('warning', '🧹 LIMPANDO PENDÊNCIAS - Iniciando transação administrativa');
     toast.info('Iniciando limpeza de pendências... Aguarde o pinpad.');
-    
-    // Fazer uma transação de R$50,00 (valor comum) com autorizador DEMO
-    // Isso força o PayGo a resolver pendências anteriores
+
+    // IMPORTANTE: se o PayGo ficar em estado pendente e não retornar callback,
+    // evitamos travar a UI com um timeout.
     setIsProcessing(true);
-    
-    await iniciarPagamento({
+
+    const paymentPromise = iniciarPagamento({
       ordemId: `LIMPAR_PENDENCIA_${Date.now()}`,
-      valor: 50.00,
+      valor: 50.0,
       tipo: 'credit',
-      parcelas: 1
+      parcelas: 1,
     });
+
+    const timeoutMs = 90_000;
+    const timeoutPromise = new Promise<boolean>((resolve) =>
+      setTimeout(() => resolve(false), timeoutMs)
+    );
+
+    const ok = await Promise.race([paymentPromise, timeoutPromise]);
+
+    if (!ok) {
+      addLog('warning', '⚠️ Limpeza de pendências sem resposta (timeout).');
+      toast.warning('Sem resposta do pinpad (timeout). Tente novamente após reiniciar o PayGo/Pinpad.');
+    }
+
+    setIsProcessing(false);
+    refreshAndroidLogs();
   };
 
   // Lista de transações aprovadas que podem ser canceladas (Passo 21)
@@ -1702,7 +1717,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
             )}
 
             {/* Botões para Resolver Pendência (quando há erro de autorização pendente) */}
-            {isAndroidAvailable && !pendingConfirmation && !isProcessing && (
+            {isAndroidAvailable && !pendingConfirmation && (
               <div className="flex flex-col gap-2 flex-shrink-0">
                 <div className="flex gap-2">
                   <Button
@@ -1710,6 +1725,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     onPointerDown={handleResolvePendencyConfirm}
                     variant="outline"
                     size="sm"
+                    disabled={isProcessing}
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10 flex-1"
                   >
                     <Check className="h-4 w-4 mr-1.5" />
@@ -1720,6 +1736,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     onPointerDown={handleResolvePendencyUndo}
                     variant="outline"
                     size="sm"
+                    disabled={isProcessing}
                     className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 flex-1"
                   >
                     <RotateCcw className="h-4 w-4 mr-1.5" />
@@ -1731,11 +1748,15 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   onPointerDown={handleClearPendenciesWithTransaction}
                   variant="outline"
                   size="sm"
+                  disabled={isProcessing}
                   className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 w-full"
                 >
                   <Trash2 className="h-4 w-4 mr-1.5" />
                   Limpar Pendências (Transação R$50)
                 </Button>
+                {isProcessing && (
+                  <p className="text-xs text-urbana-light/70">Aguardando retorno do pinpad… se travar, aguarde o timeout.</p>
+                )}
               </div>
             )}
 
