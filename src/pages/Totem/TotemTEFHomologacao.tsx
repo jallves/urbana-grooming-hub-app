@@ -31,7 +31,8 @@ import {
   Hash,
   Check,
   Printer,
-  Receipt
+  Receipt,
+  Database
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -44,6 +45,21 @@ import {
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
 import { formatBrazilDate, getTodayInBrazil } from '@/lib/utils/dateUtils';
+import {
+  loadLogStorage,
+  saveLogStorage,
+  addAndroidLogs,
+  getAvailableDates,
+  getLogsByDate,
+  getAllLogs,
+  clearAllLogs,
+  clearLogsByDate,
+  migrateOldLogs,
+  getStorageStats,
+  formatDateForDisplay,
+  type StoredTransactionLog,
+  type StoredAndroidLog
+} from '@/lib/tef/tefLogStorage';
 
 type PaymentMethod = 'debito' | 'credito' | 'pix';
 type FinancingType = 'avista' | 'parcelado_loja' | 'parcelado_emissor';
@@ -80,20 +96,14 @@ const PAYGO_TEST_VALUES: Array<{
   { passo: '53', valor: 50000, desc: 'PIX R$500', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
 ];
 
-interface TransactionLog {
-  id: string;
-  timestamp: string;
-  date: string; // YYYY-MM-DD para agrupamento
-  type: 'info' | 'success' | 'error' | 'warning' | 'transaction';
-  message: string;
-  data?: Record<string, unknown>;
-}
+// Usar tipos do storage
+type TransactionLog = StoredTransactionLog;
 
 interface DailyLogGroup {
   date: string;
   displayDate: string;
-  transactionLogs: TransactionLog[];
-  androidLogs: { timestamp: string; message: string }[];
+  transactionLogs: StoredTransactionLog[];
+  androidLogs: StoredAndroidLog[];
 }
 
 export default function TotemTEFHomologacao() {
@@ -107,45 +117,44 @@ export default function TotemTEFHomologacao() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showTestValues, setShowTestValues] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  // Função para filtrar logs dos últimos 30 dias
-  const filterLogsLast30Days = (logs: TransactionLog[]): TransactionLog[] => {
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    return logs.filter(log => new Date(log.timestamp) >= thirtyDaysAgo);
-  };
-
-  // Carregar logs do localStorage na inicialização (mantém apenas últimos 30 dias)
-  const [transactionLogs, setTransactionLogs] = useState<TransactionLog[]>(() => {
-    try {
-      const saved = localStorage.getItem('tef_homologacao_logs');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        // Filtrar apenas logs dos últimos 30 dias
-        return filterLogsLast30Days(parsed);
-      }
-    } catch (e) {
-      console.error('Erro ao carregar logs do localStorage:', e);
-    }
-    return [];
+  
+  // Carregar logs do storage persistente na inicialização
+  const [transactionLogs, setTransactionLogs] = useState<StoredTransactionLog[]>(() => {
+    const storage = loadLogStorage();
+    return storage.transactionLogs;
   });
-  const [androidLogs, setAndroidLogs] = useState<{ timestamp: string; message: string }[]>([]);
+  const [androidLogs, setAndroidLogs] = useState<StoredAndroidLog[]>(() => {
+    const storage = loadLogStorage();
+    return storage.androidLogs;
+  });
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(true);
   const [activeTab, setActiveTab] = useState<'pdv' | 'logs'>('pdv');
   const [selectedDate, setSelectedDate] = useState<string>(getTodayInBrazil());
+  const [storageStats, setStorageStats] = useState(() => getStorageStats());
   const transactionLogsEndRef = useRef<HTMLDivElement>(null);
   const androidLogsScrollRef = useRef<HTMLDivElement>(null);
   const [isAndroidLogsAtBottom, setIsAndroidLogsAtBottom] = useState(true);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
   
-  // Salvar logs no localStorage sempre que mudarem (filtrando logs antigos)
+  // Migrar logs antigos na primeira execução
   useEffect(() => {
-    try {
-      const logsToSave = filterLogsLast30Days(transactionLogs);
-      localStorage.setItem('tef_homologacao_logs', JSON.stringify(logsToSave));
-    } catch (e) {
-      console.error('Erro ao salvar logs no localStorage:', e);
-    }
-  }, [transactionLogs]);
+    migrateOldLogs();
+    // Recarregar após migração
+    const storage = loadLogStorage();
+    setTransactionLogs(storage.transactionLogs);
+    setAndroidLogs(storage.androidLogs);
+    setStorageStats(getStorageStats());
+  }, []);
+  
+  // Salvar logs no storage sempre que mudarem
+  useEffect(() => {
+    saveLogStorage({
+      transactionLogs,
+      androidLogs,
+      lastCleanup: new Date().toISOString()
+    });
+    setStorageStats(getStorageStats());
+  }, [transactionLogs, androidLogs]);
 
 
   // Permite abrir direto na aba Logs quando vier do Diagnóstico
@@ -379,17 +388,27 @@ export default function TotemTEFHomologacao() {
     refreshAndroidLogs();
   }, []);
 
-  const refreshAndroidLogs = () => {
+  const refreshAndroidLogs = useCallback(() => {
     if (isAndroidTEFAvailable()) {
       const logs = getLogsAndroid();
+      const today = getTodayInBrazil();
       const now = new Date();
-      const formattedLogs = logs.map((log, i) => ({
-        timestamp: now.toISOString(),
+      
+      // Formatar e persistir logs Android com data
+      const formattedLogs: StoredAndroidLog[] = logs.map((log, i) => ({
+        timestamp: new Date(now.getTime() + i).toISOString(),
+        date: today,
         message: log
       }));
-      setAndroidLogs(formattedLogs);
+      
+      // Atualizar estado local
+      setAndroidLogs(prev => {
+        // Manter logs de outros dias, atualizar apenas o dia atual
+        const otherDays = prev.filter(l => l.date !== today);
+        return [...otherDays, ...formattedLogs];
+      });
     }
-  };
+  }, []);
 
   // Agrupar logs por data
   const dailyLogGroups = useMemo((): DailyLogGroup[] => {
@@ -400,7 +419,7 @@ export default function TotemTEFHomologacao() {
       if (!groups[log.date]) {
         groups[log.date] = {
           date: log.date,
-          displayDate: formatDateDisplay(log.date),
+          displayDate: formatDateForDisplay(log.date),
           transactionLogs: [],
           androidLogs: []
         };
@@ -408,17 +427,29 @@ export default function TotemTEFHomologacao() {
       groups[log.date].transactionLogs.push(log);
     });
 
-    // Adicionar logs Android no dia atual
+    // Adicionar logs Android por data
+    androidLogs.forEach(log => {
+      if (!groups[log.date]) {
+        groups[log.date] = {
+          date: log.date,
+          displayDate: formatDateForDisplay(log.date),
+          transactionLogs: [],
+          androidLogs: []
+        };
+      }
+      groups[log.date].androidLogs.push(log);
+    });
+
+    // Garantir que hoje sempre apareça
     const today = getTodayInBrazil();
     if (!groups[today]) {
       groups[today] = {
         date: today,
-        displayDate: formatDateDisplay(today),
+        displayDate: formatDateForDisplay(today),
         transactionLogs: [],
         androidLogs: []
       };
     }
-    groups[today].androidLogs = androidLogs;
 
     return Object.values(groups).sort((a, b) => b.date.localeCompare(a.date));
   }, [transactionLogs, androidLogs]);
@@ -570,13 +601,23 @@ export default function TotemTEFHomologacao() {
     setPendingConfirmation(null);
   };
 
-  // Limpar logs (remove do localStorage também)
+  // Limpar logs (remove do storage também)
   const handleClearLogs = () => {
+    clearAllLogs();
     setTransactionLogs([]);
-    limparLogsAndroid();
     setAndroidLogs([]);
-    localStorage.removeItem('tef_homologacao_logs');
+    limparLogsAndroid();
+    setStorageStats(getStorageStats());
     toast.success('Todos os logs foram excluídos');
+  };
+  
+  // Limpar logs apenas do dia selecionado
+  const handleClearDayLogs = () => {
+    clearLogsByDate(selectedDate);
+    setTransactionLogs(prev => prev.filter(l => l.date !== selectedDate));
+    setAndroidLogs(prev => prev.filter(l => l.date !== selectedDate));
+    setStorageStats(getStorageStats());
+    toast.success(`Logs de ${formatDateForDisplay(selectedDate)} excluídos`);
   };
 
   // Exportar logs do dia selecionado
@@ -1405,33 +1446,59 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     className="flex-1 border-green-500/30 text-green-400 hover:bg-green-500/10 h-8 text-xs"
                   >
                     <FileText className="h-3 w-3 mr-1" />
-                    Tudo
+                    30 dias
+                  </Button>
+                </div>
+                
+                {/* Ações de Limpeza */}
+                <div className="flex gap-1.5 mt-1.5">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={handleClearDayLogs}
+                    className="flex-1 border-orange-500/30 text-orange-400 hover:bg-orange-500/10 h-7 text-[10px]"
+                  >
+                    <Trash2 className="h-2.5 w-2.5 mr-1" />
+                    Limpar dia
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     onPointerDown={handleClearLogs}
-                    className="border-red-500/30 text-red-400 hover:bg-red-500/10 h-8 px-2"
+                    className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10 h-7 text-[10px]"
                   >
-                    <Trash2 className="h-3 w-3" />
+                    <Trash2 className="h-2.5 w-2.5 mr-1" />
+                    Limpar tudo
                   </Button>
                 </div>
 
-                {/* Status */}
+                {/* Status e Informações de Armazenamento */}
                 <div className="flex items-center justify-between mt-2 pt-2 border-t border-urbana-gold/10">
-                  <Badge 
-                    variant="outline" 
-                    className={`cursor-pointer text-[10px] ${autoRefreshLogs 
-                      ? 'border-green-500 text-green-400 animate-pulse' 
-                      : 'border-gray-500 text-gray-400'}`}
-                    onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
-                  >
-                    <RefreshCw className={`h-2.5 w-2.5 mr-1 ${autoRefreshLogs ? 'animate-spin' : ''}`} />
-                    {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge 
+                      variant="outline" 
+                      className={`cursor-pointer text-[10px] ${autoRefreshLogs 
+                        ? 'border-green-500 text-green-400 animate-pulse' 
+                        : 'border-gray-500 text-gray-400'}`}
+                      onClick={() => setAutoRefreshLogs(!autoRefreshLogs)}
+                    >
+                      <RefreshCw className={`h-2.5 w-2.5 mr-1 ${autoRefreshLogs ? 'animate-spin' : ''}`} />
+                      {autoRefreshLogs ? 'AO VIVO' : 'PAUSADO'}
+                    </Badge>
+                    <Badge variant="outline" className="text-[9px] border-blue-500/30 text-blue-400">
+                      <Database className="h-2.5 w-2.5 mr-1" />
+                      30 dias
+                    </Badge>
+                  </div>
                   <span className="text-[10px] text-urbana-light/50">
                     {selectedDayLogs.transactionLogs.length} txn | {selectedDayLogs.androidLogs.length} logs
                   </span>
+                </div>
+                
+                {/* Estatísticas de armazenamento */}
+                <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-urbana-gold/5 text-[9px] text-urbana-light/40">
+                  <span>Total: {storageStats.totalTransactionLogs} transações</span>
+                  <span>{storageStats.daysWithLogs} dias com logs</span>
                 </div>
               </CardContent>
             </Card>
