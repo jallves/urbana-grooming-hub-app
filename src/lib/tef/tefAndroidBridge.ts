@@ -53,6 +53,7 @@ declare global {
       cancelarVenda: (jsonParams: string) => void;
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
+      resolverPendencia: () => void;
       verificarPinpad: () => string;
       getStatus: () => string;
       verificarPayGo: () => string;
@@ -327,6 +328,31 @@ export function confirmarTransacaoTEF(
  */
 export function desfazerTransacaoTEF(confirmationId: string): boolean {
   return confirmarTransacaoTEF(confirmationId, 'DESFEITO_MANUAL');
+}
+
+/**
+ * Resolve transação pendente no PayGo
+ * Usar quando há erro de "autorização pendente"
+ */
+export function resolverPendenciaAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.warn('[TEFBridge] TEF Android não disponível');
+    return false;
+  }
+  
+  try {
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    console.log('[TEFBridge] RESOLVENDO PENDÊNCIA');
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    
+    window.TEF!.resolverPendencia();
+    
+    console.log('[TEFBridge] ✅ Solicitação de resolução enviada');
+    return true;
+  } catch (error) {
+    console.error('[TEFBridge] ❌ Erro ao resolver pendência:', error);
+    return false;
+  }
 }
 
 /**
