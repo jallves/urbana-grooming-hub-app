@@ -622,9 +622,17 @@ export default function TotemTEFHomologacao() {
       return;
     }
     
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    console.log('[TotemTEF] BOTÃO CONFIRMAR PENDÊNCIA CLICADO');
+    console.log('[TotemTEF] isAndroidAvailable:', isAndroidAvailable);
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    
     addLog('warning', '🔄 CONFIRMANDO PENDÊNCIA NO PAYGO');
+    toast.info('Enviando comando de confirmação...');
     
     const resolved = resolverPendenciaAndroid('confirmar');
+    console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
+    
     if (resolved) {
       addLog('success', '✅ Confirmação de pendência enviada');
       toast.success('Pendência confirmada no PayGo');
@@ -633,7 +641,10 @@ export default function TotemTEFHomologacao() {
       toast.error('Erro ao confirmar pendência');
     }
     
-    refreshAndroidLogs();
+    // Aguardar um pouco e atualizar logs
+    setTimeout(() => {
+      refreshAndroidLogs();
+    }, 1000);
   };
 
   // Resolver pendência no PayGo - Desfazer
@@ -643,9 +654,17 @@ export default function TotemTEFHomologacao() {
       return;
     }
     
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    console.log('[TotemTEF] BOTÃO DESFAZER PENDÊNCIA CLICADO');
+    console.log('[TotemTEF] isAndroidAvailable:', isAndroidAvailable);
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    
     addLog('warning', '🔄 DESFAZENDO PENDÊNCIA NO PAYGO');
+    toast.info('Enviando comando de desfazimento...');
     
     const resolved = resolverPendenciaAndroid('desfazer');
+    console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
+    
     if (resolved) {
       addLog('success', '✅ Desfazimento de pendência enviado');
       toast.success('Pendência desfeita no PayGo');
@@ -654,7 +673,36 @@ export default function TotemTEFHomologacao() {
       toast.error('Erro ao desfazer pendência');
     }
     
-    refreshAndroidLogs();
+    // Aguardar um pouco e atualizar logs
+    setTimeout(() => {
+      refreshAndroidLogs();
+    }, 1000);
+  };
+
+  // Limpar pendências via transação administrativa (R$0,01)
+  const handleClearPendenciesWithTransaction = async () => {
+    if (!isAndroidAvailable || !isPinpadConnected) {
+      toast.error('TEF ou Pinpad não disponível');
+      return;
+    }
+    
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    console.log('[TotemTEF] LIMPANDO PENDÊNCIAS VIA TRANSAÇÃO');
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    
+    addLog('warning', '🧹 LIMPANDO PENDÊNCIAS - Iniciando transação administrativa');
+    toast.info('Iniciando limpeza de pendências... Aguarde o pinpad.');
+    
+    // Fazer uma transação de R$50,00 (valor comum) com autorizador DEMO
+    // Isso força o PayGo a resolver pendências anteriores
+    setIsProcessing(true);
+    
+    await iniciarPagamento({
+      ordemId: `LIMPAR_PENDENCIA_${Date.now()}`,
+      valor: 50.00,
+      tipo: 'credit',
+      parcelas: 1
+    });
   };
 
   // Lista de transações aprovadas que podem ser canceladas (Passo 21)
@@ -1655,26 +1703,38 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
 
             {/* Botões para Resolver Pendência (quando há erro de autorização pendente) */}
             {isAndroidAvailable && !pendingConfirmation && !isProcessing && (
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleResolvePendencyConfirm}
+                    onPointerDown={handleResolvePendencyConfirm}
+                    variant="outline"
+                    size="sm"
+                    className="border-green-500/50 text-green-400 hover:bg-green-500/10 flex-1"
+                  >
+                    <Check className="h-4 w-4 mr-1.5" />
+                    Confirmar Pendência
+                  </Button>
+                  <Button
+                    onClick={handleResolvePendencyUndo}
+                    onPointerDown={handleResolvePendencyUndo}
+                    variant="outline"
+                    size="sm"
+                    className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 flex-1"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-1.5" />
+                    Desfazer Pendência
+                  </Button>
+                </div>
                 <Button
-                  onClick={handleResolvePendencyConfirm}
-                  onPointerDown={handleResolvePendencyConfirm}
+                  onClick={handleClearPendenciesWithTransaction}
+                  onPointerDown={handleClearPendenciesWithTransaction}
                   variant="outline"
                   size="sm"
-                  className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                  className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 w-full"
                 >
-                  <Check className="h-4 w-4 mr-1.5" />
-                  Confirmar Pendência
-                </Button>
-                <Button
-                  onClick={handleResolvePendencyUndo}
-                  onPointerDown={handleResolvePendencyUndo}
-                  variant="outline"
-                  size="sm"
-                  className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10"
-                >
-                  <RotateCcw className="h-4 w-4 mr-1.5" />
-                  Desfazer Pendência
+                  <Trash2 className="h-4 w-4 mr-1.5" />
+                  Limpar Pendências (Transação R$50)
                 </Button>
               </div>
             )}
