@@ -32,7 +32,8 @@ import {
   Check,
   Printer,
   Receipt,
-  Database
+  Database,
+  RotateCcw
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -41,7 +42,9 @@ import {
   getLogsAndroid, 
   setModoDebug,
   limparLogsAndroid,
-  confirmarTransacaoTEF
+  confirmarTransacaoTEF,
+  cancelarVendaAndroid,
+  type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
 import { formatBrazilDate, getTodayInBrazil } from '@/lib/utils/dateUtils';
@@ -117,6 +120,16 @@ export default function TotemTEFHomologacao() {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [showTestValues, setShowTestValues] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Estado para modo de cancelamento (Passo 21)
+  const [showCancelMode, setShowCancelMode] = useState(false);
+  const [selectedCancelTransaction, setSelectedCancelTransaction] = useState<{
+    nsu: string;
+    autorizacao: string;
+    valor: number;
+    bandeira?: string;
+    passoTeste?: string;
+  } | null>(null);
   
   // Carregar logs do storage persistente na inicialização
   const [transactionLogs, setTransactionLogs] = useState<StoredTransactionLog[]>(() => {
@@ -599,6 +612,117 @@ export default function TotemTEFHomologacao() {
       toast.error('Erro ao desfazer');
     }
     setPendingConfirmation(null);
+  };
+
+  // Lista de transações aprovadas que podem ser canceladas (Passo 21)
+  const cancellableTransactions = useMemo(() => {
+    return transactionLogs
+      .filter(log => log.type === 'success' && log.data?.nsu && log.data?.valor)
+      .map(log => ({
+        id: log.id,
+        timestamp: log.timestamp,
+        nsu: String(log.data?.nsu || ''),
+        autorizacao: String(log.data?.autorizacao || ''),
+        valor: log.data?.valor as number,
+        bandeira: String(log.data?.bandeira || ''),
+        passoTeste: log.data?.passoTeste as string | undefined,
+      }))
+      .reverse(); // Mais recentes primeiro
+  }, [transactionLogs]);
+
+  // Iniciar cancelamento de venda (Passo 21)
+  const handleStartCancelamento = async () => {
+    if (!selectedCancelTransaction) {
+      toast.error('Selecione uma transação para cancelar');
+      return;
+    }
+
+    if (!isAndroidAvailable) {
+      toast.error('TEF Android não disponível');
+      return;
+    }
+
+    if (!isPinpadConnected) {
+      toast.error('Pinpad não conectado');
+      return;
+    }
+
+    setIsProcessing(true);
+    const orderId = `CANCEL_${Date.now()}`;
+    const valorCentavos = Math.round(selectedCancelTransaction.valor * 100);
+
+    addLog('transaction', `🔄 INICIANDO CANCELAMENTO (Passo 21)`, {
+      orderId,
+      valorOriginal: selectedCancelTransaction.valor,
+      nsuOriginal: selectedCancelTransaction.nsu,
+      autorizacaoOriginal: selectedCancelTransaction.autorizacao,
+      passoTeste: '21'
+    });
+
+    // Definir callback para resultado
+    const handleCancelResult = (resultado: TEFResultado) => {
+      setIsProcessing(false);
+      
+      if (resultado.status === 'aprovado') {
+        addLog('success', `✅ CANCELAMENTO APROVADO (Passo 21)`, {
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao,
+          valorCancelado: selectedCancelTransaction.valor,
+          passoTeste: '21'
+        });
+        
+        setTransactionResult({
+          show: true,
+          status: 'aprovado',
+          valor: selectedCancelTransaction.valor,
+          nsu: resultado.nsu || '',
+          autorizacao: resultado.autorizacao || '',
+          bandeira: resultado.bandeira || selectedCancelTransaction.bandeira || '',
+          mensagem: 'Cancelamento realizado com sucesso',
+          comprovanteCliente: resultado.comprovanteCliente,
+          comprovanteLojista: resultado.comprovanteLojista,
+          passoTeste: '21'
+        });
+        
+        toast.success('Cancelamento aprovado!');
+      } else {
+        addLog('error', `❌ CANCELAMENTO NEGADO`, {
+          erro: resultado.mensagem,
+          passoTeste: '21'
+        });
+        
+        setTransactionResult({
+          show: true,
+          status: 'negado',
+          valor: selectedCancelTransaction.valor,
+          nsu: resultado.nsu || 'N/A',
+          autorizacao: resultado.autorizacao || 'N/A',
+          bandeira: '',
+          mensagem: resultado.mensagem || 'Cancelamento não realizado',
+          passoTeste: '21'
+        });
+        
+        toast.error('Cancelamento negado');
+      }
+      
+      refreshAndroidLogs();
+      setShowCancelMode(false);
+      setSelectedCancelTransaction(null);
+    };
+
+    // Chamar cancelamento
+    const success = cancelarVendaAndroid({
+      ordemId: orderId,
+      valorCentavos,
+      nsuOriginal: selectedCancelTransaction.nsu,
+      autorizacaoOriginal: selectedCancelTransaction.autorizacao
+    }, handleCancelResult);
+
+    if (!success) {
+      setIsProcessing(false);
+      addLog('error', '❌ Falha ao iniciar cancelamento');
+      toast.error('Falha ao iniciar cancelamento');
+    }
   };
 
   // Limpar logs (remove do storage também)
@@ -1318,24 +1442,140 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </CardContent>
             </Card>
 
-            {/* Botão de Pagamento */}
-            <Button
-              onPointerDown={handleStartTransaction}
-              disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected}
-              className="w-full h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-600 hover:to-green-500 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20 flex-shrink-0"
-            >
-              {isProcessing ? (
-                <>
-                  <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Processando...
-                </>
-              ) : (
-                <>
-                  <DollarSign className="h-5 w-5 mr-1.5" />
-                  PAGAR {formatCurrency(amount)}
-                </>
-              )}
-            </Button>
+            {/* Botões de Ação */}
+            <div className="flex gap-2 flex-shrink-0">
+              {/* Botão de Pagamento */}
+              <Button
+                onPointerDown={handleStartTransaction}
+                disabled={isProcessing || !amount || !isAndroidAvailable || !isPinpadConnected || showCancelMode}
+                className="flex-1 h-14 text-lg font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-600 hover:to-green-500 active:from-green-800 active:to-green-700 text-white disabled:opacity-50 shadow-lg shadow-green-500/20"
+              >
+                {isProcessing && !showCancelMode ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Processando...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="h-5 w-5 mr-1.5" />
+                    PAGAR {formatCurrency(amount)}
+                  </>
+                )}
+              </Button>
+              
+              {/* Botão de Cancelamento (Passo 21) */}
+              <Button
+                onPointerDown={() => setShowCancelMode(!showCancelMode)}
+                disabled={isProcessing || cancellableTransactions.length === 0}
+                className={`h-14 px-4 font-bold transition-all ${showCancelMode 
+                  ? 'bg-red-600 hover:bg-red-700 text-white' 
+                  : 'bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30'}`}
+              >
+                <RotateCcw className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Painel de Cancelamento (Passo 21) */}
+            {showCancelMode && (
+              <Card className="bg-red-900/20 border-red-500/50 flex-shrink-0">
+                <CardHeader className="py-2 px-3">
+                  <CardTitle className="text-sm text-red-400 flex items-center gap-2">
+                    <RotateCcw className="h-4 w-4" />
+                    Cancelamento de Venda (Passo 21)
+                    <Badge variant="outline" className="ml-auto border-red-500/30 text-red-400">
+                      {cancellableTransactions.length} disponíveis
+                    </Badge>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0 space-y-3">
+                  <p className="text-xs text-red-300/70">
+                    Selecione a transação aprovada do Passo 19 para cancelar:
+                  </p>
+                  
+                  {/* Lista de transações canceláveis */}
+                  <ScrollArea className="max-h-40">
+                    <div className="space-y-1.5">
+                      {cancellableTransactions.map((tx) => (
+                        <div
+                          key={tx.id}
+                          className={`p-2 rounded border cursor-pointer transition-all ${
+                            selectedCancelTransaction?.nsu === tx.nsu
+                              ? 'bg-red-500/30 border-red-500'
+                              : 'bg-urbana-black/30 border-red-500/20 hover:border-red-500/50'
+                          }`}
+                          onClick={() => setSelectedCancelTransaction({
+                            nsu: tx.nsu,
+                            autorizacao: tx.autorizacao,
+                            valor: tx.valor,
+                            bandeira: tx.bandeira,
+                            passoTeste: tx.passoTeste
+                          })}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="radio"
+                                checked={selectedCancelTransaction?.nsu === tx.nsu}
+                                onChange={() => {}}
+                                className="accent-red-500"
+                              />
+                              <div>
+                                <p className="text-xs text-white font-mono">
+                                  NSU: {tx.nsu}
+                                </p>
+                                <p className="text-[10px] text-red-300/60">
+                                  Auth: {tx.autorizacao} {tx.passoTeste && `• Passo ${tx.passoTeste}`}
+                                </p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-sm font-bold text-red-400">
+                                R$ {tx.valor.toFixed(2)}
+                              </p>
+                              <p className="text-[9px] text-red-300/50">
+                                {tx.bandeira || 'DEMO'}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                  
+                  {/* Botões de ação */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      className="flex-1 border-red-500/30 text-red-400 hover:bg-red-500/10"
+                      onPointerDown={() => {
+                        setShowCancelMode(false);
+                        setSelectedCancelTransaction(null);
+                      }}
+                    >
+                      <X className="h-4 w-4 mr-1.5" />
+                      Voltar
+                    </Button>
+                    <Button
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white"
+                      disabled={!selectedCancelTransaction || isProcessing}
+                      onPointerDown={handleStartCancelamento}
+                    >
+                      {isProcessing ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />
+                          Cancelando...
+                        </>
+                      ) : (
+                        <>
+                          <RotateCcw className="h-4 w-4 mr-1.5" />
+                          Cancelar Venda
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Confirmação Pendente */}
             {pendingConfirmation && (

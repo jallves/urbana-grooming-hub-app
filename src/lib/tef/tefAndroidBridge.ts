@@ -37,11 +37,20 @@ export interface TEFPinpadStatus {
   timestamp: number;
 }
 
+// Parâmetros para cancelamento de venda
+export interface TEFCancelamentoParams {
+  ordemId: string;
+  valorCentavos: number;
+  nsuOriginal: string;
+  autorizacaoOriginal?: string;
+}
+
 // Declaração global da interface TEF injetada pelo Android
 declare global {
   interface Window {
     TEF?: {
       iniciarPagamento: (jsonParams: string) => void;
+      cancelarVenda: (jsonParams: string) => void;
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
       verificarPinpad: () => string;
@@ -321,7 +330,7 @@ export function desfazerTransacaoTEF(confirmationId: string): boolean {
 }
 
 /**
- * Cancela o pagamento TEF atual
+ * Cancela o pagamento TEF atual (em andamento)
  */
 export function cancelarPagamentoAndroid(): boolean {
   if (!isAndroidTEFAvailable()) {
@@ -335,6 +344,93 @@ export function cancelarPagamentoAndroid(): boolean {
     return true;
   } catch (error) {
     console.error('[TEFBridge] Erro ao cancelar pagamento:', error);
+    return false;
+  }
+}
+
+/**
+ * Cancela uma venda já realizada anteriormente (Passo 21 - Cancelamento)
+ * 
+ * @param params - Parâmetros do cancelamento:
+ *   - ordemId: ID da ordem de cancelamento
+ *   - valorCentavos: Valor original em centavos
+ *   - nsuOriginal: NSU da transação original
+ *   - autorizacaoOriginal: Código de autorização original (opcional)
+ * @param onResult - Callback para resultado
+ */
+export function cancelarVendaAndroid(
+  params: TEFCancelamentoParams,
+  onResult?: TEFResultCallback
+): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.warn('[TEFBridge] TEF Android não disponível');
+    return false;
+  }
+  
+  // Limpar resultado anterior
+  lastProcessedResult = null;
+  
+  // Registrar callback interno (backup)
+  if (onResult) {
+    resultCallback = onResult;
+  }
+  
+  // Verificar se já existe um handler registrado
+  const existingHandler = (window as any).onTefResultado;
+  const hasExistingHandler = typeof existingHandler === 'function';
+  
+  console.log('[TEFBridge] ═══════════════════════════════════════');
+  console.log('[TEFBridge] INICIANDO CANCELAMENTO DE VENDA');
+  console.log('[TEFBridge] Handler existente:', hasExistingHandler);
+  
+  // Se NÃO existe handler, registrar fallback
+  if (!hasExistingHandler) {
+    console.log('[TEFBridge] Registrando fallback para cancelamento');
+    (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+      console.log('[TEFBridge] RESULTADO DO CANCELAMENTO RECEBIDO');
+      console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+      
+      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+      
+      // Salvar no sessionStorage
+      try {
+        sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
+        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+      } catch (e) {
+        console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
+      }
+      
+      // Disparar evento
+      const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
+      window.dispatchEvent(event);
+      document.dispatchEvent(event);
+      
+      if (resultCallback) {
+        resultCallback(normalizedResult);
+        resultCallback = null;
+      }
+      
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+    };
+  }
+  
+  try {
+    const jsonParams = JSON.stringify({
+      ordemId: params.ordemId,
+      valorCentavos: params.valorCentavos,
+      nsuOriginal: params.nsuOriginal,
+      autorizacaoOriginal: params.autorizacaoOriginal || ''
+    });
+    
+    console.log('[TEFBridge] Parâmetros cancelamento:', jsonParams);
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    
+    window.TEF!.cancelarVenda(jsonParams);
+    return true;
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao cancelar venda:', error);
+    resultCallback = null;
     return false;
   }
 }
