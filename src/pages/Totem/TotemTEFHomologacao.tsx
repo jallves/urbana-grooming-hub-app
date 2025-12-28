@@ -1657,6 +1657,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
             {isAndroidAvailable && !pendingConfirmation && !isProcessing && (
               <div className="flex gap-2 flex-shrink-0">
                 <Button
+                  onClick={handleResolvePendencyConfirm}
                   onPointerDown={handleResolvePendencyConfirm}
                   variant="outline"
                   size="sm"
@@ -1666,6 +1667,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   Confirmar Pendência
                 </Button>
                 <Button
+                  onClick={handleResolvePendencyUndo}
                   onPointerDown={handleResolvePendencyUndo}
                   variant="outline"
                   size="sm"

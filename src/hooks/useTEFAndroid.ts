@@ -329,6 +329,12 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
     // Limpar resultado anterior
     globalLastProcessedResult = null;
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+    } catch {
+      // ignore
+    }
     
     setIsProcessing(true);
     console.log('[useTEFAndroid] Iniciando pagamento TEF:', params);
