@@ -44,6 +44,7 @@ import {
   limparLogsAndroid,
   confirmarTransacaoTEF,
   cancelarVendaAndroid,
+  resolverPendenciaAndroid,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
@@ -612,6 +613,27 @@ export default function TotemTEFHomologacao() {
       toast.error('Erro ao desfazer');
     }
     setPendingConfirmation(null);
+  };
+
+  // Resolver pendência no PayGo
+  const handleResolvePendency = () => {
+    if (!isAndroidAvailable) {
+      toast.error('TEF Android não disponível');
+      return;
+    }
+    
+    addLog('warning', '🔄 RESOLVENDO PENDÊNCIA NO PAYGO');
+    
+    const resolved = resolverPendenciaAndroid();
+    if (resolved) {
+      addLog('success', '✅ Solicitação de resolução enviada');
+      toast.success('Resolução de pendência enviada ao PayGo');
+    } else {
+      addLog('error', '❌ Erro ao resolver pendência');
+      toast.error('Erro ao resolver pendência');
+    }
+    
+    refreshAndroidLogs();
   };
 
   // Lista de transações aprovadas que podem ser canceladas (Passo 21)
@@ -1608,6 +1630,19 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   </div>
                 </CardContent>
               </Card>
+            )}
+
+            {/* Botão para Resolver Pendência (quando há erro de autorização pendente) */}
+            {isAndroidAvailable && !pendingConfirmation && !isProcessing && (
+              <Button
+                onPointerDown={handleResolvePendency}
+                variant="outline"
+                size="sm"
+                className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 flex-shrink-0"
+              >
+                <RotateCcw className="h-4 w-4 mr-1.5" />
+                Resolver Pendência PayGo
+              </Button>
             )}
 
             {/* Aviso se não conectado */}
