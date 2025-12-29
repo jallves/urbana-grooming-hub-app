@@ -90,8 +90,8 @@ const PAYGO_TEST_VALUES: Array<{
   { passo: '11', valor: 5000, desc: 'PIX QRCode', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
   { passo: '19', valor: 1234567, desc: 'Venda p/ cancelar', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '30', valor: 100300, desc: 'Msg máxima', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
-  { passo: '33', valor: 100560, desc: 'Pendente #1', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
-  { passo: '34', valor: 100561, desc: 'Pendente #2', resultado: 'Negada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '33', valor: 100560, desc: 'Pendente #1 (confirmar)', resultado: 'Aprovada+Confirmada', metodo: 'credito', autorizador: 'DEMO' },
+  { passo: '34', valor: 100561, desc: 'Pendente #2 (DESFAZER!)', resultado: 'Aprovada+Desfeita', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '35', valor: 101200, desc: 'Confirmação', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '37', valor: 101100, desc: 'Desfazimento', resultado: 'Desfeita', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '39', valor: 101300, desc: 'Falha mercadoria', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
@@ -215,6 +215,12 @@ export default function TotemTEFHomologacao() {
       const valorCentavos = resultado.valor ? Math.round(resultado.valor * 100) : parseInt(amount, 10);
       const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
       
+      // PASSOS 33 e 34: Lógica especial de confirmação/desfazimento
+      // Passo 33 (R$1005,60 / 100560): Confirmar manualmente
+      // Passo 34 (R$1005,61 / 100561): DESFAZER manualmente (não confirmar!)
+      const isPasso33 = valorCentavos === 100560;
+      const isPasso34 = valorCentavos === 100561;
+      
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
         autorizacao: resultado.autorizacao,
@@ -222,7 +228,9 @@ export default function TotemTEFHomologacao() {
         valor: resultado.valor,
         passoTeste: testePasso?.passo,
         requiresConfirmation: resultado.requiresConfirmation,
-        confirmationId: resultado.confirmationTransactionId
+        confirmationId: resultado.confirmationTransactionId,
+        isPasso33,
+        isPasso34
       });
       
       // Mostrar modal de resultado
@@ -239,7 +247,21 @@ export default function TotemTEFHomologacao() {
         passoTeste: testePasso?.passo
       });
       
-      if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
+      // LÓGICA ESPECIAL PARA PASSOS 33 e 34:
+      if (isPasso33 && resultado.confirmationTransactionId) {
+        // Passo 33: Confirmar manualmente (isso deixa a transação do Passo 34 pendente)
+        addLog('info', '📋 PASSO 33: Confirmando transação para preparar o Passo 34...');
+        const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_MANUAL');
+        addLog('info', confirmed ? '✅ Passo 33: Confirmação manual enviada' : '❌ Erro na confirmação do Passo 33');
+        toast.success('Passo 33: Transação confirmada. Agora execute o Passo 34!');
+      } else if (isPasso34 && resultado.confirmationTransactionId) {
+        // Passo 34: DESFAZER manualmente (este é o requisito da homologação!)
+        addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL (requisito da homologação)...');
+        const undone = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'DESFEITO_MANUAL');
+        addLog('warning', undone ? '✅ Passo 34: DESFAZIMENTO MANUAL enviado com sucesso!' : '❌ Erro no desfazimento do Passo 34');
+        toast.info('Passo 34: Desfazimento manual enviado conforme requisito!');
+      } else if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
+        // Outros casos que requerem confirmação manual
         setPendingConfirmation({
           confirmationId: resultado.confirmationTransactionId,
           nsu: resultado.nsu || '',
@@ -247,6 +269,7 @@ export default function TotemTEFHomologacao() {
         });
         addLog('warning', '⚠️ Transação aguardando confirmação manual');
       } else {
+        // Confirmação automática para demais transações
         if (resultado.confirmationTransactionId) {
           const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
           addLog('info', confirmed ? '✅ Confirmação automática enviada' : '❌ Erro na confirmação automática');
