@@ -14,7 +14,7 @@ import {
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
-  onError?: (erro: string) => void;
+  onError?: (erro: string, resultadoCompleto?: TEFResultado) => void;
   onCancelled?: () => void;
 }
 
@@ -147,7 +147,8 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         case 'negado':
           console.log('[useTEFAndroid] ❌ Pagamento NEGADO - chamando onError');
           if (opts.onError) {
-            opts.onError(normalizedResult.mensagem || 'Pagamento negado');
+            // Passar resultado completo para permitir acesso aos dados da pendência
+            opts.onError(normalizedResult.mensagem || 'Pagamento negado', normalizedResult);
           }
           break;
 
@@ -161,7 +162,8 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         case 'erro':
           console.log('[useTEFAndroid] ❌ ERRO no pagamento - chamando onError');
           if (opts.onError) {
-            opts.onError(normalizedResult.mensagem || 'Erro desconhecido');
+            // Passar resultado completo para permitir acesso aos dados da pendência
+            opts.onError(normalizedResult.mensagem || 'Erro desconhecido', normalizedResult);
           }
           break;
       }
