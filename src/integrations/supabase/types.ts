@@ -3645,13 +3645,16 @@ export type Database = {
           authorization_code: string | null
           callback_url: string | null
           card_brand: string | null
+          confirmation_transaction_id: string | null
           created_at: string
           id: string
           installments: number | null
           nsu: string | null
           payment_id: string
           payment_type: string
+          pending_transaction_exists: boolean | null
           reference: string | null
+          requires_confirmation: boolean | null
           simulated_at: string | null
           soft_descriptor: string | null
           status: string
@@ -3663,13 +3666,16 @@ export type Database = {
           authorization_code?: string | null
           callback_url?: string | null
           card_brand?: string | null
+          confirmation_transaction_id?: string | null
           created_at?: string
           id?: string
           installments?: number | null
           nsu?: string | null
           payment_id: string
           payment_type: string
+          pending_transaction_exists?: boolean | null
           reference?: string | null
+          requires_confirmation?: boolean | null
           simulated_at?: string | null
           soft_descriptor?: string | null
           status?: string
@@ -3681,13 +3687,16 @@ export type Database = {
           authorization_code?: string | null
           callback_url?: string | null
           card_brand?: string | null
+          confirmation_transaction_id?: string | null
           created_at?: string
           id?: string
           installments?: number | null
           nsu?: string | null
           payment_id?: string
           payment_type?: string
+          pending_transaction_exists?: boolean | null
           reference?: string | null
+          requires_confirmation?: boolean | null
           simulated_at?: string | null
           soft_descriptor?: string | null
           status?: string
