@@ -391,39 +391,42 @@ export default function TotemTEFHomologacao() {
             addLog('info', '📋 [PASSO 34] Obtendo dados da transação pendente (saidaTransacao.obtemDadosTransacaoPendente())...');
             addLog('info', '📋 [PASSO 34] Dados obtidos:', { confirmationId: pendingId });
             
-            // 4. Resolver a pendência com DESFEITO_MANUAL (conforme roteiro)
-            addLog('warning', '🔄 [PASSO 34] Resolvendo pendência: informaStatusTransacao(StatusTransacao.DESFEITO_MANUAL)');
-            addLog('warning', '🔄 [PASSO 34] Chamando transacao.resolvePendencia(dadosPendencia, confirmacao)...');
+            // 4. Resolver a pendência com DESFEITO_MANUAL (conforme roteiro PayGo)
+            addLog('warning', '🔄 [PASSO 34] Criando confirmação: confirmacao.informaStatusTransacao(StatusTransacao.DESFEITO_MANUAL)');
+            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: transacao.resolvePendencia(dadosPendencia, confirmacao)...');
             
-            const success = confirmarTransacaoTEF(pendingId, 'DESFEITO_MANUAL');
+            // Chamar PayGo via resolverPendenciaAndroid passando o confirmationId
+            const success = resolverPendenciaAndroid('desfazer', pendingId);
             
             if (success) {
-              addLog('success', '✅ [PASSO 34] DESFEITO_MANUAL enviado com sucesso!', { 
+              addLog('success', '✅ [PASSO 34] PayGo chamado com sucesso! DESFEITO_MANUAL enviado', { 
                 confirmationId: pendingId,
-                statusEnviado: 'DESFEITO_MANUAL'
+                statusEnviado: 'DESFEITO_MANUAL',
+                metodo: 'window.TEF.confirmarTransacao()'
               });
               toast.success('✅ PASSO 34 COMPLETO!', {
-                description: 'Pendência verificada e DESFEITO_MANUAL enviado',
+                description: 'PayGo chamado - DESFEITO_MANUAL enviado',
                 duration: 5000
               });
               setPasso33PendingConfirmationId(null);
             } else {
-              addLog('error', '❌ [PASSO 34] Erro ao enviar DESFEITO_MANUAL para confirmarTransacao()');
-              toast.error('Erro ao enviar DESFEITO_MANUAL');
+              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo para DESFEITO_MANUAL');
+              toast.error('Erro ao chamar PayGo');
             }
           } else {
-            // Não há pendência detectada - usar resolverPendenciaAndroid como fallback
-            addLog('warning', '⚠️ [PASSO 34] Nenhum confirmationId encontrado. Tentando resolverPendenciaAndroid (fallback)...');
+            // Não há confirmationId - tentar resolverPendencia genérico
+            addLog('warning', '⚠️ [PASSO 34] Nenhum confirmationId encontrado.');
+            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: window.TEF.resolverPendencia() (método genérico)...');
             
             const success = resolverPendenciaAndroid('desfazer');
             if (success) {
-              addLog('success', '✅ [PASSO 34] resolverPendencia(DESFAZER) enviado via PayGo');
-              toast.success('✅ PASSO 34: Resolução de pendência enviada!', {
-                description: 'DESFAZER enviado via PayGo',
+              addLog('success', '✅ [PASSO 34] PayGo chamado: resolverPendencia(DESFAZER)');
+              toast.success('✅ PASSO 34: PayGo chamado!', {
+                description: 'resolverPendencia(DESFAZER) enviado',
                 duration: 5000
               });
             } else {
-              addLog('error', '❌ [PASSO 34] Erro ao resolver pendência via resolverPendenciaAndroid()');
+              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo resolverPendencia()');
             }
           }
         }
