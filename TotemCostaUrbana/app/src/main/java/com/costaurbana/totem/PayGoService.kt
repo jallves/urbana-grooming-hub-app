@@ -805,6 +805,67 @@ class PayGoService(private val context: Context) {
     }
 
     // ========================================================================
+    // REIMPRESSÃO (ÚLTIMA TRANSAÇÃO)
+    // ========================================================================
+
+    /**
+     * Solicita reimpressão do último comprovante
+     * Conforme documentação: operation=REIMPRESSAO
+     * 
+     * @param callback Callback com resultado (comprovantes disponíveis na resposta)
+     */
+    fun startReimpressao(callback: (JSONObject) -> Unit) {
+        addLog("════════════════════════════════════════")
+        addLog("[REIMPRESSAO] INICIANDO")
+        addLog("════════════════════════════════════════")
+
+        if (!payGoInstalled) checkPayGoInstallation()
+        
+        if (!payGoInstalled) {
+            callback(createError("PAYGO_NOT_INSTALLED", "PayGo não instalado"))
+            return
+        }
+
+        val transactionId = "REIMP_${System.currentTimeMillis()}"
+        pendingTransactionId = transactionId
+        pendingCallback = callback
+
+        try {
+            // URI de reimpressão
+            // Formato: app://payment/input?operation=REIMPRESSAO&transactionId=xxx
+            val reimpressaoUri = Uri.Builder()
+                .scheme("app")
+                .authority("payment")
+                .appendPath("input")
+                .appendQueryParameter("operation", "REIMPRESSAO")
+                .appendQueryParameter("transactionId", transactionId)
+                .build()
+            
+            addLog("[REIMPRESSAO] URI: $reimpressaoUri")
+            
+            val dadosAutomacaoUri = buildDadosAutomacaoUri()
+            val personalizacaoUri = buildPersonalizacaoUri()
+            
+            val intent = Intent(ACTION_TRANSACTION, reimpressaoUri).apply {
+                putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
+                putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
+                putExtra(EXTRA_PACKAGE, context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            
+            context.startActivity(intent)
+            addLog("[REIMPRESSAO] ✅ Intent enviado")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro na reimpressão: ${e.message}", e)
+            addLog("[REIMPRESSAO] ❌ ERRO: ${e.message}")
+            pendingTransactionId = null
+            pendingCallback = null
+            callback(createError("REPRINT_ERROR", "Erro ao solicitar reimpressão: ${e.message}"))
+        }
+    }
+
+    // ========================================================================
     // DEBUG & LOGS
     // ========================================================================
 

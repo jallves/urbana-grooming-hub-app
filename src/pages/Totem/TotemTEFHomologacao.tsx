@@ -45,6 +45,7 @@ import {
   confirmarTransacaoTEF,
   cancelarVendaAndroid,
   resolverPendenciaAndroid,
+  reimprimirUltimaTransacaoAndroid,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
@@ -886,6 +887,68 @@ export default function TotemTEFHomologacao() {
       setIsProcessing(false);
       addLog('error', '❌ Falha ao iniciar cancelamento');
       toast.error('Falha ao iniciar cancelamento');
+    }
+  };
+
+  // Reimprimir última transação
+  const handleReimpressao = async () => {
+    if (!isAndroidAvailable) {
+      toast.error('TEF Android não disponível');
+      return;
+    }
+
+    if (!isPinpadConnected) {
+      toast.error('Pinpad não conectado');
+      return;
+    }
+
+    setIsProcessing(true);
+    addLog('transaction', '🖨️ SOLICITANDO REIMPRESSÃO DA ÚLTIMA TRANSAÇÃO');
+
+    // Definir callback para resultado
+    const handleReimpressaoResult = (resultado: TEFResultado) => {
+      setIsProcessing(false);
+      
+      if (resultado.status === 'aprovado') {
+        addLog('success', '✅ REIMPRESSÃO RETORNADA', {
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao,
+          temComprovanteCliente: !!resultado.comprovanteCliente,
+          temComprovanteLojista: !!resultado.comprovanteLojista
+        });
+        
+        // Exibir modal de resultado com comprovantes
+        setTransactionResult({
+          show: true,
+          status: 'aprovado',
+          valor: resultado.valor ? resultado.valor / 100 : 0,
+          nsu: resultado.nsu || '',
+          autorizacao: resultado.autorizacao || '',
+          bandeira: resultado.bandeira || '',
+          mensagem: 'Comprovante da última transação',
+          comprovanteCliente: resultado.comprovanteCliente,
+          comprovanteLojista: resultado.comprovanteLojista
+        });
+        
+        toast.success('Comprovantes recuperados!');
+      } else {
+        addLog('warning', '⚠️ REIMPRESSÃO NÃO DISPONÍVEL', {
+          mensagem: resultado.mensagem
+        });
+        
+        toast.warning(resultado.mensagem || 'Não há transação para reimprimir');
+      }
+      
+      refreshAndroidLogs();
+    };
+
+    // Chamar reimpressão
+    const success = reimprimirUltimaTransacaoAndroid(handleReimpressaoResult);
+
+    if (!success) {
+      setIsProcessing(false);
+      addLog('error', '❌ Falha ao solicitar reimpressão');
+      toast.error('Falha ao solicitar reimpressão');
     }
   };
 
@@ -1836,17 +1899,30 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     Desfazer Pendência
                   </Button>
                 </div>
-                <Button
-                  onClick={handleClearPendenciesWithTransaction}
-                  onPointerDown={handleClearPendenciesWithTransaction}
-                  variant="outline"
-                  size="sm"
-                  disabled={isProcessing}
-                  className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 w-full"
-                >
-                  <Trash2 className="h-4 w-4 mr-1.5" />
-                  Limpar Pendências (Transação R$50)
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleClearPendenciesWithTransaction}
+                    onPointerDown={handleClearPendenciesWithTransaction}
+                    variant="outline"
+                    size="sm"
+                    disabled={isProcessing}
+                    className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 flex-1"
+                  >
+                    <Trash2 className="h-4 w-4 mr-1.5" />
+                    Limpar Pendências
+                  </Button>
+                  <Button
+                    onClick={handleReimpressao}
+                    onPointerDown={handleReimpressao}
+                    variant="outline"
+                    size="sm"
+                    disabled={isProcessing}
+                    className="border-purple-500/50 text-purple-400 hover:bg-purple-500/10 flex-1"
+                  >
+                    <Printer className="h-4 w-4 mr-1.5" />
+                    Reimprimir Última
+                  </Button>
+                </div>
                 {isProcessing && (
                   <p className="text-xs text-urbana-light/70">Aguardando retorno do pinpad… se travar, aguarde o timeout.</p>
                 )}

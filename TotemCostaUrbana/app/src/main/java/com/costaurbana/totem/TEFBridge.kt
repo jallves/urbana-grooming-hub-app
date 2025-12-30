@@ -288,6 +288,23 @@ class TEFBridge(
     }
 
     // ========================================================================
+    // REIMPRESSÃO ÚLTIMA TRANSAÇÃO
+    // ========================================================================
+
+    /**
+     * Solicita reimpressão do último comprovante
+     * Chamado do JS: TEF.reimprimirUltimaTransacao()
+     */
+    @JavascriptInterface
+    fun reimprimirUltimaTransacao() {
+        Log.i(TAG, "reimprimirUltimaTransacao")
+        
+        payGoService.startReimpressao { result ->
+            returnResult(result)
+        }
+    }
+
+    // ========================================================================
     // DEBUG - LISTAR APPS
     // ========================================================================
 

@@ -54,6 +54,7 @@ declare global {
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
       resolverPendencia: () => void;
+      reimprimirUltimaTransacao: () => void;
       verificarPinpad: () => string;
       getStatus: () => string;
       verificarPayGo: () => string;
@@ -468,6 +469,78 @@ export function cancelarVendaAndroid(
     return true;
   } catch (error) {
     console.error('[TEFBridge] Erro ao cancelar venda:', error);
+    resultCallback = null;
+    return false;
+  }
+}
+
+/**
+ * Solicita reimpressão do último comprovante
+ * Conforme documentação PayGo: operation=REIMPRESSAO
+ * 
+ * @param onResult - Callback para resultado (inclui comprovantes)
+ */
+export function reimprimirUltimaTransacaoAndroid(
+  onResult?: TEFResultCallback
+): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.warn('[TEFBridge] TEF Android não disponível');
+    return false;
+  }
+  
+  // Registrar callback interno (backup)
+  if (onResult) {
+    resultCallback = onResult;
+  }
+  
+  // Verificar se já existe um handler registrado
+  const existingHandler = (window as any).onTefResultado;
+  const hasExistingHandler = typeof existingHandler === 'function';
+  
+  console.log('[TEFBridge] ═══════════════════════════════════════');
+  console.log('[TEFBridge] SOLICITANDO REIMPRESSÃO');
+  console.log('[TEFBridge] Handler existente:', hasExistingHandler);
+  
+  // Se NÃO existe handler, registrar fallback
+  if (!hasExistingHandler) {
+    console.log('[TEFBridge] Registrando fallback para reimpressão');
+    (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+      console.log('[TEFBridge] RESULTADO DA REIMPRESSÃO RECEBIDO');
+      console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+      
+      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+      
+      // Salvar no sessionStorage
+      try {
+        sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
+        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+      } catch (e) {
+        console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
+      }
+      
+      // Disparar evento
+      const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
+      window.dispatchEvent(event);
+      document.dispatchEvent(event);
+      
+      if (resultCallback) {
+        resultCallback(normalizedResult);
+        resultCallback = null;
+      }
+      
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+    };
+  }
+  
+  try {
+    console.log('[TEFBridge] Chamando reimprimirUltimaTransacao()...');
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    
+    window.TEF!.reimprimirUltimaTransacao();
+    return true;
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao reimprimir:', error);
     resultCallback = null;
     return false;
   }
