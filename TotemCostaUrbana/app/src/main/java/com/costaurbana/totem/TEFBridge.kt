@@ -169,15 +169,59 @@ class TEFBridge(
 
     /**
      * Resolve transação pendente
-     * Chamado do JS: TEF.resolverPendencia()
+     * Chamado do JS: TEF.resolverPendencia(status)
+     * 
+     * @param status "CONFIRMADO_MANUAL" ou "DESFEITO_MANUAL" (default)
      */
     @JavascriptInterface
-    fun resolverPendencia() {
-        Log.i(TAG, "resolverPendencia")
-        
-        payGoService.resolvePendingTransaction { result ->
-            returnResult(result)
+    fun resolverPendencia(status: String = "DESFEITO_MANUAL") {
+        val validStatus = when (status) {
+            "CONFIRMADO_MANUAL", "DESFEITO_MANUAL", "CONFIRMADO_AUTOMATICO" -> status
+            else -> "DESFEITO_MANUAL"
         }
+        
+        Log.i(TAG, "resolverPendencia: status=$validStatus")
+        
+        payGoService.resolvePendingTransaction({ result ->
+            returnResult(result)
+        }, validStatus)
+    }
+    
+    /**
+     * Obtém informações sobre pendências
+     * Chamado do JS: TEF.getPendingInfo()
+     * @return JSON string com informações de pendência
+     */
+    @JavascriptInterface
+    fun getPendingInfo(): String {
+        Log.d(TAG, "getPendingInfo")
+        return payGoService.getPendingInfo().toString()
+    }
+    
+    /**
+     * Salva confirmationId da última transação aprovada
+     * Chamado do JS: TEF.salvarConfirmationId(id, nsu, autorizacao)
+     */
+    @JavascriptInterface
+    fun salvarConfirmationId(confirmationId: String, nsu: String, autorizacao: String) {
+        Log.i(TAG, "salvarConfirmationId: id=$confirmationId, nsu=$nsu")
+        payGoService.saveLastConfirmationId(confirmationId, nsu, autorizacao)
+        
+        returnResult(JSONObject().apply {
+            put("status", "salvo")
+            put("confirmationId", confirmationId)
+            put("mensagem", "ConfirmationId salvo para uso posterior")
+        })
+    }
+    
+    /**
+     * Limpa confirmationId após confirmação bem-sucedida
+     * Chamado do JS: TEF.limparConfirmationId()
+     */
+    @JavascriptInterface
+    fun limparConfirmationId() {
+        Log.i(TAG, "limparConfirmationId")
+        payGoService.clearLastConfirmationId()
     }
 
     // ========================================================================

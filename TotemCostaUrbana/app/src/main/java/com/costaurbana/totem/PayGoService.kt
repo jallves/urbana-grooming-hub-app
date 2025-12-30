@@ -2,6 +2,7 @@ package com.costaurbana.totem
 
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
@@ -87,6 +88,9 @@ class PayGoService(private val context: Context) {
     // Dados de transação pendente (para resolução)
     private var lastPendingData: JSONObject? = null
     
+    // SharedPreferences para persistir dados de pendência
+    private val prefs: SharedPreferences = context.getSharedPreferences("paygo_pending", Context.MODE_PRIVATE)
+    
     // Debug
     private var debugMode = true
     private val logs = mutableListOf<String>()
@@ -97,6 +101,7 @@ class PayGoService(private val context: Context) {
         addLog("Package: ${context.packageName}")
         addLog("Desenvolvedor: $POS_DEVELOPER")
         addLog("Modo: ${if (IS_HOMOLOGATION) "HOMOLOGAÇÃO" else "PRODUÇÃO"}")
+        loadPersistedPendingData() // Carregar pendências salvas
         checkPayGoInstallation()
         addLog("════════════════════════════════════════")
     }
@@ -565,6 +570,7 @@ class PayGoService(private val context: Context) {
 
     /**
      * Salva dados de transação pendente para resolução posterior
+     * PERSISTIDO em SharedPreferences para sobreviver ao reinício do app
      */
     private fun savePendingData(uri: Uri) {
         lastPendingData = JSONObject().apply {
@@ -573,8 +579,103 @@ class PayGoService(private val context: Context) {
             put("localNsu", uri.getQueryParameter("terminalNsu") ?: "")
             put("transactionNsu", uri.getQueryParameter("transactionNsu") ?: "")
             put("hostNsu", uri.getQueryParameter("transactionNsu") ?: "") // Usar mesmo NSU se hostNsu não vier
+            put("confirmationTransactionId", uri.getQueryParameter("confirmationTransactionId") ?: "")
+            put("timestamp", System.currentTimeMillis())
         }
-        addLog("[PENDING] Dados de pendência salvos: $lastPendingData")
+        
+        // Persistir em SharedPreferences
+        prefs.edit()
+            .putString("pending_data", lastPendingData.toString())
+            .putLong("pending_timestamp", System.currentTimeMillis())
+            .apply()
+        
+        addLog("[PENDING] Dados de pendência PERSISTIDOS: $lastPendingData")
+    }
+    
+    /**
+     * Salva o confirmationTransactionId da última transação aprovada
+     * para uso em confirmação/desfazimento posterior
+     */
+    fun saveLastConfirmationId(confirmationId: String, nsu: String, autorizacao: String) {
+        prefs.edit()
+            .putString("last_confirmation_id", confirmationId)
+            .putString("last_nsu", nsu)
+            .putString("last_autorizacao", autorizacao)
+            .putLong("last_transaction_timestamp", System.currentTimeMillis())
+            .apply()
+        
+        addLog("[PERSIST] ConfirmationId salvo: $confirmationId")
+        addLog("[PERSIST] NSU: $nsu, Autorização: $autorizacao")
+    }
+    
+    /**
+     * Obtém o confirmationTransactionId da última transação (se existir)
+     */
+    fun getLastConfirmationId(): String? {
+        return prefs.getString("last_confirmation_id", null)
+    }
+    
+    /**
+     * Limpa o confirmationTransactionId após confirmação bem-sucedida
+     */
+    fun clearLastConfirmationId() {
+        prefs.edit()
+            .remove("last_confirmation_id")
+            .remove("last_nsu")
+            .remove("last_autorizacao")
+            .remove("last_transaction_timestamp")
+            .apply()
+        addLog("[PERSIST] ConfirmationId limpo")
+    }
+    
+    /**
+     * Carrega dados de pendência persistidos (chamado no init)
+     */
+    private fun loadPersistedPendingData() {
+        val pendingJson = prefs.getString("pending_data", null)
+        if (pendingJson != null) {
+            try {
+                lastPendingData = JSONObject(pendingJson)
+                addLog("[PERSIST] Pendência carregada: $lastPendingData")
+            } catch (e: Exception) {
+                addLog("[PERSIST] Erro ao carregar pendência: ${e.message}")
+            }
+        }
+    }
+    
+    /**
+     * Limpa dados de pendência após resolução
+     */
+    private fun clearPersistedPendingData() {
+        lastPendingData = null
+        prefs.edit()
+            .remove("pending_data")
+            .remove("pending_timestamp")
+            .apply()
+        addLog("[PERSIST] Dados de pendência limpos")
+    }
+    
+    /**
+     * Verifica se existe pendência persistida
+     */
+    fun hasPersistedPending(): Boolean {
+        return prefs.getString("pending_data", null) != null || 
+               prefs.getString("last_confirmation_id", null) != null
+    }
+    
+    /**
+     * Obtém informações sobre pendências (para JavaScript)
+     */
+    fun getPendingInfo(): JSONObject {
+        return JSONObject().apply {
+            put("hasPendingData", lastPendingData != null)
+            put("pendingData", lastPendingData ?: JSONObject.NULL)
+            put("lastConfirmationId", prefs.getString("last_confirmation_id", null) ?: JSONObject.NULL)
+            put("lastNsu", prefs.getString("last_nsu", null) ?: JSONObject.NULL)
+            put("lastAutorizacao", prefs.getString("last_autorizacao", null) ?: JSONObject.NULL)
+            put("lastTransactionTimestamp", prefs.getLong("last_transaction_timestamp", 0))
+        }
+    }
     }
 
     // ========================================================================
@@ -631,17 +732,67 @@ class PayGoService(private val context: Context) {
     /**
      * Resolve transação pendente
      * Conforme documentação: https://github.com/adminti2/mobile-integracao-uri#343-resolução-de-pendência
+     * 
+     * ESTRATÉGIA:
+     * 1. Se temos dados de pendência completos (via pendingTransactionExists), usar URI de resolução
+     * 2. Se temos apenas confirmationTransactionId (ex: Passo 33/34), usar confirmação direta
      */
-    fun resolvePendingTransaction(callback: (JSONObject) -> Unit) {
-        addLog("[RESOLVE] Resolvendo pendência...")
+    fun resolvePendingTransaction(callback: (JSONObject) -> Unit, status: String = "DESFEITO_MANUAL") {
+        addLog("[RESOLVE] Resolvendo pendência... (status: $status)")
         
+        // ESTRATÉGIA 1: Usar dados de pendência completos (se existirem)
         val pendingData = lastPendingData
-        if (pendingData == null) {
-            addLog("[RESOLVE] ⚠️ Nenhuma pendência registrada")
-            callback(createError("NO_PENDING", "Nenhuma transação pendente para resolver"))
+        if (pendingData != null && pendingData.optString("providerName").isNotEmpty()) {
+            addLog("[RESOLVE] Usando dados de pendência completos")
+            resolvePendingWithFullData(pendingData, status, callback)
             return
         }
         
+        // ESTRATÉGIA 2: Usar confirmationTransactionId persistido (ex: Passo 33)
+        val lastConfirmId = prefs.getString("last_confirmation_id", null)
+        if (lastConfirmId != null && lastConfirmId.isNotEmpty()) {
+            addLog("[RESOLVE] Usando confirmationTransactionId persistido: $lastConfirmId")
+            sendConfirmation(lastConfirmId, status)
+            
+            // Limpar após envio
+            if (status == "DESFEITO_MANUAL") {
+                clearLastConfirmationId()
+            }
+            
+            callback(JSONObject().apply {
+                put("status", "enviado")
+                put("mensagem", "Confirmação $status enviada")
+                put("confirmationId", lastConfirmId)
+                put("metodo", "confirmation_id_persistido")
+            })
+            return
+        }
+        
+        // ESTRATÉGIA 3: Verificar se temos confirmationTransactionId nos dados de pendência
+        val confirmIdFromPending = pendingData?.optString("confirmationTransactionId")
+        if (!confirmIdFromPending.isNullOrEmpty()) {
+            addLog("[RESOLVE] Usando confirmationTransactionId da pendência: $confirmIdFromPending")
+            sendConfirmation(confirmIdFromPending, status)
+            clearPersistedPendingData()
+            
+            callback(JSONObject().apply {
+                put("status", "enviado")
+                put("mensagem", "Confirmação $status enviada")
+                put("confirmationId", confirmIdFromPending)
+                put("metodo", "confirmation_id_from_pending")
+            })
+            return
+        }
+        
+        addLog("[RESOLVE] ⚠️ Nenhuma pendência encontrada")
+        addLog("[RESOLVE] Dica: O Passo 33 deve salvar o confirmationTransactionId")
+        callback(createError("NO_PENDING", "Nenhuma transação pendente para resolver. Verifique se o Passo 33 foi executado com sucesso."))
+    }
+    
+    /**
+     * Resolve pendência usando dados completos (providerName, merchantId, etc)
+     */
+    private fun resolvePendingWithFullData(pendingData: JSONObject, status: String, callback: (JSONObject) -> Unit) {
         try {
             // Construir URI de resolução
             // Formato: app://resolve/pendingTransaction?providerName=xxx&merchantId=xxx&...
@@ -658,8 +809,8 @@ class PayGoService(private val context: Context) {
             
             addLog("[RESOLVE] URI: $resolveUri")
             
-            // URI de confirmação automática
-            val confirmacaoUri = "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO"
+            // URI de confirmação com status especificado
+            val confirmacaoUri = "app://resolve/confirmation?transactionStatus=$status"
             
             // Enviar broadcast
             val intent = Intent().apply {
@@ -670,14 +821,15 @@ class PayGoService(private val context: Context) {
             }
             
             context.sendBroadcast(intent)
-            addLog("[RESOLVE] ✅ Broadcast enviado")
+            addLog("[RESOLVE] ✅ Broadcast de resolução enviado")
             
             // Limpar dados de pendência
-            lastPendingData = null
+            clearPersistedPendingData()
             
             callback(JSONObject().apply {
                 put("status", "resolvido")
-                put("mensagem", "Resolução de pendência enviada")
+                put("mensagem", "Resolução de pendência enviada com status $status")
+                put("metodo", "full_pending_data")
             })
             
         } catch (e: Exception) {
