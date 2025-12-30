@@ -246,6 +246,10 @@ export default function TotemTEFHomologacao() {
       // - Passo 34 (R$1005,61): realizar 2ª venda e enviar DESFAZIMENTO MANUAL da pendência (Passo 33)
       const isPasso33 = valorCentavos === 100560;
       const isPasso34 = valorCentavos === 100561;
+      
+      // FALLBACK: Usar NSU como confirmationId se não vier do PayGo
+      // Isso é comum no PayGo - o NSU pode ser usado como identificador da transação
+      const confirmationId = resultado.confirmationTransactionId || resultado.nsu || '';
 
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
@@ -254,10 +258,19 @@ export default function TotemTEFHomologacao() {
         valor: resultado.valor,
         passoTeste: testePasso?.passo,
         requiresConfirmation: resultado.requiresConfirmation,
-        confirmationId: resultado.confirmationTransactionId,
+        confirmationIdOriginal: resultado.confirmationTransactionId || 'NÃO RETORNADO PELO PAYGO',
+        confirmationIdUsado: confirmationId,
         isPasso33,
         isPasso34
       });
+      
+      // AVISO se confirmationId não veio do PayGo
+      if (!resultado.confirmationTransactionId && resultado.nsu) {
+        addLog('warning', '⚠️ PayGoService.kt NÃO retornou confirmationTransactionId - usando NSU como fallback', {
+          nsu: resultado.nsu,
+          acao: 'O PayGoService.kt deve incluir confirmationTransactionId no resultado'
+        });
+      }
 
       // Mostrar modal de resultado
       setTransactionResult({
@@ -274,15 +287,24 @@ export default function TotemTEFHomologacao() {
       });
 
       // LÓGICA ESPECIAL PARA PASSOS 33 e 34:
-      if (isPasso33 && resultado.confirmationTransactionId) {
-        // Passo 33: guardar o confirmationId e NÃO confirmar (gera pendência)
-        setPasso33PendingConfirmationId(resultado.confirmationTransactionId);
-        addLog('warning', '📋 PASSO 33: Transação ficará PENDENTE (sem confirmação) para executar o Passo 34');
-        toast.warning('Passo 33: transação ficará pendente. Agora execute o Passo 34!');
+      if (isPasso33) {
+        // Passo 33: guardar o confirmationId (NSU como fallback) e NÃO confirmar (gera pendência)
+        if (confirmationId) {
+          setPasso33PendingConfirmationId(confirmationId);
+          addLog('warning', '📋 PASSO 33: Transação ficará PENDENTE (sem confirmação) para executar o Passo 34', {
+            confirmationIdArmazenado: confirmationId
+          });
+          toast.warning('Passo 33: transação ficará pendente. Agora execute o Passo 34!');
+        } else {
+          addLog('error', '❌ PASSO 33: Não foi possível armazenar confirmationId - PayGo não retornou NSU nem confirmationTransactionId');
+          toast.error('Passo 33: Erro - Sem ID para confirmar. Verifique PayGoService.kt');
+        }
       } else if (isPasso34) {
         // Passo 34: primeiro, resolver a pendência do Passo 33 com DESFAZIMENTO MANUAL
         if (passo33PendingConfirmationId) {
-          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL da pendência (Passo 33)...');
+          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL da pendência (Passo 33)...', {
+            confirmationId: passo33PendingConfirmationId
+          });
           const undone = confirmarTransacaoTEF(passo33PendingConfirmationId, 'DESFEITO_MANUAL');
           addLog('warning', undone ? '✅ Pendência (Passo 33): DESFAZIMENTO MANUAL enviado' : '❌ Falha ao desfazer pendência (Passo 33)');
           setPasso33PendingConfirmationId(null);
@@ -291,25 +313,25 @@ export default function TotemTEFHomologacao() {
         }
 
         // Depois, confirmar a própria transação do Passo 34 (para não bloquear próximas operações)
-        if (resultado.confirmationTransactionId) {
+        if (confirmationId) {
           addLog('info', '📋 PASSO 34: Confirmando a 2ª venda para finalizar o fluxo...');
-          const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_MANUAL');
+          const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_MANUAL');
           addLog('info', confirmed ? '✅ Passo 34: Confirmação enviada' : '❌ Erro na confirmação do Passo 34');
         }
 
         toast.info('Passo 34: pendência desfeita e venda finalizada. Teste deve liberar novas operações.');
-      } else if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
+      } else if (resultado.requiresConfirmation && confirmationId) {
         // Outros casos que requerem confirmação manual
         setPendingConfirmation({
-          confirmationId: resultado.confirmationTransactionId,
+          confirmationId: confirmationId,
           nsu: resultado.nsu || '',
           autorizacao: resultado.autorizacao || ''
         });
         addLog('warning', '⚠️ Transação aguardando confirmação manual');
       } else {
         // Confirmação automática para demais transações
-        if (resultado.confirmationTransactionId) {
-          const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
+        if (confirmationId) {
+          const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_AUTOMATICO');
           addLog('info', confirmed ? '✅ Confirmação automática enviada' : '❌ Erro na confirmação automática');
         }
       }
