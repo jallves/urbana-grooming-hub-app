@@ -210,7 +210,22 @@ export default function TotemTEFHomologacao() {
     passoTeste?: string;
   } | null>(null);
 
-  const { 
+  // Adicionar log com data - DEFINIDO ANTES do useTEFAndroid para estar disponível nos callbacks
+  const addLog = useCallback((type: TransactionLog['type'], message: string, data?: Record<string, unknown>) => {
+    const now = new Date();
+    const log: TransactionLog = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: now.toISOString(),
+      date: now.toISOString().split('T')[0],
+      type,
+      message,
+      data
+    };
+    setTransactionLogs(prev => [...prev, log]);
+    console.log('[PDV LOG]', type, message, data);
+  }, []);
+
+  const {
     isAndroidAvailable, 
     isPinpadConnected, 
     pinpadStatus,
@@ -435,20 +450,6 @@ export default function TotemTEFHomologacao() {
       refreshAndroidLogs();
     }
   });
-
-  // Adicionar log com data
-  const addLog = useCallback((type: TransactionLog['type'], message: string, data?: Record<string, unknown>) => {
-    const now = new Date();
-    const log: TransactionLog = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      timestamp: now.toISOString(),
-      date: now.toISOString().split('T')[0],
-      type,
-      message,
-      data
-    };
-    setTransactionLogs(prev => [...prev, log]);
-  }, []);
 
   // Função para resolver pendência - PASSO 34: DESFAZER
   const handleResolverPendenciaDesfazer = useCallback(async () => {
