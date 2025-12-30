@@ -750,26 +750,26 @@ Deno.serve(async (req) => {
           console.log('✅ Gorjeta registrada em barber_commissions:', tipCommission.id, 'Valor:', tip_amount)
         }
         
-        // 2. 🔒 CORREÇÃO: Criar também registro em financial_records para a gorjeta
-        // Isso garante que a gorjeta apareça nos relatórios administrativos
+        // 2. Criar registro de RECEITA em financial_records para a gorjeta
         const { data: tipTransactionNumber } = await supabase
           .rpc('generate_transaction_number')
         
         if (tipTransactionNumber) {
-          const { data: tipRecord, error: tipRecordError } = await supabase
+          // 2a. Criar RECEITA da gorjeta (entrada de dinheiro)
+          const { data: tipRevenueRecord, error: tipRevenueError } = await supabase
             .from('financial_records')
             .insert({
               transaction_number: `TIP-${tipTransactionNumber}`,
               transaction_type: 'revenue',
               category: 'tips',
-              subcategory: 'tip',
+              subcategory: 'tip_received',
               gross_amount: tip_amount,
               discount_amount: 0,
               tax_amount: 0,
               net_amount: tip_amount,
               status: 'completed',
-              description: 'Gorjeta',
-              notes: 'Gorjeta recebida via Totem',
+              description: 'Gorjeta recebida',
+              notes: 'Gorjeta recebida via Totem - 100% destinada ao barbeiro',
               transaction_date: transactionDate,
               completed_at: transactionDateTime,
               appointment_id,
@@ -778,18 +778,19 @@ Deno.serve(async (req) => {
               metadata: {
                 source: 'totem_tip',
                 payment_method: payment_method,
-                payment_time: transactionDateTime
+                payment_time: transactionDateTime,
+                tip_destination: 'barber'
               }
             })
             .select()
             .single()
           
-          if (tipRecordError) {
-            console.error('❌ Erro ao criar financial_record para gorjeta:', tipRecordError)
+          if (tipRevenueError) {
+            console.error('❌ Erro ao criar receita de gorjeta:', tipRevenueError)
           } else {
-            console.log('✅ Gorjeta registrada em financial_records:', tipRecord.id, 'Valor:', tip_amount)
+            console.log('✅ Receita de gorjeta registrada:', tipRevenueRecord.id, 'Valor:', tip_amount)
             
-            // 3. Criar registro de pagamento para a gorjeta
+            // 2b. Criar registro de pagamento para a receita
             const { data: tipPaymentNumber } = await supabase
               .rpc('generate_payment_number')
             
@@ -798,7 +799,7 @@ Deno.serve(async (req) => {
                 .from('payment_records')
                 .insert({
                   payment_number: tipPaymentNumber,
-                  financial_record_id: tipRecord.id,
+                  financial_record_id: tipRevenueRecord.id,
                   payment_method,
                   amount: tip_amount,
                   status: 'paid',
@@ -806,7 +807,7 @@ Deno.serve(async (req) => {
                   confirmed_at: transactionDateTime,
                   metadata: {
                     payment_datetime: transactionDateTime,
-                    type: 'tip'
+                    type: 'tip_revenue'
                   }
                 })
               
@@ -814,11 +815,60 @@ Deno.serve(async (req) => {
             }
             
             createdRecords.push({
-              type: 'tip',
-              name: 'Gorjeta',
-              revenue_id: tipRecord.id,
+              type: 'tip_revenue',
+              name: 'Gorjeta (Receita)',
+              revenue_id: tipRevenueRecord.id,
               amount: tip_amount
             })
+          }
+          
+          // 3. 🔒 CORREÇÃO CRÍTICA: Criar CONTAS A PAGAR para a gorjeta do barbeiro
+          // Isso garante que a gorjeta apareça no contas a pagar separadamente
+          const { data: tipExpenseTransactionNumber } = await supabase
+            .rpc('generate_transaction_number')
+          
+          if (tipExpenseTransactionNumber) {
+            const { data: tipExpenseRecord, error: tipExpenseError } = await supabase
+              .from('financial_records')
+              .insert({
+                transaction_number: `TIP-EXP-${tipExpenseTransactionNumber}`,
+                transaction_type: 'commission',
+                category: 'tips',
+                subcategory: 'tip_payable',
+                gross_amount: tip_amount,
+                discount_amount: 0,
+                tax_amount: 0,
+                net_amount: tip_amount,
+                status: 'pending', // Pendente de pagamento ao barbeiro
+                description: 'Gorjeta a pagar ao barbeiro',
+                notes: 'Gorjeta 100% - Contas a Pagar',
+                transaction_date: transactionDate,
+                due_date: transactionDate, // Vencimento no mesmo dia
+                appointment_id,
+                client_id,
+                barber_id,
+                metadata: {
+                  source: 'totem_tip',
+                  commission_rate: 100,
+                  source_type: 'tip',
+                  tip_revenue_record_id: tipRevenueRecord?.id
+                }
+              })
+              .select()
+              .single()
+            
+            if (tipExpenseError) {
+              console.error('❌ Erro ao criar contas a pagar de gorjeta:', tipExpenseError)
+            } else {
+              console.log('✅ Contas a pagar de gorjeta registrada:', tipExpenseRecord.id, 'Valor:', tip_amount)
+              
+              createdRecords.push({
+                type: 'tip_payable',
+                name: 'Gorjeta (Contas a Pagar)',
+                expense_id: tipExpenseRecord.id,
+                amount: tip_amount
+              })
+            }
           }
         }
       } else {
