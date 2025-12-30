@@ -1521,25 +1521,31 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                         onPointerDown={() => {
                           // Passo 54 é cancelamento - abre aba de cancelamento e busca transação do Passo 53
                           if (test.passo === '54') {
-                            // Buscar transação do Passo 53 (PIX R$500 aprovada)
-                            const passo53Transaction = transactionLogs.find(
-                              log => log.data?.passoTeste === '53' && log.type === 'success' && log.data?.valor === 500
+                            // Buscar transação do Passo 53 (PIX R$500 aprovada) na lista de canceláveis
+                            const passo53FromCancellable = cancellableTransactions.find(
+                              tx => tx.passoTeste === '53' || tx.valor === 50000 || tx.valor === 500
                             );
                             
-                            if (passo53Transaction && passo53Transaction.data?.nsu && passo53Transaction.data?.autorizacao) {
+                            if (passo53FromCancellable) {
                               // Pré-seleciona a transação do Passo 53 para cancelamento
                               setSelectedCancelTransaction({
-                                nsu: String(passo53Transaction.data.nsu),
-                                autorizacao: String(passo53Transaction.data.autorizacao),
-                                valor: Number(passo53Transaction.data.valor) * 100 || 50000,
-                                bandeira: passo53Transaction.data.bandeira ? String(passo53Transaction.data.bandeira) : undefined,
+                                nsu: passo53FromCancellable.nsu,
+                                autorizacao: passo53FromCancellable.autorizacao,
+                                valor: passo53FromCancellable.valor,
+                                bandeira: passo53FromCancellable.bandeira,
                                 passoTeste: '53'
                               });
                               // Ativa modo de cancelamento
                               setShowCancelMode(true);
-                              toast.info('Transação do Passo 53 selecionada para cancelamento');
+                              toast.info('Transação do Passo 53 selecionada para cancelamento (Passo 54)');
                             } else {
-                              toast.error('Execute o Passo 53 (PIX R$500) primeiro antes de cancelar');
+                              // Verificar se existe alguma transação disponível
+                              if (cancellableTransactions.length > 0) {
+                                setShowCancelMode(true);
+                                toast.warning('Passo 53 não encontrado. Selecione manualmente a transação PIX R$500.');
+                              } else {
+                                toast.error('Execute o Passo 53 (PIX R$500) primeiro antes de cancelar');
+                              }
                             }
                             return;
                           }
