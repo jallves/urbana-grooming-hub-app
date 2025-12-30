@@ -1519,6 +1519,31 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                         size="sm"
                         variant="outline"
                         onPointerDown={() => {
+                          // Passo 54 é cancelamento - abre aba de cancelamento e busca transação do Passo 53
+                          if (test.passo === '54') {
+                            // Buscar transação do Passo 53 (PIX R$500 aprovada)
+                            const passo53Transaction = transactionLogs.find(
+                              log => log.data?.passoTeste === '53' && log.type === 'success' && log.data?.valor === 500
+                            );
+                            
+                            if (passo53Transaction && passo53Transaction.data?.nsu && passo53Transaction.data?.autorizacao) {
+                              // Pré-seleciona a transação do Passo 53 para cancelamento
+                              setSelectedCancelTransaction({
+                                nsu: String(passo53Transaction.data.nsu),
+                                autorizacao: String(passo53Transaction.data.autorizacao),
+                                valor: Number(passo53Transaction.data.valor) * 100 || 50000,
+                                bandeira: passo53Transaction.data.bandeira ? String(passo53Transaction.data.bandeira) : undefined,
+                                passoTeste: '53'
+                              });
+                              // Ativa modo de cancelamento
+                              setShowCancelMode(true);
+                              toast.info('Transação do Passo 53 selecionada para cancelamento');
+                            } else {
+                              toast.error('Execute o Passo 53 (PIX R$500) primeiro antes de cancelar');
+                            }
+                            return;
+                          }
+                          
                           // Configura valor
                           setAmount(test.valor.toString());
                           // Configura método de pagamento
@@ -1542,18 +1567,23 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                           });
                         }}
                         className={`h-auto py-1.5 px-2 text-left border-orange-500/20 hover:bg-transparent flex flex-col items-start ${
+                          test.passo === '54' ? 'text-red-300 border-red-500/30' :
                           test.metodo === 'pix' ? 'text-cyan-300' : 
                           test.metodo === 'debito' ? 'text-green-300' : 'text-orange-300'
                         }`}
                       >
                         <div className="flex items-center gap-1 w-full">
                           <span className="text-[9px] font-bold">P{test.passo}</span>
-                          <span className={`text-[7px] px-1 rounded ${
-                            test.metodo === 'pix' ? 'bg-cyan-500/20' : 
-                            test.metodo === 'debito' ? 'bg-green-500/20' : 'bg-orange-500/20'
-                          }`}>
-                            {test.metodo === 'pix' ? 'PIX' : test.metodo === 'debito' ? 'DEB' : 'CRE'}
-                          </span>
+                          {test.passo === '54' ? (
+                            <XCircle className="h-3 w-3 text-red-400" />
+                          ) : (
+                            <span className={`text-[7px] px-1 rounded ${
+                              test.metodo === 'pix' ? 'bg-cyan-500/20' : 
+                              test.metodo === 'debito' ? 'bg-green-500/20' : 'bg-orange-500/20'
+                            }`}>
+                              {test.metodo === 'pix' ? 'PIX' : test.metodo === 'debito' ? 'DEB' : 'CRE'}
+                            </span>
+                          )}
                         </div>
                         <span className="text-[8px] text-urbana-light/70 truncate w-full">{test.desc}</span>
                       </Button>
