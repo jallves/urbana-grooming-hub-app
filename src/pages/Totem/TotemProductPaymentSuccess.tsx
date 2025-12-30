@@ -146,7 +146,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
             Obrigado, {client?.nome?.split(' ')[0]}!
           </p>
 
-          <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 space-y-2">
+          <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-4 space-y-2 max-h-[40vh] overflow-y-auto">
             <div className="flex justify-between text-sm">
               <span className="text-urbana-light/60">Data:</span>
               <span className="text-urbana-light">{format(new Date(), "dd/MM/yyyy HH:mm")}</span>
@@ -156,6 +156,23 @@ const TotemProductPaymentSuccess: React.FC = () => {
               <div className="flex justify-between text-sm">
                 <span className="text-urbana-light/60">NSU:</span>
                 <span className="text-urbana-light">{transactionData.nsu}</span>
+              </div>
+            )}
+            
+            {/* Lista detalhada de produtos */}
+            {sale?.items && sale.items.length > 0 && (
+              <div className="py-2 border-t border-b border-urbana-gold/20 space-y-1">
+                <p className="text-xs text-urbana-light/60 mb-1">Produtos:</p>
+                {sale.items.map((item: any, idx: number) => (
+                  <div key={idx} className="flex justify-between text-xs">
+                    <span className="text-urbana-light truncate max-w-[60%]">
+                      {item.quantidade || 1}x {item.nome}
+                    </span>
+                    <span className="text-urbana-gold font-medium">
+                      R$ {Number(item.total || (item.preco_unit * (item.quantidade || 1))).toFixed(2)}
+                    </span>
+                  </div>
+                ))}
               </div>
             )}
             

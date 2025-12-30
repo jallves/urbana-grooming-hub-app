@@ -243,8 +243,8 @@ const TotemPaymentSuccess: React.FC = () => {
           )}
         </div>
 
-        {/* Receipt - Compacto */}
-        <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 space-y-2">
+        {/* Receipt - Detalhado */}
+        <div className="bg-urbana-black/40 backdrop-blur-sm border-2 border-urbana-gold/30 rounded-xl p-3 sm:p-4 space-y-2 max-h-[40vh] overflow-y-auto">
           <div className="flex items-center justify-center gap-2 text-sm font-bold text-urbana-gold border-b border-urbana-gold/30 pb-2">
             <Receipt className="w-4 h-4" />
             RECIBO
@@ -256,17 +256,54 @@ const TotemPaymentSuccess: React.FC = () => {
               <span className="text-urbana-light">{format(new Date(), "dd/MM/yyyy HH:mm")}</span>
             </div>
             
-            {appointment?.servico?.nome && (
-              <div className="flex justify-between">
-                <span className="text-urbana-light/60">Serviço:</span>
-                <span className="text-urbana-light">{appointment.servico.nome}</span>
-              </div>
-            )}
+            {/* Lista detalhada de itens */}
+            <div className="py-2 border-t border-b border-urbana-gold/20 space-y-1">
+              <p className="text-xs text-urbana-light/60 mb-1">Itens:</p>
+              
+              {/* Serviço principal */}
+              {(resumo?.original_service || appointment?.servico) && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-urbana-light truncate max-w-[60%]">
+                    {resumo?.original_service?.nome || appointment?.servico?.nome}
+                  </span>
+                  <span className="text-urbana-gold font-medium">
+                    R$ {(resumo?.original_service?.preco || appointment?.servico?.preco || 0).toFixed(2)}
+                  </span>
+                </div>
+              )}
+              
+              {/* Serviços extras */}
+              {(resumo?.extra_services || extraServices)?.map((service: { nome: string; preco: number }, idx: number) => (
+                <div key={`extra-${idx}`} className="flex justify-between text-xs">
+                  <span className="text-urbana-light truncate max-w-[60%]">+ {service.nome}</span>
+                  <span className="text-urbana-gold font-medium">R$ {service.preco.toFixed(2)}</span>
+                </div>
+              ))}
+              
+              {/* Produtos */}
+              {selectedProducts?.map((product: SelectedProduct, idx: number) => (
+                <div key={`product-${idx}`} className="flex justify-between text-xs">
+                  <span className="text-urbana-light truncate max-w-[60%]">
+                    {product.quantidade}x {product.nome}
+                  </span>
+                  <span className="text-urbana-gold font-medium">
+                    R$ {(product.preco * product.quantidade).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
             
             <div className="flex justify-between">
               <span className="text-urbana-light/60">Pagamento:</span>
               <span className="text-urbana-light">{getPaymentMethodText()}</span>
             </div>
+
+            {transactionData?.nsu && (
+              <div className="flex justify-between">
+                <span className="text-urbana-light/60">NSU:</span>
+                <span className="text-urbana-light">{transactionData.nsu}</span>
+              </div>
+            )}
 
             <div className="flex justify-between pt-2 border-t border-urbana-gold/30">
               <span className="text-lg font-bold text-urbana-light">TOTAL:</span>
