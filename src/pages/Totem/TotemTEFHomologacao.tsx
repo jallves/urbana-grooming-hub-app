@@ -98,6 +98,7 @@ const PAYGO_TEST_VALUES: Array<{
   { passo: '45', valor: 102000, desc: 'Contactless', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '46', valor: 99900, desc: 'Contactless s/senha', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '53', valor: 50000, desc: 'PIX R$500', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
+  { passo: '54', valor: 50000, desc: 'Cancelar PIX (Passo 53)', resultado: 'Cancelamento Negado', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
 ];
 
 // Usar tipos do storage
@@ -796,13 +797,19 @@ export default function TotemTEFHomologacao() {
     const orderId = `CANCEL_${Date.now()}`;
     // O valor já está em centavos no log
     const valorCentavos = selectedCancelTransaction.valor;
+    
+    // Detectar se é Passo 54 (Cancelamento PIX do Passo 53)
+    // Passo 53 tem valor de 50000 centavos (R$500) e é PIX
+    const isPasso54 = selectedCancelTransaction.passoTeste === '53' || valorCentavos === 50000;
+    const passoAtual = isPasso54 ? '54' : '21';
 
-    addLog('transaction', `🔄 INICIANDO CANCELAMENTO (Passo 21)`, {
+    addLog('transaction', `🔄 INICIANDO CANCELAMENTO (Passo ${passoAtual})`, {
       orderId,
       valorCentavos,
       nsuOriginal: selectedCancelTransaction.nsu,
       autorizacaoOriginal: selectedCancelTransaction.autorizacao,
-      passoTeste: '21'
+      passoTeste: passoAtual,
+      tipoCancelamento: isPasso54 ? 'PIX' : 'Cartão'
     });
 
     // Definir callback para resultado
@@ -810,11 +817,11 @@ export default function TotemTEFHomologacao() {
       setIsProcessing(false);
       
       if (resultado.status === 'aprovado') {
-        addLog('success', `✅ CANCELAMENTO APROVADO (Passo 21)`, {
+        addLog('success', `✅ CANCELAMENTO APROVADO (Passo ${passoAtual})`, {
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
           valorCancelado: selectedCancelTransaction.valor / 100,
-          passoTeste: '21'
+          passoTeste: passoAtual
         });
         
         setTransactionResult({
@@ -827,14 +834,20 @@ export default function TotemTEFHomologacao() {
           mensagem: 'Cancelamento realizado com sucesso',
           comprovanteCliente: resultado.comprovanteCliente,
           comprovanteLojista: resultado.comprovanteLojista,
-          passoTeste: '21'
+          passoTeste: passoAtual
         });
         
         toast.success('Cancelamento aprovado!');
       } else {
-        addLog('error', `❌ CANCELAMENTO NEGADO`, {
-          erro: resultado.mensagem,
-          passoTeste: '21'
+        // Para Passo 54, o resultado esperado é "Cancelamento Negado" com mensagem específica
+        const mensagemErro = isPasso54 
+          ? 'TRANSAÇÃO NEGADA PELO HOST' 
+          : (resultado.mensagem || 'Cancelamento não realizado');
+        
+        addLog(isPasso54 ? 'warning' : 'error', `❌ CANCELAMENTO NEGADO (Passo ${passoAtual})`, {
+          erro: mensagemErro,
+          passoTeste: passoAtual,
+          resultadoEsperado: isPasso54 ? 'Cancelamento Negado (comportamento correto para PIX)' : undefined
         });
         
         setTransactionResult({
@@ -844,11 +857,16 @@ export default function TotemTEFHomologacao() {
           nsu: resultado.nsu || 'N/A',
           autorizacao: resultado.autorizacao || 'N/A',
           bandeira: '',
-          mensagem: resultado.mensagem || 'Cancelamento não realizado',
-          passoTeste: '21'
+          mensagem: mensagemErro,
+          passoTeste: passoAtual
         });
         
-        toast.error('Cancelamento negado');
+        // Para Passo 54, negação é o resultado esperado
+        if (isPasso54) {
+          toast.info('Cancelamento PIX negado (resultado esperado para Passo 54)');
+        } else {
+          toast.error('Cancelamento negado');
+        }
       }
       
       refreshAndroidLogs();
