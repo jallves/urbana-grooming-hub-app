@@ -33,7 +33,10 @@ import {
   Printer,
   Receipt,
   Database,
-  RotateCcw
+  RotateCcw,
+  AlertTriangle,
+  Undo2,
+  CheckSquare
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -144,7 +147,8 @@ export default function TotemTEFHomologacao() {
     return storage.androidLogs;
   });
   const [autoRefreshLogs, setAutoRefreshLogs] = useState(true);
-  const [activeTab, setActiveTab] = useState<'pdv' | 'logs'>('pdv');
+  const [activeTab, setActiveTab] = useState<'pdv' | 'logs' | 'pendencias'>('pdv');
+  const [resolvingPending, setResolvingPending] = useState(false);
   const [selectedDate, setSelectedDate] = useState<string>(getTodayInBrazil());
   const [storageStats, setStorageStats] = useState(() => getStorageStats());
   const transactionLogsEndRef = useRef<HTMLDivElement>(null);
@@ -175,12 +179,13 @@ export default function TotemTEFHomologacao() {
 
   // Permite abrir direto na aba Logs quando vier do Diagnóstico
   useEffect(() => {
-    const state = location.state as { tab?: 'pdv' | 'logs' } | null;
+    const state = location.state as { tab?: 'pdv' | 'logs' | 'pendencias' } | null;
     if (state?.tab) {
       setActiveTab(state.tab);
       window.history.replaceState({}, document.title);
     }
   }, [location.state]);
+
   // Dados da última transação para confirmação manual
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     confirmationId: string;
@@ -397,6 +402,108 @@ export default function TotemTEFHomologacao() {
     };
     setTransactionLogs(prev => [...prev, log]);
   }, []);
+
+  // Função para resolver pendência - PASSO 34: DESFAZER
+  const handleResolverPendenciaDesfazer = useCallback(async () => {
+    console.log('[PDV] Iniciando DESFAZIMENTO de pendência (Passo 34)');
+    setResolvingPending(true);
+    
+    try {
+      if (!isAndroidAvailable) {
+        toast.error('TEF Android não disponível');
+        return;
+      }
+
+      // Se temos o confirmationId do passo 33, usar confirmarTransacaoTEF
+      if (passo33PendingConfirmationId) {
+        console.log('[PDV] Usando confirmarTransacaoTEF com ID:', passo33PendingConfirmationId);
+        const success = confirmarTransacaoTEF(passo33PendingConfirmationId, 'DESFEITO_MANUAL');
+        
+        if (success) {
+          toast.success('✅ DESFEITO_MANUAL enviado!', {
+            description: 'Passo 34 concluído - Pendência resolvida',
+            duration: 5000
+          });
+          setPasso33PendingConfirmationId(null);
+          
+          // Adicionar log
+          addLog('warning', '[PASSO 34] DESFEITO_MANUAL enviado com sucesso', { 
+            confirmationId: passo33PendingConfirmationId, 
+            action: 'DESFEITO_MANUAL' 
+          });
+        } else {
+          toast.error('Erro ao enviar DESFEITO_MANUAL');
+        }
+      } else {
+        // Usar resolverPendenciaAndroid como fallback
+        console.log('[PDV] Usando resolverPendenciaAndroid (desfazer)');
+        const success = resolverPendenciaAndroid('desfazer');
+        
+        if (success) {
+          toast.success('✅ Resolução de pendência (DESFAZER) enviada!', {
+            description: 'Aguardando resposta do PayGo...',
+            duration: 5000
+          });
+          addLog('warning', 'Resolução de pendência (DESFAZER) enviada via PayGo');
+        } else {
+          toast.error('Erro ao resolver pendência');
+        }
+      }
+    } catch (error) {
+      console.error('[PDV] Erro ao resolver pendência:', error);
+      toast.error('Erro ao resolver pendência');
+    } finally {
+      setResolvingPending(false);
+    }
+  }, [isAndroidAvailable, passo33PendingConfirmationId, addLog]);
+
+  // Função para resolver pendência - CONFIRMAR
+  const handleResolverPendenciaConfirmar = useCallback(async () => {
+    console.log('[PDV] Iniciando CONFIRMAÇÃO de pendência');
+    setResolvingPending(true);
+    
+    try {
+      if (!isAndroidAvailable) {
+        toast.error('TEF Android não disponível');
+        return;
+      }
+
+      if (passo33PendingConfirmationId) {
+        console.log('[PDV] Usando confirmarTransacaoTEF com ID:', passo33PendingConfirmationId);
+        const success = confirmarTransacaoTEF(passo33PendingConfirmationId, 'CONFIRMADO_MANUAL');
+        
+        if (success) {
+          toast.success('✅ CONFIRMADO_MANUAL enviado!', {
+            description: 'Pendência confirmada com sucesso',
+            duration: 5000
+          });
+          setPasso33PendingConfirmationId(null);
+          addLog('success', 'CONFIRMADO_MANUAL enviado com sucesso', { 
+            confirmationId: passo33PendingConfirmationId, 
+            action: 'CONFIRMADO_MANUAL' 
+          });
+        } else {
+          toast.error('Erro ao enviar CONFIRMADO_MANUAL');
+        }
+      } else {
+        const success = resolverPendenciaAndroid('confirmar');
+        
+        if (success) {
+          toast.success('✅ Resolução de pendência (CONFIRMAR) enviada!', {
+            duration: 5000
+          });
+          addLog('success', 'Resolução de pendência (CONFIRMAR) enviada via PayGo');
+        } else {
+          toast.error('Erro ao resolver pendência');
+        }
+      }
+    } catch (error) {
+      console.error('[PDV] Erro ao confirmar pendência:', error);
+      toast.error('Erro ao confirmar pendência');
+    } finally {
+      setResolvingPending(false);
+    }
+  }, [isAndroidAvailable, passo33PendingConfirmationId, addLog]);
 
   // Auto-scroll
   useEffect(() => {
@@ -1408,37 +1515,184 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
 
       {/* Tabs para Mobile/Tablet */}
       <div className="flex-shrink-0 px-2 md:px-4 pt-2">
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <Button
             variant={activeTab === 'pdv' ? 'default' : 'outline'}
             onPointerDown={() => setActiveTab('pdv')}
-            className={`flex-1 h-10 ${activeTab === 'pdv' 
+            className={`h-10 ${activeTab === 'pdv' 
               ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
               : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            <DollarSign className="h-4 w-4 mr-1.5" />
+            <DollarSign className="h-4 w-4 mr-1" />
             PDV
+          </Button>
+          <Button
+            variant={activeTab === 'pendencias' ? 'default' : 'outline'}
+            onPointerDown={() => setActiveTab('pendencias')}
+            className={`h-10 ${activeTab === 'pendencias' 
+              ? 'bg-yellow-500 text-black hover:bg-yellow-500/90' 
+              : 'border-yellow-500/30 text-yellow-500 hover:bg-yellow-500/10'}`}
+          >
+            <AlertTriangle className="h-4 w-4 mr-1" />
+            33/34
+            {passo33PendingConfirmationId && (
+              <Badge className="ml-1 bg-red-500 text-white text-[9px] px-1 animate-pulse">
+                !
+              </Badge>
+            )}
           </Button>
           <Button
             variant={activeTab === 'logs' ? 'default' : 'outline'}
             onPointerDown={() => setActiveTab('logs')}
-            className={`flex-1 h-10 ${activeTab === 'logs' 
+            className={`h-10 ${activeTab === 'logs' 
               ? 'bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90' 
               : 'border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10'}`}
           >
-            <FileText className="h-4 w-4 mr-1.5" />
+            <FileText className="h-4 w-4 mr-1" />
             Logs
-            {transactionLogs.length > 0 && (
-              <Badge className="ml-1.5 bg-urbana-black text-urbana-gold text-xs px-1.5">
-                {transactionLogs.length}
-              </Badge>
-            )}
           </Button>
         </div>
       </div>
 
       {/* Conteúdo Principal */}
       <div className="flex-1 overflow-hidden p-2">
+        {/* Aba Pendências - Passos 33/34 */}
+        {activeTab === 'pendencias' && (
+          <div className="h-full flex flex-col gap-3">
+            {/* Instruções */}
+            <Card className="bg-yellow-900/20 border-yellow-500/30">
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-sm text-yellow-400 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4" />
+                  Passos 33 e 34 - Transação Pendente
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3 text-xs text-yellow-200/80 space-y-2">
+                <p><strong>Passo 33:</strong> Execute venda de R$ 1.005,60 e <strong>NÃO confirme</strong> - deixe pendente.</p>
+                <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61. Após aprovação, clique em <strong>"DESFAZER Pendência"</strong> abaixo para enviar DESFEITO_MANUAL.</p>
+              </CardContent>
+            </Card>
+
+            {/* Status da Pendência */}
+            <Card className={`border-2 ${passo33PendingConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
+              <CardContent className="p-4 text-center">
+                {passo33PendingConfirmationId ? (
+                  <>
+                    <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-2 animate-pulse" />
+                    <p className="text-red-400 font-bold text-lg">PENDÊNCIA DETECTADA</p>
+                    <p className="text-red-300/70 text-xs mt-1 font-mono break-all">
+                      ID: {passo33PendingConfirmationId}
+                    </p>
+                    <p className="text-yellow-400 text-sm mt-2">
+                      Envie DESFEITO_MANUAL para resolver (Passo 34)
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
+                    <p className="text-green-400 font-bold text-lg">SEM PENDÊNCIAS</p>
+                    <p className="text-green-300/70 text-sm mt-1">
+                      Execute o Passo 33 (R$ 1.005,60) para criar uma pendência
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Botões de Ação */}
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                onPointerDown={handleResolverPendenciaDesfazer}
+                disabled={resolvingPending || !isAndroidAvailable}
+                className="h-16 bg-red-600 hover:bg-red-700 text-white flex flex-col gap-1"
+              >
+                {resolvingPending ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <Undo2 className="h-6 w-6" />
+                )}
+                <span className="text-xs font-bold">DESFAZER</span>
+                <span className="text-[9px] opacity-70">DESFEITO_MANUAL</span>
+              </Button>
+              
+              <Button
+                onPointerDown={handleResolverPendenciaConfirmar}
+                disabled={resolvingPending || !isAndroidAvailable}
+                className="h-16 bg-green-600 hover:bg-green-700 text-white flex flex-col gap-1"
+              >
+                {resolvingPending ? (
+                  <Loader2 className="h-6 w-6 animate-spin" />
+                ) : (
+                  <CheckSquare className="h-6 w-6" />
+                )}
+                <span className="text-xs font-bold">CONFIRMAR</span>
+                <span className="text-[9px] opacity-70">CONFIRMADO_MANUAL</span>
+              </Button>
+            </div>
+
+            {/* Resolver Pendência PayGo (fallback) */}
+            <Card className="bg-blue-900/20 border-blue-500/30">
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs text-blue-400">
+                  Resolver via PayGo (alternativo)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={() => {
+                      if (resolverPendenciaAndroid('desfazer')) {
+                        toast.success('DESFAZER enviado via PayGo');
+                      }
+                    }}
+                    disabled={!isAndroidAvailable}
+                    className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                  >
+                    <Undo2 className="h-3 w-3 mr-1" />
+                    PayGo Desfazer
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onPointerDown={() => {
+                      if (resolverPendenciaAndroid('confirmar')) {
+                        toast.success('CONFIRMAR enviado via PayGo');
+                      }
+                    }}
+                    disabled={!isAndroidAvailable}
+                    className="border-green-500/50 text-green-400 hover:bg-green-500/10"
+                  >
+                    <CheckSquare className="h-3 w-3 mr-1" />
+                    PayGo Confirmar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Info TEF */}
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 mt-auto">
+              <CardContent className="p-2">
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 bg-urbana-black/50 rounded text-center">
+                    <p className="text-[9px] text-urbana-light/50 uppercase">TEF Android</p>
+                    <p className={`text-sm font-bold ${isAndroidAvailable ? 'text-green-400' : 'text-red-400'}`}>
+                      {isAndroidAvailable ? '✓ Disponível' : '✗ Indisponível'}
+                    </p>
+                  </div>
+                  <div className="p-2 bg-urbana-black/50 rounded text-center">
+                    <p className="text-[9px] text-urbana-light/50 uppercase">Pinpad</p>
+                    <p className={`text-sm font-bold ${isPinpadConnected ? 'text-green-400' : 'text-yellow-400'}`}>
+                      {isPinpadConnected ? '✓ Conectado' : '⚠ Desconectado'}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* PDV Tab */}
         {activeTab === 'pdv' && (
           <div className="h-full flex flex-col gap-2">
