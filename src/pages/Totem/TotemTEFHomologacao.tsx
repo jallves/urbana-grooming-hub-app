@@ -301,13 +301,16 @@ export default function TotemTEFHomologacao() {
       
       refreshAndroidLogs();
     },
-    onError: (erro) => {
+    onError: (erro, resultadoCompleto) => {
       setIsProcessing(false);
       
       const valorCentavos = parseInt(amount, 10);
       const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
       const resultadoEsperado = testePasso?.resultado || 'N/A';
       const timestamp = new Date().toISOString();
+      
+      // PASSO 34: Verificar se é a transação de R$ 1.005,61 que deve ser negada
+      const isPasso34 = valorCentavos === 100561;
       
       // Detectar se é cancelamento (rede não informada, operação cancelada, etc.)
       const erroLower = erro.toLowerCase();
@@ -346,8 +349,50 @@ export default function TotemTEFHomologacao() {
           valor: valorCentavos / 100,
           motivoNegacao: erro,
           timestamp,
-          observacao: 'Transação negada pelo autorizador - não gera NSU ou código de autorização'
+          observacao: 'Transação negada pelo autorizador - não gera NSU ou código de autorização',
+          isPasso34,
+          resultadoCompleto
         });
+        
+        // PASSO 34: Se for R$ 1.005,61 e foi negado, enviar DESFAZIMENTO AUTOMATICAMENTE
+        if (isPasso34) {
+          addLog('warning', '🔄 [PASSO 34] Transação negada - Enviando DESFEITO_MANUAL automaticamente...');
+          
+          // Tentar obter dados da pendência do resultado ou usar fallback
+          const pendingId = resultadoCompleto?.confirmationTransactionId || 
+                           passo33PendingConfirmationId;
+          
+          if (pendingId) {
+            // Enviar desfazimento com o ID da pendência
+            const success = confirmarTransacaoTEF(pendingId, 'DESFEITO_MANUAL');
+            if (success) {
+              addLog('success', '✅ [PASSO 34] DESFEITO_MANUAL enviado com sucesso!', { 
+                confirmationId: pendingId 
+              });
+              toast.success('✅ PASSO 34 COMPLETO!', {
+                description: 'Transação negada + DESFEITO_MANUAL enviado automaticamente',
+                duration: 5000
+              });
+              setPasso33PendingConfirmationId(null);
+            } else {
+              addLog('error', '❌ [PASSO 34] Erro ao enviar DESFEITO_MANUAL');
+              toast.error('Erro ao enviar DESFEITO_MANUAL');
+            }
+          } else {
+            // Fallback: usar resolverPendenciaAndroid
+            addLog('info', '🔄 [PASSO 34] Usando resolverPendenciaAndroid (fallback)...');
+            const success = resolverPendenciaAndroid('desfazer');
+            if (success) {
+              addLog('success', '✅ [PASSO 34] Resolução de pendência enviada via PayGo');
+              toast.success('✅ PASSO 34: Resolução de pendência enviada!', {
+                description: 'DESFAZER enviado via PayGo',
+                duration: 5000
+              });
+            } else {
+              addLog('error', '❌ [PASSO 34] Erro ao resolver pendência');
+            }
+          }
+        }
         
         setTransactionResult({
           show: true,
@@ -356,7 +401,9 @@ export default function TotemTEFHomologacao() {
           nsu: 'N/A (negado)',
           autorizacao: 'N/A (negado)',
           bandeira: '',
-          mensagem: erro,
+          mensagem: isPasso34 
+            ? `${erro} - DESFEITO_MANUAL ENVIADO (Passo 34)` 
+            : erro,
           passoTeste: testePasso?.passo
         });
       }
@@ -1568,8 +1615,9 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3 text-xs text-yellow-200/80 space-y-2">
-                <p><strong>Passo 33:</strong> Execute venda de R$ 1.005,60 e <strong>NÃO confirme</strong> - deixe pendente.</p>
-                <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61. Após aprovação, clique em <strong>"DESFAZER Pendência"</strong> abaixo para enviar DESFEITO_MANUAL.</p>
+                <p><strong>Passo 33:</strong> Execute venda de R$ 1.005,60 → Aprovada e confirmada normalmente.</p>
+                <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61 → Será <strong>NEGADA</strong> e o sistema <strong>automaticamente</strong> envia DESFEITO_MANUAL.</p>
+                <p className="text-green-400 text-[10px] italic">✓ O desfazimento é enviado automaticamente quando a transação do Passo 34 for negada.</p>
               </CardContent>
             </Card>
 
