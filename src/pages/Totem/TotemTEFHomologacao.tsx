@@ -288,38 +288,82 @@ export default function TotemTEFHomologacao() {
 
       // LÓGICA ESPECIAL PARA PASSOS 33 e 34:
       if (isPasso33) {
-        // Passo 33: guardar o confirmationId (NSU como fallback) e NÃO confirmar (gera pendência)
+        // Passo 33: guardar o confirmationId e NÃO confirmar (gera pendência)
+        // IMPORTANTE: Salvar tanto no estado React quanto no Android (SharedPreferences)
         if (confirmationId) {
           setPasso33PendingConfirmationId(confirmationId);
+          
+          // Salvar no Android para persistir entre sessões
+          if (typeof window !== 'undefined' && window.TEF?.salvarConfirmationId) {
+            try {
+              window.TEF.salvarConfirmationId(confirmationId, resultado.nsu || '', resultado.autorizacao || '');
+              addLog('success', '📋 PASSO 33: confirmationId salvo no Android (SharedPreferences)', {
+                confirmationId,
+                nsu: resultado.nsu,
+                autorizacao: resultado.autorizacao
+              });
+            } catch (e) {
+              addLog('warning', '⚠️ PASSO 33: Erro ao salvar no Android, usando apenas estado React', { erro: String(e) });
+            }
+          }
+          
+          // Também salvar no localStorage como fallback
+          try {
+            localStorage.setItem('passo33_confirmationId', confirmationId);
+            localStorage.setItem('passo33_nsu', resultado.nsu || '');
+            localStorage.setItem('passo33_autorizacao', resultado.autorizacao || '');
+          } catch (e) {
+            console.warn('Erro ao salvar no localStorage:', e);
+          }
+          
           addLog('warning', '📋 PASSO 33: Transação ficará PENDENTE (sem confirmação) para executar o Passo 34', {
-            confirmationIdArmazenado: confirmationId
+            confirmationIdArmazenado: confirmationId,
+            instrucao: 'Agora execute o Passo 34 (R$ 1.005,61) - a 2ª venda será bloqueada e o DESFAZIMENTO será enviado automaticamente'
           });
-          toast.warning('Passo 33: transação ficará pendente. Agora execute o Passo 34!');
+          toast.warning('Passo 33: transação ficará pendente. Agora execute o Passo 34!', { duration: 8000 });
         } else {
           addLog('error', '❌ PASSO 33: Não foi possível armazenar confirmationId - PayGo não retornou NSU nem confirmationTransactionId');
           toast.error('Passo 33: Erro - Sem ID para confirmar. Verifique PayGoService.kt');
         }
       } else if (isPasso34) {
-        // Passo 34: primeiro, resolver a pendência do Passo 33 com DESFAZIMENTO MANUAL
+        // Passo 34 APROVADO: Isso significa que a pendência do Passo 33 já foi resolvida
+        // Agora precisamos confirmar a transação do Passo 34
+        addLog('success', '✅ PASSO 34: Transação aprovada!');
+        
+        // Primeiro, limpar qualquer pendência anterior (Passo 33)
         if (passo33PendingConfirmationId) {
-          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL da pendência (Passo 33)...', {
-            confirmationId: passo33PendingConfirmationId
+          addLog('info', '📋 PASSO 34: Limpando estado do Passo 33 (já resolvido)', {
+            confirmationIdAnterior: passo33PendingConfirmationId
           });
-          const undone = confirmarTransacaoTEF(passo33PendingConfirmationId, 'DESFEITO_MANUAL');
-          addLog('warning', undone ? '✅ Pendência (Passo 33): DESFAZIMENTO MANUAL enviado' : '❌ Falha ao desfazer pendência (Passo 33)');
           setPasso33PendingConfirmationId(null);
-        } else {
-          addLog('warning', '⚠️ PASSO 34: Não encontrei pendência do Passo 33 para desfazer (confirmationId ausente)');
+        }
+        
+        // Limpar localStorage
+        try {
+          localStorage.removeItem('passo33_confirmationId');
+          localStorage.removeItem('passo33_nsu');
+          localStorage.removeItem('passo33_autorizacao');
+        } catch (e) {
+          console.warn('Erro ao limpar localStorage:', e);
+        }
+        
+        // Limpar no Android
+        if (typeof window !== 'undefined' && window.TEF?.limparConfirmationId) {
+          try {
+            window.TEF.limparConfirmationId();
+          } catch (e) {
+            console.warn('Erro ao limpar confirmationId no Android:', e);
+          }
         }
 
-        // Depois, confirmar a própria transação do Passo 34 (para não bloquear próximas operações)
+        // Confirmar a transação do Passo 34
         if (confirmationId) {
-          addLog('info', '📋 PASSO 34: Confirmando a 2ª venda para finalizar o fluxo...');
+          addLog('info', '📋 PASSO 34: Confirmando a transação para finalizar o fluxo...');
           const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_MANUAL');
           addLog('info', confirmed ? '✅ Passo 34: Confirmação enviada' : '❌ Erro na confirmação do Passo 34');
         }
 
-        toast.info('Passo 34: pendência desfeita e venda finalizada. Teste deve liberar novas operações.');
+        toast.success('Passo 34: Transação confirmada. Fluxo completo!', { duration: 5000 });
       } else if (resultado.requiresConfirmation && confirmationId) {
         // Outros casos que requerem confirmação manual
         setPendingConfirmation({
@@ -391,78 +435,86 @@ export default function TotemTEFHomologacao() {
           resultadoCompleto
         });
         
-        // PASSO 34: Se for R$ 1.005,61 e foi negado, verificar e tratar pendência conforme documentação
+        // PASSO 34: Se for R$ 1.005,61 e foi negado com erro de pendência
+        // Conforme documentação PayGo: "Após a segunda venda, a pendência não foi tratada...
+        // Ao final desta, um desfazimento manual deve ser enviado logo em seguida"
         if (isPasso34) {
-          // 1. Logar que a transação foi negada (já logado acima)
-          // 2. Verificar se existe transação pendente (conforme documentação PayGo)
-          addLog('info', '🔍 [PASSO 34] Verificando se existe transação pendente (saidaTransacao.existeTransacaoPendente())...');
+          addLog('warning', '🔄 [PASSO 34] Transação negada - Verificando pendência do Passo 33...');
           
-          // Dados da pendência podem vir do resultado ou do estado salvo do Passo 33
-          const pendingId = resultadoCompleto?.confirmationTransactionId || 
-                           passo33PendingConfirmationId;
-          const existeTransacaoPendente = !!pendingId;
+          // Buscar confirmationId de várias fontes (prioridade)
+          let pendingId = resultadoCompleto?.confirmationTransactionId || passo33PendingConfirmationId;
           
-          addLog('info', `🔍 [PASSO 34] existeTransacaoPendente: ${existeTransacaoPendente}`, {
+          // Fallback: buscar do localStorage
+          if (!pendingId) {
+            try {
+              pendingId = localStorage.getItem('passo33_confirmationId') || undefined;
+              if (pendingId) {
+                addLog('info', '📋 [PASSO 34] confirmationId recuperado do localStorage', { pendingId });
+              }
+            } catch (e) {
+              console.warn('Erro ao ler localStorage:', e);
+            }
+          }
+          
+          // Fallback: buscar do Android (SharedPreferences)
+          if (!pendingId && typeof window !== 'undefined' && window.TEF?.getPendingInfo) {
+            try {
+              const pendingInfo = window.TEF.getPendingInfo();
+              if (pendingInfo) {
+                const info = JSON.parse(pendingInfo);
+                pendingId = info.confirmationId || info.lastConfirmationId;
+                if (pendingId) {
+                  addLog('info', '📋 [PASSO 34] confirmationId recuperado do Android (SharedPreferences)', { pendingId, info });
+                }
+              }
+            } catch (e) {
+              console.warn('Erro ao buscar pendingInfo do Android:', e);
+            }
+          }
+          
+          addLog('info', `🔍 [PASSO 34] Status: existeTransacaoPendente=${!!pendingId}`, {
             confirmationIdFromResult: resultadoCompleto?.confirmationTransactionId || 'N/A',
-            confirmationIdFromPasso33: passo33PendingConfirmationId || 'N/A',
-            pendingIdUsado: pendingId || 'NENHUM'
+            confirmationIdFromState: passo33PendingConfirmationId || 'N/A',
+            confirmationIdFinal: pendingId || 'NENHUM'
           });
           
-          if (existeTransacaoPendente && pendingId) {
-            // 3. Obter dados da transação pendente
-            addLog('info', '📋 [PASSO 34] Obtendo dados da transação pendente (saidaTransacao.obtemDadosTransacaoPendente())...');
-            addLog('info', '📋 [PASSO 34] Dados obtidos:', { confirmationId: pendingId });
-            
-            // 4. Resolver a pendência com DESFEITO_MANUAL (conforme roteiro PayGo)
-            addLog('warning', '🔄 [PASSO 34] Criando confirmação: confirmacao.informaStatusTransacao(StatusTransacao.DESFEITO_MANUAL)');
-            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: transacao.resolvePendencia(dadosPendencia, confirmacao)...');
-            
-            // Chamar PayGo via resolverPendenciaAndroid passando o confirmationId
-            const success = resolverPendenciaAndroid('desfazer', pendingId);
-            
-            if (success) {
-              addLog('success', '✅ [PASSO 34] PayGo chamado com sucesso! DESFEITO_MANUAL enviado', { 
-                confirmationId: pendingId,
-                statusEnviado: 'DESFEITO_MANUAL',
-                metodo: 'window.TEF.confirmarTransacao()'
-              });
-              toast.success('✅ PASSO 34 COMPLETO!', {
-                description: 'PayGo chamado - DESFEITO_MANUAL enviado',
-                duration: 5000
-              });
-              setPasso33PendingConfirmationId(null);
-            } else {
-              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo para DESFEITO_MANUAL');
-              toast.error('Erro ao chamar PayGo');
-            }
-          } else {
-            // Não há confirmationId - A transação pendente existe no PayGo mas não temos o ID
-            // Isso acontece quando: Passo 33 falhou ou a pendência é de outra sessão
-            addLog('warning', '⚠️ [PASSO 34] Nenhum confirmationId encontrado.');
-            addLog('info', '📋 [PASSO 34] DIAGNÓSTICO:', {
-              motivo: 'O Passo 33 provavelmente também falhou com erro de pendência',
-              solucao: 'O SDK Android precisa buscar a pendência automaticamente via obtemDadosTransacaoPendente()',
-              codigoErro: resultadoCompleto?.codigoResposta || '-2599'
+          // Enviar DESFAZIMENTO MANUAL conforme documentação PayGo
+          addLog('warning', '🔄 [PASSO 34] Enviando DESFAZIMENTO MANUAL (transacao.resolvePendencia)...');
+          
+          // Chamar resolverPendenciaAndroid - o Android usará o pendingId ou buscará do SharedPreferences
+          const success = resolverPendenciaAndroid('desfazer', pendingId);
+          
+          if (success) {
+            addLog('success', '✅ [PASSO 34] DESFEITO_MANUAL enviado ao PayGo!', { 
+              confirmationId: pendingId || 'buscado do Android',
+              statusEnviado: 'DESFEITO_MANUAL'
+            });
+            toast.success('✅ PASSO 34: DESFEITO_MANUAL enviado!', {
+              description: 'Pendência do Passo 33 resolvida. Próximas vendas liberadas.',
+              duration: 5000
             });
             
-            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: resolverPendenciaAndroid(desfazer)...');
-            addLog('info', '📋 [PASSO 34] O app Android deve implementar:');
-            addLog('info', '   1. existeTransacaoPendente() -> true');
-            addLog('info', '   2. obtemDadosTransacaoPendente() -> dados');
-            addLog('info', '   3. resolvePendencia(dados, DESFEITO_MANUAL)');
-            
-            const success = resolverPendenciaAndroid('desfazer');
-            if (success) {
-              addLog('success', '✅ [PASSO 34] Chamada enviada ao PayGo');
-              addLog('warning', '⚠️ [PASSO 34] Se a pendência persistir, verifique se o app Android implementa a busca automática de pendências');
-              toast.info('PASSO 34: Comando enviado ao PayGo', {
-                description: 'Verifique os logs do Android para confirmar resolução',
-                duration: 5000
-              });
-            } else {
-              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo');
-              toast.error('Erro ao chamar PayGo');
+            // Limpar estado
+            setPasso33PendingConfirmationId(null);
+            try {
+              localStorage.removeItem('passo33_confirmationId');
+              localStorage.removeItem('passo33_nsu');
+              localStorage.removeItem('passo33_autorizacao');
+            } catch (e) {
+              console.warn('Erro ao limpar localStorage:', e);
             }
+            
+            // Limpar no Android
+            if (typeof window !== 'undefined' && window.TEF?.limparConfirmationId) {
+              try {
+                window.TEF.limparConfirmationId();
+              } catch (e) {
+                console.warn('Erro ao limpar confirmationId no Android:', e);
+              }
+            }
+          } else {
+            addLog('error', '❌ [PASSO 34] Erro ao enviar DESFEITO_MANUAL');
+            toast.error('Erro ao enviar DESFEITO_MANUAL. Verifique logs do Android.');
           }
         }
         
