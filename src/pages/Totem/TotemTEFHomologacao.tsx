@@ -414,19 +414,32 @@ export default function TotemTEFHomologacao() {
               toast.error('Erro ao chamar PayGo');
             }
           } else {
-            // Não há confirmationId - tentar resolverPendencia genérico
+            // Não há confirmationId - A transação pendente existe no PayGo mas não temos o ID
+            // Isso acontece quando: Passo 33 falhou ou a pendência é de outra sessão
             addLog('warning', '⚠️ [PASSO 34] Nenhum confirmationId encontrado.');
-            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: window.TEF.resolverPendencia() (método genérico)...');
+            addLog('info', '📋 [PASSO 34] DIAGNÓSTICO:', {
+              motivo: 'O Passo 33 provavelmente também falhou com erro de pendência',
+              solucao: 'O SDK Android precisa buscar a pendência automaticamente via obtemDadosTransacaoPendente()',
+              codigoErro: resultadoCompleto?.codigoResposta || '-2599'
+            });
+            
+            addLog('warning', '🔄 [PASSO 34] Chamando PayGo: resolverPendenciaAndroid(desfazer)...');
+            addLog('info', '📋 [PASSO 34] O app Android deve implementar:');
+            addLog('info', '   1. existeTransacaoPendente() -> true');
+            addLog('info', '   2. obtemDadosTransacaoPendente() -> dados');
+            addLog('info', '   3. resolvePendencia(dados, DESFEITO_MANUAL)');
             
             const success = resolverPendenciaAndroid('desfazer');
             if (success) {
-              addLog('success', '✅ [PASSO 34] PayGo chamado: resolverPendencia(DESFAZER)');
-              toast.success('✅ PASSO 34: PayGo chamado!', {
-                description: 'resolverPendencia(DESFAZER) enviado',
+              addLog('success', '✅ [PASSO 34] Chamada enviada ao PayGo');
+              addLog('warning', '⚠️ [PASSO 34] Se a pendência persistir, verifique se o app Android implementa a busca automática de pendências');
+              toast.info('PASSO 34: Comando enviado ao PayGo', {
+                description: 'Verifique os logs do Android para confirmar resolução',
                 duration: 5000
               });
             } else {
-              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo resolverPendencia()');
+              addLog('error', '❌ [PASSO 34] Erro ao chamar PayGo');
+              toast.error('Erro ao chamar PayGo');
             }
           }
         }
