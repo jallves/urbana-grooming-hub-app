@@ -2333,8 +2333,16 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                  transactionResult.status === 'negado' ? 'TRANSAÇÃO NEGADA' : 
                  'TRANSAÇÃO CANCELADA'}
               </CardTitle>
+              {/* Mensagem de erro do host - destacada para cancelamentos */}
+              {transactionResult.status === 'negado' && transactionResult.mensagem && (
+                <div className="mt-2 px-3 py-2 bg-red-900/50 rounded-lg border border-red-500/50">
+                  <p className="text-sm font-mono text-red-300 text-center">
+                    {transactionResult.mensagem}
+                  </p>
+                </div>
+              )}
               {transactionResult.passoTeste && (
-                <Badge variant="outline" className="mx-auto mt-1 border-urbana-gold/50 text-urbana-gold">
+                <Badge variant="outline" className="mx-auto mt-2 border-urbana-gold/50 text-urbana-gold">
                   Passo {transactionResult.passoTeste}
                 </Badge>
               )}
@@ -2362,7 +2370,8 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <span className="text-urbana-light/60">Bandeira:</span>
                   <span className="text-urbana-light">{transactionResult.bandeira || '-'}</span>
                 </div>
-                {transactionResult.mensagem && (
+                {/* Mensagem apenas para status aprovado (negado já exibe no topo) */}
+                {transactionResult.mensagem && transactionResult.status === 'aprovado' && (
                   <div className="pt-2 border-t border-urbana-light/10">
                     <p className="text-xs text-urbana-light/80">{transactionResult.mensagem}</p>
                   </div>
