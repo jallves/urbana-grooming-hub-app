@@ -37,9 +37,9 @@ import {
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
-import { 
-  isAndroidTEFAvailable, 
-  getLogsAndroid, 
+import {
+  isAndroidTEFAvailable,
+  getLogsAndroid,
   setModoDebug,
   limparLogsAndroid,
   confirmarTransacaoTEF,
@@ -186,6 +186,9 @@ export default function TotemTEFHomologacao() {
     autorizacao: string;
   } | null>(null);
 
+  // Passos 33/34: armazenar a confirmação do Passo 33 para resolver no Passo 34
+  const [passo33PendingConfirmationId, setPasso33PendingConfirmationId] = useState<string | null>(null);
+
   // Modal de resultado da transação
   const [transactionResult, setTransactionResult] = useState<{
     show: boolean;
@@ -215,12 +218,13 @@ export default function TotemTEFHomologacao() {
       const valorCentavos = resultado.valor ? Math.round(resultado.valor * 100) : parseInt(amount, 10);
       const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
       
-      // PASSOS 33 e 34: Lógica especial de confirmação/desfazimento
-      // Passo 33 (R$1005,60 / 100560): Confirmar manualmente
-      // Passo 34 (R$1005,61 / 100561): DESFAZER manualmente (não confirmar!)
+      // PASSOS 33 e 34: Lógica especial de transação pendente
+      // Interpretação do roteiro PayGo:
+      // - Passo 33 (R$1005,60): NÃO confirmar -> deixa a transação pendente
+      // - Passo 34 (R$1005,61): realizar 2ª venda e enviar DESFAZIMENTO MANUAL da pendência (Passo 33)
       const isPasso33 = valorCentavos === 100560;
       const isPasso34 = valorCentavos === 100561;
-      
+
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
         autorizacao: resultado.autorizacao,
@@ -232,7 +236,7 @@ export default function TotemTEFHomologacao() {
         isPasso33,
         isPasso34
       });
-      
+
       // Mostrar modal de resultado
       setTransactionResult({
         show: true,
@@ -246,34 +250,32 @@ export default function TotemTEFHomologacao() {
         comprovanteLojista: resultado.comprovanteLojista,
         passoTeste: testePasso?.passo
       });
-      
+
       // LÓGICA ESPECIAL PARA PASSOS 33 e 34:
       if (isPasso33 && resultado.confirmationTransactionId) {
-        // Passo 33: Confirmar manualmente (isso deixa a transação do Passo 34 pendente)
-        addLog('info', '📋 PASSO 33: Confirmando transação para preparar o Passo 34...');
-        const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_MANUAL');
-        addLog('info', confirmed ? '✅ Passo 33: Confirmação manual enviada' : '❌ Erro na confirmação do Passo 33');
-        toast.success('Passo 33: Transação confirmada. Agora execute o Passo 34!');
-      } else if (isPasso34 && resultado.confirmationTransactionId) {
-        // Passo 34: DESFAZER manualmente (requisito da homologação)
-        // Importante: após o desfazimento, forçamos também a resolução de pendência
-        // para evitar ficar travado em "autorização pendente".
-        addLog('warning', '📋 PASSO 34: Preparando DESFAZIMENTO MANUAL (requisito da homologação)...');
+        // Passo 33: guardar o confirmationId e NÃO confirmar (gera pendência)
+        setPasso33PendingConfirmationId(resultado.confirmationTransactionId);
+        addLog('warning', '📋 PASSO 33: Transação ficará PENDENTE (sem confirmação) para executar o Passo 34');
+        toast.warning('Passo 33: transação ficará pendente. Agora execute o Passo 34!');
+      } else if (isPasso34) {
+        // Passo 34: primeiro, resolver a pendência do Passo 33 com DESFAZIMENTO MANUAL
+        if (passo33PendingConfirmationId) {
+          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL da pendência (Passo 33)...');
+          const undone = confirmarTransacaoTEF(passo33PendingConfirmationId, 'DESFEITO_MANUAL');
+          addLog('warning', undone ? '✅ Pendência (Passo 33): DESFAZIMENTO MANUAL enviado' : '❌ Falha ao desfazer pendência (Passo 33)');
+          setPasso33PendingConfirmationId(null);
+        } else {
+          addLog('warning', '⚠️ PASSO 34: Não encontrei pendência do Passo 33 para desfazer (confirmationId ausente)');
+        }
 
-        // Pequeno delay para garantir que o PayGo finalize o fluxo/prints antes do comando
-        window.setTimeout(() => {
-          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL agora...');
-          const undone = confirmarTransacaoTEF(resultado.confirmationTransactionId!, 'DESFEITO_MANUAL');
-          addLog('warning', undone ? '✅ Passo 34: DESFAZIMENTO MANUAL enviado com sucesso!' : '❌ Erro no desfazimento do Passo 34');
+        // Depois, confirmar a própria transação do Passo 34 (para não bloquear próximas operações)
+        if (resultado.confirmationTransactionId) {
+          addLog('info', '📋 PASSO 34: Confirmando a 2ª venda para finalizar o fluxo...');
+          const confirmed = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'CONFIRMADO_MANUAL');
+          addLog('info', confirmed ? '✅ Passo 34: Confirmação enviada' : '❌ Erro na confirmação do Passo 34');
+        }
 
-          // Forçar limpeza de pendência (se existir) após o desfazimento
-          addLog('info', '🧹 PASSO 34: Forçando resolução de pendência (desfazer) para liberar novas operações...');
-          const resolved = resolverPendenciaAndroid('desfazer');
-          addLog('info', resolved ? '✅ Pendência: comando de resolução enviado' : '⚠️ Pendência: não foi possível enviar comando');
-
-          toast.info('Passo 34: Desfazimento manual enviado + limpeza de pendência acionada.');
-          refreshAndroidLogs();
-        }, 800);
+        toast.info('Passo 34: pendência desfeita e venda finalizada. Teste deve liberar novas operações.');
       } else if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
         // Outros casos que requerem confirmação manual
         setPendingConfirmation({
