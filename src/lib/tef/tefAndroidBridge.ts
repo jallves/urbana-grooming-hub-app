@@ -53,7 +53,7 @@ declare global {
       cancelarVenda: (jsonParams: string) => void;
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
-      resolverPendencia: () => void;
+      resolverPendencia: (status?: string) => void;
       reimprimirUltimaTransacao: () => void;
       verificarPinpad: () => string;
       getStatus: () => string;
@@ -62,6 +62,10 @@ declare global {
       getLogs: () => string;
       limparLogs: () => void;
       isReady: () => boolean;
+      // Novos métodos para gerenciamento de pendências
+      getPendingInfo?: () => string;
+      salvarConfirmationId?: (confirmationId: string, nsu: string, autorizacao: string) => void;
+      limparConfirmationId?: () => void;
     };
     Android?: {
       // Legacy Android interface
@@ -387,40 +391,87 @@ export function resolverPendenciaAndroid(
     
     // Tentar métodos alternativos em ordem de preferência:
     
-    // 1. resolverPendenciaComStatus(status) - método ideal se existir
-    if (typeof (window.TEF as any).resolverPendenciaComStatus === 'function') {
-      console.log('[TEFBridge] ✅ Usando resolverPendenciaComStatus(' + status + ')');
-      (window.TEF as any).resolverPendenciaComStatus(status);
-      return true;
-    }
-    
-    // 2. resolverPendencia(status) - passar status como parâmetro
+    // 1. resolverPendencia(status) - agora aceita parâmetro!
     if (typeof window.TEF!.resolverPendencia === 'function') {
-      console.log('[TEFBridge] Chamando window.TEF.resolverPendencia()...');
-      console.log('[TEFBridge] NOTA: Este método pode não passar o status ' + status);
-      console.log('[TEFBridge] O app Android deve implementar a lógica de buscar e resolver');
-      window.TEF!.resolverPendencia();
-      console.log('[TEFBridge] ✅ resolverPendencia() chamado');
+      console.log('[TEFBridge] Chamando window.TEF.resolverPendencia(' + status + ')...');
+      window.TEF!.resolverPendencia(status);
+      console.log('[TEFBridge] ✅ resolverPendencia(' + status + ') chamado');
       return true;
     }
     
-    // 3. Fallback: confirmarTransacao com ID especial "PENDING"
+    // 2. Fallback: confirmarTransacao com ID especial "PENDING"
     console.log('[TEFBridge] resolverPendencia não encontrado');
     console.log('[TEFBridge] Tentando confirmarTransacao(PENDING, ' + status + ')...');
     window.TEF!.confirmarTransacao('PENDING', status);
     console.log('[TEFBridge] ✅ confirmarTransacao(PENDING, ' + status + ') chamado');
     
     console.log('[TEFBridge] ═══════════════════════════════════════');
-    console.log('[TEFBridge] ⚠️ IMPORTANTE: O app Android deve implementar:');
-    console.log('[TEFBridge]    - existeTransacaoPendente()');
-    console.log('[TEFBridge]    - obtemDadosTransacaoPendente()');
-    console.log('[TEFBridge]    - resolvePendencia(dados, status)');
-    console.log('[TEFBridge] ═══════════════════════════════════════');
     
     return true;
   } catch (error) {
     console.error('[TEFBridge] ❌ Erro ao resolver pendência:', error);
     return false;
+  }
+}
+
+/**
+ * Salva o confirmationId da transação aprovada para uso posterior
+ * IMPORTANTE: Chamar após cada transação aprovada no Passo 33
+ */
+export function salvarConfirmationIdAndroid(
+  confirmationId: string,
+  nsu: string,
+  autorizacao: string
+): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - salvando em localStorage');
+    try {
+      localStorage.setItem('tef_last_confirmation_id', confirmationId);
+      localStorage.setItem('tef_last_nsu', nsu);
+      localStorage.setItem('tef_last_autorizacao', autorizacao);
+      localStorage.setItem('tef_last_timestamp', Date.now().toString());
+    } catch (e) {
+      console.error('[TEFBridge] Erro ao salvar em localStorage:', e);
+    }
+    return true;
+  }
+  
+  try {
+    console.log('[TEFBridge] Salvando confirmationId:', confirmationId);
+    if (window.TEF!.salvarConfirmationId) {
+      window.TEF!.salvarConfirmationId(confirmationId, nsu, autorizacao);
+    }
+    // Também salvar em localStorage como backup
+    localStorage.setItem('tef_last_confirmation_id', confirmationId);
+    localStorage.setItem('tef_last_nsu', nsu);
+    return true;
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao salvar confirmationId:', error);
+    return false;
+  }
+}
+
+/**
+ * Obtém informações sobre pendências do PayGo
+ */
+export function getPendingInfoAndroid(): Record<string, unknown> | null {
+  if (!isAndroidTEFAvailable() || !window.TEF!.getPendingInfo) {
+    // Retornar dados do localStorage como fallback
+    const confirmationId = localStorage.getItem('tef_last_confirmation_id');
+    return {
+      hasPendingData: false,
+      lastConfirmationId: confirmationId,
+      lastNsu: localStorage.getItem('tef_last_nsu'),
+      source: 'localStorage'
+    };
+  }
+  
+  try {
+    const infoJson = window.TEF!.getPendingInfo();
+    return JSON.parse(infoJson);
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao obter pendingInfo:', error);
+    return null;
   }
 }
 
