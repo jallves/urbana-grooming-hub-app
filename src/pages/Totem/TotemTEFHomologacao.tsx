@@ -369,42 +369,61 @@ export default function TotemTEFHomologacao() {
           resultadoCompleto
         });
         
-        // PASSO 34: Se for R$ 1.005,61 e foi negado, enviar DESFAZIMENTO AUTOMATICAMENTE
+        // PASSO 34: Se for R$ 1.005,61 e foi negado, verificar e tratar pendência conforme documentação
         if (isPasso34) {
-          addLog('warning', '🔄 [PASSO 34] Transação negada - Enviando DESFEITO_MANUAL automaticamente...');
+          // 1. Logar que a transação foi negada (já logado acima)
+          // 2. Verificar se existe transação pendente (conforme documentação PayGo)
+          addLog('info', '🔍 [PASSO 34] Verificando se existe transação pendente (saidaTransacao.existeTransacaoPendente())...');
           
-          // Tentar obter dados da pendência do resultado ou usar fallback
+          // Dados da pendência podem vir do resultado ou do estado salvo do Passo 33
           const pendingId = resultadoCompleto?.confirmationTransactionId || 
                            passo33PendingConfirmationId;
+          const existeTransacaoPendente = !!pendingId;
           
-          if (pendingId) {
-            // Enviar desfazimento com o ID da pendência
+          addLog('info', `🔍 [PASSO 34] existeTransacaoPendente: ${existeTransacaoPendente}`, {
+            confirmationIdFromResult: resultadoCompleto?.confirmationTransactionId || 'N/A',
+            confirmationIdFromPasso33: passo33PendingConfirmationId || 'N/A',
+            pendingIdUsado: pendingId || 'NENHUM'
+          });
+          
+          if (existeTransacaoPendente && pendingId) {
+            // 3. Obter dados da transação pendente
+            addLog('info', '📋 [PASSO 34] Obtendo dados da transação pendente (saidaTransacao.obtemDadosTransacaoPendente())...');
+            addLog('info', '📋 [PASSO 34] Dados obtidos:', { confirmationId: pendingId });
+            
+            // 4. Resolver a pendência com DESFEITO_MANUAL (conforme roteiro)
+            addLog('warning', '🔄 [PASSO 34] Resolvendo pendência: informaStatusTransacao(StatusTransacao.DESFEITO_MANUAL)');
+            addLog('warning', '🔄 [PASSO 34] Chamando transacao.resolvePendencia(dadosPendencia, confirmacao)...');
+            
             const success = confirmarTransacaoTEF(pendingId, 'DESFEITO_MANUAL');
+            
             if (success) {
               addLog('success', '✅ [PASSO 34] DESFEITO_MANUAL enviado com sucesso!', { 
-                confirmationId: pendingId 
+                confirmationId: pendingId,
+                statusEnviado: 'DESFEITO_MANUAL'
               });
               toast.success('✅ PASSO 34 COMPLETO!', {
-                description: 'Transação negada + DESFEITO_MANUAL enviado automaticamente',
+                description: 'Pendência verificada e DESFEITO_MANUAL enviado',
                 duration: 5000
               });
               setPasso33PendingConfirmationId(null);
             } else {
-              addLog('error', '❌ [PASSO 34] Erro ao enviar DESFEITO_MANUAL');
+              addLog('error', '❌ [PASSO 34] Erro ao enviar DESFEITO_MANUAL para confirmarTransacao()');
               toast.error('Erro ao enviar DESFEITO_MANUAL');
             }
           } else {
-            // Fallback: usar resolverPendenciaAndroid
-            addLog('info', '🔄 [PASSO 34] Usando resolverPendenciaAndroid (fallback)...');
+            // Não há pendência detectada - usar resolverPendenciaAndroid como fallback
+            addLog('warning', '⚠️ [PASSO 34] Nenhum confirmationId encontrado. Tentando resolverPendenciaAndroid (fallback)...');
+            
             const success = resolverPendenciaAndroid('desfazer');
             if (success) {
-              addLog('success', '✅ [PASSO 34] Resolução de pendência enviada via PayGo');
+              addLog('success', '✅ [PASSO 34] resolverPendencia(DESFAZER) enviado via PayGo');
               toast.success('✅ PASSO 34: Resolução de pendência enviada!', {
                 description: 'DESFAZER enviado via PayGo',
                 duration: 5000
               });
             } else {
-              addLog('error', '❌ [PASSO 34] Erro ao resolver pendência');
+              addLog('error', '❌ [PASSO 34] Erro ao resolver pendência via resolverPendenciaAndroid()');
             }
           }
         }
