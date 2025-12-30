@@ -2,12 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Plus, Minus, ShoppingCart, CreditCard, DollarSign, Package } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, ShoppingCart, CreditCard, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import TotemProductPaymentPixModal from '@/components/totem/TotemProductPaymentPixModal';
-import TotemProductPaymentCardModal from '@/components/totem/TotemProductPaymentCardModal';
 
 interface Product {
   id: string;
@@ -36,12 +34,7 @@ const TotemProductSale: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [processing, setProcessing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
-  const [showPixModal, setShowPixModal] = useState(false);
-  const [showCardModal, setShowCardModal] = useState(false);
-  const [paymentType, setPaymentType] = useState<'credit' | 'debit'>('credit');
-  const [currentSaleId, setCurrentSaleId] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -145,147 +138,31 @@ const TotemProductSale: React.FC = () => {
     return cart.reduce((sum, item) => sum + (item.preco * item.quantidade), 0);
   };
 
-  const handlePayment = async (method: 'pix' | 'credit' | 'debit') => {
+  // 🔒 CORREÇÃO: Redirecionar para seleção de barbeiro antes do checkout
+  const handleProceedToCheckout = () => {
     if (cart.length === 0) {
       toast.error('Adicione produtos ao carrinho');
       return;
     }
 
-    setProcessing(true);
+    console.log('🛒 Redirecionando para seleção de barbeiro com carrinho:', cart);
     
-    try {
-      console.log('🛒 Iniciando venda de produtos:', cart);
-      
-      // Criar venda direta (sem agendamento)
-      const { data: venda, error: vendaError } = await supabase
-        .from('vendas')
-        .insert({
-          cliente_id: client.id,
-          agendamento_id: null,
-          totem_session_id: null,
-          subtotal: calculateTotal(),
-          desconto: 0,
-          total: calculateTotal(),
-          status: 'ABERTA'
-        })
-        .select()
-        .single();
-
-      if (vendaError) throw vendaError;
-
-      console.log('✅ Venda criada:', venda.id);
-
-      // Adicionar produtos à venda
-      const vendaItens = cart.map(item => ({
-        venda_id: venda.id,
-        tipo: 'PRODUTO',
-        ref_id: item.product_id,
-        nome: item.nome,
-        quantidade: item.quantidade,
-        preco_unit: item.preco,
-        total: item.preco * item.quantidade
-      }));
-
-      const { error: itensError } = await supabase
-        .from('vendas_itens')
-        .insert(vendaItens);
-
-      if (itensError) throw itensError;
-
-      console.log('✅ Itens adicionados à venda');
-
-      // Criar registro de pagamento
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: null,
-          payment_method: method,
-          amount: calculateTotal(),
-          status: 'pending'
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      console.log('✅ Pagamento criado:', payment.id);
-
-      setCurrentSaleId(venda.id);
-
-      // Abrir modal de pagamento
-      if (method === 'pix') {
-        setShowPixModal(true);
-      } else {
-        setPaymentType(method);
-        setShowCardModal(true);
+    // Redirecionar para seleção de barbeiro
+    navigate('/totem/product-barber-select', {
+      state: {
+        client,
+        cart: cart.map(item => ({
+          product: {
+            id: item.product_id,
+            nome: item.nome,
+            preco: item.preco
+          },
+          quantity: item.quantidade
+        }))
       }
-
-    } catch (error: any) {
-      console.error('❌ Erro ao processar venda:', error);
-      toast.error('Erro ao processar venda', {
-        description: error.message
-      });
-    } finally {
-      setProcessing(false);
-    }
+    });
   };
 
-  const handlePaymentSuccess = async () => {
-    if (!currentSaleId) return;
-
-    try {
-      console.log('💳 Finalizando pagamento da venda:', currentSaleId);
-
-      // Buscar o payment_id criado
-      const { data: payments, error: paymentsError } = await supabase
-        .from('totem_payments')
-        .select('id')
-        .eq('amount', calculateTotal())
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (paymentsError || !payments || payments.length === 0) {
-        throw new Error('Pagamento não encontrado');
-      }
-
-      const paymentId = payments[0].id;
-
-      // Chamar edge function para finalizar venda e criar registros no ERP
-      console.log('📦 Chamando edge function totem-direct-sale');
-      const { data: finishResult, error: finishError } = await supabase.functions.invoke(
-        'totem-direct-sale',
-        {
-          body: {
-            action: 'finish',
-            venda_id: currentSaleId,
-            payment_id: paymentId
-          }
-        }
-      );
-
-      if (finishError) {
-        console.error('❌ Erro ao finalizar venda direta:', finishError);
-        throw finishError;
-      }
-
-      console.log('✅ Venda finalizada e registros criados no ERP:', finishResult);
-
-      // Redirecionar para tela de sucesso
-      navigate('/totem/product-payment-success', {
-        state: {
-          sale: { id: currentSaleId, total: calculateTotal() },
-          client
-        }
-      });
-
-    } catch (error: any) {
-      console.error('❌ Erro ao finalizar pagamento:', error);
-      toast.error('Erro ao finalizar pagamento', {
-        description: error.message
-      });
-    }
-  };
 
   if (loading) {
     return (
@@ -502,70 +379,18 @@ const TotemProductSale: React.FC = () => {
               </div>
             </Card>
 
-            {/* Payment Methods */}
-            <Card className="p-4 sm:p-6 bg-transparent backdrop-blur-md border-2 border-urbana-gold/30">
-              <h3 className="text-xl sm:text-2xl font-bold text-urbana-light mb-4 text-center">
-                Forma de Pagamento
-              </h3>
-
-              <div className="grid grid-cols-1 gap-4">
-                <button
-                  onClick={() => handlePayment('pix')}
-                  disabled={processing}
-                  className="group h-40 bg-gradient-to-br from-blue-500/20 to-blue-600/20 active:from-blue-500/30 active:to-blue-600/30 border-2 border-blue-500/50 active:border-blue-500 rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
-                >
-                  <div className="flex flex-col items-center justify-center gap-3 h-full">
-                    <DollarSign className="w-14 h-14 text-blue-400" />
-                    <span className="text-3xl font-black text-blue-400">PIX</span>
-                    <span className="text-sm text-urbana-gray-light">Instantâneo</span>
-                  </div>
-                </button>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => handlePayment('credit')}
-                    disabled={processing}
-                    className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
-                  >
-                    <div className="flex flex-col items-center justify-center gap-3 h-full">
-                      <CreditCard className="w-14 h-14 text-urbana-gold" />
-                      <span className="text-3xl font-black text-urbana-gold">CRÉDITO</span>
-                      <span className="text-sm text-urbana-gray-light">Cartão</span>
-                    </div>
-                  </button>
-
-                  <button
-                    onClick={() => handlePayment('debit')}
-                    disabled={processing}
-                    className="group h-40 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/20 active:from-urbana-gold/30 active:to-urbana-gold-dark/30 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-2xl transition-all duration-100 active:scale-98 disabled:opacity-50 overflow-hidden"
-                  >
-                    <div className="flex flex-col items-center justify-center gap-3 h-full">
-                      <CreditCard className="w-14 h-14 text-urbana-gold" />
-                      <span className="text-3xl font-black text-urbana-gold">DÉBITO</span>
-                      <span className="text-sm text-urbana-gray-light">Cartão</span>
-                    </div>
-                  </button>
-                </div>
-              </div>
-            </Card>
+            {/* Botão Finalizar Compra */}
+            <Button
+              onClick={handleProceedToCheckout}
+              size="lg"
+              className="w-full h-16 text-xl font-black bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black hover:from-urbana-gold hover:to-urbana-gold-vibrant shadow-lg shadow-urbana-gold/30"
+            >
+              <CreditCard className="w-6 h-6 mr-2" />
+              FINALIZAR COMPRA
+            </Button>
           </div>
         )}
       </div>
-
-      <TotemProductPaymentPixModal
-        isOpen={showPixModal}
-        onClose={() => setShowPixModal(false)}
-        onSuccess={handlePaymentSuccess}
-        total={calculateTotal()}
-      />
-
-      <TotemProductPaymentCardModal
-        isOpen={showCardModal}
-        onClose={() => setShowCardModal(false)}
-        onSuccess={handlePaymentSuccess}
-        total={calculateTotal()}
-        paymentType={paymentType}
-      />
     </div>
   );
 };

@@ -62,19 +62,9 @@ const TotemProductPaymentCard: React.FC = () => {
         return;
       }
 
-      // 2. Atualizar estoque de cada produto
-      if (saleItems && saleItems.length > 0) {
-        for (const item of saleItems) {
-          const { error: stockError } = await supabase.rpc('decrease_product_stock', {
-            p_product_id: item.ref_id,
-            p_quantity: item.quantidade
-          });
-
-          if (stockError) {
-            console.error('Erro ao atualizar estoque:', stockError);
-          }
-        }
-      }
+      // 🔒 CORREÇÃO: NÃO atualizar estoque aqui - o ERP (create-financial-transaction) já faz isso
+      // Removido decremento de estoque duplicado
+      console.log('📦 Itens da venda encontrados:', saleItems?.length, '- Estoque será atualizado pelo ERP');
 
       // 3. Preparar itens para o ERP (formato CheckoutItem)
       const erpItems = saleItems?.map(item => ({
