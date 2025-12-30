@@ -409,7 +409,7 @@ export function cancelarVendaAndroid(
   // Limpar resultado anterior
   lastProcessedResult = null;
   
-  // Registrar callback interno (backup)
+  // Registrar callback interno
   if (onResult) {
     resultCallback = onResult;
   }
@@ -421,38 +421,48 @@ export function cancelarVendaAndroid(
   console.log('[TEFBridge] ═══════════════════════════════════════');
   console.log('[TEFBridge] INICIANDO CANCELAMENTO DE VENDA');
   console.log('[TEFBridge] Handler existente:', hasExistingHandler);
+  console.log('[TEFBridge] Callback direto registrado:', !!onResult);
   
-  // Se NÃO existe handler, registrar fallback
-  if (!hasExistingHandler) {
-    console.log('[TEFBridge] Registrando fallback para cancelamento');
-    (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
-      console.log('[TEFBridge] ═══════════════════════════════════════');
-      console.log('[TEFBridge] RESULTADO DO CANCELAMENTO RECEBIDO');
-      console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
-      
-      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
-      
-      // Salvar no sessionStorage
-      try {
-        sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
-        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
-      } catch (e) {
-        console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
-      }
-      
-      // Disparar evento
-      const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
-      window.dispatchEvent(event);
-      document.dispatchEvent(event);
-      
-      if (resultCallback) {
-        resultCallback(normalizedResult);
-        resultCallback = null;
-      }
-      
-      console.log('[TEFBridge] ═══════════════════════════════════════');
-    };
-  }
+  // SEMPRE sobrescrever o handler para garantir que o callback seja chamado
+  // Guardar referência do handler existente para chamar depois
+  const originalHandler = hasExistingHandler ? existingHandler : null;
+  
+  (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+    console.log('[TEFBridge] RESULTADO DO CANCELAMENTO RECEBIDO');
+    console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+    
+    const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+    console.log('[TEFBridge] Resultado normalizado:', normalizedResult.status);
+    
+    // Salvar no sessionStorage
+    try {
+      sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
+      sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+    } catch (e) {
+      console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
+    }
+    
+    // Disparar evento
+    const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
+    window.dispatchEvent(event);
+    document.dispatchEvent(event);
+    
+    // IMPORTANTE: Chamar o callback direto primeiro (o que foi passado para cancelarVendaAndroid)
+    if (resultCallback) {
+      console.log('[TEFBridge] ✅ Chamando callback direto do cancelamento');
+      resultCallback(normalizedResult);
+      resultCallback = null;
+    }
+    
+    // Restaurar handler original se existia
+    if (originalHandler) {
+      console.log('[TEFBridge] Restaurando handler original');
+      (window as any).onTefResultado = originalHandler;
+    }
+    
+    console.log('[TEFBridge] ═══════════════════════════════════════');
+  };
   
   try {
     const jsonParams = JSON.stringify({
