@@ -891,7 +891,11 @@ export default function TotemTEFHomologacao() {
   };
 
   // Reimprimir última transação
-  const handleReimpressao = async () => {
+  const handleReimpressao = useCallback(() => {
+    console.log('[PDV] handleReimpressao chamado');
+    console.log('[PDV] isAndroidAvailable:', isAndroidAvailable);
+    console.log('[PDV] isPinpadConnected:', isPinpadConnected);
+    
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
@@ -904,9 +908,11 @@ export default function TotemTEFHomologacao() {
 
     setIsProcessing(true);
     addLog('transaction', '🖨️ SOLICITANDO REIMPRESSÃO DA ÚLTIMA TRANSAÇÃO');
+    toast.info('Solicitando reimpressão...');
 
-    // Definir callback para resultado
-    const handleReimpressaoResult = (resultado: TEFResultado) => {
+    // Chamar reimpressão com callback inline
+    const success = reimprimirUltimaTransacaoAndroid((resultado: TEFResultado) => {
+      console.log('[PDV] Resultado reimpressão:', resultado);
       setIsProcessing(false);
       
       if (resultado.status === 'aprovado') {
@@ -940,17 +946,16 @@ export default function TotemTEFHomologacao() {
       }
       
       refreshAndroidLogs();
-    };
+    });
 
-    // Chamar reimpressão
-    const success = reimprimirUltimaTransacaoAndroid(handleReimpressaoResult);
+    console.log('[PDV] reimprimirUltimaTransacaoAndroid retornou:', success);
 
     if (!success) {
       setIsProcessing(false);
       addLog('error', '❌ Falha ao solicitar reimpressão');
       toast.error('Falha ao solicitar reimpressão');
     }
-  };
+  }, [isAndroidAvailable, isPinpadConnected, addLog, refreshAndroidLogs]);
 
   // Limpar logs (remove do storage também)
   const handleClearLogs = () => {
