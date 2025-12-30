@@ -255,11 +255,25 @@ export default function TotemTEFHomologacao() {
         addLog('info', confirmed ? '✅ Passo 33: Confirmação manual enviada' : '❌ Erro na confirmação do Passo 33');
         toast.success('Passo 33: Transação confirmada. Agora execute o Passo 34!');
       } else if (isPasso34 && resultado.confirmationTransactionId) {
-        // Passo 34: DESFAZER manualmente (este é o requisito da homologação!)
-        addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL (requisito da homologação)...');
-        const undone = confirmarTransacaoTEF(resultado.confirmationTransactionId, 'DESFEITO_MANUAL');
-        addLog('warning', undone ? '✅ Passo 34: DESFAZIMENTO MANUAL enviado com sucesso!' : '❌ Erro no desfazimento do Passo 34');
-        toast.info('Passo 34: Desfazimento manual enviado conforme requisito!');
+        // Passo 34: DESFAZER manualmente (requisito da homologação)
+        // Importante: após o desfazimento, forçamos também a resolução de pendência
+        // para evitar ficar travado em "autorização pendente".
+        addLog('warning', '📋 PASSO 34: Preparando DESFAZIMENTO MANUAL (requisito da homologação)...');
+
+        // Pequeno delay para garantir que o PayGo finalize o fluxo/prints antes do comando
+        window.setTimeout(() => {
+          addLog('warning', '📋 PASSO 34: Enviando DESFAZIMENTO MANUAL agora...');
+          const undone = confirmarTransacaoTEF(resultado.confirmationTransactionId!, 'DESFEITO_MANUAL');
+          addLog('warning', undone ? '✅ Passo 34: DESFAZIMENTO MANUAL enviado com sucesso!' : '❌ Erro no desfazimento do Passo 34');
+
+          // Forçar limpeza de pendência (se existir) após o desfazimento
+          addLog('info', '🧹 PASSO 34: Forçando resolução de pendência (desfazer) para liberar novas operações...');
+          const resolved = resolverPendenciaAndroid('desfazer');
+          addLog('info', resolved ? '✅ Pendência: comando de resolução enviado' : '⚠️ Pendência: não foi possível enviar comando');
+
+          toast.info('Passo 34: Desfazimento manual enviado + limpeza de pendência acionada.');
+          refreshAndroidLogs();
+        }, 800);
       } else if (resultado.requiresConfirmation && resultado.confirmationTransactionId) {
         // Outros casos que requerem confirmação manual
         setPendingConfirmation({
