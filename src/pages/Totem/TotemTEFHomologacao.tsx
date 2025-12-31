@@ -94,11 +94,12 @@ const PAYGO_TEST_VALUES: Array<{
   { passo: '11', valor: 5000, desc: 'PIX QRCode', resultado: 'Aprovada', metodo: 'pix', autorizador: 'PIX_C6_BANK' },
   { passo: '19', valor: 1234567, desc: 'Venda p/ cancelar', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '30', valor: 100300, desc: 'Msg máxima', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
-  // Passos 33 e 34: Conforme documentação PayGo
-  // Passo 33: Venda APROVADA, NÃO enviar confirmação (deixa pendente)
-  // Passo 34: 2ª venda, PayGo retorna erro pendência, clicar em DESFAZER
-  { passo: '33', valor: 100560, desc: 'Venda SEM confirmação (gera pendência)', resultado: 'Aprovada (sem CNF)', metodo: 'debito', autorizador: 'DEMO' },
-  { passo: '34', valor: 100561, desc: '2ª venda → Erro pendência → DESFAZER', resultado: 'Erro + Desfazer', metodo: 'debito', autorizador: 'DEMO' },
+  // Passos 33 e 34: Conforme documentação PayGo oficial
+  // https://paygodev.readme.io/docs/exemplo-passos-33-e-34
+  // Passo 33: Venda APROVADA + CONFIRMAR normalmente
+  // Passo 34: O sandbox simula erro de pendência → clicar em DESFAZER
+  { passo: '33', valor: 100560, desc: 'Venda normal + confirmação', resultado: 'Aprovada + CNF', metodo: 'debito', autorizador: 'DEMO' },
+  { passo: '34', valor: 100561, desc: 'Sandbox simula pendência → DESFAZER', resultado: 'Pendência → Desfazer', metodo: 'debito', autorizador: 'DEMO' },
   { passo: '35', valor: 101200, desc: 'Confirmação', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '37', valor: 101100, desc: 'Desfazimento', resultado: 'Desfeita', metodo: 'credito', autorizador: 'DEMO' },
   { passo: '39', valor: 101300, desc: 'Falha mercadoria', resultado: 'Aprovada', metodo: 'credito', autorizador: 'DEMO' },
@@ -244,13 +245,22 @@ export default function TotemTEFHomologacao() {
       const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
       
       // ========================================
-      // PASSOS 33 e 34: Lógica de Transação Pendente (Documentação PayGo)
+      // PASSOS 33 e 34: Lógica de Transação Pendente (Documentação PayGo Oficial)
       // ========================================
-      // Passo 33 (R$1005,60): Venda APROVADA → NÃO ENVIAR CONFIRMAÇÃO (CNF)
-      //                      Isso deixa a transação PENDENTE no concentrador PayGo
-      // 
-      // Passo 34 (R$1005,61): Tentar nova venda → PayGo retorna ERRO de pendência
-      //                      Aparece tela para "Confirmar" ou "Desfazer" → CLICAR EM DESFAZER
+      // ANÁLISE DA DOCUMENTAÇÃO (https://paygodev.readme.io/docs/exemplo-passos-33-e-34):
+      //
+      // Passo 33 (R$1005,60):
+      //   1. Enviar venda (CRT) com valor 100560
+      //   2. Venda APROVADA (009-000 = 0)
+      //   3. ENVIAR confirmação (CNF) ← Documentação mostra envio do CNF!
+      //
+      // Passo 34 (R$1005,61):
+      //   1. Enviar venda (CRT) com valor 100561
+      //   2. "Essa venda vai retornar erro de transação pendente"
+      //   3. Aparece tela → clicar em DESFAZER
+      //
+      // CONCLUSÃO: O sandbox PayGo SIMULA a pendência no Passo 34 para teste.
+      // O Passo 33 deve confirmar normalmente. A pendência é comportamento do sandbox.
       // ========================================
       const isPasso33 = valorCentavos === 100560;
       const isPasso34 = valorCentavos === 100561;
@@ -278,7 +288,7 @@ export default function TotemTEFHomologacao() {
         autorizacao: resultado.autorizacao || '',
         bandeira: resultado.bandeira || '',
         mensagem: isPasso33 
-          ? '✅ APROVADA - NÃO CONFIRMAR! Execute o Passo 34 agora.'
+          ? '✅ APROVADA e CONFIRMADA. Execute o Passo 34 para testar resolução de pendência.'
           : (resultado.mensagem || 'Transação aprovada com sucesso'),
         comprovanteCliente: resultado.comprovanteCliente,
         comprovanteLojista: resultado.comprovanteLojista,
@@ -286,34 +296,33 @@ export default function TotemTEFHomologacao() {
       });
 
       // ========================================
-      // PASSO 33: NÃO ENVIAR CONFIRMAÇÃO
+      // PASSO 33: CONFIRMAR NORMALMENTE (conforme documentação oficial)
       // ========================================
       if (isPasso33) {
-        // Conforme documentação PayGo: "Após a aprovação da venda, envie uma confirmação..."
-        // Mas no Passo 33, NÃO enviamos a confirmação para criar a pendência
+        // A documentação oficial mostra ENVIO de CNF após aprovação do Passo 33
+        // O sandbox PayGo vai simular a pendência no Passo 34 de qualquer forma
         
-        addLog('warning', '⚠️ PASSO 33: Transação APROVADA mas NÃO será confirmada (gerando pendência)', {
-          nsu: resultado.nsu,
-          autorizacao: resultado.autorizacao,
-          confirmationId,
-          instrucao: 'Execute o Passo 34 (R$1.005,61) - a transação vai falhar e você deve clicar em DESFAZER'
+        if (confirmationId) {
+          const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_AUTOMATICO');
+          addLog('info', confirmed 
+            ? '✅ PASSO 33: Confirmação enviada (conforme documentação PayGo)' 
+            : '❌ PASSO 33: Erro ao enviar confirmação', {
+            confirmationId,
+            instrucao: 'Execute o Passo 34 (R$1.005,61) - o sandbox vai simular erro de pendência'
+          });
+        }
+        
+        toast.success('✅ PASSO 33 COMPLETO!', {
+          description: 'Transação aprovada e confirmada. Execute o Passo 34 para testar resolução de pendência.',
+          duration: 8000
         });
-        
-        toast.warning('⚠️ PASSO 33 COMPLETO!', {
-          description: 'Transação NÃO confirmada (pendente). Agora execute o Passo 34!',
-          duration: 10000
-        });
-        
-        // NÃO chamar confirmarTransacaoTEF() aqui!
-        // A transação fica pendente propositalmente
       } else if (isPasso34) {
         // ========================================
-        // PASSO 34: Se chegou aqui, significa que a venda foi APROVADA
-        // Isso pode acontecer se a pendência do Passo 33 foi resolvida automaticamente
+        // PASSO 34: Se chegou aqui com APROVAÇÃO, a pendência foi resolvida
         // ========================================
-        addLog('success', '✅ PASSO 34: Transação aprovada (pendência já resolvida)', {
+        addLog('success', '✅ PASSO 34: Transação aprovada!', {
           nsu: resultado.nsu,
-          observacao: 'Se você clicou em DESFAZER na tela do PayGo, a pendência foi resolvida'
+          observacao: 'Se o PayGo exibiu tela de pendência e você clicou em DESFAZER, este é o resultado esperado.'
         });
         
         // Confirmar esta transação normalmente
@@ -323,7 +332,7 @@ export default function TotemTEFHomologacao() {
         }
 
         toast.success('✅ PASSO 34 COMPLETO!', {
-          description: 'Pendência resolvida e transação confirmada.',
+          description: 'Transação aprovada e confirmada. Fluxo de pendência testado com sucesso!',
           duration: 5000
         });
       } else if (resultado.requiresConfirmation && confirmationId) {
