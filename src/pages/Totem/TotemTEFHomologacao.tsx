@@ -308,9 +308,6 @@ export default function TotemTEFHomologacao() {
         // O sandbox PayGo vai simular a pendência no Passo 34 de qualquer forma
 
         if (confirmationId) {
-          // Guardar o ID mais recente (útil caso o PayGo aponte pendência logo na sequência)
-          setPendingResolutionConfirmationId(confirmationId);
-
           const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_AUTOMATICO');
           addLog(
             'info',
@@ -322,6 +319,11 @@ export default function TotemTEFHomologacao() {
               instrucao: 'Execute o Passo 34 (R$1.005,61) - o sandbox vai simular erro de pendência'
             }
           );
+          
+          // IMPORTANTE: NÃO guardar este ID em pendingResolutionConfirmationId!
+          // O Passo 33 já foi CONFIRMADO. Se guardarmos, o Passo 34 vai usar este ID
+          // para enviar DESFEITO_MANUAL, desfazendo a transação errada.
+          // A pendência do Passo 34 terá seu próprio ID fornecido pelo PayGo.
         }
 
         toast.success('✅ PASSO 33 COMPLETO!', {
@@ -409,19 +411,21 @@ export default function TotemTEFHomologacao() {
         const info = getPendingInfoAndroid();
         setPendingInfo(info);
 
+        // IMPORTANTE: Para o Passo 34, o ID da pendência deve vir do PayGo (info.pendingConfirmationId),
+        // NÃO do pendingResolutionConfirmationId que pode conter ID do Passo 33 (já confirmado).
+        // Se não houver ID do PayGo, usamos resolverPendenciaAndroid que busca automaticamente.
         const candidateId =
           (info?.pendingConfirmationId as string | undefined) ||
           (info?.confirmationId as string | undefined) ||
           (info?.lastConfirmationId as string | undefined) ||
-          pendingResolutionConfirmationId ||
-          undefined;
+          undefined; // NÃO usar pendingResolutionConfirmationId aqui!
 
         if (candidateId) setPendingResolutionConfirmationId(candidateId);
 
         addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Iniciando resolução automática...', {
           erro,
           pendingInfo: info,
-          candidateId,
+          candidateId: candidateId || '(nenhum - usará resolverPendenciaAndroid)',
           acao: 'Chamando DESFEITO_MANUAL automaticamente'
         });
 
@@ -632,14 +636,13 @@ export default function TotemTEFHomologacao() {
       const info = getPendingInfoAndroid();
       setPendingInfo(info);
 
+      // IMPORTANTE: Buscar ID APENAS do PayGo, não usar pendingResolutionConfirmationId
+      // que pode conter ID de transação antiga já confirmada (ex: Passo 33)
       const candidateId =
         (info?.pendingConfirmationId as string | undefined) ||
         (info?.confirmationId as string | undefined) ||
         (info?.lastConfirmationId as string | undefined) ||
-        pendingResolutionConfirmationId ||
-        undefined;
-
-      if (candidateId) setPendingResolutionConfirmationId(candidateId);
+        undefined; // NÃO usar pendingResolutionConfirmationId!
 
       // Preferir confirmação com ID específico quando disponível
       if (candidateId) {
@@ -696,14 +699,12 @@ export default function TotemTEFHomologacao() {
       const info = getPendingInfoAndroid();
       setPendingInfo(info);
 
+      // IMPORTANTE: Buscar ID APENAS do PayGo
       const candidateId =
         (info?.pendingConfirmationId as string | undefined) ||
         (info?.confirmationId as string | undefined) ||
         (info?.lastConfirmationId as string | undefined) ||
-        pendingResolutionConfirmationId ||
         undefined;
-
-      if (candidateId) setPendingResolutionConfirmationId(candidateId);
 
       if (candidateId) {
         console.log('[PDV] Usando confirmarTransacaoTEF (CONFIRMADO_MANUAL) com ID:', candidateId);
