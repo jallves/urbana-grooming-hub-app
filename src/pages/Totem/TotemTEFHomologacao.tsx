@@ -407,47 +407,75 @@ export default function TotemTEFHomologacao() {
         });
         
         // ========================================
-        // PASSO 34: Erro de Transação Pendente
+        // PASSO 34: Resolução de Pendência via PayGo
         // ========================================
-        // Conforme documentação PayGo:
+        // Conforme documentação PayGo oficial:
         // "Essa venda vai retornar erro de transação pendente, clique em desfazer"
         // 
-        // O PayGo exibe uma tela com botões "Confirmar" e "Desfazer"
-        // O usuário deve CLICAR EM DESFAZER na interface do PayGo
+        // FLUXO REAL:
+        // 1. Frontend envia venda R$ 1.005,61
+        // 2. PayGo detecta pendência → EXIBE TELA com "Confirmar" e "Desfazer"
+        // 3. Operador CLICA em "DESFAZER" na interface do PayGo
+        // 4. PayGo retorna erro/cancelamento ao frontend
+        // 5. Frontend registra sucesso do teste
+        //
+        // IMPORTANTE: O PayGo (não o frontend) exibe a tela de resolução!
         // ========================================
         if (isPasso34) {
           const erroPendencia = erroLower.includes('pendente') || 
                                erroLower.includes('-2599') ||
                                erroLower.includes('transação pendente');
           
-          if (erroPendencia) {
-            addLog('warning', '⚠️ PASSO 34: Erro de transação pendente detectado!', {
+          // Detectar se a pendência foi RESOLVIDA (operador já clicou em Desfazer)
+          const pendenciaResolvida = erroLower.includes('desfeita') || 
+                                     erroLower.includes('resolvida') ||
+                                     erroLower.includes('cancelad');
+          
+          if (pendenciaResolvida || isCancelamento) {
+            // Operador já clicou em "Desfazer" - PASSO COMPLETO!
+            addLog('success', '✅ PASSO 34 COMPLETO: Pendência resolvida via PayGo!', {
               erro,
-              instrucao: 'O PayGo deve exibir tela com opções "Confirmar" ou "Desfazer"',
-              acao: 'CLIQUE EM DESFAZER na tela do PayGo!'
+              observacao: 'Operador clicou em "Desfazer" na interface do PayGo'
             });
             
-            toast.warning('⚠️ PASSO 34: Clique em DESFAZER!', {
-              description: 'Na tela do PayGo, clique no botão "Desfazer" para resolver a pendência.',
+            toast.success('✅ PASSO 34 COMPLETO!', {
+              description: 'Pendência resolvida com sucesso. Teste finalizado!',
+              duration: 8000
+            });
+          } else if (erroPendencia) {
+            // PayGo está exibindo (ou vai exibir) a tela de resolução
+            addLog('warning', '⚠️ PASSO 34: Pendência detectada pelo PayGo', {
+              erro,
+              instrucao: 'O PayGo deve exibir/exibiu tela com "Confirmar" e "Desfazer"',
+              acao: 'Se ainda não clicou, CLIQUE EM DESFAZER na tela do PayGo!'
+            });
+            
+            toast.warning('⚠️ PASSO 34: Verifique a tela do PayGo', {
+              description: 'Clique em "Desfazer" na tela do PayGo para resolver a pendência.',
               duration: 15000
             });
           } else {
-            addLog('info', '📋 PASSO 34: Erro não é de pendência', {
+            addLog('info', '📋 PASSO 34: Retorno do PayGo', {
               erro,
-              observacao: 'Se a pendência já foi resolvida, tente novamente'
+              observacao: 'Verifique se a pendência foi resolvida'
             });
           }
         }
         
+        // Para o Passo 34, qualquer retorno após clicar em "Desfazer" é sucesso do teste
+        const isPasso34Sucesso = isPasso34 && (isCancelamento || erroLower.includes('desfeita') || erroLower.includes('resolvida'));
+        
         setTransactionResult({
           show: true,
-          status: isPasso34 ? 'cancelado' : 'negado', // Passo 34 com pendência não é "negado", é esperado
+          status: isPasso34Sucesso ? 'aprovado' : (isPasso34 ? 'cancelado' : 'negado'),
           valor: parseInt(amount, 10) / 100,
           nsu: 'N/A',
           autorizacao: 'N/A',
           bandeira: '',
           mensagem: isPasso34 
-            ? `⚠️ PASSO 34: ${erro}\n\n➡️ CLIQUE EM "DESFAZER" NA TELA DO PAYGO!`
+            ? (isPasso34Sucesso 
+                ? '✅ PASSO 34 COMPLETO! Pendência resolvida via PayGo.'
+                : `⚠️ PASSO 34: ${erro}\n\n➡️ Se o PayGo exibir tela, clique em "DESFAZER"`)
             : erro,
           passoTeste: testePasso?.passo
         });
