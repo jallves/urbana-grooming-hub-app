@@ -49,6 +49,7 @@ import {
   cancelarVendaAndroid,
   resolverPendenciaAndroid,
   reimprimirUltimaTransacaoAndroid,
+  getPendingInfoAndroid,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
@@ -197,8 +198,9 @@ export default function TotemTEFHomologacao() {
     autorizacao: string;
   } | null>(null);
 
-  // Passos 33/34: armazenar a confirmação do Passo 33 para resolver no Passo 34
-  const [passo33PendingConfirmationId, setPasso33PendingConfirmationId] = useState<string | null>(null);
+  // Pendência PayGo (ex: erro -2599): armazenar ID a ser usado em CONFIRMADO_MANUAL / DESFEITO_MANUAL
+  const [pendingResolutionConfirmationId, setPendingResolutionConfirmationId] = useState<string | null>(null);
+  const [pendingInfo, setPendingInfo] = useState<Record<string, unknown> | null>(null);
 
   // Modal de resultado da transação
   const [transactionResult, setTransactionResult] = useState<{
@@ -301,19 +303,27 @@ export default function TotemTEFHomologacao() {
       if (isPasso33) {
         // A documentação oficial mostra ENVIO de CNF após aprovação do Passo 33
         // O sandbox PayGo vai simular a pendência no Passo 34 de qualquer forma
-        
+
         if (confirmationId) {
+          // Guardar o ID mais recente (útil caso o PayGo aponte pendência logo na sequência)
+          setPendingResolutionConfirmationId(confirmationId);
+
           const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_AUTOMATICO');
-          addLog('info', confirmed 
-            ? '✅ PASSO 33: Confirmação enviada (conforme documentação PayGo)' 
-            : '❌ PASSO 33: Erro ao enviar confirmação', {
-            confirmationId,
-            instrucao: 'Execute o Passo 34 (R$1.005,61) - o sandbox vai simular erro de pendência'
-          });
+          addLog(
+            'info',
+            confirmed
+              ? '✅ PASSO 33: Confirmação enviada (conforme documentação PayGo)'
+              : '❌ PASSO 33: Erro ao enviar confirmação',
+            {
+              confirmationId,
+              instrucao: 'Execute o Passo 34 (R$1.005,61) - o sandbox vai simular erro de pendência'
+            }
+          );
         }
-        
+
         toast.success('✅ PASSO 33 COMPLETO!', {
-          description: 'Transação aprovada e confirmada. Execute o Passo 34 para testar resolução de pendência.',
+          description:
+            'Transação aprovada e confirmada. Execute o Passo 34 para testar resolução de pendência.',
           duration: 8000
         });
       } else if (isPasso34) {
@@ -361,19 +371,71 @@ export default function TotemTEFHomologacao() {
       const resultadoEsperado = testePasso?.resultado || 'N/A';
       const timestamp = new Date().toISOString();
       
-      // PASSO 34: Verificar se é a transação de R$ 1.005,61 que deve ser negada
+      // PASSO 34: Verificar se é a transação de R$ 1.005,61 (pendência -2599)
       const isPasso34 = valorCentavos === 100561;
-      
-      // Detectar se é cancelamento (rede não informada, operação cancelada, etc.)
+
       const erroLower = erro.toLowerCase();
-      const isCancelamento = erroLower.includes('cancelad') || 
-                             erroLower.includes('rede não informada') ||
-                             erroLower.includes('operação cancelada') ||
-                             erroLower.includes('esc') ||
-                             erroLower.includes('abortado');
-      
-      if (isCancelamento) {
-        // Tratar como OPERAÇÃO CANCELADA (Passo 05 - rede não informada)
+
+      // Detectar pendência (PayGo / sandbox costuma retornar -2599)
+      const isErroPendencia =
+        isPasso34 &&
+        (
+          erroLower.includes('pendente') ||
+          erroLower.includes('transação pendente') ||
+          erroLower.includes('-2599') ||
+          resultadoCompleto?.codigoErro === '-2599' ||
+          resultadoCompleto?.codigoResposta === '-2599'
+        );
+
+      // Detectar cancelamento REAL (usuário abortou / ESC)
+      // IMPORTANTE: no Passo 34, não podemos tratar a pendência como "operação cancelada", senão perdemos o fluxo.
+      const isCancelamento =
+        !isErroPendencia &&
+        (erroLower.includes('rede não informada') ||
+          erroLower.includes('esc') ||
+          erroLower.includes('abortado') ||
+          erroLower.includes('cancelad'));
+
+      if (isErroPendencia) {
+        // Em integração TEF (automação), o PayGo pode NÃO exibir a tela "Confirmar/Desfazer".
+        // Quem resolve é a automação (nosso app) via resolvePendencia/confirmarTransacao.
+        const info = getPendingInfoAndroid();
+        setPendingInfo(info);
+
+        const candidateId =
+          (info?.pendingConfirmationId as string | undefined) ||
+          (info?.confirmationId as string | undefined) ||
+          (info?.lastConfirmationId as string | undefined) ||
+          undefined;
+
+        if (candidateId) setPendingResolutionConfirmationId(candidateId);
+
+        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599)', {
+          erro,
+          pendingInfo: info,
+          instrucao: 'Abra a aba "Pendências" e clique em DESFAZER (DESFEITO_MANUAL) para liberar o TEF.'
+        });
+
+        setActiveTab('pendencias');
+
+        toast.warning('⚠️ Pendência PayGo detectada (Passo 34)', {
+          description: 'Abra a aba Pendências e clique em DESFAZER para resolver e liberar próximas transações.',
+          duration: 12000
+        });
+
+        setTransactionResult({
+          show: true,
+          status: 'erro',
+          valor: parseInt(amount, 10) / 100,
+          nsu: 'PENDENTE',
+          autorizacao: 'PENDENTE',
+          bandeira: '',
+          mensagem:
+            'PASSO 34: PayGo retornou pendência (-2599).\n\n➡️ Abra a aba "Pendências" e clique em "DESFAZER" (DESFEITO_MANUAL).',
+          passoTeste: testePasso?.passo
+        });
+      } else if (isCancelamento) {
+        // Tratar como OPERAÇÃO CANCELADA (Passo 05 - rede não informada / usuário abortou)
         addLog('warning', `⚠️ OPERAÇÃO CANCELADA`, {
           passoTeste: testePasso?.passo,
           resultadoEsperado,
@@ -382,7 +444,7 @@ export default function TotemTEFHomologacao() {
           timestamp,
           observacao: 'Transação não realizada - rede não informada ou operação cancelada pelo usuário'
         });
-        
+
         setTransactionResult({
           show: true,
           status: 'cancelado',
@@ -513,47 +575,58 @@ export default function TotemTEFHomologacao() {
   const handleResolverPendenciaDesfazer = useCallback(async () => {
     console.log('[PDV] Iniciando DESFAZIMENTO de pendência (Passo 34)');
     setResolvingPending(true);
-    
+
     try {
       if (!isAndroidAvailable) {
         toast.error('TEF Android não disponível');
         return;
       }
 
-      // Se temos o confirmationId do passo 33, usar confirmarTransacaoTEF
-      if (passo33PendingConfirmationId) {
-        console.log('[PDV] Usando confirmarTransacaoTEF com ID:', passo33PendingConfirmationId);
-        const success = confirmarTransacaoTEF(passo33PendingConfirmationId, 'DESFEITO_MANUAL');
-        
+      // Atualizar infos antes de resolver (se disponível)
+      const info = getPendingInfoAndroid();
+      setPendingInfo(info);
+
+      const candidateId =
+        (info?.pendingConfirmationId as string | undefined) ||
+        (info?.confirmationId as string | undefined) ||
+        (info?.lastConfirmationId as string | undefined) ||
+        pendingResolutionConfirmationId ||
+        undefined;
+
+      if (candidateId) setPendingResolutionConfirmationId(candidateId);
+
+      // Preferir confirmação com ID específico quando disponível
+      if (candidateId) {
+        console.log('[PDV] Usando confirmarTransacaoTEF (DESFEITO_MANUAL) com ID:', candidateId);
+        const success = confirmarTransacaoTEF(candidateId, 'DESFEITO_MANUAL');
+
         if (success) {
           toast.success('✅ DESFEITO_MANUAL enviado!', {
-            description: 'Passo 34 concluído - Pendência resolvida',
-            duration: 5000
+            description: 'Pendência em resolução. Aguarde o retorno e tente uma nova transação.',
+            duration: 6000
           });
-          setPasso33PendingConfirmationId(null);
-          
-          // Adicionar log
-          addLog('warning', '[PASSO 34] DESFEITO_MANUAL enviado com sucesso', { 
-            confirmationId: passo33PendingConfirmationId, 
-            action: 'DESFEITO_MANUAL' 
+          setPendingResolutionConfirmationId(null);
+
+          addLog('warning', '[PENDÊNCIA] DESFEITO_MANUAL enviado com sucesso', {
+            confirmationId: candidateId,
+            action: 'DESFEITO_MANUAL'
           });
-        } else {
-          toast.error('Erro ao enviar DESFEITO_MANUAL');
+          return;
         }
+      }
+
+      // Fallback: resolverPendenciaAndroid (o nativo busca os dados pendentes)
+      console.log('[PDV] Fallback: resolverPendenciaAndroid (desfazer)');
+      const success = resolverPendenciaAndroid('desfazer');
+
+      if (success) {
+        toast.success('✅ Resolução de pendência (DESFAZER) enviada!', {
+          description: 'Aguardando resposta do PayGo...',
+          duration: 6000
+        });
+        addLog('warning', 'Resolução de pendência (DESFAZER) enviada via PayGo');
       } else {
-        // Usar resolverPendenciaAndroid como fallback
-        console.log('[PDV] Usando resolverPendenciaAndroid (desfazer)');
-        const success = resolverPendenciaAndroid('desfazer');
-        
-        if (success) {
-          toast.success('✅ Resolução de pendência (DESFAZER) enviada!', {
-            description: 'Aguardando resposta do PayGo...',
-            duration: 5000
-          });
-          addLog('warning', 'Resolução de pendência (DESFAZER) enviada via PayGo');
-        } else {
-          toast.error('Erro ao resolver pendência');
-        }
+        toast.error('Erro ao resolver pendência');
       }
     } catch (error) {
       console.error('[PDV] Erro ao resolver pendência:', error);
@@ -561,47 +634,59 @@ export default function TotemTEFHomologacao() {
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, passo33PendingConfirmationId, addLog]);
+  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog]);
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
     console.log('[PDV] Iniciando CONFIRMAÇÃO de pendência');
     setResolvingPending(true);
-    
+
     try {
       if (!isAndroidAvailable) {
         toast.error('TEF Android não disponível');
         return;
       }
 
-      if (passo33PendingConfirmationId) {
-        console.log('[PDV] Usando confirmarTransacaoTEF com ID:', passo33PendingConfirmationId);
-        const success = confirmarTransacaoTEF(passo33PendingConfirmationId, 'CONFIRMADO_MANUAL');
-        
+      const info = getPendingInfoAndroid();
+      setPendingInfo(info);
+
+      const candidateId =
+        (info?.pendingConfirmationId as string | undefined) ||
+        (info?.confirmationId as string | undefined) ||
+        (info?.lastConfirmationId as string | undefined) ||
+        pendingResolutionConfirmationId ||
+        undefined;
+
+      if (candidateId) setPendingResolutionConfirmationId(candidateId);
+
+      if (candidateId) {
+        console.log('[PDV] Usando confirmarTransacaoTEF (CONFIRMADO_MANUAL) com ID:', candidateId);
+        const success = confirmarTransacaoTEF(candidateId, 'CONFIRMADO_MANUAL');
+
         if (success) {
           toast.success('✅ CONFIRMADO_MANUAL enviado!', {
-            description: 'Pendência confirmada com sucesso',
-            duration: 5000
+            description: 'Pendência confirmada. Aguarde o retorno e tente uma nova transação.',
+            duration: 6000
           });
-          setPasso33PendingConfirmationId(null);
-          addLog('success', 'CONFIRMADO_MANUAL enviado com sucesso', { 
-            confirmationId: passo33PendingConfirmationId, 
-            action: 'CONFIRMADO_MANUAL' 
+          setPendingResolutionConfirmationId(null);
+
+          addLog('success', '[PENDÊNCIA] CONFIRMADO_MANUAL enviado com sucesso', {
+            confirmationId: candidateId,
+            action: 'CONFIRMADO_MANUAL'
           });
-        } else {
-          toast.error('Erro ao enviar CONFIRMADO_MANUAL');
+          return;
         }
+      }
+
+      const success = resolverPendenciaAndroid('confirmar');
+
+      if (success) {
+        toast.success('✅ Resolução de pendência (CONFIRMAR) enviada!', {
+          duration: 6000
+        });
+        addLog('success', 'Resolução de pendência (CONFIRMAR) enviada via PayGo');
       } else {
-        const success = resolverPendenciaAndroid('confirmar');
-        
-        if (success) {
-          toast.success('✅ Resolução de pendência (CONFIRMAR) enviada!', {
-            duration: 5000
-          });
-          addLog('success', 'Resolução de pendência (CONFIRMAR) enviada via PayGo');
-        } else {
-          toast.error('Erro ao resolver pendência');
-        }
+        toast.error('Erro ao resolver pendência');
       }
     } catch (error) {
       console.error('[PDV] Erro ao confirmar pendência:', error);
@@ -609,7 +694,7 @@ export default function TotemTEFHomologacao() {
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, passo33PendingConfirmationId, addLog]);
+  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog]);
 
   // Auto-scroll
   useEffect(() => {
@@ -1641,7 +1726,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
           >
             <AlertTriangle className="h-4 w-4 mr-1" />
             33/34
-            {passo33PendingConfirmationId && (
+            {pendingResolutionConfirmationId && (
               <Badge className="ml-1 bg-red-500 text-white text-[9px] px-1 animate-pulse">
                 !
               </Badge>
@@ -1670,37 +1755,34 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-sm text-yellow-400 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
-                  Passos 33 e 34 - Transação Pendente
+                  Passos 33 e 34 - Pendência (-2599)
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3 text-xs text-yellow-200/80 space-y-2">
                 <p><strong>Passo 33:</strong> Execute venda de R$ 1.005,60 → Aprovada e confirmada normalmente.</p>
-                <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61 → Será <strong>NEGADA</strong> e o sistema <strong>automaticamente</strong> envia DESFEITO_MANUAL.</p>
-                <p className="text-green-400 text-[10px] italic">✓ O desfazimento é enviado automaticamente quando a transação do Passo 34 for negada.</p>
+                <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61 → O PayGo retorna <strong>pendência (-2599)</strong>.</p>
+                <p className="text-yellow-300/80 text-[10px] italic">Em integração (automação), a tela “Confirmar/Desfazer” pode não aparecer no PayGo. A resolução deve ser feita aqui.</p>
               </CardContent>
             </Card>
 
             {/* Status da Pendência */}
-            <Card className={`border-2 ${passo33PendingConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
+            <Card className={`border-2 ${pendingResolutionConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
               <CardContent className="p-4 text-center">
-                {passo33PendingConfirmationId ? (
+                {pendingResolutionConfirmationId ? (
                   <>
                     <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-2 animate-pulse" />
                     <p className="text-red-400 font-bold text-lg">PENDÊNCIA DETECTADA</p>
                     <p className="text-red-300/70 text-xs mt-1 font-mono break-all">
-                      ID: {passo33PendingConfirmationId}
+                      ID: {pendingResolutionConfirmationId}
                     </p>
                     <p className="text-yellow-400 text-sm mt-2">
-                      Envie DESFEITO_MANUAL para resolver (Passo 34)
+                      Clique em <strong>DESFAZER</strong> para liberar o TEF
                     </p>
                   </>
                 ) : (
                   <>
                     <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
                     <p className="text-green-400 font-bold text-lg">SEM PENDÊNCIAS</p>
-                    <p className="text-green-300/70 text-sm mt-1">
-                      Execute o Passo 33 (R$ 1.005,60) para criar uma pendência
-                    </p>
                   </>
                 )}
               </CardContent>
