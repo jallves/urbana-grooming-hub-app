@@ -571,17 +571,35 @@ class PayGoService(private val context: Context) {
     /**
      * Salva dados de transação pendente para resolução posterior
      * PERSISTIDO em SharedPreferences para sobreviver ao reinício do app
+     * 
+     * IMPORTANTE: Os campos transactionNsu e hostNsu são OBRIGATÓRIOS para resolução.
+     * Se não vierem na resposta, usamos localNsu como fallback (é melhor tentar com dados
+     * possivelmente duplicados do que não tentar resolver).
      */
     private fun savePendingData(uri: Uri) {
+        val localNsu = uri.getQueryParameter("terminalNsu") ?: ""
+        val transactionNsu = uri.getQueryParameter("transactionNsu")?.takeIf { it.isNotEmpty() } ?: localNsu
+        val hostNsu = uri.getQueryParameter("hostNsu")?.takeIf { it.isNotEmpty() } ?: transactionNsu
+        
         lastPendingData = JSONObject().apply {
             put("providerName", uri.getQueryParameter("providerName") ?: "")
             put("merchantId", uri.getQueryParameter("merchantId") ?: "")
-            put("localNsu", uri.getQueryParameter("terminalNsu") ?: "")
-            put("transactionNsu", uri.getQueryParameter("transactionNsu") ?: "")
-            put("hostNsu", uri.getQueryParameter("transactionNsu") ?: "") // Usar mesmo NSU se hostNsu não vier
+            put("localNsu", localNsu)
+            put("transactionNsu", transactionNsu)  // Fallback para localNsu se vazio
+            put("hostNsu", hostNsu)                // Fallback para transactionNsu se vazio
             put("confirmationTransactionId", uri.getQueryParameter("confirmationTransactionId") ?: "")
             put("timestamp", System.currentTimeMillis())
         }
+        
+        addLog("[PENDING] ════════════════════════════════════════")
+        addLog("[PENDING] DADOS DE PENDÊNCIA SALVOS:")
+        addLog("[PENDING] providerName: ${lastPendingData?.optString("providerName")}")
+        addLog("[PENDING] merchantId: ${lastPendingData?.optString("merchantId")}")
+        addLog("[PENDING] localNsu: $localNsu")
+        addLog("[PENDING] transactionNsu: $transactionNsu (fallback: ${transactionNsu == localNsu})")
+        addLog("[PENDING] hostNsu: $hostNsu (fallback: ${hostNsu == transactionNsu})")
+        addLog("[PENDING] confirmationTransactionId: ${lastPendingData?.optString("confirmationTransactionId")}")
+        addLog("[PENDING] ════════════════════════════════════════")
         
         // Persistir em SharedPreferences
         prefs.edit()
@@ -589,7 +607,7 @@ class PayGoService(private val context: Context) {
             .putLong("pending_timestamp", System.currentTimeMillis())
             .apply()
         
-        addLog("[PENDING] Dados de pendência PERSISTIDOS: $lastPendingData")
+        addLog("[PENDING] ✅ Dados PERSISTIDOS em SharedPreferences")
     }
     
     /**
@@ -861,11 +879,36 @@ class PayGoService(private val context: Context) {
     /**
      * NOVO: Resolve pendência usando dados passados diretamente do JavaScript
      * Isso resolve o problema de perda de dados quando o APK reinicia
+     * 
+     * IMPORTANTE: Aplica fallbacks para campos NSU obrigatórios que podem vir vazios
      */
-    fun resolvePendingWithExternalData(pendingData: JSONObject, status: String, callback: (JSONObject) -> Unit) {
+    fun resolvePendingWithExternalData(pendingDataRaw: JSONObject, status: String, callback: (JSONObject) -> Unit) {
+        addLog("[RESOLVE-EXT] ════════════════════════════════════════")
         addLog("[RESOLVE-EXT] Resolvendo com dados do JavaScript...")
         addLog("[RESOLVE-EXT] Status: $status")
-        addLog("[RESOLVE-EXT] Dados: $pendingData")
+        addLog("[RESOLVE-EXT] Dados recebidos: $pendingDataRaw")
+        
+        // Aplicar fallbacks para campos NSU obrigatórios
+        val localNsu = pendingDataRaw.optString("localNsu", "")
+        val transactionNsu = pendingDataRaw.optString("transactionNsu", "").takeIf { it.isNotEmpty() } ?: localNsu
+        val hostNsu = pendingDataRaw.optString("hostNsu", "").takeIf { it.isNotEmpty() } ?: transactionNsu
+        
+        // Criar objeto com fallbacks aplicados
+        val pendingData = JSONObject().apply {
+            put("providerName", pendingDataRaw.optString("providerName", ""))
+            put("merchantId", pendingDataRaw.optString("merchantId", ""))
+            put("localNsu", localNsu)
+            put("transactionNsu", transactionNsu)
+            put("hostNsu", hostNsu)
+            put("confirmationTransactionId", pendingDataRaw.optString("confirmationTransactionId", ""))
+            put("timestamp", System.currentTimeMillis())
+        }
+        
+        addLog("[RESOLVE-EXT] Dados com fallbacks:")
+        addLog("[RESOLVE-EXT]   localNsu: $localNsu")
+        addLog("[RESOLVE-EXT]   transactionNsu: $transactionNsu (fallback: ${transactionNsu == localNsu})")
+        addLog("[RESOLVE-EXT]   hostNsu: $hostNsu (fallback: ${hostNsu == transactionNsu})")
+        addLog("[RESOLVE-EXT] ════════════════════════════════════════")
         
         // Salvar os dados recebidos para uso imediato
         lastPendingData = pendingData
@@ -876,20 +919,37 @@ class PayGoService(private val context: Context) {
             .putLong("pending_timestamp", System.currentTimeMillis())
             .apply()
         
-        // Agora resolver usando os dados recém-salvos
+        // Agora resolver usando os dados com fallbacks
         resolvePendingWithFullData(pendingData, status, callback)
     }
     
     /**
      * NOVO: Salva dados de pendência recebidos do JavaScript
      */
-    fun savePendingDataFromJS(pendingData: JSONObject) {
-        lastPendingData = pendingData
+    fun savePendingDataFromJS(pendingDataRaw: JSONObject) {
+        // Aplicar fallbacks
+        val localNsu = pendingDataRaw.optString("localNsu", "")
+        val transactionNsu = pendingDataRaw.optString("transactionNsu", "").takeIf { it.isNotEmpty() } ?: localNsu
+        val hostNsu = pendingDataRaw.optString("hostNsu", "").takeIf { it.isNotEmpty() } ?: transactionNsu
+        
+        lastPendingData = JSONObject().apply {
+            put("providerName", pendingDataRaw.optString("providerName", ""))
+            put("merchantId", pendingDataRaw.optString("merchantId", ""))
+            put("localNsu", localNsu)
+            put("transactionNsu", transactionNsu)
+            put("hostNsu", hostNsu)
+            put("confirmationTransactionId", pendingDataRaw.optString("confirmationTransactionId", ""))
+            put("timestamp", System.currentTimeMillis())
+        }
+        
         prefs.edit()
-            .putString("pending_data", pendingData.toString())
+            .putString("pending_data", lastPendingData.toString())
             .putLong("pending_timestamp", System.currentTimeMillis())
             .apply()
-        addLog("[PERSIST-JS] Dados de pendência salvos do JavaScript: $pendingData")
+            
+        addLog("[PERSIST-JS] Dados de pendência salvos do JavaScript (com fallbacks):")
+        addLog("[PERSIST-JS]   transactionNsu: $transactionNsu")
+        addLog("[PERSIST-JS]   hostNsu: $hostNsu")
     }
 
     // ========================================================================
