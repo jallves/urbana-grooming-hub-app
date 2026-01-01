@@ -205,7 +205,7 @@ export default function TotemTEFHomologacao() {
   // Modal de resultado da transação
   const [transactionResult, setTransactionResult] = useState<{
     show: boolean;
-    status: 'aprovado' | 'negado' | 'cancelado' | 'erro';
+    status: 'aprovado' | 'negado' | 'cancelado' | 'erro' | 'pendencia';
     valor: number;
     nsu: string;
     autorizacao: string;
@@ -214,6 +214,7 @@ export default function TotemTEFHomologacao() {
     comprovanteCliente?: string;
     comprovanteLojista?: string;
     passoTeste?: string;
+    isPendenciaPasso34?: boolean; // Flag para mostrar botões CONFIRMAR/DESFAZER
   } | null>(null);
 
   // Adicionar log com data - DEFINIDO ANTES do useTEFAndroid para estar disponível nos callbacks
@@ -442,14 +443,15 @@ export default function TotemTEFHomologacao() {
 
         setTransactionResult({
           show: true,
-          status: 'erro',
+          status: 'pendencia',
           valor: parseInt(amount, 10) / 100,
-          nsu: 'PENDENTE',
-          autorizacao: 'PENDENTE',
+          nsu: String(info?.lastNsu || 'PENDENTE'),
+          autorizacao: String(info?.lastConfirmationId || 'PENDENTE'),
           bandeira: '',
           mensagem:
-            'PASSO 34: Pendência detectada (-2599).\n\n➡️ Vá em “Pendências” e escolha: CONFIRMAR ou DESFAZER.\n\nDepois de resolver, execute uma nova transação para validar que o TEF voltou ao normal.',
-          passoTeste: testePasso?.passo
+            'PASSO 34: Pendência detectada (-2599).\n\nEscolha abaixo: CONFIRMAR ou DESFAZER a transação pendente.',
+          passoTeste: testePasso?.passo,
+          isPendenciaPasso34: true
         });
       } else if (isCancelamento) {
         // Tratar como OPERAÇÃO CANCELADA (Passo 05 - rede não informada / usuário abortou)
@@ -1532,6 +1534,51 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
 ╚════════════════════════════════════╝
       `.trim();
     }
+  };
+
+  // Função para resolver pendência do modal (Passo 34)
+  const handlePendingResolution = async (acao: 'confirmar' | 'desfazer') => {
+    setResolvingPending(true);
+    const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
+    
+    addLog('info', `🔄 Resolvendo pendência via modal: ${status}`, { 
+      acao, 
+      confirmationId: pendingResolutionConfirmationId 
+    });
+    
+    let resolved = false;
+    
+    // Tentar com ID específico primeiro
+    if (pendingResolutionConfirmationId) {
+      resolved = confirmarTransacaoTEF(pendingResolutionConfirmationId, status);
+      addLog('info', resolved 
+        ? `✅ ${status} enviado (ID: ${pendingResolutionConfirmationId})` 
+        : `⚠️ Fallback necessário - ID não resolveu`, { pendingResolutionConfirmationId });
+    }
+    
+    // Fallback: resolverPendenciaAndroid (SDK busca pendência automaticamente)
+    if (!resolved) {
+      resolved = resolverPendenciaAndroid(acao);
+      addLog('info', resolved 
+        ? `✅ resolverPendenciaAndroid(${acao}) chamado` 
+        : `❌ Falha ao chamar resolverPendenciaAndroid`);
+    }
+    
+    if (resolved) {
+      toast.success(`✅ ${status} enviado!`, {
+        description: 'Aguarde o retorno do PayGo. Execute uma nova transação para validar.',
+        duration: 8000
+      });
+      setPendingResolutionConfirmationId(null);
+      setTransactionResult(null);
+    } else {
+      toast.error('❌ Não foi possível resolver a pendência', {
+        description: 'Tente novamente ou verifique a tela do PayGo.',
+        duration: 8000
+      });
+    }
+    
+    setResolvingPending(false);
   };
 
   // Função para imprimir recibo diferenciado (Passo 10)
@@ -2769,12 +2816,16 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   ? 'bg-green-500/20' 
                   : transactionResult.status === 'negado'
                   ? 'bg-red-500/20'
+                  : transactionResult.status === 'pendencia'
+                  ? 'bg-orange-500/20'
                   : 'bg-yellow-500/20'
               }`}>
                 {transactionResult.status === 'aprovado' ? (
                   <CheckCircle2 className="h-10 w-10 text-green-400" />
                 ) : transactionResult.status === 'negado' ? (
                   <XCircle className="h-10 w-10 text-red-400" />
+                ) : transactionResult.status === 'pendencia' ? (
+                  <AlertTriangle className="h-10 w-10 text-orange-400" />
                 ) : (
                   <XCircle className="h-10 w-10 text-yellow-400" />
                 )}
@@ -2784,10 +2835,13 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   ? 'text-green-400' 
                   : transactionResult.status === 'negado'
                   ? 'text-red-400'
+                  : transactionResult.status === 'pendencia'
+                  ? 'text-orange-400'
                   : 'text-yellow-400'
               }`}>
                 {transactionResult.status === 'aprovado' ? 'TRANSAÇÃO APROVADA' : 
                  transactionResult.status === 'negado' ? 'TRANSAÇÃO NEGADA' : 
+                 transactionResult.status === 'pendencia' ? 'PENDÊNCIA DETECTADA' :
                  'TRANSAÇÃO CANCELADA'}
               </CardTitle>
               {/* Mensagem de erro do host - destacada para cancelamentos */}
@@ -2827,6 +2881,12 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <span className="text-urbana-light/60">Bandeira:</span>
                   <span className="text-urbana-light">{transactionResult.bandeira || '-'}</span>
                 </div>
+                {/* Mensagem para pendência */}
+                {transactionResult.mensagem && transactionResult.status === 'pendencia' && (
+                  <div className="pt-2 border-t border-orange-500/30">
+                    <p className="text-xs text-orange-300 whitespace-pre-line">{transactionResult.mensagem}</p>
+                  </div>
+                )}
                 {/* Mensagem apenas para status aprovado (negado já exibe no topo) */}
                 {transactionResult.mensagem && transactionResult.status === 'aprovado' && (
                   <div className="pt-2 border-t border-urbana-light/10">
@@ -2834,6 +2894,56 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   </div>
                 )}
               </div>
+              
+              {/* BOTÕES CONFIRMAR/DESFAZER PARA PENDÊNCIA (Passo 34) */}
+              {transactionResult.status === 'pendencia' && transactionResult.isPendenciaPasso34 && (
+                <div className="space-y-3">
+                  <p className="text-sm text-center text-orange-300 font-semibold">
+                    Escolha a ação para resolver a pendência:
+                  </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Button
+                      className="h-16 bg-red-600 hover:bg-red-700 text-white font-bold text-lg"
+                      disabled={resolvingPending}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePendingResolution('desfazer');
+                      }}
+                    >
+                      {resolvingPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Undo2 className="h-5 w-5 mr-2" />
+                          DESFAZER
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      className="h-16 bg-green-600 hover:bg-green-700 text-white font-bold text-lg"
+                      disabled={resolvingPending}
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handlePendingResolution('confirmar');
+                      }}
+                    >
+                      {resolvingPending ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <CheckSquare className="h-5 w-5 mr-2" />
+                          CONFIRMAR
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <p className="text-xs text-center text-urbana-light/50">
+                    Conforme documentação PayGo: Passo 34 deve clicar em "Desfazer"
+                  </p>
+                </div>
+              )}
               
               {/* Botões de Impressão */}
               {transactionResult.status === 'aprovado' && (
@@ -2860,18 +2970,20 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                 </div>
               )}
               
-              {/* Botão Fechar */}
-              <Button
-                className="w-full bg-urbana-gold text-urbana-black font-bold h-14 text-lg"
-                onPointerDown={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeTransactionResult();
-                }}
-              >
-                <X className="h-5 w-5 mr-2" />
-                {transactionResult.status === 'aprovado' ? 'Fechar / Próxima Transação' : 'Fechar / Tentar Novamente'}
-              </Button>
+              {/* Botão Fechar - não mostra para pendência */}
+              {transactionResult.status !== 'pendencia' && (
+                <Button
+                  className="w-full bg-urbana-gold text-urbana-black font-bold h-14 text-lg"
+                  onPointerDown={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeTransactionResult();
+                  }}
+                >
+                  <X className="h-5 w-5 mr-2" />
+                  {transactionResult.status === 'aprovado' ? 'Fechar / Próxima Transação' : 'Fechar / Tentar Novamente'}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>
