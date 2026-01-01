@@ -188,6 +188,68 @@ class TEFBridge(
     }
     
     /**
+     * NOVO: Resolve transação pendente COM dados passados do JavaScript
+     * Isso resolve o problema de perda de dados quando o APK reinicia
+     * 
+     * Chamado do JS: TEF.resolverPendenciaComDados(pendingDataJson, status)
+     * 
+     * @param pendingDataJson JSON string com dados da pendência (providerName, merchantId, localNsu, etc.)
+     * @param status "CONFIRMADO_MANUAL" ou "DESFEITO_MANUAL"
+     */
+    @JavascriptInterface
+    fun resolverPendenciaComDados(pendingDataJson: String, status: String) {
+        Log.i(TAG, "resolverPendenciaComDados: dados=$pendingDataJson, status=$status")
+        
+        val validStatus = when (status) {
+            "CONFIRMADO_MANUAL", "DESFEITO_MANUAL", "CONFIRMADO_AUTOMATICO" -> status
+            else -> "DESFEITO_MANUAL"
+        }
+        
+        try {
+            val pendingData = JSONObject(pendingDataJson)
+            Log.i(TAG, "resolverPendenciaComDados: pendingData parseado com sucesso")
+            
+            // Usar os dados passados diretamente
+            payGoService.resolvePendingWithExternalData(pendingData, validStatus) { result ->
+                returnResult(result)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao parsear pendingDataJson", e)
+            // Fallback: tentar sem dados
+            payGoService.resolvePendingTransaction({ result ->
+                returnResult(result)
+            }, validStatus)
+        }
+    }
+    
+    /**
+     * NOVO: Salva dados de pendência recebidos do JavaScript
+     * Chamado do JS: TEF.salvarPendingData(pendingDataJson)
+     * 
+     * @param pendingDataJson JSON string com dados da pendência
+     */
+    @JavascriptInterface
+    fun salvarPendingData(pendingDataJson: String) {
+        Log.i(TAG, "salvarPendingData: $pendingDataJson")
+        
+        try {
+            val pendingData = JSONObject(pendingDataJson)
+            payGoService.savePendingDataFromJS(pendingData)
+            
+            returnResult(JSONObject().apply {
+                put("status", "salvo")
+                put("mensagem", "Dados de pendência salvos com sucesso")
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao salvar pendingData", e)
+            returnResult(JSONObject().apply {
+                put("status", "erro")
+                put("mensagem", "Erro ao salvar dados: ${e.message}")
+            })
+        }
+    }
+    
+    /**
      * Obtém informações sobre pendências
      * Chamado do JS: TEF.getPendingInfo()
      * @return JSON string com informações de pendência

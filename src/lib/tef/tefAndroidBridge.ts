@@ -54,8 +54,8 @@ declare global {
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
       resolverPendencia: (status?: string) => void;
-      // Método alternativo para resolução de pendência com status explícito
-      resolverPendenciaComStatus?: (status: string) => void;
+      // Método que recebe dados da pendência + status (NOVO - resolve o problema)
+      resolverPendenciaComDados?: (pendingDataJson: string, status: string) => void;
       reimprimirUltimaTransacao: () => void;
       verificarPinpad: () => string;
       getStatus: () => string;
@@ -68,10 +68,8 @@ declare global {
       getPendingInfo?: () => string;
       salvarConfirmationId?: (confirmationId: string, nsu: string, autorizacao: string) => void;
       limparConfirmationId?: () => void;
-      // Método para verificar se existe pendência (PayGo SDK)
-      existeTransacaoPendente?: () => boolean;
-      // Método para obter dados da pendência (PayGo SDK)
-      obtemDadosTransacaoPendente?: () => string;
+      // Salvar dados de pendência no APK (para resolução posterior)
+      salvarPendingData?: (pendingDataJson: string) => void;
     };
     Android?: {
       // Legacy Android interface
@@ -351,14 +349,17 @@ export function desfazerTransacaoTEF(confirmationId: string): boolean {
  * 3. confirmacao.informaStatusTransacao(StatusTransacao.CONFIRMADO_MANUAL ou DESFEITO_MANUAL)
  * 4. transacao.resolvePendencia(dadosPendencia, confirmacao) → resolve a pendência
  * 
- * O APK Android DEVE implementar este fluxo internamente quando chamamos resolverPendencia().
+ * IMPORTANTE: Os dados de pendência devem ser passados do JavaScript para o APK
+ * porque o APK pode perder esses dados se o app for reiniciado.
  * 
  * @param acao - 'confirmar' para CONFIRMADO_MANUAL, 'desfazer' para DESFEITO_MANUAL
  * @param confirmationId - ID da transação pendente (opcional)
+ * @param pendingDataFromJS - Dados da pendência vindos do JavaScript (opcional, mas importante!)
  */
 export function resolverPendenciaAndroid(
   acao: 'confirmar' | 'desfazer' = 'confirmar',
-  confirmationId?: string
+  confirmationId?: string,
+  pendingDataFromJS?: Record<string, unknown>
 ): boolean {
   if (!isAndroidTEFAvailable()) {
     console.warn('[TEFBridge] TEF Android não disponível');
@@ -374,6 +375,7 @@ export function resolverPendenciaAndroid(
     console.log('[TEFBridge] ║ Ação:', acao.toUpperCase().padEnd(52), '║');
     console.log('[TEFBridge] ║ Status:', status.padEnd(50), '║');
     console.log('[TEFBridge] ║ confirmationId:', (confirmationId || 'N/A').substring(0, 42).padEnd(42), '║');
+    console.log('[TEFBridge] ║ pendingDataFromJS:', pendingDataFromJS ? 'SIM' : 'NÃO'.padEnd(39), '║');
     console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
     
     // Verificar métodos disponíveis no TEF
@@ -381,14 +383,27 @@ export function resolverPendenciaAndroid(
     console.log('[TEFBridge] Métodos TEF disponíveis:', tefMethods.join(', '));
     
     // ========================================================================
-    // ESTRATÉGIA 1: resolverPendenciaComStatus(status)
-    // Método específico que aceita o status diretamente
+    // ESTRATÉGIA 1 (NOVA - PREFERENCIAL): resolverPendenciaComDados(pendingDataJson, status)
+    // Passa os dados da pendência diretamente do JavaScript para o APK
     // ========================================================================
-    if (typeof (window.TEF as any).resolverPendenciaComStatus === 'function') {
-      console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComStatus(' + status + ')...');
-      (window.TEF as any).resolverPendenciaComStatus(status);
-      console.log('[TEFBridge] ✅ resolverPendenciaComStatus chamado');
+    if (pendingDataFromJS && typeof (window.TEF as any).resolverPendenciaComDados === 'function') {
+      const pendingDataJson = JSON.stringify(pendingDataFromJS);
+      console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComDados com dados do JS...');
+      console.log('[TEFBridge] Dados:', pendingDataJson);
+      (window.TEF as any).resolverPendenciaComDados(pendingDataJson, status);
+      console.log('[TEFBridge] ✅ resolverPendenciaComDados chamado com sucesso');
       return true;
+    }
+    
+    // ========================================================================
+    // ESTRATÉGIA 1.5: Salvar dados de pendência no APK primeiro, depois resolver
+    // ========================================================================
+    if (pendingDataFromJS && typeof (window.TEF as any).salvarPendingData === 'function') {
+      const pendingDataJson = JSON.stringify(pendingDataFromJS);
+      console.log('[TEFBridge] 💾 Salvando pendingData no APK antes de resolver...');
+      (window.TEF as any).salvarPendingData(pendingDataJson);
+      console.log('[TEFBridge] ✅ Dados de pendência salvos no APK');
+      // Agora tentar resolver
     }
     
     // ========================================================================

@@ -857,6 +857,40 @@ class PayGoService(private val context: Context) {
             callback(createError("RESOLVE_ERROR", "Erro ao resolver pendência: ${e.message}"))
         }
     }
+    
+    /**
+     * NOVO: Resolve pendência usando dados passados diretamente do JavaScript
+     * Isso resolve o problema de perda de dados quando o APK reinicia
+     */
+    fun resolvePendingWithExternalData(pendingData: JSONObject, status: String, callback: (JSONObject) -> Unit) {
+        addLog("[RESOLVE-EXT] Resolvendo com dados do JavaScript...")
+        addLog("[RESOLVE-EXT] Status: $status")
+        addLog("[RESOLVE-EXT] Dados: $pendingData")
+        
+        // Salvar os dados recebidos para uso imediato
+        lastPendingData = pendingData
+        
+        // Persistir também
+        prefs.edit()
+            .putString("pending_data", pendingData.toString())
+            .putLong("pending_timestamp", System.currentTimeMillis())
+            .apply()
+        
+        // Agora resolver usando os dados recém-salvos
+        resolvePendingWithFullData(pendingData, status, callback)
+    }
+    
+    /**
+     * NOVO: Salva dados de pendência recebidos do JavaScript
+     */
+    fun savePendingDataFromJS(pendingData: JSONObject) {
+        lastPendingData = pendingData
+        prefs.edit()
+            .putString("pending_data", pendingData.toString())
+            .putLong("pending_timestamp", System.currentTimeMillis())
+            .apply()
+        addLog("[PERSIST-JS] Dados de pendência salvos do JavaScript: $pendingData")
+    }
 
     // ========================================================================
     // CANCELAMENTO (DESFAZER)
