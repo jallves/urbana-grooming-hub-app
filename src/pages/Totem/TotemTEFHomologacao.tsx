@@ -52,6 +52,7 @@ import {
   resolverPendenciaAndroid,
   reimprimirUltimaTransacaoAndroid,
   getPendingInfoAndroid,
+  savePendingDataToLocalStorage,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
@@ -653,40 +654,44 @@ export default function TotemTEFHomologacao() {
         return;
       }
 
-      // Atualizar infos antes de resolver (se disponível)
-      const info = getPendingInfoAndroid();
-      setPendingInfo(info);
+      // ESTRATÉGIA: Buscar dados de pendência do localStorage (salvos pelo hook useTEFAndroid)
+      // Esses dados contêm providerName, merchantId, localNsu, etc.
+      let pendingDataToUse: Record<string, unknown> | null = null;
       
-      console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
-      addLog('info', '📊 PendingInfo para desfazimento', info || {});
+      // 1. Tentar localStorage (dados salvos pelo hook)
+      try {
+        const savedData = localStorage.getItem('tef_pending_data');
+        if (savedData) {
+          pendingDataToUse = JSON.parse(savedData);
+          console.log('[PDV] 📦 Dados de pendência do localStorage:', pendingDataToUse);
+        }
+      } catch (e) {
+        console.warn('[PDV] Erro ao ler localStorage:', e);
+      }
+      
+      // 2. Fallback: Tentar do APK via getPendingInfo
+      if (!pendingDataToUse) {
+        const info = getPendingInfoAndroid();
+        setPendingInfo(info);
+        pendingDataToUse = info?.pendingData as Record<string, unknown> | undefined || null;
+        console.log('[PDV] 📦 Dados de pendência do APK:', pendingDataToUse);
+      }
+      
+      // 3. Último fallback: usar pendingInfo do state
+      if (!pendingDataToUse && pendingInfo?.pendingData) {
+        pendingDataToUse = pendingInfo.pendingData as Record<string, unknown>;
+        console.log('[PDV] 📦 Dados de pendência do state:', pendingDataToUse);
+      }
 
-      // Extrair dados de pendência COMPLETOS para passar ao APK
-      const pendingData = info?.pendingData as Record<string, unknown> | undefined;
-      
-      // IMPORTANTE: Também usar o pendingInfo do estado do componente (pode ter dados mais recentes)
-      const pendingDataToUse = pendingData || pendingInfo?.pendingData as Record<string, unknown> | undefined;
-      
-      console.log('[PDV] 📦 Dados de pendência para enviar ao APK:', JSON.stringify(pendingDataToUse, null, 2));
+      addLog('info', '🔄 Resolvendo pendência via modal: DESFEITO_MANUAL', {
+        acao: 'desfazer',
+        pendingDataDisponivel: !!pendingDataToUse,
+        fonte: pendingDataToUse ? 'localStorage/APK' : 'nenhum'
+      });
 
-      // Extrair possíveis IDs da pendência
-      const possibleIds = [
-        info?.pendingConfirmationId,
-        info?.confirmationId,
-        pendingDataToUse?.confirmationTransactionId,
-        pendingDataToUse?.transactionId,
-        info?.lastConfirmationId,
-      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
-      
-      console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
-
-      // ESTRATÉGIA PRINCIPAL: Passar os dados de pendência diretamente para o APK
-      // Isso resolve o problema de perda de dados quando o APK reinicia
-      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer) com dados de pendência...');
-      const success = resolverPendenciaAndroid(
-        'desfazer', 
-        possibleIds[0] as string | undefined,
-        pendingDataToUse // NOVO: passa os dados de pendência!
-      );
+      // Chamar resolução com os dados disponíveis
+      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer)...');
+      const success = resolverPendenciaAndroid('desfazer', undefined, pendingDataToUse || undefined);
 
       if (success) {
         toast.success('✅ Comando DESFAZER enviado ao PayGo!', {
@@ -696,9 +701,7 @@ export default function TotemTEFHomologacao() {
         setPendingResolutionConfirmationId(null);
 
         addLog('success', '✅ Comando DESFAZER enviado ao PayGo', {
-          idsEncontrados: possibleIds,
-          idUsado: possibleIds[0] || 'automático',
-          pendingDataEnviado: pendingDataToUse ? 'SIM' : 'NÃO',
+          pendingDataEnviado: !!pendingDataToUse,
           action: 'DESFEITO_MANUAL'
         });
         
@@ -728,94 +731,45 @@ export default function TotemTEFHomologacao() {
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
-    // Debounce: evita chamadas múltiplas
     const now = Date.now();
     if (now - lastResolveTimeRef.current < RESOLVE_DEBOUNCE_MS) {
-      console.log('[PDV] Debounce: ignorando chamada duplicada de CONFIRMAR');
       return;
     }
     lastResolveTimeRef.current = now;
-    
-    console.log('[PDV] ╔════════════════════════════════════════════════════════════╗');
-    console.log('[PDV] ║     INICIANDO CONFIRMAÇÃO DE PENDÊNCIA                      ║');
-    console.log('[PDV] ╚════════════════════════════════════════════════════════════╝');
     setResolvingPending(true);
 
     try {
       if (!isAndroidAvailable) {
         toast.error('TEF Android não disponível');
-        addLog('error', '❌ TEF Android não disponível para confirmação');
         return;
       }
 
-      const info = getPendingInfoAndroid();
-      setPendingInfo(info);
+      // Buscar dados de pendência
+      let pendingDataToUse: Record<string, unknown> | null = null;
+      try {
+        const savedData = localStorage.getItem('tef_pending_data');
+        if (savedData) pendingDataToUse = JSON.parse(savedData);
+      } catch (e) { /* ignore */ }
       
-      console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
-      addLog('info', '📊 PendingInfo para confirmação', info || {});
+      if (!pendingDataToUse) {
+        const info = getPendingInfoAndroid();
+        pendingDataToUse = info?.pendingData as Record<string, unknown> || null;
+      }
 
-      // Extrair dados de pendência COMPLETOS para passar ao APK
-      const pendingData = info?.pendingData as Record<string, unknown> | undefined;
-      const pendingDataToUse = pendingData || pendingInfo?.pendingData as Record<string, unknown> | undefined;
-      
-      console.log('[PDV] 📦 Dados de pendência para enviar ao APK:', JSON.stringify(pendingDataToUse, null, 2));
-
-      // Extrair possíveis IDs da pendência
-      const possibleIds = [
-        info?.pendingConfirmationId,
-        info?.confirmationId,
-        pendingDataToUse?.confirmationTransactionId,
-        pendingDataToUse?.transactionId,
-        info?.lastConfirmationId,
-      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
-      
-      console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
-
-      // ESTRATÉGIA PRINCIPAL: Passar os dados de pendência diretamente para o APK
-      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(confirmar) com dados de pendência...');
-      const success = resolverPendenciaAndroid(
-        'confirmar', 
-        possibleIds[0] as string | undefined,
-        pendingDataToUse // NOVO: passa os dados de pendência!
-      );
+      const success = resolverPendenciaAndroid('confirmar', undefined, pendingDataToUse || undefined);
 
       if (success) {
-        toast.success('✅ Comando CONFIRMAR enviado ao PayGo!', {
-          description: 'Aguarde a resposta do PayGo.',
-          duration: 8000
-        });
-        setPendingResolutionConfirmationId(null);
-
-        addLog('success', '✅ Comando CONFIRMAR enviado ao PayGo', {
-          idsEncontrados: possibleIds,
-          idUsado: possibleIds[0] || 'automático',
-          pendingDataEnviado: pendingDataToUse ? 'SIM' : 'NÃO',
-          action: 'CONFIRMADO_MANUAL'
-        });
-        
-        // Aguardar um momento e verificar se a pendência foi resolvida
-        setTimeout(() => {
-          const infoApos = getPendingInfoAndroid();
-          console.log('[PDV] 📊 PendingInfo APÓS confirmação:', JSON.stringify(infoApos, null, 2));
-          if (infoApos?.hasPendingData === false) {
-            toast.success('🎉 Pendência confirmada com sucesso!');
-            addLog('success', '🎉 Pendência resolvida após CONFIRMAR');
-          }
-        }, 2000);
+        toast.success('✅ Comando CONFIRMAR enviado ao PayGo!');
+        addLog('success', '✅ Comando CONFIRMAR enviado', { action: 'CONFIRMADO_MANUAL' });
       } else {
-        toast.error('❌ Falha ao enviar comando CONFIRMAR', {
-          description: 'Verifique os logs do APK para mais detalhes.'
-        });
-        addLog('error', '❌ Falha ao chamar resolverPendenciaAndroid(confirmar)');
+        toast.error('❌ Falha ao enviar CONFIRMAR');
       }
     } catch (error) {
-      console.error('[PDV] ❌ Erro ao confirmar pendência:', error);
       toast.error('Erro ao confirmar pendência');
-      addLog('error', '❌ Exceção ao confirmar pendência', { error: String(error) });
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog, pendingInfo]);
+  }, [isAndroidAvailable, addLog]);
 
   // Auto-scroll
   useEffect(() => {

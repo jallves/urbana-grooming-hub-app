@@ -8,6 +8,7 @@ import {
   registrarListenersPinpad,
   mapPaymentMethod,
   reaisToCentavos,
+  savePendingDataToLocalStorage,
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
@@ -85,6 +86,14 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       console.log('[useTEFAndroid] Dados:', JSON.stringify(resultado, null, 2));
       console.log('[useTEFAndroid] isProcessing (ref):', processingRef.current);
       console.log('[useTEFAndroid] ═══════════════════════════════════════');
+
+      // IMPORTANTE: Salvar dados de pendência ANTES de normalizar
+      // Isso captura providerName, merchantId, localNsu, etc. para resolução posterior
+      const rawData = resultado as Record<string, unknown>;
+      if (rawData.providerName || rawData.merchantId || rawData.terminalNsu) {
+        console.log('[useTEFAndroid] 💾 Salvando dados de pendência para resolução futura');
+        savePendingDataToLocalStorage(rawData);
+      }
 
       // Normalizar resultado
       const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
