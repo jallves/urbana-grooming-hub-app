@@ -226,14 +226,19 @@ TotemCostaUrbana/
 
 ## Changelog de Atualizações
 
+### v1.2.1 (Janeiro 2026) - CORREÇÃO VALIDAÇÃO
+- ✅ **CORREÇÃO CRÍTICA**: APK agora limpa `lastPendingData` e dados persistidos APÓS enviar broadcast
+  - Problema: frontend ficava em loop de validação porque `getPendingInfo()` retornava dados locais do APK (não do PayGo real)
+  - Solução: `clearPersistedPendingData()` é chamado logo após `sendBroadcast()` ser executado
+  - Resultado: `getPendingInfo()` retorna `hasPendingData: false` imediatamente após resolução
+
 ### v1.2.0 (Janeiro 2026)
 - ✅ **CORREÇÃO CRÍTICA - Resolução de Pendência**: Implementação conforme documentação oficial PayGo (seção 3.4.3)
   - Broadcast enviado com DUAS URIs separadas: `uri` (dados pendência) + `Confirmacao` (status)
   - Intent Action: `br.com.setis.confirmation.TRANSACTION`
   - Flag: `FLAG_INCLUDE_STOPPED_PACKAGES`
-- ✅ **Novo método `limparPendingData()`**: Permite frontend limpar dados do APK após validação
+- ✅ **Novo método `limparPendingData()`**: Permite frontend limpar dados do APK manualmente
 - ✅ **Logs detalhados**: Logs expandidos para debug de resolução de pendências
-- ✅ **NÃO limpar dados imediatamente**: APK não limpa dados após envio - frontend controla limpeza após validação
 
 ### v1.1.0 (Janeiro 2026)
 - ✅ **Splash Screen**: Adicionada logo oficial da Costa Urbana Barbearia

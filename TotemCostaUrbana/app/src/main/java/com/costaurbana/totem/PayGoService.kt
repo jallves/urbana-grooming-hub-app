@@ -872,12 +872,15 @@ class PayGoService(private val context: Context) {
             addLog("[RESOLVE] ✅ Broadcast enviado!")
             
             // ════════════════════════════════════════════════════════════════
-            // NÃO LIMPAR DADOS IMEDIATAMENTE
-            // O frontend fará a validação pós-resolução e limpará quando confirmar
-            // que o PayGo realmente processou a resolução
+            // LIMPAR DADOS LOCAIS APÓS ENVIAR BROADCAST
             // ════════════════════════════════════════════════════════════════
-            // REMOVIDO: clearPersistedPendingData()
-            // O JavaScript chamará limparConfirmationId() quando validar sucesso
+            // O broadcast de resolução não tem resposta (conforme documentação oficial).
+            // Portanto, devemos assumir que foi processado e limpar os dados locais.
+            // Se não limparmos, getPendingInfo() continuará retornando hasPendingData=true
+            // e o frontend entrará em loop de validação infinito.
+            addLog("[RESOLVE] 🧹 Limpando dados locais após envio...")
+            clearPersistedPendingData()
+            addLog("[RESOLVE] ✅ Dados locais limpos")
             
             callback(JSONObject().apply {
                 put("status", "resolvido")
@@ -890,9 +893,7 @@ class PayGoService(private val context: Context) {
                 put("hostNsu", pendingData.optString("hostNsu"))
                 put("uriPendencia", pendingUri.toString())
                 put("uriConfirmacao", confirmationUri)
-                // IMPORTANTE: Ainda temos pendência até validação
-                put("pendingDataCleared", false)
-                put("aguardandoValidacao", true)
+                put("pendingDataCleared", true)
             })
             
         } catch (e: Exception) {
