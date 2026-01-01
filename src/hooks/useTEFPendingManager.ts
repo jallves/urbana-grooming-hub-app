@@ -1,13 +1,18 @@
 /**
  * useTEFPendingManager - Gerenciamento de Transações Pendentes TEF
  * 
- * Implementação conforme documentação oficial PayGo:
- * - Verificação automática na inicialização
- * - Verificação antes de cada nova venda
- * - Persistência do estado vendaCommitada
- * - Decisão automática CONFIRMAR/DESFAZER baseada em vendaCommitada
- * - Bloqueio de novas vendas com pendência ativa
- * - Logs detalhados para homologação
+ * Implementação COMPLETA conforme documentação oficial PayGo:
+ * 
+ * REGRA FUNDAMENTAL: Enquanto existir qualquer transação pendente, 
+ * o PayGo bloqueia novas vendas. O PDV deve obrigatoriamente resolver
+ * a pendência antes de continuar.
+ * 
+ * FLUXO OBRIGATÓRIO:
+ * 1. No BOOT do PDV: verificar pendência
+ * 2. Antes de CADA venda: verificar pendência
+ * 3. Se venda retornar -2599: resolver pendência
+ * 4. Após resolução: VALIDAR que pendência foi realmente limpa
+ * 5. Só então permitir nova venda
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -15,7 +20,9 @@ import {
   isAndroidTEFAvailable,
   getPendingInfoAndroid,
   resolverPendenciaAndroid,
-  confirmarTransacaoTEF
+  confirmarTransacaoTEF,
+  savePendingDataToLocalStorage,
+  clearSavedPendingData
 } from '@/lib/tef/tefAndroidBridge';
 
 // ============================================================================
@@ -39,11 +46,13 @@ export interface PendingState {
   pendingData: Record<string, unknown> | null;
   lastCheck: number;
   resolving: boolean;
+  lastResolutionAttempt?: number;
+  resolutionValidated?: boolean;
 }
 
 export interface TEFPendingLog {
   timestamp: string;
-  type: 'check' | 'detect' | 'decision' | 'resolve' | 'error' | 'block';
+  type: 'check' | 'detect' | 'decision' | 'resolve' | 'validate' | 'error' | 'block';
   message: string;
   data?: Record<string, unknown>;
 }
@@ -56,6 +65,7 @@ const STORAGE_KEYS = {
   VENDA_STATE: 'tef_venda_state',
   PENDING_STATE: 'tef_pending_state',
   PENDING_LOGS: 'tef_pending_logs',
+  PENDING_DATA: 'tef_pending_data',
   LAST_CONFIRMATION_ID: 'tef_last_confirmation_id',
 };
 
@@ -112,11 +122,12 @@ interface UseTEFPendingManagerOptions {
   autoResolve?: boolean; // Se true, resolve automaticamente baseado em vendaCommitada
   onPendingDetected?: (info: Record<string, unknown>) => void;
   onPendingResolved?: (status: 'confirmado' | 'desfeito') => void;
+  onResolutionFailed?: (reason: string) => void;
   onError?: (error: string) => void;
 }
 
 export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) {
-  const { autoResolve = true, onPendingDetected, onPendingResolved, onError } = options;
+  const { autoResolve = true, onPendingDetected, onPendingResolved, onResolutionFailed, onError } = options;
 
   // Estado
   const [vendaState, setVendaState] = useState<VendaState | null>(() => loadVendaState());
@@ -125,6 +136,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     pendingData: null,
     lastCheck: 0,
     resolving: false,
+    resolutionValidated: false,
   });
   const [logs, setLogs] = useState<TEFPendingLog[]>(() => loadPendingLogs());
   const [isBlocked, setIsBlocked] = useState(false);
@@ -160,7 +172,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   }, []);
 
   // ============================================================================
-  // VERIFICAÇÃO DE PENDÊNCIA
+  // VERIFICAÇÃO DE PENDÊNCIA (paygoPendingCheckUri)
   // ============================================================================
 
   const checkPending = useCallback((): { hasPending: boolean; data: Record<string, unknown> | null } => {
@@ -169,13 +181,20 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       return { hasPending: false, data: null };
     }
 
-    addLog('check', 'Verificando transação pendente...');
+    addLog('check', '🔍 Verificando transação pendente (paygoPendingCheckUri)...');
 
     try {
       const info = getPendingInfoAndroid();
       
       if (!info) {
         addLog('check', 'Nenhuma informação de pendência retornada');
+        setPendingState(prev => ({
+          ...prev,
+          hasPending: false,
+          pendingData: null,
+          lastCheck: Date.now(),
+        }));
+        setIsBlocked(false);
         return { hasPending: false, data: null };
       }
 
@@ -186,7 +205,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       
       const hasPending = hasPendingData || hasConfirmationId;
 
-      addLog('check', `Resultado da verificação: ${hasPending ? 'PENDÊNCIA DETECTADA' : 'Sem pendências'}`, {
+      addLog('check', `Resultado: ${hasPending ? '⚠️ PENDÊNCIA DETECTADA' : '✅ Sem pendências'}`, {
         hasPendingData,
         hasConfirmationId,
         confirmationId: info.lastConfirmationId || info.confirmationId,
@@ -198,11 +217,17 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
         hasPending,
         pendingData: info,
         lastCheck: Date.now(),
+        resolutionValidated: !hasPending,
       }));
 
       if (hasPending) {
         setIsBlocked(true);
-        addLog('detect', 'TRANSAÇÃO PENDENTE DETECTADA - Bloqueando novas vendas', info);
+        addLog('detect', '🚫 BLOQUEANDO NOVAS VENDAS - Pendência ativa', info);
+        
+        // Salvar dados de pendência para uso na resolução
+        if (info) {
+          savePendingDataToLocalStorage(info);
+        }
         
         if (optionsRef.current.onPendingDetected) {
           optionsRef.current.onPendingDetected(info);
@@ -226,7 +251,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   const decideResolution = useCallback((): 'confirmar' | 'desfazer' => {
     const state = loadVendaState();
     
-    addLog('decision', 'Decidindo resolução de pendência...', {
+    addLog('decision', '🤔 Decidindo resolução de pendência...', {
       vendaState: state ? {
         ordemId: state.ordemId,
         status: state.status,
@@ -275,71 +300,92 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   }, [addLog]);
 
   // ============================================================================
-  // RESOLVER PENDÊNCIA
+  // RESOLVER PENDÊNCIA (paygoPendingConfirmUri / paygoPendingVoidUri)
   // ============================================================================
 
   const resolvePending = useCallback(async (
     acao: 'confirmar' | 'desfazer',
-    confirmationId?: string
+    pendingDataFromJS?: Record<string, unknown>
   ): Promise<boolean> => {
     if (pendingState.resolving) {
       addLog('block', 'Resolução já em andamento - ignorando');
       return false;
     }
 
-    setPendingState(prev => ({ ...prev, resolving: true }));
+    setPendingState(prev => ({ ...prev, resolving: true, lastResolutionAttempt: Date.now() }));
     
     const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
     
-    addLog('resolve', `Resolvendo pendência: ${acao.toUpperCase()}`, {
+    addLog('resolve', `🔄 Resolvendo pendência: ${acao.toUpperCase()}`, {
       status,
-      confirmationId: confirmationId || 'automático',
+      hasPendingData: !!pendingDataFromJS,
     });
 
     try {
-      let success = false;
-
-      // Tentar com confirmationId específico primeiro
-      if (confirmationId) {
-        success = confirmarTransacaoTEF(confirmationId, status as any);
-        addLog('resolve', success 
-          ? `✅ confirmarTransacaoTEF(${confirmationId}, ${status}) - sucesso`
-          : `❌ confirmarTransacaoTEF falhou`);
-      }
-
-      // Fallback: usar resolverPendenciaAndroid
+      // ====================================================================
+      // PASSO 1: Enviar comando de resolução via URI
+      // ====================================================================
+      const success = resolverPendenciaAndroid(acao, undefined, pendingDataFromJS);
+      
       if (!success) {
-        success = resolverPendenciaAndroid(acao);
-        addLog('resolve', success 
-          ? `✅ resolverPendenciaAndroid(${acao}) - sucesso`
-          : `❌ resolverPendenciaAndroid falhou`);
-      }
-
-      if (success) {
-        // Limpar estados
-        setVendaState(null);
-        saveVendaState(null);
-        setIsBlocked(false);
-        setPendingState({
-          hasPending: false,
-          pendingData: null,
-          lastCheck: Date.now(),
-          resolving: false,
-        });
-
-        if (optionsRef.current.onPendingResolved) {
-          optionsRef.current.onPendingResolved(acao === 'confirmar' ? 'confirmado' : 'desfeito');
-        }
-
-        addLog('resolve', `✅ Pendência resolvida com ${acao.toUpperCase()}`);
-      } else {
-        addLog('error', 'Falha ao resolver pendência');
+        addLog('error', `❌ Falha ao enviar comando ${acao.toUpperCase()}`);
         if (optionsRef.current.onError) {
-          optionsRef.current.onError('Falha ao resolver pendência');
+          optionsRef.current.onError(`Falha ao enviar comando ${acao}`);
         }
+        return false;
+      }
+      
+      addLog('resolve', `✅ Comando ${acao.toUpperCase()} enviado ao PayGo`);
+
+      // ====================================================================
+      // PASSO 2: VALIDAÇÃO PÓS-RESOLUÇÃO (OBRIGATÓRIO)
+      // Aguardar um momento e verificar se a pendência foi realmente limpa
+      // ====================================================================
+      addLog('validate', '⏳ Aguardando validação pós-resolução...');
+      
+      // Aguardar 1.5 segundos para o PayGo processar
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      
+      // Re-verificar pendência
+      const { hasPending: stillPending } = checkPending();
+      
+      if (stillPending) {
+        // ❌ PENDÊNCIA NÃO FOI RESOLVIDA
+        addLog('validate', '❌ VALIDAÇÃO FALHOU: Pendência ainda existe!', {
+          acao,
+          observacao: 'O PayGo não processou a resolução. Manter bloqueio.'
+        });
+        
+        if (optionsRef.current.onResolutionFailed) {
+          optionsRef.current.onResolutionFailed('Pendência não foi resolvida pelo PayGo');
+        }
+        
+        return false;
       }
 
-      return success;
+      // ✅ PENDÊNCIA RESOLVIDA COM SUCESSO
+      addLog('validate', '✅ VALIDAÇÃO OK: Pendência resolvida com sucesso!');
+      
+      // Limpar estados
+      setVendaState(null);
+      saveVendaState(null);
+      clearSavedPendingData();
+      setIsBlocked(false);
+      setPendingState({
+        hasPending: false,
+        pendingData: null,
+        lastCheck: Date.now(),
+        resolving: false,
+        resolutionValidated: true,
+      });
+
+      if (optionsRef.current.onPendingResolved) {
+        optionsRef.current.onPendingResolved(acao === 'confirmar' ? 'confirmado' : 'desfeito');
+      }
+
+      addLog('resolve', `🎉 Pendência resolvida com ${acao.toUpperCase()} e VALIDADA`);
+      return true;
+
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : 'Erro desconhecido';
       addLog('error', `Erro ao resolver pendência: ${errorMsg}`);
@@ -350,7 +396,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     } finally {
       setPendingState(prev => ({ ...prev, resolving: false }));
     }
-  }, [pendingState.resolving, addLog]);
+  }, [pendingState.resolving, addLog, checkPending]);
 
   // ============================================================================
   // RESOLUÇÃO AUTOMÁTICA
@@ -371,12 +417,10 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     // Decidir ação baseada em vendaCommitada
     const acao = decideResolution();
     
-    // Obter confirmationId dos dados de pendência
-    const confirmationId = data?.lastConfirmationId as string | undefined 
-      || data?.confirmationId as string | undefined
-      || (data?.pendingData as Record<string, unknown>)?.confirmationTransactionId as string | undefined;
+    // Usar dados de pendência disponíveis
+    const pendingData = data?.pendingData as Record<string, unknown> | undefined || data;
 
-    return resolvePending(acao, confirmationId);
+    return resolvePending(acao, pendingData);
   }, [checkPending, autoResolve, decideResolution, resolvePending, addLog]);
 
   // ============================================================================
@@ -384,11 +428,19 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   // ============================================================================
 
   const startVenda = useCallback((ordemId: string, valor: number, metodo: string): boolean => {
-    // BLOQUEIO: Não permitir nova venda com pendência ativa
-    if (isBlocked || pendingState.hasPending) {
-      addLog('block', 'BLOQUEADO: Tentativa de nova venda com pendência ativa', {
+    // ====================================================================
+    // VERIFICAÇÃO OBRIGATÓRIA ANTES DE INICIAR VENDA
+    // Conforme documentação: "Sempre antes de disparar paygoSaleUri(...)"
+    // ====================================================================
+    addLog('check', '🔍 Verificação pré-venda obrigatória...');
+    const { hasPending } = checkPending();
+    
+    if (hasPending || isBlocked) {
+      addLog('block', '🚫 BLOQUEADO: Não é possível iniciar venda com pendência ativa', {
         ordemId,
         valor,
+        hasPending,
+        isBlocked,
       });
       return false;
     }
@@ -404,10 +456,10 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
 
     setVendaState(state);
     saveVendaState(state);
-    addLog('check', `Venda iniciada: ${ordemId} - R$ ${(valor / 100).toFixed(2)}`, { ordemId, valor, metodo });
+    addLog('check', `✅ Venda iniciada: ${ordemId} - R$ ${(valor / 100).toFixed(2)}`, { ordemId, valor, metodo });
 
     return true;
-  }, [isBlocked, pendingState.hasPending, addLog]);
+  }, [isBlocked, checkPending, addLog]);
 
   const setVendaAprovada = useCallback((confirmationId: string, nsu: string, autorizacao: string) => {
     setVendaState(prev => {
@@ -457,7 +509,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   }, [addLog]);
 
   // ============================================================================
-  // VERIFICAÇÃO NA INICIALIZAÇÃO
+  // VERIFICAÇÃO NA INICIALIZAÇÃO (BOOT DO PDV)
   // ============================================================================
 
   useEffect(() => {
@@ -465,9 +517,9 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       return;
     }
 
-    addLog('check', '═══════════════════════════════════════');
-    addLog('check', 'INICIALIZAÇÃO DO GERENCIADOR DE PENDÊNCIAS');
-    addLog('check', '═══════════════════════════════════════');
+    addLog('check', '╔═══════════════════════════════════════════════════════════╗');
+    addLog('check', '║   INICIALIZAÇÃO DO PDV - VERIFICAÇÃO DE PENDÊNCIAS        ║');
+    addLog('check', '╚═══════════════════════════════════════════════════════════╝');
 
     // Verificar e resolver pendências na inicialização
     autoResolvePending();
