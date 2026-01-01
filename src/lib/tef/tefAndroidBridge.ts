@@ -72,6 +72,8 @@ declare global {
       salvarPendingData?: (pendingDataJson: string) => void;
       // NOVO: Limpar dados de pendência após validação bem-sucedida
       limparPendingData?: () => void;
+      // NOVO: Operação administrativa - pode resolver pendências
+      iniciarAdministrativa?: () => void;
     };
     Android?: {
       // Legacy Android interface
@@ -1014,6 +1016,87 @@ export function getPayGoInfoAndroid(): Record<string, unknown> | null {
   } catch (error) {
     console.error('[TEFBridge] Erro ao verificar PayGo:', error);
     return null;
+  }
+}
+
+/**
+ * Inicia operação ADMINISTRATIVA do PayGo
+ * Esta operação abre o menu administrativo onde é possível:
+ * - Resolver transações pendentes manualmente
+ * - Verificar status do terminal
+ * - Outras funções administrativas
+ * 
+ * IMPORTANTE: Usar quando o broadcast de resolução não funcionar
+ */
+export function iniciarAdministrativaAndroid(
+  onResult?: TEFResultCallback
+): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.warn('[TEFBridge] TEF Android não disponível');
+    return false;
+  }
+  
+  // Registrar callback interno (backup)
+  if (onResult) {
+    resultCallback = onResult;
+  }
+  
+  console.log('[TEFBridge] ═══════════════════════════════════════');
+  console.log('[TEFBridge] INICIANDO OPERAÇÃO ADMINISTRATIVA');
+  console.log('[TEFBridge] Esta operação pode resolver pendências!');
+  console.log('[TEFBridge] ═══════════════════════════════════════');
+  
+  // Verificar se já existe um handler registrado
+  const existingHandler = (window as any).onTefResultado;
+  const hasExistingHandler = typeof existingHandler === 'function';
+  
+  // Se NÃO existe handler, registrar fallback
+  if (!hasExistingHandler) {
+    console.log('[TEFBridge] Registrando fallback para administrativa');
+    (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+      console.log('[TEFBridge] RESULTADO DA ADMINISTRATIVA RECEBIDO');
+      console.log('[TEFBridge] Dados brutos:', JSON.stringify(resultado, null, 2));
+      
+      const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
+      
+      // Salvar no sessionStorage
+      try {
+        sessionStorage.setItem('lastTefResult', JSON.stringify(normalizedResult));
+        sessionStorage.setItem('lastTefResultTime', Date.now().toString());
+      } catch (e) {
+        console.error('[TEFBridge] Erro ao salvar no sessionStorage:', e);
+      }
+      
+      // Disparar evento
+      const event = new CustomEvent('tefPaymentResult', { detail: normalizedResult });
+      window.dispatchEvent(event);
+      
+      // Chamar callback se existir
+      if (resultCallback) {
+        console.log('[TEFBridge] ✅ Chamando callback da administrativa');
+        resultCallback(normalizedResult);
+        resultCallback = null;
+      }
+      
+      console.log('[TEFBridge] ═══════════════════════════════════════');
+    };
+  }
+  
+  try {
+    if (typeof (window.TEF as any).iniciarAdministrativa === 'function') {
+      (window.TEF as any).iniciarAdministrativa();
+      console.log('[TEFBridge] ✅ Operação administrativa iniciada');
+      return true;
+    } else {
+      console.error('[TEFBridge] ❌ Método iniciarAdministrativa não disponível no APK');
+      console.error('[TEFBridge] É necessário atualizar o APK para usar esta função');
+      return false;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao iniciar administrativa:', error);
+    resultCallback = null;
+    return false;
   }
 }
 

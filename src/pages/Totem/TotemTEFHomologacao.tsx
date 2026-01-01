@@ -53,6 +53,7 @@ import {
   reimprimirUltimaTransacaoAndroid,
   getPendingInfoAndroid,
   savePendingDataToLocalStorage,
+  iniciarAdministrativaAndroid,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
@@ -1145,6 +1146,43 @@ export default function TotemTEFHomologacao() {
     }
   }, [isAndroidAvailable, addLog, refreshAndroidLogs]);
 
+  // Iniciar Operação Administrativa do PayGo
+  const handleIniciarAdministrativa = useCallback(async () => {
+    if (!isAndroidAvailable) {
+      toast.error('TEF Android não disponível');
+      return;
+    }
+    
+    setResolvingPending(true);
+    
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    console.log('[TotemTEF] INICIANDO OPERAÇÃO ADMINISTRATIVA');
+    console.log('[TotemTEF] ═══════════════════════════════════════');
+    
+    addLog('info', '🔧 Abrindo menu administrativo do PayGo...');
+    toast.info('Abrindo menu administrativo do PayGo...', { duration: 5000 });
+    
+    try {
+      const started = iniciarAdministrativaAndroid((resultado) => {
+        console.log('[TotemTEF] Resultado da administrativa:', resultado);
+        addLog('success', '✅ Operação administrativa concluída', resultado as unknown as Record<string, unknown>);
+        toast.success('Operação administrativa concluída');
+        setResolvingPending(false);
+        refreshAndroidLogs();
+      });
+      
+      if (!started) {
+        addLog('error', '❌ Método iniciarAdministrativa não disponível. Atualize o APK.');
+        toast.error('Função não disponível. Atualize o APK.');
+        setResolvingPending(false);
+      }
+    } catch (error) {
+      addLog('error', '❌ Erro ao iniciar administrativa: ' + String(error));
+      toast.error('Erro ao iniciar administrativa');
+      setResolvingPending(false);
+    }
+  }, [isAndroidAvailable, addLog, refreshAndroidLogs]);
+
   // Limpar pendências via transação administrativa (R$50,00)
   const handleClearPendenciesWithTransaction = async () => {
     if (!isAndroidAvailable || !isPinpadConnected) {
@@ -2125,11 +2163,40 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </CardContent>
             </Card>
 
+            {/* OPERAÇÃO ADMINISTRATIVA - RESOLVE PENDÊNCIAS DIRETAMENTE NO PAYGO */}
+            <Card className="bg-purple-900/20 border-purple-500/30 flex-shrink-0">
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs text-purple-400 flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4" />
+                  Operação Administrativa (RECOMENDADO)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <p className="text-[10px] text-purple-200/70 mb-2">
+                  Se o broadcast não resolver a pendência, use a <strong>Operação Administrativa</strong> do PayGo. 
+                  Ela abre o menu interno do PayGo onde você pode resolver pendências manualmente.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPointerDown={handleIniciarAdministrativa}
+                  disabled={!isAndroidAvailable || resolvingPending}
+                  className="w-full border-purple-500/50 text-purple-300 hover:bg-purple-500/10 h-10"
+                >
+                  {resolvingPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldAlert className="h-4 w-4 mr-2" />}
+                  Abrir Menu Administrativo do PayGo
+                </Button>
+                <p className="text-[9px] text-purple-300/50 mt-2 text-center">
+                  ⚠️ Requer APK atualizado. No menu PayGo, procure "Resolver Pendências".
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Resolver Pendência PayGo (fallback) */}
             <Card className="bg-blue-900/20 border-blue-500/30 flex-shrink-0">
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-xs text-blue-400">
-                  Resolver via PayGo (alternativo - sem validação)
+                  Resolver via Broadcast (alternativo - sem validação)
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
@@ -2142,7 +2209,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                   >
                     {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Undo2 className="h-3 w-3 mr-1" />}
-                    PayGo Desfazer
+                    Broadcast Desfazer
                   </Button>
                   <Button
                     size="sm"
@@ -2152,12 +2219,62 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10"
                   >
                     {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckSquare className="h-3 w-3 mr-1" />}
-                    PayGo Confirmar
+                    Broadcast Confirmar
                   </Button>
                 </div>
                 <p className="text-[9px] text-blue-300/50 mt-2 text-center">
-                  Estes botões enviam diretamente ao APK sem validação pós-resolução.
+                  Envia broadcast diretamente. Se não funcionar, use a Operação Administrativa acima.
                 </p>
+              </CardContent>
+            </Card>
+
+            {/* Dados de Pendência Salvos (para debug) */}
+            <Card className="bg-gray-900/50 border-gray-700/50 flex-shrink-0">
+              <CardHeader className="py-2 px-3 border-b border-gray-700/30">
+                <CardTitle className="text-xs text-gray-400 flex items-center gap-2">
+                  <Database className="h-3.5 w-3.5" />
+                  Dados de Pendência (Debug)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <pre className="text-[9px] text-gray-400 bg-gray-800/50 p-2 rounded overflow-x-auto whitespace-pre-wrap max-h-24 overflow-y-auto">
+                  {(() => {
+                    try {
+                      const pendingData = localStorage.getItem('tef_pending_data');
+                      const confirmId = localStorage.getItem('tef_last_confirmation_id');
+                      const nsu = localStorage.getItem('tef_last_nsu');
+                      
+                      if (!pendingData && !confirmId) {
+                        return 'Nenhum dado de pendência salvo localmente.';
+                      }
+                      
+                      const data = pendingData ? JSON.parse(pendingData) : {};
+                      return JSON.stringify({
+                        ...data,
+                        confirmationId_local: confirmId || '(não salvo)',
+                        nsu_local: nsu || '(não salvo)'
+                      }, null, 2);
+                    } catch (e) {
+                      return 'Erro ao ler dados: ' + String(e);
+                    }
+                  })()}
+                </pre>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="w-full h-6 mt-1 text-[9px] text-gray-500 hover:text-gray-300"
+                  onPointerDown={() => {
+                    localStorage.removeItem('tef_pending_data');
+                    localStorage.removeItem('tef_last_confirmation_id');
+                    localStorage.removeItem('tef_last_nsu');
+                    localStorage.removeItem('tef_last_autorizacao');
+                    localStorage.removeItem('tef_last_timestamp');
+                    toast.info('Dados de pendência locais limpos');
+                  }}
+                >
+                  <Trash2 className="h-3 w-3 mr-1" />
+                  Limpar Dados Locais
+                </Button>
               </CardContent>
             </Card>
 

@@ -1158,6 +1158,73 @@ class PayGoService(private val context: Context) {
     }
 
     // ========================================================================
+    // OPERAÇÃO ADMINISTRATIVA - PODE RESOLVER PENDÊNCIAS
+    // ========================================================================
+
+    /**
+     * Inicia operação ADMINISTRATIVA
+     * Conforme documentação PayGo: operation=ADMINISTRATIVA
+     * 
+     * Esta operação abre o menu administrativo do PayGo onde é possível:
+     * - Resolver transações pendentes manualmente
+     * - Verificar status do terminal
+     * - Outras funções administrativas
+     * 
+     * @param callback Callback com resultado
+     */
+    fun startAdministrativa(callback: (JSONObject) -> Unit) {
+        addLog("════════════════════════════════════════")
+        addLog("[ADMINISTRATIVA] INICIANDO")
+        addLog("[ADMINISTRATIVA] Esta operação pode resolver pendências!")
+        addLog("════════════════════════════════════════")
+
+        if (!payGoInstalled) checkPayGoInstallation()
+        
+        if (!payGoInstalled) {
+            callback(createError("PAYGO_NOT_INSTALLED", "PayGo não instalado"))
+            return
+        }
+
+        val transactionId = "ADMIN_${System.currentTimeMillis()}"
+        pendingTransactionId = transactionId
+        pendingCallback = callback
+
+        try {
+            // URI de operação administrativa
+            // Formato: app://payment/input?operation=ADMINISTRATIVA&transactionId=xxx
+            val adminUri = Uri.Builder()
+                .scheme("app")
+                .authority("payment")
+                .appendPath("input")
+                .appendQueryParameter("operation", "ADMINISTRATIVA")
+                .appendQueryParameter("transactionId", transactionId)
+                .build()
+            
+            addLog("[ADMINISTRATIVA] URI: $adminUri")
+            
+            val dadosAutomacaoUri = buildDadosAutomacaoUri()
+            val personalizacaoUri = buildPersonalizacaoUri()
+            
+            val intent = Intent(ACTION_TRANSACTION, adminUri).apply {
+                putExtra(EXTRA_DADOS_AUTOMACAO, dadosAutomacaoUri.toString())
+                putExtra(EXTRA_PERSONALIZACAO, personalizacaoUri.toString())
+                putExtra(EXTRA_PACKAGE, context.packageName)
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+            }
+            
+            context.startActivity(intent)
+            addLog("[ADMINISTRATIVA] ✅ Intent enviado - Aguardando resposta do PayGo")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro na administrativa: ${e.message}", e)
+            addLog("[ADMINISTRATIVA] ❌ ERRO: ${e.message}")
+            pendingTransactionId = null
+            pendingCallback = null
+            callback(createError("ADMIN_ERROR", "Erro ao iniciar administrativa: ${e.message}"))
+        }
+    }
+
+    // ========================================================================
     // DEBUG & LOGS
     // ========================================================================
 

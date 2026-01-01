@@ -430,6 +430,24 @@ class TEFBridge(
     }
 
     // ========================================================================
+    // OPERAÇÃO ADMINISTRATIVA - RESOLVE PENDÊNCIAS
+    // ========================================================================
+
+    /**
+     * Inicia operação ADMINISTRATIVA do PayGo
+     * Esta operação abre o menu administrativo onde é possível resolver pendências
+     * Chamado do JS: TEF.iniciarAdministrativa()
+     */
+    @JavascriptInterface
+    fun iniciarAdministrativa() {
+        Log.i(TAG, "iniciarAdministrativa - Abrindo menu administrativo do PayGo")
+        
+        payGoService.startAdministrativa { result ->
+            returnResult(result)
+        }
+    }
+
+    // ========================================================================
     // DEBUG - LISTAR APPS
     // ========================================================================
 
