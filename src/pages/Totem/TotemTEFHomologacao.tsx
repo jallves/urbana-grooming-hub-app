@@ -2895,53 +2895,38 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                 )}
               </div>
               
-              {/* BOTÕES CONFIRMAR/DESFAZER PARA PENDÊNCIA (Passo 34) */}
+              {/* DIALOG PENDÊNCIA ESTILO PAYGO */}
               {transactionResult.status === 'pendencia' && transactionResult.isPendenciaPasso34 && (
-                <div className="space-y-3">
-                  <p className="text-sm text-center text-orange-300 font-semibold">
-                    Escolha a ação para resolver a pendência:
-                  </p>
-                  <div className="grid grid-cols-2 gap-3">
-                    <Button
-                      className="h-16 bg-red-600 hover:bg-red-700 text-white font-bold text-lg"
-                      disabled={resolvingPending}
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePendingResolution('desfazer');
-                      }}
-                    >
-                      {resolvingPending ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          <Undo2 className="h-5 w-5 mr-2" />
-                          DESFAZER
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      className="h-16 bg-green-600 hover:bg-green-700 text-white font-bold text-lg"
-                      disabled={resolvingPending}
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handlePendingResolution('confirmar');
-                      }}
-                    >
-                      {resolvingPending ? (
-                        <Loader2 className="h-5 w-5 animate-spin" />
-                      ) : (
-                        <>
-                          <CheckSquare className="h-5 w-5 mr-2" />
-                          CONFIRMAR
-                        </>
-                      )}
-                    </Button>
+                <div className="bg-zinc-800 rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center justify-between">
+                    <span className="text-white text-base font-medium">
+                      Transação pendente
+                    </span>
+                    <div className="flex items-center gap-4">
+                      <button
+                        className="text-sm font-medium tracking-wide text-white/90 hover:text-white disabled:opacity-50 uppercase"
+                        disabled={resolvingPending}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePendingResolution('desfazer');
+                        }}
+                      >
+                        {resolvingPending ? '...' : 'DESFAZER'}
+                      </button>
+                      <button
+                        className="text-sm font-medium tracking-wide text-white/90 hover:text-white disabled:opacity-50 uppercase"
+                        disabled={resolvingPending}
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePendingResolution('confirmar');
+                        }}
+                      >
+                        {resolvingPending ? '...' : 'CONFIRMAR'}
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-xs text-center text-urbana-light/50">
-                    Conforme documentação PayGo: Passo 34 deve clicar em "Desfazer"
-                  </p>
                 </div>
               )}
               
