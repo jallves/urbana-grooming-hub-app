@@ -676,7 +676,6 @@ class PayGoService(private val context: Context) {
             put("lastTransactionTimestamp", prefs.getLong("last_transaction_timestamp", 0))
         }
     }
-    }
 
     // ========================================================================
     // 3.4.2 CONFIRMAÇÃO (via sendBroadcast)
