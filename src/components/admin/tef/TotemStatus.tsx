@@ -1,10 +1,22 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { getLogsAndroid, limparLogsAndroid, setModoDebug } from '@/lib/tef/tefAndroidBridge';
+import {
+  getAllLogs,
+  getAvailableDates,
+  getLogsByDate,
+  clearAllLogs,
+  clearLogsByDate,
+  getStorageStats,
+  formatDateForDisplay,
+  StoredTransactionLog,
+  StoredAndroidLog
+} from '@/lib/tef/tefLogStorage';
 import {
   Smartphone,
   Usb,
@@ -19,12 +31,35 @@ import {
   Download,
   Cpu,
   HardDrive,
-  Clock
+  Clock,
+  Calendar,
+  FileText,
+  AlertTriangle,
+  Info,
+  ChevronDown,
+  Database
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useState } from 'react';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 const TotemStatus: React.FC = () => {
   const {
@@ -36,7 +71,46 @@ const TotemStatus: React.FC = () => {
   } = useTEFAndroid();
 
   const [debugMode, setDebugMode] = useState(false);
-  const [logs, setLogs] = useState<string[]>([]);
+  const [androidLogs, setAndroidLogs] = useState<string[]>([]);
+  
+  // Logs persistidos
+  const [availableDates, setAvailableDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [transactionLogs, setTransactionLogs] = useState<StoredTransactionLog[]>([]);
+  const [storedAndroidLogs, setStoredAndroidLogs] = useState<StoredAndroidLog[]>([]);
+  const [storageStats, setStorageStats] = useState<ReturnType<typeof getStorageStats> | null>(null);
+
+  // Carregar logs persistidos ao montar
+  useEffect(() => {
+    loadPersistedLogs();
+  }, []);
+
+  const loadPersistedLogs = () => {
+    const dates = getAvailableDates();
+    setAvailableDates(dates);
+    
+    const stats = getStorageStats();
+    setStorageStats(stats);
+    
+    // Selecionar a data mais recente
+    if (dates.length > 0 && !selectedDate) {
+      setSelectedDate(dates[0]);
+      loadLogsForDate(dates[0]);
+    } else if (selectedDate) {
+      loadLogsForDate(selectedDate);
+    }
+  };
+
+  const loadLogsForDate = (date: string) => {
+    const logs = getLogsByDate(date);
+    setTransactionLogs(logs.transactionLogs);
+    setStoredAndroidLogs(logs.androidLogs);
+  };
+
+  const handleDateChange = (date: string) => {
+    setSelectedDate(date);
+    loadLogsForDate(date);
+  };
 
   const handleToggleDebug = (enabled: boolean) => {
     setDebugMode(enabled);
@@ -44,34 +118,155 @@ const TotemStatus: React.FC = () => {
     toast.success(enabled ? 'Modo debug ativado' : 'Modo debug desativado');
   };
 
-  const handleRefreshLogs = () => {
+  const handleRefreshAndroidLogs = () => {
     const newLogs = getLogsAndroid();
-    setLogs(newLogs);
-    toast.success(`${newLogs.length} logs carregados`);
+    setAndroidLogs(newLogs);
+    toast.success(`${newLogs.length} logs do Android carregados`);
   };
 
-  const handleClearLogs = () => {
+  const handleClearAndroidLogs = () => {
     limparLogsAndroid();
-    setLogs([]);
-    toast.success('Logs limpos');
+    setAndroidLogs([]);
+    toast.success('Logs do Android limpos');
+  };
+
+  const handleRefreshPersistedLogs = () => {
+    loadPersistedLogs();
+    toast.success('Logs atualizados');
+  };
+
+  const handleClearDateLogs = () => {
+    if (selectedDate) {
+      clearLogsByDate(selectedDate);
+      loadPersistedLogs();
+      toast.success(`Logs de ${formatDateForDisplay(selectedDate)} limpos`);
+    }
+  };
+
+  const handleClearAllLogs = () => {
+    clearAllLogs();
+    setTransactionLogs([]);
+    setStoredAndroidLogs([]);
+    setAvailableDates([]);
+    setSelectedDate('');
+    setStorageStats(null);
+    toast.success('Todos os logs foram limpos');
+  };
+
+  const formatLogsForExport = () => {
+    const allLogs = getAllLogs();
+    
+    let output = '═══════════════════════════════════════════════════════════════\n';
+    output += '                    LOGS DO TOTEM TEF\n';
+    output += `             Exportado em: ${new Date().toLocaleString('pt-BR')}\n`;
+    output += '═══════════════════════════════════════════════════════════════\n\n';
+    
+    // Estatísticas
+    output += '📊 ESTATÍSTICAS\n';
+    output += '───────────────────────────────────────────────────────────────\n';
+    output += `Total de logs de transação: ${allLogs.transactionLogs.length}\n`;
+    output += `Total de logs do Android: ${allLogs.androidLogs.length}\n`;
+    output += `Última limpeza: ${allLogs.lastCleanup}\n\n`;
+    
+    // Logs de transação agrupados por data
+    output += '📋 LOGS DE TRANSAÇÃO\n';
+    output += '───────────────────────────────────────────────────────────────\n\n';
+    
+    const transactionsByDate = allLogs.transactionLogs.reduce((acc, log) => {
+      if (!acc[log.date]) acc[log.date] = [];
+      acc[log.date].push(log);
+      return acc;
+    }, {} as Record<string, StoredTransactionLog[]>);
+    
+    Object.entries(transactionsByDate)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .forEach(([date, logs]) => {
+        output += `\n📅 ${formatDateForDisplay(date)} (${date})\n`;
+        output += '─────────────────────────────────\n';
+        logs.forEach(log => {
+          const time = new Date(log.timestamp).toLocaleTimeString('pt-BR');
+          const icon = getLogIcon(log.type);
+          output += `${time} ${icon} ${log.message}\n`;
+          if (log.data) {
+            output += `         ${JSON.stringify(log.data, null, 2).split('\n').join('\n         ')}\n`;
+          }
+        });
+      });
+    
+    // Logs do Android agrupados por data
+    output += '\n\n📱 LOGS DO ANDROID\n';
+    output += '───────────────────────────────────────────────────────────────\n\n';
+    
+    const androidByDate = allLogs.androidLogs.reduce((acc, log) => {
+      if (!acc[log.date]) acc[log.date] = [];
+      acc[log.date].push(log);
+      return acc;
+    }, {} as Record<string, StoredAndroidLog[]>);
+    
+    Object.entries(androidByDate)
+      .sort(([a], [b]) => b.localeCompare(a))
+      .forEach(([date, logs]) => {
+        output += `\n📅 ${formatDateForDisplay(date)} (${date})\n`;
+        output += '─────────────────────────────────\n';
+        logs.forEach(log => {
+          const time = new Date(log.timestamp).toLocaleTimeString('pt-BR');
+          output += `${time} ${log.message}\n`;
+        });
+      });
+    
+    output += '\n\n═══════════════════════════════════════════════════════════════\n';
+    output += '                    FIM DOS LOGS\n';
+    output += '═══════════════════════════════════════════════════════════════\n';
+    
+    return output;
+  };
+
+  const getLogIcon = (type: string): string => {
+    switch (type) {
+      case 'success': return '✅';
+      case 'error': return '❌';
+      case 'warning': return '⚠️';
+      case 'transaction': return '💳';
+      default: return 'ℹ️';
+    }
   };
 
   const handleCopyLogs = () => {
-    const logsText = logs.join('\n');
+    const logsText = formatLogsForExport();
     navigator.clipboard.writeText(logsText);
-    toast.success('Logs copiados');
+    toast.success('Logs copiados para a área de transferência');
   };
 
   const handleDownloadLogs = () => {
-    const logsText = logs.join('\n');
-    const blob = new Blob([logsText], { type: 'text/plain' });
+    const logsText = formatLogsForExport();
+    const blob = new Blob([logsText], { type: 'text/plain;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `totem-logs-${new Date().toISOString().slice(0, 10)}.txt`;
+    a.download = `totem-logs-completo-${new Date().toISOString().slice(0, 10)}.txt`;
     a.click();
     URL.revokeObjectURL(url);
     toast.success('Logs baixados');
+  };
+
+  const getLogTypeColor = (type: string) => {
+    switch (type) {
+      case 'success': return 'text-green-400';
+      case 'error': return 'text-red-400';
+      case 'warning': return 'text-amber-400';
+      case 'transaction': return 'text-blue-400';
+      default: return 'text-gray-400';
+    }
+  };
+
+  const getLogTypeIcon = (type: string) => {
+    switch (type) {
+      case 'success': return <CheckCircle2 className="h-3 w-3 text-green-400" />;
+      case 'error': return <XCircle className="h-3 w-3 text-red-400" />;
+      case 'warning': return <AlertTriangle className="h-3 w-3 text-amber-400" />;
+      case 'transaction': return <FileText className="h-3 w-3 text-blue-400" />;
+      default: return <Info className="h-3 w-3 text-gray-400" />;
+    }
   };
 
   return (
@@ -86,7 +281,7 @@ const TotemStatus: React.FC = () => {
             <div>
               <CardTitle className="text-xl text-green-900">Status do Totem Android</CardTitle>
               <CardDescription className="text-green-700">
-                Monitoramento e logs do sistema Totem integrado
+                Monitoramento, logs e diagnóstico do sistema Totem integrado
               </CardDescription>
             </div>
           </div>
@@ -188,6 +383,229 @@ const TotemStatus: React.FC = () => {
         </Card>
       </div>
 
+      {/* Tabs de Logs */}
+      <Card className="border-gray-200">
+        <CardHeader>
+          <div className="flex justify-between items-start">
+            <div>
+              <CardTitle className="text-base flex items-center gap-2">
+                <Database className="h-5 w-5 text-gray-600" />
+                Central de Logs do Totem
+              </CardTitle>
+              <CardDescription>
+                Logs persistidos das transações TEF e do app Android (retenção: 30 dias)
+              </CardDescription>
+            </div>
+            {storageStats && (
+              <div className="text-right text-xs text-gray-500">
+                <p>{storageStats.totalTransactionLogs} logs de transação</p>
+                <p>{storageStats.totalAndroidLogs} logs Android</p>
+                <p>{storageStats.daysWithLogs} dias com registros</p>
+              </div>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="persisted" className="w-full">
+            <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsTrigger value="persisted" className="text-sm">
+                <FileText className="h-4 w-4 mr-2" />
+                Logs Persistidos
+              </TabsTrigger>
+              <TabsTrigger value="realtime" className="text-sm">
+                <Smartphone className="h-4 w-4 mr-2" />
+                Android (Tempo Real)
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Logs Persistidos */}
+            <TabsContent value="persisted" className="space-y-4">
+              <div className="flex flex-wrap gap-3 items-center justify-between">
+                <div className="flex gap-2 items-center">
+                  <Calendar className="h-4 w-4 text-gray-500" />
+                  <Select value={selectedDate} onValueChange={handleDateChange}>
+                    <SelectTrigger className="w-[180px]">
+                      <SelectValue placeholder="Selecione a data" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableDates.map(date => (
+                        <SelectItem key={date} value={date}>
+                          {formatDateForDisplay(date)} ({date})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" onClick={handleRefreshPersistedLogs}>
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Atualizar
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleCopyLogs}>
+                    <Copy className="h-4 w-4 mr-1" />
+                    Copiar Tudo
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={handleDownloadLogs}>
+                    <Download className="h-4 w-4 mr-1" />
+                    Baixar
+                  </Button>
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700">
+                        <Trash2 className="h-4 w-4 mr-1" />
+                        Limpar Tudo
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Limpar todos os logs?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Esta ação não pode ser desfeita. Todos os logs de transação e do Android serão permanentemente excluídos.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={handleClearAllLogs} className="bg-red-600 hover:bg-red-700">
+                          Limpar Tudo
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
+              </div>
+
+              {/* Lista de logs da data selecionada */}
+              {transactionLogs.length === 0 && storedAndroidLogs.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">Nenhum log encontrado</p>
+                  <p className="text-sm mt-2">
+                    {selectedDate 
+                      ? `Não há logs registrados para ${formatDateForDisplay(selectedDate)}`
+                      : 'Selecione uma data ou realize operações no Totem para gerar logs'}
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs font-mono space-y-1">
+                    {/* Logs de transação */}
+                    {transactionLogs.length > 0 && (
+                      <>
+                        <div className="text-blue-400 font-bold mb-2 sticky top-0 bg-gray-900 py-1">
+                          ═══ LOGS DE TRANSAÇÃO ({transactionLogs.length}) ═══
+                        </div>
+                        {transactionLogs.map((log, index) => (
+                          <div 
+                            key={log.id} 
+                            className={`py-1 border-b border-gray-800 last:border-0 ${getLogTypeColor(log.type)}`}
+                          >
+                            <div className="flex items-start gap-2">
+                              {getLogTypeIcon(log.type)}
+                              <span className="text-gray-500">
+                                {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                              </span>
+                              <span className={getLogTypeColor(log.type)}>{log.message}</span>
+                            </div>
+                            {log.data && (
+                              <pre className="ml-5 mt-1 text-gray-500 whitespace-pre-wrap">
+                                {JSON.stringify(log.data, null, 2)}
+                              </pre>
+                            )}
+                          </div>
+                        ))}
+                      </>
+                    )}
+                    
+                    {/* Logs do Android */}
+                    {storedAndroidLogs.length > 0 && (
+                      <>
+                        <div className="text-green-400 font-bold my-2 sticky top-0 bg-gray-900 py-1">
+                          ═══ LOGS DO ANDROID ({storedAndroidLogs.length}) ═══
+                        </div>
+                        {storedAndroidLogs.map((log, index) => (
+                          <div key={index} className="py-0.5 border-b border-gray-800 last:border-0">
+                            <span className="text-gray-500">
+                              {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                            </span>
+                            {' '}
+                            <span className="text-gray-300">{log.message}</span>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
+
+            {/* Logs em tempo real do Android */}
+            <TabsContent value="realtime" className="space-y-4">
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshAndroidLogs}
+                  disabled={!isAndroidAvailable}
+                >
+                  <RefreshCw className="h-4 w-4 mr-1" />
+                  Buscar Logs
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(androidLogs.join('\n'));
+                    toast.success('Logs copiados');
+                  }}
+                  disabled={androidLogs.length === 0}
+                >
+                  <Copy className="h-4 w-4 mr-1" />
+                  Copiar
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleClearAndroidLogs}
+                  disabled={androidLogs.length === 0 || !isAndroidAvailable}
+                >
+                  <Trash2 className="h-4 w-4 mr-1" />
+                  Limpar
+                </Button>
+              </div>
+
+              {!isAndroidAvailable ? (
+                <div className="text-center py-12 text-gray-500">
+                  <WifiOff className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">App Android não detectado</p>
+                  <p className="text-sm mt-2">
+                    Os logs em tempo real só estão disponíveis quando o sistema está rodando no Totem físico.
+                  </p>
+                </div>
+              ) : androidLogs.length === 0 ? (
+                <div className="text-center py-12 text-gray-500">
+                  <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p className="font-medium">Nenhum log capturado</p>
+                  <p className="text-sm mt-2">
+                    Clique em "Buscar Logs" para carregar os logs do Android.
+                  </p>
+                </div>
+              ) : (
+                <ScrollArea className="h-[400px]">
+                  <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs font-mono">
+                    {androidLogs.map((log, index) => (
+                      <div key={index} className="py-0.5 border-b border-gray-800 last:border-0">
+                        {log}
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+
       {/* Informações do Sistema */}
       <Card className="border-gray-200">
         <CardHeader>
@@ -232,86 +650,6 @@ const TotemStatus: React.FC = () => {
               </ul>
             </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Logs */}
-      <Card className="border-gray-200">
-        <CardHeader>
-          <div className="flex justify-between items-start">
-            <div>
-              <CardTitle className="text-base flex items-center gap-2">
-                <Bug className="h-5 w-5 text-gray-600" />
-                Logs do Totem
-              </CardTitle>
-              <CardDescription>
-                Logs capturados do app Android para debug
-              </CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshLogs}
-                disabled={!isAndroidAvailable}
-              >
-                <RefreshCw className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyLogs}
-                disabled={logs.length === 0}
-              >
-                <Copy className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleDownloadLogs}
-                disabled={logs.length === 0}
-              >
-                <Download className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearLogs}
-                disabled={logs.length === 0}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {!isAndroidAvailable ? (
-            <div className="text-center py-8 text-gray-500">
-              <WifiOff className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">App Android não detectado</p>
-              <p className="text-sm mt-2">
-                Os logs só estão disponíveis quando o sistema está rodando no Totem físico.
-              </p>
-            </div>
-          ) : logs.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <Clock className="h-12 w-12 mx-auto mb-4 opacity-50" />
-              <p className="font-medium">Nenhum log capturado</p>
-              <p className="text-sm mt-2">
-                Ative o modo debug e realize operações para capturar logs.
-              </p>
-            </div>
-          ) : (
-            <ScrollArea className="h-[250px]">
-              <div className="bg-gray-900 text-gray-100 p-4 rounded-lg text-xs font-mono">
-                {logs.map((log, index) => (
-                  <div key={index} className="py-0.5 border-b border-gray-800 last:border-0">
-                    {log}
-                  </div>
-                ))}
-              </div>
-            </ScrollArea>
-          )}
         </CardContent>
       </Card>
     </div>
