@@ -27,24 +27,25 @@
             android:padding="24dp"
             android:gravity="center_horizontal">
 
-            <!-- Header -->
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Costa Urbana"
-                android:textColor="#D4A853"
-                android:textSize="32sp"
-                android:textStyle="bold"
-                android:layout_marginTop="24dp" />
+            <!-- Header com Logo Oficial -->
+            <ImageView
+                android:layout_width="140dp"
+                android:layout_height="140dp"
+                android:src="@drawable/logo_costa_urbana"
+                android:scaleType="fitCenter"
+                android:layout_marginTop="16dp"
+                android:contentDescription="Logo Costa Urbana Barbearia" />
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="TOTEM DE AUTOATENDIMENTO"
-                android:textColor="#AAAAAA"
-                android:textSize="12sp"
+                android:textColor="#D4A853"
+                android:textSize="14sp"
                 android:letterSpacing="0.2"
-                android:layout_marginBottom="32dp" />
+                android:textStyle="bold"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="24dp" />
 
             <!-- App Info Card -->
             <LinearLayout
@@ -466,31 +467,32 @@
         android:background="#0A0A14"
         android:visibility="gone">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Costa Urbana"
-            android:textColor="#D4A853"
-            android:textSize="36sp"
-            android:textStyle="bold"
-            android:layout_marginBottom="8dp" />
+        <!-- Logo Oficial Grande -->
+        <ImageView
+            android:layout_width="200dp"
+            android:layout_height="200dp"
+            android:src="@drawable/logo_costa_urbana"
+            android:scaleType="fitCenter"
+            android:contentDescription="Logo Costa Urbana Barbearia"
+            android:layout_marginBottom="24dp" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="BARBEARIA"
-            android:textColor="#FFFFFF"
-            android:textSize="14sp"
-            android:letterSpacing="0.3"
+            android:textColor="#D4A853"
+            android:textSize="18sp"
+            android:letterSpacing="0.4"
+            android:textStyle="bold"
             android:layout_marginBottom="48dp" />
 
         <ProgressBar
             android:id="@+id/progressBar"
             style="?android:attr/progressBarStyleHorizontal"
-            android:layout_width="200dp"
-            android:layout_height="4dp"
+            android:layout_width="240dp"
+            android:layout_height="6dp"
             android:progressTint="#D4A853"
-            android:progressBackgroundTint="#333333"
+            android:progressBackgroundTint="#2A2A2A"
             android:max="100"
             android:progress="0" />
 
