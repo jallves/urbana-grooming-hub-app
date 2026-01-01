@@ -54,6 +54,8 @@ declare global {
       cancelarPagamento: () => void;
       confirmarTransacao: (confirmationId: string, status: string) => void;
       resolverPendencia: (status?: string) => void;
+      // Método alternativo para resolução de pendência com status explícito
+      resolverPendenciaComStatus?: (status: string) => void;
       reimprimirUltimaTransacao: () => void;
       verificarPinpad: () => string;
       getStatus: () => string;
@@ -62,10 +64,14 @@ declare global {
       getLogs: () => string;
       limparLogs: () => void;
       isReady: () => boolean;
-      // Novos métodos para gerenciamento de pendências
+      // Métodos para gerenciamento de pendências (Passos 33/34)
       getPendingInfo?: () => string;
       salvarConfirmationId?: (confirmationId: string, nsu: string, autorizacao: string) => void;
       limparConfirmationId?: () => void;
+      // Método para verificar se existe pendência (PayGo SDK)
+      existeTransacaoPendente?: () => boolean;
+      // Método para obter dados da pendência (PayGo SDK)
+      obtemDadosTransacaoPendente?: () => string;
     };
     Android?: {
       // Legacy Android interface
@@ -337,17 +343,18 @@ export function desfazerTransacaoTEF(confirmationId: string): boolean {
 
 /**
  * Resolve transação pendente no PayGo
- * Conforme documentação PayGo:
- * 1. Verificar se existe transação pendente: saidaTransacao.existeTransacaoPendente()
- * 2. Obter dados: saidaTransacao.obtemDadosTransacaoPendente()
- * 3. Criar confirmação: confirmacao.informaStatusTransacao(StatusTransacao.CONFIRMADO_MANUAL ou DESFEITO_MANUAL)
- * 4. Resolver: transacao.resolvePendencia(dadosPendencia, confirmacao)
+ * Conforme documentação PayGo (Passos 33/34):
  * 
- * IMPORTANTE: Se não temos o confirmationId, precisamos chamar o método que
- * busca e resolve a pendência automaticamente no SDK Android.
+ * FLUXO SDK PayGo:
+ * 1. saidaTransacao.existeTransacaoPendente() → verifica se há pendência
+ * 2. saidaTransacao.obtemDadosTransacaoPendente() → obtém DadosTransacaoPendente
+ * 3. confirmacao.informaStatusTransacao(StatusTransacao.CONFIRMADO_MANUAL ou DESFEITO_MANUAL)
+ * 4. transacao.resolvePendencia(dadosPendencia, confirmacao) → resolve a pendência
  * 
- * @param acao - 'confirmar' para confirmar a pendência, 'desfazer' para desfazer
- * @param confirmationId - ID da transação pendente (opcional, se não fornecido usa método genérico)
+ * O APK Android DEVE implementar este fluxo internamente quando chamamos resolverPendencia().
+ * 
+ * @param acao - 'confirmar' para CONFIRMADO_MANUAL, 'desfazer' para DESFEITO_MANUAL
+ * @param confirmationId - ID da transação pendente (opcional)
  */
 export function resolverPendenciaAndroid(
   acao: 'confirmar' | 'desfazer' = 'confirmar',
@@ -361,51 +368,97 @@ export function resolverPendenciaAndroid(
   const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
   
   try {
-    console.log('[TEFBridge] ═══════════════════════════════════════');
-    console.log('[TEFBridge] RESOLVENDO PENDÊNCIA PayGo');
-    console.log('[TEFBridge] Ação:', acao);
-    console.log('[TEFBridge] Status a enviar:', status);
-    console.log('[TEFBridge] confirmationId:', confirmationId || 'N/A (usar método genérico)');
-    console.log('[TEFBridge] ═══════════════════════════════════════');
-    
-    // Se temos confirmationId, usar confirmarTransacao diretamente
-    if (confirmationId && confirmationId !== 'PENDENCIA') {
-      console.log('[TEFBridge] Chamando window.TEF.confirmarTransacao(' + confirmationId + ', ' + status + ')...');
-      window.TEF!.confirmarTransacao(confirmationId, status);
-      console.log('[TEFBridge] ✅ confirmarTransacao chamado com ID específico');
-      return true;
-    }
-    
-    // Sem ID: O SDK Android DEVE buscar a pendência automaticamente
-    // O método resolverPendencia() no Android deve:
-    // 1. Chamar existeTransacaoPendente() para verificar
-    // 2. Se true, chamar obtemDadosTransacaoPendente()
-    // 3. Chamar resolvePendencia(dadosPendencia, confirmacao) com o status
-    //
-    // Como a interface JS não passa o status para resolverPendencia(),
-    // precisamos usar uma abordagem diferente:
+    console.log('[TEFBridge] ╔═══════════════════════════════════════════════════════════╗');
+    console.log('[TEFBridge] ║         RESOLUÇÃO DE PENDÊNCIA PayGo (Passo 34)           ║');
+    console.log('[TEFBridge] ╠═══════════════════════════════════════════════════════════╣');
+    console.log('[TEFBridge] ║ Ação:', acao.toUpperCase().padEnd(52), '║');
+    console.log('[TEFBridge] ║ Status:', status.padEnd(50), '║');
+    console.log('[TEFBridge] ║ confirmationId:', (confirmationId || 'N/A').substring(0, 42).padEnd(42), '║');
+    console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
     
     // Verificar métodos disponíveis no TEF
     const tefMethods = Object.keys(window.TEF || {});
     console.log('[TEFBridge] Métodos TEF disponíveis:', tefMethods.join(', '));
     
-    // Tentar métodos alternativos em ordem de preferência:
-    
-    // 1. resolverPendencia(status) - agora aceita parâmetro!
-    if (typeof window.TEF!.resolverPendencia === 'function') {
-      console.log('[TEFBridge] Chamando window.TEF.resolverPendencia(' + status + ')...');
-      window.TEF!.resolverPendencia(status);
-      console.log('[TEFBridge] ✅ resolverPendencia(' + status + ') chamado');
+    // ========================================================================
+    // ESTRATÉGIA 1: resolverPendenciaComStatus(status)
+    // Método específico que aceita o status diretamente
+    // ========================================================================
+    if (typeof (window.TEF as any).resolverPendenciaComStatus === 'function') {
+      console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComStatus(' + status + ')...');
+      (window.TEF as any).resolverPendenciaComStatus(status);
+      console.log('[TEFBridge] ✅ resolverPendenciaComStatus chamado');
       return true;
     }
     
-    // 2. Fallback: confirmarTransacao com ID especial "PENDING"
-    console.log('[TEFBridge] resolverPendencia não encontrado');
-    console.log('[TEFBridge] Tentando confirmarTransacao(PENDING, ' + status + ')...');
+    // ========================================================================
+    // ESTRATÉGIA 2: resolverPendencia(status) com parâmetro
+    // O método resolverPendencia agora aceita o status como parâmetro
+    // ========================================================================
+    if (typeof window.TEF!.resolverPendencia === 'function') {
+      console.log('[TEFBridge] 🔄 Chamando resolverPendencia(' + status + ')...');
+      window.TEF!.resolverPendencia(status);
+      console.log('[TEFBridge] ✅ resolverPendencia(' + status + ') chamado');
+      
+      // Aguardar um momento e verificar se a pendência foi resolvida
+      setTimeout(() => {
+        const infoApos = getPendingInfoAndroid();
+        console.log('[TEFBridge] 📊 Status após resolução:', JSON.stringify(infoApos, null, 2));
+      }, 1000);
+      
+      return true;
+    }
+    
+    // ========================================================================
+    // ESTRATÉGIA 3: confirmarTransacao com confirmationId específico
+    // Se temos o ID, usamos confirmarTransacao diretamente
+    // ========================================================================
+    if (confirmationId && confirmationId !== 'PENDENCIA' && confirmationId !== 'undefined') {
+      console.log('[TEFBridge] 🔄 Chamando confirmarTransacao(' + confirmationId + ', ' + status + ')...');
+      window.TEF!.confirmarTransacao(confirmationId, status);
+      console.log('[TEFBridge] ✅ confirmarTransacao chamado com ID específico');
+      return true;
+    }
+    
+    // ========================================================================
+    // ESTRATÉGIA 4: Buscar pendingData e usar confirmationTransactionId
+    // Obtém os dados da pendência e usa o ID correto
+    // ========================================================================
+    const pendingInfo = getPendingInfoAndroid();
+    console.log('[TEFBridge] 📊 PendingInfo obtido:', JSON.stringify(pendingInfo, null, 2));
+    
+    if (pendingInfo) {
+      // Extrair possíveis IDs da pendência
+      const pendingData = pendingInfo.pendingData as Record<string, unknown> | undefined;
+      const possibleIds = [
+        pendingInfo.pendingConfirmationId,
+        pendingInfo.confirmationId,
+        pendingInfo.lastConfirmationId,
+        pendingData?.confirmationTransactionId,
+        pendingData?.transactionId,
+        pendingInfo.confirmationTransactionId,
+      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
+      
+      console.log('[TEFBridge] 🔍 IDs candidatos encontrados:', possibleIds);
+      
+      if (possibleIds.length > 0) {
+        const idToUse = possibleIds[0] as string;
+        console.log('[TEFBridge] 🔄 Usando confirmarTransacao(' + idToUse + ', ' + status + ')...');
+        window.TEF!.confirmarTransacao(idToUse, status);
+        console.log('[TEFBridge] ✅ confirmarTransacao chamado com ID da pendência');
+        return true;
+      }
+    }
+    
+    // ========================================================================
+    // ESTRATÉGIA 5: confirmarTransacao com ID genérico "PENDING"
+    // Fallback: indica ao APK que deve buscar a pendência automaticamente
+    // ========================================================================
+    console.log('[TEFBridge] ⚠️ Nenhum ID disponível - tentando confirmarTransacao(PENDING, ' + status + ')...');
     window.TEF!.confirmarTransacao('PENDING', status);
     console.log('[TEFBridge] ✅ confirmarTransacao(PENDING, ' + status + ') chamado');
     
-    console.log('[TEFBridge] ═══════════════════════════════════════');
+    console.log('[TEFBridge] ════════════════════════════════════════════════════════════');
     
     return true;
   } catch (error) {
