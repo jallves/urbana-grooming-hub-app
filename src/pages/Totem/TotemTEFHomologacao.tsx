@@ -660,22 +660,33 @@ export default function TotemTEFHomologacao() {
       console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
       addLog('info', '📊 PendingInfo para desfazimento', info || {});
 
-      // Extrair possíveis IDs da pendência
+      // Extrair dados de pendência COMPLETOS para passar ao APK
       const pendingData = info?.pendingData as Record<string, unknown> | undefined;
+      
+      // IMPORTANTE: Também usar o pendingInfo do estado do componente (pode ter dados mais recentes)
+      const pendingDataToUse = pendingData || pendingInfo?.pendingData as Record<string, unknown> | undefined;
+      
+      console.log('[PDV] 📦 Dados de pendência para enviar ao APK:', JSON.stringify(pendingDataToUse, null, 2));
+
+      // Extrair possíveis IDs da pendência
       const possibleIds = [
         info?.pendingConfirmationId,
         info?.confirmationId,
-        pendingData?.confirmationTransactionId,
-        pendingData?.transactionId,
+        pendingDataToUse?.confirmationTransactionId,
+        pendingDataToUse?.transactionId,
         info?.lastConfirmationId,
       ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
       
       console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
 
-      // ESTRATÉGIA PRINCIPAL: Usar resolverPendenciaAndroid que tenta múltiplas abordagens
-      // Esta função agora implementa 5 estratégias diferentes de fallback
-      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer)...');
-      const success = resolverPendenciaAndroid('desfazer', possibleIds[0] as string | undefined);
+      // ESTRATÉGIA PRINCIPAL: Passar os dados de pendência diretamente para o APK
+      // Isso resolve o problema de perda de dados quando o APK reinicia
+      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer) com dados de pendência...');
+      const success = resolverPendenciaAndroid(
+        'desfazer', 
+        possibleIds[0] as string | undefined,
+        pendingDataToUse // NOVO: passa os dados de pendência!
+      );
 
       if (success) {
         toast.success('✅ Comando DESFAZER enviado ao PayGo!', {
@@ -687,6 +698,7 @@ export default function TotemTEFHomologacao() {
         addLog('success', '✅ Comando DESFAZER enviado ao PayGo', {
           idsEncontrados: possibleIds,
           idUsado: possibleIds[0] || 'automático',
+          pendingDataEnviado: pendingDataToUse ? 'SIM' : 'NÃO',
           action: 'DESFEITO_MANUAL'
         });
         
@@ -712,7 +724,7 @@ export default function TotemTEFHomologacao() {
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, addLog]);
+  }, [isAndroidAvailable, addLog, pendingInfo]);
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
@@ -742,21 +754,30 @@ export default function TotemTEFHomologacao() {
       console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
       addLog('info', '📊 PendingInfo para confirmação', info || {});
 
-      // Extrair possíveis IDs da pendência
+      // Extrair dados de pendência COMPLETOS para passar ao APK
       const pendingData = info?.pendingData as Record<string, unknown> | undefined;
+      const pendingDataToUse = pendingData || pendingInfo?.pendingData as Record<string, unknown> | undefined;
+      
+      console.log('[PDV] 📦 Dados de pendência para enviar ao APK:', JSON.stringify(pendingDataToUse, null, 2));
+
+      // Extrair possíveis IDs da pendência
       const possibleIds = [
         info?.pendingConfirmationId,
         info?.confirmationId,
-        pendingData?.confirmationTransactionId,
-        pendingData?.transactionId,
+        pendingDataToUse?.confirmationTransactionId,
+        pendingDataToUse?.transactionId,
         info?.lastConfirmationId,
       ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
       
       console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
 
-      // ESTRATÉGIA PRINCIPAL: Usar resolverPendenciaAndroid que tenta múltiplas abordagens
-      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(confirmar)...');
-      const success = resolverPendenciaAndroid('confirmar', possibleIds[0] as string | undefined);
+      // ESTRATÉGIA PRINCIPAL: Passar os dados de pendência diretamente para o APK
+      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(confirmar) com dados de pendência...');
+      const success = resolverPendenciaAndroid(
+        'confirmar', 
+        possibleIds[0] as string | undefined,
+        pendingDataToUse // NOVO: passa os dados de pendência!
+      );
 
       if (success) {
         toast.success('✅ Comando CONFIRMAR enviado ao PayGo!', {
@@ -768,6 +789,7 @@ export default function TotemTEFHomologacao() {
         addLog('success', '✅ Comando CONFIRMAR enviado ao PayGo', {
           idsEncontrados: possibleIds,
           idUsado: possibleIds[0] || 'automático',
+          pendingDataEnviado: pendingDataToUse ? 'SIM' : 'NÃO',
           action: 'CONFIRMADO_MANUAL'
         });
         
@@ -793,7 +815,7 @@ export default function TotemTEFHomologacao() {
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog]);
+  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog, pendingInfo]);
 
   // Auto-scroll
   useEffect(() => {
