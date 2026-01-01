@@ -370,115 +370,158 @@ export function resolverPendenciaAndroid(
   
   try {
     console.log('[TEFBridge] ╔═══════════════════════════════════════════════════════════╗');
-    console.log('[TEFBridge] ║         RESOLUÇÃO DE PENDÊNCIA PayGo (Passo 34)           ║');
+    console.log('[TEFBridge] ║         RESOLUÇÃO DE PENDÊNCIA PayGo via URI              ║');
     console.log('[TEFBridge] ╠═══════════════════════════════════════════════════════════╣');
     console.log('[TEFBridge] ║ Ação:', acao.toUpperCase().padEnd(52), '║');
     console.log('[TEFBridge] ║ Status:', status.padEnd(50), '║');
-    console.log('[TEFBridge] ║ confirmationId:', (confirmationId || 'N/A').substring(0, 42).padEnd(42), '║');
-    console.log('[TEFBridge] ║ pendingDataFromJS:', pendingDataFromJS ? 'SIM' : 'NÃO'.padEnd(39), '║');
     console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
     
-    // Verificar métodos disponíveis no TEF
-    const tefMethods = Object.keys(window.TEF || {});
-    console.log('[TEFBridge] Métodos TEF disponíveis:', tefMethods.join(', '));
+    // ========================================================================
+    // PASSO 1: Obter dados de pendência (ordem de prioridade)
+    // 1. Dados passados diretamente do JS (pendingDataFromJS)
+    // 2. Dados salvos no localStorage (pendência capturada anteriormente)
+    // 3. Dados do APK (getPendingInfo)
+    // ========================================================================
+    
+    // Tentar obter dados salvos no localStorage primeiro
+    const savedPendingData = getSavedPendingDataFromLocalStorage();
+    
+    // Usar dados na ordem de prioridade
+    const dataToUse = pendingDataFromJS || savedPendingData || null;
+    
+    console.log('[TEFBridge] 📊 Dados de pendência:');
+    console.log('[TEFBridge]   - pendingDataFromJS:', pendingDataFromJS ? 'SIM' : 'NÃO');
+    console.log('[TEFBridge]   - savedPendingData:', savedPendingData ? 'SIM' : 'NÃO');
+    console.log('[TEFBridge]   - dataToUse:', dataToUse ? JSON.stringify(dataToUse) : 'NENHUM');
     
     // ========================================================================
-    // ESTRATÉGIA 1 (NOVA - PREFERENCIAL): resolverPendenciaComDados(pendingDataJson, status)
-    // Passa os dados da pendência diretamente do JavaScript para o APK
+    // PASSO 2: Montar e enviar URI de resolução via APK
+    // Formato conforme documentação PayGo:
+    // URI Pendência: app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&...
+    // URI Confirmação: app://resolve/confirmation?transactionStatus=xxx
     // ========================================================================
-    if (pendingDataFromJS && typeof (window.TEF as any).resolverPendenciaComDados === 'function') {
-      const pendingDataJson = JSON.stringify(pendingDataFromJS);
-      console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComDados com dados do JS...');
-      console.log('[TEFBridge] Dados:', pendingDataJson);
-      (window.TEF as any).resolverPendenciaComDados(pendingDataJson, status);
-      console.log('[TEFBridge] ✅ resolverPendenciaComDados chamado com sucesso');
-      return true;
-    }
     
-    // ========================================================================
-    // ESTRATÉGIA 1.5: Salvar dados de pendência no APK primeiro, depois resolver
-    // ========================================================================
-    if (pendingDataFromJS && typeof (window.TEF as any).salvarPendingData === 'function') {
-      const pendingDataJson = JSON.stringify(pendingDataFromJS);
-      console.log('[TEFBridge] 💾 Salvando pendingData no APK antes de resolver...');
-      (window.TEF as any).salvarPendingData(pendingDataJson);
-      console.log('[TEFBridge] ✅ Dados de pendência salvos no APK');
-      // Agora tentar resolver
-    }
-    
-    // ========================================================================
-    // ESTRATÉGIA 2: resolverPendencia(status) com parâmetro
-    // O método resolverPendencia agora aceita o status como parâmetro
-    // ========================================================================
-    if (typeof window.TEF!.resolverPendencia === 'function') {
-      console.log('[TEFBridge] 🔄 Chamando resolverPendencia(' + status + ')...');
-      window.TEF!.resolverPendencia(status);
-      console.log('[TEFBridge] ✅ resolverPendencia(' + status + ') chamado');
-      
-      // Aguardar um momento e verificar se a pendência foi resolvida
-      setTimeout(() => {
-        const infoApos = getPendingInfoAndroid();
-        console.log('[TEFBridge] 📊 Status após resolução:', JSON.stringify(infoApos, null, 2));
-      }, 1000);
-      
-      return true;
-    }
-    
-    // ========================================================================
-    // ESTRATÉGIA 3: confirmarTransacao com confirmationId específico
-    // Se temos o ID, usamos confirmarTransacao diretamente
-    // ========================================================================
-    if (confirmationId && confirmationId !== 'PENDENCIA' && confirmationId !== 'undefined') {
-      console.log('[TEFBridge] 🔄 Chamando confirmarTransacao(' + confirmationId + ', ' + status + ')...');
-      window.TEF!.confirmarTransacao(confirmationId, status);
-      console.log('[TEFBridge] ✅ confirmarTransacao chamado com ID específico');
-      return true;
-    }
-    
-    // ========================================================================
-    // ESTRATÉGIA 4: Buscar pendingData e usar confirmationTransactionId
-    // Obtém os dados da pendência e usa o ID correto
-    // ========================================================================
-    const pendingInfo = getPendingInfoAndroid();
-    console.log('[TEFBridge] 📊 PendingInfo obtido:', JSON.stringify(pendingInfo, null, 2));
-    
-    if (pendingInfo) {
-      // Extrair possíveis IDs da pendência
-      const pendingData = pendingInfo.pendingData as Record<string, unknown> | undefined;
-      const possibleIds = [
-        pendingInfo.pendingConfirmationId,
-        pendingInfo.confirmationId,
-        pendingInfo.lastConfirmationId,
-        pendingData?.confirmationTransactionId,
-        pendingData?.transactionId,
-        pendingInfo.confirmationTransactionId,
-      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
-      
-      console.log('[TEFBridge] 🔍 IDs candidatos encontrados:', possibleIds);
-      
-      if (possibleIds.length > 0) {
-        const idToUse = possibleIds[0] as string;
-        console.log('[TEFBridge] 🔄 Usando confirmarTransacao(' + idToUse + ', ' + status + ')...');
-        window.TEF!.confirmarTransacao(idToUse, status);
-        console.log('[TEFBridge] ✅ confirmarTransacao chamado com ID da pendência');
+    if (dataToUse && hasRequiredPendingFields(dataToUse)) {
+      // Temos dados válidos - usar resolverPendenciaComDados
+      if (typeof (window.TEF as any).resolverPendenciaComDados === 'function') {
+        const pendingDataJson = JSON.stringify(dataToUse);
+        console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComDados...');
+        console.log('[TEFBridge] Dados:', pendingDataJson);
+        (window.TEF as any).resolverPendenciaComDados(pendingDataJson, status);
+        console.log('[TEFBridge] ✅ Resolução de pendência enviada via URI');
+        
+        // Limpar dados salvos após resolução
+        clearSavedPendingData();
         return true;
       }
     }
     
     // ========================================================================
-    // ESTRATÉGIA 5: confirmarTransacao com ID genérico "PENDING"
-    // Fallback: indica ao APK que deve buscar a pendência automaticamente
+    // FALLBACK: Tentar via resolverPendencia simples
+    // O APK tentará buscar os dados internamente
     // ========================================================================
-    console.log('[TEFBridge] ⚠️ Nenhum ID disponível - tentando confirmarTransacao(PENDING, ' + status + ')...');
-    window.TEF!.confirmarTransacao('PENDING', status);
-    console.log('[TEFBridge] ✅ confirmarTransacao(PENDING, ' + status + ') chamado');
+    if (typeof window.TEF!.resolverPendencia === 'function') {
+      console.log('[TEFBridge] 🔄 Chamando resolverPendencia(' + status + ')...');
+      window.TEF!.resolverPendencia(status);
+      console.log('[TEFBridge] ✅ resolverPendencia chamado');
+      clearSavedPendingData();
+      return true;
+    }
     
-    console.log('[TEFBridge] ════════════════════════════════════════════════════════════');
+    // ========================================================================
+    // ÚLTIMO RECURSO: confirmarTransacao
+    // ========================================================================
+    const idToUse = confirmationId || dataToUse?.confirmationTransactionId as string || 'PENDING';
+    console.log('[TEFBridge] 🔄 Chamando confirmarTransacao(' + idToUse + ', ' + status + ')...');
+    window.TEF!.confirmarTransacao(idToUse, status);
+    console.log('[TEFBridge] ✅ confirmarTransacao chamado');
+    clearSavedPendingData();
     
     return true;
   } catch (error) {
     console.error('[TEFBridge] ❌ Erro ao resolver pendência:', error);
     return false;
+  }
+}
+
+/**
+ * Verifica se os dados de pendência têm os campos obrigatórios para a URI
+ * Conforme documentação PayGo: providerName, merchantId, localNsu, transactionNsu, hostNsu
+ */
+function hasRequiredPendingFields(data: Record<string, unknown>): boolean {
+  const required = ['providerName', 'merchantId', 'localNsu'];
+  const hasRequired = required.every(field => {
+    const value = data[field];
+    return value && typeof value === 'string' && value.trim() !== '';
+  });
+  
+  console.log('[TEFBridge] Verificação de campos obrigatórios:', {
+    providerName: data.providerName || '(vazio)',
+    merchantId: data.merchantId || '(vazio)',
+    localNsu: data.localNsu || '(vazio)',
+    transactionNsu: data.transactionNsu || '(vazio)',
+    hostNsu: data.hostNsu || '(vazio)',
+    hasRequired
+  });
+  
+  return hasRequired;
+}
+
+/**
+ * Salva dados de pendência no localStorage para uso posterior
+ * IMPORTANTE: Chamar quando receber resposta do PayGo com dados de pendência
+ */
+export function savePendingDataToLocalStorage(data: Record<string, unknown>): void {
+  try {
+    const pendingData = {
+      providerName: data.providerName || data.provider || '',
+      merchantId: data.merchantId || '',
+      localNsu: data.localNsu || data.terminalNsu || '',
+      transactionNsu: data.transactionNsu || data.nsu || '',
+      hostNsu: data.hostNsu || data.transactionNsu || data.nsu || '',
+      confirmationTransactionId: data.confirmationTransactionId || '',
+      timestamp: Date.now()
+    };
+    
+    localStorage.setItem('tef_pending_data', JSON.stringify(pendingData));
+    console.log('[TEFBridge] ✅ Dados de pendência salvos no localStorage:', pendingData);
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao salvar dados de pendência:', error);
+  }
+}
+
+/**
+ * Obtém dados de pendência salvos no localStorage
+ */
+function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
+  try {
+    const saved = localStorage.getItem('tef_pending_data');
+    if (saved) {
+      const data = JSON.parse(saved);
+      // Verificar se não está muito antigo (30 minutos)
+      if (data.timestamp && (Date.now() - data.timestamp) < 30 * 60 * 1000) {
+        console.log('[TEFBridge] 📥 Dados de pendência recuperados do localStorage:', data);
+        return data;
+      } else {
+        console.log('[TEFBridge] ⚠️ Dados de pendência muito antigos, descartando');
+        localStorage.removeItem('tef_pending_data');
+      }
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao recuperar dados de pendência:', error);
+  }
+  return null;
+}
+
+/**
+ * Limpa dados de pendência salvos
+ */
+export function clearSavedPendingData(): void {
+  try {
+    localStorage.removeItem('tef_pending_data');
+    console.log('[TEFBridge] 🗑️ Dados de pendência limpos do localStorage');
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao limpar dados de pendência:', error);
   }
 }
 
