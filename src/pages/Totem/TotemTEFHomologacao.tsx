@@ -422,56 +422,23 @@ export default function TotemTEFHomologacao() {
 
         if (candidateId) setPendingResolutionConfirmationId(candidateId);
 
-        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Iniciando resolução automática...', {
+        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Aguardando ação no PDV', {
           erro,
           pendingInfo: info,
-          candidateId: candidateId || '(nenhum - usará resolverPendenciaAndroid)',
-          acao: 'Chamando DESFEITO_MANUAL automaticamente'
+          candidateId: candidateId || '(nenhum - PayGo deve informar/buscar via SDK)',
+          acao: 'Mostrar botões CONFIRMAR / DESFAZER na aba Pendências'
         });
 
-        toast.warning('⚠️ Pendência detectada - Resolvendo automaticamente...', {
-          description: 'Enviando DESFEITO_MANUAL para o PayGo...',
-          duration: 5000
+        // IMPORTANTE (Passos 33/34 - PayGo):
+        // No Passo 34, NÃO resolvemos automaticamente.
+        // O objetivo do teste é o operador escolher CONFIRMAR ou DESFAZER.
+        toast.warning('⚠️ Pendência PayGo detectada (Passo 34)', {
+          description: 'Abra a aba “Pendências” e selecione: Confirmar ou Desfazer.',
+          duration: 12000
         });
 
-        // ========================================
-        // CHAMAR DESFAZER AUTOMATICAMENTE
-        // ========================================
-        setTimeout(() => {
-          let resolved = false;
-
-          // Tentar com ID específico primeiro
-          if (candidateId) {
-            console.log('[PDV] Passo 34: Chamando confirmarTransacaoTEF com DESFEITO_MANUAL, ID:', candidateId);
-            resolved = confirmarTransacaoTEF(candidateId, 'DESFEITO_MANUAL');
-            addLog('info', resolved 
-              ? `✅ DESFEITO_MANUAL enviado (ID: ${candidateId})` 
-              : `❌ Falha ao enviar DESFEITO_MANUAL com ID`, { candidateId });
-          }
-
-          // Fallback: resolverPendenciaAndroid (SDK busca pendência automaticamente)
-          if (!resolved) {
-            console.log('[PDV] Passo 34: Fallback - Chamando resolverPendenciaAndroid(desfazer)');
-            resolved = resolverPendenciaAndroid('desfazer');
-            addLog('info', resolved 
-              ? '✅ resolverPendenciaAndroid(desfazer) chamado' 
-              : '❌ Falha ao chamar resolverPendenciaAndroid');
-          }
-
-          if (resolved) {
-            toast.success('✅ DESFEITO_MANUAL enviado!', {
-              description: 'Aguarde o retorno do PayGo. Próximas transações devem funcionar.',
-              duration: 8000
-            });
-            setPendingResolutionConfirmationId(null);
-          } else {
-            toast.error('❌ Não foi possível resolver automaticamente', {
-              description: 'Abra a aba Pendências e tente manualmente.',
-              duration: 8000
-            });
-            setActiveTab('pendencias');
-          }
-        }, 500); // Pequeno delay para garantir que o PayGo processou o erro
+        // Levar o usuário diretamente para a aba de resolução manual
+        setActiveTab('pendencias');
 
         setTransactionResult({
           show: true,
@@ -481,7 +448,7 @@ export default function TotemTEFHomologacao() {
           autorizacao: 'PENDENTE',
           bandeira: '',
           mensagem:
-            'PASSO 34: Pendência detectada (-2599).\n\n🔄 Enviando DESFEITO_MANUAL automaticamente...',
+            'PASSO 34: Pendência detectada (-2599).\n\n➡️ Vá em “Pendências” e escolha: CONFIRMAR ou DESFAZER.\n\nDepois de resolver, execute uma nova transação para validar que o TEF voltou ao normal.',
           passoTeste: testePasso?.passo
         });
       } else if (isCancelamento) {
