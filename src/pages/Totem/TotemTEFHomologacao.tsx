@@ -161,6 +161,10 @@ export default function TotemTEFHomologacao() {
   const [isAndroidLogsAtBottom, setIsAndroidLogsAtBottom] = useState(true);
   const [copiedNsuId, setCopiedNsuId] = useState<string | null>(null);
   
+  // Ref para debounce de resolução de pendência (evita chamadas múltiplas)
+  const lastResolveTimeRef = useRef<number>(0);
+  const RESOLVE_DEBOUNCE_MS = 2000; // 2 segundos entre chamadas
+  
   // Migrar logs antigos na primeira execução
   useEffect(() => {
     migrateOldLogs();
@@ -592,6 +596,14 @@ export default function TotemTEFHomologacao() {
 
   // Função para resolver pendência - PASSO 34: DESFAZER
   const handleResolverPendenciaDesfazer = useCallback(async () => {
+    // Debounce: evita chamadas múltiplas
+    const now = Date.now();
+    if (now - lastResolveTimeRef.current < RESOLVE_DEBOUNCE_MS) {
+      console.log('[PDV] Debounce: ignorando chamada duplicada de DESFAZER');
+      return;
+    }
+    lastResolveTimeRef.current = now;
+    
     console.log('[PDV] Iniciando DESFAZIMENTO de pendência (Passo 34)');
     setResolvingPending(true);
 
@@ -656,6 +668,14 @@ export default function TotemTEFHomologacao() {
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
+    // Debounce: evita chamadas múltiplas
+    const now = Date.now();
+    if (now - lastResolveTimeRef.current < RESOLVE_DEBOUNCE_MS) {
+      console.log('[PDV] Debounce: ignorando chamada duplicada de CONFIRMAR');
+      return;
+    }
+    lastResolveTimeRef.current = now;
+    
     console.log('[PDV] Iniciando CONFIRMAÇÃO de pendência');
     setResolvingPending(true);
 
@@ -1909,12 +1929,8 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={() => {
-                      if (resolverPendenciaAndroid('desfazer')) {
-                        toast.success('DESFAZER enviado via PayGo');
-                      }
-                    }}
-                    disabled={!isAndroidAvailable}
+                    onPointerDown={handleResolverPendenciaDesfazer}
+                    disabled={!isAndroidAvailable || resolvingPending}
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                   >
                     <Undo2 className="h-3 w-3 mr-1" />
@@ -1923,12 +1939,8 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={() => {
-                      if (resolverPendenciaAndroid('confirmar')) {
-                        toast.success('CONFIRMAR enviado via PayGo');
-                      }
-                    }}
-                    disabled={!isAndroidAvailable}
+                    onPointerDown={handleResolverPendenciaConfirmar}
+                    disabled={!isAndroidAvailable || resolvingPending}
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10"
                   >
                     <CheckSquare className="h-3 w-3 mr-1" />
