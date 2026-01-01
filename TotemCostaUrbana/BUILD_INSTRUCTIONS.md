@@ -226,6 +226,14 @@ TotemCostaUrbana/
 
 ## Changelog de Atualizações
 
+### v1.3.0 (Janeiro 2026) - OPERAÇÃO ADMINISTRATIVA
+- ✅ **NOVA FUNCIONALIDADE**: `iniciarAdministrativa()` - Abre menu administrativo do PayGo
+  - Permite resolver pendências manualmente dentro do PayGo
+  - Alternativa quando o broadcast de resolução não funciona
+  - Novo botão na aba 33/34: "Abrir Menu Administrativo do PayGo"
+- ✅ **UI Melhorada**: Exibe dados de pendência salvos para debug
+- ✅ **Botão Limpar Dados Locais**: Remove dados de pendência do localStorage
+
 ### v1.2.2 (Janeiro 2026) - CORREÇÃO FRONTEND - LOOP DE VALIDAÇÃO
 - ✅ **CORREÇÃO CRÍTICA no FRONTEND** (NÃO requer rebuild de APK):
   - **Problema**: `checkPending()` usava `hasPending = hasPendingData || hasConfirmationId`
