@@ -339,25 +339,51 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
 
       // ====================================================================
       // PASSO 2: VALIDAÇÃO PÓS-RESOLUÇÃO (OBRIGATÓRIO)
-      // Aguardar um momento e verificar se a pendência foi realmente limpa
+      // 
+      // PROBLEMA IDENTIFICADO: O APK limpa seus dados internos após chamar
+      // resolverPendenciaComDados(), mas o PayGo SDK pode ainda ter pendência.
+      // 
+      // SOLUÇÃO TEMPORÁRIA: Fazer múltiplas verificações com intervalos maiores
+      // para dar tempo ao PayGo processar e ao APK sincronizar.
+      // 
+      // SOLUÇÃO DEFINITIVA: APK precisa chamar transacao.obtemDadosTransacaoPendente()
+      // do PayGo SDK real para verificar se ainda existe pendência.
       // ====================================================================
-      addLog('validate', '⏳ Aguardando validação pós-resolução...');
+      addLog('validate', '⏳ Aguardando validação pós-resolução (múltiplas verificações)...');
       
-      // Aguardar 1.5 segundos para o PayGo processar
-      await new Promise(resolve => setTimeout(resolve, 1500));
+      // Aguardar 2 segundos iniciais para o PayGo processar
+      await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Re-verificar pendência
-      const { hasPending: stillPending } = checkPending();
+      // Fazer até 3 verificações com intervalos de 1 segundo
+      let stillPending = false;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        addLog('validate', `🔄 Verificação ${attempt}/3...`);
+        const result = checkPending();
+        stillPending = result.hasPending;
+        
+        if (!stillPending) {
+          addLog('validate', `✅ Verificação ${attempt}/3: Sem pendência`);
+          break;
+        }
+        
+        addLog('validate', `⚠️ Verificação ${attempt}/3: Pendência ainda detectada`, result.data);
+        
+        if (attempt < 3) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      }
       
       if (stillPending) {
         // ❌ PENDÊNCIA NÃO FOI RESOLVIDA
-        addLog('validate', '❌ VALIDAÇÃO FALHOU: Pendência ainda existe!', {
+        addLog('validate', '❌ VALIDAÇÃO FALHOU após 3 tentativas: Pendência ainda existe!', {
           acao,
-          observacao: 'O PayGo não processou a resolução. Manter bloqueio.'
+          observacao: 'O PayGo não processou a resolução. APK precisa atualização para consultar SDK real.'
         });
         
+        // IMPORTANTE: Não limpar os dados locais - manter para nova tentativa
+        
         if (optionsRef.current.onResolutionFailed) {
-          optionsRef.current.onResolutionFailed('Pendência não foi resolvida pelo PayGo');
+          optionsRef.current.onResolutionFailed('Pendência não foi resolvida pelo PayGo - APK precisa atualização');
         }
         
         return false;
