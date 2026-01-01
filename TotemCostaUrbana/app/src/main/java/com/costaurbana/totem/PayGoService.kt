@@ -790,45 +790,48 @@ class PayGoService(private val context: Context) {
     
     /**
      * Resolve pendência usando dados completos (providerName, merchantId, etc)
+     * Conforme documentação: https://github.com/adminti2/mobile-integracao-uri#343-resolução-de-pendência
+     * 
+     * URI: app://resolve/pendingTransaction?providerName=xxx&merchantId=xxx&localNsu=xxx&transactionNsu=xxx&hostNsu=xxx&transactionStatus=xxx
      */
     private fun resolvePendingWithFullData(pendingData: JSONObject, status: String, callback: (JSONObject) -> Unit) {
         try {
-            // Construir URI de resolução
-            // Formato: app://resolve/pendingTransaction?providerName=xxx&merchantId=xxx&...
+            // Construir URI COMPLETA de resolução (incluindo transactionStatus)
+            // Conforme documentação, TODOS os parâmetros devem estar na mesma URI
             val resolveUri = Uri.Builder()
                 .scheme("app")
                 .authority("resolve")
                 .appendPath("pendingTransaction")
-                .appendQueryParameter("providerName", pendingData.optString("providerName"))
-                .appendQueryParameter("merchantId", pendingData.optString("merchantId"))
-                .appendQueryParameter("localNsu", pendingData.optString("localNsu"))
-                .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu"))
-                .appendQueryParameter("hostNsu", pendingData.optString("hostNsu"))
+                .appendQueryParameter("providerName", pendingData.optString("providerName", ""))
+                .appendQueryParameter("merchantId", pendingData.optString("merchantId", ""))
+                .appendQueryParameter("localNsu", pendingData.optString("localNsu", ""))
+                .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu", ""))
+                .appendQueryParameter("hostNsu", pendingData.optString("hostNsu", ""))
+                .appendQueryParameter("transactionStatus", status) // CRÍTICO: status na mesma URI
                 .build()
             
-            addLog("[RESOLVE] URI: $resolveUri")
+            addLog("[RESOLVE] URI Completa: $resolveUri")
+            addLog("[RESOLVE] transactionStatus: $status")
             
-            // URI de confirmação com status especificado
-            val confirmacaoUri = "app://resolve/confirmation?transactionStatus=$status"
-            
-            // Enviar broadcast
+            // Enviar broadcast (conforme doc, usar sendBroadcast com ACTION_CONFIRMATION)
             val intent = Intent().apply {
                 action = ACTION_CONFIRMATION
                 putExtra(EXTRA_URI, resolveUri.toString())
-                putExtra(EXTRA_CONFIRMACAO, confirmacaoUri)
                 addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
             
             context.sendBroadcast(intent)
-            addLog("[RESOLVE] ✅ Broadcast de resolução enviado")
+            addLog("[RESOLVE] ✅ Broadcast de resolução enviado com sucesso")
             
-            // Limpar dados de pendência
+            // Limpar dados de pendência APENAS após confirmar envio
             clearPersistedPendingData()
             
             callback(JSONObject().apply {
                 put("status", "resolvido")
-                put("mensagem", "Resolução de pendência enviada com status $status")
+                put("mensagem", "Resolução de pendência ($status) enviada")
                 put("metodo", "full_pending_data")
+                put("providerName", pendingData.optString("providerName"))
+                put("localNsu", pendingData.optString("localNsu"))
             })
             
         } catch (e: Exception) {
