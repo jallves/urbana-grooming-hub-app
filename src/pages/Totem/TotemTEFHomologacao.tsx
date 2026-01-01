@@ -1073,69 +1073,77 @@ export default function TotemTEFHomologacao() {
     setPendingConfirmation(null);
   };
 
-  // Resolver pendência no PayGo - Confirmar
-  const handleResolvePendencyConfirm = () => {
+  // Resolver pendência no PayGo - Confirmar (FALLBACK - sem validação)
+  const handleResolvePendencyConfirm = useCallback(async () => {
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
     }
     
+    setResolvingPending(true);
+    
     console.log('[TotemTEF] ═══════════════════════════════════════');
-    console.log('[TotemTEF] BOTÃO CONFIRMAR PENDÊNCIA CLICADO');
-    console.log('[TotemTEF] isAndroidAvailable:', isAndroidAvailable);
+    console.log('[TotemTEF] BOTÃO CONFIRMAR PENDÊNCIA (FALLBACK) CLICADO');
     console.log('[TotemTEF] ═══════════════════════════════════════');
     
-    addLog('warning', '🔄 CONFIRMANDO PENDÊNCIA NO PAYGO');
-    toast.info('Enviando comando de confirmação...');
+    addLog('warning', '🔄 [FALLBACK] Enviando CONFIRMAR via resolverPendenciaAndroid()...');
+    toast.info('Enviando comando de confirmação (fallback)...', { duration: 3000 });
     
-    const resolved = resolverPendenciaAndroid('confirmar');
-    console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
-    
-    if (resolved) {
-      addLog('success', '✅ Confirmação de pendência enviada');
-      toast.success('Pendência confirmada no PayGo');
-    } else {
-      addLog('error', '❌ Erro ao confirmar pendência');
-      toast.error('Erro ao confirmar pendência');
+    try {
+      const resolved = resolverPendenciaAndroid('confirmar');
+      console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
+      
+      if (resolved) {
+        addLog('success', '✅ [FALLBACK] Comando CONFIRMAR enviado ao APK');
+        toast.success('Comando enviado! Verifique logs do Android.', { duration: 5000 });
+      } else {
+        addLog('error', '❌ [FALLBACK] Erro ao enviar CONFIRMAR');
+        toast.error('Erro ao enviar comando');
+      }
+    } finally {
+      setResolvingPending(false);
+      // Aguardar um pouco e atualizar logs
+      setTimeout(() => {
+        refreshAndroidLogs();
+      }, 1000);
     }
-    
-    // Aguardar um pouco e atualizar logs
-    setTimeout(() => {
-      refreshAndroidLogs();
-    }, 1000);
-  };
+  }, [isAndroidAvailable, addLog, refreshAndroidLogs]);
 
-  // Resolver pendência no PayGo - Desfazer
-  const handleResolvePendencyUndo = () => {
+  // Resolver pendência no PayGo - Desfazer (FALLBACK - sem validação)
+  const handleResolvePendencyUndo = useCallback(async () => {
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
     }
     
+    setResolvingPending(true);
+    
     console.log('[TotemTEF] ═══════════════════════════════════════');
-    console.log('[TotemTEF] BOTÃO DESFAZER PENDÊNCIA CLICADO');
-    console.log('[TotemTEF] isAndroidAvailable:', isAndroidAvailable);
+    console.log('[TotemTEF] BOTÃO DESFAZER PENDÊNCIA (FALLBACK) CLICADO');
     console.log('[TotemTEF] ═══════════════════════════════════════');
     
-    addLog('warning', '🔄 DESFAZENDO PENDÊNCIA NO PAYGO');
-    toast.info('Enviando comando de desfazimento...');
+    addLog('warning', '🔄 [FALLBACK] Enviando DESFAZER via resolverPendenciaAndroid()...');
+    toast.info('Enviando comando de desfazimento (fallback)...', { duration: 3000 });
     
-    const resolved = resolverPendenciaAndroid('desfazer');
-    console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
-    
-    if (resolved) {
-      addLog('success', '✅ Desfazimento de pendência enviado');
-      toast.success('Pendência desfeita no PayGo');
-    } else {
-      addLog('error', '❌ Erro ao desfazer pendência');
-      toast.error('Erro ao desfazer pendência');
+    try {
+      const resolved = resolverPendenciaAndroid('desfazer');
+      console.log('[TotemTEF] resolverPendenciaAndroid retornou:', resolved);
+      
+      if (resolved) {
+        addLog('success', '✅ [FALLBACK] Comando DESFAZER enviado ao APK');
+        toast.success('Comando enviado! Verifique logs do Android.', { duration: 5000 });
+      } else {
+        addLog('error', '❌ [FALLBACK] Erro ao enviar DESFAZER');
+        toast.error('Erro ao enviar comando');
+      }
+    } finally {
+      setResolvingPending(false);
+      // Aguardar um pouco e atualizar logs
+      setTimeout(() => {
+        refreshAndroidLogs();
+      }, 1000);
     }
-    
-    // Aguardar um pouco e atualizar logs
-    setTimeout(() => {
-      refreshAndroidLogs();
-    }, 1000);
-  };
+  }, [isAndroidAvailable, addLog, refreshAndroidLogs]);
 
   // Limpar pendências via transação administrativa (R$50,00)
   const handleClearPendenciesWithTransaction = async () => {
@@ -1930,9 +1938,9 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
       <div className="flex-1 overflow-hidden p-2">
         {/* Aba Pendências - Passos 33/34 */}
         {activeTab === 'pendencias' && (
-          <div className="h-full flex flex-col gap-3">
+          <div className="h-full flex flex-col gap-3 overflow-y-auto">
             {/* Instruções */}
-            <Card className="bg-yellow-900/20 border-yellow-500/30">
+            <Card className="bg-yellow-900/20 border-yellow-500/30 flex-shrink-0">
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-sm text-yellow-400 flex items-center gap-2">
                   <AlertTriangle className="h-4 w-4" />
@@ -1942,7 +1950,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               <CardContent className="px-3 pb-3 text-xs text-yellow-200/80 space-y-2">
                 <p><strong>Passo 33:</strong> Execute venda de R$ 1.005,60 → Aprovada e confirmada normalmente.</p>
                 <p><strong>Passo 34:</strong> Execute venda de R$ 1.005,61 → O PayGo retorna <strong>pendência (-2599)</strong>.</p>
-                <p className="text-yellow-300/80 text-[10px] italic">Em integração (automação), a tela “Confirmar/Desfazer” pode não aparecer no PayGo. A resolução deve ser feita aqui.</p>
+                <p className="text-yellow-300/80 text-[10px] italic">Em integração (automação), a tela "Confirmar/Desfazer" pode não aparecer no PayGo. A resolução deve ser feita aqui.</p>
               </CardContent>
             </Card>
 
@@ -1954,7 +1962,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               const isPasso34Detected = ultimaTransacao?.data?.valor === 100561 || ultimaTransacao?.data?.passoTeste === '34';
               
               return (
-                <Card className={`border-2 ${pendingResolutionConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
+                <Card className={`border-2 flex-shrink-0 ${pendingResolutionConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
                   <CardContent className="p-4 text-center">
                     {pendingResolutionConfirmationId ? (
                       <>
@@ -1989,57 +1997,139 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               );
             })()}
 
-            {/* Botoes de Acao - com destaque para Passo 34 */}
+            {/* Botoes de Acao - com destaque para Passo 34 e FEEDBACK VISUAL */}
             {(() => {
               const ultimaTx = transactionLogs.filter(l => l.data?.valor && (l.data?.orderId || l.data?.passoTeste)).slice(-1)[0];
               const isPasso34Btn = ultimaTx?.data?.valor === 100561 || ultimaTx?.data?.passoTeste === '34';
               
               return (
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-2 gap-3 flex-shrink-0">
                   <Button
                     onPointerDown={handleResolverPendenciaDesfazer}
                     disabled={resolvingPending || !isAndroidAvailable}
-                    className={`h-16 text-white flex flex-col gap-1 transition-all ${
+                    className={`h-20 text-white flex flex-col gap-1 transition-all ${
                       isPasso34Btn 
                         ? 'bg-red-500 hover:bg-red-600 ring-4 ring-red-300 ring-opacity-75 animate-pulse scale-105' 
                         : 'bg-red-600 hover:bg-red-700'
                     }`}
                   >
                     {resolvingPending ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="text-xs font-bold">ENVIANDO...</span>
+                        <span className="text-[9px] opacity-70">Aguarde resposta do APK</span>
+                      </>
                     ) : (
-                      <Undo2 className="h-6 w-6" />
+                      <>
+                        <Undo2 className="h-6 w-6" />
+                        <span className="text-xs font-bold">{isPasso34Btn ? 'CLIQUE AQUI: DESFAZER' : 'DESFAZER'}</span>
+                        <span className="text-[9px] opacity-70">DESFEITO_MANUAL</span>
+                      </>
                     )}
-                    <span className="text-xs font-bold">{isPasso34Btn ? 'CLIQUE AQUI: DESFAZER' : 'DESFAZER'}</span>
-                    <span className="text-[9px] opacity-70">DESFEITO_MANUAL</span>
                   </Button>
                   
                   <Button
                     onPointerDown={handleResolverPendenciaConfirmar}
                     disabled={resolvingPending || !isAndroidAvailable}
-                    className={`h-16 text-white flex flex-col gap-1 ${
+                    className={`h-20 text-white flex flex-col gap-1 ${
                       isPasso34Btn 
                         ? 'bg-gray-600 hover:bg-gray-700 opacity-50' 
                         : 'bg-green-600 hover:bg-green-700'
                     }`}
                   >
                     {resolvingPending ? (
-                      <Loader2 className="h-6 w-6 animate-spin" />
+                      <>
+                        <Loader2 className="h-6 w-6 animate-spin" />
+                        <span className="text-xs font-bold">ENVIANDO...</span>
+                        <span className="text-[9px] opacity-70">Aguarde resposta do APK</span>
+                      </>
                     ) : (
-                      <CheckSquare className="h-6 w-6" />
+                      <>
+                        <CheckSquare className="h-6 w-6" />
+                        <span className="text-xs font-bold">CONFIRMAR</span>
+                        <span className="text-[9px] opacity-70">{isPasso34Btn ? '(NAO USAR NO P34)' : 'CONFIRMADO_MANUAL'}</span>
+                      </>
                     )}
-                    <span className="text-xs font-bold">CONFIRMAR</span>
-                    <span className="text-[9px] opacity-70">{isPasso34Btn ? '(NAO USAR NO P34)' : 'CONFIRMADO_MANUAL'}</span>
                   </Button>
                 </div>
               );
             })()}
 
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            {/* PAINEL DE AÇÕES RECENTES - FEEDBACK VISUAL EM TEMPO REAL */}
+            {/* ═══════════════════════════════════════════════════════════════════ */}
+            <Card className="bg-gray-900/50 border-gray-700/50 flex-shrink-0">
+              <CardHeader className="py-2 px-3 border-b border-gray-700/30">
+                <CardTitle className="text-xs text-gray-400 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <FileText className="h-3.5 w-3.5" />
+                    Ações Recentes (últimas 10)
+                  </span>
+                  <Badge variant="outline" className={`text-[9px] ${resolvingPending ? 'border-yellow-500 text-yellow-400 animate-pulse' : 'border-gray-600 text-gray-500'}`}>
+                    {resolvingPending ? '⏳ PROCESSANDO' : '● IDLE'}
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2">
+                <ScrollArea className="h-32">
+                  {transactionLogs
+                    .filter(l => 
+                      l.message.includes('pendência') || 
+                      l.message.includes('Pendência') || 
+                      l.message.includes('PENDÊNCIA') ||
+                      l.message.includes('PASSO 34') ||
+                      l.message.includes('Resolvendo') ||
+                      l.message.includes('Validação') ||
+                      l.message.includes('DESFEITO') ||
+                      l.message.includes('CONFIRMADO') ||
+                      l.message.includes('desfazer') ||
+                      l.message.includes('confirmar')
+                    )
+                    .slice(-10)
+                    .reverse()
+                    .map((log, idx) => (
+                      <div 
+                        key={log.id} 
+                        className={`py-1.5 px-2 text-[10px] border-l-2 mb-1 rounded-r ${
+                          log.type === 'success' ? 'border-green-500 bg-green-500/10 text-green-300' :
+                          log.type === 'error' ? 'border-red-500 bg-red-500/10 text-red-300' :
+                          log.type === 'warning' ? 'border-yellow-500 bg-yellow-500/10 text-yellow-300' :
+                          'border-blue-500 bg-blue-500/10 text-blue-300'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start gap-2">
+                          <span className="flex-1">{log.message}</span>
+                          <span className="text-[8px] opacity-50 whitespace-nowrap">
+                            {new Date(log.timestamp).toLocaleTimeString('pt-BR')}
+                          </span>
+                        </div>
+                        {log.data && (
+                          <pre className="mt-1 text-[8px] opacity-60 overflow-x-auto whitespace-pre-wrap">
+                            {JSON.stringify(log.data, null, 1)}
+                          </pre>
+                        )}
+                      </div>
+                    ))
+                  }
+                  {transactionLogs.filter(l => 
+                    l.message.includes('pendência') || 
+                    l.message.includes('PASSO 34')
+                  ).length === 0 && (
+                    <div className="text-center text-gray-500 text-xs py-4">
+                      Nenhuma ação de pendência registrada ainda.
+                      <br />
+                      <span className="text-[10px]">Execute o Passo 34 ou clique em Desfazer/Confirmar.</span>
+                    </div>
+                  )}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+
             {/* Resolver Pendência PayGo (fallback) */}
-            <Card className="bg-blue-900/20 border-blue-500/30">
+            <Card className="bg-blue-900/20 border-blue-500/30 flex-shrink-0">
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-xs text-blue-400">
-                  Resolver via PayGo (alternativo)
+                  Resolver via PayGo (alternativo - sem validação)
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
@@ -2047,29 +2137,75 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={handleResolverPendenciaDesfazer}
+                    onPointerDown={handleResolvePendencyUndo}
                     disabled={!isAndroidAvailable || resolvingPending}
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                   >
-                    <Undo2 className="h-3 w-3 mr-1" />
+                    {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Undo2 className="h-3 w-3 mr-1" />}
                     PayGo Desfazer
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={handleResolverPendenciaConfirmar}
+                    onPointerDown={handleResolvePendencyConfirm}
                     disabled={!isAndroidAvailable || resolvingPending}
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10"
                   >
-                    <CheckSquare className="h-3 w-3 mr-1" />
+                    {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckSquare className="h-3 w-3 mr-1" />}
                     PayGo Confirmar
                   </Button>
                 </div>
+                <p className="text-[9px] text-blue-300/50 mt-2 text-center">
+                  Estes botões enviam diretamente ao APK sem validação pós-resolução.
+                </p>
+              </CardContent>
+            </Card>
+
+            {/* Logs do Android em tempo real */}
+            <Card className="bg-gray-900/30 border-gray-700/30 flex-1 min-h-0">
+              <CardHeader className="py-2 px-3 border-b border-gray-700/30">
+                <CardTitle className="text-xs text-gray-400 flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Smartphone className="h-3.5 w-3.5" />
+                    Logs Android (últimos 15)
+                  </span>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-5 px-2 text-[9px] text-gray-500 hover:text-gray-300"
+                    onPointerDown={() => refreshAndroidLogs()}
+                  >
+                    <RefreshCw className="h-3 w-3 mr-1" />
+                    Atualizar
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="p-2 h-[calc(100%-36px)]">
+                <ScrollArea className="h-full">
+                  {androidLogs.slice(-15).reverse().map((log, idx) => (
+                    <div 
+                      key={idx} 
+                      className={`py-0.5 px-1.5 text-[9px] font-mono mb-0.5 rounded ${
+                        log.message.includes('✅') ? 'bg-green-500/10 text-green-300' :
+                        log.message.includes('❌') ? 'bg-red-500/10 text-red-300' :
+                        log.message.includes('⚠') || log.message.includes('RESOLVE') ? 'bg-yellow-500/10 text-yellow-300' :
+                        'bg-gray-800/50 text-gray-400'
+                      }`}
+                    >
+                      {log.message}
+                    </div>
+                  ))}
+                  {androidLogs.length === 0 && (
+                    <div className="text-center text-gray-500 text-xs py-4">
+                      Nenhum log do Android disponível.
+                    </div>
+                  )}
+                </ScrollArea>
               </CardContent>
             </Card>
 
             {/* Info TEF */}
-            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 mt-auto">
+            <Card className="bg-urbana-black-soft/80 border-urbana-gold/30 flex-shrink-0">
               <CardContent className="p-2">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="p-2 bg-urbana-black/50 rounded text-center">
