@@ -15,4 +15,7 @@
     <color name="green">#FF22C55E</color>
     <color name="red">#FFEF4444</color>
     <color name="orange">#FFF97316</color>
+    
+    <!-- Launcher Background (dark) -->
+    <color name="ic_launcher_background">#0A0A14</color>
 </resources>

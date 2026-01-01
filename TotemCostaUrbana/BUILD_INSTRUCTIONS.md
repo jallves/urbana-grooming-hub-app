@@ -218,5 +218,21 @@ TotemCostaUrbana/
 
 ## URLs Importantes
 
-- **PWA URL**: `https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/totem`
+- **PWA URL Produção**: `https://barbeariacostaurbana.com.br/totem`
+- **PWA URL Dev**: `https://d8077827-f7c8-4ebd-8463-ec535c4f64a5.lovableproject.com/totem`
 - **Documentação PayGo**: [GitHub - mobile-integracao-uri](https://github.com/nicfrezza/mobile-integracao-uri)
+
+---
+
+## Changelog de Atualizações
+
+### v1.1.0 (Janeiro 2026)
+- ✅ **Splash Screen**: Adicionada logo oficial da Costa Urbana Barbearia
+- ✅ **Ícone do APK**: Atualizado para usar a logo oficial
+- ✅ **Loading**: Tela de carregamento melhorada com logo grande e barra de progresso dourada
+- ✅ **TEF Bridge**: Métodos `getPendingInfo()` e `resolverPendencia(status)` para suporte aos Passos 33/34 PayGo
+
+### v1.0.0 (Inicial)
+- WebView para carregar o PWA do Totem
+- Integração TEF via PayGo Integrado
+- Tela de diagnóstico inicial
