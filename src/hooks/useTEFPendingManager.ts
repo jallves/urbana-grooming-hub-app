@@ -22,7 +22,8 @@ import {
   resolverPendenciaAndroid,
   confirmarTransacaoTEF,
   savePendingDataToLocalStorage,
-  clearSavedPendingData
+  clearSavedPendingData,
+  limparPendingDataCompleto
 } from '@/lib/tef/tefAndroidBridge';
 
 // ============================================================================
@@ -392,10 +393,16 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       // ✅ PENDÊNCIA RESOLVIDA COM SUCESSO
       addLog('validate', '✅ VALIDAÇÃO OK: Pendência resolvida com sucesso!');
       
-      // Limpar estados
+      // ════════════════════════════════════════════════════════════════════
+      // LIMPAR DADOS DE PENDÊNCIA DO APK E LOCALSTORAGE
+      // Agora que confirmamos que o PayGo processou, podemos limpar
+      // ════════════════════════════════════════════════════════════════════
+      addLog('resolve', '🗑️ Limpando dados de pendência (APK + localStorage)...');
+      limparPendingDataCompleto();
+      
+      // Limpar estados do hook
       setVendaState(null);
       saveVendaState(null);
-      clearSavedPendingData();
       setIsBlocked(false);
       setPendingState({
         hasPending: false,

@@ -226,6 +226,15 @@ TotemCostaUrbana/
 
 ## Changelog de Atualizações
 
+### v1.2.0 (Janeiro 2026)
+- ✅ **CORREÇÃO CRÍTICA - Resolução de Pendência**: Implementação conforme documentação oficial PayGo (seção 3.4.3)
+  - Broadcast enviado com DUAS URIs separadas: `uri` (dados pendência) + `Confirmacao` (status)
+  - Intent Action: `br.com.setis.confirmation.TRANSACTION`
+  - Flag: `FLAG_INCLUDE_STOPPED_PACKAGES`
+- ✅ **Novo método `limparPendingData()`**: Permite frontend limpar dados do APK após validação
+- ✅ **Logs detalhados**: Logs expandidos para debug de resolução de pendências
+- ✅ **NÃO limpar dados imediatamente**: APK não limpa dados após envio - frontend controla limpeza após validação
+
 ### v1.1.0 (Janeiro 2026)
 - ✅ **Splash Screen**: Adicionada logo oficial da Costa Urbana Barbearia
 - ✅ **Ícone do APK**: Atualizado para usar a logo oficial
@@ -236,3 +245,20 @@ TotemCostaUrbana/
 - WebView para carregar o PWA do Totem
 - Integração TEF via PayGo Integrado
 - Tela de diagnóstico inicial
+
+---
+
+## Métodos TEF Disponíveis (window.TEF)
+
+| Método | Descrição |
+|--------|-----------|
+| `iniciarPagamento(json)` | Inicia transação de pagamento |
+| `cancelarVenda(json)` | Cancela venda anterior |
+| `confirmarTransacao(id, status)` | Confirma transação manualmente |
+| `resolverPendencia(status)` | Resolve pendência sem dados externos |
+| `resolverPendenciaComDados(json, status)` | Resolve pendência com dados do JS |
+| `getPendingInfo()` | Obtém info de pendências |
+| `limparPendingData()` | **NOVO** - Limpa dados de pendência do APK |
+| `salvarConfirmationId(id, nsu, auth)` | Salva IDs para resolução futura |
+| `verificarPinpad()` | Verifica status do pinpad |
+| `getStatus()` | Status completo do serviço |
