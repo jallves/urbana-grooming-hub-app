@@ -1947,59 +1947,94 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </CardContent>
             </Card>
 
-            {/* Status da Pendência */}
-            <Card className={`border-2 ${pendingResolutionConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
-              <CardContent className="p-4 text-center">
-                {pendingResolutionConfirmationId ? (
-                  <>
-                    <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-2 animate-pulse" />
-                    <p className="text-red-400 font-bold text-lg">PENDÊNCIA DETECTADA</p>
-                    <p className="text-red-300/70 text-xs mt-1 font-mono break-all">
-                      ID: {pendingResolutionConfirmationId}
-                    </p>
-                    <p className="text-yellow-400 text-sm mt-2">
-                      Clique em <strong>DESFAZER</strong> para liberar o TEF
-                    </p>
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
-                    <p className="text-green-400 font-bold text-lg">SEM PENDÊNCIAS</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Botões de Ação */}
-            <div className="grid grid-cols-2 gap-3">
-              <Button
-                onPointerDown={handleResolverPendenciaDesfazer}
-                disabled={resolvingPending || !isAndroidAvailable}
-                className="h-16 bg-red-600 hover:bg-red-700 text-white flex flex-col gap-1"
-              >
-                {resolvingPending ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <Undo2 className="h-6 w-6" />
-                )}
-                <span className="text-xs font-bold">DESFAZER</span>
-                <span className="text-[9px] opacity-70">DESFEITO_MANUAL</span>
-              </Button>
+            {/* Status da Pendência - com detecção do Passo 34 */}
+            {(() => {
+              // Detectar se a última transação foi Passo 34 (valor 100561 centavos = R$ 1.005,61)
+              // Buscar em logs do tipo 'info' que contenham dados de transação iniciada
+              const ultimaTransacao = transactionLogs.filter(l => l.data?.valor && (l.data?.orderId || l.data?.passoTeste)).slice(-1)[0];
+              const isPasso34Detected = ultimaTransacao?.data?.valor === 100561 || ultimaTransacao?.data?.passoTeste === '34';
               
-              <Button
-                onPointerDown={handleResolverPendenciaConfirmar}
-                disabled={resolvingPending || !isAndroidAvailable}
-                className="h-16 bg-green-600 hover:bg-green-700 text-white flex flex-col gap-1"
-              >
-                {resolvingPending ? (
-                  <Loader2 className="h-6 w-6 animate-spin" />
-                ) : (
-                  <CheckSquare className="h-6 w-6" />
-                )}
-                <span className="text-xs font-bold">CONFIRMAR</span>
-                <span className="text-[9px] opacity-70">CONFIRMADO_MANUAL</span>
-              </Button>
-            </div>
+              return (
+                <Card className={`border-2 ${pendingResolutionConfirmationId ? 'bg-red-900/20 border-red-500/50' : 'bg-green-900/20 border-green-500/50'}`}>
+                  <CardContent className="p-4 text-center">
+                    {pendingResolutionConfirmationId ? (
+                      <>
+                        <AlertTriangle className="h-10 w-10 text-red-400 mx-auto mb-2 animate-pulse" />
+                        <p className="text-red-400 font-bold text-lg">PENDENCIA DETECTADA</p>
+                        <p className="text-red-300/70 text-xs mt-1 font-mono break-all">
+                          ID: {pendingResolutionConfirmationId}
+                        </p>
+                        {isPasso34Detected ? (
+                          <div className="bg-red-800/50 border-2 border-red-400 rounded-lg p-3 mt-3 animate-pulse">
+                            <p className="text-red-100 text-lg font-bold">
+                              PASSO 34: CLIQUE EM DESFAZER
+                            </p>
+                            <p className="text-red-200/80 text-xs mt-1">
+                              NAO clique em Confirmar! O teste exige DESFAZER.
+                            </p>
+                          </div>
+                        ) : (
+                          <p className="text-yellow-400 text-sm mt-2">
+                            Clique em <strong>DESFAZER</strong> ou <strong>CONFIRMAR</strong> conforme o contexto
+                          </p>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-10 w-10 text-green-400 mx-auto mb-2" />
+                        <p className="text-green-400 font-bold text-lg">SEM PENDENCIAS</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })()}
+
+            {/* Botoes de Acao - com destaque para Passo 34 */}
+            {(() => {
+              const ultimaTx = transactionLogs.filter(l => l.data?.valor && (l.data?.orderId || l.data?.passoTeste)).slice(-1)[0];
+              const isPasso34Btn = ultimaTx?.data?.valor === 100561 || ultimaTx?.data?.passoTeste === '34';
+              
+              return (
+                <div className="grid grid-cols-2 gap-3">
+                  <Button
+                    onPointerDown={handleResolverPendenciaDesfazer}
+                    disabled={resolvingPending || !isAndroidAvailable}
+                    className={`h-16 text-white flex flex-col gap-1 transition-all ${
+                      isPasso34Btn 
+                        ? 'bg-red-500 hover:bg-red-600 ring-4 ring-red-300 ring-opacity-75 animate-pulse scale-105' 
+                        : 'bg-red-600 hover:bg-red-700'
+                    }`}
+                  >
+                    {resolvingPending ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <Undo2 className="h-6 w-6" />
+                    )}
+                    <span className="text-xs font-bold">{isPasso34Btn ? 'CLIQUE AQUI: DESFAZER' : 'DESFAZER'}</span>
+                    <span className="text-[9px] opacity-70">DESFEITO_MANUAL</span>
+                  </Button>
+                  
+                  <Button
+                    onPointerDown={handleResolverPendenciaConfirmar}
+                    disabled={resolvingPending || !isAndroidAvailable}
+                    className={`h-16 text-white flex flex-col gap-1 ${
+                      isPasso34Btn 
+                        ? 'bg-gray-600 hover:bg-gray-700 opacity-50' 
+                        : 'bg-green-600 hover:bg-green-700'
+                    }`}
+                  >
+                    {resolvingPending ? (
+                      <Loader2 className="h-6 w-6 animate-spin" />
+                    ) : (
+                      <CheckSquare className="h-6 w-6" />
+                    )}
+                    <span className="text-xs font-bold">CONFIRMAR</span>
+                    <span className="text-[9px] opacity-70">{isPasso34Btn ? '(NAO USAR NO P34)' : 'CONFIRMADO_MANUAL'}</span>
+                  </Button>
+                </div>
+              );
+            })()}
 
             {/* Resolver Pendência PayGo (fallback) */}
             <Card className="bg-blue-900/20 border-blue-500/30">
