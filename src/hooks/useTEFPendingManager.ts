@@ -199,17 +199,26 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
         return { hasPending: false, data: null };
       }
 
-      // Verificar se existe pendência real
+      // ════════════════════════════════════════════════════════════════════════
+      // VERIFICAÇÃO DE PENDÊNCIA - PRIORIZAR RESPOSTA DO APK
+      // ════════════════════════════════════════════════════════════════════════
+      // O APK consulta o PayGo SDK real via getPendingInfo()
+      // Se o APK diz hasPendingData: false, devemos confiar nele
+      // localStorage é apenas fallback para quando APK não está disponível
+      // ════════════════════════════════════════════════════════════════════════
+      
       const hasPendingData = info.hasPendingData === true;
-      const hasConfirmationId = !!(info.lastConfirmationId || info.confirmationId);
       const pendingData = info.pendingData as Record<string, unknown> | undefined;
       
-      const hasPending = hasPendingData || hasConfirmationId;
+      // REMOVIDO: hasConfirmationId - causa falsos positivos
+      // O confirmationId no localStorage é apenas para referência, não indica pendência real
+      // A pendência real é determinada APENAS pelo APK (que consulta PayGo SDK)
+      
+      const hasPending = hasPendingData;
 
       addLog('check', `Resultado: ${hasPending ? '⚠️ PENDÊNCIA DETECTADA' : '✅ Sem pendências'}`, {
         hasPendingData,
-        hasConfirmationId,
-        confirmationId: info.lastConfirmationId || info.confirmationId,
+        source: info.source || 'APK',
         pendingData: pendingData ? 'presente' : 'ausente',
       });
 
@@ -235,6 +244,9 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
         }
       } else {
         setIsBlocked(false);
+        
+        // Se não há pendência, garantir que dados locais estão limpos
+        clearSavedPendingData();
       }
 
       return { hasPending, data: info };

@@ -609,11 +609,25 @@ function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
 
 /**
  * Limpa dados de pendência salvos no localStorage
+ * IMPORTANTE: Limpa TODOS os dados relacionados a pendências
  */
 export function clearSavedPendingData(): void {
   try {
+    // Limpar dados de pendência principal
     localStorage.removeItem('tef_pending_data');
-    console.log('[TEFBridge] 🗑️ Dados de pendência limpos do localStorage');
+    
+    // CRÍTICO: Também limpar confirmationId e dados relacionados
+    // Esses dados são usados na verificação de pendência em checkPending()
+    localStorage.removeItem('tef_last_confirmation_id');
+    localStorage.removeItem('tef_last_nsu');
+    localStorage.removeItem('tef_last_autorizacao');
+    localStorage.removeItem('tef_last_timestamp');
+    
+    // Limpar estados do hook
+    localStorage.removeItem('tef_venda_state');
+    localStorage.removeItem('tef_pending_state');
+    
+    console.log('[TEFBridge] 🗑️ TODOS os dados de pendência limpos do localStorage');
   } catch (error) {
     console.error('[TEFBridge] Erro ao limpar dados de pendência:', error);
   }

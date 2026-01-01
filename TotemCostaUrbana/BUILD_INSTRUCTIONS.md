@@ -226,8 +226,16 @@ TotemCostaUrbana/
 
 ## Changelog de Atualizações
 
-### v1.2.1 (Janeiro 2026) - CORREÇÃO VALIDAÇÃO
-- ✅ **CORREÇÃO CRÍTICA**: APK agora limpa `lastPendingData` e dados persistidos APÓS enviar broadcast
+### v1.2.2 (Janeiro 2026) - CORREÇÃO FRONTEND - LOOP DE VALIDAÇÃO
+- ✅ **CORREÇÃO CRÍTICA no FRONTEND** (NÃO requer rebuild de APK):
+  - **Problema**: `checkPending()` usava `hasPending = hasPendingData || hasConfirmationId`
+  - Se existia `tef_last_confirmation_id` no localStorage, considerava como pendência mesmo que o APK dissesse `hasPendingData: false`
+  - **Solução 1**: `checkPending()` agora usa APENAS `hasPendingData` do APK (não mais `hasConfirmationId`)
+  - **Solução 2**: `clearSavedPendingData()` agora limpa TODOS os dados: `tef_pending_data`, `tef_last_confirmation_id`, `tef_last_nsu`, `tef_venda_state`, etc.
+  - **Resultado**: Após resolução bem-sucedida, sistema NÃO reporta mais falsa pendência
+
+### v1.2.1 (Janeiro 2026) - CORREÇÃO APK - LIMPEZA APÓS BROADCAST
+- ✅ **CORREÇÃO no APK**: APK agora limpa `lastPendingData` e dados persistidos APÓS enviar broadcast
   - Problema: frontend ficava em loop de validação porque `getPendingInfo()` retornava dados locais do APK (não do PayGo real)
   - Solução: `clearPersistedPendingData()` é chamado logo após `sendBroadcast()` ser executado
   - Resultado: `getPendingInfo()` retorna `hasPendingData: false` imediatamente após resolução
