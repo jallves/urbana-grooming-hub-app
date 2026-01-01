@@ -387,12 +387,34 @@ export function resolverPendenciaAndroid(
     const savedPendingData = getSavedPendingDataFromLocalStorage();
     
     // Usar dados na ordem de prioridade
-    const dataToUse = pendingDataFromJS || savedPendingData || null;
+    let dataToUse = pendingDataFromJS || savedPendingData || null;
     
-    console.log('[TEFBridge] 📊 Dados de pendência:');
-    console.log('[TEFBridge]   - pendingDataFromJS:', pendingDataFromJS ? 'SIM' : 'NÃO');
-    console.log('[TEFBridge]   - savedPendingData:', savedPendingData ? 'SIM' : 'NÃO');
-    console.log('[TEFBridge]   - dataToUse:', dataToUse ? JSON.stringify(dataToUse) : 'NENHUM');
+    // ========================================================================
+    // APLICAR FALLBACKS NOS DADOS DE PENDÊNCIA
+    // Conforme documentação PayGo: transactionNsu e hostNsu são MANDATÓRIOS
+    // Se vazios, usar localNsu como fallback
+    // ========================================================================
+    if (dataToUse) {
+      const localNsu = String(dataToUse.localNsu || '').trim();
+      const transactionNsu = String(dataToUse.transactionNsu || '').trim() || localNsu;
+      const hostNsu = String(dataToUse.hostNsu || '').trim() || transactionNsu;
+      
+      dataToUse = {
+        ...dataToUse,
+        localNsu,
+        transactionNsu,
+        hostNsu,
+      };
+      
+      console.log('[TEFBridge] 📊 Dados de pendência (COM FALLBACKS APLICADOS):');
+      console.log('[TEFBridge]   - providerName:', dataToUse.providerName);
+      console.log('[TEFBridge]   - merchantId:', dataToUse.merchantId);
+      console.log('[TEFBridge]   - localNsu:', localNsu);
+      console.log('[TEFBridge]   - transactionNsu:', transactionNsu, transactionNsu === localNsu ? '(fallback)' : '');
+      console.log('[TEFBridge]   - hostNsu:', hostNsu, hostNsu === transactionNsu ? '(fallback)' : '');
+    } else {
+      console.log('[TEFBridge] ⚠️ Nenhum dado de pendência disponível');
+    }
     
     // ========================================================================
     // PASSO 2: Montar e enviar URI de resolução via APK
@@ -406,7 +428,7 @@ export function resolverPendenciaAndroid(
       if (typeof (window.TEF as any).resolverPendenciaComDados === 'function') {
         const pendingDataJson = JSON.stringify(dataToUse);
         console.log('[TEFBridge] 🔄 Chamando resolverPendenciaComDados...');
-        console.log('[TEFBridge] Dados:', pendingDataJson);
+        console.log('[TEFBridge] Dados JSON:', pendingDataJson);
         (window.TEF as any).resolverPendenciaComDados(pendingDataJson, status);
         console.log('[TEFBridge] ✅ Resolução de pendência enviada via URI');
         
@@ -446,14 +468,31 @@ export function resolverPendenciaAndroid(
 
 /**
  * Verifica se os dados de pendência têm os campos obrigatórios para a URI
- * Conforme documentação PayGo: providerName, merchantId, localNsu, transactionNsu, hostNsu
+ * Conforme documentação PayGo (seção 3.3.4):
+ * - providerName (M - Mandatório)
+ * - merchantId (M - Mandatório)
+ * - localNsu (M - Mandatório)
+ * - transactionNsu (M - Mandatório) - pode usar fallback do localNsu
+ * - hostNsu (M - Mandatório) - pode usar fallback do transactionNsu
  */
 function hasRequiredPendingFields(data: Record<string, unknown>): boolean {
-  const required = ['providerName', 'merchantId', 'localNsu'];
-  const hasRequired = required.every(field => {
+  // Campos básicos obrigatórios (devem existir originalmente)
+  const basicFields = ['providerName', 'merchantId', 'localNsu'];
+  const hasBasicFields = basicFields.every(field => {
     const value = data[field];
     return value && typeof value === 'string' && value.trim() !== '';
   });
+  
+  // transactionNsu e hostNsu podem vir via fallback do localNsu
+  // então verificamos se têm valor (que pode ser o fallback)
+  const hasTransactionNsu = data.transactionNsu && 
+    typeof data.transactionNsu === 'string' && 
+    data.transactionNsu.trim() !== '';
+  const hasHostNsu = data.hostNsu && 
+    typeof data.hostNsu === 'string' && 
+    data.hostNsu.trim() !== '';
+  
+  const hasRequired = hasBasicFields && hasTransactionNsu && hasHostNsu;
   
   console.log('[TEFBridge] Verificação de campos obrigatórios:', {
     providerName: data.providerName || '(vazio)',
@@ -461,6 +500,9 @@ function hasRequiredPendingFields(data: Record<string, unknown>): boolean {
     localNsu: data.localNsu || '(vazio)',
     transactionNsu: data.transactionNsu || '(vazio)',
     hostNsu: data.hostNsu || '(vazio)',
+    hasBasicFields,
+    hasTransactionNsu,
+    hasHostNsu,
     hasRequired
   });
   
@@ -470,21 +512,51 @@ function hasRequiredPendingFields(data: Record<string, unknown>): boolean {
 /**
  * Salva dados de pendência no localStorage para uso posterior
  * IMPORTANTE: Chamar quando receber resposta do PayGo com dados de pendência
+ * 
+ * REGRA PayGo: Os campos transactionNsu e hostNsu são MANDATÓRIOS para resolução.
+ * Se vierem vazios (comum no erro -2599), usamos localNsu como fallback.
  */
 export function savePendingDataToLocalStorage(data: Record<string, unknown>): void {
   try {
+    // Extrair dados brutos com múltiplas fontes possíveis
+    const rawLocalNsu = String(data.localNsu || data.terminalNsu || data.localReference || '').trim();
+    const rawTransactionNsu = String(data.transactionNsu || data.nsu || '').trim();
+    const rawHostNsu = String(data.hostNsu || '').trim();
+    
+    // APLICAR FALLBACKS CONFORME DOCUMENTAÇÃO PayGo:
+    // Se transactionNsu está vazio, usar localNsu
+    // Se hostNsu está vazio, usar transactionNsu (ou localNsu se também vazio)
+    const localNsu = rawLocalNsu;
+    const transactionNsu = rawTransactionNsu || localNsu;
+    const hostNsu = rawHostNsu || transactionNsu;
+    
     const pendingData = {
-      providerName: data.providerName || data.provider || '',
-      merchantId: data.merchantId || '',
-      localNsu: data.localNsu || data.terminalNsu || '',
-      transactionNsu: data.transactionNsu || data.nsu || '',
-      hostNsu: data.hostNsu || data.transactionNsu || data.nsu || '',
-      confirmationTransactionId: data.confirmationTransactionId || '',
-      timestamp: Date.now()
+      providerName: String(data.providerName || data.provider || '').trim(),
+      merchantId: String(data.merchantId || '').trim(),
+      localNsu: localNsu,
+      transactionNsu: transactionNsu,
+      hostNsu: hostNsu,
+      confirmationTransactionId: String(data.confirmationTransactionId || '').trim(),
+      timestamp: Date.now(),
+      // Guardar valores originais para debug
+      _rawTransactionNsu: rawTransactionNsu,
+      _rawHostNsu: rawHostNsu,
+      _fallbackApplied: rawTransactionNsu === '' || rawHostNsu === ''
     };
     
+    console.log('[TEFBridge] ╔═══════════════════════════════════════════════════════════╗');
+    console.log('[TEFBridge] ║     SALVANDO DADOS DE PENDÊNCIA (com fallbacks)          ║');
+    console.log('[TEFBridge] ╠═══════════════════════════════════════════════════════════╣');
+    console.log('[TEFBridge] ║ providerName:', pendingData.providerName.padEnd(44), '║');
+    console.log('[TEFBridge] ║ merchantId:', pendingData.merchantId.padEnd(46), '║');
+    console.log('[TEFBridge] ║ localNsu:', localNsu.padEnd(48), '║');
+    console.log('[TEFBridge] ║ transactionNsu:', transactionNsu, rawTransactionNsu === '' ? '(fallback)' : '', '║');
+    console.log('[TEFBridge] ║ hostNsu:', hostNsu, rawHostNsu === '' ? '(fallback)' : '', '║');
+    console.log('[TEFBridge] ║ fallbackApplied:', pendingData._fallbackApplied, '║');
+    console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
+    
     localStorage.setItem('tef_pending_data', JSON.stringify(pendingData));
-    console.log('[TEFBridge] ✅ Dados de pendência salvos no localStorage:', pendingData);
+    console.log('[TEFBridge] ✅ Dados de pendência salvos no localStorage');
   } catch (error) {
     console.error('[TEFBridge] Erro ao salvar dados de pendência:', error);
   }
@@ -492,6 +564,7 @@ export function savePendingDataToLocalStorage(data: Record<string, unknown>): vo
 
 /**
  * Obtém dados de pendência salvos no localStorage
+ * APLICA FALLBACKS automaticamente para garantir que campos obrigatórios estejam preenchidos
  */
 function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
   try {
@@ -500,8 +573,27 @@ function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
       const data = JSON.parse(saved);
       // Verificar se não está muito antigo (30 minutos)
       if (data.timestamp && (Date.now() - data.timestamp) < 30 * 60 * 1000) {
-        console.log('[TEFBridge] 📥 Dados de pendência recuperados do localStorage:', data);
-        return data;
+        // Aplicar fallbacks novamente por segurança
+        const localNsu = String(data.localNsu || '').trim();
+        const transactionNsu = String(data.transactionNsu || '').trim() || localNsu;
+        const hostNsu = String(data.hostNsu || '').trim() || transactionNsu;
+        
+        const dataWithFallbacks = {
+          ...data,
+          localNsu,
+          transactionNsu,
+          hostNsu,
+        };
+        
+        console.log('[TEFBridge] 📥 Dados de pendência recuperados (com fallbacks):', {
+          providerName: dataWithFallbacks.providerName,
+          merchantId: dataWithFallbacks.merchantId,
+          localNsu: dataWithFallbacks.localNsu,
+          transactionNsu: dataWithFallbacks.transactionNsu,
+          hostNsu: dataWithFallbacks.hostNsu,
+        });
+        
+        return dataWithFallbacks;
       } else {
         console.log('[TEFBridge] ⚠️ Dados de pendência muito antigos, descartando');
         localStorage.removeItem('tef_pending_data');

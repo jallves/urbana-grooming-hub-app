@@ -89,9 +89,21 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
       // IMPORTANTE: Salvar dados de pendência ANTES de normalizar
       // Isso captura providerName, merchantId, localNsu, etc. para resolução posterior
+      // SALVAR SEMPRE que tiver dados relevantes (aprovado OU erro com pendência)
       const rawData = resultado as Record<string, unknown>;
-      if (rawData.providerName || rawData.merchantId || rawData.terminalNsu) {
+      const hasRelevantData = rawData.providerName || rawData.merchantId || 
+                              rawData.terminalNsu || rawData.localNsu || 
+                              rawData.transactionNsu;
+      
+      if (hasRelevantData) {
         console.log('[useTEFAndroid] 💾 Salvando dados de pendência para resolução futura');
+        console.log('[useTEFAndroid] Dados brutos:', JSON.stringify({
+          providerName: rawData.providerName,
+          merchantId: rawData.merchantId,
+          localNsu: rawData.localNsu || rawData.terminalNsu,
+          transactionNsu: rawData.transactionNsu || rawData.nsu,
+          hostNsu: rawData.hostNsu,
+        }));
         savePendingDataToLocalStorage(rawData);
       }
 
