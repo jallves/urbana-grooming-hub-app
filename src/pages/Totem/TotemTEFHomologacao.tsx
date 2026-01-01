@@ -641,67 +641,78 @@ export default function TotemTEFHomologacao() {
     }
     lastResolveTimeRef.current = now;
     
-    console.log('[PDV] Iniciando DESFAZIMENTO de pendência (Passo 34)');
+    console.log('[PDV] ╔════════════════════════════════════════════════════════════╗');
+    console.log('[PDV] ║     INICIANDO DESFAZIMENTO DE PENDÊNCIA (PASSO 34)         ║');
+    console.log('[PDV] ╚════════════════════════════════════════════════════════════╝');
     setResolvingPending(true);
 
     try {
       if (!isAndroidAvailable) {
         toast.error('TEF Android não disponível');
+        addLog('error', '❌ TEF Android não disponível para desfazimento');
         return;
       }
 
       // Atualizar infos antes de resolver (se disponível)
       const info = getPendingInfoAndroid();
       setPendingInfo(info);
+      
+      console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
+      addLog('info', '📊 PendingInfo para desfazimento', info || {});
 
-      // IMPORTANTE: Buscar ID APENAS do PayGo, não usar pendingResolutionConfirmationId
-      // que pode conter ID de transação antiga já confirmada (ex: Passo 33)
-      const candidateId =
-        (info?.pendingConfirmationId as string | undefined) ||
-        (info?.confirmationId as string | undefined) ||
-        (info?.lastConfirmationId as string | undefined) ||
-        undefined; // NÃO usar pendingResolutionConfirmationId!
+      // Extrair possíveis IDs da pendência
+      const pendingData = info?.pendingData as Record<string, unknown> | undefined;
+      const possibleIds = [
+        info?.pendingConfirmationId,
+        info?.confirmationId,
+        pendingData?.confirmationTransactionId,
+        pendingData?.transactionId,
+        info?.lastConfirmationId,
+      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
+      
+      console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
 
-      // Preferir confirmação com ID específico quando disponível
-      if (candidateId) {
-        console.log('[PDV] Usando confirmarTransacaoTEF (DESFEITO_MANUAL) com ID:', candidateId);
-        const success = confirmarTransacaoTEF(candidateId, 'DESFEITO_MANUAL');
-
-        if (success) {
-          toast.success('✅ DESFEITO_MANUAL enviado!', {
-            description: 'Pendência em resolução. Aguarde o retorno e tente uma nova transação.',
-            duration: 6000
-          });
-          setPendingResolutionConfirmationId(null);
-
-          addLog('warning', '[PENDÊNCIA] DESFEITO_MANUAL enviado com sucesso', {
-            confirmationId: candidateId,
-            action: 'DESFEITO_MANUAL'
-          });
-          return;
-        }
-      }
-
-      // Fallback: resolverPendenciaAndroid (o nativo busca os dados pendentes)
-      console.log('[PDV] Fallback: resolverPendenciaAndroid (desfazer)');
-      const success = resolverPendenciaAndroid('desfazer');
+      // ESTRATÉGIA PRINCIPAL: Usar resolverPendenciaAndroid que tenta múltiplas abordagens
+      // Esta função agora implementa 5 estratégias diferentes de fallback
+      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer)...');
+      const success = resolverPendenciaAndroid('desfazer', possibleIds[0] as string | undefined);
 
       if (success) {
-        toast.success('✅ Resolução de pendência (DESFAZER) enviada!', {
-          description: 'Aguardando resposta do PayGo...',
-          duration: 6000
+        toast.success('✅ Comando DESFAZER enviado ao PayGo!', {
+          description: 'Aguarde a resposta do PayGo. Se a pendência persistir, verifique os logs.',
+          duration: 8000
         });
-        addLog('warning', 'Resolução de pendência (DESFAZER) enviada via PayGo');
+        setPendingResolutionConfirmationId(null);
+
+        addLog('success', '✅ Comando DESFAZER enviado ao PayGo', {
+          idsEncontrados: possibleIds,
+          idUsado: possibleIds[0] || 'automático',
+          action: 'DESFEITO_MANUAL'
+        });
+        
+        // Aguardar um momento e verificar se a pendência foi resolvida
+        setTimeout(() => {
+          const infoApos = getPendingInfoAndroid();
+          console.log('[PDV] 📊 PendingInfo APÓS desfazimento:', JSON.stringify(infoApos, null, 2));
+          if (infoApos?.hasPendingData === false) {
+            toast.success('🎉 Pendência resolvida com sucesso!');
+            addLog('success', '🎉 Pendência resolvida após DESFAZER');
+          }
+        }, 2000);
       } else {
-        toast.error('Erro ao resolver pendência');
+        toast.error('❌ Falha ao enviar comando DESFAZER', {
+          description: 'Verifique os logs do APK para mais detalhes.'
+        });
+        addLog('error', '❌ Falha ao chamar resolverPendenciaAndroid(desfazer)');
       }
     } catch (error) {
-      console.error('[PDV] Erro ao resolver pendência:', error);
+      console.error('[PDV] ❌ Erro ao resolver pendência:', error);
       toast.error('Erro ao resolver pendência');
+      addLog('error', '❌ Exceção ao resolver pendência', { error: String(error) });
     } finally {
       setResolvingPending(false);
     }
-  }, [isAndroidAvailable, pendingResolutionConfirmationId, addLog]);
+  }, [isAndroidAvailable, addLog]);
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
@@ -713,57 +724,72 @@ export default function TotemTEFHomologacao() {
     }
     lastResolveTimeRef.current = now;
     
-    console.log('[PDV] Iniciando CONFIRMAÇÃO de pendência');
+    console.log('[PDV] ╔════════════════════════════════════════════════════════════╗');
+    console.log('[PDV] ║     INICIANDO CONFIRMAÇÃO DE PENDÊNCIA                      ║');
+    console.log('[PDV] ╚════════════════════════════════════════════════════════════╝');
     setResolvingPending(true);
 
     try {
       if (!isAndroidAvailable) {
         toast.error('TEF Android não disponível');
+        addLog('error', '❌ TEF Android não disponível para confirmação');
         return;
       }
 
       const info = getPendingInfoAndroid();
       setPendingInfo(info);
+      
+      console.log('[PDV] 📊 PendingInfo atual:', JSON.stringify(info, null, 2));
+      addLog('info', '📊 PendingInfo para confirmação', info || {});
 
-      // IMPORTANTE: Buscar ID APENAS do PayGo
-      const candidateId =
-        (info?.pendingConfirmationId as string | undefined) ||
-        (info?.confirmationId as string | undefined) ||
-        (info?.lastConfirmationId as string | undefined) ||
-        undefined;
+      // Extrair possíveis IDs da pendência
+      const pendingData = info?.pendingData as Record<string, unknown> | undefined;
+      const possibleIds = [
+        info?.pendingConfirmationId,
+        info?.confirmationId,
+        pendingData?.confirmationTransactionId,
+        pendingData?.transactionId,
+        info?.lastConfirmationId,
+      ].filter(id => id && typeof id === 'string' && id !== 'undefined' && id !== 'null' && id !== '');
+      
+      console.log('[PDV] 🔍 IDs candidatos encontrados:', possibleIds);
 
-      if (candidateId) {
-        console.log('[PDV] Usando confirmarTransacaoTEF (CONFIRMADO_MANUAL) com ID:', candidateId);
-        const success = confirmarTransacaoTEF(candidateId, 'CONFIRMADO_MANUAL');
-
-        if (success) {
-          toast.success('✅ CONFIRMADO_MANUAL enviado!', {
-            description: 'Pendência confirmada. Aguarde o retorno e tente uma nova transação.',
-            duration: 6000
-          });
-          setPendingResolutionConfirmationId(null);
-
-          addLog('success', '[PENDÊNCIA] CONFIRMADO_MANUAL enviado com sucesso', {
-            confirmationId: candidateId,
-            action: 'CONFIRMADO_MANUAL'
-          });
-          return;
-        }
-      }
-
-      const success = resolverPendenciaAndroid('confirmar');
+      // ESTRATÉGIA PRINCIPAL: Usar resolverPendenciaAndroid que tenta múltiplas abordagens
+      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(confirmar)...');
+      const success = resolverPendenciaAndroid('confirmar', possibleIds[0] as string | undefined);
 
       if (success) {
-        toast.success('✅ Resolução de pendência (CONFIRMAR) enviada!', {
-          duration: 6000
+        toast.success('✅ Comando CONFIRMAR enviado ao PayGo!', {
+          description: 'Aguarde a resposta do PayGo.',
+          duration: 8000
         });
-        addLog('success', 'Resolução de pendência (CONFIRMAR) enviada via PayGo');
+        setPendingResolutionConfirmationId(null);
+
+        addLog('success', '✅ Comando CONFIRMAR enviado ao PayGo', {
+          idsEncontrados: possibleIds,
+          idUsado: possibleIds[0] || 'automático',
+          action: 'CONFIRMADO_MANUAL'
+        });
+        
+        // Aguardar um momento e verificar se a pendência foi resolvida
+        setTimeout(() => {
+          const infoApos = getPendingInfoAndroid();
+          console.log('[PDV] 📊 PendingInfo APÓS confirmação:', JSON.stringify(infoApos, null, 2));
+          if (infoApos?.hasPendingData === false) {
+            toast.success('🎉 Pendência confirmada com sucesso!');
+            addLog('success', '🎉 Pendência resolvida após CONFIRMAR');
+          }
+        }, 2000);
       } else {
-        toast.error('Erro ao resolver pendência');
+        toast.error('❌ Falha ao enviar comando CONFIRMAR', {
+          description: 'Verifique os logs do APK para mais detalhes.'
+        });
+        addLog('error', '❌ Falha ao chamar resolverPendenciaAndroid(confirmar)');
       }
     } catch (error) {
-      console.error('[PDV] Erro ao confirmar pendência:', error);
+      console.error('[PDV] ❌ Erro ao confirmar pendência:', error);
       toast.error('Erro ao confirmar pendência');
+      addLog('error', '❌ Exceção ao confirmar pendência', { error: String(error) });
     } finally {
       setResolvingPending(false);
     }
