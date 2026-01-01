@@ -36,10 +36,12 @@ import {
   RotateCcw,
   AlertTriangle,
   Undo2,
-  CheckSquare
+  CheckSquare,
+  ShieldAlert
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useTEFPendingManager } from '@/hooks/useTEFPendingManager';
 import {
   isAndroidTEFAvailable,
   getLogsAndroid,
@@ -236,6 +238,42 @@ export default function TotemTEFHomologacao() {
     console.log('[PDV LOG]', type, message, data);
   }, []);
 
+  // ============================================================================
+  // GERENCIADOR DE PENDÊNCIAS TEF (Conforme documentação PayGo)
+  // ============================================================================
+  const {
+    pendingState,
+    isBlocked: isPendingBlocked,
+    logs: pendingLogs,
+    checkPending,
+    canStartNewTransaction,
+    resolvePending,
+    autoResolvePending,
+    decideResolution,
+    startVenda,
+    setVendaAprovada,
+    setVendaCommitada,
+    clearVendaState,
+    addLog: addPendingLog,
+  } = useTEFPendingManager({
+    autoResolve: false, // No PDV de homologação, queremos controle manual
+    onPendingDetected: (info) => {
+      addLog('warning', '⚠️ PENDÊNCIA DETECTADA NA INICIALIZAÇÃO', info as Record<string, unknown>);
+      toast.warning('Pendência TEF detectada', {
+        description: 'Vá para a aba "Pendências" para resolver.',
+        duration: 10000,
+      });
+      setActiveTab('pendencias');
+    },
+    onPendingResolved: (status) => {
+      addLog('success', `✅ Pendência resolvida: ${status.toUpperCase()}`);
+      toast.success(`Pendência ${status}!`);
+    },
+    onError: (error) => {
+      addLog('error', `❌ Erro no gerenciador de pendências: ${error}`);
+    },
+  });
+
   const {
     isAndroidAvailable, 
     isPinpadConnected, 
@@ -257,25 +295,22 @@ export default function TotemTEFHomologacao() {
       // ========================================
       // PASSOS 33 e 34: Lógica de Transação Pendente (Documentação PayGo Oficial)
       // ========================================
-      // ANÁLISE DA DOCUMENTAÇÃO (https://paygodev.readme.io/docs/exemplo-passos-33-e-34):
-      //
-      // Passo 33 (R$1005,60):
-      //   1. Enviar venda (CRT) com valor 100560
-      //   2. Venda APROVADA (009-000 = 0)
-      //   3. ENVIAR confirmação (CNF) ← Documentação mostra envio do CNF!
-      //
-      // Passo 34 (R$1005,61):
-      //   1. Enviar venda (CRT) com valor 100561
-      //   2. "Essa venda vai retornar erro de transação pendente"
-      //   3. Aparece tela → clicar em DESFAZER
-      //
-      // CONCLUSÃO: O sandbox PayGo SIMULA a pendência no Passo 34 para teste.
-      // O Passo 33 deve confirmar normalmente. A pendência é comportamento do sandbox.
-      // ========================================
       const isPasso33 = valorCentavos === 100560;
       const isPasso34 = valorCentavos === 100561;
       
       const confirmationId = resultado.confirmationTransactionId || resultado.nsu || '';
+
+      // ========================================
+      // GERENCIAMENTO DE ESTADO DA VENDA (para decisão CONFIRMAR/DESFAZER)
+      // ========================================
+      // Marcar transação como APROVADA (aguardando persistência)
+      if (confirmationId) {
+        setVendaAprovada(
+          confirmationId,
+          resultado.nsu || '',
+          resultado.autorizacao || ''
+        );
+      }
 
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
@@ -310,25 +345,27 @@ export default function TotemTEFHomologacao() {
       // ========================================
       if (isPasso33) {
         // A documentação oficial mostra ENVIO de CNF após aprovação do Passo 33
-        // O sandbox PayGo vai simular a pendência no Passo 34 de qualquer forma
 
         if (confirmationId) {
           const confirmed = confirmarTransacaoTEF(confirmationId, 'CONFIRMADO_AUTOMATICO');
+          
+          // Marcar venda como COMMITADA (confirmada com sucesso)
+          if (confirmed) {
+            setVendaCommitada(true);
+            clearVendaState(); // Limpar estado após confirmação bem-sucedida
+          }
+          
           addLog(
             'info',
             confirmed
-              ? '✅ PASSO 33: Confirmação enviada (conforme documentação PayGo)'
+              ? '✅ PASSO 33: Confirmação enviada + vendaCommitada=true'
               : '❌ PASSO 33: Erro ao enviar confirmação',
             {
               confirmationId,
+              vendaCommitada: confirmed,
               instrucao: 'Execute o Passo 34 (R$1.005,61) - o sandbox vai simular erro de pendência'
             }
           );
-          
-          // IMPORTANTE: NÃO guardar este ID em pendingResolutionConfirmationId!
-          // O Passo 33 já foi CONFIRMADO. Se guardarmos, o Passo 34 vai usar este ID
-          // para enviar DESFEITO_MANUAL, desfazendo a transação errada.
-          // A pendência do Passo 34 terá seu próprio ID fornecido pelo PayGo.
         }
 
         toast.success('✅ PASSO 33 COMPLETO!', {
@@ -926,9 +963,30 @@ export default function TotemTEFHomologacao() {
       return;
     }
 
+    // ========================================
+    // VERIFICAÇÃO OBRIGATÓRIA DE PENDÊNCIA
+    // Conforme documentação PayGo: verificar ANTES de cada nova venda
+    // ========================================
+    addPendingLog('check', 'Verificando pendências antes de iniciar transação...');
+    const { hasPending } = checkPending();
+    
+    if (hasPending || isPendingBlocked) {
+      addLog('error', '❌ BLOQUEADO: Existe transação pendente. Resolva antes de iniciar nova venda.');
+      toast.error('Transação pendente!', {
+        description: 'Vá para a aba "Pendências" e resolva antes de iniciar nova venda.',
+        duration: 8000,
+      });
+      setActiveTab('pendencias');
+      return;
+    }
+
     setIsProcessing(true);
-    const valorReais = parseInt(amount, 10) / 100;
+    const valorCentavos = parseInt(amount, 10);
+    const valorReais = valorCentavos / 100;
     const orderId = `HOMOLOG_${Date.now()}`;
+
+    // Registrar início da venda para decisão futura de CONFIRMAR/DESFAZER
+    startVenda(orderId, valorCentavos, selectedMethod);
 
     // Determinar parcelas baseado no tipo de financiamento
     const parcelas = selectedMethod === 'credito' && financingType !== 'avista' 
@@ -936,7 +994,7 @@ export default function TotemTEFHomologacao() {
       : 1;
 
     // Encontrar passo do teste se for um valor conhecido
-    const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === parseInt(amount, 10));
+    const testePasso = PAYGO_TEST_VALUES.find(t => t.valor === valorCentavos);
 
     addLog('transaction', `🚀 INICIANDO TRANSAÇÃO ${testePasso ? `(Passo ${testePasso.passo})` : ''}`, {
       orderId,
