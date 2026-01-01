@@ -285,6 +285,25 @@ class TEFBridge(
         Log.i(TAG, "limparConfirmationId")
         payGoService.clearLastConfirmationId()
     }
+    
+    /**
+     * NOVO: Limpa dados de pendência após validação bem-sucedida
+     * Chamado do JS: TEF.limparPendingData()
+     * 
+     * IMPORTANTE: Chamar SOMENTE após confirmar que o PayGo realmente 
+     * processou a resolução da pendência
+     */
+    @JavascriptInterface
+    fun limparPendingData() {
+        Log.i(TAG, "limparPendingData - Limpando dados após validação")
+        payGoService.clearPersistedPendingData()
+        payGoService.clearLastConfirmationId()
+        
+        returnResult(JSONObject().apply {
+            put("status", "limpo")
+            put("mensagem", "Dados de pendência limpos com sucesso")
+        })
+    }
 
     // ========================================================================
     // STATUS E VERIFICAÇÃO

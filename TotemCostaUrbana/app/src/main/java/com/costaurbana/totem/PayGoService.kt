@@ -662,15 +662,16 @@ class PayGoService(private val context: Context) {
     }
     
     /**
-     * Limpa dados de pendência após resolução
+     * Limpa dados de pendência após resolução VALIDADA
+     * IMPORTANTE: Chamar SOMENTE após confirmar que o PayGo processou a resolução
      */
-    private fun clearPersistedPendingData() {
+    fun clearPersistedPendingData() {
         lastPendingData = null
         prefs.edit()
             .remove("pending_data")
             .remove("pending_timestamp")
             .apply()
-        addLog("[PERSIST] Dados de pendência limpos")
+        addLog("[PERSIST] ✅ Dados de pendência limpos (validação confirmada)")
     }
     
     /**
@@ -844,8 +845,17 @@ class PayGoService(private val context: Context) {
             addLog("[RESOLVE] Status desejado: $status")
             addLog("[RESOLVE] ════════════════════════════════════════")
             
-            // Enviar broadcast conforme documentação oficial
-            // Intent com ACTION_CONFIRMATION e DOIS extras separados
+            // ════════════════════════════════════════════════════════════════
+            // ENVIAR BROADCAST CONFORME DOCUMENTAÇÃO OFICIAL (seção 3.4.3)
+            // Intent Action: br.com.setis.confirmation.TRANSACTION
+            // Extras: "uri" (dados pendência) + "Confirmacao" (status)
+            // ════════════════════════════════════════════════════════════════
+            
+            addLog("[RESOLVE] 📡 Preparando broadcast para PayGo...")
+            addLog("[RESOLVE] Action: $ACTION_CONFIRMATION")
+            addLog("[RESOLVE] Extra 'uri': ${pendingUri}")
+            addLog("[RESOLVE] Extra 'Confirmacao': $confirmationUri")
+            
             val intent = Intent().apply {
                 action = ACTION_CONFIRMATION
                 putExtra(EXTRA_URI, pendingUri.toString())           // "uri" = dados da pendência
@@ -853,20 +863,36 @@ class PayGoService(private val context: Context) {
                 addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
             
-            context.sendBroadcast(intent)
-            addLog("[RESOLVE] ✅ Broadcast de resolução enviado com 2 URIs")
+            // Log detalhado para debug
+            addLog("[RESOLVE] Intent Action: ${intent.action}")
+            addLog("[RESOLVE] Intent Flags: ${intent.flags}")
+            addLog("[RESOLVE] Intent Extras: uri=${intent.getStringExtra(EXTRA_URI)?.take(100)}...")
             
-            // Limpar dados de pendência após envio
-            clearPersistedPendingData()
+            context.sendBroadcast(intent)
+            addLog("[RESOLVE] ✅ Broadcast enviado!")
+            
+            // ════════════════════════════════════════════════════════════════
+            // NÃO LIMPAR DADOS IMEDIATAMENTE
+            // O frontend fará a validação pós-resolução e limpará quando confirmar
+            // que o PayGo realmente processou a resolução
+            // ════════════════════════════════════════════════════════════════
+            // REMOVIDO: clearPersistedPendingData()
+            // O JavaScript chamará limparConfirmationId() quando validar sucesso
             
             callback(JSONObject().apply {
                 put("status", "resolvido")
-                put("mensagem", "Resolução de pendência ($status) enviada com formato correto")
+                put("mensagem", "Resolução de pendência ($status) enviada ao PayGo")
                 put("metodo", "full_pending_data_2_uris")
                 put("providerName", pendingData.optString("providerName"))
+                put("merchantId", pendingData.optString("merchantId"))
                 put("localNsu", pendingData.optString("localNsu"))
+                put("transactionNsu", pendingData.optString("transactionNsu"))
+                put("hostNsu", pendingData.optString("hostNsu"))
                 put("uriPendencia", pendingUri.toString())
                 put("uriConfirmacao", confirmationUri)
+                // IMPORTANTE: Ainda temos pendência até validação
+                put("pendingDataCleared", false)
+                put("aguardandoValidacao", true)
             })
             
         } catch (e: Exception) {

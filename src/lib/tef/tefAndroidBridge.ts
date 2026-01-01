@@ -70,6 +70,8 @@ declare global {
       limparConfirmationId?: () => void;
       // Salvar dados de pendência no APK (para resolução posterior)
       salvarPendingData?: (pendingDataJson: string) => void;
+      // NOVO: Limpar dados de pendência após validação bem-sucedida
+      limparPendingData?: () => void;
     };
     Android?: {
       // Legacy Android interface
@@ -606,7 +608,7 @@ function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
 }
 
 /**
- * Limpa dados de pendência salvos
+ * Limpa dados de pendência salvos no localStorage
  */
 export function clearSavedPendingData(): void {
   try {
@@ -614,6 +616,49 @@ export function clearSavedPendingData(): void {
     console.log('[TEFBridge] 🗑️ Dados de pendência limpos do localStorage');
   } catch (error) {
     console.error('[TEFBridge] Erro ao limpar dados de pendência:', error);
+  }
+}
+
+/**
+ * Limpa dados de pendência do APK E do localStorage
+ * IMPORTANTE: Chamar SOMENTE após confirmar que o PayGo realmente processou a resolução
+ */
+export function limparPendingDataCompleto(): void {
+  console.log('[TEFBridge] ╔═══════════════════════════════════════════════════════════╗');
+  console.log('[TEFBridge] ║      LIMPANDO DADOS DE PENDÊNCIA (APK + LocalStorage)     ║');
+  console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
+  
+  // 1. Limpar localStorage
+  clearSavedPendingData();
+  
+  // 2. Limpar APK (se disponível)
+  if (isAndroidTEFAvailable() && typeof (window.TEF as any).limparPendingData === 'function') {
+    try {
+      console.log('[TEFBridge] 🔄 Chamando TEF.limparPendingData() no APK...');
+      (window.TEF as any).limparPendingData();
+      console.log('[TEFBridge] ✅ Dados do APK limpos');
+    } catch (error) {
+      console.error('[TEFBridge] Erro ao limpar dados do APK:', error);
+    }
+  } else if (isAndroidTEFAvailable() && window.TEF!.limparConfirmationId) {
+    // Fallback: limpar pelo menos o confirmationId
+    try {
+      window.TEF!.limparConfirmationId();
+      console.log('[TEFBridge] ✅ ConfirmationId do APK limpo (fallback)');
+    } catch (error) {
+      console.error('[TEFBridge] Erro ao limpar confirmationId:', error);
+    }
+  }
+  
+  // 3. Limpar localStorage adicional
+  try {
+    localStorage.removeItem('tef_last_confirmation_id');
+    localStorage.removeItem('tef_last_nsu');
+    localStorage.removeItem('tef_last_autorizacao');
+    localStorage.removeItem('tef_last_timestamp');
+    console.log('[TEFBridge] ✅ Dados adicionais do localStorage limpos');
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao limpar dados adicionais:', error);
   }
 }
 
