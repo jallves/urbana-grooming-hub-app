@@ -1539,45 +1539,62 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
   // Função para resolver pendência do modal (Passo 34)
   const handlePendingResolution = async (acao: 'confirmar' | 'desfazer') => {
     setResolvingPending(true);
+
+    // Esta ação só funciona no Totem Android com PayGo integrado.
+    if (!isAndroidTEFAvailable()) {
+      addLog('warning', '⚠️ Pendência: ação solicitada fora do Android/PayGo', { acao });
+      toast.error('Ação disponível apenas no Totem (PayGo)', {
+        description: 'Abra este PDV dentro do app Android do Totem para enviar CONFIRMAR/DESFAZER ao PayGo.',
+        duration: 7000
+      });
+      setResolvingPending(false);
+      return;
+    }
+
     const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
-    
-    addLog('info', `🔄 Resolvendo pendência via modal: ${status}`, { 
-      acao, 
-      confirmationId: pendingResolutionConfirmationId 
+
+    addLog('info', `🔄 Resolvendo pendência via modal: ${status}`, {
+      acao,
+      confirmationId: pendingResolutionConfirmationId
     });
-    
+
     let resolved = false;
-    
-    // Tentar com ID específico primeiro
+
+    // 1) Preferência: confirmar usando o ID específico da pendência (quando disponível)
     if (pendingResolutionConfirmationId) {
       resolved = confirmarTransacaoTEF(pendingResolutionConfirmationId, status);
-      addLog('info', resolved 
-        ? `✅ ${status} enviado (ID: ${pendingResolutionConfirmationId})` 
-        : `⚠️ Fallback necessário - ID não resolveu`, { pendingResolutionConfirmationId });
+      addLog(
+        'info',
+        resolved
+          ? `✅ ${status} enviado (ID: ${pendingResolutionConfirmationId})`
+          : '⚠️ Não foi possível resolver com ID específico — tentando fallback',
+        { pendingResolutionConfirmationId }
+      );
     }
-    
-    // Fallback: resolverPendenciaAndroid (SDK busca pendência automaticamente)
+
+    // 2) Fallback: pedir para o SDK resolver a pendência (busca automática no PayGo)
     if (!resolved) {
       resolved = resolverPendenciaAndroid(acao);
-      addLog('info', resolved 
-        ? `✅ resolverPendenciaAndroid(${acao}) chamado` 
-        : `❌ Falha ao chamar resolverPendenciaAndroid`);
+      addLog(
+        'info',
+        resolved ? `✅ resolverPendenciaAndroid(${acao}) chamado` : '❌ Falha ao chamar resolverPendenciaAndroid'
+      );
     }
-    
+
     if (resolved) {
-      toast.success(`✅ ${status} enviado!`, {
-        description: 'Aguarde o retorno do PayGo. Execute uma nova transação para validar.',
+      toast.success(`✅ ${status} enviado ao PayGo`, {
+        description: 'Aguarde o retorno do PayGo no terminal.',
         duration: 8000
       });
       setPendingResolutionConfirmationId(null);
       setTransactionResult(null);
     } else {
-      toast.error('❌ Não foi possível resolver a pendência', {
-        description: 'Tente novamente ou verifique a tela do PayGo.',
+      toast.error('❌ Não foi possível enviar ao PayGo', {
+        description: 'Verifique se o PayGo está aberto e tente novamente.',
         duration: 8000
       });
     }
-    
+
     setResolvingPending(false);
   };
 
@@ -2897,16 +2914,22 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               
               {/* DIALOG PENDÊNCIA ESTILO PAYGO */}
               {transactionResult.status === 'pendencia' && transactionResult.isPendenciaPasso34 && (
-                <div className="bg-zinc-800 rounded-lg p-4 shadow-lg">
+                <div className="bg-card rounded-lg p-4 shadow-lg">
                   <div className="flex items-center justify-between">
-                    <span className="text-white text-base font-medium">
+                    <span className="text-foreground text-base font-medium">
                       Transação pendente
                     </span>
                     <div className="flex items-center gap-4">
                       <button
-                        className="text-sm font-medium tracking-wide text-white/90 hover:text-white disabled:opacity-50 uppercase"
+                        type="button"
+                        className="text-sm font-medium tracking-wide text-foreground/90 hover:text-foreground disabled:opacity-50 uppercase"
                         disabled={resolvingPending}
                         onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePendingResolution('desfazer');
+                        }}
+                        onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           handlePendingResolution('desfazer');
@@ -2915,9 +2938,15 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                         {resolvingPending ? '...' : 'DESFAZER'}
                       </button>
                       <button
-                        className="text-sm font-medium tracking-wide text-white/90 hover:text-white disabled:opacity-50 uppercase"
+                        type="button"
+                        className="text-sm font-medium tracking-wide text-foreground/90 hover:text-foreground disabled:opacity-50 uppercase"
                         disabled={resolvingPending}
                         onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handlePendingResolution('confirmar');
+                        }}
+                        onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
                           handlePendingResolution('confirmar');
@@ -2929,7 +2958,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   </div>
                 </div>
               )}
-              
+
               {/* Botões de Impressão */}
               {transactionResult.status === 'aprovado' && (
                 <div className="space-y-2">
