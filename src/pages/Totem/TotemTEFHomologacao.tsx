@@ -632,6 +632,11 @@ export default function TotemTEFHomologacao() {
     }
   });
 
+  // ============================================================================
+  // FUNÇÕES DE RESOLUÇÃO DE PENDÊNCIA (PASSO 34)
+  // Usa o hook useTEFPendingManager com validação pós-resolução
+  // ============================================================================
+
   // Função para resolver pendência - PASSO 34: DESFAZER
   const handleResolverPendenciaDesfazer = useCallback(async () => {
     // Debounce: evita chamadas múltiplas
@@ -654,11 +659,10 @@ export default function TotemTEFHomologacao() {
         return;
       }
 
-      // ESTRATÉGIA: Buscar dados de pendência do localStorage (salvos pelo hook useTEFAndroid)
-      // Esses dados contêm providerName, merchantId, localNsu, etc.
+      // Buscar dados de pendência de todas as fontes
       let pendingDataToUse: Record<string, unknown> | null = null;
       
-      // 1. Tentar localStorage (dados salvos pelo hook)
+      // 1. Tentar localStorage (dados salvos pelo hook useTEFAndroid)
       try {
         const savedData = localStorage.getItem('tef_pending_data');
         if (savedData) {
@@ -673,52 +677,46 @@ export default function TotemTEFHomologacao() {
       if (!pendingDataToUse) {
         const info = getPendingInfoAndroid();
         setPendingInfo(info);
-        pendingDataToUse = info?.pendingData as Record<string, unknown> | undefined || null;
+        pendingDataToUse = info?.pendingData as Record<string, unknown> | undefined || info;
         console.log('[PDV] 📦 Dados de pendência do APK:', pendingDataToUse);
       }
-      
-      // 3. Último fallback: usar pendingInfo do state
-      if (!pendingDataToUse && pendingInfo?.pendingData) {
-        pendingDataToUse = pendingInfo.pendingData as Record<string, unknown>;
-        console.log('[PDV] 📦 Dados de pendência do state:', pendingDataToUse);
-      }
 
-      addLog('info', '🔄 Resolvendo pendência via modal: DESFEITO_MANUAL', {
+      addLog('info', '🔄 Resolvendo pendência: DESFEITO_MANUAL', {
         acao: 'desfazer',
         pendingDataDisponivel: !!pendingDataToUse,
-        fonte: pendingDataToUse ? 'localStorage/APK' : 'nenhum'
       });
 
-      // Chamar resolução com os dados disponíveis
-      console.log('[PDV] 🔄 Chamando resolverPendenciaAndroid(desfazer)...');
-      const success = resolverPendenciaAndroid('desfazer', undefined, pendingDataToUse || undefined);
+      // ====================================================================
+      // USAR O HOOK COM VALIDAÇÃO PÓS-RESOLUÇÃO
+      // ====================================================================
+      const success = await resolvePending('desfazer', pendingDataToUse || undefined);
 
       if (success) {
-        toast.success('✅ Comando DESFAZER enviado ao PayGo!', {
-          description: 'Aguarde a resposta do PayGo. Se a pendência persistir, verifique os logs.',
+        toast.success('🎉 Pendência DESFEITA e VALIDADA!', {
+          description: 'O PayGo confirmou que a pendência foi resolvida. Pode iniciar nova venda.',
           duration: 8000
         });
         setPendingResolutionConfirmationId(null);
+        setTransactionResult(null); // Fechar modal
 
-        addLog('success', '✅ Comando DESFAZER enviado ao PayGo', {
-          pendingDataEnviado: !!pendingDataToUse,
-          action: 'DESFEITO_MANUAL'
-        });
-        
-        // Aguardar um momento e verificar se a pendência foi resolvida
-        setTimeout(() => {
-          const infoApos = getPendingInfoAndroid();
-          console.log('[PDV] 📊 PendingInfo APÓS desfazimento:', JSON.stringify(infoApos, null, 2));
-          if (infoApos?.hasPendingData === false) {
-            toast.success('🎉 Pendência resolvida com sucesso!');
-            addLog('success', '🎉 Pendência resolvida após DESFAZER');
-          }
-        }, 2000);
+        addLog('success', '🎉 PASSO 34 COMPLETO: Pendência desfeita e validada!');
       } else {
-        toast.error('❌ Falha ao enviar comando DESFAZER', {
-          description: 'Verifique os logs do APK para mais detalhes.'
-        });
-        addLog('error', '❌ Falha ao chamar resolverPendenciaAndroid(desfazer)');
+        // Verificar se ainda há pendência
+        const { hasPending } = checkPending();
+        
+        if (hasPending) {
+          toast.error('❌ Pendência NÃO foi resolvida!', {
+            description: 'O PayGo ainda indica pendência. Tente novamente ou verifique os logs.',
+            duration: 10000
+          });
+          addLog('error', '❌ Validação falhou: pendência ainda existe após DESFAZER');
+        } else {
+          // Comando enviado, mas aguardando resposta do PayGo
+          toast.info('⏳ Comando enviado, aguardando resposta...', {
+            description: 'O PayGo está processando. Aguarde alguns segundos.',
+            duration: 5000
+          });
+        }
       }
     } catch (error) {
       console.error('[PDV] ❌ Erro ao resolver pendência:', error);
@@ -726,8 +724,9 @@ export default function TotemTEFHomologacao() {
       addLog('error', '❌ Exceção ao resolver pendência', { error: String(error) });
     } finally {
       setResolvingPending(false);
+      refreshAndroidLogs();
     }
-  }, [isAndroidAvailable, addLog, pendingInfo]);
+  }, [isAndroidAvailable, addLog, resolvePending, checkPending]);
 
   // Função para resolver pendência - CONFIRMAR
   const handleResolverPendenciaConfirmar = useCallback(async () => {
@@ -753,23 +752,47 @@ export default function TotemTEFHomologacao() {
       
       if (!pendingDataToUse) {
         const info = getPendingInfoAndroid();
-        pendingDataToUse = info?.pendingData as Record<string, unknown> || null;
+        pendingDataToUse = info?.pendingData as Record<string, unknown> || info;
       }
 
-      const success = resolverPendenciaAndroid('confirmar', undefined, pendingDataToUse || undefined);
+      addLog('info', '🔄 Resolvendo pendência: CONFIRMADO_MANUAL', {
+        acao: 'confirmar',
+        pendingDataDisponivel: !!pendingDataToUse,
+      });
+
+      // ====================================================================
+      // USAR O HOOK COM VALIDAÇÃO PÓS-RESOLUÇÃO
+      // ====================================================================
+      const success = await resolvePending('confirmar', pendingDataToUse || undefined);
 
       if (success) {
-        toast.success('✅ Comando CONFIRMAR enviado ao PayGo!');
-        addLog('success', '✅ Comando CONFIRMAR enviado', { action: 'CONFIRMADO_MANUAL' });
+        toast.success('🎉 Pendência CONFIRMADA e VALIDADA!', {
+          description: 'O PayGo confirmou que a pendência foi resolvida.',
+          duration: 8000
+        });
+        setTransactionResult(null); // Fechar modal
+
+        addLog('success', '✅ Pendência confirmada e validada!');
       } else {
-        toast.error('❌ Falha ao enviar CONFIRMAR');
+        const { hasPending } = checkPending();
+        
+        if (hasPending) {
+          toast.error('❌ Pendência NÃO foi resolvida!', {
+            description: 'Tente novamente ou use DESFAZER.',
+            duration: 10000
+          });
+        } else {
+          toast.info('⏳ Comando enviado, aguardando resposta...', { duration: 5000 });
+        }
       }
     } catch (error) {
       toast.error('Erro ao confirmar pendência');
+      addLog('error', '❌ Erro ao confirmar pendência', { error: String(error) });
     } finally {
       setResolvingPending(false);
+      refreshAndroidLogs();
     }
-  }, [isAndroidAvailable, addLog]);
+  }, [isAndroidAvailable, addLog, resolvePending, checkPending]);
 
   // Auto-scroll
   useEffect(() => {
