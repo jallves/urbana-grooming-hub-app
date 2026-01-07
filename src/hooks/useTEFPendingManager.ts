@@ -18,7 +18,12 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
   isAndroidTEFAvailable,
+  // Legacy fallback (quando o APK não tem o gerenciador novo)
   getPendingInfoAndroid,
+  // Novo gerenciador (APK v1.4+): consulta o SDK real e evita falso “sem pendência”
+  canStartNewTransaction as canStartNewTransactionAndroid,
+  hasPendingTransactionAndroid,
+  getPendingTransactionInfoAndroid,
   resolverPendenciaAndroid,
   confirmarTransacaoTEF,
   savePendingDataToLocalStorage,
@@ -182,12 +187,36 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       return { hasPending: false, data: null };
     }
 
-    addLog('check', '🔍 Verificando transação pendente (paygoPendingCheckUri)...');
+    addLog('check', '🔍 Verificando transação pendente (PayGo SDK)...');
 
     try {
-      const info = getPendingInfoAndroid();
-      
-      if (!info) {
+      // =====================================================================
+      // PRIORIDADE 1 (APK v1.4+): usar o “gate” que consulta o SDK real
+      // Motivo: limpar SharedPreferences/localStorage não significa que o PayGo
+      // realmente removeu a pendência. O gate evita falso “sem pendência”.
+      // =====================================================================
+      const gateOk = canStartNewTransactionAndroid();
+      const hasPendingByGate = !gateOk;
+      const hasPendingByFlag = hasPendingTransactionAndroid();
+
+      // Se o gerenciador novo não existir no APK, esses métodos retornam
+      // “true/false” com fallback seguro.
+      const pendingInfoNew = getPendingTransactionInfoAndroid();
+
+      // =====================================================================
+      // FALLBACK (legado): getPendingInfoAndroid() (pode usar SharedPreferences)
+      // =====================================================================
+      const infoLegacy = getPendingInfoAndroid();
+
+      // Determinar pendência: se o gate bloqueia OU a flag de pendência acusa
+      const hasPending = hasPendingByGate || hasPendingByFlag;
+
+      // Normalizar “info” para log/UI (preferir novo, cair para legado)
+      const info = (pendingInfoNew as unknown as Record<string, unknown> | null) || infoLegacy;
+      const pendingData = (info as any)?.pendingData as Record<string, unknown> | undefined;
+
+      // Sem info alguma: tratar como sem pendência (não vamos bloquear sem evidência)
+      if (!info && !hasPending) {
         addLog('check', 'Nenhuma informação de pendência retornada');
         setPendingState(prev => ({
           ...prev,
@@ -199,26 +228,11 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
         return { hasPending: false, data: null };
       }
 
-      // ════════════════════════════════════════════════════════════════════════
-      // VERIFICAÇÃO DE PENDÊNCIA - PRIORIZAR RESPOSTA DO APK
-      // ════════════════════════════════════════════════════════════════════════
-      // O APK consulta o PayGo SDK real via getPendingInfo()
-      // Se o APK diz hasPendingData: false, devemos confiar nele
-      // localStorage é apenas fallback para quando APK não está disponível
-      // ════════════════════════════════════════════════════════════════════════
-      
-      const hasPendingData = info.hasPendingData === true;
-      const pendingData = info.pendingData as Record<string, unknown> | undefined;
-      
-      // REMOVIDO: hasConfirmationId - causa falsos positivos
-      // O confirmationId no localStorage é apenas para referência, não indica pendência real
-      // A pendência real é determinada APENAS pelo APK (que consulta PayGo SDK)
-      
-      const hasPending = hasPendingData;
-
       addLog('check', `Resultado: ${hasPending ? '⚠️ PENDÊNCIA DETECTADA' : '✅ Sem pendências'}`, {
-        hasPendingData,
-        source: info.source || 'APK',
+        gateOk,
+        hasPendingByGate,
+        hasPendingByFlag,
+        source: (info as any)?.source || (pendingInfoNew ? 'APK_v1.4+' : 'APK_legacy'),
         pendingData: pendingData ? 'presente' : 'ausente',
       });
 
