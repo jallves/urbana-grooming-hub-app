@@ -2300,11 +2300,55 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </CardContent>
             </Card>
 
+            {/* NOVA VENDA FORÇA RESOLUÇÃO - Método mais confiável em autoatendimento */}
+            <Card className="bg-green-900/20 border-green-500/30 flex-shrink-0">
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs text-green-400 flex items-center gap-2">
+                  <CreditCard className="h-4 w-4" />
+                  Resolver via Nova Transação (Recomendado)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3">
+                <p className="text-[10px] text-green-200/70 mb-2">
+                  Em modo <strong>Autoatendimento</strong>, o PayGo resolve pendências automaticamente ao iniciar uma nova venda.
+                </p>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onPointerDown={async () => {
+                    addLog('info', '🔄 Iniciando venda de R$ 0,01 para forçar resolução de pendência...');
+                    setIsProcessing(true);
+                    try {
+                      await iniciarPagamento({
+                        ordemId: `RESOLVE_PENDING_${Date.now()}`,
+                        valor: 0.01, // 1 centavo
+                        tipo: 'credit',
+                        parcelas: 1
+                      });
+                      addLog('success', '✅ Transação de resolução enviada - PayGo deve resolver pendência primeiro');
+                    } catch (error) {
+                      addLog('error', `❌ Erro: ${error}`);
+                    } finally {
+                      setIsProcessing(false);
+                    }
+                  }}
+                  disabled={!isAndroidAvailable || isProcessing}
+                  className="w-full h-10 border-green-500/50 text-green-300 hover:bg-green-500/10"
+                >
+                  {isProcessing ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <CreditCard className="h-4 w-4 mr-2" />}
+                  Iniciar Venda R$ 0,01 (Força Resolução)
+                </Button>
+                <p className="text-[9px] text-green-300/50 mt-2 text-center">
+                  O PayGo irá resolver a pendência antes de processar esta venda. Cancele a venda após resolver.
+                </p>
+              </CardContent>
+            </Card>
+
             {/* Resolver Pendência PayGo (fallback) */}
             <Card className="bg-blue-900/20 border-blue-500/30 flex-shrink-0">
               <CardHeader className="py-2 px-3">
                 <CardTitle className="text-xs text-blue-400">
-                  Resolver via Broadcast (alternativo - sem validação)
+                  Resolver via Broadcast (alternativo)
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
@@ -2331,7 +2375,7 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   </Button>
                 </div>
                 <p className="text-[9px] text-blue-300/50 mt-2 text-center">
-                  Envia broadcast diretamente. Se não funcionar, use a Operação Administrativa acima.
+                  Envia broadcast diretamente. Se não funcionar, use os métodos acima.
                 </p>
               </CardContent>
             </Card>
