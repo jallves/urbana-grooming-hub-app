@@ -169,6 +169,11 @@ export default function TotemTEFHomologacao() {
   const lastResolveTimeRef = useRef<number>(0);
   const RESOLVE_DEBOUNCE_MS = 2000; // 2 segundos entre chamadas
   
+  // Contador de tentativas de resolução automática (se persistir, orientar Menu Administrativo)
+  const pendingResolutionAttemptsRef = useRef<number>(0);
+  const MAX_AUTO_RESOLVE_ATTEMPTS = 2; // Após 2 tentativas, parar e orientar admin
+  const [showAdminRequired, setShowAdminRequired] = useState(false);
+  
   // Migrar logs antigos na primeira execução
   useEffect(() => {
     migrateOldLogs();
@@ -314,6 +319,10 @@ export default function TotemTEFHomologacao() {
         );
       }
 
+      // Reset do contador de tentativas de resolução (transação funcionou!)
+      pendingResolutionAttemptsRef.current = 0;
+      setShowAdminRequired(false);
+
       addLog('success', `✅ TRANSAÇÃO APROVADA`, {
         nsu: resultado.nsu,
         autorizacao: resultado.autorizacao,
@@ -453,14 +462,51 @@ export default function TotemTEFHomologacao() {
         setPendingInfo(info);
 
         const pendingDataRaw = ((info as any)?.pendingData as Record<string, unknown> | undefined) ?? (info as any);
+        
+        // Incrementar contador de tentativas
+        pendingResolutionAttemptsRef.current += 1;
+        const attemptNum = pendingResolutionAttemptsRef.current;
+        
+        // Se excedeu o limite, orientar para Menu Administrativo
+        if (attemptNum > MAX_AUTO_RESOLVE_ATTEMPTS) {
+          addLog('error', `❌ PENDÊNCIA PERSISTENTE após ${attemptNum - 1} tentativas - Use o MENU ADMINISTRATIVO do PayGo`, {
+            erro,
+            tentativas: attemptNum - 1,
+            acao: 'Abra o Menu Administrativo do PayGo para resolver manualmente',
+          });
+          
+          setShowAdminRequired(true);
+          setActiveTab('pendencias');
+          
+          toast.error('⚠️ Resolução automática não funcionou', {
+            description: 'Use o botão "Menu Administrativo do PayGo" na aba Pendências.',
+            duration: 15000,
+          });
+          
+          setTransactionResult({
+            show: true,
+            status: 'erro',
+            valor: parseInt(amount, 10) / 100,
+            nsu: 'N/A',
+            autorizacao: 'N/A',
+            bandeira: '',
+            mensagem:
+              `⚠️ PENDÊNCIA PERSISTENTE\n\nA resolução automática foi enviada ${attemptNum - 1}x mas o PayGo não processou.\n\n` +
+              `➡️ SOLUÇÃO: Abra a aba "Pendências" e clique em "Menu Administrativo do PayGo".\n\n` +
+              `No menu do PayGo, procure "Resolver Pendências" ou "Transações Pendentes".`,
+            passoTeste: testePasso?.passo,
+          });
+          return;
+        }
 
-        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Resolvendo automaticamente (DESFAZER)', {
+        addLog('warning', `⚠️ PASSO 34: Pendência detectada (-2599) - Tentativa ${attemptNum}/${MAX_AUTO_RESOLVE_ATTEMPTS}`, {
           erro,
           pendingInfo: info,
           acao: 'AUTO: DESFAZER via gerenciador de pendências',
+          tentativa: attemptNum,
         });
 
-        toast.warning('⚠️ Pendência PayGo detectada', {
+        toast.warning(`⚠️ Pendência PayGo detectada (tentativa ${attemptNum})`, {
           description: 'Resolvendo automaticamente (DESFAZER)...',
           duration: 8000,
         });
@@ -483,7 +529,9 @@ export default function TotemTEFHomologacao() {
           autorizacao: String((info as any)?.lastConfirmationId || 'PENDENTE'),
           bandeira: '',
           mensagem:
-            'PASSO 34: Pendência detectada (-2599).\n\n✅ O Totem vai DESFAZER automaticamente. Aguarde a validação.',
+            `PASSO 34: Pendência detectada (-2599).\n\n` +
+            `🔄 Tentativa ${attemptNum}/${MAX_AUTO_RESOLVE_ATTEMPTS} - Aguarde a validação.\n\n` +
+            `Se persistir, use o Menu Administrativo do PayGo.`,
           passoTeste: testePasso?.passo,
           isPendenciaPasso34: false,
         });
@@ -2190,30 +2238,61 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
             </Card>
 
             {/* OPERAÇÃO ADMINISTRATIVA - RESOLVE PENDÊNCIAS DIRETAMENTE NO PAYGO */}
-            <Card className="bg-purple-900/20 border-purple-500/30 flex-shrink-0">
+            <Card className={`flex-shrink-0 transition-all ${
+              showAdminRequired 
+                ? 'bg-red-900/40 border-red-500/70 ring-2 ring-red-500/50 animate-pulse' 
+                : 'bg-purple-900/20 border-purple-500/30'
+            }`}>
               <CardHeader className="py-2 px-3">
-                <CardTitle className="text-xs text-purple-400 flex items-center gap-2">
+                <CardTitle className={`text-xs flex items-center gap-2 ${showAdminRequired ? 'text-red-300' : 'text-purple-400'}`}>
                   <ShieldAlert className="h-4 w-4" />
-                  Operação Administrativa (RECOMENDADO)
+                  {showAdminRequired 
+                    ? '⚠️ AÇÃO NECESSÁRIA - Resolução Automática Falhou!' 
+                    : 'Operação Administrativa (RECOMENDADO)'
+                  }
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
+                {showAdminRequired && (
+                  <div className="mb-3 p-2 bg-red-950/50 rounded border border-red-500/40">
+                    <p className="text-xs text-red-200 font-medium">
+                      O broadcast de resolução foi enviado mas o PayGo não processou.
+                    </p>
+                    <p className="text-[10px] text-red-300/70 mt-1">
+                      Use o Menu Administrativo abaixo para resolver manualmente dentro do PayGo.
+                    </p>
+                  </div>
+                )}
                 <p className="text-[10px] text-purple-200/70 mb-2">
-                  Se o broadcast não resolver a pendência, use a <strong>Operação Administrativa</strong> do PayGo. 
-                  Ela abre o menu interno do PayGo onde você pode resolver pendências manualmente.
+                  {showAdminRequired 
+                    ? 'Clique abaixo para abrir o menu interno do PayGo e resolver a pendência manualmente.'
+                    : 'Se o broadcast não resolver a pendência, use a Operação Administrativa do PayGo.'
+                  }
                 </p>
                 <Button
                   size="sm"
-                  variant="outline"
-                  onPointerDown={handleIniciarAdministrativa}
+                  variant={showAdminRequired ? 'destructive' : 'outline'}
+                  onPointerDown={() => {
+                    handleIniciarAdministrativa();
+                    // Reset do estado após abrir (assumir que o usuário vai resolver)
+                    setShowAdminRequired(false);
+                    pendingResolutionAttemptsRef.current = 0;
+                  }}
                   disabled={!isAndroidAvailable || resolvingPending}
-                  className="w-full border-purple-500/50 text-purple-300 hover:bg-purple-500/10 h-10"
+                  className={`w-full h-12 text-sm font-medium ${
+                    showAdminRequired 
+                      ? 'bg-red-600 hover:bg-red-700 text-white' 
+                      : 'border-purple-500/50 text-purple-300 hover:bg-purple-500/10 h-10'
+                  }`}
                 >
-                  {resolvingPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ShieldAlert className="h-4 w-4 mr-2" />}
-                  Abrir Menu Administrativo do PayGo
+                  {resolvingPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <ShieldAlert className="h-5 w-5 mr-2" />}
+                  {showAdminRequired ? '🔧 ABRIR MENU ADMINISTRATIVO AGORA' : 'Abrir Menu Administrativo do PayGo'}
                 </Button>
                 <p className="text-[9px] text-purple-300/50 mt-2 text-center">
-                  ⚠️ Requer APK atualizado. No menu PayGo, procure "Resolver Pendências".
+                  {showAdminRequired 
+                    ? 'No menu PayGo, selecione "Pendências" ou "Resolver Transações".' 
+                    : '⚠️ Requer APK atualizado. No menu PayGo, procure "Resolver Pendências".'
+                  }
                 </p>
               </CardContent>
             </Card>
