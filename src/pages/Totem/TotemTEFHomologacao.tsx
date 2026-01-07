@@ -2380,6 +2380,53 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
               </CardContent>
             </Card>
 
+            {/* Documentação Oficial PayGo - Passos 33 e 34 */}
+            <Card className="bg-gray-800/50 border-gray-700 flex-shrink-0">
+              <CardHeader className="py-2 px-3">
+                <CardTitle className="text-xs text-gray-300">
+                  📋 Roteiro Oficial PayGo - Passos 33 e 34
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-3 pb-3 space-y-3">
+                {/* Passo 33 */}
+                <div className="bg-green-900/20 border border-green-500/30 rounded p-2">
+                  <p className="text-[11px] font-bold text-green-400 mb-1">✅ Passo 33 - Venda com Confirmação</p>
+                  <ol className="text-[10px] text-green-200/80 space-y-1 list-decimal list-inside">
+                    <li>Enviar venda <code className="bg-black/30 px-1 rounded">CRT</code> de R$ 1.005,60</li>
+                    <li>Aguardar aprovação (campo 009-000 = 0)</li>
+                    <li>Imprimir comprovantes (Via Cliente + Via Lojista)</li>
+                    <li><strong>Enviar confirmação</strong> <code className="bg-black/30 px-1 rounded">CNF</code> com campo 027-000</li>
+                  </ol>
+                  <p className="text-[9px] text-green-300/60 mt-1 italic">
+                    Campo 027-000 = identificador único (data+hora+NSU) ex: 170720241420627705
+                  </p>
+                </div>
+
+                {/* Passo 34 */}
+                <div className="bg-amber-900/20 border border-amber-500/30 rounded p-2">
+                  <p className="text-[11px] font-bold text-amber-400 mb-1">⚠️ Passo 34 - Venda com Desfazimento</p>
+                  <ol className="text-[10px] text-amber-200/80 space-y-1 list-decimal list-inside">
+                    <li>Enviar venda <code className="bg-black/30 px-1 rounded">CRT</code> de R$ 1.005,61</li>
+                    <li>Aguardar aprovação - <strong>NÃO enviar CNF!</strong></li>
+                    <li>Tentar nova venda → PayGo detecta pendência (-2599)</li>
+                    <li><strong>Clicar em "Desfazer"</strong> para resolver</li>
+                  </ol>
+                  <p className="text-[9px] text-amber-300/60 mt-1 italic">
+                    Em Autoatendimento: resolução automática ao iniciar nova venda
+                  </p>
+                </div>
+
+                {/* Fluxo resumido */}
+                <div className="bg-blue-900/20 border border-blue-500/30 rounded p-2">
+                  <p className="text-[11px] font-bold text-blue-400 mb-1">🔄 Regra de Negócio</p>
+                  <div className="text-[10px] text-blue-200/80 space-y-1">
+                    <p>• <strong>Print OK</strong> → <code className="bg-black/30 px-1 rounded">CNF</code> (CONFIRMADO_MANUAL)</p>
+                    <p>• <strong>Print FALHOU</strong> → <code className="bg-black/30 px-1 rounded">NCN</code> (DESFEITO_MANUAL)</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Dados de Pendência Salvos (para debug) */}
             <Card className="bg-gray-900/50 border-gray-700/50 flex-shrink-0">
               <CardHeader className="py-2 px-3 border-b border-gray-700/30">
