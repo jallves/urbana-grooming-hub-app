@@ -30,6 +30,9 @@ class TEFBridge(
     companion object {
         private const val TAG = "TEFBridge"
     }
+    
+    // Resolver de pendências (Passos 33/34)
+    private val pendingResolver = PayGoPendingResolver(activity)
 
     // ========================================================================
     // PAGAMENTO (VENDA)
@@ -445,6 +448,195 @@ class TEFBridge(
         payGoService.startAdministrativa { result ->
             returnResult(result)
         }
+    }
+    
+    // ========================================================================
+    // PASSOS 33/34 - GERENCIADOR DE PENDÊNCIAS OBRIGATÓRIO
+    // ========================================================================
+    
+    /**
+     * OBRIGATÓRIO: Verifica se pode iniciar nova transação
+     * Retorna false se há pendência que precisa ser resolvida primeiro
+     * Chamado do JS: TEF.canStartTransaction()
+     * @return boolean
+     */
+    @JavascriptInterface
+    fun canStartTransaction(): Boolean {
+        val canStart = pendingResolver.canStartNewTransaction()
+        Log.i(TAG, "canStartTransaction: $canStart")
+        return canStart
+    }
+    
+    /**
+     * Verifica se existe pendência
+     * Chamado do JS: TEF.hasPendingTransaction()
+     * @return boolean
+     */
+    @JavascriptInterface
+    fun hasPendingTransaction(): Boolean {
+        val hasPending = pendingResolver.hasPendingTransaction()
+        Log.i(TAG, "hasPendingTransaction: $hasPending")
+        return hasPending
+    }
+    
+    /**
+     * Obtém informações detalhadas sobre pendência
+     * Chamado do JS: TEF.getPendingTransactionInfo()
+     * @return JSON string com dados da pendência
+     */
+    @JavascriptInterface
+    fun getPendingTransactionInfo(): String {
+        val info = pendingResolver.getPendingInfoJson()
+        Log.d(TAG, "getPendingTransactionInfo: $info")
+        return info.toString()
+    }
+    
+    /**
+     * Salva transação APROVADA para confirmação posterior
+     * Chamado do JS: TEF.saveApprovedTransaction(jsonParams)
+     * 
+     * Deve ser chamado APÓS receber aprovação do PayGo
+     * A transação só será confirmada após impressão/registro no PDV
+     */
+    @JavascriptInterface
+    fun saveApprovedTransaction(params: String) {
+        Log.i(TAG, "saveApprovedTransaction: $params")
+        
+        try {
+            val obj = JSONObject(params)
+            pendingResolver.saveApprovedTransaction(
+                confirmationId = obj.optString("confirmationId", ""),
+                nsu = obj.optString("nsu", ""),
+                autorizacao = obj.optString("autorizacao", ""),
+                valor = obj.optLong("valor", 0),
+                providerName = obj.optString("providerName", ""),
+                merchantId = obj.optString("merchantId", ""),
+                localNsu = obj.optString("localNsu", ""),
+                transactionNsu = obj.optString("transactionNsu", ""),
+                hostNsu = obj.optString("hostNsu", "")
+            )
+            
+            returnResult(JSONObject().apply {
+                put("status", "salvo")
+                put("mensagem", "Transação aprovada salva para confirmação posterior")
+            })
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro em saveApprovedTransaction", e)
+            returnError("SAVE_ERROR", "Erro ao salvar transação: ${e.message}")
+        }
+    }
+    
+    /**
+     * Marca que impressão foi bem-sucedida
+     * Chamado do JS: TEF.markPrintSuccess()
+     */
+    @JavascriptInterface
+    fun markPrintSuccess() {
+        Log.i(TAG, "markPrintSuccess")
+        pendingResolver.markPrintSuccess()
+        
+        returnResult(JSONObject().apply {
+            put("status", "ok")
+            put("mensagem", "Impressão marcada como sucesso")
+        })
+    }
+    
+    /**
+     * Marca que impressão falhou
+     * Chamado do JS: TEF.markPrintFailure()
+     */
+    @JavascriptInterface
+    fun markPrintFailure() {
+        Log.w(TAG, "markPrintFailure")
+        pendingResolver.markPrintFailure()
+        
+        returnResult(JSONObject().apply {
+            put("status", "ok")
+            put("mensagem", "Impressão marcada como falha - transação será desfeita")
+        })
+    }
+    
+    /**
+     * CONFIRMA a transação após impressão OK
+     * Chamado do JS: TEF.confirmApprovedTransaction()
+     */
+    @JavascriptInterface
+    fun confirmApprovedTransaction() {
+        Log.i(TAG, "confirmApprovedTransaction")
+        
+        val success = pendingResolver.confirmTransaction()
+        
+        returnResult(JSONObject().apply {
+            put("status", if (success) "confirmado" else "erro")
+            put("mensagem", if (success) "Transação confirmada" else "Erro ao confirmar")
+        })
+    }
+    
+    /**
+     * DESFAZ a transação (falha na impressão, cancelamento, etc)
+     * Chamado do JS: TEF.undoApprovedTransaction(reason)
+     */
+    @JavascriptInterface
+    fun undoApprovedTransaction(reason: String = "DESFEITO_MANUAL") {
+        Log.i(TAG, "undoApprovedTransaction: $reason")
+        
+        val success = pendingResolver.undoTransaction(reason)
+        
+        returnResult(JSONObject().apply {
+            put("status", if (success) "desfeito" else "erro")
+            put("mensagem", if (success) "Transação desfeita" else "Erro ao desfazer")
+        })
+    }
+    
+    /**
+     * RESOLVE pendência existente (Passo 34)
+     * Chamado do JS: TEF.resolvePendingTransaction(action)
+     * @param action "CONFIRMAR" ou "DESFAZER"
+     */
+    @JavascriptInterface
+    fun resolvePendingTransaction(action: String = "DESFAZER") {
+        Log.i(TAG, "resolvePendingTransaction: $action")
+        
+        val success = pendingResolver.resolvePending(action)
+        
+        returnResult(JSONObject().apply {
+            put("status", if (success) "resolvido" else "erro")
+            put("action", action)
+            put("mensagem", if (success) "Pendência resolvida: $action" else "Erro ao resolver pendência")
+            put("canStartNewTransaction", pendingResolver.canStartNewTransaction())
+        })
+    }
+    
+    /**
+     * AUTO-RESOLVE pendência baseado no status
+     * Chamado do JS: TEF.autoResolvePending()
+     */
+    @JavascriptInterface
+    fun autoResolvePending() {
+        Log.i(TAG, "autoResolvePending")
+        
+        val success = pendingResolver.autoResolvePending()
+        
+        returnResult(JSONObject().apply {
+            put("status", if (success) "ok" else "erro")
+            put("mensagem", if (success) "Pendência auto-resolvida" else "Erro ao auto-resolver")
+            put("canStartNewTransaction", pendingResolver.canStartNewTransaction())
+        })
+    }
+    
+    /**
+     * Limpa pendência manualmente (após confirmação externa)
+     * Chamado do JS: TEF.clearPendingTransaction()
+     */
+    @JavascriptInterface
+    fun clearPendingTransaction() {
+        Log.i(TAG, "clearPendingTransaction")
+        pendingResolver.clearPending()
+        
+        returnResult(JSONObject().apply {
+            put("status", "limpo")
+            put("mensagem", "Pendência limpa")
+        })
     }
 
     // ========================================================================

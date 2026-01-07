@@ -74,6 +74,23 @@ declare global {
       limparPendingData?: () => void;
       // NOVO: Operação administrativa - pode resolver pendências
       iniciarAdministrativa?: () => void;
+      // ===== PASSOS 33/34 - GERENCIADOR OBRIGATÓRIO =====
+      // Gate: verifica se pode iniciar nova transação
+      canStartTransaction?: () => boolean;
+      hasPendingTransaction?: () => boolean;
+      getPendingTransactionInfo?: () => string;
+      // Salvar transação aprovada para confirmação posterior
+      saveApprovedTransaction?: (jsonParams: string) => void;
+      // Marcar status da impressão
+      markPrintSuccess?: () => void;
+      markPrintFailure?: () => void;
+      // Confirmar/Desfazer transação aprovada
+      confirmApprovedTransaction?: () => void;
+      undoApprovedTransaction?: (reason: string) => void;
+      // Resolver pendência existente
+      resolvePendingTransaction?: (action: string) => void;
+      autoResolvePending?: () => void;
+      clearPendingTransaction?: () => void;
     };
     Android?: {
       // Legacy Android interface
@@ -1183,6 +1200,295 @@ export function mapPaymentMethod(
     default:
       return 'credito';
   }
+}
+
+// ============================================================================
+// PASSOS 33/34 - FUNÇÕES DE GERENCIAMENTO DE PENDÊNCIA (OBRIGATÓRIO PayGo)
+// ============================================================================
+
+/**
+ * Interface para informações de pendência do novo gerenciador
+ */
+export interface PendingTransactionInfo {
+  hasPending: boolean;
+  canStartTransaction: boolean;
+  pending?: {
+    confirmationId: string;
+    nsu: string;
+    autorizacao: string;
+    valor: number;
+    status: string;
+    timestamp: number;
+  };
+}
+
+/**
+ * GATE OBRIGATÓRIO: Verifica se pode iniciar nova transação
+ * Retorna FALSE se há pendência que precisa ser resolvida primeiro
+ * 
+ * REGRA PayGo: ANTES de qualquer venda, verificar pendência!
+ */
+export function canStartNewTransaction(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - permitindo transação');
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).canStartTransaction === 'function') {
+      const canStart = (window.TEF as any).canStartTransaction();
+      console.log('[TEFBridge] canStartTransaction:', canStart);
+      return canStart;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao verificar canStartTransaction:', error);
+  }
+  
+  return true;
+}
+
+/**
+ * Verifica se existe pendência no sistema
+ */
+export function hasPendingTransactionAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    return false;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).hasPendingTransaction === 'function') {
+      return (window.TEF as any).hasPendingTransaction();
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao verificar hasPendingTransaction:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Obtém informações detalhadas sobre a pendência atual
+ */
+export function getPendingTransactionInfoAndroid(): PendingTransactionInfo | null {
+  if (!isAndroidTEFAvailable()) {
+    return null;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).getPendingTransactionInfo === 'function') {
+      const infoJson = (window.TEF as any).getPendingTransactionInfo();
+      return JSON.parse(infoJson) as PendingTransactionInfo;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro ao obter getPendingTransactionInfo:', error);
+  }
+  
+  return null;
+}
+
+/**
+ * Salva transação APROVADA para confirmação posterior
+ * Chamado APÓS receber aprovação do PayGo
+ * 
+ * A transação só será CONFIRMADA após impressão/registro no PDV
+ */
+export function saveApprovedTransactionAndroid(params: {
+  confirmationId: string;
+  nsu: string;
+  autorizacao: string;
+  valor: number;
+  providerName?: string;
+  merchantId?: string;
+  localNsu?: string;
+  transactionNsu?: string;
+  hostNsu?: string;
+}): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - salvando em localStorage');
+    try {
+      localStorage.setItem('tef_approved_transaction', JSON.stringify({
+        ...params,
+        timestamp: Date.now()
+      }));
+    } catch (e) {
+      console.error('[TEFBridge] Erro ao salvar em localStorage:', e);
+    }
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).saveApprovedTransaction === 'function') {
+      console.log('[TEFBridge] Salvando transação aprovada no APK:', params);
+      (window.TEF as any).saveApprovedTransaction(JSON.stringify(params));
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em saveApprovedTransaction:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Marca que impressão foi bem-sucedida
+ * Chamar APÓS imprimir/enviar comprovante
+ */
+export function markPrintSuccessAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).markPrintSuccess === 'function') {
+      (window.TEF as any).markPrintSuccess();
+      console.log('[TEFBridge] ✅ Impressão marcada como sucesso');
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em markPrintSuccess:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Marca que impressão falhou
+ * Chamar quando impressão/envio de comprovante falhar
+ */
+export function markPrintFailureAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).markPrintFailure === 'function') {
+      (window.TEF as any).markPrintFailure();
+      console.warn('[TEFBridge] ❌ Impressão marcada como falha');
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em markPrintFailure:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * CONFIRMA a transação aprovada (PASSO 33)
+ * Chamar APÓS impressão OK e registro no PDV
+ */
+export function confirmApprovedTransactionAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - confirmação simulada');
+    localStorage.removeItem('tef_approved_transaction');
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).confirmApprovedTransaction === 'function') {
+      console.log('[TEFBridge] ✅ Confirmando transação aprovada...');
+      (window.TEF as any).confirmApprovedTransaction();
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em confirmApprovedTransaction:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * DESFAZ a transação aprovada (quando há falha)
+ * Chamar quando: impressão falhou, PDV falhou, usuário cancelou, etc.
+ */
+export function undoApprovedTransactionAndroid(reason: string = 'DESFEITO_MANUAL'): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - desfazimento simulado');
+    localStorage.removeItem('tef_approved_transaction');
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).undoApprovedTransaction === 'function') {
+      console.log('[TEFBridge] ❌ Desfazendo transação aprovada:', reason);
+      (window.TEF as any).undoApprovedTransaction(reason);
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em undoApprovedTransaction:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * RESOLVE pendência existente (PASSO 34)
+ * Chamar ANTES de iniciar nova transação quando há pendência
+ * 
+ * @param action "CONFIRMAR" ou "DESFAZER"
+ */
+export function resolvePendingTransactionAndroid(action: 'CONFIRMAR' | 'DESFAZER' = 'DESFAZER'): boolean {
+  if (!isAndroidTEFAvailable()) {
+    console.log('[TEFBridge] TEF não disponível - resolução simulada');
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).resolvePendingTransaction === 'function') {
+      console.log('[TEFBridge] 🔄 Resolvendo pendência:', action);
+      (window.TEF as any).resolvePendingTransaction(action);
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em resolvePendingTransaction:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * AUTO-RESOLVE pendência baseado no status
+ * Lógica: IMPRESSA_OK → CONFIRMAR, IMPRESSA_FALHA → DESFAZER, APROVADA → DESFAZER
+ */
+export function autoResolvePendingAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).autoResolvePending === 'function') {
+      console.log('[TEFBridge] 🤖 Auto-resolvendo pendência...');
+      (window.TEF as any).autoResolvePending();
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em autoResolvePending:', error);
+  }
+  
+  return false;
+}
+
+/**
+ * Limpa pendência manualmente
+ * CUIDADO: Chamar SOMENTE após confirmar resolução externa
+ */
+export function clearPendingTransactionAndroid(): boolean {
+  if (!isAndroidTEFAvailable()) {
+    localStorage.removeItem('tef_approved_transaction');
+    return true;
+  }
+  
+  try {
+    if (typeof (window.TEF as any).clearPendingTransaction === 'function') {
+      console.log('[TEFBridge] 🗑️ Limpando pendência...');
+      (window.TEF as any).clearPendingTransaction();
+      return true;
+    }
+  } catch (error) {
+    console.error('[TEFBridge] Erro em clearPendingTransaction:', error);
+  }
+  
+  return false;
 }
 
 /**
