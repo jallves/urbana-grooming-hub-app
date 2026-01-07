@@ -2248,27 +2248,36 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <ShieldAlert className="h-4 w-4" />
                   {showAdminRequired 
                     ? '⚠️ AÇÃO NECESSÁRIA - Resolução Automática Falhou!' 
-                    : 'Operação Administrativa (RECOMENDADO)'
+                    : 'Operação Administrativa PayGo'
                   }
                 </CardTitle>
               </CardHeader>
               <CardContent className="px-3 pb-3">
                 {showAdminRequired && (
                   <div className="mb-3 p-2 bg-red-950/50 rounded border border-red-500/40">
-                    <p className="text-xs text-red-200 font-medium">
+                    <p className="text-xs text-red-200 font-medium mb-2">
                       O broadcast de resolução foi enviado mas o PayGo não processou.
                     </p>
-                    <p className="text-[10px] text-red-300/70 mt-1">
-                      Use o Menu Administrativo abaixo para resolver manualmente dentro do PayGo.
-                    </p>
+                    <div className="text-[10px] text-red-300/90 space-y-1 bg-black/30 p-2 rounded">
+                      <p className="font-bold text-red-200">📋 PASSO A PASSO NO MENU PAYGO:</p>
+                      <p>1️⃣ Clique no botão abaixo para abrir o menu</p>
+                      <p>2️⃣ Se estiver em <strong>modo Autoatendimento</strong>:</p>
+                      <p className="ml-3">• Tente iniciar uma nova venda qualquer</p>
+                      <p className="ml-3">• O PayGo resolve automaticamente ao iniciar</p>
+                      <p>3️⃣ Se precisar resolver manualmente:</p>
+                      <p className="ml-3">• Vá em ⚙️ <strong>Configurações → Modo de operação</strong></p>
+                      <p className="ml-3">• Mude temporariamente para <strong>"Atendido"</strong></p>
+                      <p className="ml-3">• Volte e procure opção <strong>"Resolver Pendência"</strong></p>
+                      <p className="ml-3">• Selecione <strong>DESFAZER</strong> ou <strong>CONFIRMAR</strong></p>
+                      <p className="ml-3">• Depois volte para <strong>"Autoatendimento"</strong></p>
+                    </div>
                   </div>
                 )}
-                <p className="text-[10px] text-purple-200/70 mb-2">
-                  {showAdminRequired 
-                    ? 'Clique abaixo para abrir o menu interno do PayGo e resolver a pendência manualmente.'
-                    : 'Se o broadcast não resolver a pendência, use a Operação Administrativa do PayGo.'
-                  }
-                </p>
+                {!showAdminRequired && (
+                  <p className="text-[10px] text-purple-200/70 mb-2">
+                    Abre o menu interno do PayGo para resolver pendências, ver status, etc.
+                  </p>
+                )}
                 <Button
                   size="sm"
                   variant={showAdminRequired ? 'destructive' : 'outline'}
@@ -2288,12 +2297,6 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   {resolvingPending ? <Loader2 className="h-5 w-5 mr-2 animate-spin" /> : <ShieldAlert className="h-5 w-5 mr-2" />}
                   {showAdminRequired ? '🔧 ABRIR MENU ADMINISTRATIVO AGORA' : 'Abrir Menu Administrativo do PayGo'}
                 </Button>
-                <p className="text-[9px] text-purple-300/50 mt-2 text-center">
-                  {showAdminRequired 
-                    ? 'No menu PayGo, selecione "Pendências" ou "Resolver Transações".' 
-                    : '⚠️ Requer APK atualizado. No menu PayGo, procure "Resolver Pendências".'
-                  }
-                </p>
               </CardContent>
             </Card>
 
