@@ -73,7 +73,89 @@ const STORAGE_KEYS = {
   PENDING_LOGS: 'tef_pending_logs',
   PENDING_DATA: 'tef_pending_data',
   LAST_CONFIRMATION_ID: 'tef_last_confirmation_id',
+  // IDEMPOTÊNCIA: Controle de pendências já processadas
+  PENDING_RESOLVED_KEYS: 'tef_pending_resolved_keys',
+  PENDING_IN_PROGRESS_KEY: 'tef_pending_in_progress_key',
 };
+
+// ============================================================================
+// IDEMPOTÊNCIA: Gerar chave única para pendência
+// ============================================================================
+
+function generatePendingKey(data: Record<string, unknown> | null): string | null {
+  if (!data) return null;
+  
+  // Extrair campos relevantes (podem estar em pendingData ou diretamente no objeto)
+  const pendingData = (data.pendingData as Record<string, unknown>) || data;
+  
+  const providerName = String(pendingData.providerName || '').trim();
+  const merchantId = String(pendingData.merchantId || '').trim();
+  const hostNsu = String(pendingData.hostNsu || '').trim();
+  const localNsu = String(pendingData.localNsu || '').trim();
+  const transactionNsu = String(pendingData.transactionNsu || '').trim();
+  const timestamp = String(pendingData.timestamp || '').trim();
+  
+  // Se não temos dados mínimos, não gerar chave
+  if (!providerName && !merchantId && !localNsu && !transactionNsu) {
+    return null;
+  }
+  
+  return `${providerName}|${merchantId}|${hostNsu}|${localNsu}|${transactionNsu}|${timestamp}`;
+}
+
+function isPendingKeyResolved(key: string): boolean {
+  try {
+    const resolved = localStorage.getItem(STORAGE_KEYS.PENDING_RESOLVED_KEYS);
+    if (!resolved) return false;
+    const resolvedKeys: { key: string; timestamp: number }[] = JSON.parse(resolved);
+    // Verificar se a chave está resolvida (válido por 24h)
+    const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+    return resolvedKeys.some(r => r.key === key && (Date.now() - r.timestamp) < MAX_AGE_MS);
+  } catch {
+    return false;
+  }
+}
+
+function markPendingKeyResolved(key: string): void {
+  try {
+    const resolved = localStorage.getItem(STORAGE_KEYS.PENDING_RESOLVED_KEYS);
+    let resolvedKeys: { key: string; timestamp: number }[] = resolved ? JSON.parse(resolved) : [];
+    // Limpar chaves antigas (> 24h)
+    const MAX_AGE_MS = 24 * 60 * 60 * 1000;
+    resolvedKeys = resolvedKeys.filter(r => (Date.now() - r.timestamp) < MAX_AGE_MS);
+    // Adicionar nova chave
+    resolvedKeys.push({ key, timestamp: Date.now() });
+    // Manter no máximo 50 chaves
+    if (resolvedKeys.length > 50) resolvedKeys = resolvedKeys.slice(-50);
+    localStorage.setItem(STORAGE_KEYS.PENDING_RESOLVED_KEYS, JSON.stringify(resolvedKeys));
+  } catch (e) {
+    console.error('[TEFPending] Erro ao marcar pendência como resolvida:', e);
+  }
+}
+
+function isPendingKeyInProgress(key: string): boolean {
+  try {
+    const inProgress = localStorage.getItem(STORAGE_KEYS.PENDING_IN_PROGRESS_KEY);
+    if (!inProgress) return false;
+    const data: { key: string; timestamp: number } = JSON.parse(inProgress);
+    // Considerar "em progresso" por no máximo 30 segundos (evitar travamento)
+    return data.key === key && (Date.now() - data.timestamp) < 30000;
+  } catch {
+    return false;
+  }
+}
+
+function markPendingKeyInProgress(key: string | null): void {
+  try {
+    if (key) {
+      localStorage.setItem(STORAGE_KEYS.PENDING_IN_PROGRESS_KEY, JSON.stringify({ key, timestamp: Date.now() }));
+    } else {
+      localStorage.removeItem(STORAGE_KEYS.PENDING_IN_PROGRESS_KEY);
+    }
+  } catch (e) {
+    console.error('[TEFPending] Erro ao marcar pendência em progresso:', e);
+  }
+}
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -334,11 +416,35 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     acao: 'confirmar' | 'desfazer',
     pendingDataFromJS?: Record<string, unknown>
   ): Promise<boolean> => {
+    // ====================================================================
+    // IDEMPOTÊNCIA: Verificar se já está em progresso ou já foi resolvida
+    // ====================================================================
+    const pendingKey = generatePendingKey(pendingDataFromJS || pendingState.pendingData);
+    
+    if (pendingKey) {
+      // Verificar se já está resolvida
+      if (isPendingKeyResolved(pendingKey)) {
+        addLog('block', '🔒 IDEMPOTÊNCIA: Pendência já resolvida anteriormente - ignorando', { pendingKey });
+        return true; // Já resolvida = sucesso
+      }
+      
+      // Verificar se está em progresso
+      if (isPendingKeyInProgress(pendingKey)) {
+        addLog('block', '🔒 IDEMPOTÊNCIA: Resolução já em andamento para esta pendência - ignorando', { pendingKey });
+        return false;
+      }
+    }
+    
     if (pendingState.resolving) {
-      addLog('block', 'Resolução já em andamento - ignorando');
+      addLog('block', 'Resolução já em andamento (flag) - ignorando');
       return false;
     }
 
+    // Marcar como em progresso
+    if (pendingKey) {
+      markPendingKeyInProgress(pendingKey);
+    }
+    
     setPendingState(prev => ({ ...prev, resolving: true, lastResolutionAttempt: Date.now() }));
     
     const status = acao === 'confirmar' ? 'CONFIRMADO_MANUAL' : 'DESFEITO_MANUAL';
@@ -346,6 +452,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     addLog('resolve', `🔄 Resolvendo pendência: ${acao.toUpperCase()}`, {
       status,
       hasPendingData: !!pendingDataFromJS,
+      pendingKey: pendingKey || '(sem chave)',
     });
 
     try {
@@ -356,6 +463,7 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       
       if (!success) {
         addLog('error', `❌ Falha ao enviar comando ${acao.toUpperCase()}`);
+        markPendingKeyInProgress(null); // Liberar lock
         if (optionsRef.current.onError) {
           optionsRef.current.onError(`Falha ao enviar comando ${acao}`);
         }
@@ -407,7 +515,8 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
           observacao: 'O PayGo não processou a resolução. APK precisa atualização para consultar SDK real.'
         });
         
-        // IMPORTANTE: Não limpar os dados locais - manter para nova tentativa
+        // Liberar lock de "em progresso"
+        markPendingKeyInProgress(null);
         
         if (optionsRef.current.onResolutionFailed) {
           optionsRef.current.onResolutionFailed('Pendência não foi resolvida pelo PayGo - APK precisa atualização');
@@ -415,6 +524,13 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
         
         return false;
       }
+
+      // ✅ PENDÊNCIA RESOLVIDA COM SUCESSO - MARCAR COMO RESOLVIDA (IDEMPOTÊNCIA)
+      if (pendingKey) {
+        markPendingKeyResolved(pendingKey);
+        addLog('resolve', `🔒 IDEMPOTÊNCIA: Pendência marcada como resolvida`, { pendingKey });
+      }
+      markPendingKeyInProgress(null); // Liberar lock
 
       // ✅ PENDÊNCIA RESOLVIDA COM SUCESSO
       addLog('validate', '✅ VALIDAÇÃO OK: Pendência resolvida com sucesso!');

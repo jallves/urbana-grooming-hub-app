@@ -447,10 +447,10 @@ export default function TotemTEFHomologacao() {
 
       if (isErroPendencia) {
         // ========================================
-        // RESOLUÇÃO AUTOMÁTICA DA PENDÊNCIA (Passo 34)
+        // RESOLUÇÃO AUTOMÁTICA DA PENDÊNCIA (Passo 34) - TOTEM SEM INTERVENÇÃO
         // ========================================
-        // Em integração TEF (automação), o PayGo NÃO exibe a tela "Confirmar/Desfazer".
-        // Quem resolve é a automação (nosso app) via resolvePendencia/confirmarTransacao.
+        // Conforme documentação PayGo: no TOTEM (automação), o PayGo NÃO exibe 
+        // a tela "Confirmar/Desfazer". Quem resolve é a automação (nosso app).
         // ========================================
         const info = getPendingInfoAndroid();
         setPendingInfo(info);
