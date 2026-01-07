@@ -444,7 +444,7 @@ export default function TotemTEFHomologacaoV3() {
       const params = {
         ordemId: transactionId,
         valorCentavos: valorEmCentavos,
-        metodo: 'debito' as const,
+        metodo: 'credit' as const,
         parcelas: 1
       };
       
