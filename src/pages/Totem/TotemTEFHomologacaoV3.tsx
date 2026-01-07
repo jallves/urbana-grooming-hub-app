@@ -446,7 +446,8 @@ export default function TotemTEFHomologacaoV3() {
         transactionStatus: statusResolucao,
       });
       (window.TEF as any).resolverPendenciaComDados(pendingDataJson, statusResolucao);
-      addLog('success', '✅ Resolução enviada (resolverPendenciaComDados)');
+      addLog('success', '✅ Broadcast enviado ao PayGo (resolverPendenciaComDados)');
+      addLog('warning', '⚠️ NOTA: O PayGo NÃO responde broadcasts. A resposta abaixo é do APK, não do SDK.');
     } else if (window.TEF?.resolvePendingTransaction) {
       // IMPORTANTE: o APK espera "CONFIRMAR" | "DESFAZER" (não "CONFIRM"/"UNDO")
       window.TEF.resolvePendingTransaction(acao === 'confirmar' ? 'CONFIRMAR' : 'DESFAZER');
@@ -532,7 +533,13 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button 
             className={`${btnOutline} p-2`}
-            onPointerDown={() => navigate('/totem')}
+            onPointerDown={() => {
+              // Limpar estado e resetar para tela inicial do PDV (não sair do PDV)
+              setStatus('idle');
+              setValorCentavos('');
+              setLastTransaction(null);
+              addLog('info', '🔄 PDV resetado');
+            }}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -753,8 +760,10 @@ export default function TotemTEFHomologacaoV3() {
                   <CardTitle className="text-white text-sm md:text-base">Valor da Venda</CardTitle>
                 </CardHeader>
                 <CardContent className="p-3 pt-0">
-                  <div className="text-2xl md:text-3xl font-bold text-center py-3 bg-black/30 rounded mb-3">
-                    {formatarValor(valorCentavos)}
+                  <div className="text-3xl md:text-4xl font-bold text-center py-4 bg-black/50 rounded-lg mb-3 border border-yellow-600/50">
+                    <span className="text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
+                      {formatarValor(valorCentavos)}
+                    </span>
                   </div>
                   
                   {/* Atalhos */}
