@@ -443,22 +443,50 @@ export default function TotemTEFHomologacaoV3() {
         ...pendingData,
         uriPendencia,
         uriConfirmacao,
-        transactionStatus: statusResolucao
+        transactionStatus: statusResolucao,
       });
       (window.TEF as any).resolverPendenciaComDados(pendingDataJson, statusResolucao);
-      addLog('success', '✅ Resolução enviada');
+      addLog('success', '✅ Resolução enviada (resolverPendenciaComDados)');
     } else if (window.TEF?.resolvePendingTransaction) {
-      window.TEF.resolvePendingTransaction(acao === 'confirmar' ? 'CONFIRM' : 'UNDO');
-      addLog('success', '✅ Resolução enviada (fallback)');
+      // IMPORTANTE: o APK espera "CONFIRMAR" | "DESFAZER" (não "CONFIRM"/"UNDO")
+      window.TEF.resolvePendingTransaction(acao === 'confirmar' ? 'CONFIRMAR' : 'DESFAZER');
+      addLog('success', '✅ Resolução enviada (resolvePendingTransaction)');
     } else if (window.TEF?.resolverPendencia) {
       window.TEF.resolverPendencia(statusResolucao);
-      addLog('success', '✅ Resolução enviada (fallback 2)');
+      addLog('success', '✅ Resolução enviada (resolverPendencia)');
     } else {
       addLog('error', '❌ Nenhum método disponível');
       return;
     }
-    
-    setTimeout(clearPendingData, 1000);
+
+    // Validar se a pendência realmente saiu do SDK antes de limpar no front
+    addLog('info', '⏳ Validando se a pendência foi removida no APK...');
+
+    setTimeout(() => {
+      try {
+        if (window.TEF?.hasPendingTransaction) {
+          const stillPending = window.TEF.hasPendingTransaction();
+          addLog(stillPending ? 'error' : 'success',
+            stillPending
+              ? '❌ Pendência AINDA existe no SDK (não resolveu)'
+              : '✅ Pendência removida no SDK');
+
+          if (!stillPending) {
+            // Opcional: pedir para o APK limpar dados internos também
+            if (typeof (window.TEF as any)?.limparPendingData === 'function') {
+              (window.TEF as any).limparPendingData();
+            }
+            clearPendingData();
+          }
+          return;
+        }
+      } catch (e) {
+        addLog('debug', 'Erro ao validar pendência no APK', e);
+      }
+
+      // Fallback: se não há API de verificação, manter comportamento antigo
+      clearPendingData();
+    }, 1500);
   }, [pendingData, isAndroid, addLog, clearPendingData]);
   
   const abrirMenuAdministrativo = useCallback(() => {
