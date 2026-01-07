@@ -485,7 +485,10 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       // ====================================================================
       // PASSO 1: Enviar comando de resolução via URI
       // ====================================================================
-      const success = resolverPendenciaAndroid(acao, undefined, pendingDataFromJS);
+      // Normalizar formato: alguns métodos retornam wrapper { hasPendingData, pendingData: {...} }
+      const normalizedPendingData = ((pendingDataFromJS as any)?.pendingData as Record<string, unknown> | undefined) ?? pendingDataFromJS;
+
+      const success = resolverPendenciaAndroid(acao, undefined, normalizedPendingData);
       
       if (!success) {
         addLog('error', `❌ Falha ao enviar comando ${acao.toUpperCase()}`);

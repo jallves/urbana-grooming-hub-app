@@ -449,52 +449,43 @@ export default function TotemTEFHomologacao() {
         // ========================================
         // RESOLUÇÃO AUTOMÁTICA DA PENDÊNCIA (Passo 34) - TOTEM SEM INTERVENÇÃO
         // ========================================
-        // Conforme documentação PayGo: no TOTEM (automação), o PayGo NÃO exibe 
-        // a tela "Confirmar/Desfazer". Quem resolve é a automação (nosso app).
-        // ========================================
         const info = getPendingInfoAndroid();
         setPendingInfo(info);
 
-        // IMPORTANTE: Para o Passo 34, o ID da pendência deve vir do PayGo (info.pendingConfirmationId),
-        // NÃO do pendingResolutionConfirmationId que pode conter ID do Passo 33 (já confirmado).
-        // Se não houver ID do PayGo, usamos resolverPendenciaAndroid que busca automaticamente.
-        const candidateId =
-          (info?.pendingConfirmationId as string | undefined) ||
-          (info?.confirmationId as string | undefined) ||
-          (info?.lastConfirmationId as string | undefined) ||
-          undefined; // NÃO usar pendingResolutionConfirmationId aqui!
+        const pendingDataRaw = ((info as any)?.pendingData as Record<string, unknown> | undefined) ?? (info as any);
 
-        if (candidateId) setPendingResolutionConfirmationId(candidateId);
-
-        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Aguardando ação no PDV', {
+        addLog('warning', '⚠️ PASSO 34: Pendência detectada (-2599) - Resolvendo automaticamente (DESFAZER)', {
           erro,
           pendingInfo: info,
-          candidateId: candidateId || '(nenhum - PayGo deve informar/buscar via SDK)',
-          acao: 'Mostrar botões CONFIRMAR / DESFAZER na aba Pendências'
+          acao: 'AUTO: DESFAZER via gerenciador de pendências',
         });
 
-        // IMPORTANTE (Passos 33/34 - PayGo):
-        // No Passo 34, NÃO resolvemos automaticamente.
-        // O objetivo do teste é o operador escolher CONFIRMAR ou DESFAZER.
-        toast.warning('⚠️ Pendência PayGo detectada (Passo 34)', {
-          description: 'Abra a aba “Pendências” e selecione: Confirmar ou Desfazer.',
-          duration: 12000
+        toast.warning('⚠️ Pendência PayGo detectada', {
+          description: 'Resolvendo automaticamente (DESFAZER)...',
+          duration: 8000,
         });
 
-        // Levar o usuário diretamente para a aba de resolução manual
+        // Evitar re-disparos em sequência (alguns fluxos chamam onError 2x)
+        const now = Date.now();
+        if (now - lastResolveTimeRef.current > RESOLVE_DEBOUNCE_MS) {
+          lastResolveTimeRef.current = now;
+          setResolvingPending(true);
+          void resolvePending('desfazer', pendingDataRaw).finally(() => setResolvingPending(false));
+        }
+
         setActiveTab('pendencias');
 
         setTransactionResult({
           show: true,
           status: 'pendencia',
           valor: parseInt(amount, 10) / 100,
-          nsu: String(info?.lastNsu || 'PENDENTE'),
-          autorizacao: String(info?.lastConfirmationId || 'PENDENTE'),
+          nsu: String((info as any)?.lastNsu || 'PENDENTE'),
+          autorizacao: String((info as any)?.lastConfirmationId || 'PENDENTE'),
           bandeira: '',
           mensagem:
-            'PASSO 34: Pendência detectada (-2599).\n\nEscolha abaixo: CONFIRMAR ou DESFAZER a transação pendente.',
+            'PASSO 34: Pendência detectada (-2599).\n\n✅ O Totem vai DESFAZER automaticamente. Aguarde a validação.',
           passoTeste: testePasso?.passo,
-          isPendenciaPasso34: true
+          isPendenciaPasso34: false,
         });
       } else if (isCancelamento) {
         // Tratar como OPERAÇÃO CANCELADA (Passo 05 - rede não informada / usuário abortou)
