@@ -426,14 +426,35 @@ export default function TotemTEFHomologacaoV3() {
     
     const uriConfirmacao = `app://resolve/confirmation?transactionStatus=${statusResolucao}`;
     
-    addLog('info', '═══════════════════════════════════════');
-    addLog('info', `🔄 RESOLUÇÃO: ${acao.toUpperCase()}`);
-    addLog('info', `URI Pendência: ${uriPendencia}`);
-    addLog('info', `URI Confirmação: ${uriConfirmacao}`);
-    addLog('info', '═══════════════════════════════════════');
+    // =========================================================================
+    // LOG DETALHADO PARA SUPORTE PAYGO - EXATAMENTE O QUE ESTÁ SENDO ENVIADO
+    // =========================================================================
+    addLog('info', '══════════════════════════════════════════════════════════════════');
+    addLog('info', '📤 ENVIANDO RESOLUÇÃO DE PENDÊNCIA AO SDK PAYGO');
+    addLog('info', '══════════════════════════════════════════════════════════════════');
+    addLog('info', `⏰ Timestamp: ${new Date().toISOString()}`);
+    addLog('info', `📋 Ação Solicitada: ${acao.toUpperCase()}`);
+    addLog('info', '');
+    addLog('info', '🔹 BROADCAST ACTION:');
+    addLog('info', '   br.com.setis.confirmation.TRANSACTION');
+    addLog('info', '');
+    addLog('info', '🔹 EXTRA "uri" (dados da transação):');
+    addLog('info', `   ${uriPendencia}`);
+    addLog('info', '');
+    addLog('info', '🔹 EXTRA "Confirmacao" (status resolução):');
+    addLog('info', `   ${uriConfirmacao}`);
+    addLog('info', '');
+    addLog('info', '🔹 PARÂMETROS INDIVIDUAIS:');
+    addLog('info', `   merchantId: ${pendingData.merchantId}`);
+    addLog('info', `   providerName: ${pendingData.providerName}`);
+    addLog('info', `   hostNsu: ${pendingData.hostNsu}`);
+    addLog('info', `   localNsu: ${pendingData.localNsu}`);
+    addLog('info', `   transactionNsu: ${pendingData.transactionNsu}`);
+    addLog('info', `   transactionStatus: ${statusResolucao}`);
+    addLog('info', '══════════════════════════════════════════════════════════════════');
     
     if (!isAndroid) {
-      addLog('success', `✅ [SIM] ${acao === 'confirmar' ? 'Confirmado' : 'Desfeito'}`);
+      addLog('success', `✅ [SIMULAÇÃO] ${acao === 'confirmar' ? 'Confirmado' : 'Desfeito'}`);
       clearPendingData();
       return;
     }
@@ -445,35 +466,55 @@ export default function TotemTEFHomologacaoV3() {
         uriConfirmacao,
         transactionStatus: statusResolucao,
       });
+      
+      addLog('info', '');
+      addLog('info', '🔹 JSON ENVIADO AO APK (resolverPendenciaComDados):');
+      addLog('info', pendingDataJson);
+      addLog('info', '');
+      
       (window.TEF as any).resolverPendenciaComDados(pendingDataJson, statusResolucao);
-      addLog('success', '✅ Broadcast enviado ao PayGo (resolverPendenciaComDados)');
-      addLog('warning', '⚠️ NOTA: O PayGo NÃO responde broadcasts. A resposta abaixo é do APK, não do SDK.');
+      
+      addLog('success', '✅ sendBroadcast() executado pelo APK');
+      addLog('warning', '');
+      addLog('warning', '⚠️ IMPORTANTE PARA SUPORTE PAYGO:');
+      addLog('warning', '   O SDK PayGo NÃO retorna resposta para broadcasts de resolução.');
+      addLog('warning', '   O broadcast foi enviado conforme documentação PayGo URI/Intent.');
+      addLog('warning', '   Qualquer resposta abaixo é do APK local, NÃO do SDK PayGo.');
+      addLog('warning', '');
     } else if (window.TEF?.resolvePendingTransaction) {
-      // IMPORTANTE: o APK espera "CONFIRMAR" | "DESFAZER" (não "CONFIRM"/"UNDO")
+      addLog('info', `🔹 Método alternativo: resolvePendingTransaction("${acao === 'confirmar' ? 'CONFIRMAR' : 'DESFAZER'}")`);
       window.TEF.resolvePendingTransaction(acao === 'confirmar' ? 'CONFIRMAR' : 'DESFAZER');
       addLog('success', '✅ Resolução enviada (resolvePendingTransaction)');
     } else if (window.TEF?.resolverPendencia) {
+      addLog('info', `🔹 Método alternativo: resolverPendencia("${statusResolucao}")`);
       window.TEF.resolverPendencia(statusResolucao);
       addLog('success', '✅ Resolução enviada (resolverPendencia)');
     } else {
-      addLog('error', '❌ Nenhum método disponível');
+      addLog('error', '❌ Nenhum método de resolução disponível no APK');
       return;
     }
 
-    // Validar se a pendência realmente saiu do SDK antes de limpar no front
-    addLog('info', '⏳ Validando se a pendência foi removida no APK...');
+    // Validar se a pendência realmente saiu do SDK
+    addLog('info', '');
+    addLog('info', '⏳ Aguardando 1.5s para verificar se SDK removeu pendência...');
 
     setTimeout(() => {
       try {
         if (window.TEF?.hasPendingTransaction) {
           const stillPending = window.TEF.hasPendingTransaction();
+          addLog('info', '');
+          addLog('info', '══════════════════════════════════════════════════════════════════');
+          addLog('info', '📥 VERIFICAÇÃO PÓS-RESOLUÇÃO');
+          addLog('info', '══════════════════════════════════════════════════════════════════');
+          addLog('info', `⏰ Timestamp: ${new Date().toISOString()}`);
+          addLog('info', `🔹 hasPendingTransaction(): ${stillPending}`);
           addLog(stillPending ? 'error' : 'success',
             stillPending
-              ? '❌ Pendência AINDA existe no SDK (não resolveu)'
-              : '✅ Pendência removida no SDK');
+              ? '❌ RESULTADO: Pendência AINDA existe no SDK PayGo'
+              : '✅ RESULTADO: Pendência removida do SDK PayGo');
+          addLog('info', '══════════════════════════════════════════════════════════════════');
 
           if (!stillPending) {
-            // Opcional: pedir para o APK limpar dados internos também
             if (typeof (window.TEF as any)?.limparPendingData === 'function') {
               (window.TEF as any).limparPendingData();
             }
@@ -485,7 +526,6 @@ export default function TotemTEFHomologacaoV3() {
         addLog('debug', 'Erro ao validar pendência no APK', e);
       }
 
-      // Fallback: se não há API de verificação, manter comportamento antigo
       clearPendingData();
     }, 1500);
   }, [pendingData, isAndroid, addLog, clearPendingData]);
