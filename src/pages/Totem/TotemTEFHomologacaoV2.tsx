@@ -1,17 +1,37 @@
 /**
- * PDV de Homologação TEF v2.0
+ * PDV de Homologação TEF v2.0 - COMPLETO
  * 
  * Implementação 100% conforme documentação oficial PayGo:
  * https://github.com/adminti2/mobile-integracao-uri
  * 
- * Fluxo de operações:
- * 1. TRANSAÇÃO: br.com.setis.payment.TRANSACTION (startActivity)
- * 2. CONFIRMAÇÃO: br.com.setis.confirmation.TRANSACTION (sendBroadcast)
- * 3. RESOLUÇÃO DE PENDÊNCIA: 2 URIs (pendingTransaction + confirmation)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * FLUXO PASSOS 33 E 34 (OBRIGATÓRIO PAYGO):
+ * ═══════════════════════════════════════════════════════════════════════════
  * 
- * Passos 33 e 34:
- * - Passo 33: R$ 1.005,60 → Venda aprovada → Enviar CNF (CONFIRMADO_MANUAL)
- * - Passo 34: R$ 1.005,61 → Erro -2599 (pendência) → DESFAZER
+ * PASSO 33 - Venda com Confirmação:
+ * 1. Enviar CRT (Venda R$ 1.005,60)
+ * 2. Receber aprovação (campo 009-000 = 0)
+ * 3. Imprimir comprovante
+ * 4. Enviar CNF (Confirmação)
+ * 
+ * PASSO 34 - Venda com Pendência:
+ * 1. Enviar CRT (Venda R$ 1.005,61)
+ * 2. PayGo retorna erro -2599 (existe pendência)
+ * 3. Clicar DESFAZER para resolver pendência
+ * 
+ * ═══════════════════════════════════════════════════════════════════════════
+ * URIs PayGo (Integração via Android):
+ * ═══════════════════════════════════════════════════════════════════════════
+ * 
+ * 1. TRANSAÇÃO: br.com.setis.payment.TRANSACTION (startActivity)
+ *    - operation: VENDA, CANCELAMENTO, REIMPRESSAO, ADMINISTRATIVA
+ * 
+ * 2. CONFIRMAÇÃO: br.com.setis.confirmation.TRANSACTION (sendBroadcast)
+ *    - transactionStatus: CONFIRMADO_MANUAL, DESFEITO_MANUAL
+ * 
+ * 3. PENDÊNCIA: Combina pendingTransaction + confirmation
+ *    - pendingTransaction: providerName, merchantId, localNsu, transactionNsu, hostNsu
+ *    - confirmation: transactionStatus
  */
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
@@ -19,6 +39,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
 import { 
   ArrowLeft, 
   Loader2, 
@@ -27,14 +48,18 @@ import {
   AlertTriangle,
   RefreshCw,
   Trash2,
-  DollarSign,
   CreditCard,
-  Smartphone,
   QrCode,
   Check,
   Undo2,
   Play,
-  FileText
+  FileText,
+  Settings,
+  Info,
+  Wifi,
+  WifiOff,
+  Download,
+  Copy
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -46,32 +71,45 @@ import {
   resolverPendenciaAndroid,
   getPendingInfoAndroid,
   iniciarAdministrativaAndroid,
+  salvarConfirmationIdAndroid,
+  clearSavedPendingData,
+  limparPendingDataCompleto,
+  canStartNewTransaction,
+  hasPendingTransactionAndroid,
   type TEFResultado
 } from '@/lib/tef/tefAndroidBridge';
 import { toast } from 'sonner';
 
 // ============================================================================
-// TIPOS E CONSTANTES
+// TIPOS E INTERFACES
 // ============================================================================
 
 type PaymentMethod = 'debito' | 'credito' | 'pix';
-type PDVState = 
-  | 'idle'           // Aguardando input
-  | 'processing'     // Transação em andamento
-  | 'pending'        // Pendência detectada - aguarda resolução
-  | 'confirming'     // Enviando confirmação
-  | 'success'        // Transação finalizada com sucesso
-  | 'error';         // Erro na transação
 
-interface TransactionResult {
-  status: 'aprovado' | 'negado' | 'cancelado' | 'erro';
+type PDVState = 
+  | 'idle'           // Aguardando input do operador
+  | 'checking'       // Verificando pendências
+  | 'processing'     // Transação em andamento no PayGo
+  | 'approved'       // Transação aprovada - aguardando confirmação
+  | 'confirming'     // Enviando confirmação/resolução
+  | 'pending'        // Pendência detectada - precisa resolver
+  | 'success'        // Fluxo finalizado com sucesso
+  | 'error';         // Erro no processo
+
+interface TransactionData {
+  // Dados básicos da transação
+  status: 'aprovado' | 'negado' | 'cancelado' | 'erro' | 'pendente';
+  valor?: number;
   nsu?: string;
   autorizacao?: string;
   bandeira?: string;
   mensagem?: string;
+  
+  // Dados para confirmação (Passo 33)
   confirmationTransactionId?: string;
   requiresConfirmation?: boolean;
-  pendingTransactionExists?: boolean;
+  
+  // Dados para resolução de pendência (Passo 34)
   pendingData?: {
     providerName: string;
     merchantId: string;
@@ -79,12 +117,15 @@ interface TransactionResult {
     transactionNsu: string;
     hostNsu: string;
   };
+  
+  // Código de erro
+  codigoErro?: string;
 }
 
 interface LogEntry {
   id: string;
   time: string;
-  type: 'info' | 'success' | 'error' | 'warning' | 'pending';
+  type: 'info' | 'success' | 'error' | 'warning' | 'pending' | 'debug';
   message: string;
 }
 
@@ -95,157 +136,293 @@ interface LogEntry {
 export default function TotemTEFHomologacaoV2() {
   const navigate = useNavigate();
   
-  // ========== ESTADO PRINCIPAL ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESTADOS PRINCIPAIS
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const [pdvState, setPdvState] = useState<PDVState>('idle');
   const [amount, setAmount] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('debito');
   const [installments, setInstallments] = useState(1);
   
-  // ========== RESULTADO DA TRANSAÇÃO ==========
-  const [lastResult, setLastResult] = useState<TransactionResult | null>(null);
-  const [pendingInfo, setPendingInfo] = useState<{
-    hasPending: boolean;
-    confirmationId?: string;
-    pendingData?: TransactionResult['pendingData'];
-  } | null>(null);
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DADOS DA TRANSAÇÃO ATUAL
+  // ═══════════════════════════════════════════════════════════════════════════
   
-  // ========== LOGS ==========
+  const [transactionData, setTransactionData] = useState<TransactionData | null>(null);
+  
+  // ═══════════════════════════════════════════════════════════════════════════
+  // LOGS E DIAGNÓSTICO
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const [logs, setLogs] = useState<LogEntry[]>([]);
+  const [showDebugInfo, setShowDebugInfo] = useState(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
   
-  // ========== ANDROID TEF ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // ESTADO DO ANDROID TEF
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const [isAndroid, setIsAndroid] = useState(false);
   
-  // Wrapper para onError que converte para o formato esperado pelo hook
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HOOK TEF ANDROID
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const handleTefSuccess = useCallback((result: TEFResultado) => {
+    handlePaymentApproved(result);
+  }, []);
+  
   const handleTefError = useCallback((erro: string, resultadoCompleto?: TEFResultado) => {
     handlePaymentError(resultadoCompleto || { status: 'erro', mensagem: erro });
   }, []);
   
-  const { iniciarPagamento, isProcessing: tefProcessing } = useTEFAndroid({
-    onSuccess: handlePaymentSuccess,
+  const handleTefCancelled = useCallback(() => {
+    handlePaymentCancelled();
+  }, []);
+  
+  const { 
+    iniciarPagamento, 
+    isProcessing: tefProcessing,
+    isPinpadConnected,
+    isAndroidAvailable,
+    verificarConexao
+  } = useTEFAndroid({
+    onSuccess: handleTefSuccess,
     onError: handleTefError,
-    onCancelled: handlePaymentCancelled
+    onCancelled: handleTefCancelled
   });
 
-  // ========== INICIALIZAÇÃO ==========
-  useEffect(() => {
-    const androidAvailable = isAndroidTEFAvailable();
-    setIsAndroid(androidAvailable);
-    addLog('info', `PDV iniciado. Android TEF: ${androidAvailable ? '✅ Disponível' : '❌ Não disponível'}`);
-    
-    // Verificar pendência ao iniciar
-    checkPendingOnStart();
+  // ═══════════════════════════════════════════════════════════════════════════
+  // FUNÇÕES DE LOG
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const addLog = useCallback((type: LogEntry['type'], message: string) => {
+    const entry: LogEntry = {
+      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      time: new Date().toLocaleTimeString('pt-BR', { hour12: false }),
+      type,
+      message
+    };
+    setLogs(prev => [...prev.slice(-150), entry]);
   }, []);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+    limparLogsAndroid();
+    addLog('info', '🗑️ Logs limpos');
+  }, [addLog]);
+
+  const copyLogs = useCallback(() => {
+    const logText = logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+    navigator.clipboard.writeText(logText);
+    toast.success('Logs copiados!');
+  }, [logs]);
+
+  const downloadLogs = useCallback(() => {
+    const logText = logs.map(l => `[${l.time}] [${l.type.toUpperCase()}] ${l.message}`).join('\n');
+    const blob = new Blob([logText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `tef-homologacao-logs-${new Date().toISOString().slice(0,10)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [logs]);
 
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [logs]);
 
-  // ========== FUNÇÕES DE LOG ==========
-  const addLog = useCallback((type: LogEntry['type'], message: string) => {
-    const entry: LogEntry = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-      time: new Date().toLocaleTimeString('pt-BR'),
-      type,
-      message
-    };
-    setLogs(prev => [...prev.slice(-100), entry]); // Manter últimos 100 logs
-  }, []);
-
-  const clearLogs = useCallback(() => {
-    setLogs([]);
-    limparLogsAndroid();
-    addLog('info', 'Logs limpos');
-  }, [addLog]);
-
-  // ========== VERIFICAÇÃO DE PENDÊNCIA ==========
-  const checkPendingOnStart = useCallback(async () => {
-    if (!isAndroidTEFAvailable()) return;
+  // ═══════════════════════════════════════════════════════════════════════════
+  // INICIALIZAÇÃO
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  useEffect(() => {
+    const androidAvailable = isAndroidTEFAvailable();
+    setIsAndroid(androidAvailable);
     
-    addLog('info', '🔍 Verificando pendências...');
+    addLog('info', '╔═══════════════════════════════════════════════════════════╗');
+    addLog('info', '║         PDV HOMOLOGAÇÃO TEF v2.0 - INICIADO              ║');
+    addLog('info', '╠═══════════════════════════════════════════════════════════╣');
+    addLog('info', `║ Android TEF: ${androidAvailable ? '✅ DISPONÍVEL' : '❌ NÃO DISPONÍVEL'}`);
+    addLog('info', '╚═══════════════════════════════════════════════════════════╝');
     
-    try {
-      const info = await getPendingInfoAndroid();
-      
-      if (info?.hasPendingData || info?.lastConfirmationId) {
-        addLog('pending', `⚠️ PENDÊNCIA DETECTADA!`);
-        addLog('pending', `  ConfirmationId: ${info.lastConfirmationId || 'N/A'}`);
-        
-        setPendingInfo({
-          hasPending: true,
-          confirmationId: info.lastConfirmationId as string | undefined,
-          pendingData: info.pendingData as TransactionResult['pendingData'] | undefined
-        });
-        setPdvState('pending');
-      } else {
-        addLog('success', '✅ Nenhuma pendência encontrada');
-        setPendingInfo({ hasPending: false });
-      }
-    } catch (e) {
-      addLog('error', `Erro ao verificar pendência: ${e}`);
+    // Verificar pendências ao iniciar
+    if (androidAvailable) {
+      setTimeout(() => checkPendingTransactions(), 500);
     }
   }, [addLog]);
 
-  // ========== HANDLERS DE PAGAMENTO ==========
-  function handlePaymentSuccess(result: TEFResultado) {
-    addLog('success', `✅ TRANSAÇÃO APROVADA!`);
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VERIFICAÇÃO DE PENDÊNCIAS (OBRIGATÓRIO PAYGO)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const checkPendingTransactions = useCallback(async () => {
+    addLog('info', '🔍 Verificando pendências PayGo...');
+    setPdvState('checking');
+    
+    try {
+      // 1. Verificar via função do SDK
+      const hasPendingSDK = hasPendingTransactionAndroid();
+      addLog('debug', `  hasPendingTransaction (SDK): ${hasPendingSDK}`);
+      
+      // 2. Verificar via getPendingInfo
+      const pendingInfo = await getPendingInfoAndroid();
+      addLog('debug', `  getPendingInfo: ${JSON.stringify(pendingInfo)}`);
+      
+      // 3. Verificar localStorage
+      const savedPendingData = localStorage.getItem('tef_pending_data');
+      const hasLocalPending = !!savedPendingData;
+      addLog('debug', `  localStorage tef_pending_data: ${hasLocalPending ? 'SIM' : 'NÃO'}`);
+      
+      // 4. Determinar se há pendência
+      const hasPending = hasPendingSDK || 
+                         pendingInfo?.hasPendingData || 
+                         hasLocalPending ||
+                         !!pendingInfo?.lastConfirmationId;
+      
+      if (hasPending) {
+        addLog('pending', '⚠️ PENDÊNCIA DETECTADA!');
+        
+        // Montar dados da pendência
+        let pendingData: TransactionData['pendingData'] | undefined;
+        
+        if (savedPendingData) {
+          try {
+            const parsed = JSON.parse(savedPendingData);
+            pendingData = {
+              providerName: parsed.providerName || '',
+              merchantId: parsed.merchantId || '',
+              localNsu: parsed.localNsu || '',
+              transactionNsu: parsed.transactionNsu || parsed.localNsu || '',
+              hostNsu: parsed.hostNsu || parsed.transactionNsu || parsed.localNsu || '',
+            };
+            addLog('debug', `  Dados: providerName=${pendingData.providerName}, merchantId=${pendingData.merchantId}`);
+            addLog('debug', `  NSUs: local=${pendingData.localNsu}, tx=${pendingData.transactionNsu}, host=${pendingData.hostNsu}`);
+          } catch (e) {
+            addLog('error', `  Erro ao parsear dados de pendência: ${e}`);
+          }
+        }
+        
+        setTransactionData({
+          status: 'pendente',
+          confirmationTransactionId: pendingInfo?.lastConfirmationId as string,
+          pendingData
+        });
+        
+        setPdvState('pending');
+      } else {
+        addLog('success', '✅ Nenhuma pendência encontrada');
+        setPdvState('idle');
+      }
+    } catch (error) {
+      addLog('error', `❌ Erro ao verificar pendências: ${error}`);
+      setPdvState('idle');
+    }
+  }, [addLog]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLERS DE PAGAMENTO
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  function handlePaymentApproved(result: TEFResultado) {
+    addLog('success', '════════════════════════════════════════════════════════');
+    addLog('success', '║               ✅ TRANSAÇÃO APROVADA!                   ║');
+    addLog('success', '════════════════════════════════════════════════════════');
     addLog('info', `  NSU: ${result.nsu || 'N/A'}`);
     addLog('info', `  Autorização: ${result.autorizacao || 'N/A'}`);
     addLog('info', `  Bandeira: ${result.bandeira || 'N/A'}`);
+    addLog('info', `  ConfirmationId: ${result.confirmationTransactionId || 'N/A'}`);
+    addLog('info', `  Requer Confirmação: ${result.requiresConfirmation ? 'SIM' : 'NÃO'}`);
     
-    const txResult: TransactionResult = {
+    // Salvar dados para confirmação posterior
+    if (result.confirmationTransactionId) {
+      salvarConfirmationIdAndroid(
+        result.confirmationTransactionId,
+        result.nsu || '',
+        result.autorizacao || ''
+      );
+      addLog('debug', '  💾 ConfirmationId salvo para confirmação posterior');
+    }
+    
+    setTransactionData({
       status: 'aprovado',
+      valor: result.valor,
       nsu: result.nsu,
       autorizacao: result.autorizacao,
       bandeira: result.bandeira,
       mensagem: result.mensagem,
       confirmationTransactionId: result.confirmationTransactionId,
       requiresConfirmation: result.requiresConfirmation
-    };
+    });
     
-    setLastResult(txResult);
-    
-    // Se requer confirmação, guardar para enviar depois
-    if (result.requiresConfirmation && result.confirmationTransactionId) {
-      addLog('warning', `⚠️ Transação REQUER confirmação!`);
-      addLog('info', `  ConfirmationId: ${result.confirmationTransactionId}`);
-      setPendingInfo({
-        hasPending: true,
-        confirmationId: result.confirmationTransactionId
-      });
-      setPdvState('pending');
+    // Se requer confirmação, ir para estado approved
+    if (result.requiresConfirmation) {
+      addLog('warning', '⚠️ ATENÇÃO: Transação requer CONFIRMAÇÃO!');
+      addLog('warning', '   Clique em CONFIRMAR para finalizar (Passo 33)');
+      setPdvState('approved');
     } else {
+      // Já confirmado automaticamente
       setPdvState('success');
     }
   }
 
   function handlePaymentError(error: TEFResultado) {
-    addLog('error', `❌ ERRO NA TRANSAÇÃO`);
-    addLog('error', `  Código: ${error.codigoErro || 'N/A'}`);
+    addLog('error', '════════════════════════════════════════════════════════');
+    addLog('error', '║                   ❌ ERRO NA TRANSAÇÃO                  ║');
+    addLog('error', '════════════════════════════════════════════════════════');
+    addLog('error', `  Código: ${error.codigoErro || error.codigoResposta || 'N/A'}`);
     addLog('error', `  Mensagem: ${error.mensagem || 'Erro desconhecido'}`);
     
     // Verificar se é erro de pendência (-2599)
-    if (error.codigoErro === '-2599' || error.mensagem?.includes('pendente') || error.mensagem?.includes('pendência')) {
-      addLog('pending', `⚠️ PENDÊNCIA DETECTADA (erro -2599)`);
-      setPdvState('pending');
-      checkPendingOnStart(); // Atualizar info de pendência
-    } else {
-      setLastResult({
-        status: 'erro',
+    const isPendingError = 
+      error.codigoErro === '-2599' || 
+      error.codigoResposta === '-2599' ||
+      error.mensagem?.toLowerCase().includes('pendente') ||
+      error.mensagem?.toLowerCase().includes('pendência');
+    
+    if (isPendingError) {
+      addLog('pending', '════════════════════════════════════════════════════════');
+      addLog('pending', '║        ⚠️ ERRO -2599: TRANSAÇÃO PENDENTE!             ║');
+      addLog('pending', '║        Clique em DESFAZER para resolver (Passo 34)    ║');
+      addLog('pending', '════════════════════════════════════════════════════════');
+      
+      setTransactionData({
+        status: 'pendente',
+        codigoErro: '-2599',
         mensagem: error.mensagem
+      });
+      
+      // Verificar se há dados de pendência salvos
+      checkPendingTransactions();
+    } else {
+      setTransactionData({
+        status: 'erro',
+        mensagem: error.mensagem,
+        codigoErro: error.codigoErro
       });
       setPdvState('error');
     }
   }
 
   function handlePaymentCancelled() {
-    addLog('warning', '⚡ Transação cancelada pelo usuário');
-    setLastResult({ status: 'cancelado' });
+    addLog('warning', '════════════════════════════════════════════════════════');
+    addLog('warning', '║            ⚡ TRANSAÇÃO CANCELADA PELO USUÁRIO         ║');
+    addLog('warning', '════════════════════════════════════════════════════════');
+    
+    setTransactionData({
+      status: 'cancelado',
+      mensagem: 'Cancelado pelo usuário'
+    });
     setPdvState('idle');
   }
 
-  // ========== EXECUTAR VENDA ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // EXECUTAR VENDA
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const executePayment = useCallback(async () => {
     if (!amount || parseInt(amount) <= 0) {
       toast.error('Digite um valor válido');
@@ -253,37 +430,71 @@ export default function TotemTEFHomologacaoV2() {
     }
 
     const valorCentavos = parseInt(amount);
-    const valorReais = (valorCentavos / 100).toLocaleString('pt-BR', { 
+    const valorReais = valorCentavos / 100;
+    const valorFormatado = valorReais.toLocaleString('pt-BR', { 
       style: 'currency', 
       currency: 'BRL' 
     });
     
-    addLog('info', '════════════════════════════════════════');
-    addLog('info', `🚀 INICIANDO VENDA`);
-    addLog('info', `  Valor: ${valorReais} (${valorCentavos} centavos)`);
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', '║                 🚀 INICIANDO VENDA                     ║');
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', `  Valor: ${valorFormatado} (${valorCentavos} centavos)`);
     addLog('info', `  Método: ${paymentMethod.toUpperCase()}`);
     if (paymentMethod === 'credito' && installments > 1) {
       addLog('info', `  Parcelas: ${installments}x`);
     }
-    addLog('info', '════════════════════════════════════════');
+    
+    // Verificar se pode iniciar nova transação
+    if (isAndroid) {
+      const canStart = canStartNewTransaction();
+      addLog('debug', `  canStartNewTransaction: ${canStart}`);
+      
+      if (!canStart) {
+        addLog('error', '❌ Não é possível iniciar nova transação - resolva a pendência primeiro!');
+        toast.error('Resolva a pendência antes de iniciar nova venda');
+        checkPendingTransactions();
+        return;
+      }
+    }
     
     setPdvState('processing');
-    setLastResult(null);
+    setTransactionData(null);
+    
+    // Detectar passo da homologação
+    if (valorCentavos === 100560) {
+      addLog('info', '📋 PASSO 33 DETECTADO: Venda R$ 1.005,60');
+      addLog('info', '   → Após aprovação, clicar CONFIRMAR');
+    } else if (valorCentavos === 100561) {
+      addLog('info', '📋 PASSO 34 DETECTADO: Venda R$ 1.005,61');
+      addLog('info', '   → PayGo retornará erro -2599 (pendência)');
+      addLog('info', '   → Clicar DESFAZER para resolver');
+    }
     
     if (!isAndroid) {
       // Simulação para ambiente web
       addLog('warning', '⚠️ Ambiente WEB - Simulando transação...');
       setTimeout(() => {
-        // Simular aprovação
-        handlePaymentSuccess({
-          status: 'aprovado',
-          nsu: '123456',
-          autorizacao: 'ABC123',
-          bandeira: 'VISA',
-          mensagem: 'TRANSACAO APROVADA (SIMULADO)',
-          confirmationTransactionId: 'SIMULATED-CONFIRM-ID',
-          requiresConfirmation: true
-        });
+        if (valorCentavos === 100561) {
+          // Simular erro de pendência
+          handlePaymentError({
+            status: 'erro',
+            codigoErro: '-2599',
+            mensagem: 'Existe transação pendente'
+          });
+        } else {
+          // Simular aprovação
+          handlePaymentApproved({
+            status: 'aprovado',
+            nsu: `SIM${Date.now().toString().slice(-6)}`,
+            autorizacao: `AUT${Math.random().toString(36).slice(2, 8).toUpperCase()}`,
+            bandeira: 'VISA',
+            valor: valorReais,
+            mensagem: 'TRANSAÇÃO APROVADA (SIMULADO)',
+            confirmationTransactionId: `CONF-${Date.now()}`,
+            requiresConfirmation: true
+          });
+        }
       }, 2000);
       return;
     }
@@ -292,9 +503,13 @@ export default function TotemTEFHomologacaoV2() {
       const ordemId = `HOMOLOG_${Date.now()}`;
       const tipo = paymentMethod === 'credito' ? 'credit' : paymentMethod === 'debito' ? 'debit' : 'pix';
       
+      addLog('debug', `  Chamando iniciarPagamento...`);
+      addLog('debug', `  ordemId: ${ordemId}`);
+      addLog('debug', `  tipo: ${tipo}`);
+      
       await iniciarPagamento({
         ordemId,
-        valor: valorCentavos / 100, // O hook espera valor em reais
+        valor: valorReais,
         tipo,
         parcelas: installments
       });
@@ -303,89 +518,169 @@ export default function TotemTEFHomologacaoV2() {
       addLog('error', `Erro ao iniciar pagamento: ${e}`);
       setPdvState('error');
     }
-  }, [amount, paymentMethod, installments, isAndroid, iniciarPagamento, addLog]);
+  }, [amount, paymentMethod, installments, isAndroid, iniciarPagamento, addLog, checkPendingTransactions]);
 
-  // ========== CONFIRMAR TRANSAÇÃO (PASSO 33) ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // CONFIRMAR TRANSAÇÃO (PASSO 33)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const confirmTransaction = useCallback(async () => {
-    if (!pendingInfo?.confirmationId) {
+    if (!transactionData?.confirmationTransactionId) {
       toast.error('Nenhum confirmationId disponível');
+      addLog('error', '❌ Não foi possível confirmar: confirmationId não encontrado');
       return;
     }
     
-    addLog('info', '════════════════════════════════════════');
-    addLog('info', `📤 ENVIANDO CONFIRMAÇÃO (PASSO 33)`);
-    addLog('info', `  ConfirmationId: ${pendingInfo.confirmationId}`);
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', '║         📤 ENVIANDO CONFIRMAÇÃO (PASSO 33)            ║');
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', `  ConfirmationId: ${transactionData.confirmationTransactionId}`);
     addLog('info', `  Status: CONFIRMADO_MANUAL`);
-    addLog('info', '════════════════════════════════════════');
     
     setPdvState('confirming');
     
     try {
-      const result = await confirmarTransacaoTEF(pendingInfo.confirmationId, 'CONFIRMADO_MANUAL');
+      const result = confirmarTransacaoTEF(
+        transactionData.confirmationTransactionId, 
+        'CONFIRMADO_MANUAL'
+      );
       
-      addLog('success', '✅ Confirmação enviada!');
-      addLog('info', `  Resposta: ${JSON.stringify(result)}`);
-      
-      setPendingInfo({ hasPending: false });
-      setPdvState('success');
-      toast.success('Transação confirmada com sucesso!');
-      
+      if (result) {
+        addLog('success', '✅ Confirmação enviada com sucesso!');
+        
+        // Limpar dados de pendência
+        clearSavedPendingData();
+        addLog('debug', '  Dados de pendência limpos');
+        
+        // Atualizar estado
+        setPdvState('success');
+        toast.success('Transação confirmada!');
+      } else {
+        addLog('error', '❌ Falha ao enviar confirmação');
+        toast.error('Erro ao confirmar');
+      }
     } catch (e) {
       addLog('error', `❌ Erro na confirmação: ${e}`);
       setPdvState('error');
       toast.error('Erro ao confirmar transação');
     }
-  }, [pendingInfo, addLog]);
+  }, [transactionData, addLog]);
 
-  // ========== DESFAZER TRANSAÇÃO (PASSO 34) ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // DESFAZER TRANSAÇÃO (PASSO 34)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const undoTransaction = useCallback(async () => {
-    addLog('info', '════════════════════════════════════════');
-    addLog('info', `🔄 DESFAZENDO TRANSAÇÃO (PASSO 34)`);
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', '║          🔄 DESFAZENDO TRANSAÇÃO (PASSO 34)           ║');
+    addLog('info', '════════════════════════════════════════════════════════');
     addLog('info', `  Status: DESFEITO_MANUAL`);
-    addLog('info', '════════════════════════════════════════');
+    
+    if (transactionData?.pendingData) {
+      addLog('debug', `  providerName: ${transactionData.pendingData.providerName}`);
+      addLog('debug', `  merchantId: ${transactionData.pendingData.merchantId}`);
+      addLog('debug', `  localNsu: ${transactionData.pendingData.localNsu}`);
+      addLog('debug', `  transactionNsu: ${transactionData.pendingData.transactionNsu}`);
+      addLog('debug', `  hostNsu: ${transactionData.pendingData.hostNsu}`);
+    }
     
     setPdvState('confirming');
     
     try {
-      const result = resolverPendenciaAndroid('desfazer');
+      const result = resolverPendenciaAndroid(
+        'desfazer',
+        transactionData?.confirmationTransactionId,
+        transactionData?.pendingData as Record<string, unknown> | undefined
+      );
       
-      addLog('success', '✅ Desfazimento enviado!');
-      addLog('info', `  Resultado: ${result}`);
-      
-      setPendingInfo({ hasPending: false });
-      setPdvState('success');
-      toast.success('Transação desfeita com sucesso!');
-      
-      // Verificar se realmente limpou
-      setTimeout(() => checkPendingOnStart(), 2000);
-      
+      if (result) {
+        addLog('success', '✅ Comando de desfazimento enviado!');
+        
+        // Limpar dados de pendência
+        limparPendingDataCompleto();
+        addLog('debug', '  Todos os dados de pendência limpos');
+        
+        // Aguardar um pouco e verificar se resolveu
+        addLog('info', '  Aguardando confirmação do PayGo...');
+        
+        setTimeout(async () => {
+          await checkPendingTransactions();
+          
+          // Se não há mais pendência, sucesso
+          const stillPending = hasPendingTransactionAndroid();
+          if (!stillPending) {
+            addLog('success', '✅ Pendência resolvida com sucesso!');
+            setPdvState('success');
+            toast.success('Pendência resolvida!');
+          } else {
+            addLog('warning', '⚠️ Ainda pode haver pendência - verifique');
+          }
+        }, 2000);
+        
+      } else {
+        addLog('error', '❌ Falha ao enviar desfazimento');
+        toast.error('Erro ao desfazer');
+      }
     } catch (e) {
       addLog('error', `❌ Erro no desfazimento: ${e}`);
-      setPdvState('error');
+      setPdvState('pending');
       toast.error('Erro ao desfazer transação');
     }
-  }, [addLog, checkPendingOnStart]);
+  }, [transactionData, addLog, checkPendingTransactions]);
 
-  // ========== ABRIR MENU ADMINISTRATIVO ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // MENU ADMINISTRATIVO
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const openAdminMenu = useCallback(async () => {
-    addLog('info', '🔧 Abrindo menu administrativo PayGo...');
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', '║          🔧 ABRINDO MENU ADMINISTRATIVO               ║');
+    addLog('info', '════════════════════════════════════════════════════════');
+    
     try {
-      await iniciarAdministrativaAndroid();
-      addLog('success', 'Menu administrativo aberto');
+      const result = await iniciarAdministrativaAndroid();
+      if (result) {
+        addLog('success', '✅ Menu administrativo aberto');
+        addLog('info', '   Use o menu para resolver pendências manualmente');
+      } else {
+        addLog('error', '❌ Não foi possível abrir menu administrativo');
+        addLog('warning', '   Pode ser necessário atualizar o APK');
+      }
     } catch (e) {
       addLog('error', `Erro: ${e}`);
     }
   }, [addLog]);
 
-  // ========== NOVA TRANSAÇÃO ==========
-  const resetForNewTransaction = useCallback(() => {
-    setAmount('');
-    setLastResult(null);
-    setPdvState('idle');
-    addLog('info', '🔄 Pronto para nova transação');
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VENDA MICRO (FORÇA RESOLUÇÃO)
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const forceMicroTransaction = useCallback(() => {
+    addLog('info', '════════════════════════════════════════════════════════');
+    addLog('info', '║       💰 INICIANDO MICRO-TRANSAÇÃO R$ 0,01            ║');
+    addLog('info', '║       Esta operação força o PayGo a resolver          ║');
+    addLog('info', '║       pendências automaticamente                      ║');
+    addLog('info', '════════════════════════════════════════════════════════');
+    
+    setAmount('1');
+    setPaymentMethod('debito');
   }, [addLog]);
 
-  // ========== HANDLERS DE INPUT ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RESET PARA NOVA TRANSAÇÃO
+  // ═══════════════════════════════════════════════════════════════════════════
+  
+  const resetForNewTransaction = useCallback(() => {
+    setAmount('');
+    setTransactionData(null);
+    setPdvState('idle');
+    addLog('info', '🔄 PDV pronto para nova transação');
+  }, [addLog]);
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // HANDLERS DE INPUT
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const handleDigit = (digit: string) => {
     if (amount.length < 10) {
       setAmount(prev => prev + digit);
@@ -400,16 +695,27 @@ export default function TotemTEFHomologacaoV2() {
     setAmount('');
   };
 
-  // ========== VALORES FORMATADOS ==========
+  // ═══════════════════════════════════════════════════════════════════════════
+  // VALORES FORMATADOS
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   const formattedAmount = (parseInt(amount || '0') / 100).toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL'
   });
 
-  // ========== RENDER ==========
+  const isInputDisabled = pdvState === 'processing' || pdvState === 'confirming' || pdvState === 'checking';
+  const isPayDisabled = !amount || parseInt(amount) <= 0 || isInputDisabled || pdvState === 'pending' || pdvState === 'approved';
+
+  // ═══════════════════════════════════════════════════════════════════════════
+  // RENDER
+  // ═══════════════════════════════════════════════════════════════════════════
+  
   return (
     <div className="fixed inset-0 bg-gray-900 text-white flex flex-col">
-      {/* Header */}
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          HEADER
+      ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="flex items-center justify-between p-3 bg-gray-800 border-b border-gray-700">
         <Button
           variant="ghost"
@@ -421,104 +727,229 @@ export default function TotemTEFHomologacaoV2() {
           Voltar
         </Button>
         
-        <h1 className="text-lg font-bold">PDV Homologação TEF v2.0</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-lg font-bold">PDV Homologação TEF</h1>
+          <Badge variant="outline" className="text-xs">v2.0</Badge>
+        </div>
         
-        <Badge variant={isAndroid ? 'default' : 'secondary'}>
-          {isAndroid ? '📱 Android TEF' : '🌐 Web (Simulado)'}
-        </Badge>
+        <div className="flex items-center gap-2">
+          {/* Status de Conexão */}
+          <Badge 
+            variant={isPinpadConnected ? 'default' : 'destructive'}
+            className="text-xs"
+          >
+            {isPinpadConnected ? (
+              <><Wifi className="h-3 w-3 mr-1" /> Pinpad</>
+            ) : (
+              <><WifiOff className="h-3 w-3 mr-1" /> Offline</>
+            )}
+          </Badge>
+          
+          <Badge variant={isAndroid ? 'default' : 'secondary'} className="text-xs">
+            {isAndroid ? '📱 Android' : '🌐 Web'}
+          </Badge>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowDebugInfo(!showDebugInfo)}
+          >
+            <Info className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
 
-      {/* Main Content */}
+      {/* ═══════════════════════════════════════════════════════════════════════════
+          MAIN CONTENT
+      ═══════════════════════════════════════════════════════════════════════════ */}
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Panel - Input & Actions */}
-        <div className="w-1/2 p-4 flex flex-col gap-4 border-r border-gray-700">
+        
+        {/* ═══════════════════════════════════════════════════════════════════════════
+            LEFT PANEL - INPUT & ACTIONS
+        ═══════════════════════════════════════════════════════════════════════════ */}
+        <div className="w-1/2 p-4 flex flex-col gap-3 border-r border-gray-700 overflow-y-auto">
           
-          {/* Status Banner */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              STATUS BANNERS
+          ═══════════════════════════════════════════════════════════════════════════ */}
+          
+          {/* Banner: Pendência Detectada */}
           {pdvState === 'pending' && (
-            <Card className="bg-amber-900/50 border-amber-500">
+            <Card className="bg-amber-900/60 border-amber-500 animate-pulse">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-8 w-8 text-amber-400" />
+                  <AlertTriangle className="h-10 w-10 text-amber-400" />
                   <div className="flex-1">
-                    <p className="font-bold text-amber-300">⚠️ PENDÊNCIA DETECTADA</p>
-                    <p className="text-sm text-amber-200/80">
-                      Resolva a pendência antes de continuar
+                    <p className="font-bold text-amber-300 text-lg">⚠️ PENDÊNCIA DETECTADA</p>
+                    <p className="text-amber-200/80 text-sm">
+                      Existe uma transação pendente. Resolva antes de continuar.
                     </p>
-                    {pendingInfo?.confirmationId && (
+                    {transactionData?.confirmationTransactionId && (
                       <p className="text-xs text-amber-200/60 mt-1 font-mono">
-                        ID: {pendingInfo.confirmationId.substring(0, 30)}...
+                        ID: {transactionData.confirmationTransactionId.substring(0, 40)}...
                       </p>
                     )}
                   </div>
                 </div>
                 
-                <div className="flex gap-2 mt-4">
+                <Separator className="my-3 bg-amber-700" />
+                
+                <div className="grid grid-cols-2 gap-2">
                   <Button
                     onClick={confirmTransaction}
-                    className="flex-1 bg-green-600 hover:bg-green-700"
+                    className="bg-green-600 hover:bg-green-700 h-12"
+                    disabled={!transactionData?.confirmationTransactionId}
                   >
-                    <Check className="h-4 w-4 mr-2" />
-                    CONFIRMAR (Passo 33)
+                    <Check className="h-5 w-5 mr-2" />
+                    CONFIRMAR
                   </Button>
                   <Button
                     onClick={undoTransaction}
-                    className="flex-1 bg-red-600 hover:bg-red-700"
+                    className="bg-red-600 hover:bg-red-700 h-12"
                   >
-                    <Undo2 className="h-4 w-4 mr-2" />
-                    DESFAZER (Passo 34)
+                    <Undo2 className="h-5 w-5 mr-2" />
+                    DESFAZER
                   </Button>
                 </div>
                 
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={openAdminMenu}
-                  className="w-full mt-2 border-amber-500 text-amber-300"
-                >
-                  🔧 Menu Administrativo PayGo
-                </Button>
+                <div className="grid grid-cols-2 gap-2 mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={openAdminMenu}
+                    className="border-amber-500 text-amber-300"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    Menu Admin
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={forceMicroTransaction}
+                    className="border-amber-500 text-amber-300"
+                  >
+                    💰 Venda R$ 0,01
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
 
-          {/* Success/Error Banner */}
-          {pdvState === 'success' && lastResult && (
-            <Card className="bg-green-900/50 border-green-500">
+          {/* Banner: Transação Aprovada - Aguardando Confirmação */}
+          {pdvState === 'approved' && transactionData && (
+            <Card className="bg-blue-900/60 border-blue-500">
               <CardContent className="p-4">
-                <div className="flex items-center gap-3 mb-3">
-                  <CheckCircle2 className="h-8 w-8 text-green-400" />
-                  <div>
-                    <p className="font-bold text-green-300">✅ TRANSAÇÃO FINALIZADA</p>
-                    {lastResult.nsu && (
-                      <p className="text-sm text-green-200/80">NSU: {lastResult.nsu}</p>
-                    )}
+                <div className="flex items-center gap-3">
+                  <CheckCircle2 className="h-10 w-10 text-blue-400" />
+                  <div className="flex-1">
+                    <p className="font-bold text-blue-300 text-lg">✅ TRANSAÇÃO APROVADA</p>
+                    <p className="text-blue-200/80 text-sm">
+                      Confirme para finalizar (Passo 33)
+                    </p>
                   </div>
                 </div>
-                <Button onClick={resetForNewTransaction} className="w-full">
+                
+                <div className="grid grid-cols-2 gap-2 text-sm mt-3 bg-blue-950/50 p-2 rounded">
+                  <div>
+                    <span className="text-blue-400">NSU:</span>
+                    <span className="ml-2 font-mono">{transactionData.nsu || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-400">Autorização:</span>
+                    <span className="ml-2 font-mono">{transactionData.autorizacao || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-400">Bandeira:</span>
+                    <span className="ml-2">{transactionData.bandeira || 'N/A'}</span>
+                  </div>
+                  <div>
+                    <span className="text-blue-400">Valor:</span>
+                    <span className="ml-2">{transactionData.valor?.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) || 'N/A'}</span>
+                  </div>
+                </div>
+                
+                <Separator className="my-3 bg-blue-700" />
+                
+                <div className="flex gap-2">
+                  <Button
+                    onClick={confirmTransaction}
+                    className="flex-1 bg-green-600 hover:bg-green-700 h-12"
+                  >
+                    <Check className="h-5 w-5 mr-2" />
+                    CONFIRMAR (CNF)
+                  </Button>
+                  <Button
+                    onClick={undoTransaction}
+                    variant="outline"
+                    className="border-red-500 text-red-400 hover:bg-red-900/30"
+                  >
+                    <Undo2 className="h-5 w-5" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Banner: Sucesso */}
+          {pdvState === 'success' && (
+            <Card className="bg-green-900/60 border-green-500">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <CheckCircle2 className="h-10 w-10 text-green-400" />
+                  <div>
+                    <p className="font-bold text-green-300 text-lg">✅ OPERAÇÃO CONCLUÍDA</p>
+                    <p className="text-green-200/80 text-sm">
+                      {transactionData?.status === 'aprovado' ? 'Transação finalizada com sucesso' : 'Pendência resolvida'}
+                    </p>
+                  </div>
+                </div>
+                <Button onClick={resetForNewTransaction} className="w-full bg-green-700 hover:bg-green-800">
                   Nova Transação
                 </Button>
               </CardContent>
             </Card>
           )}
 
+          {/* Banner: Erro */}
           {pdvState === 'error' && (
-            <Card className="bg-red-900/50 border-red-500">
+            <Card className="bg-red-900/60 border-red-500">
               <CardContent className="p-4">
                 <div className="flex items-center gap-3 mb-3">
-                  <XCircle className="h-8 w-8 text-red-400" />
+                  <XCircle className="h-10 w-10 text-red-400" />
                   <div>
-                    <p className="font-bold text-red-300">❌ ERRO</p>
-                    <p className="text-sm text-red-200/80">{lastResult?.mensagem || 'Erro desconhecido'}</p>
+                    <p className="font-bold text-red-300 text-lg">❌ ERRO</p>
+                    <p className="text-red-200/80 text-sm">{transactionData?.mensagem || 'Erro desconhecido'}</p>
                   </div>
                 </div>
-                <Button onClick={resetForNewTransaction} variant="outline" className="w-full">
+                <Button onClick={resetForNewTransaction} variant="outline" className="w-full border-red-500">
                   Tentar Novamente
                 </Button>
               </CardContent>
             </Card>
           )}
 
-          {/* Amount Display */}
+          {/* Banner: Processando */}
+          {(pdvState === 'processing' || pdvState === 'confirming' || pdvState === 'checking') && (
+            <Card className="bg-gray-800/80 border-gray-600">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-center gap-3">
+                  <Loader2 className="h-8 w-8 text-blue-400 animate-spin" />
+                  <div className="text-center">
+                    <p className="font-bold text-gray-200">
+                      {pdvState === 'processing' && '⏳ Processando pagamento...'}
+                      {pdvState === 'confirming' && '📤 Enviando confirmação...'}
+                      {pdvState === 'checking' && '🔍 Verificando pendências...'}
+                    </p>
+                    <p className="text-gray-400 text-sm">Aguarde...</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              DISPLAY DE VALOR
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <Card className="bg-gray-800 border-gray-600">
             <CardContent className="p-4">
               <p className="text-xs text-gray-400 mb-1">VALOR DA VENDA</p>
@@ -531,35 +962,40 @@ export default function TotemTEFHomologacaoV2() {
             </CardContent>
           </Card>
 
-          {/* Payment Method */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              MÉTODO DE PAGAMENTO
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-3 gap-2">
             <Button
               variant={paymentMethod === 'debito' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('debito')}
-              className={paymentMethod === 'debito' ? 'bg-blue-600' : ''}
+              className={paymentMethod === 'debito' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              disabled={isInputDisabled}
             >
-              <CreditCard className="h-4 w-4 mr-2" />
+              <CreditCard className="h-4 w-4 mr-1" />
               Débito
             </Button>
             <Button
               variant={paymentMethod === 'credito' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('credito')}
-              className={paymentMethod === 'credito' ? 'bg-purple-600' : ''}
+              className={paymentMethod === 'credito' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+              disabled={isInputDisabled}
             >
-              <CreditCard className="h-4 w-4 mr-2" />
+              <CreditCard className="h-4 w-4 mr-1" />
               Crédito
             </Button>
             <Button
               variant={paymentMethod === 'pix' ? 'default' : 'outline'}
               onClick={() => setPaymentMethod('pix')}
-              className={paymentMethod === 'pix' ? 'bg-green-600' : ''}
+              className={paymentMethod === 'pix' ? 'bg-green-600 hover:bg-green-700' : ''}
+              disabled={isInputDisabled}
             >
-              <QrCode className="h-4 w-4 mr-2" />
+              <QrCode className="h-4 w-4 mr-1" />
               PIX
             </Button>
           </div>
 
-          {/* Installments (only for credit) */}
+          {/* Parcelas (só para crédito) */}
           {paymentMethod === 'credito' && (
             <div className="flex items-center gap-2">
               <span className="text-sm text-gray-400">Parcelas:</span>
@@ -571,6 +1007,7 @@ export default function TotemTEFHomologacaoV2() {
                     variant={installments === n ? 'default' : 'outline'}
                     onClick={() => setInstallments(n)}
                     className="w-10"
+                    disabled={isInputDisabled}
                   >
                     {n}x
                   </Button>
@@ -579,43 +1016,47 @@ export default function TotemTEFHomologacaoV2() {
             </div>
           )}
 
-          {/* Numeric Keypad */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              TECLADO NUMÉRICO
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <div className="grid grid-cols-3 gap-2">
             {['1', '2', '3', '4', '5', '6', '7', '8', '9', '00', '0', '⌫'].map(key => (
               <Button
                 key={key}
                 variant="outline"
-                className="h-14 text-xl font-mono"
+                className="h-12 text-xl font-mono"
                 onClick={() => {
                   if (key === '⌫') handleBackspace();
                   else handleDigit(key);
                 }}
-                disabled={pdvState === 'processing' || pdvState === 'confirming'}
+                disabled={isInputDisabled}
               >
                 {key}
               </Button>
             ))}
           </div>
 
-          {/* Action Buttons */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              BOTÕES DE AÇÃO
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <div className="flex gap-2">
             <Button
               variant="outline"
               onClick={handleClear}
-              disabled={pdvState === 'processing' || pdvState === 'confirming'}
+              disabled={isInputDisabled}
               className="flex-1"
             >
               Limpar
             </Button>
             <Button
               onClick={executePayment}
-              disabled={!amount || pdvState === 'processing' || pdvState === 'confirming' || pdvState === 'pending'}
-              className="flex-2 bg-amber-600 hover:bg-amber-700 text-lg font-bold"
+              disabled={isPayDisabled}
+              className="flex-[2] bg-amber-600 hover:bg-amber-700 text-lg font-bold h-12"
             >
               {pdvState === 'processing' ? (
                 <>
                   <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                  Processando...
+                  Aguarde...
                 </>
               ) : (
                 <>
@@ -626,10 +1067,12 @@ export default function TotemTEFHomologacaoV2() {
             </Button>
           </div>
 
-          {/* Quick Values for Testing */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              VALORES RÁPIDOS (HOMOLOGAÇÃO)
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <Card className="bg-gray-800/50 border-gray-700">
             <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs text-gray-400">⚡ Valores Rápidos (Homologação)</CardTitle>
+              <CardTitle className="text-xs text-gray-400">⚡ Valores Rápidos - Homologação PayGo</CardTitle>
             </CardHeader>
             <CardContent className="px-3 pb-3">
               <div className="grid grid-cols-2 gap-2">
@@ -637,65 +1080,90 @@ export default function TotemTEFHomologacaoV2() {
                   variant="outline"
                   size="sm"
                   onClick={() => { setAmount('100560'); setPaymentMethod('debito'); }}
-                  className="text-xs h-auto py-2"
+                  className="text-xs h-auto py-2 border-green-700 hover:bg-green-900/30"
+                  disabled={isInputDisabled}
                 >
-                  <div className="text-left">
+                  <div className="text-left w-full">
                     <p className="font-bold text-green-400">Passo 33</p>
-                    <p className="text-gray-400">R$ 1.005,60 - Confirmar</p>
+                    <p className="text-gray-400">R$ 1.005,60 → Confirmar</p>
                   </div>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => { setAmount('100561'); setPaymentMethod('debito'); }}
-                  className="text-xs h-auto py-2"
+                  className="text-xs h-auto py-2 border-amber-700 hover:bg-amber-900/30"
+                  disabled={isInputDisabled}
                 >
-                  <div className="text-left">
+                  <div className="text-left w-full">
                     <p className="font-bold text-amber-400">Passo 34</p>
-                    <p className="text-gray-400">R$ 1.005,61 - Desfazer</p>
+                    <p className="text-gray-400">R$ 1.005,61 → Desfazer</p>
                   </div>
                 </Button>
+              </div>
+              <div className="grid grid-cols-3 gap-2 mt-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => { setAmount('5000'); setPaymentMethod('credito'); }}
                   className="text-xs"
+                  disabled={isInputDisabled}
                 >
-                  R$ 50,00 (Crédito)
+                  R$ 50,00
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => { setAmount('1'); setPaymentMethod('debito'); }}
+                  onClick={() => { setAmount('10000'); setPaymentMethod('debito'); }}
                   className="text-xs"
+                  disabled={isInputDisabled}
                 >
-                  R$ 0,01 (Força Resolução)
+                  R$ 100,00
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={forceMicroTransaction}
+                  className="text-xs border-orange-700"
+                  disabled={isInputDisabled}
+                >
+                  R$ 0,01 💰
                 </Button>
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Right Panel - Logs */}
+        {/* ═══════════════════════════════════════════════════════════════════════════
+            RIGHT PANEL - LOGS
+        ═══════════════════════════════════════════════════════════════════════════ */}
         <div className="w-1/2 flex flex-col">
+          {/* Header Logs */}
           <div className="flex items-center justify-between p-2 bg-gray-800 border-b border-gray-700">
             <div className="flex items-center gap-2">
               <FileText className="h-4 w-4" />
-              <span className="font-semibold">Logs em Tempo Real</span>
+              <span className="font-semibold text-sm">Logs em Tempo Real</span>
               <Badge variant="outline" className="text-xs">
-                {logs.length} entradas
+                {logs.length}
               </Badge>
             </div>
             <div className="flex gap-1">
-              <Button size="sm" variant="ghost" onClick={checkPendingOnStart}>
+              <Button size="sm" variant="ghost" onClick={checkPendingTransactions} title="Verificar pendências">
                 <RefreshCw className="h-3 w-3" />
               </Button>
-              <Button size="sm" variant="ghost" onClick={clearLogs}>
+              <Button size="sm" variant="ghost" onClick={copyLogs} title="Copiar logs">
+                <Copy className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={downloadLogs} title="Download logs">
+                <Download className="h-3 w-3" />
+              </Button>
+              <Button size="sm" variant="ghost" onClick={clearLogs} title="Limpar logs">
                 <Trash2 className="h-3 w-3" />
               </Button>
             </div>
           </div>
           
+          {/* Área de Logs */}
           <ScrollArea className="flex-1 bg-gray-950">
             <div className="p-2 font-mono text-xs space-y-0.5">
               {logs.map(log => (
@@ -706,37 +1174,40 @@ export default function TotemTEFHomologacaoV2() {
                     log.type === 'success' ? 'text-green-400' :
                     log.type === 'warning' ? 'text-yellow-400' :
                     log.type === 'pending' ? 'text-amber-400' :
+                    log.type === 'debug' ? 'text-purple-400' :
                     'text-gray-400'
                   }`}
                 >
                   <span className="text-gray-600 shrink-0">{log.time}</span>
-                  <span className="break-all">{log.message}</span>
+                  <span className="break-all whitespace-pre-wrap">{log.message}</span>
                 </div>
               ))}
               <div ref={logsEndRef} />
             </div>
           </ScrollArea>
 
-          {/* Documentation Card */}
+          {/* ═══════════════════════════════════════════════════════════════════════════
+              DOCUMENTAÇÃO PASSOS 33/34
+          ═══════════════════════════════════════════════════════════════════════════ */}
           <Card className="m-2 bg-gray-800/50 border-gray-700">
             <CardHeader className="py-2 px-3">
-              <CardTitle className="text-xs text-gray-400">📋 Roteiro PayGo - Passos 33/34</CardTitle>
+              <CardTitle className="text-xs text-gray-400">📋 Roteiro PayGo - Homologação</CardTitle>
             </CardHeader>
-            <CardContent className="px-3 pb-3 text-xs space-y-2">
+            <CardContent className="px-3 pb-3 space-y-2 text-xs">
               <div className="bg-green-900/30 border border-green-700/50 rounded p-2">
-                <p className="font-bold text-green-400">✅ Passo 33 - Venda R$ 1.005,60</p>
+                <p className="font-bold text-green-400">✅ PASSO 33 - Venda R$ 1.005,60</p>
                 <ol className="text-green-300/80 list-decimal list-inside mt-1 space-y-0.5">
-                  <li>Digite 100560 → Clique VENDER</li>
-                  <li>Transação aprovada → Salva confirmationId</li>
-                  <li>Clique "CONFIRMAR" para enviar CNF</li>
+                  <li>Selecione valor 100560 (ou digite)</li>
+                  <li>Clique VENDER → Transação aprovada</li>
+                  <li>Clique CONFIRMAR (envia CNF ao PayGo)</li>
                 </ol>
               </div>
               <div className="bg-amber-900/30 border border-amber-700/50 rounded p-2">
-                <p className="font-bold text-amber-400">⚠️ Passo 34 - Venda R$ 1.005,61</p>
+                <p className="font-bold text-amber-400">⚠️ PASSO 34 - Venda R$ 1.005,61</p>
                 <ol className="text-amber-300/80 list-decimal list-inside mt-1 space-y-0.5">
-                  <li>Digite 100561 → Clique VENDER</li>
-                  <li>PayGo retorna erro -2599 (pendência)</li>
-                  <li>Clique "DESFAZER" para resolver</li>
+                  <li>Selecione valor 100561 (ou digite)</li>
+                  <li>Clique VENDER → PayGo retorna erro -2599</li>
+                  <li>Clique DESFAZER para resolver pendência</li>
                 </ol>
               </div>
             </CardContent>
