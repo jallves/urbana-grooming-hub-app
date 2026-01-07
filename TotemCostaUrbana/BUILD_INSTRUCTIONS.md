@@ -1,5 +1,19 @@
 # Guia de Build - TotemCostaUrbana APK
 
+## Versão: 1.4.0 - Passos 33/34 Completo
+
+### Changelog v1.4.0
+- **NOVO**: `PayGoPendingResolver.kt` - Classe dedicada para Passos 33/34
+- **NOVO**: Gate obrigatório `canStartTransaction()` antes de qualquer venda
+- **NOVO**: Fluxo completo: APROVADA → IMPRESSÃO → CONFIRMAR/DESFAZER
+- **NOVO**: Persistência de transação pendente em SharedPreferences
+- **CORRIGIDO**: Resolução de pendência agora bloqueia nova venda até resolver
+
+### Arquivos Modificados
+- `PayGoPendingResolver.kt` (NOVO)
+- `TEFBridge.kt` - Novos métodos para JS
+- `src/lib/tef/tefAndroidBridge.ts` - Wrappers para novas funções
+
 ## Pré-requisitos
 
 1. **Android Studio** instalado (Arctic Fox ou superior)
