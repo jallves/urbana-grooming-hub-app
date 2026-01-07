@@ -573,13 +573,7 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button 
             className={`${btnOutline} p-2`}
-            onPointerDown={() => {
-              // Limpar estado e resetar para tela inicial do PDV (não sair do PDV)
-              setStatus('idle');
-              setValorCentavos('');
-              setLastTransaction(null);
-              addLog('info', '🔄 PDV resetado');
-            }}
+            onPointerDown={() => navigate(-1)}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
