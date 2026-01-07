@@ -1074,13 +1074,34 @@ export default function TotemTEFHomologacao() {
     setPendingConfirmation(null);
   };
 
+  // ============================================================================
+  // DEBOUNCE / MUTEX para evitar chamadas repetidas
+  // ============================================================================
+  const fallbackMutexRef = useRef<{ inProgress: boolean; lastCall: number }>({
+    inProgress: false,
+    lastCall: 0
+  });
+  const FALLBACK_DEBOUNCE_MS = 3000; // 3 segundos entre chamadas
+
   // Resolver pendência no PayGo - Confirmar (FALLBACK - sem validação)
   const handleResolvePendencyConfirm = useCallback(async () => {
+    // MUTEX + DEBOUNCE: evitar chamadas repetidas
+    const now = Date.now();
+    if (fallbackMutexRef.current.inProgress) {
+      console.log('[TotemTEF] FALLBACK CONFIRMAR ignorado - já em progresso');
+      return;
+    }
+    if (now - fallbackMutexRef.current.lastCall < FALLBACK_DEBOUNCE_MS) {
+      console.log('[TotemTEF] FALLBACK CONFIRMAR ignorado - debounce ativo');
+      return;
+    }
+
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
     }
     
+    fallbackMutexRef.current = { inProgress: true, lastCall: now };
     setResolvingPending(true);
     
     console.log('[TotemTEF] ═══════════════════════════════════════');
@@ -1103,6 +1124,7 @@ export default function TotemTEFHomologacao() {
       }
     } finally {
       setResolvingPending(false);
+      fallbackMutexRef.current.inProgress = false;
       // Aguardar um pouco e atualizar logs
       setTimeout(() => {
         refreshAndroidLogs();
@@ -1112,11 +1134,23 @@ export default function TotemTEFHomologacao() {
 
   // Resolver pendência no PayGo - Desfazer (FALLBACK - sem validação)
   const handleResolvePendencyUndo = useCallback(async () => {
+    // MUTEX + DEBOUNCE: evitar chamadas repetidas
+    const now = Date.now();
+    if (fallbackMutexRef.current.inProgress) {
+      console.log('[TotemTEF] FALLBACK DESFAZER ignorado - já em progresso');
+      return;
+    }
+    if (now - fallbackMutexRef.current.lastCall < FALLBACK_DEBOUNCE_MS) {
+      console.log('[TotemTEF] FALLBACK DESFAZER ignorado - debounce ativo');
+      return;
+    }
+
     if (!isAndroidAvailable) {
       toast.error('TEF Android não disponível');
       return;
     }
     
+    fallbackMutexRef.current = { inProgress: true, lastCall: now };
     setResolvingPending(true);
     
     console.log('[TotemTEF] ═══════════════════════════════════════');
@@ -1139,6 +1173,7 @@ export default function TotemTEFHomologacao() {
       }
     } finally {
       setResolvingPending(false);
+      fallbackMutexRef.current.inProgress = false;
       // Aguardar um pouco e atualizar logs
       setTimeout(() => {
         refreshAndroidLogs();
@@ -2204,8 +2239,8 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={handleResolvePendencyUndo}
-                    disabled={!isAndroidAvailable || resolvingPending}
+                    onClick={handleResolvePendencyUndo}
+                    disabled={!isAndroidAvailable || resolvingPending || isProcessing}
                     className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                   >
                     {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <Undo2 className="h-3 w-3 mr-1" />}
@@ -2214,8 +2249,8 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                   <Button
                     size="sm"
                     variant="outline"
-                    onPointerDown={handleResolvePendencyConfirm}
-                    disabled={!isAndroidAvailable || resolvingPending}
+                    onClick={handleResolvePendencyConfirm}
+                    disabled={!isAndroidAvailable || resolvingPending || isProcessing}
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10"
                   >
                     {resolvingPending ? <Loader2 className="h-3 w-3 mr-1 animate-spin" /> : <CheckSquare className="h-3 w-3 mr-1" />}
@@ -2787,34 +2822,31 @@ ${transactionResult.passoTeste ? `║ PASSO TESTE: ${transactionResult.passoTest
                 <div className="flex gap-2">
                   <Button
                     onClick={handleResolvePendencyConfirm}
-                    onPointerDown={handleResolvePendencyConfirm}
                     variant="outline"
                     size="sm"
-                    disabled={isProcessing}
+                    disabled={isProcessing || resolvingPending}
                     className="border-green-500/50 text-green-400 hover:bg-green-500/10 flex-1"
                   >
-                    <Check className="h-4 w-4 mr-1.5" />
+                    {resolvingPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Check className="h-4 w-4 mr-1.5" />}
                     Confirmar Pendência
                   </Button>
                   <Button
                     onClick={handleResolvePendencyUndo}
-                    onPointerDown={handleResolvePendencyUndo}
                     variant="outline"
                     size="sm"
-                    disabled={isProcessing}
+                    disabled={isProcessing || resolvingPending}
                     className="border-orange-500/50 text-orange-400 hover:bg-orange-500/10 flex-1"
                   >
-                    <RotateCcw className="h-4 w-4 mr-1.5" />
+                    {resolvingPending ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <RotateCcw className="h-4 w-4 mr-1.5" />}
                     Desfazer Pendência
                   </Button>
                 </div>
                 <div className="flex gap-2">
                   <Button
                     onClick={handleClearPendenciesWithTransaction}
-                    onPointerDown={handleClearPendenciesWithTransaction}
                     variant="outline"
                     size="sm"
-                    disabled={isProcessing}
+                    disabled={isProcessing || resolvingPending}
                     className="border-blue-500/50 text-blue-400 hover:bg-blue-500/10 flex-1"
                   >
                     <Trash2 className="h-4 w-4 mr-1.5" />

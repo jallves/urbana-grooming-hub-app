@@ -412,10 +412,32 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
   // RESOLVER PENDÊNCIA (paygoPendingConfirmUri / paygoPendingVoidUri)
   // ============================================================================
 
+  // Ref para mutex global - evita chamadas simultâneas
+  const resolvingMutexRef = useRef<boolean>(false);
+  const lastResolveCallRef = useRef<number>(0);
+  const RESOLVE_DEBOUNCE_MS = 2000; // 2 segundos entre chamadas
+
   const resolvePending = useCallback(async (
     acao: 'confirmar' | 'desfazer',
     pendingDataFromJS?: Record<string, unknown>
   ): Promise<boolean> => {
+    // ====================================================================
+    // MUTEX GLOBAL: Apenas uma resolução por vez
+    // ====================================================================
+    const now = Date.now();
+    
+    // Debounce: ignorar chamadas muito próximas
+    if (now - lastResolveCallRef.current < RESOLVE_DEBOUNCE_MS) {
+      addLog('block', `🔒 DEBOUNCE: Chamada ignorada (última há ${now - lastResolveCallRef.current}ms)`);
+      return false;
+    }
+    
+    // Mutex: apenas uma execução por vez
+    if (resolvingMutexRef.current) {
+      addLog('block', '🔒 MUTEX: Resolução já em andamento - ignorando chamada duplicada');
+      return false;
+    }
+    
     // ====================================================================
     // IDEMPOTÊNCIA: Verificar se já está em progresso ou já foi resolvida
     // ====================================================================
@@ -436,9 +458,13 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
     }
     
     if (pendingState.resolving) {
-      addLog('block', 'Resolução já em andamento (flag) - ignorando');
+      addLog('block', 'Resolução já em andamento (state flag) - ignorando');
       return false;
     }
+
+    // Marcar mutex e debounce
+    resolvingMutexRef.current = true;
+    lastResolveCallRef.current = now;
 
     // Marcar como em progresso
     if (pendingKey) {
@@ -569,9 +595,12 @@ export function useTEFPendingManager(options: UseTEFPendingManagerOptions = {}) 
       }
       return false;
     } finally {
+      // SEMPRE liberar mutex e state no final
+      resolvingMutexRef.current = false;
+      markPendingKeyInProgress(null);
       setPendingState(prev => ({ ...prev, resolving: false }));
     }
-  }, [pendingState.resolving, addLog, checkPending]);
+  }, [pendingState.resolving, pendingState.pendingData, addLog, checkPending]);
 
   // ============================================================================
   // RESOLUÇÃO AUTOMÁTICA
