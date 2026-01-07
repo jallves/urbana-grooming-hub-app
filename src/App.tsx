@@ -100,6 +100,7 @@ import TotemDiagnostico from './pages/admin/TotemDiagnostico';
 import TotemTEFDebug from './pages/Totem/TotemTEFDebug';
 import TotemTEFHomologacao from './pages/Totem/TotemTEFHomologacao';
 import TotemTEFHomologacaoV2 from './pages/Totem/TotemTEFHomologacaoV2';
+import TotemTEFHomologacaoV3 from './pages/Totem/TotemTEFHomologacaoV3';
 import TotemTEFReportHomologacao from './pages/Totem/TotemTEFReportHomologacao';
 import TotemDebug from './pages/Totem/TotemDebug';
 
@@ -352,6 +353,11 @@ function App() {
                     </AdminRedirectGuard>
                   } />
                   <Route path="/totem/tef-homologacao" element={
+                    <AdminRedirectGuard>
+                      <TotemTEFHomologacaoV3 />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/tef-homologacao-v2" element={
                     <AdminRedirectGuard>
                       <TotemTEFHomologacaoV2 />
                     </AdminRedirectGuard>
