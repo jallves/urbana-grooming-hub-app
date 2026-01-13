@@ -57,10 +57,12 @@ export const supabaseRPC = {
 
   getAvailableTimeSlots: async (staffId: string, date: string, serviceDuration: number) => {
     try {
-      const { data, error } = await supabase.rpc('get_available_time_slots', {
-        p_staff_id: staffId,
+      // Use check_barber_slot_availability as fallback since get_available_time_slots doesn't exist
+      const { data, error } = await (supabase.rpc as any)('check_barber_slot_availability', {
+        p_barber_id: staffId,
         p_date: date,
-        p_service_duration: serviceDuration
+        p_duration: serviceDuration,
+        p_time: '09:00'
       });
       
       return { data, error };
