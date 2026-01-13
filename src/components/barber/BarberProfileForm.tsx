@@ -64,7 +64,9 @@ export default function BarberProfileForm() {
           email: staffData.email || '',
           phone: staffData.phone || '',
           image_url: staffData.image_url || '',
-          specialties: staffData.specialties || '',
+          specialties: Array.isArray(staffData.specialties) 
+            ? staffData.specialties.join(', ') 
+            : (staffData.specialties || ''),
           experience: staffData.experience || '',
           commission_rate: staffData.commission_rate || 0,
         });
@@ -73,7 +75,9 @@ export default function BarberProfileForm() {
           phone: staffData.phone || '',
           email: staffData.email || '',
           experience: staffData.experience || '',
-          specialties: staffData.specialties || '',
+          specialties: Array.isArray(staffData.specialties) 
+            ? staffData.specialties.join(', ') 
+            : (staffData.specialties || ''),
           commission_rate: staffData.commission_rate || 0,
         });
       }
@@ -95,7 +99,7 @@ export default function BarberProfileForm() {
           phone: formData.phone,
           email: formData.email,
           experience: formData.experience,
-          specialties: formData.specialties,
+          specialties: formData.specialties.split(',').map(s => s.trim()).filter(Boolean),
           // commission_rate removido - apenas admin pode alterar
         })
         .eq('id', barber.id);

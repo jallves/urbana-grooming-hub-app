@@ -61,7 +61,9 @@ const BarberAvailabilityChecker: React.FC = () => {
         setBarbers(data.map(barber => ({
           id: barber.id,
           name: barber.name,
-          specialties: barber.specialties || '',
+          specialties: Array.isArray(barber.specialties) 
+            ? barber.specialties.join(', ') 
+            : (barber.specialties || ''),
           image_url: barber.image_url || '',
         })));
       }

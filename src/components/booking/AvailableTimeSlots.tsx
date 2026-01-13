@@ -4,12 +4,14 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Clock, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { format, parse, addMinutes, isAfter, isBefore, isEqual, setHours, setMinutes } from 'date-fns';
 
 interface AvailableTimeSlotsProps {
   barberId: string;
   selectedDate: Date;
   onSelectTime: (time: string) => void;
   selectedTime?: string;
+  serviceDuration?: number;
 }
 
 interface TimeSlot {
@@ -21,7 +23,8 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
   barberId,
   selectedDate,
   onSelectTime,
-  selectedTime
+  selectedTime,
+  serviceDuration = 30
 }) => {
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
   const [loading, setLoading] = useState(false);
@@ -30,24 +33,83 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
     if (barberId && selectedDate) {
       fetchAvailableTimeSlots();
     }
-  }, [barberId, selectedDate]);
+  }, [barberId, selectedDate, serviceDuration]);
 
   const fetchAvailableTimeSlots = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase.rpc('get_barbeiro_horarios_disponiveis', {
-        p_barbeiro_id: barberId,
-        p_data: selectedDate.toISOString().split('T')[0],
-        p_duracao_minutos: 30
-      });
+      const dateStr = format(selectedDate, 'yyyy-MM-dd');
+      const dayOfWeek = selectedDate.getDay();
 
-      if (error) {
-        console.error('Erro ao buscar horários:', error);
-        toast.error('Erro ao buscar horários disponíveis');
+      // Fetch working hours for this barber
+      const { data: workingHoursData, error: whError } = await supabase
+        .from('working_hours')
+        .select('start_time, end_time, is_active')
+        .eq('staff_id', barberId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true)
+        .single();
+
+      if (whError || !workingHoursData) {
+        setTimeSlots([]);
         return;
       }
 
-      setTimeSlots(data || []);
+      // Fetch existing appointments for this date
+      const { data: appointments } = await supabase
+        .from('painel_agendamentos')
+        .select('hora, painel_servicos(duracao)')
+        .eq('barbeiro_id', barberId)
+        .eq('data', dateStr)
+        .neq('status', 'cancelado');
+
+      // Generate time slots
+      const slots: TimeSlot[] = [];
+      const startTime = parse(workingHoursData.start_time, 'HH:mm:ss', selectedDate);
+      const endTime = parse(workingHoursData.end_time, 'HH:mm:ss', selectedDate);
+      
+      let currentSlot = startTime;
+      const now = new Date();
+      const isToday = format(selectedDate, 'yyyy-MM-dd') === format(now, 'yyyy-MM-dd');
+
+      while (isBefore(currentSlot, endTime)) {
+        const slotStr = format(currentSlot, 'HH:mm');
+        const slotEnd = addMinutes(currentSlot, serviceDuration);
+        
+        // Check if slot is in the past (for today)
+        let isAvailable = true;
+        if (isToday && isBefore(currentSlot, now)) {
+          isAvailable = false;
+        }
+
+        // Check if slot conflicts with existing appointments
+        if (isAvailable && appointments) {
+          for (const apt of appointments) {
+            const aptStart = parse(apt.hora, 'HH:mm:ss', selectedDate);
+            const aptDuration = (apt.painel_servicos as any)?.duracao || 30;
+            const aptEnd = addMinutes(aptStart, aptDuration);
+            
+            // Check for overlap
+            if (
+              (isAfter(currentSlot, aptStart) || isEqual(currentSlot, aptStart)) && isBefore(currentSlot, aptEnd) ||
+              (isAfter(slotEnd, aptStart) && (isBefore(slotEnd, aptEnd) || isEqual(slotEnd, aptEnd))) ||
+              (isBefore(currentSlot, aptStart) && isAfter(slotEnd, aptEnd))
+            ) {
+              isAvailable = false;
+              break;
+            }
+          }
+        }
+
+        slots.push({
+          horario: slotStr + ':00',
+          disponivel: isAvailable
+        });
+        
+        currentSlot = addMinutes(currentSlot, 30);
+      }
+
+      setTimeSlots(slots);
     } catch (error) {
       console.error('Erro:', error);
       toast.error('Erro ao buscar horários');
@@ -57,7 +119,6 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
   };
 
   const formatTime = (time: string) => {
-    // Formato esperado: "14:30:00" -> "14:30"
     return time.substring(0, 5);
   };
 
