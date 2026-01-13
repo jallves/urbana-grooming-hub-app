@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,6 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { Clock, Calendar, Save } from 'lucide-react';
+import { Json } from '@/integrations/supabase/types';
 
 interface BusinessHours {
   monday: { start: string; end: string; closed?: boolean };
@@ -46,26 +46,26 @@ const BookingSettings: React.FC = () => {
   const loadSettings = async () => {
     try {
       const { data, error } = await supabase
-        .from('booking_settings')
-        .select('setting_key, setting_value');
+        .from('settings')
+        .select('key, value')
+        .in('key', ['business_hours', 'appointment_interval', 'advance_booking_days', 'cancellation_hours', 'max_appointments_per_day']);
 
       if (error) throw error;
 
-      data?.forEach(({ setting_key, setting_value }) => {
-        if (setting_key === 'business_hours') {
-          // Safe type conversion with proper checking
-          const hours = setting_value as unknown;
+      data?.forEach((setting) => {
+        if (setting.key === 'business_hours' && setting.value) {
+          const hours = setting.value as unknown;
           if (hours && typeof hours === 'object') {
             setBusinessHours(hours as BusinessHours);
           }
-        } else if (setting_key === 'appointment_interval') {
-          setSettings(prev => ({ ...prev, appointmentInterval: setting_value as string }));
-        } else if (setting_key === 'advance_booking_days') {
-          setSettings(prev => ({ ...prev, advanceBookingDays: setting_value as string }));
-        } else if (setting_key === 'cancellation_hours') {
-          setSettings(prev => ({ ...prev, cancellationHours: setting_value as string }));
-        } else if (setting_key === 'max_appointments_per_day') {
-          setSettings(prev => ({ ...prev, maxAppointmentsPerDay: setting_value as string }));
+        } else if (setting.key === 'appointment_interval' && setting.value) {
+          setSettings(prev => ({ ...prev, appointmentInterval: String(setting.value) }));
+        } else if (setting.key === 'advance_booking_days' && setting.value) {
+          setSettings(prev => ({ ...prev, advanceBookingDays: String(setting.value) }));
+        } else if (setting.key === 'cancellation_hours' && setting.value) {
+          setSettings(prev => ({ ...prev, cancellationHours: String(setting.value) }));
+        } else if (setting.key === 'max_appointments_per_day' && setting.value) {
+          setSettings(prev => ({ ...prev, maxAppointmentsPerDay: String(setting.value) }));
         }
       });
     } catch (error) {
@@ -81,15 +81,15 @@ const BookingSettings: React.FC = () => {
   const saveSettings = async () => {
     setLoading(true);
     try {
-      // Salvar horários de funcionamento - convert to JSON-compatible format
+      // Save business hours
       await supabase
-        .from('booking_settings')
+        .from('settings')
         .upsert({
-          setting_key: 'business_hours',
-          setting_value: businessHours as unknown as any
-        });
+          key: 'business_hours',
+          value: businessHours as unknown as Json
+        }, { onConflict: 'key' });
 
-      // Salvar outras configurações
+      // Save other settings
       const settingsToSave = [
         { key: 'appointment_interval', value: settings.appointmentInterval },
         { key: 'advance_booking_days', value: settings.advanceBookingDays },
@@ -99,11 +99,11 @@ const BookingSettings: React.FC = () => {
 
       for (const setting of settingsToSave) {
         await supabase
-          .from('booking_settings')
+          .from('settings')
           .upsert({
-            setting_key: setting.key,
-            setting_value: setting.value as unknown as any
-          });
+            key: setting.key,
+            value: setting.value as unknown as Json
+          }, { onConflict: 'key' });
       }
 
       toast({
@@ -139,7 +139,6 @@ const BookingSettings: React.FC = () => {
         <p className="text-gray-600">Configure os horários de funcionamento e regras de agendamento</p>
       </div>
 
-      {/* Horários de Funcionamento */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -219,7 +218,6 @@ const BookingSettings: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Configurações Gerais */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
