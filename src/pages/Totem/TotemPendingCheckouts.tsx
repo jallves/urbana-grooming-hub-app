@@ -16,6 +16,7 @@ interface PendingCheckout {
   cliente_id: string;
   barbeiro_id: string;
   servico_id: string;
+  status_totem?: string;
   painel_clientes?: {
     nome: string;
   };
@@ -26,12 +27,6 @@ interface PendingCheckout {
     nome: string;
     preco: number;
   };
-  totem_sessions: Array<{
-    id: string;
-    check_in_time: string;
-    check_out_time: string | null;
-    status: string;
-  }>;
 }
 
 const TotemPendingCheckouts: React.FC = () => {
@@ -60,6 +55,7 @@ const TotemPendingCheckouts: React.FC = () => {
     try {
       console.log('🔍 Carregando checkouts pendentes para cliente:', cliente.id);
       
+      // Buscar agendamentos com status_totem = 'checkin' (aguardando checkout)
       const { data: checkouts, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -69,7 +65,8 @@ const TotemPendingCheckouts: React.FC = () => {
           cliente_id,
           barbeiro_id,
           servico_id,
-          painel_clientes!inner (
+          status_totem,
+          painel_clientes (
             nome
           ),
           painel_barbeiros (
@@ -78,22 +75,15 @@ const TotemPendingCheckouts: React.FC = () => {
           painel_servicos (
             nome,
             preco
-          ),
-          totem_sessions!inner (
-            id,
-            check_in_time,
-            check_out_time,
-            status
           )
         `)
         .eq('cliente_id', cliente.id)
-        .not('totem_sessions.check_in_time', 'is', null)
-        .is('totem_sessions.check_out_time', null);
+        .eq('status_totem', 'checkin');
 
       if (error) throw error;
 
       console.log('✅ Checkouts pendentes encontrados:', checkouts?.length || 0);
-      setPendingCheckouts(checkouts || []);
+      setPendingCheckouts((checkouts || []) as PendingCheckout[]);
     } catch (error) {
       console.error('❌ Erro ao carregar checkouts pendentes:', error);
       toast.error('Erro ao carregar pagamentos pendentes');
@@ -103,8 +93,6 @@ const TotemPendingCheckouts: React.FC = () => {
   };
 
   const handleGoToCheckout = (appointment: PendingCheckout) => {
-    const session = appointment.totem_sessions[0];
-    
     navigate('/totem/checkout', {
       state: {
         appointment: {
@@ -129,12 +117,6 @@ const TotemPendingCheckouts: React.FC = () => {
           },
         },
         client: cliente,
-        session: {
-          id: session.id,
-          appointment_id: appointment.id,
-          status: session.status,
-          check_in_time: session.check_in_time,
-        },
       },
     });
   };
@@ -221,7 +203,6 @@ const TotemPendingCheckouts: React.FC = () => {
       <div className="flex-1 z-10 overflow-y-auto">
         <div className="max-w-5xl mx-auto space-y-4 pb-4">
           {pendingCheckouts.map((checkout) => {
-            const session = checkout.totem_sessions[0];
             const appointmentDate = parseISO(checkout.data);
             
             return (
@@ -239,7 +220,7 @@ const TotemPendingCheckouts: React.FC = () => {
                         {format(appointmentDate, "dd 'de' MMMM", { locale: ptBR })}
                       </p>
                       <p className="text-sm md:text-base text-urbana-light/60">
-                        Check-in: {format(new Date(session.check_in_time), 'HH:mm', { locale: ptBR })}
+                        Horário: {checkout.hora}
                       </p>
                     </div>
                   </div>

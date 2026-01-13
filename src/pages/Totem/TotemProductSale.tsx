@@ -12,11 +12,10 @@ interface Product {
   nome: string;
   preco: number;
   estoque: number;
-  imagens: string[];
-  categoria: string;
-  descricao?: string;
-  destaque?: boolean;
-  estoque_minimo?: number;
+  imagem_url?: string | null;
+  categoria?: string | null;
+  descricao?: string | null;
+  ativo: boolean;
 }
 
 interface CartItem {
@@ -66,20 +65,13 @@ const TotemProductSale: React.FC = () => {
       const { data, error } = await supabase
         .from('painel_produtos')
         .select('*')
-        .eq('is_active', true)
+        .eq('ativo', true)
         .gt('estoque', 0)
-        .order('destaque', { ascending: false })
         .order('nome');
 
       if (error) throw error;
       
-      // Convert Json to string[] for imagens
-      const productsData = (data || []).map(p => ({
-        ...p,
-        imagens: Array.isArray(p.imagens) ? p.imagens : []
-      })) as Product[];
-      
-      setProducts(productsData);
+      setProducts((data || []) as Product[]);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
       toast.error('Erro ao carregar produtos');
@@ -259,10 +251,10 @@ const TotemProductSale: React.FC = () => {
                 >
                   {/* Product Image */}
                   <div className="relative aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 overflow-hidden">
-                    {product.imagens && product.imagens.length > 0 ? (
+                    {product.imagem_url ? (
                       <>
                         <img
-                          src={product.imagens[0]}
+                          src={product.imagem_url}
                           alt={product.nome}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
@@ -273,9 +265,6 @@ const TotemProductSale: React.FC = () => {
                         <Package className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
                       </div>
                     )}
-                    
-                    {/* Badge Destaque */}
-                    {product.destaque && (
                       <div className="absolute top-2 left-2 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black px-2 py-1 rounded-lg text-[10px] font-black shadow-lg z-10">
                         ⭐ DESTAQUE
                       </div>

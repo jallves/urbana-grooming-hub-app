@@ -161,13 +161,21 @@ const TotemPaymentCard: React.FC = () => {
         });
       }
 
-      // Atualizar estoque dos produtos
+      // Atualizar estoque dos produtos manualmente
       if (selectedProducts?.length > 0) {
         for (const product of selectedProducts) {
-          await supabase.rpc('decrease_product_stock', {
-            p_product_id: product.product_id,
-            p_quantity: product.quantidade
-          });
+          const { data: currentProduct } = await supabase
+            .from('painel_produtos')
+            .select('estoque')
+            .eq('id', product.product_id)
+            .single();
+          
+          if (currentProduct) {
+            await supabase
+              .from('painel_produtos')
+              .update({ estoque: Math.max(0, currentProduct.estoque - product.quantidade) })
+              .eq('id', product.product_id);
+          }
         }
       }
 

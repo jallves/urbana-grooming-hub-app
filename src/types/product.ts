@@ -1,25 +1,3 @@
-
-import { Database } from '@/integrations/supabase/types';
-
-// Define o tipo para produtos
-export type Product = Database['public']['Tables']['products']['Row'];
-
-// Define um tipo para novos produtos (sem id e timestamps)
-export type NewProduct = Omit<Product, 'id' | 'created_at' | 'updated_at'>;
-
-// Define um tipo para o formulário de produtos
-export interface ProductFormData {
-  name: string;
-  description: string | null;
-  price: number;
-  cost_price: number | null;
-  stock_quantity: number | null;
-  is_active: boolean;
-}
-
-// Define o tipo para categorias de produtos
-export type ProductCategory = Database['public']['Tables']['product_categories']['Row'];
-
 // Tipos para produtos da barbearia (painel_produtos)
 export interface BarbershopProduct {
   id: string;
@@ -32,6 +10,25 @@ export interface BarbershopProduct {
   ativo: boolean;
   created_at?: string | null;
   updated_at?: string | null;
+}
+
+// Define um tipo para novos produtos (sem id e timestamps)
+export type NewProduct = Omit<BarbershopProduct, 'id' | 'created_at' | 'updated_at'>;
+
+// Define um tipo para o formulário de produtos
+export interface ProductFormData {
+  nome: string;
+  descricao: string | null;
+  preco: number;
+  estoque: number;
+  categoria: string | null;
+  ativo: boolean;
+}
+
+// Define o tipo para categorias de produtos (usando valores simples)
+export interface ProductCategory {
+  id: string;
+  name: string;
 }
 
 export interface CartItem {
