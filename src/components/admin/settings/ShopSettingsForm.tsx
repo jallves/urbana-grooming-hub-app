@@ -5,7 +5,6 @@ import * as z from 'zod';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
 import {
   Form,
@@ -17,15 +16,27 @@ import {
   FormDescription,
 } from '@/components/ui/form';
 import { Loader2, Building, Phone, Mail, Globe, Instagram, Facebook, Twitter } from 'lucide-react';
-import { ShopSettingsFormData } from '@/types/settings';
+import { Json } from '@/integrations/supabase/types';
+
+interface ShopSettingsFormData {
+  shop_name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  logo_url?: string | null;
+  website?: string | null;
+  social_instagram?: string | null;
+  social_facebook?: string | null;
+  social_twitter?: string | null;
+}
 
 const shopSettingsSchema = z.object({
   shop_name: z.string().min(3, { message: 'Nome da barbearia é obrigatório' }),
   address: z.string().nullable().optional(),
   phone: z.string().nullable().optional(),
-  email: z.string().email({ message: 'E-mail inválido' }).nullable().optional(),
+  email: z.string().email({ message: 'E-mail inválido' }).nullable().optional().or(z.literal('')),
   logo_url: z.string().nullable().optional(),
-  website: z.string().url({ message: 'URL do site inválida' }).nullable().optional(),
+  website: z.string().url({ message: 'URL do site inválida' }).nullable().optional().or(z.literal('')),
   social_instagram: z.string().nullable().optional(),
   social_facebook: z.string().nullable().optional(),
   social_twitter: z.string().nullable().optional(),
@@ -34,7 +45,6 @@ const shopSettingsSchema = z.object({
 const ShopSettingsForm: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [settingsId, setSettingsId] = useState<string | null>(null);
 
   const form = useForm<ShopSettingsFormData>({
     resolver: zodResolver(shopSettingsSchema),
@@ -56,25 +66,25 @@ const ShopSettingsForm: React.FC = () => {
       try {
         setIsLoading(true);
         const { data, error } = await supabase
-          .from('shop_settings')
-          .select('*')
-          .limit(1)
+          .from('settings')
+          .select('key, value')
+          .eq('key', 'shop_settings')
           .maybeSingle();
 
         if (error) throw error;
 
-        if (data) {
-          setSettingsId(data.id);
+        if (data?.value) {
+          const shopData = data.value as unknown as ShopSettingsFormData;
           form.reset({
-            shop_name: data.shop_name,
-            address: data.address || '',
-            phone: data.phone || '',
-            email: data.email || '',
-            logo_url: data.logo_url || '',
-            website: data.website || '',
-            social_instagram: data.social_instagram || '',
-            social_facebook: data.social_facebook || '',
-            social_twitter: data.social_twitter || '',
+            shop_name: shopData.shop_name || '',
+            address: shopData.address || '',
+            phone: shopData.phone || '',
+            email: shopData.email || '',
+            logo_url: shopData.logo_url || '',
+            website: shopData.website || '',
+            social_instagram: shopData.social_instagram || '',
+            social_facebook: shopData.social_facebook || '',
+            social_twitter: shopData.social_twitter || '',
           });
         }
       } catch (error) {
@@ -94,32 +104,14 @@ const ShopSettingsForm: React.FC = () => {
     try {
       setIsSaving(true);
 
-      const settingsData = {
-        shop_name: values.shop_name,
-        address: values.address || null,
-        phone: values.phone || null,
-        email: values.email || null,
-        logo_url: values.logo_url || null,
-        website: values.website || null,
-        social_instagram: values.social_instagram || null,
-        social_facebook: values.social_facebook || null,
-        social_twitter: values.social_twitter || null,
-      };
+      const { error } = await supabase
+        .from('settings')
+        .upsert({
+          key: 'shop_settings',
+          value: values as unknown as Json
+        }, { onConflict: 'key' });
 
-      if (settingsId) {
-        const { error } = await supabase
-          .from('shop_settings')
-          .update(settingsData)
-          .eq('id', settingsId);
-
-        if (error) throw error;
-      } else {
-        const { error } = await supabase
-          .from('shop_settings')
-          .insert([settingsData]);
-
-        if (error) throw error;
-      }
+      if (error) throw error;
 
       toast.success('Configurações salvas com sucesso!');
     } catch (error) {

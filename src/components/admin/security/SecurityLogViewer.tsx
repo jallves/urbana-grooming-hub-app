@@ -32,10 +32,10 @@ interface SecurityLog {
   id: string;
   admin_id: string | null;
   action: string;
-  entity: string;
+  entity_type: string | null;
   entity_id: string | null;
-  details: Record<string, any> | null;
-  ip_address: string | null;
+  new_data: Record<string, any> | null;
+  old_data: Record<string, any> | null;
   created_at: string;
   admin_name?: string;
   admin_email?: string;
@@ -106,7 +106,6 @@ export const SecurityLogViewer = () => {
   const fetchLogs = useCallback(async () => {
     setLoading(true);
     try {
-      // Buscar logs dos últimos 30 dias
       const thirtyDaysAgo = new Date();
       thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
       
@@ -119,7 +118,6 @@ export const SecurityLogViewer = () => {
 
       if (error) throw error;
 
-      // Buscar nomes dos admins (admin_id é o id da tabela admin_users)
       const adminIds = [...new Set((data || []).map(log => log.admin_id).filter(Boolean))];
       
       let adminInfo: Record<string, { name: string; email: string }> = {};
@@ -137,11 +135,17 @@ export const SecurityLogViewer = () => {
         }
       }
 
-      const logsWithEmail = (data || []).map(log => ({
-        ...log,
+      const logsWithEmail: SecurityLog[] = (data || []).map(log => ({
+        id: log.id,
+        admin_id: log.admin_id,
+        action: log.action,
+        entity_type: log.entity_type,
+        entity_id: log.entity_id,
+        new_data: log.new_data as Record<string, any> | null,
+        old_data: log.old_data as Record<string, any> | null,
+        created_at: log.created_at || '',
         admin_name: log.admin_id ? adminInfo[log.admin_id]?.name : 'Sistema',
         admin_email: log.admin_id ? adminInfo[log.admin_id]?.email : 'Sistema',
-        details: log.details as Record<string, any> | null,
       }));
 
       setLogs(logsWithEmail);
@@ -159,7 +163,14 @@ export const SecurityLogViewer = () => {
 
   const cleanupOldLogs = async () => {
     try {
-      const { error } = await supabase.rpc('cleanup_old_security_logs');
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const { error } = await supabase
+        .from('admin_activity_log')
+        .delete()
+        .lt('created_at', thirtyDaysAgo.toISOString());
+        
       if (error) throw error;
       
       toast({
@@ -178,11 +189,9 @@ export const SecurityLogViewer = () => {
     }
   };
 
-  // Configurar realtime para atualizações automáticas
   useEffect(() => {
     fetchLogs();
     
-    // Inscrever-se para atualizações em tempo real
     const channel = supabase
       .channel('security-logs-realtime')
       .on(
@@ -193,9 +202,6 @@ export const SecurityLogViewer = () => {
           table: 'admin_activity_log'
         },
         async (payload) => {
-          console.log('📝 Novo log de segurança recebido:', payload);
-          
-          // Buscar dados do admin (admin_id é o id da tabela admin_users)
           let adminName = 'Sistema';
           let adminEmail = 'Sistema';
           if (payload.new.admin_id) {
@@ -213,27 +219,24 @@ export const SecurityLogViewer = () => {
             id: payload.new.id,
             admin_id: payload.new.admin_id,
             action: payload.new.action,
-            entity: payload.new.entity,
+            entity_type: payload.new.entity_type,
             entity_id: payload.new.entity_id,
-            details: payload.new.details as Record<string, any> | null,
-            ip_address: payload.new.ip_address,
+            new_data: payload.new.new_data as Record<string, any> | null,
+            old_data: payload.new.old_data as Record<string, any> | null,
             created_at: payload.new.created_at,
             admin_name: adminName,
             admin_email: adminEmail
           };
           
-          // Adicionar novo log no topo da lista
           setLogs(prevLogs => [newLog, ...prevLogs.slice(0, 499)]);
           
-          // Notificação visual
           sonnerToast.info('🔔 Novo log registrado', {
-            description: `${actionLabels[newLog.action] || newLog.action} em ${entityLabels[newLog.entity] || newLog.entity}`,
+            description: `${actionLabels[newLog.action] || newLog.action} em ${entityLabels[newLog.entity_type || ''] || newLog.entity_type}`,
             duration: 3000,
           });
         }
       )
       .subscribe((status) => {
-        console.log('📡 Status realtime security logs:', status);
         setIsRealtimeConnected(status === 'SUBSCRIBED');
       });
 
@@ -245,16 +248,16 @@ export const SecurityLogViewer = () => {
   const filteredLogs = logs.filter(log => {
     const matchesSearch = 
       log.admin_email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      log.entity.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (log.entity_type || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.action.toLowerCase().includes(searchTerm.toLowerCase()) ||
       log.entity_id?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesEntity = filterEntity === 'all' || log.entity === filterEntity;
+    const matchesEntity = filterEntity === 'all' || log.entity_type === filterEntity;
     
     return matchesSearch && matchesEntity;
   });
 
-  const uniqueEntities = [...new Set(logs.map(log => log.entity))];
+  const uniqueEntities = [...new Set(logs.map(log => log.entity_type).filter(Boolean))];
 
   const getActionIcon = (action: string) => {
     const Icon = actionIcons[action] || Activity;
@@ -267,7 +270,6 @@ export const SecurityLogViewer = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <Card className="border-l-4 border-l-indigo-500">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between flex-wrap gap-4">
@@ -309,7 +311,6 @@ export const SecurityLogViewer = () => {
         </CardHeader>
       </Card>
 
-      {/* Filtros */}
       <Card>
         <CardContent className="pt-4">
           <div className="flex gap-4 flex-wrap">
@@ -331,8 +332,8 @@ export const SecurityLogViewer = () => {
             >
               <option value="all">Todas as entidades</option>
               {uniqueEntities.map(entity => (
-                <option key={entity} value={entity}>
-                  {entityLabels[entity] || entity}
+                <option key={entity} value={entity || ''}>
+                  {entityLabels[entity || ''] || entity}
                 </option>
               ))}
             </select>
@@ -340,7 +341,6 @@ export const SecurityLogViewer = () => {
         </CardContent>
       </Card>
 
-      {/* Estatísticas */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card className="bg-blue-600 border-blue-700">
           <CardContent className="pt-4">
@@ -409,7 +409,6 @@ export const SecurityLogViewer = () => {
         </Card>
       </div>
 
-      {/* Lista de Logs */}
       <Card>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg flex items-center gap-2">
@@ -449,7 +448,7 @@ export const SecurityLogViewer = () => {
                           {actionLabels[log.action] || log.action}
                         </Badge>
                         <Badge variant="outline">
-                          {entityLabels[log.entity] || log.entity}
+                          {entityLabels[log.entity_type || ''] || log.entity_type}
                         </Badge>
                         {log.entity_id && (
                           <span className="text-xs text-muted-foreground font-mono">
@@ -469,13 +468,13 @@ export const SecurityLogViewer = () => {
                         </span>
                       </div>
                       
-                      {log.details && Object.keys(log.details).length > 0 && (
+                      {log.new_data && Object.keys(log.new_data).length > 0 && (
                         <details className="mt-2">
                           <summary className="text-xs text-muted-foreground cursor-pointer hover:text-foreground">
                             Ver detalhes
                           </summary>
                           <pre className="mt-2 p-2 bg-muted rounded text-xs overflow-auto max-h-32">
-                            {JSON.stringify(log.details, null, 2)}
+                            {JSON.stringify(log.new_data, null, 2)}
                           </pre>
                         </details>
                       )}
@@ -488,21 +487,18 @@ export const SecurityLogViewer = () => {
         </CardContent>
       </Card>
 
-      {/* Informação sobre retenção */}
-      <Card className="bg-amber-500 border-amber-600">
+      <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-4">
-          <div className="flex items-start gap-3">
-            <AlertTriangle className="h-5 w-5 text-white mt-0.5" />
-            <div>
-              <p className="font-medium text-white">Política de Retenção</p>
-              <p className="text-sm text-amber-100">
-                Os logs de segurança são mantidos por 30 dias. Após esse período, são automaticamente 
-                removidos para otimizar o armazenamento do banco de dados.
-              </p>
-            </div>
+          <div className="flex items-center gap-2 text-blue-700">
+            <AlertTriangle className="h-5 w-5" />
+            <p className="text-sm font-medium">
+              Os logs são mantidos por 30 dias e depois removidos automaticamente.
+            </p>
           </div>
         </CardContent>
       </Card>
     </div>
   );
 };
+
+export default SecurityLogViewer;

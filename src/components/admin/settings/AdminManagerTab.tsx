@@ -42,13 +42,28 @@ const AdminManagerTab: React.FC = () => {
     try {
       setLoading(true);
       
-      // Usar função RPC segura
-      const { data, error } = await supabase
-        .rpc('get_admin_manager_details');
+      // Fetch employees directly from tables
+      const { data: employeesData, error } = await supabase
+        .from('employees')
+        .select('*')
+        .in('role', ['admin', 'manager'])
+        .order('name');
 
       if (error) throw error;
 
-      setEmployees(data || []);
+      const mappedEmployees: EmployeeDetail[] = (employeesData || []).map(emp => ({
+        employee_id: emp.id,
+        name: emp.name,
+        email: emp.email || '',
+        role: emp.role || 'user',
+        status: emp.status || 'active',
+        user_id: emp.user_id,
+        has_access: !!emp.user_id,
+        created_at: emp.created_at || '',
+        last_login: null
+      }));
+
+      setEmployees(mappedEmployees);
     } catch (error: any) {
       console.error('Erro ao buscar funcionários:', error);
       toast({
@@ -88,7 +103,6 @@ const AdminManagerTab: React.FC = () => {
         throw new Error('Funcionário não encontrado');
       }
 
-      // Usar edge function para criar o usuário de forma segura
       const { data, error } = await supabase.functions.invoke('manage-admin-user', {
         body: {
           action: 'create',
@@ -159,13 +173,11 @@ const AdminManagerTab: React.FC = () => {
     }
 
     try {
-      // Buscar o user_id do employee
       const employee = employees.find(e => e.employee_id === employeeId);
       if (!employee || !employee.user_id) {
         throw new Error('Usuário não encontrado');
       }
 
-      // Usar edge function para revogar acesso de forma segura
       const { data, error } = await supabase.functions.invoke('manage-admin-user', {
         body: {
           action: 'revoke',
@@ -244,7 +256,6 @@ const AdminManagerTab: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Card de Dar Acesso */}
       {availableEmployees.length > 0 && (
         <Card className="p-6">
           <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
@@ -312,7 +323,6 @@ const AdminManagerTab: React.FC = () => {
         </Card>
       )}
 
-      {/* Lista de Funcionários com Acesso */}
       <Card className="p-6">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
           <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -411,7 +421,6 @@ const AdminManagerTab: React.FC = () => {
         )}
       </Card>
 
-      {/* Card Informativo */}
       <Card className="p-6 bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
         <h4 className="font-semibold mb-3 flex items-center gap-2">
           <Users className="h-5 w-5 text-blue-600" />

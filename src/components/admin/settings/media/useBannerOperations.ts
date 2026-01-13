@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { BannerImage } from '@/types/settings';
@@ -16,7 +15,6 @@ export const useBannerOperations = (
   const [isLoading, setIsLoading] = useState(false);
   const [editingBanner, setEditingBanner] = useState<BannerImage | null>(null);
   
-  // Fetch banner images from Supabase
   useEffect(() => {
     const loadBannerImages = async () => {
       try {
@@ -25,40 +23,24 @@ export const useBannerOperations = (
         setBannerImages(formattedData);
       } catch (error) {
         console.error('Error fetching banner images:', error);
-        toast({
-          title: "Erro ao carregar banners",
-          description: "Não foi possível carregar os banners do banco de dados",
-          variant: "destructive",
-        });
       } finally {
         setIsLoading(false);
       }
     };
 
     loadBannerImages();
-  }, [setBannerImages, toast]);
+  }, [setBannerImages]);
 
   const handleAddBanner = async (newBanner: Omit<BannerImage, 'id'>, bannerUpload: { file: File, previewUrl: string } | null) => {
-    // Validate input
     if (!validateBanner(newBanner.title, newBanner.image_url)) return false;
     
     try {
       let imageUrl = newBanner.image_url;
       
-      // Upload file if provided
       if (bannerUpload) {
-        try {
-          console.log("Uploading banner image to Supabase Storage");
-          // Use 'banners' bucket for banner uploads
-          imageUrl = await uploadFile(bannerUpload.file, 'uploads', 'banners');
-          console.log("Banner image upload successful, URL:", imageUrl);
-        } catch (uploadError: any) {
-          console.error("Banner upload error:", uploadError);
-          throw new Error(uploadError.message || "Erro ao fazer upload da imagem");
-        }
+        imageUrl = await uploadFile(bannerUpload.file, 'uploads', 'banners');
       }
       
-      // Insert new banner into Supabase
       const data = await createBanner({
         image_url: imageUrl,
         title: newBanner.title,
@@ -67,17 +49,17 @@ export const useBannerOperations = (
         display_order: bannerImages.length
       });
       
-      if (data && data[0]) {
+      if (data && data.length > 0) {
         const newBannerWithId: BannerImage = {
-          id: data[0].id,
-          image_url: data[0].image_url,
-          title: data[0].title,
-          subtitle: data[0].subtitle,
-          description: data[0].description || '',
-          button_text: data[0].button_text || 'Agendar Agora',
-          button_link: data[0].button_link || '/cliente/login',
-          is_active: data[0].is_active,
-          display_order: data[0].display_order
+          id: String(Date.now()),
+          image_url: imageUrl,
+          title: newBanner.title,
+          subtitle: newBanner.subtitle,
+          description: newBanner.description,
+          button_text: 'Agendar Agora',
+          button_link: '/cliente/login',
+          is_active: true,
+          display_order: bannerImages.length
         };
         
         setBannerImages([...bannerImages, newBannerWithId]);
@@ -92,7 +74,7 @@ export const useBannerOperations = (
       console.error('Error adding banner:', error);
       toast({
         title: "Erro ao adicionar banner",
-        description: "Ocorreu um erro ao adicionar o banner: " + error.message,
+        description: "Ocorreu um erro ao adicionar o banner",
         variant: "destructive",
       });
       throw error;
@@ -110,11 +92,9 @@ export const useBannerOperations = (
     }
     
     try {
-      // Find the banner with the given id
       const bannerToDelete = bannerImages.find(img => img.id === id);
       if (!bannerToDelete) return;
       
-      // Delete from Supabase using the image_url
       await deleteBanner(bannerToDelete.image_url);
       
       setBannerImages(bannerImages.filter(img => img.id !== id));
@@ -124,11 +104,6 @@ export const useBannerOperations = (
       });
     } catch (error) {
       console.error('Error deleting banner:', error);
-      toast({
-        title: "Erro ao remover banner",
-        description: "Ocorreu um erro ao remover o banner",
-        variant: "destructive",
-      });
     }
   };
 
@@ -136,7 +111,6 @@ export const useBannerOperations = (
     if (!editingBanner) return;
     
     try {
-      // Update the banner in Supabase
       await updateBanner({
         image_url: editingBanner.image_url,
         title: editingBanner.title,
@@ -155,11 +129,6 @@ export const useBannerOperations = (
       });
     } catch (error) {
       console.error('Error updating banner:', error);
-      toast({
-        title: "Erro ao atualizar banner",
-        description: "Ocorreu um erro ao atualizar o banner",
-        variant: "destructive",
-      });
     }
   };
 
