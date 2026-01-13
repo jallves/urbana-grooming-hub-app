@@ -12,7 +12,7 @@ export const barberSchema = z.object({
   email: z.string().email('Email inválido').or(z.literal('')).optional(),
   phone: z.string().optional(),
   image_url: z.string().optional(),
-  specialties: z.string().optional(),
+  specialties: z.union([z.string(), z.array(z.string())]).optional(),
   experience: z.string().optional(),
   commission_rate: z.union([z.number(), z.null()]).optional(),
   is_active: z.boolean().default(true),
@@ -59,7 +59,15 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
         .single()
         .then(({ data, error }) => {
           if (data) {
-            form.reset(data);
+            // Convert array specialties to string for form compatibility
+            const formData = {
+              ...data,
+              specialties: Array.isArray(data.specialties) 
+                ? data.specialties.join(', ') 
+                : data.specialties || '',
+              image_url: data.image_url || data.photo_url || '',
+            };
+            form.reset(formData);
           }
         });
     }

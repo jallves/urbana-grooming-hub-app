@@ -16,14 +16,14 @@ import { ptBR } from 'date-fns/locale';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 
-interface BirthdayClient {
+export interface BirthdayClient {
   id: string;
   name: string;
-  email: string;
-  phone: string;
-  birth_date: string;
-  whatsapp: string;
-  age: number;
+  email?: string | null;
+  phone?: string | null;
+  birth_date?: string | null;
+  whatsapp?: string | null;
+  age?: number;
 }
 
 interface BirthdayListProps {
@@ -69,14 +69,19 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
       return;
     }
 
-    const excelData = clients.map(client => ({
-      'Nome': client.name,
-      'E-mail': client.email || '-',
-      'Telefone': client.phone,
-      'WhatsApp': client.whatsapp || client.phone,
-      'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-',
-      'Idade': `${client.age} anos`
-    }));
+    const excelData = clients.map(client => {
+      const age = client.birth_date 
+        ? Math.floor((new Date().getTime() - new Date(client.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+        : 0;
+      return {
+        'Nome': client.name,
+        'E-mail': client.email || '-',
+        'Telefone': client.phone || '-',
+        'WhatsApp': client.whatsapp || client.phone || '-',
+        'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy') : '-',
+        'Idade': `${age} anos`
+      };
+    });
 
     const worksheet = XLSX.utils.json_to_sheet(excelData);
     const workbook = XLSX.utils.book_new();
@@ -146,6 +151,9 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
       <div className="block lg:hidden p-3 space-y-3">
         {clients.map((client) => {
           const whatsappNumber = client.whatsapp || client.phone;
+          const age = client.birth_date 
+            ? Math.floor((new Date().getTime() - new Date(client.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+            : 0;
           
           return (
             <div key={client.id} className="bg-gray-700 border border-gray-600 rounded-lg p-3 space-y-3">
@@ -154,7 +162,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-white text-sm truncate">{client.name}</h3>
                   <Badge variant="outline" className="border-gray-600 text-white mt-1">
-                    {client.age} anos
+                    {age} anos
                   </Badge>
                 </div>
                 <Badge className="bg-green-900 text-green-300 border-green-700 flex-shrink-0">
@@ -224,6 +232,9 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
           <TableBody>
             {clients.map((client) => {
               const whatsappNumber = client.whatsapp || client.phone;
+              const age = client.birth_date 
+                ? Math.floor((new Date().getTime() - new Date(client.birth_date).getTime()) / (365.25 * 24 * 60 * 60 * 1000))
+                : 0;
 
               return (
                 <TableRow key={client.id} className="border-gray-700 hover:bg-gray-700">
@@ -260,7 +271,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
                   </TableCell>
                   <TableCell className="whitespace-nowrap">
                     <Badge variant="outline" className="border-gray-600 text-white">
-                      {client.age} anos
+                      {age} anos
                     </Badge>
                   </TableCell>
                   <TableCell className="text-right whitespace-nowrap">

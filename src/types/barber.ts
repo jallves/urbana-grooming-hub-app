@@ -7,16 +7,18 @@ export interface Staff {
   email: string;
   phone?: string;
   image_url?: string;
-  specialties: string; // Changed from string[] to string to match database
-  experience: string; // Changed from number to string to match database
+  photo_url?: string;
+  specialties: string[] | string | null; // Support both array and string from database
+  experience: string | null;
   commission_rate: number;
   is_active: boolean;
   role: string;
-  created_at: string;
-  updated_at: string;
+  staff_id?: string;
+  created_at?: string;
+  updated_at?: string;
   
   /** @deprecated */
-  uuid_id?: string; // Marcado como deprecated
+  uuid_id?: string;
 }
 
 // Export Barber as an alias for Staff to maintain backward compatibility

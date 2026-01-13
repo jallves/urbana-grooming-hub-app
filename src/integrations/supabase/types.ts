@@ -123,14 +123,49 @@ export type Database = {
           },
         ]
       }
+      appointment_totem_sessions: {
+        Row: {
+          appointment_id: string
+          created_at: string | null
+          id: string
+          status: string | null
+          totem_session_id: string | null
+        }
+        Insert: {
+          appointment_id: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          totem_session_id?: string | null
+        }
+        Update: {
+          appointment_id?: string
+          created_at?: string | null
+          id?: string
+          status?: string | null
+          totem_session_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_totem_sessions_totem_session_id_fkey"
+            columns: ["totem_session_id"]
+            isOneToOne: false
+            referencedRelation: "totem_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointments: {
         Row: {
           client_id: string | null
           created_at: string | null
+          discount_amount: number | null
           end_time: string
           id: string
           notes: string | null
+          service_fk: string | null
           service_id: string | null
+          services: Json | null
           staff_id: string | null
           start_time: string
           status: string | null
@@ -139,10 +174,13 @@ export type Database = {
         Insert: {
           client_id?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           end_time: string
           id?: string
           notes?: string | null
+          service_fk?: string | null
           service_id?: string | null
+          services?: Json | null
           staff_id?: string | null
           start_time: string
           status?: string | null
@@ -151,10 +189,13 @@ export type Database = {
         Update: {
           client_id?: string | null
           created_at?: string | null
+          discount_amount?: number | null
           end_time?: string
           id?: string
           notes?: string | null
+          service_fk?: string | null
           service_id?: string | null
+          services?: Json | null
           staff_id?: string | null
           start_time?: string
           status?: string | null
@@ -166,6 +207,13 @@ export type Database = {
             columns: ["client_id"]
             isOneToOne: false
             referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_fk_fkey"
+            columns: ["service_fk"]
+            isOneToOne: false
+            referencedRelation: "services"
             referencedColumns: ["id"]
           },
           {
@@ -219,30 +267,48 @@ export type Database = {
       }
       barber_commissions: {
         Row: {
+          amount: number | null
+          appointment_id: string | null
+          appointment_source: string | null
           barber_id: string
+          barber_name: string | null
+          commission_rate: number | null
           created_at: string | null
           data_pagamento: string | null
           id: string
+          payment_date: string | null
           status: string | null
           tipo: string | null
           valor: number
           venda_id: string | null
         }
         Insert: {
+          amount?: number | null
+          appointment_id?: string | null
+          appointment_source?: string | null
           barber_id: string
+          barber_name?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           data_pagamento?: string | null
           id?: string
+          payment_date?: string | null
           status?: string | null
           tipo?: string | null
           valor: number
           venda_id?: string | null
         }
         Update: {
+          amount?: number | null
+          appointment_id?: string | null
+          appointment_source?: string | null
           barber_id?: string
+          barber_name?: string | null
+          commission_rate?: number | null
           created_at?: string | null
           data_pagamento?: string | null
           id?: string
+          payment_date?: string | null
           status?: string | null
           tipo?: string | null
           valor?: number
@@ -272,6 +338,8 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          notes: string | null
+          payment_method: string | null
           reference_id: string | null
           status: string | null
           transaction_date: string | null
@@ -283,6 +351,8 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          notes?: string | null
+          payment_method?: string | null
           reference_id?: string | null
           status?: string | null
           transaction_date?: string | null
@@ -294,12 +364,153 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          notes?: string | null
+          payment_method?: string | null
           reference_id?: string | null
           status?: string | null
           transaction_date?: string | null
           transaction_type?: string
         }
         Relationships: []
+      }
+      cash_flow_categories: {
+        Row: {
+          color: string | null
+          created_at: string | null
+          id: string
+          name: string
+          parent_id: string | null
+          type: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          parent_id?: string | null
+          type: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          parent_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cash_flow_categories_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "cash_flow_categories"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cash_register_sessions: {
+        Row: {
+          closed_at: string | null
+          closed_by: string | null
+          closing_balance: number | null
+          created_at: string | null
+          date: string
+          difference: number | null
+          expected_balance: number | null
+          id: string
+          notes: string | null
+          opened_at: string
+          opened_by: string | null
+          opening_balance: number
+          status: string
+          total_commissions: number | null
+          total_expenses: number | null
+          total_sales: number | null
+        }
+        Insert: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance?: number | null
+          created_at?: string | null
+          date?: string
+          difference?: number | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_balance?: number
+          status?: string
+          total_commissions?: number | null
+          total_expenses?: number | null
+          total_sales?: number | null
+        }
+        Update: {
+          closed_at?: string | null
+          closed_by?: string | null
+          closing_balance?: number | null
+          created_at?: string | null
+          date?: string
+          difference?: number | null
+          expected_balance?: number | null
+          id?: string
+          notes?: string | null
+          opened_at?: string
+          opened_by?: string | null
+          opening_balance?: number
+          status?: string
+          total_commissions?: number | null
+          total_expenses?: number | null
+          total_sales?: number | null
+        }
+        Relationships: []
+      }
+      client_profiles: {
+        Row: {
+          client_id: string | null
+          created_at: string | null
+          id: string
+          last_visit: string | null
+          loyalty_points: number | null
+          notes: string | null
+          preferences: Json | null
+          total_spent: number | null
+          updated_at: string | null
+          visit_count: number | null
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_visit?: string | null
+          loyalty_points?: number | null
+          notes?: string | null
+          preferences?: Json | null
+          total_spent?: number | null
+          updated_at?: string | null
+          visit_count?: number | null
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string | null
+          id?: string
+          last_visit?: string | null
+          loyalty_points?: number | null
+          notes?: string | null
+          preferences?: Json | null
+          total_spent?: number | null
+          updated_at?: string | null
+          visit_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_profiles_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       clients: {
         Row: {
@@ -476,6 +687,7 @@ export type Database = {
       }
       discount_coupons: {
         Row: {
+          campaign_id: string | null
           code: string
           created_at: string | null
           current_uses: number | null
@@ -491,6 +703,7 @@ export type Database = {
           valid_until: string | null
         }
         Insert: {
+          campaign_id?: string | null
           code: string
           created_at?: string | null
           current_uses?: number | null
@@ -506,6 +719,7 @@ export type Database = {
           valid_until?: string | null
         }
         Update: {
+          campaign_id?: string | null
           code?: string
           created_at?: string | null
           current_uses?: number | null
@@ -520,7 +734,15 @@ export type Database = {
           valid_from?: string | null
           valid_until?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "discount_coupons_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "marketing_campaigns"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       employees: {
         Row: {
@@ -534,6 +756,7 @@ export type Database = {
           phone: string | null
           photo_url: string | null
           role: string | null
+          status: string | null
           updated_at: string | null
           user_id: string | null
         }
@@ -548,6 +771,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           role?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -562,6 +786,7 @@ export type Database = {
           phone?: string | null
           photo_url?: string | null
           role?: string | null
+          status?: string | null
           updated_at?: string | null
           user_id?: string | null
         }
@@ -578,12 +803,16 @@ export type Database = {
           description: string | null
           due_date: string | null
           id: string
+          net_amount: number | null
+          notes: string | null
           payment_date: string | null
           reference_id: string | null
           reference_type: string | null
           service_id: string | null
           service_name: string | null
           status: string | null
+          subcategory: string | null
+          transaction_date: string | null
           transaction_type: string
           updated_at: string | null
         }
@@ -597,12 +826,16 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          net_amount?: number | null
+          notes?: string | null
           payment_date?: string | null
           reference_id?: string | null
           reference_type?: string | null
           service_id?: string | null
           service_name?: string | null
           status?: string | null
+          subcategory?: string | null
+          transaction_date?: string | null
           transaction_type: string
           updated_at?: string | null
         }
@@ -616,12 +849,16 @@ export type Database = {
           description?: string | null
           due_date?: string | null
           id?: string
+          net_amount?: number | null
+          notes?: string | null
           payment_date?: string | null
           reference_id?: string | null
           reference_type?: string | null
           service_id?: string | null
           service_name?: string | null
           status?: string | null
+          subcategory?: string | null
+          transaction_date?: string | null
           transaction_type?: string
           updated_at?: string | null
         }
@@ -645,6 +882,75 @@ export type Database = {
             columns: ["service_id"]
             isOneToOne: false
             referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      financial_transactions: {
+        Row: {
+          amount: number
+          barber_id: string | null
+          category: string | null
+          client_id: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          notes: string | null
+          payment_method: string | null
+          reference_id: string | null
+          status: string | null
+          subcategory: string | null
+          transaction_date: string
+          transaction_type: string
+          updated_at: string | null
+        }
+        Insert: {
+          amount: number
+          barber_id?: string | null
+          category?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          reference_id?: string | null
+          status?: string | null
+          subcategory?: string | null
+          transaction_date?: string
+          transaction_type: string
+          updated_at?: string | null
+        }
+        Update: {
+          amount?: number
+          barber_id?: string | null
+          category?: string | null
+          client_id?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          notes?: string | null
+          payment_method?: string | null
+          reference_id?: string | null
+          status?: string | null
+          subcategory?: string | null
+          transaction_date?: string
+          transaction_type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_transactions_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "financial_transactions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
             referencedColumns: ["id"]
           },
         ]
@@ -678,36 +984,45 @@ export type Database = {
       }
       marketing_campaigns: {
         Row: {
+          budget: number | null
           created_at: string | null
           description: string | null
+          end_date: string | null
           id: string
           name: string
           scheduled_at: string | null
           sent_at: string | null
+          start_date: string | null
           status: string | null
           target_audience: string | null
           type: string | null
           updated_at: string | null
         }
         Insert: {
+          budget?: number | null
           created_at?: string | null
           description?: string | null
+          end_date?: string | null
           id?: string
           name: string
           scheduled_at?: string | null
           sent_at?: string | null
+          start_date?: string | null
           status?: string | null
           target_audience?: string | null
           type?: string | null
           updated_at?: string | null
         }
         Update: {
+          budget?: number | null
           created_at?: string | null
           description?: string | null
+          end_date?: string | null
           id?: string
           name?: string
           scheduled_at?: string | null
           sent_at?: string | null
+          start_date?: string | null
           status?: string | null
           target_audience?: string | null
           type?: string | null
@@ -762,7 +1077,9 @@ export type Database = {
           painel_servicos: Json | null
           servico_id: string | null
           status: string | null
+          status_totem: string | null
           updated_at: string | null
+          venda_id: string | null
         }
         Insert: {
           barbeiro_id?: string | null
@@ -777,7 +1094,9 @@ export type Database = {
           painel_servicos?: Json | null
           servico_id?: string | null
           status?: string | null
+          status_totem?: string | null
           updated_at?: string | null
+          venda_id?: string | null
         }
         Update: {
           barbeiro_id?: string | null
@@ -792,7 +1111,9 @@ export type Database = {
           painel_servicos?: Json | null
           servico_id?: string | null
           status?: string | null
+          status_totem?: string | null
           updated_at?: string | null
+          venda_id?: string | null
         }
         Relationships: [
           {
@@ -814,6 +1135,13 @@ export type Database = {
             columns: ["servico_id"]
             isOneToOne: false
             referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]
@@ -1070,6 +1398,45 @@ export type Database = {
           },
         ]
       }
+      services: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          display_order: number | null
+          duration: number
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration?: number
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          display_order?: number | null
+          duration?: number
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       settings: {
         Row: {
           created_at: string | null
@@ -1101,6 +1468,7 @@ export type Database = {
           email: string | null
           experience: string | null
           id: string
+          image_url: string | null
           is_active: boolean | null
           name: string
           phone: string | null
@@ -1116,6 +1484,7 @@ export type Database = {
           email?: string | null
           experience?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name: string
           phone?: string | null
@@ -1131,6 +1500,7 @@ export type Database = {
           email?: string | null
           experience?: string | null
           id?: string
+          image_url?: string | null
           is_active?: boolean | null
           name?: string
           phone?: string | null
@@ -1455,6 +1825,16 @@ export type Database = {
       apply_coupon_to_appointment: {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
+      }
+      array_to_comma_string: { Args: { arr: string[] }; Returns: string }
+      check_barber_slot_availability: {
+        Args: {
+          p_barber_id: string
+          p_date: string
+          p_duration?: number
+          p_time: string
+        }
+        Returns: boolean
       }
       create_public_appointment: {
         Args: {
