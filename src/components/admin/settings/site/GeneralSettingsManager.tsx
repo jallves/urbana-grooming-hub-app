@@ -7,45 +7,52 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Phone, Mail, MapPin, Globe, Instagram, Facebook, Twitter } from 'lucide-react';
+import { Save, Phone, Mail, MapPin, Globe, Instagram, Facebook, Twitter, AlertCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 interface ShopSettings {
-  id: string;
   shop_name: string;
-  address: string | null;
-  phone: string | null;
-  email: string | null;
-  logo_url: string | null;
-  website: string | null;
-  social_instagram: string | null;
-  social_facebook: string | null;
-  social_twitter: string | null;
-  hero_title: string | null;
-  hero_subtitle: string | null;
-  about_title: string | null;
-  about_description: string | null;
-  footer_text: string | null;
+  address: string;
+  phone: string;
+  email: string;
+  logo_url: string;
+  website: string;
+  social_instagram: string;
+  social_facebook: string;
+  social_twitter: string;
+  hero_title: string;
+  hero_subtitle: string;
+  about_title: string;
+  about_description: string;
+  footer_text: string;
 }
 
 const GeneralSettingsManager: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
+  // Use the generic settings table with a key-value approach
   const { data: settings, isLoading } = useQuery({
-    queryKey: ['shop-settings'],
+    queryKey: ['general-settings'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('shop_settings')
-        .select('*')
-        .limit(1)
-        .single();
+        .from('settings')
+        .select('key, value')
+        .in('key', [
+          'shop_name', 'address', 'phone', 'email', 'logo_url', 'website',
+          'social_instagram', 'social_facebook', 'social_twitter',
+          'hero_title', 'hero_subtitle', 'about_title', 'about_description', 'footer_text'
+        ]);
       
-      if (error) {
-        console.error('Error fetching settings:', error);
-        throw error;
-      }
+      if (error) throw error;
       
-      return data as unknown as ShopSettings;
+      // Convert array of key-value to object
+      const settingsObj: Partial<ShopSettings> = {};
+      (data || []).forEach((item: any) => {
+        settingsObj[item.key as keyof ShopSettings] = typeof item.value === 'string' ? item.value : String(item.value || '');
+      });
+      
+      return settingsObj as ShopSettings;
     }
   });
 
@@ -59,15 +66,21 @@ const GeneralSettingsManager: React.FC = () => {
 
   const updateSettingsMutation = useMutation({
     mutationFn: async (data: Partial<ShopSettings>) => {
-      const { error } = await supabase
-        .from('shop_settings')
-        .update(data)
-        .eq('id', settings?.id || '');
-      
-      if (error) throw error;
+      // Update each setting individually using upsert
+      for (const [key, value] of Object.entries(data)) {
+        const { error } = await supabase
+          .from('settings')
+          .upsert({ 
+            key, 
+            value: value as any,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'key' });
+        
+        if (error) throw error;
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['shop-settings'] });
+      queryClient.invalidateQueries({ queryKey: ['general-settings'] });
       toast({
         title: "Configurações salvas",
         description: "As configurações foram atualizadas com sucesso",
@@ -94,7 +107,7 @@ const GeneralSettingsManager: React.FC = () => {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="animate-spin h-8 w-8 border-4 border-urbana-gold border-t-transparent rounded-full" />
+        <div className="animate-spin h-8 w-8 border-4 border-yellow-500 border-t-transparent rounded-full" />
       </div>
     );
   }
@@ -103,12 +116,12 @@ const GeneralSettingsManager: React.FC = () => {
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informações Básicas */}
       <Card className="p-4 sm:p-6 bg-white border-gray-200">
-        <h3 className="text-lg sm:text-xl font-playfair font-bold text-gray-900 mb-3 sm:mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
           📍 Informações Básicas
         </h3>
         <div className="grid gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="shop_name" className="flex items-center gap-2 font-raleway text-sm">
+            <Label htmlFor="shop_name" className="flex items-center gap-2 text-sm">
               <Globe className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Nome da Barbearia
             </Label>
@@ -122,7 +135,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="address" className="flex items-center gap-2 font-raleway text-sm">
+            <Label htmlFor="address" className="flex items-center gap-2 text-sm">
               <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Endereço
             </Label>
@@ -137,7 +150,7 @@ const GeneralSettingsManager: React.FC = () => {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
             <div>
-              <Label htmlFor="phone" className="flex items-center gap-2 font-raleway text-sm">
+              <Label htmlFor="phone" className="flex items-center gap-2 text-sm">
                 <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Telefone
               </Label>
@@ -151,7 +164,7 @@ const GeneralSettingsManager: React.FC = () => {
             </div>
 
             <div>
-              <Label htmlFor="email" className="flex items-center gap-2 font-raleway text-sm">
+              <Label htmlFor="email" className="flex items-center gap-2 text-sm">
                 <Mail className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 Email
               </Label>
@@ -170,12 +183,12 @@ const GeneralSettingsManager: React.FC = () => {
 
       {/* Redes Sociais */}
       <Card className="p-4 sm:p-6 bg-white border-gray-200">
-        <h3 className="text-lg sm:text-xl font-playfair font-bold text-gray-900 mb-3 sm:mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
           📱 Redes Sociais
         </h3>
         <div className="grid gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="social_instagram" className="flex items-center gap-2 font-raleway text-sm">
+            <Label htmlFor="social_instagram" className="flex items-center gap-2 text-sm">
               <Instagram className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Instagram
             </Label>
@@ -189,7 +202,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="social_facebook" className="flex items-center gap-2 font-raleway text-sm">
+            <Label htmlFor="social_facebook" className="flex items-center gap-2 text-sm">
               <Facebook className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Facebook
             </Label>
@@ -203,7 +216,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="social_twitter" className="flex items-center gap-2 font-raleway text-sm">
+            <Label htmlFor="social_twitter" className="flex items-center gap-2 text-sm">
               <Twitter className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Twitter/X
             </Label>
@@ -220,12 +233,12 @@ const GeneralSettingsManager: React.FC = () => {
 
       {/* Textos do Site */}
       <Card className="p-4 sm:p-6 bg-white border-gray-200">
-        <h3 className="text-lg sm:text-xl font-playfair font-bold text-gray-900 mb-3 sm:mb-4">
+        <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-3 sm:mb-4">
           ✍️ Textos do Site
         </h3>
         <div className="grid gap-3 sm:gap-4">
           <div>
-            <Label htmlFor="hero_title" className="font-raleway text-sm">
+            <Label htmlFor="hero_title" className="text-sm">
               Título Principal (Hero)
             </Label>
             <Input
@@ -238,7 +251,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="hero_subtitle" className="font-raleway text-sm">
+            <Label htmlFor="hero_subtitle" className="text-sm">
               Subtítulo (Hero)
             </Label>
             <Input
@@ -251,7 +264,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="about_title" className="font-raleway text-sm">
+            <Label htmlFor="about_title" className="text-sm">
               Título Sobre Nós
             </Label>
             <Input
@@ -264,7 +277,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="about_description" className="font-raleway text-sm">
+            <Label htmlFor="about_description" className="text-sm">
               Descrição Sobre Nós
             </Label>
             <Textarea
@@ -277,7 +290,7 @@ const GeneralSettingsManager: React.FC = () => {
           </div>
 
           <div>
-            <Label htmlFor="footer_text" className="font-raleway text-sm">
+            <Label htmlFor="footer_text" className="text-sm">
               Texto do Rodapé
             </Label>
             <Input
@@ -295,7 +308,7 @@ const GeneralSettingsManager: React.FC = () => {
         <Button 
           type="submit" 
           disabled={updateSettingsMutation.isPending}
-          className="w-full sm:w-auto bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-raleway font-semibold"
+          className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-black font-semibold"
         >
           <Save className="h-4 w-4 mr-2" />
           {updateSettingsMutation.isPending ? 'Salvando...' : 'Salvar Configurações'}

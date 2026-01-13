@@ -23,7 +23,7 @@ interface BlockedSlot {
   start_time: string;
   end_time: string;
   is_available: boolean;
-  reason: string | null;
+  reason?: string | null;
 }
 
 interface WorkingHours {
@@ -115,7 +115,8 @@ const SlotBlockManager: React.FC = () => {
         .eq('date', selectedDate);
 
       if (blocksError) throw blocksError;
-      setBlockedSlots(blocksData || []);
+      // Map data to include optional reason field
+      setBlockedSlots((blocksData || []).map(b => ({ ...b, reason: null })));
 
       // Buscar o barbeiro_id do painel_barbeiros
       const { data: barbeiroData } = await supabase

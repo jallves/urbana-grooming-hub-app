@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { UserX, UserCheck, AlertCircle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -13,7 +12,7 @@ const BookingAvailabilityToggle: React.FC = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Carregar estado atual
+  // Use the is_active field instead of available_for_booking which doesn't exist
   useEffect(() => {
     const loadAvailability = async () => {
       if (!barberData?.id) {
@@ -26,7 +25,7 @@ const BookingAvailabilityToggle: React.FC = () => {
       try {
         const { data, error } = await supabase
           .from('painel_barbeiros')
-          .select('available_for_booking')
+          .select('is_active')
           .eq('id', barberData.id)
           .single();
 
@@ -35,26 +34,19 @@ const BookingAvailabilityToggle: React.FC = () => {
           throw error;
         }
 
-        console.log('✅ Disponibilidade carregada:', data?.available_for_booking);
+        console.log('✅ Disponibilidade carregada:', data?.is_active);
         
-        // CRÍTICO: Se o campo não existir, usar true como padrão APENAS na primeira vez
-        // Mas sempre usar o valor do banco se existir
-        const availabilityValue = data?.available_for_booking !== undefined 
-          ? data.available_for_booking 
-          : true;
-        
+        const availabilityValue = data?.is_active ?? true;
         setIsAvailable(availabilityValue);
       } catch (error) {
         console.error('❌ Erro ao carregar disponibilidade:', error);
         toast.error('Erro ao carregar configuração de disponibilidade');
-        // Em caso de erro, manter o estado atual (não mudar para true)
         setIsAvailable(prev => prev !== null ? prev : true);
       } finally {
         setIsLoading(false);
       }
     };
 
-    // Resetar loading quando barberData mudar
     if (barberData?.id) {
       setIsLoading(true);
       loadAvailability();
@@ -71,9 +63,9 @@ const BookingAvailabilityToggle: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('painel_barbeiros')
-        .update({ available_for_booking: newValue })
+        .update({ is_active: newValue })
         .eq('id', barberData.id)
-        .select('available_for_booking')
+        .select('is_active')
         .single();
 
       if (error) {
@@ -81,10 +73,9 @@ const BookingAvailabilityToggle: React.FC = () => {
         throw error;
       }
 
-      console.log('✅ Disponibilidade atualizada no banco:', data?.available_for_booking);
+      console.log('✅ Disponibilidade atualizada no banco:', data?.is_active);
       
-      // Usar o valor retornado do banco para garantir sincronização
-      setIsAvailable(data?.available_for_booking ?? newValue);
+      setIsAvailable(data?.is_active ?? newValue);
       
       toast.success(
         newValue 
@@ -103,7 +94,6 @@ const BookingAvailabilityToggle: React.FC = () => {
         description: error.message || 'Não foi possível salvar a alteração. Tente novamente.',
         duration: 5000
       });
-      // Não mudar o estado local em caso de erro
     } finally {
       setIsSaving(false);
     }
@@ -111,18 +101,18 @@ const BookingAvailabilityToggle: React.FC = () => {
 
   if (isLoadingBarber || isLoading || isAvailable === null) {
     return (
-      <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl p-6">
+      <div className="backdrop-blur-xl bg-gray-900/40 border border-yellow-500/20 rounded-xl p-6">
         <div className="animate-pulse space-y-3">
-          <div className="h-6 bg-urbana-black/60 rounded w-3/4"></div>
-          <div className="h-4 bg-urbana-black/60 rounded w-full"></div>
-          <div className="h-10 bg-urbana-black/60 rounded w-1/3"></div>
+          <div className="h-6 bg-gray-800 rounded w-3/4"></div>
+          <div className="h-4 bg-gray-800 rounded w-full"></div>
+          <div className="h-10 bg-gray-800 rounded w-1/3"></div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="backdrop-blur-xl bg-urbana-black/40 border border-urbana-gold/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl">
+    <div className="backdrop-blur-xl bg-gray-900/40 border border-yellow-500/20 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-6 shadow-2xl">
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-3 sm:gap-4">
         <div className="flex-1 w-full">
           <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-3">
@@ -131,12 +121,12 @@ const BookingAvailabilityToggle: React.FC = () => {
             ) : (
               <UserX className="h-5 w-5 sm:h-6 sm:w-6 text-orange-400 flex-shrink-0" />
             )}
-            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-urbana-light">
+            <h3 className="text-sm sm:text-base md:text-lg font-semibold text-gray-100">
               Disponível para Novos Agendamentos
             </h3>
           </div>
           
-          <p className="text-xs sm:text-sm text-urbana-light/70 mb-3 sm:mb-4 leading-relaxed">
+          <p className="text-xs sm:text-sm text-gray-400 mb-3 sm:mb-4 leading-relaxed">
             Controle se você aparece como disponível quando clientes fazem novos agendamentos.
             Não afeta agendamentos já existentes, totem, vendas ou comissões.
           </p>
@@ -161,7 +151,7 @@ const BookingAvailabilityToggle: React.FC = () => {
         </div>
 
         <div className="flex flex-row md:flex-col items-center justify-between md:justify-center gap-3 md:gap-2 w-full md:w-auto">
-          <span className="text-xs font-medium text-urbana-light/60 md:order-2">
+          <span className="text-xs font-medium text-gray-400 md:order-2">
             {isAvailable ? 'ATIVO' : 'INATIVO'}
           </span>
           <Switch
@@ -174,9 +164,9 @@ const BookingAvailabilityToggle: React.FC = () => {
       </div>
 
       {!isAvailable && (
-        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-urbana-gold/20">
-          <h4 className="text-xs sm:text-sm font-medium text-urbana-light mb-2">O que continua funcionando:</h4>
-          <ul className="text-[11px] sm:text-xs md:text-sm text-urbana-light/70 space-y-0.5 sm:space-y-1 leading-relaxed">
+        <div className="mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-yellow-500/20">
+          <h4 className="text-xs sm:text-sm font-medium text-gray-100 mb-2">O que continua funcionando:</h4>
+          <ul className="text-[11px] sm:text-xs md:text-sm text-gray-400 space-y-0.5 sm:space-y-1 leading-relaxed">
             <li>✅ Agendamentos já existentes</li>
             <li>✅ Check-in no totem</li>
             <li>✅ Finalização de atendimentos</li>

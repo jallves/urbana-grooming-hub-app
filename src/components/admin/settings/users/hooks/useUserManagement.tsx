@@ -1,9 +1,7 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { UserWithRole, AppRole } from '../types';
-import { sanitizeInput } from '@/lib/security';
+import { UserWithRole } from '../types';
 
 export const useUserManagement = () => {
   const [users, setUsers] = useState<UserWithRole[]>([]);
@@ -17,29 +15,29 @@ export const useUserManagement = () => {
       setLoading(true);
       setError(null);
       
-      console.log("Fetching users via RPC get_admin_manager_details...");
-      const { data: employeeData, error: rpcError } = await supabase
-        .rpc('get_admin_manager_details');
+      // Fetch users from staff table (simpler approach without RPC)
+      const { data: staffData, error: staffError } = await supabase
+        .from('staff')
+        .select('id, name, email, role, is_active, created_at, updated_at')
+        .eq('is_active', true)
+        .order('name');
 
-      if (rpcError) {
-        console.error("Error fetching via RPC:", rpcError);
-        setError(rpcError.message || 'Erro ao buscar usuários');
-        throw rpcError;
+      if (staffError) {
+        console.error("Error fetching staff:", staffError);
+        setError(staffError.message || 'Erro ao buscar usuários');
+        throw staffError;
       }
       
-      console.log("Fetched employee data:", employeeData);
-      
-      // Mapear dados de employees para UserWithRole
-      const usersWithRoles = (employeeData || []).map((emp: any) => ({
-        id: emp.user_id || emp.employee_id,
-        email: emp.email,
-        name: emp.name || 'Sem nome',
-        created_at: emp.created_at,
-        last_sign_in_at: emp.last_login,
-        role: emp.role || 'user'
+      // Map staff data to UserWithRole format
+      const usersWithRoles: UserWithRole[] = (staffData || []).map((staff) => ({
+        id: staff.id,
+        email: staff.email || '',
+        name: staff.name || 'Sem nome',
+        created_at: staff.created_at || '',
+        last_sign_in_at: staff.updated_at || null,
+        role: (staff.role as 'master' | 'admin' | 'manager' | 'barber' | 'user') || 'user'
       }));
 
-      console.log("Processed users with roles:", usersWithRoles);
       setUsers(usersWithRoles);
     } catch (error) {
       console.error('Erro ao buscar usuários:', error);
@@ -57,39 +55,26 @@ export const useUserManagement = () => {
   }, [fetchUsers]);
 
   const handleDeleteUser = useCallback(async (userId: string) => {
-    if (window.confirm('Tem certeza que deseja remover este usuário?')) {
+    if (window.confirm('Tem certeza que deseja desativar este usuário?')) {
       try {
         setError(null);
         
-        // Buscar employee_id pelo user_id
-        const { data: employeeData } = await supabase
-          .rpc('get_admin_manager_details');
-        
-        const employee = (employeeData || []).find((emp: any) => emp.user_id === userId);
-        
-        if (!employee) {
-          throw new Error('Usuário não encontrado');
-        }
-        
-        // Usar RPC para revogar acesso
-        const { data: rpcData, error: rpcError } = await supabase
-          .rpc('revoke_admin_manager_access', { p_employee_id: employee.employee_id });
+        // Deactivate staff member instead of deleting
+        const { error: updateError } = await supabase
+          .from('staff')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('id', userId);
 
-        if (rpcError) {
-          setError(rpcError.message || 'Erro ao remover usuário');
-          throw rpcError;
+        if (updateError) {
+          setError(updateError.message || 'Erro ao desativar usuário');
+          throw updateError;
         }
 
-        const result = rpcData as { success: boolean; error?: string };
-        if (!result.success) {
-          throw new Error(result.error || 'Erro ao remover usuário');
-        }
-
-        toast.success('Usuário removido com sucesso');
+        toast.success('Usuário desativado com sucesso');
         fetchUsers();
       } catch (error) {
         setError((error as Error).message);
-        toast.error('Erro ao remover usuário', { 
+        toast.error('Erro ao desativar usuário', { 
           description: (error as Error).message 
         });
       }
@@ -101,89 +86,12 @@ export const useUserManagement = () => {
       setSyncLoading(true);
       setError(null);
       
-      const { data: staffMembers, error: staffError } = await supabase
-        .from('staff')
-        .select('*')
-        .eq('is_active', true);
-        
-      if (staffError) {
-        setError(staffError.message || 'Erro ao buscar profissionais');
-        throw staffError;
-      }
-      
-      if (!staffMembers || staffMembers.length === 0) {
-        toast.info('Não há profissionais ativos para sincronizar');
-        setSyncLoading(false);
-        return;
-      }
-      
-      console.log('Fetched active staff members:', staffMembers);
-
-      const { data: existingUsers, error: usersError } = await supabase
-        .rpc('get_admin_manager_details');
-        
-      if (usersError) {
-        setError(usersError.message || 'Erro ao buscar usuários existentes');
-        throw usersError;
-      }
-      
-      const existingEmails = new Set((existingUsers || []).map((user: any) => 
-        user.email?.toLowerCase()).filter(Boolean));
-      
-      console.log('Existing emails:', Array.from(existingEmails));
-      
-      const newStaff = staffMembers.filter(staff => 
-        staff.email && !existingEmails.has(staff.email.toLowerCase())
-      );
-      
-      console.log('New staff to add:', newStaff);
-      
-      if (newStaff.length === 0) {
-        toast.info('Todos os profissionais já foram sincronizados como usuários');
-        setSyncLoading(false);
-        return;
-      }
-
-      let addedCount = 0;
-      let errors = 0;
-      
-      for (const staff of newStaff) {
-        const staffEmail = sanitizeInput(staff.email || `${staff.name.replace(/\s+/g, '').toLowerCase()}@exemplo.com`);
-        const staffName = sanitizeInput(staff.name);
-        console.log(`Adding staff: ${staffName} with email: ${staffEmail}`);
-        
-        try {
-          const { data, error: rpcError } = await supabase.rpc(
-            'add_barber_user' as any, 
-            {
-              p_email: staffEmail,
-              p_name: staffName,
-              p_role: 'barber'
-            }
-          );
-
-          if (rpcError) {
-            errors++;
-            setError(rpcError.message || 'Erro ao adicionar barbeiro');
-          } else {
-            addedCount++;
-          }
-        } catch (e) {
-          errors++;
-          setError((e as Error).message);
-        }
-      }
-      
-      if (addedCount > 0) {
-        toast.success(`${addedCount} profissionais foram adicionados como usuários`);
-        fetchUsers();
-        setError(null);
-      } else if (errors > 0) {
-        toast.error(`Não foi possível adicionar os profissionais. Verifique os logs para mais detalhes.`);
-      }
+      // Just refresh the list
+      await fetchUsers();
+      toast.success('Lista de usuários atualizada');
     } catch (error) {
       setError((error as Error).message);
-      toast.error('Erro ao sincronizar profissionais', { 
+      toast.error('Erro ao sincronizar', { 
         description: (error as Error).message 
       });
     } finally {
