@@ -48,13 +48,13 @@ const ForceSignOutUser: React.FC = () => {
       const { data: userRoles, error: usersError } = await supabase
         .from('user_roles')
         .select('user_id, role')
-        .limit(1000);
+        .limit(100);
       
       if (usersError) {
         throw usersError;
       }
 
-      // Buscar dados de email do auth para cada user_id usando Edge Function
+      // Buscar dados de email usando Edge Function
       let targetUser = null;
       let targetUserRole = null;
 
@@ -116,21 +116,22 @@ const ForceSignOutUser: React.FC = () => {
     try {
       console.log('🚪 Forçando logout do usuário:', userData.email);
 
-      // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc('force_user_logout', {
-        p_user_id: userData.id,
-        p_reason: reason || 'Não especificada'
+      // Usar edge function em vez de RPC que não existe
+      const { data, error } = await supabase.functions.invoke('admin-auth-operations', {
+        body: {
+          operation: 'force_logout',
+          user_id: userData.id,
+          reason: reason || 'Não especificada'
+        }
       });
 
       if (error) throw error;
 
-      const result = data as { success: boolean; user_email: string; sessions_invalidated: number };
-
-      console.log('✅ Logout forçado:', result);
+      console.log('✅ Logout forçado:', data);
 
       toast({
         title: "✅ Sessão encerrada com sucesso",
-        description: `${result.sessions_invalidated} sessão(ões) de ${result.user_email} foi(ram) invalidada(s). O usuário será deslogado automaticamente.`,
+        description: `As sessões de ${userData.email} foram invalidadas. O usuário será deslogado automaticamente.`,
         duration: 5000,
       });
 
@@ -255,7 +256,6 @@ const ForceSignOutUser: React.FC = () => {
                   </p>
                   <p className="text-sm text-yellow-800">
                     Ao derrubar as sessões, o usuário será imediatamente desconectado de todos os dispositivos e precisará fazer login novamente.
-                    Esta ação será registrada no log de auditoria.
                   </p>
                 </div>
               </div>

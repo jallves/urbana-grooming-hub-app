@@ -38,20 +38,13 @@ const TotemProducts: React.FC = () => {
       const { data, error } = await supabase
         .from('painel_produtos')
         .select('*')
-        .eq('is_active', true)
+        .eq('ativo', true)
         .gt('estoque', 0)
-        .order('destaque', { ascending: false })
         .order('nome', { ascending: true });
 
       if (error) throw error;
       
-      // Convert Json to string[] for imagens
-      const productsData = (data || []).map(p => ({
-        ...p,
-        imagens: Array.isArray(p.imagens) ? p.imagens : []
-      })) as BarbershopProduct[];
-      
-      setProducts(productsData);
+      setProducts((data || []) as BarbershopProduct[]);
     } catch (error) {
       console.error('Erro ao carregar produtos:', error);
       toast.error('Erro ao carregar produtos');
@@ -215,12 +208,12 @@ const TotemProducts: React.FC = () => {
                   key={product.id}
                   className="group relative overflow-hidden bg-white/10 backdrop-blur-xl border-2 border-white/20 hover:border-urbana-gold/80 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-urbana-gold/30 hover:-translate-y-1 cursor-pointer"
                 >
-                  {/* Product Image */}
+                {/* Product Image */}
                   <div className="relative aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 overflow-hidden">
-                    {product.imagens && product.imagens.length > 0 ? (
+                    {product.imagem_url ? (
                       <>
                         <img
-                          src={product.imagens[0]}
+                          src={product.imagem_url}
                           alt={product.nome}
                           className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         />
@@ -230,13 +223,6 @@ const TotemProducts: React.FC = () => {
                     ) : (
                       <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black/80 to-urbana-brown/60">
                         <Package className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
-                      </div>
-                    )}
-                    
-                    {/* Badge Destaque */}
-                    {product.destaque && (
-                      <div className="absolute top-2 left-2 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black px-2 py-1 rounded-lg text-[10px] font-black shadow-lg z-10">
-                        ⭐ DESTAQUE
                       </div>
                     )}
 

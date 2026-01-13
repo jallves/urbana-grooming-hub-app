@@ -1,8 +1,18 @@
-
-import { Database } from '@/integrations/supabase/types';
-
 // Define o tipo para configurações da barbearia
-export type ShopSettings = Database['public']['Tables']['shop_settings']['Row'];
+export interface ShopSettings {
+  id: string;
+  shop_name: string;
+  address: string | null;
+  phone: string | null;
+  email: string | null;
+  logo_url: string | null;
+  website: string | null;
+  social_instagram: string | null;
+  social_facebook: string | null;
+  social_twitter: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 // Define um tipo para o formulário de configurações
 export interface ShopSettingsFormData {
@@ -17,7 +27,7 @@ export interface ShopSettingsFormData {
   social_twitter: string | null;
 }
 
-// Define tipos para as configurações do banner rotativo - updated to match database
+// Define tipos para as configurações do banner rotativo
 export interface BannerImage {
   id: string;
   image_url: string;

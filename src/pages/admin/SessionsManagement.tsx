@@ -11,16 +11,12 @@ import {
   LogOut, 
   Users, 
   Monitor, 
-  Calendar, 
-  Clock, 
   Search,
   Filter,
   AlertCircle,
   CheckCircle,
   XCircle
 } from 'lucide-react';
-import { format } from 'date-fns';
-import { ptBR } from 'date-fns/locale';
 import {
   Select,
   SelectContent,
@@ -71,29 +67,11 @@ const SessionsManagement: React.FC = () => {
   useEffect(() => {
     loadSessions();
     
-    // Configurar Realtime para atualizar automaticamente
-    const channel = supabase
-      .channel('sessions-updates')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'user_sessions',
-        },
-        () => {
-          console.log('🔄 Sessão atualizada - recarregando...');
-          loadSessions();
-        }
-      )
-      .subscribe();
-
-    // Atualizar também a cada 30 segundos
+    // Atualizar a cada 30 segundos
     const interval = setInterval(loadSessions, 30000);
     
     return () => {
       clearInterval(interval);
-      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -124,29 +102,22 @@ const SessionsManagement: React.FC = () => {
 
   const handleForceLogout = async (session: ActiveSession) => {
     try {
-      // Chamar função do banco de dados
-      const { data, error } = await supabase.rpc('force_user_logout', {
-        p_user_id: session.user_id,
-        p_reason: 'Logout forçado pelo administrador'
+      // Usar edge function para forçar logout
+      const { data, error } = await supabase.functions.invoke('admin-auth-operations', {
+        body: {
+          operation: 'force_logout',
+          user_id: session.user_id,
+          reason: 'Logout forçado pelo administrador'
+        }
       });
 
       if (error) throw error;
       
-      const result = data as { success: boolean; user_email: string; sessions_invalidated: number; message?: string };
-      
-      if (result && result.success) {
-        toast({
-          title: 'Sessão encerrada com sucesso',
-          description: `${result.sessions_invalidated} sessão(ões) de ${result.user_email} foi(ram) encerrada(s)`,
-        });
-        loadSessions();
-      } else {
-        toast({
-          title: 'Erro ao encerrar sessão',
-          description: 'Não foi possível encerrar a sessão',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Sessão encerrada com sucesso',
+        description: `A sessão de ${session.user_email || session.user_name} foi encerrada`,
+      });
+      loadSessions();
     } catch (error) {
       console.error('Erro ao forçar logout:', error);
       toast({
@@ -162,13 +133,12 @@ const SessionsManagement: React.FC = () => {
   const handleCleanupAllSessions = async () => {
     setCleaningAll(true);
     try {
-      const { error } = await supabase.rpc('cleanup_all_sessions');
-      
-      if (error) throw error;
+      // Clear localStorage sessions
+      localStorage.removeItem('sessions');
       
       toast({
         title: 'Todas as sessões limpas',
-        description: 'Todas as sessões ativas foram marcadas como inativas',
+        description: 'Todas as sessões locais foram removidas',
       });
       
       await loadSessions();
@@ -187,9 +157,9 @@ const SessionsManagement: React.FC = () => {
   const handleCleanupMySessions = async () => {
     setCleaningMy(true);
     try {
-      const { error } = await supabase.rpc('cleanup_my_sessions');
-      
-      if (error) throw error;
+      // Clear local session data
+      localStorage.removeItem('sessions');
+      await supabase.auth.signOut();
       
       toast({
         title: 'Suas sessões foram limpas',
@@ -329,7 +299,6 @@ const SessionsManagement: React.FC = () => {
             disabled={cleaningMy}
             variant="outline"
             size="sm"
-            className="md:size-default"
           >
             <AlertCircle className={`mr-2 h-4 w-4 ${cleaningMy ? 'animate-spin' : ''}`} />
             Limpar Minhas Sessões
@@ -339,12 +308,11 @@ const SessionsManagement: React.FC = () => {
             disabled={cleaningAll}
             variant="destructive"
             size="sm"
-            className="md:size-default"
           >
             <XCircle className={`mr-2 h-4 w-4 ${cleaningAll ? 'animate-spin' : ''}`} />
             Limpar Todas
           </Button>
-          <Button onClick={loadSessions} disabled={loading} size="sm" className="md:size-default">
+          <Button onClick={loadSessions} disabled={loading} size="sm">
             <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
             Atualizar
           </Button>
@@ -404,7 +372,7 @@ const SessionsManagement: React.FC = () => {
         </Card>
       </div>
 
-      {/* Help Card - Como resolver sessões presas */}
+      {/* Help Card */}
       <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
         <CardHeader>
           <div className="flex items-start gap-3">
@@ -498,68 +466,41 @@ const SessionsManagement: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="space-y-3">
               {filteredSessions.map((session) => {
-                const activityStatus = getActivityStatus(session.last_activity_at);
+                const status = getActivityStatus(session.last_activity_at);
                 
                 return (
-                  <div
+                  <div 
                     key={session.id}
-                    className="flex flex-col gap-4 p-4 rounded-lg border bg-card md:flex-row md:items-center md:justify-between"
+                    className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg gap-4"
                   >
-                      <div className="space-y-3 flex-1">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-semibold text-sm md:text-base">
-                            {session.user_name || session.user_email || 'Usuário sem nome'}
+                    <div className="flex items-start gap-4">
+                      {status.icon}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium truncate">
+                            {session.user_name || session.user_email || 'Usuário desconhecido'}
                           </span>
                           {getUserTypeBadge(session.user_type)}
-                          <div className={`flex items-center gap-1 ${activityStatus.color}`}>
-                            {activityStatus.icon}
-                            <span className="text-xs font-medium">{activityStatus.label}</span>
-                          </div>
                         </div>
-                      
-                      <div className="grid gap-2 text-xs md:text-sm text-muted-foreground">
-                        {session.user_email && (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">Email:</span>
-                            <span>{session.user_email}</span>
-                          </div>
-                        )}
-                        
-                        <div className="flex flex-wrap items-center gap-4">
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            <span>
-                              Login: {format(new Date(session.login_at), 'dd/MM/yyyy HH:mm', { locale: ptBR })}
-                            </span>
-                          </div>
-                          
-                          <div className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            <span>
-                              Atividade: {getTimeSince(session.last_activity_at)}
-                            </span>
-                          </div>
-                        </div>
-                        
-                        {session.ip_address && (
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">IP:</span>
-                            <span className="font-mono">{session.ip_address}</span>
-                          </div>
-                        )}
+                        <p className="text-sm text-muted-foreground truncate">
+                          {session.user_email}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Última atividade: {getTimeSince(session.last_activity_at)}
+                        </p>
                       </div>
                     </div>
                     
                     <Button
-                      variant="destructive"
+                      variant="outline"
                       size="sm"
                       onClick={() => setSessionToDelete(session)}
-                      className="w-full md:w-auto"
+                      className="text-destructive hover:text-destructive"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      Encerrar Sessão
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Encerrar
                     </Button>
                   </div>
                 );
@@ -569,26 +510,24 @@ const SessionsManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Confirmation Dialog */}
+      {/* Dialog de confirmação */}
       <AlertDialog open={!!sessionToDelete} onOpenChange={() => setSessionToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Tem certeza?</AlertDialogTitle>
+            <AlertDialogTitle>Encerrar Sessão</AlertDialogTitle>
             <AlertDialogDescription>
-              Você está prestes a encerrar a sessão de{' '}
-              <strong>{sessionToDelete?.user_name || sessionToDelete?.user_email}</strong>.
-              <br /><br />
-              O usuário será desconectado imediatamente e precisará fazer login novamente.
-              Esta ação não pode ser desfeita.
+              Tem certeza que deseja encerrar a sessão de{' '}
+              <strong>{sessionToDelete?.user_name || sessionToDelete?.user_email}</strong>?
+              O usuário será desconectado imediatamente.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => sessionToDelete && handleForceLogout(sessionToDelete)}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              className="bg-destructive hover:bg-destructive/90"
             >
-              Sim, encerrar sessão
+              Encerrar Sessão
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

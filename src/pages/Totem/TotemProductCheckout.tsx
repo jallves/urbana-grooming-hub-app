@@ -62,15 +62,15 @@ const TotemProductCheckout: React.FC = () => {
 
       if (saleError) throw saleError;
 
-      // Criar itens da venda usando vendas_itens
+      // Criar itens da venda usando vendas_itens com campos corretos
       const saleItems = (cart as CartItem[]).map(item => ({
         venda_id: sale.id,
         tipo: 'PRODUTO',
-        ref_id: item.product.id,
+        item_id: item.product.id,
         nome: item.product.nome,
         quantidade: item.quantity,
-        preco_unit: item.product.preco,
-        total: item.product.preco * item.quantity
+        preco_unitario: item.product.preco,
+        subtotal: item.product.preco * item.quantity
       }));
 
       const { error: itemsError } = await supabase

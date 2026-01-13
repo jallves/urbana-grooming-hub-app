@@ -68,10 +68,10 @@ const TotemProductPaymentPix: React.FC = () => {
       // 3. Preparar itens para o ERP (formato CheckoutItem)
       const erpItems = saleItems?.map(item => ({
         type: 'product' as const,
-        id: item.ref_id,
+        id: item.item_id,
         name: item.nome,
         quantity: item.quantidade,
-        price: Number(item.preco_unit),
+        price: Number(item.preco_unitario),
         discount: 0
       })) || [];
 
