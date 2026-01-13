@@ -21,15 +21,17 @@ export interface ActiveSession {
   expires_at: string;
 }
 
+/**
+ * Session Manager simplificado - gerencia sessões localmente
+ * As RPCs de sessão não existem no banco, então usamos localStorage
+ */
 class SessionManager {
   private sessionToken: string | null = null;
 
-  // Gerar token único para a sessão
   private generateSessionToken(): string {
     return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
-  // Obter informações do dispositivo
   private getDeviceInfo() {
     return {
       platform: navigator.platform,
@@ -39,33 +41,30 @@ class SessionManager {
     };
   }
 
-  // Criar nova sessão
+  // Criar nova sessão (local)
   async createSession(data: SessionData): Promise<string | null> {
     try {
       const token = this.generateSessionToken();
       const expiresAt = new Date();
       expiresAt.setHours(expiresAt.getHours() + (data.expiresInHours || 24));
 
-      const { data: sessionId, error } = await supabase.rpc('create_user_session', {
-        p_user_id: data.userId || null,
-        p_user_type: data.userType,
-        p_user_email: data.userEmail || null,
-        p_user_name: data.userName || null,
-        p_session_token: token,
-        p_user_agent: navigator.userAgent,
-        p_device_info: this.getDeviceInfo(),
-        p_expires_at: expiresAt.toISOString(),
-      });
-
-      if (error) {
-        console.error('Erro ao criar sessão:', error);
-        return null;
-      }
+      // Armazenar sessão localmente
+      const sessionData = {
+        token,
+        userId: data.userId,
+        userType: data.userType,
+        userEmail: data.userEmail,
+        userName: data.userName,
+        expiresAt: expiresAt.toISOString(),
+        createdAt: new Date().toISOString(),
+        lastActivity: new Date().toISOString(),
+        deviceInfo: this.getDeviceInfo()
+      };
 
       this.sessionToken = token;
       localStorage.setItem(`session_token_${data.userType}`, token);
+      localStorage.setItem(`session_data_${data.userType}`, JSON.stringify(sessionData));
       
-      // Iniciar atualização periódica de atividade
       this.startActivityUpdater();
 
       return token;
@@ -81,16 +80,22 @@ class SessionManager {
       const sessionToken = token || this.sessionToken;
       if (!sessionToken) return false;
 
-      const { data, error } = await supabase.rpc('update_session_activity', {
-        p_session_token: sessionToken,
-      });
-
-      if (error) {
-        console.error('Erro ao atualizar atividade:', error);
-        return false;
+      // Atualizar last activity no localStorage
+      const userTypes = ['admin', 'barber', 'client', 'painel_cliente', 'totem'];
+      for (const userType of userTypes) {
+        const storedToken = localStorage.getItem(`session_token_${userType}`);
+        if (storedToken === sessionToken) {
+          const sessionDataStr = localStorage.getItem(`session_data_${userType}`);
+          if (sessionDataStr) {
+            const sessionData = JSON.parse(sessionDataStr);
+            sessionData.lastActivity = new Date().toISOString();
+            localStorage.setItem(`session_data_${userType}`, JSON.stringify(sessionData));
+          }
+          break;
+        }
       }
 
-      return data || false;
+      return true;
     } catch (error) {
       console.error('Erro ao atualizar atividade:', error);
       return false;
@@ -100,23 +105,12 @@ class SessionManager {
   // Invalidar sessão (logout)
   async invalidateSession(userType: string, token?: string): Promise<boolean> {
     try {
-      const sessionToken = token || this.sessionToken || localStorage.getItem(`session_token_${userType}`);
-      if (!sessionToken) return false;
-
-      const { data, error } = await supabase.rpc('invalidate_session', {
-        p_session_token: sessionToken,
-      });
-
-      if (error) {
-        console.error('Erro ao invalidar sessão:', error);
-        return false;
-      }
-
       this.sessionToken = null;
       localStorage.removeItem(`session_token_${userType}`);
+      localStorage.removeItem(`session_data_${userType}`);
       this.stopActivityUpdater();
 
-      return data || false;
+      return true;
     } catch (error) {
       console.error('Erro ao invalidar sessão:', error);
       return false;
@@ -129,71 +123,49 @@ class SessionManager {
       const sessionToken = token || localStorage.getItem(`session_token_${userType}`);
       if (!sessionToken) return { valid: false };
 
-      const { data, error } = await supabase.rpc('validate_session', {
-        p_session_token: sessionToken,
-      });
+      const sessionDataStr = localStorage.getItem(`session_data_${userType}`);
+      if (!sessionDataStr) return { valid: false };
 
-      if (error) {
-        console.error('Erro ao validar sessão:', error);
-        return { valid: false };
+      const sessionData = JSON.parse(sessionDataStr);
+      const expiresAt = new Date(sessionData.expiresAt);
+      
+      if (expiresAt < new Date()) {
+        await this.invalidateSession(userType);
+        return { valid: false, reason: 'expired' };
       }
 
-      const result = data as any;
-      if (result && result.valid) {
-        this.sessionToken = sessionToken;
-        this.startActivityUpdater();
-      }
+      this.sessionToken = sessionToken;
+      this.startActivityUpdater();
 
-      return result || { valid: false };
+      return { 
+        valid: true,
+        userId: sessionData.userId,
+        userEmail: sessionData.userEmail,
+        userName: sessionData.userName
+      };
     } catch (error) {
       console.error('Erro ao validar sessão:', error);
       return { valid: false };
     }
   }
 
-  // Obter todas as sessões ativas (apenas admins)
+  // Obter todas as sessões ativas (simplificado)
   async getActiveSessions(): Promise<ActiveSession[]> {
-    try {
-      const { data, error } = await supabase.rpc('get_active_sessions');
-
-      if (error) {
-        console.error('Erro ao obter sessões ativas:', error);
-        return [];
-      }
-
-      return data || [];
-    } catch (error) {
-      console.error('Erro ao obter sessões ativas:', error);
-      return [];
-    }
+    // Retornar array vazio - não temos tabela de sessões
+    return [];
   }
 
-  // Forçar logout de uma sessão (apenas admins)
+  // Forçar logout de uma sessão
   async forceLogoutSession(sessionId: string): Promise<boolean> {
-    try {
-      const { data, error } = await supabase.rpc('force_logout_session', {
-        p_session_id: sessionId,
-      });
-
-      if (error) {
-        console.error('Erro ao forçar logout:', error);
-        return false;
-      }
-
-      return data || false;
-    } catch (error) {
-      console.error('Erro ao forçar logout:', error);
-      return false;
-    }
+    // Simplificado - não temos controle centralizado de sessões
+    return true;
   }
 
-  // Atualizar atividade periodicamente
   private activityInterval: NodeJS.Timeout | null = null;
 
   private startActivityUpdater() {
     if (this.activityInterval) return;
 
-    // Atualizar atividade a cada 15 minutos (aumentado para evitar conflitos)
     this.activityInterval = setInterval(() => {
       this.updateActivity();
     }, 15 * 60 * 1000);

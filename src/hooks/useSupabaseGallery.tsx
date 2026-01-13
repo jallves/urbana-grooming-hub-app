@@ -15,21 +15,25 @@ export interface GalleryPhoto {
   updated_at: string;
 }
 
+/**
+ * Hook para gerenciar galeria de fotos
+ * Usa a tabela gallery_images existente
+ */
 export const useSupabaseGallery = () => {
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
-  // Buscar fotos do banco de dados
+  // Buscar fotos do banco de dados (usando gallery_images)
   const fetchPhotos = async () => {
     try {
       setLoading(true);
       console.log('🔍 Buscando fotos no banco de dados...');
       
       const { data, error } = await supabase
-        .from('gallery_photos')
+        .from('gallery_images')
         .select('*')
-        .eq('published', true)
+        .eq('is_active', true)
         .order('display_order', { ascending: true });
 
       if (error) {
@@ -37,8 +41,21 @@ export const useSupabaseGallery = () => {
         throw error;
       }
 
-      console.log(`📸 ${data?.length || 0} fotos encontradas no banco`);
-      setPhotos(data || []);
+      // Mapear gallery_images para GalleryPhoto
+      const mappedPhotos: GalleryPhoto[] = (data || []).map(img => ({
+        id: img.id,
+        title: img.alt || 'Foto',
+        description: '',
+        image_url: img.src,
+        alt_text: img.alt || '',
+        published: img.is_active ?? true,
+        display_order: img.display_order ?? 0,
+        created_at: img.created_at || new Date().toISOString(),
+        updated_at: img.created_at || new Date().toISOString()
+      }));
+
+      console.log(`📸 ${mappedPhotos.length} fotos encontradas no banco`);
+      setPhotos(mappedPhotos);
     } catch (error) {
       console.error('❌ Erro ao carregar galeria:', error);
       setPhotos([]);
@@ -47,14 +64,14 @@ export const useSupabaseGallery = () => {
     }
   };
 
-  // Buscar todas as fotos (incluindo não publicadas) para admin
+  // Buscar todas as fotos para admin
   const fetchAllPhotos = async () => {
     try {
       setLoading(true);
       console.log('🔍 Buscando todas as fotos para admin...');
       
       const { data, error } = await supabase
-        .from('gallery_photos')
+        .from('gallery_images')
         .select('*')
         .order('display_order', { ascending: true });
 
@@ -63,8 +80,20 @@ export const useSupabaseGallery = () => {
         throw error;
       }
 
-      console.log(`📸 ${data?.length || 0} fotos encontradas (admin)`);
-      setPhotos(data || []);
+      const mappedPhotos: GalleryPhoto[] = (data || []).map(img => ({
+        id: img.id,
+        title: img.alt || 'Foto',
+        description: '',
+        image_url: img.src,
+        alt_text: img.alt || '',
+        published: img.is_active ?? true,
+        display_order: img.display_order ?? 0,
+        created_at: img.created_at || new Date().toISOString(),
+        updated_at: img.created_at || new Date().toISOString()
+      }));
+
+      console.log(`📸 ${mappedPhotos.length} fotos encontradas (admin)`);
+      setPhotos(mappedPhotos);
     } catch (error) {
       console.error('❌ Erro ao carregar galeria:', error);
       setPhotos([]);
@@ -83,14 +112,13 @@ export const useSupabaseGallery = () => {
       const imageUrl = await uploadFileToStorage(file, 'gallery-photos', 'uploads');
       console.log('✅ Arquivo enviado para storage:', imageUrl);
 
-      // 2. Salvar dados no banco
+      // 2. Salvar dados no banco (gallery_images)
       const { data, error } = await supabase
-        .from('gallery_photos')
+        .from('gallery_images')
         .insert([{
-          title: title,
-          alt_text: altText,
-          image_url: imageUrl,
-          published: true,
+          src: imageUrl,
+          alt: altText || title,
+          is_active: true,
           display_order: photos.length
         }])
         .select();
@@ -102,7 +130,6 @@ export const useSupabaseGallery = () => {
 
       console.log('✅ Foto salva no banco de dados:', data);
       
-      // Recarregar fotos
       await fetchPhotos();
       return true;
     } catch (error) {
@@ -119,10 +146,11 @@ export const useSupabaseGallery = () => {
       console.log('🔄 Atualizando foto:', id);
       
       const { error } = await supabase
-        .from('gallery_photos')
+        .from('gallery_images')
         .update({
-          ...updates,
-          updated_at: new Date().toISOString()
+          alt: updates.alt_text || updates.title,
+          display_order: updates.display_order,
+          is_active: updates.published
         })
         .eq('id', id);
 
@@ -132,7 +160,7 @@ export const useSupabaseGallery = () => {
       }
 
       console.log('✅ Foto atualizada com sucesso');
-      await fetchAllPhotos(); // Usar fetchAllPhotos para atualizar lista de admin
+      await fetchAllPhotos();
       return true;
     } catch (error) {
       console.error('❌ Erro ao atualizar foto:', error);
@@ -146,11 +174,8 @@ export const useSupabaseGallery = () => {
       console.log(`🔄 ${currentState ? 'Despublicando' : 'Publicando'} foto:`, id);
       
       const { error } = await supabase
-        .from('gallery_photos')
-        .update({
-          published: !currentState,
-          updated_at: new Date().toISOString()
-        })
+        .from('gallery_images')
+        .update({ is_active: !currentState })
         .eq('id', id);
 
       if (error) {
@@ -173,7 +198,7 @@ export const useSupabaseGallery = () => {
       console.log('🗑️ Deletando foto:', id);
       
       const { error } = await supabase
-        .from('gallery_photos')
+        .from('gallery_images')
         .delete()
         .eq('id', id);
 
@@ -200,7 +225,6 @@ export const useSupabaseGallery = () => {
       const newIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
       if (newIndex < 0 || newIndex >= photos.length) return false;
 
-      // Trocar display_order entre as duas fotos
       const currentPhoto = photos[currentIndex];
       const targetPhoto = photos[newIndex];
 

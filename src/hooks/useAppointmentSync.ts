@@ -81,22 +81,20 @@ export const useAppointmentSync = () => {
             .from('cash_flow')
             .select('id')
             .eq('reference_id', id)
-            .eq('reference_type', 'appointment')
             .maybeSingle();
 
           if (!existingCashFlow) {
             await supabase
               .from('cash_flow')
-              .insert({
+              .insert([{
                 transaction_type: 'income',
                 amount: serviceData.data.preco,
                 description: `Serviço: ${serviceData.data.nome} - Cliente: ${clientData.data.nome}`,
                 category: 'Serviços',
                 payment_method: 'Dinheiro',
                 transaction_date: new Date().toISOString().split('T')[0],
-                reference_id: id,
-                reference_type: 'appointment'
-              });
+                reference_id: id
+              }]);
           }
 
           // Criar comissão para o barbeiro - usar o ID do painel diretamente
@@ -120,14 +118,15 @@ export const useAppointmentSync = () => {
 
               await supabase
                 .from('barber_commissions')
-                .insert({
-                  barber_id: barberData.data.staff_id,
-                  appointment_id: id, // ID do painel_agendamentos
+                .insert([{
+                  barber_id: barberData.data.id,
+                  valor: commissionAmount,
+                  appointment_id: id,
                   amount: commissionAmount,
                   commission_rate: commissionRate,
-                  status: 'pending',
-                  appointment_source: 'painel' // Especificar a origem
-                });
+                  status: 'pendente',
+                  appointment_source: 'painel'
+                }]);
             }
           }
         }
