@@ -102,7 +102,7 @@ export const useAvailabilityValidation = () => {
         if (!specificAvailability.is_available) {
           toast({
             title: "Barbeiro indisponível",
-            description: specificAvailability.reason || "O barbeiro não está disponível nesta data.",
+            description: "O barbeiro não está disponível nesta data.",
             variant: "destructive",
           });
           return false;

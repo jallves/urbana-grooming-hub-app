@@ -22,13 +22,13 @@ export const useHomeServices = () => {
 
     const fetchServices = async () => {
       try {
-        // Busca serviços do painel_servicos com show_on_home = true
+        // Busca serviços do painel_servicos com exibir_home = true (coluna existente)
         const { data: services, error: fetchError } = await supabase
           .from('painel_servicos')
-          .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
+          .select('id, nome, descricao, preco, duracao, is_active, exibir_home')
           .eq('is_active', true)
-          .eq('show_on_home', true)
-          .order('display_order', { ascending: true });
+          .eq('exibir_home', true)
+          .order('nome', { ascending: true });
 
         if (!mounted) return;
 
@@ -37,8 +37,7 @@ export const useHomeServices = () => {
           setStatus('error');
           setError(fetchError.message);
         } else {
-          console.log('[Services] ✅ Carregados (show_on_home):', services?.length || 0);
-          // Mapeia os campos do painel_servicos para o formato esperado
+          console.log('[Services] ✅ Carregados (exibir_home):', services?.length || 0);
           const mappedServices: Service[] = (services || []).map(s => ({
             id: s.id,
             name: s.nome,
@@ -58,7 +57,6 @@ export const useHomeServices = () => {
 
     fetchServices();
 
-    // Realtime updates para painel_servicos
     const channel = supabase
       .channel('painel_servicos_home_changes')
       .on(
@@ -84,10 +82,10 @@ export const useHomeServices = () => {
     try {
       const { data: services, error: fetchError } = await supabase
         .from('painel_servicos')
-        .select('id, nome, descricao, preco, duracao, is_active, show_on_home')
+        .select('id, nome, descricao, preco, duracao, is_active, exibir_home')
         .eq('is_active', true)
-        .eq('show_on_home', true)
-        .order('display_order', { ascending: true });
+        .eq('exibir_home', true)
+        .order('nome', { ascending: true });
 
       if (fetchError) {
         console.error('[Services] Erro no refetch:', fetchError.message);

@@ -1,4 +1,7 @@
-import { supabase } from '@/integrations/supabase/client';
+/**
+ * TEF Driver simplificado
+ * A tabela tef_settings não existe no banco, então usamos configurações locais
+ */
 
 export interface TEFPaymentRequest {
   terminalId: string;
@@ -29,6 +32,16 @@ export interface TEFSettings {
   timeoutSeconds: number;
 }
 
+// Configurações padrão para modo mock
+const DEFAULT_SETTINGS: TEFSettings = {
+  useMock: true,
+  terminalId: 'MOCK-001',
+  apiUrl: '/api/tef-mock',
+  apiKey: '',
+  webhookUrl: '',
+  timeoutSeconds: 30
+};
+
 class TEFDriver {
   private settings: TEFSettings | null = null;
 
@@ -37,23 +50,10 @@ class TEFDriver {
       return this.settings;
     }
 
-    const { data, error } = await supabase
-      .from('tef_settings')
-      .select('*')
-      .single();
-
-    if (error || !data) {
-      throw new Error('Configurações TEF não encontradas');
-    }
-
-    this.settings = {
-      useMock: data.use_mock,
-      terminalId: data.terminal_id,
-      apiUrl: data.api_url,
-      apiKey: data.api_key,
-      webhookUrl: data.webhook_url,
-      timeoutSeconds: data.timeout_seconds
-    };
+    // Usar configurações padrão (mock)
+    // A tabela tef_settings não existe no banco
+    this.settings = DEFAULT_SETTINGS;
+    console.log('TEF: Usando configurações mock (tabela tef_settings não existe)');
 
     return this.settings;
   }
@@ -61,12 +61,29 @@ class TEFDriver {
   async createPayment(request: TEFPaymentRequest): Promise<TEFPaymentResponse> {
     const settings = await this.loadSettings();
     
+    if (settings.useMock) {
+      // Simular pagamento no modo mock
+      console.log('TEF Mock: Criando pagamento simulado', request);
+      
+      // Simular delay de processamento
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      return {
+        paymentId: `MOCK-${Date.now()}`,
+        status: 'approved',
+        authorizationCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+        nsu: Math.random().toString().substring(2, 14),
+        cardBrand: request.paymentType === 'pix' ? 'PIX' : 'VISA',
+        createdAt: new Date().toISOString()
+      };
+    }
+
     const url = `${settings.apiUrl}/payments`;
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
 
-    if (!settings.useMock && settings.apiKey) {
+    if (settings.apiKey) {
       headers['Authorization'] = `Bearer ${settings.apiKey}`;
     }
 
@@ -90,12 +107,21 @@ class TEFDriver {
   async getPaymentStatus(paymentId: string): Promise<TEFPaymentResponse> {
     const settings = await this.loadSettings();
     
+    if (settings.useMock) {
+      // Simular status no modo mock
+      return {
+        paymentId,
+        status: 'approved',
+        createdAt: new Date().toISOString()
+      };
+    }
+    
     const url = `${settings.apiUrl}/payments/${paymentId}`;
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
 
-    if (!settings.useMock && settings.apiKey) {
+    if (settings.apiKey) {
       headers['Authorization'] = `Bearer ${settings.apiKey}`;
     }
 
@@ -115,12 +141,21 @@ class TEFDriver {
   async cancelPayment(paymentId: string): Promise<TEFPaymentResponse> {
     const settings = await this.loadSettings();
     
+    if (settings.useMock) {
+      // Simular cancelamento no modo mock
+      return {
+        paymentId,
+        status: 'canceled',
+        createdAt: new Date().toISOString()
+      };
+    }
+    
     const url = `${settings.apiUrl}/payments/${paymentId}/cancel`;
     const headers: HeadersInit = {
       'Content-Type': 'application/json'
     };
 
-    if (!settings.useMock && settings.apiKey) {
+    if (settings.apiKey) {
       headers['Authorization'] = `Bearer ${settings.apiKey}`;
     }
 

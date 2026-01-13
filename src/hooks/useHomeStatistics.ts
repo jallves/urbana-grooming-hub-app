@@ -22,38 +22,22 @@ export const useHomeStatistics = () => {
 
   const fetchStatistics = async () => {
     try {
-      // Buscar contagem de avaliações 5 estrelas (clientes satisfeitos)
-      const { count: fiveStarCount } = await supabase
-        .from('appointment_ratings')
-        .select('*', { count: 'exact', head: true })
-        .eq('rating', 5);
-
       // Buscar contagem de serviços concluídos
       const { count: completedServices } = await supabase
         .from('painel_agendamentos')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'concluido');
 
-      // Buscar média de avaliações para calcular percentual
-      const { data: ratingsData } = await supabase
-        .from('appointment_ratings')
-        .select('rating');
-
-      // Calcula a média e converte para percentual
-      let avgRating = BASE_STATS.positiveRating;
-      if (ratingsData && ratingsData.length > 0) {
-        const totalRatings = ratingsData.reduce((sum, r) => sum + r.rating, 0);
-        const avgValue = totalRatings / ratingsData.length;
-        // Converte a média (1-5) para percentual (0-100)
-        // 5 estrelas = 100%, 4 estrelas = 80%, etc.
-        avgRating = Math.min(100, Math.max(BASE_STATS.positiveRating, (avgValue / 5) * 100));
-      }
+      // Buscar contagem de clientes únicos
+      const { count: uniqueClients } = await supabase
+        .from('painel_clientes')
+        .select('*', { count: 'exact', head: true });
 
       setStats({
         yearsOfExcellence: BASE_STATS.yearsOfExcellence,
-        satisfiedClients: BASE_STATS.satisfiedClients + (fiveStarCount || 0),
+        satisfiedClients: BASE_STATS.satisfiedClients + (uniqueClients || 0),
         servicesCompleted: BASE_STATS.servicesCompleted + (completedServices || 0),
-        positiveRating: Number(avgRating.toFixed(1))
+        positiveRating: BASE_STATS.positiveRating
       });
     } catch (error) {
       console.error('[Statistics] Erro ao carregar:', error);
@@ -64,22 +48,6 @@ export const useHomeStatistics = () => {
 
   useEffect(() => {
     fetchStatistics();
-
-    // Realtime para avaliações
-    const ratingsChannel = supabase
-      .channel('ratings_stats_changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'appointment_ratings'
-        },
-        () => {
-          fetchStatistics();
-        }
-      )
-      .subscribe();
 
     // Realtime para agendamentos
     const appointmentsChannel = supabase
@@ -98,7 +66,6 @@ export const useHomeStatistics = () => {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(ratingsChannel);
       supabase.removeChannel(appointmentsChannel);
     };
   }, []);

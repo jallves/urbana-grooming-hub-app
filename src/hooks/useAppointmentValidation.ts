@@ -2,16 +2,9 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
-  hasTimeOverlap, 
-  isWithinBusinessHours, 
   isPastTime,
-  getOccupiedSlots,
-  calculateEndTimeWithBuffer,
   BUSINESS_START_HOUR,
-  BUSINESS_END_HOUR,
-  BUFFER_MINUTES,
-  timeToMinutes,
-  minutesToTime
+  BUSINESS_END_HOUR
 } from '@/lib/utils/timeCalculations';
 
 export interface ValidationResult {
@@ -27,24 +20,15 @@ export interface TimeSlot {
 
 /**
  * Hook centralizado para validação de agendamentos
- * Valida:
- * - Horários passados (dia atual)
- * - Conflitos de horário
- * - Disponibilidade do barbeiro
- * - Horário de funcionamento
  */
 export const useAppointmentValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
 
-  /**
-   * Extrai mensagem de erro amigável do banco de dados
-   */
   const extractDatabaseError = useCallback((error: any): string => {
     if (!error?.message) return 'Erro ao processar agendamento';
     
     const message = error.message;
     
-    // Erros de conflito de horário
     if (message.includes('Conflito de horário')) {
       const match = message.match(/às (\d{2}:\d{2})/);
       if (match) {
@@ -53,49 +37,33 @@ export const useAppointmentValidation = () => {
       return 'Este horário já está ocupado. Escolha outro horário.';
     }
     
-    // Erros de horário passado
     if (message.includes('mais de 10 minutos') || message.includes('30 minutos de antecedência')) {
-      return 'Este horário não está mais disponível. Já passaram mais de 10 minutos desde o horário agendado.';
+      return 'Este horário não está mais disponível.';
     }
     
-    // Erros de horário de funcionamento
     if (message.includes('Horário fora do expediente')) {
       return 'Horário de funcionamento: Segunda a Sábado 08:00-20:00, Domingo 09:00-13:00.';
     }
     
-    if (message.includes('intervalos de 30 minutos')) {
-      return 'Agendamentos devem ser feitos em intervalos de 30 minutos (XX:00 ou XX:30).';
-    }
-    
-    // Erros de data
     if (message.includes('datas passadas')) {
       return 'Não é possível agendar para datas passadas.';
     }
     
-    if (message.includes('60 dias de antecedência')) {
-      return 'Agendamentos podem ser feitos com até 60 dias de antecedência.';
-    }
-    
-    // Erro genérico
     return 'Não foi possível realizar o agendamento. Tente novamente.';
   }, []);
 
-  /**
-   * Valida se o horário não é passado (apenas para o dia atual)
-   */
   const validateNotPastTime = useCallback((date: Date, time: string): ValidationResult => {
     if (isPastTime(date, time)) {
       return {
         valid: false,
-        error: 'Este horário não está mais disponível. Já passaram mais de 10 minutos desde o horário agendado.'
+        error: 'Este horário não está mais disponível.'
       };
     }
     return { valid: true };
   }, []);
 
   /**
-   * Verifica se há conflito com agendamentos existentes
-   * IMPORTANTE: Usa função unificada que verifica TODOS os sistemas
+   * Verifica se há conflito usando check_barber_slot_availability
    */
   const checkAppointmentConflict = useCallback(async (
     staffId: string,
@@ -105,18 +73,16 @@ export const useAppointmentValidation = () => {
     excludeAppointmentId?: string
   ): Promise<ValidationResult> => {
     try {
-      // Formatação segura da data para evitar problemas de timezone
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
 
-      const { data: isAvailable, error: rpcError } = await supabase.rpc('check_unified_slot_availability', {
-        p_staff_id: staffId,
+      const { data: isAvailable, error: rpcError } = await supabase.rpc('check_barber_slot_availability', {
+        p_barber_id: staffId,
         p_date: dateStr,
         p_time: time,
-        p_duration_minutes: serviceDuration,
-        p_exclude_appointment_id: excludeAppointmentId || null
+        p_duration: serviceDuration
       });
 
       if (rpcError) {
@@ -128,7 +94,6 @@ export const useAppointmentValidation = () => {
         return { valid: false, error: `Horário ${time} não está disponível.` };
       }
 
-      console.log('✅ Horário disponível (validação unificada)');
       return { valid: true };
     } catch (error) {
       console.error('💥 Erro na verificação de conflitos:', error);
@@ -136,30 +101,23 @@ export const useAppointmentValidation = () => {
     }
   }, []);
 
-  /**
-   * Verifica horário de funcionamento
-   * Considera que o serviço precisa terminar antes do fechamento
-   */
   const checkBusinessHours = useCallback((time: string, serviceDuration: number = 60): ValidationResult => {
-    if (!isWithinBusinessHours(time, serviceDuration)) {
+    const [hours, minutes] = time.split(':').map(Number);
+    const timeInMinutes = hours * 60 + minutes;
+    const endTimeInMinutes = timeInMinutes + serviceDuration;
+    
+    const startMinutes = BUSINESS_START_HOUR * 60;
+    const endMinutes = BUSINESS_END_HOUR * 60;
+    
+    if (timeInMinutes < startMinutes || endTimeInMinutes > endMinutes) {
       return {
         valid: false,
-        error: `Nosso horário de funcionamento é das ${BUSINESS_START_HOUR}:00 às ${BUSINESS_END_HOUR}:00. Este serviço não pode ser concluído dentro do expediente.`
+        error: `Nosso horário de funcionamento é das ${BUSINESS_START_HOUR}:00 às ${BUSINESS_END_HOUR}:00.`
       };
     }
     return { valid: true };
   }, []);
 
-  /**
-   * Validação completa antes de criar/atualizar agendamento
-   * IMPORTANTE: A RPC check_unified_slot_availability já valida:
-   * - Horário de funcionamento (working_hours do banco)
-   * - Conflitos com outros agendamentos
-   * - Disponibilidade do barbeiro
-   * 
-   * Removemos a validação de horário hardcoded do frontend para evitar
-   * conflitos com os horários reais configurados no banco.
-   */
   const validateAppointment = useCallback(async (
     barberId: string,
     date: Date,
@@ -170,46 +128,12 @@ export const useAppointmentValidation = () => {
     setIsValidating(true);
 
     try {
-      // Formatação segura da data para logs
-      const year = date.getFullYear();
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const dateStr = `${year}-${month}-${day}`;
-      
-      console.log('🔐 Iniciando validação completa:', {
-        barberId,
-        date: dateStr,
-        time,
-        serviceDuration,
-        excludeAppointmentId
-      });
-
-      // 1. Validar se não é horário passado (para dia atual)
-      console.log('🕐 Verificando se horário passou:', {
-        dateStr,
-        dateYear: year,
-        dateMonth: month,
-        dateDay: day,
-        time,
-        nowDate: new Date().toISOString()
-      });
-      
       const pastTimeCheck = validateNotPastTime(date, time);
       if (!pastTimeCheck.valid) {
-        console.error('❌ Horário passado detectado:', {
-          date: dateStr,
-          time,
-          error: pastTimeCheck.error
-        });
         toast.error(pastTimeCheck.error);
         return pastTimeCheck;
       }
 
-      // 2. Verificar disponibilidade usando RPC unificada
-      // Esta RPC JÁ valida:
-      // - Horário de trabalho do barbeiro (working_hours)
-      // - Conflitos com agendamentos existentes
-      // - Se o serviço pode ser concluído no horário de trabalho
       const conflictCheck = await checkAppointmentConflict(
         barberId,
         date,
@@ -219,15 +143,12 @@ export const useAppointmentValidation = () => {
       );
       
       if (!conflictCheck.valid) {
-        console.error('❌ Conflito de horário detectado');
         toast.error(conflictCheck.error);
         return conflictCheck;
       }
 
-      console.log('✅ Validação completa bem-sucedida');
       return { valid: true };
     } catch (error) {
-      console.error('💥 Erro na validação completa:', error);
       const errorMsg = 'Erro ao validar agendamento. Tente novamente.';
       toast.error(errorMsg);
       return { valid: false, error: errorMsg };
@@ -237,8 +158,7 @@ export const useAppointmentValidation = () => {
   }, [validateNotPastTime, checkAppointmentConflict]);
 
   /**
-   * Busca horários disponíveis para um barbeiro em uma data específica
-   * IMPORTANTE: Usa função unificada do banco que verifica TODOS os sistemas (Totem, Painel Cliente, Painel Admin)
+   * Busca horários disponíveis gerando slots e verificando disponibilidade
    */
   const getAvailableTimeSlots = useCallback(async (
     staffId: string,
@@ -248,69 +168,78 @@ export const useAppointmentValidation = () => {
     setIsValidating(true);
 
     try {
-      // Formatação segura da data para evitar problemas de timezone
       const year = date.getFullYear();
       const month = String(date.getMonth() + 1).padStart(2, '0');
       const day = String(date.getDate()).padStart(2, '0');
       const dateStr = `${year}-${month}-${day}`;
+      const dayOfWeek = date.getDay();
       
       const now = new Date();
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const isToday = dateStr === todayStr;
-      
-      // Usar horário local do Brasil (não UTC)
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      
-      console.log('🔍 getAvailableTimeSlots (OTIMIZADO):', {
-        dateStr,
-        todayStr,
-        isToday,
-        currentTime: `${currentHour}:${currentMinute}`,
-        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-        staffId,
-        serviceDuration,
-        note: 'Usando get_available_time_slots_optimized - busca todos os slots de uma vez'
-      });
 
-      // Buscar todos os slots disponíveis de uma vez usando função RPC otimizada
-      const { data: slotsData, error: rpcError } = await supabase.rpc('get_available_time_slots_optimized', {
-        p_staff_id: staffId,
-        p_date: dateStr,
-        p_service_duration: serviceDuration
-      });
+      // Buscar horário de trabalho
+      const { data: workingHours } = await supabase
+        .from('working_hours')
+        .select('start_time, end_time')
+        .eq('staff_id', staffId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true)
+        .maybeSingle();
 
-      if (rpcError) {
-        console.error('❌ Erro ao buscar slots:', rpcError);
-        throw rpcError;
+      if (!workingHours) {
+        return [];
       }
 
-      // Converter dados do banco para o formato TimeSlot
-      const slots: TimeSlot[] = (slotsData || []).map((slot: any) => {
-        const timeString = slot.time_slot;
-        let available = slot.is_available;
+      // Buscar agendamentos existentes
+      const { data: existingAppointments } = await supabase
+        .from('painel_agendamentos')
+        .select('hora, servico:painel_servicos(duracao)')
+        .eq('barbeiro_id', staffId)
+        .eq('data', dateStr)
+        .neq('status', 'cancelado');
+
+      // Gerar slots
+      const slots: TimeSlot[] = [];
+      const [startHour, startMin] = workingHours.start_time.split(':').map(Number);
+      const [endHour, endMin] = workingHours.end_time.split(':').map(Number);
+      const startMinutes = startHour * 60 + startMin;
+      const endMinutes = endHour * 60 + endMin;
+
+      for (let mins = startMinutes; mins + serviceDuration <= endMinutes; mins += 30) {
+        const hours = Math.floor(mins / 60);
+        const minutes = mins % 60;
+        const timeString = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+        
+        let available = true;
         let reason: string | undefined;
 
-        // Se for hoje, verificar se passou há mais de 10 minutos
+        // Verificar se é horário passado
         if (isToday && isPastTime(date, timeString)) {
-          console.log(`🕐 Horário ${timeString} marcado como passado (> 10min)`);
           available = false;
-          reason = 'Passou há mais de 10min';
-        } else if (!available) {
-          console.log(`❌ Horário ${timeString} ocupado (RPC retornou indisponível)`);
-          reason = 'Horário ocupado';
-        } else {
-          console.log(`✅ Horário ${timeString} disponível`);
+          reason = 'Horário passado';
         }
 
-        return {
-          time: timeString,
-          available,
-          reason
-        };
-      });
+        // Verificar conflitos
+        if (available && existingAppointments) {
+          for (const appt of existingAppointments) {
+            const [apptHour, apptMin] = appt.hora.split(':').map(Number);
+            const apptStart = apptHour * 60 + apptMin;
+            const apptDuration = (appt.servico as any)?.duracao || 60;
+            const apptEnd = apptStart + apptDuration;
+            
+            const slotEnd = mins + serviceDuration;
+            
+            if (mins < apptEnd && slotEnd > apptStart) {
+              available = false;
+              reason = 'Horário ocupado';
+              break;
+            }
+          }
+        }
 
-      console.log(`📊 Total de slots retornados: ${slots.length}, Disponíveis: ${slots.filter(s => s.available).length}`);
+        slots.push({ time: timeString, available, reason });
+      }
 
       return slots;
     } catch (error) {

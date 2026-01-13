@@ -1,7 +1,14 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { NewAppointment, AppointmentFormData, Barber, Commission } from '@/types/barbershop';
+import { NewAppointment, AppointmentFormData, Commission } from '@/types/barbershop';
+
+interface Barber {
+  id: string;
+  name: string;
+  email: string;
+  is_active: boolean;
+}
 
 export const useBarbershopAppointments = () => {
   const { toast } = useToast();
@@ -72,12 +79,12 @@ export const useBarbershopAppointments = () => {
   ) => {
     setIsLoading(true);
     try {
-      // Verificar disponibilidade primeiro
-      const { data: isAvailable } = await supabase.rpc('check_new_barber_availability', {
+      // Verificar disponibilidade usando check_barber_slot_availability
+      const { data: isAvailable } = await supabase.rpc('check_barber_slot_availability', {
         p_barber_id: formData.barber_id,
         p_date: formData.scheduled_date,
         p_time: formData.scheduled_time,
-        p_duration_minutes: 60 // padrão, pode ser ajustado conforme o serviço
+        p_duration: 60
       });
 
       if (!isAvailable) {
@@ -115,7 +122,6 @@ export const useBarbershopAppointments = () => {
         description: "Seu agendamento foi criado com sucesso!",
       });
 
-      // Atualizar lista local
       await fetchAppointments();
       return data;
     } catch (error) {
@@ -131,15 +137,13 @@ export const useBarbershopAppointments = () => {
     }
   }, [toast, fetchAppointments]);
 
-  // Concluir agendamento (para barbeiros)
+  // Concluir agendamento
   const completeAppointment = useCallback(async (appointmentId: string) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('appointments')
-        .update({ 
-          status: 'completed'
-        })
+        .update({ status: 'completed' })
         .eq('id', appointmentId)
         .select(`
           *,
@@ -153,10 +157,9 @@ export const useBarbershopAppointments = () => {
 
       toast({
         title: "Agendamento concluído",
-        description: "O agendamento foi marcado como concluído e a comissão foi gerada automaticamente.",
+        description: "O agendamento foi marcado como concluído.",
       });
 
-      // Atualizar lista local
       await fetchAppointments();
       return data;
     } catch (error) {
@@ -195,7 +198,6 @@ export const useBarbershopAppointments = () => {
         description: "O agendamento foi cancelado com sucesso.",
       });
 
-      // Atualizar lista local
       await fetchAppointments();
       return data;
     } catch (error) {
@@ -211,19 +213,26 @@ export const useBarbershopAppointments = () => {
     }
   }, [toast, fetchAppointments]);
 
-  // Buscar barbeiros
+  // Buscar barbeiros usando painel_barbeiros
   const fetchBarbers = useCallback(async () => {
     try {
       const { data, error } = await supabase
-        .from('barbers')
-        .select('*')
+        .from('painel_barbeiros')
+        .select('id, nome, email, is_active')
         .eq('is_active', true)
-        .order('name');
+        .order('nome');
 
       if (error) throw error;
 
-      setBarbers((data || []) as Barber[]);
-      return (data || []) as Barber[];
+      const mappedBarbers: Barber[] = (data || []).map(b => ({
+        id: b.id,
+        name: b.nome,
+        email: b.email || '',
+        is_active: b.is_active ?? true
+      }));
+
+      setBarbers(mappedBarbers);
+      return mappedBarbers;
     } catch (error) {
       console.error('Erro ao buscar barbeiros:', error);
       return [];
@@ -246,7 +255,7 @@ export const useBarbershopAppointments = () => {
             client:clients(name),
             service:services(name, price)
           ),
-          barber:staff(id, name, email)
+          barber:painel_barbeiros(id, nome, email)
         `)
         .order('created_at', { ascending: false });
 
@@ -276,14 +285,14 @@ export const useBarbershopAppointments = () => {
     }
   }, [toast]);
 
-  // Pagar comissão (para admin)
+  // Pagar comissão
   const payCommission = useCallback(async (commissionId: string) => {
     setIsLoading(true);
     try {
       const { data, error } = await supabase
         .from('barber_commissions')
         .update({ 
-          status: 'paid',
+          status: 'pago',
           payment_date: new Date().toISOString()
         })
         .eq('id', commissionId)
@@ -294,7 +303,7 @@ export const useBarbershopAppointments = () => {
             client:clients(name),
             service:services(name, price)
           ),
-          barber:staff(id, name, email)
+          barber:painel_barbeiros(id, nome, email)
         `)
         .single();
 
@@ -305,7 +314,6 @@ export const useBarbershopAppointments = () => {
         description: "A comissão foi marcada como paga com sucesso.",
       });
 
-      // Atualizar lista local
       await fetchCommissions();
       return data;
     } catch (error) {
