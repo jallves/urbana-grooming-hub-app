@@ -93,13 +93,12 @@ const ExportReports: React.FC = () => {
             'Status': apt.status,
             'Observações': apt.notes || '',
             'Desconto': apt.discount_amount || 0,
-            'Código do Cupom': apt.coupon_code || ''
           }));
           
           exportToCSV(
             appointmentData,
             `agendamentos_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
-            ['Data/Hora', 'Cliente', 'Email do Cliente', 'Telefone do Cliente', 'Serviço', 'Preço', 'Duração (min)', 'Profissional', 'Status', 'Observações', 'Desconto', 'Código do Cupom']
+            ['Data/Hora', 'Cliente', 'Email do Cliente', 'Telefone do Cliente', 'Serviço', 'Preço', 'Duração (min)', 'Profissional', 'Status', 'Observações', 'Desconto']
           );
           break;
 
@@ -109,7 +108,6 @@ const ExportReports: React.FC = () => {
             'Nome': client.name,
             'Email': client.email || '',
             'Telefone': client.phone || '',
-            'WhatsApp': client.whatsapp || '',
             'Data de Nascimento': client.birth_date ? format(new Date(client.birth_date), 'dd/MM/yyyy', { locale: ptBR }) : '',
             'Data de Cadastro': format(new Date(client.created_at), 'dd/MM/yyyy', { locale: ptBR })
           }));
@@ -117,7 +115,7 @@ const ExportReports: React.FC = () => {
           exportToCSV(
             clientData,
             `clientes_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
-            ['Nome', 'Email', 'Telefone', 'WhatsApp', 'Data de Nascimento', 'Data de Cadastro']
+            ['Nome', 'Email', 'Telefone', 'Data de Nascimento', 'Data de Cadastro']
           );
           break;
 
@@ -128,11 +126,11 @@ const ExportReports: React.FC = () => {
             'Email': member.email || '',
             'Telefone': member.phone || '',
             'Cargo': member.role || '',
-            'Especialidades': member.specialties || '',
+            'Especialidades': Array.isArray(member.specialties) ? member.specialties.join(', ') : (member.specialties || ''),
             'Experiência': member.experience || '',
             'Taxa de Comissão': member.commission_rate || 0,
             'Status': member.is_active ? 'Ativo' : 'Inativo',
-            'Data de Cadastro': format(new Date(member.created_at), 'dd/MM/yyyy', { locale: ptBR })
+            'Data de Cadastro': format(new Date(member.created_at || new Date()), 'dd/MM/yyyy', { locale: ptBR })
           }));
           
           exportToCSV(
@@ -154,13 +152,12 @@ const ExportReports: React.FC = () => {
               'Valor do Serviço': apt.services?.price || 0,
               'Desconto': apt.discount_amount || 0,
               'Valor Final': (apt.services?.price || 0) - (apt.discount_amount || 0),
-              'Código do Cupom': apt.coupon_code || ''
             }));
           
           exportToCSV(
             financialData,
             `financeiro_${format(new Date(), 'yyyy-MM-dd', { locale: ptBR })}`,
-            ['Data', 'Cliente', 'Serviço', 'Profissional', 'Valor do Serviço', 'Desconto', 'Valor Final', 'Código do Cupom']
+            ['Data', 'Cliente', 'Serviço', 'Profissional', 'Valor do Serviço', 'Desconto', 'Valor Final']
           );
           break;
       }

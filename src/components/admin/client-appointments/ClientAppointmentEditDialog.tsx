@@ -206,11 +206,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         allSlots.map(async (slot) => {
           const { data, error } = await supabase
             .rpc('check_barber_slot_availability', {
-              p_barbeiro_id: selectedBarbeiroId,
+              p_barber_id: selectedBarbeiroId,
               p_date: formattedDate,
               p_time: slot.time,
-              p_duration: serviceDuration,
-              p_exclude_appointment_id: appointmentId
+              p_duration: serviceDuration
             });
 
           if (error) {

@@ -45,13 +45,16 @@ const ProductList: React.FC = () => {
 
       if (error) throw error;
       setProducts((data || []).map(p => ({
-        ...p,
+        id: p.id,
+        nome: p.nome,
+        descricao: p.descricao,
         preco: Number(p.preco) || 0,
         estoque: Number(p.estoque) || 0,
-        estoque_minimo: Number(p.estoque_minimo) || 5,
-        commission_value: Number(p.commission_value) || 0,
-        commission_percentage: Number(p.commission_percentage) || 0,
-        imagens: Array.isArray(p.imagens) ? p.imagens : []
+        categoria: p.categoria,
+        imagem_url: p.imagem_url,
+        ativo: p.ativo ?? true,
+        created_at: p.created_at,
+        updated_at: p.updated_at,
       })) as BarbershopProduct[]);
     } catch (error) {
       console.error('Erro ao buscar produtos:', error);
@@ -156,9 +159,9 @@ const ProductList: React.FC = () => {
               <Card key={product.id} className="hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
                 {/* Imagem do Produto */}
                 <div className="aspect-square bg-muted overflow-hidden flex-shrink-0">
-                  {product.imagens && product.imagens.length > 0 ? (
+                  {product.imagem_url ? (
                     <img 
-                      src={product.imagens[0]} 
+                      src={product.imagem_url} 
                       alt={product.nome}
                       className="w-full h-full object-cover"
                       onError={(e) => {
@@ -225,10 +228,10 @@ const ProductList: React.FC = () => {
                     
                     <div className="pt-1">
                       <Badge 
-                        variant={product.is_active ? "default" : "outline"}
+                        variant={product.ativo ? "default" : "outline"}
                         className="text-[10px] px-2 py-0.5"
                       >
-                        {product.is_active ? "Ativo" : "Inativo"}
+                        {product.ativo ? "Ativo" : "Inativo"}
                       </Badge>
                     </div>
                   </div>

@@ -22,26 +22,26 @@ interface PainelAgendamento {
   updated_at: string;
   painel_clientes: {
     nome: string;
-    email: string;
-    whatsapp: string;
-  };
+    email: string | null;
+    whatsapp: string | null;
+  } | null;
   painel_barbeiros: {
     nome: string;
-    email: string;
-    telefone: string;
-    image_url: string;
-    specialties: string;
-    experience: string;
-    commission_rate: number;
-    is_active: boolean;
-    role: string;
-    staff_id: string;
-  };
+    email: string | null;
+    telefone: string | null;
+    image_url: string | null;
+    specialties: string[] | null;
+    experience: string | null;
+    commission_rate: number | null;
+    is_active: boolean | null;
+    role: string | null;
+    staff_id: string | null;
+  } | null;
   painel_servicos: {
     nome: string;
     preco: number;
     duracao: number;
-  };
+  } | null;
 }
 
 interface ClientAppointmentTableProps {
