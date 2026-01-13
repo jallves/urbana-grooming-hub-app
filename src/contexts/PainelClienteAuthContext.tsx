@@ -63,10 +63,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       try {
         console.log('[PainelClienteAuthContext] 🔍 Carregando perfil do cliente:', user.id);
         
+        // Usar painel_clientes que tem as colunas corretas
         const { data: profile, error } = await supabase
-          .from('client_profiles')
+          .from('painel_clientes')
           .select('*')
-          .eq('id', user.id)
+          .eq('user_id', user.id)
           .maybeSingle();
 
         if (error) {
@@ -92,9 +93,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
             id: profile.id,
             nome: profile.nome,
             email: profile.email || user.email || '',
-            whatsapp: profile.whatsapp,
-            data_nascimento: profile.data_nascimento,
-            created_at: profile.created_at
+            whatsapp: profile.whatsapp || '',
+            data_nascimento: profile.data_nascimento || undefined,
+            created_at: profile.created_at || ''
           };
           
           setCliente(clienteData);
@@ -191,15 +192,15 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
     try {
       const { error } = await supabase
-        .from('client_profiles')
+        .from('painel_clientes')
         .update({
           nome: dados.nome,
-          email: dados.email, // Salvar email no perfil
+          email: dados.email,
           whatsapp: dados.whatsapp,
           data_nascimento: dados.data_nascimento,
           updated_at: new Date().toISOString()
         })
-        .eq('id', user.id);
+        .eq('user_id', user.id);
 
       if (error) {
         return { error: error.message };
@@ -218,9 +219,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       // Recarregar perfil
       const { data: profile } = await supabase
-        .from('client_profiles')
+        .from('painel_clientes')
         .select('*')
-        .eq('id', user.id)
+        .eq('user_id', user.id)
         .single();
 
       if (profile) {
@@ -228,9 +229,9 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           id: profile.id,
           nome: profile.nome,
           email: profile.email || user.email || '',
-          whatsapp: profile.whatsapp,
-          data_nascimento: profile.data_nascimento,
-          created_at: profile.created_at
+          whatsapp: profile.whatsapp || '',
+          data_nascimento: profile.data_nascimento || undefined,
+          created_at: profile.created_at || ''
         });
       }
 

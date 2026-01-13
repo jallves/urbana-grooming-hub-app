@@ -38,7 +38,6 @@ export function useCashFlowSync() {
       const { data: existingCashFlow } = await supabase
         .from('cash_flow')
         .select('id')
-        .eq('reference_type', 'financial_record')
         .eq('reference_id', financialRecordId)
         .maybeSingle();
 
@@ -66,7 +65,6 @@ export function useCashFlowSync() {
           category: categoryPT,
           payment_method: paymentMethod || 'other',
           transaction_date: format(new Date(transactionDate), 'yyyy-MM-dd'),
-          reference_type: 'financial_record',
           reference_id: financialRecordId,
           notes: metadata ? JSON.stringify(metadata) : null,
         })
@@ -103,7 +101,6 @@ export function useCashFlowSync() {
       const { error } = await supabase
         .from('cash_flow')
         .delete()
-        .eq('reference_type', 'financial_record')
         .eq('reference_id', financialRecordId);
 
       if (error) throw error;

@@ -216,12 +216,12 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
         return { error: 'Erro ao finalizar cadastro. Entre em contato com o suporte.' };
       }
 
-      // Criar role de client
+      // Criar role de user (client é mapeado para 'user' no enum)
       const { error: roleError } = await supabase
         .from('user_roles')
         .insert([{
           user_id: authData.user.id,
-          role: 'client'
+          role: 'user'
         }]);
 
       if (roleError) {

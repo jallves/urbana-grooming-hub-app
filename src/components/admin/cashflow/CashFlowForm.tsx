@@ -40,7 +40,6 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
       const { data, error } = await supabase
         .from('cash_flow_categories')
         .select('*')
-        .eq('is_active', true)
         .order('name');
 
       if (error) throw error;

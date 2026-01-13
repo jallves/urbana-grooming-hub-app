@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { BannerImage } from '@/types/settings';
 
 const DEFAULT_BANNER: BannerImage = {
@@ -15,54 +14,18 @@ const DEFAULT_BANNER: BannerImage = {
 
 export const useBanners = () => {
   const [banners, setBanners] = useState<BannerImage[]>([DEFAULT_BANNER]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Banner table doesn't exist, just use default
   const fetchBanners = async () => {
-    try {
-      console.log('🎨 [useBanners] Buscando banners...');
-      setLoading(true);
-      setError(null);
-
-      const { data, error: fetchError } = await supabase
-        .from('banner_images')
-        .select('*')
-        .eq('is_active', true)
-        .order('display_order', { ascending: true });
-
-      if (fetchError) {
-        console.error('❌ [useBanners] Erro:', fetchError);
-        setError(fetchError.message);
-        setBanners([DEFAULT_BANNER]);
-        setLoading(false);
-        return;
-      }
-
-      console.log('✅ [useBanners] Sucesso:', data?.length || 0, 'banners');
-      
-      if (data && data.length > 0) {
-        setBanners(data);
-      } else {
-        console.log('⚠️ [useBanners] Nenhum banner ativo, usando default');
-        setBanners([DEFAULT_BANNER]);
-      }
-      setLoading(false);
-    } catch (err) {
-      console.error('❌ [useBanners] Exceção:', err);
-      setError(err instanceof Error ? err.message : 'Erro desconhecido');
-      setBanners([DEFAULT_BANNER]);
-      setLoading(false);
-    }
+    setBanners([DEFAULT_BANNER]);
+    setLoading(false);
   };
 
   useEffect(() => {
     fetchBanners();
   }, []);
 
-  return { 
-    banners, 
-    loading, 
-    error, 
-    refetch: fetchBanners 
-  };
+  return { banners, loading, error, refetch: fetchBanners };
 };

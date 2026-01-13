@@ -93,13 +93,6 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
 
       console.log('✅ [TotemAuth] Autenticação bem-sucedida');
       
-      // Atualizar último login
-      console.log('🔐 [TotemAuth] Atualizando último login...');
-      await supabase
-        .from('totem_auth')
-        .update({ last_login_at: new Date().toISOString() })
-        .eq('id', data.id);
-
       // Salvar token com expiração de 8 horas
       const expiryTime = new Date();
       expiryTime.setHours(expiryTime.getHours() + 8);
@@ -115,7 +108,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       console.log('🔐 [TotemAuth] Mostrando toast de sucesso');
       toast({
         title: "Login realizado",
-        description: `Bem-vindo, ${data.device_name}`,
+        description: "Bem-vindo ao Totem",
       });
       
       // Criar sessão no sistema de controle (não bloqueante - não interrompe o login se falhar)
@@ -123,7 +116,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       sessionManager.createSession({
         userId: data.id,
         userType: 'totem',
-        userName: data.device_name,
+        userName: 'Totem',
         expiresInHours: 8,
       }).catch(err => console.warn('[Totem] ⚠️ Erro ao criar sessão (não crítico):', err));
       

@@ -114,7 +114,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       .from('painel_barbeiros')
       .select('id, nome, staff_id')
       .eq('is_active', true)
-      .eq('available_for_booking', true);
+      .eq('ativo', true);
     if (data) setBarbeiros(data);
   };
 
@@ -195,11 +195,10 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         allSlots.map(async (slot) => {
           const { data, error } = await supabase
             .rpc('check_barber_slot_availability', {
-              p_barbeiro_id: barbeiroId,
+              p_barber_id: barbeiroId,
               p_date: selectedDate,
               p_time: slot.time,
-              p_duration: duration,
-              p_exclude_appointment_id: agendamento?.id || null
+              p_duration: duration
             });
 
           if (error) {

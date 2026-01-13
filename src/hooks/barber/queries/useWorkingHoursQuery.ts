@@ -1,4 +1,4 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 export const useWorkingHoursQuery = (staffId: string | null) => {
@@ -16,27 +16,30 @@ export const useWorkingHoursQuery = (staffId: string | null) => {
       return data || [];
     },
     enabled: !!staffId,
-    staleTime: 5 * 60 * 1000, // 5 minutos
+    staleTime: 5 * 60 * 1000,
     gcTime: 15 * 60 * 1000,
   });
 };
 
+// Time off query - using barber_availability table instead of non-existent time_off table
 export const useTimeOffQuery = (staffId: string | null) => {
   return useQuery({
     queryKey: ['time-off', staffId],
     queryFn: async () => {
       if (!staffId) return [];
 
+      // Use barber_availability with is_available = false as time off
       const { data } = await supabase
-        .from('time_off')
+        .from('barber_availability')
         .select('*')
-        .eq('staff_id', staffId)
-        .order('start_date', { ascending: false });
+        .eq('barber_id', staffId)
+        .eq('is_available', false)
+        .order('date', { ascending: false });
 
       return data || [];
     },
     enabled: !!staffId,
-    staleTime: 3 * 60 * 1000, // 3 minutos
+    staleTime: 3 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
 };

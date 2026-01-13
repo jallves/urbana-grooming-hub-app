@@ -35,7 +35,6 @@ export function useMigrateFinancialRecords() {
           const { data: existing } = await supabase
             .from('cash_flow')
             .select('id')
-            .eq('reference_type', 'financial_record')
             .eq('reference_id', record.id)
             .maybeSingle();
 
@@ -47,12 +46,7 @@ export function useMigrateFinancialRecords() {
           // Mapear tipo de transação
           const cashFlowType = record.transaction_type === 'revenue' ? 'income' : 'expense';
 
-          // Extrair payment_method do metadata
-          const metadata = typeof record.metadata === 'object' && record.metadata !== null 
-            ? record.metadata as Record<string, any>
-            : {};
-
-          const paymentMethod = metadata?.payment_method || 'other';
+          const paymentMethod = 'other';
 
           // Mapear categoria para português
           let categoryPT = record.category;
@@ -65,14 +59,13 @@ export function useMigrateFinancialRecords() {
             .from('cash_flow')
             .insert({
               transaction_type: cashFlowType,
-              amount: record.net_amount,
+              amount: record.net_amount || record.amount,
               description: record.description,
               category: categoryPT,
               payment_method: paymentMethod,
-              transaction_date: format(new Date(record.transaction_date), 'yyyy-MM-dd'),
-              reference_type: 'financial_record',
+              transaction_date: record.transaction_date ? format(new Date(record.transaction_date), 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'),
               reference_id: record.id,
-              notes: metadata?.notes ? String(metadata.notes) : `Migrado automaticamente - ${record.transaction_number}`,
+              notes: `Migrado automaticamente - ${record.id.substring(0, 8)}`,
             });
 
           if (insertError) {
