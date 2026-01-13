@@ -59,7 +59,7 @@ const TotemCheckoutSearch: React.FC = () => {
       }
 
       const clientesFiltrados = clientes?.filter((c: any) => {
-        const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
+        const clientPhoneClean = (c.whatsapp || c.telefone || '').replace(/\D/g, '');
         return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
       }) || [];
 
@@ -82,11 +82,16 @@ const TotemCheckoutSearch: React.FC = () => {
       const cliente = clientesFiltrados[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Buscar agendamentos do cliente
+      // Buscar agendamentos do cliente com check-in realizado
       const { data: agendamentos, error: agendError } = await supabase
         .from('painel_agendamentos')
-        .select('id, status_totem')
+        .select(`
+          *,
+          servico:painel_servicos(*),
+          barbeiro:painel_barbeiros(*)
+        `)
         .eq('cliente_id', cliente.id)
+        .in('status', ['confirmado', 'em_atendimento'])
         .order('created_at', { ascending: false });
 
       if (agendError) {
@@ -111,7 +116,7 @@ const TotemCheckoutSearch: React.FC = () => {
         navigate('/totem/error', {
           state: {
             title: 'Checkout não disponível',
-            message: 'Você não possui agendamentos. Favor realizar agendamento ou check-in primeiro.',
+            message: 'Você não possui agendamentos em andamento. Favor realizar check-in primeiro.',
             type: 'warning',
             showRetry: false,
             showGoHome: true
@@ -120,66 +125,15 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Buscar sessões com check-in mas sem check-out para esses agendamentos
-      const appointmentIds = agendamentos.map(a => a.id);
-      console.log('🔍 Buscando sessões para agendamentos:', appointmentIds);
-      
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('totem_sessions')
-        .select('*')
-        .in('appointment_id', appointmentIds)
-        .not('check_in_time', 'is', null)
-        .is('check_out_time', null)
-        .order('check_in_time', { ascending: false })
-        .limit(1);
+      const appointment = agendamentos[0];
+      console.log('✅ Agendamento encontrado para checkout:', appointment);
 
-      if (sessionError) {
-        console.error('❌ Erro ao buscar sessão:', sessionError);
-        setIsSearching(false);
-        
-        navigate('/totem/error', {
-          state: {
-            title: 'Erro ao buscar atendimento',
-            message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.',
-            type: 'error',
-            showRetry: false,
-            showGoHome: true
-          }
-        });
-        return;
-      }
-
-      console.log('📊 Sessões encontradas:', sessionData);
-
-      if (!sessionData || sessionData.length === 0) {
-        setIsSearching(false);
-        
-        navigate('/totem/error', {
-          state: {
-            title: 'Checkout não disponível',
-            message: 'Você ainda não fez check-in. Favor realizar o check-in primeiro para poder fazer o checkout.',
-            type: 'warning',
-            showRetry: false,
-            showGoHome: true
-          }
-        });
-        return;
-      }
-
-      const session = sessionData[0];
-      console.log('✅ Sessão ativa encontrada para checkout:', session);
-
-      // Buscar detalhes do agendamento
-      const { data: appointment } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          *,
-          servico:painel_servicos(*),
-          barbeiro:painel_barbeiros(*),
-          cliente:painel_clientes(*)
-        `)
-        .eq('id', session.appointment_id)
-        .single();
+      // Create a simple session object
+      const session = {
+        id: crypto.randomUUID(),
+        created_at: new Date().toISOString(),
+        appointment_id: appointment.id
+      };
 
       navigate('/totem/checkout', {
         state: {

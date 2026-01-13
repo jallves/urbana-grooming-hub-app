@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Package, Image as ImageIcon } from 'lucide-react';
+import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
@@ -35,11 +35,9 @@ const AdminProductsManagement: React.FC = () => {
     descricao: '',
     preco: 0,
     estoque: 0,
-    estoque_minimo: 5,
     categoria: 'geral',
-    imagens: [] as string[],
-    is_active: true,
-    destaque: false
+    imagem_url: '',
+    ativo: true
   });
 
   useEffect(() => {
@@ -58,9 +56,7 @@ const AdminProductsManagement: React.FC = () => {
       const productsData = (data || []).map(p => ({
         ...p,
         preco: Number(p.preco) || 0,
-        estoque: Number(p.estoque) || 0,
-        estoque_minimo: Number(p.estoque_minimo) || 5,
-        imagens: Array.isArray(p.imagens) ? p.imagens : []
+        estoque: Number(p.estoque) || 0
       })) as BarbershopProduct[];
       
       setProducts(productsData);
@@ -130,11 +126,9 @@ const AdminProductsManagement: React.FC = () => {
       descricao: product.descricao || '',
       preco: product.preco,
       estoque: product.estoque,
-      estoque_minimo: product.estoque_minimo,
-      categoria: product.categoria,
-      imagens: product.imagens,
-      is_active: product.is_active,
-      destaque: product.destaque
+      categoria: product.categoria || 'geral',
+      imagem_url: product.imagem_url || '',
+      ativo: product.ativo
     });
     setIsDialogOpen(true);
   };
@@ -146,11 +140,9 @@ const AdminProductsManagement: React.FC = () => {
       descricao: '',
       preco: 0,
       estoque: 0,
-      estoque_minimo: 5,
       categoria: 'geral',
-      imagens: [],
-      is_active: true,
-      destaque: false
+      imagem_url: '',
+      ativo: true
     });
   };
 
@@ -178,9 +170,9 @@ const AdminProductsManagement: React.FC = () => {
           <Card key={product.id} className="p-3 sm:p-4 space-y-3">
             {/* Product Image */}
             <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-              {product.imagens.length > 0 ? (
+              {product.imagem_url ? (
                 <img
-                  src={product.imagens[0]}
+                  src={product.imagem_url}
                   alt={product.nome}
                   className="w-full h-full object-cover"
                 />
@@ -200,11 +192,6 @@ const AdminProductsManagement: React.FC = () => {
                     {product.descricao}
                   </p>
                 </div>
-                {product.destaque && (
-                  <span className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded flex-shrink-0">
-                    Destaque
-                  </span>
-                )}
               </div>
 
               <div className="flex items-center justify-between gap-2">
@@ -237,11 +224,11 @@ const AdminProductsManagement: React.FC = () => {
               </div>
 
               <div className="flex gap-2 text-xs">
-                <span className={`px-2 py-1 rounded ${product.is_active ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
-                  {product.is_active ? 'Ativo' : 'Inativo'}
+                <span className={`px-2 py-1 rounded ${product.ativo ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                  {product.ativo ? 'Ativo' : 'Inativo'}
                 </span>
                 <span className="px-2 py-1 rounded bg-muted">
-                  {product.categoria}
+                  {product.categoria || 'Geral'}
                 </span>
               </div>
             </div>
@@ -325,42 +312,24 @@ const AdminProductsManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="estoque_minimo" className="text-sm sm:text-base">Estoque Mínimo</Label>
+                <Label htmlFor="imagem_url" className="text-sm sm:text-base">URL da Imagem</Label>
                 <Input
-                  id="estoque_minimo"
-                  type="number"
-                  value={formData.estoque_minimo}
-                  onChange={(e) => setFormData({ ...formData, estoque_minimo: parseInt(e.target.value) || 5 })}
+                  id="imagem_url"
+                  value={formData.imagem_url}
+                  onChange={(e) => setFormData({ ...formData, imagem_url: e.target.value })}
+                  placeholder="https://..."
                   className="text-sm sm:text-base"
                 />
               </div>
             </div>
 
-            <div>
-              <Label className="text-sm sm:text-base">Imagens</Label>
-              <p className="text-xs sm:text-sm text-muted-foreground mb-2">
-                Para adicionar imagens com upload, use o formulário principal de produtos
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
-                <Label htmlFor="is_active" className="text-sm sm:text-base">Produto Ativo</Label>
-              </div>
-
-              <div className="flex items-center gap-2">
-                <Switch
-                  id="destaque"
-                  checked={formData.destaque}
-                  onCheckedChange={(checked) => setFormData({ ...formData, destaque: checked })}
-                />
-                <Label htmlFor="destaque" className="text-sm sm:text-base">Produto em Destaque</Label>
-              </div>
+            <div className="flex items-center gap-2">
+              <Switch
+                id="ativo"
+                checked={formData.ativo}
+                onCheckedChange={(checked) => setFormData({ ...formData, ativo: checked })}
+              />
+              <Label htmlFor="ativo" className="text-sm sm:text-base">Produto Ativo</Label>
             </div>
           </div>
 
