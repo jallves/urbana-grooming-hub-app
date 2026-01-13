@@ -265,10 +265,6 @@ const TotemProductSale: React.FC = () => {
                         <Package className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
                       </div>
                     )}
-                      <div className="absolute top-2 left-2 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black px-2 py-1 rounded-lg text-[10px] font-black shadow-lg z-10">
-                        ⭐ DESTAQUE
-                      </div>
-                    )}
 
                     {/* Stock Badge - DESTAQUE MAIOR */}
                     <div className="absolute bottom-2 right-2 bg-urbana-black/90 backdrop-blur-sm text-urbana-light px-3 py-1.5 rounded-lg text-sm font-bold border-2 border-urbana-gold/50 shadow-lg z-10">
