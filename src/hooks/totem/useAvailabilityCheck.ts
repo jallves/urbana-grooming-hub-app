@@ -140,7 +140,7 @@ export const useAvailabilityCheck = () => {
 
     const { data: availability, error } = await supabase
       .from('barber_availability')
-      .select('is_available, start_time, end_time, reason')
+      .select('is_available, start_time, end_time')
       .eq('barber_id', barberId)
       .eq('date', dateStr)
       .maybeSingle();
@@ -156,7 +156,7 @@ export const useAvailabilityCheck = () => {
     if (!availability.is_available) {
       return { 
         valid: false, 
-        error: availability.reason || 'Barbeiro não disponível neste dia' 
+        error: 'Barbeiro não disponível neste dia' 
       };
     }
 

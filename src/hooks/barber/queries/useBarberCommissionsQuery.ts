@@ -29,8 +29,7 @@ export const useBarberCommissionsQuery = () => {
     queryFn: async () => {
       console.log('🔍 Buscando comissões para usuário:', { 
         id: user?.id, 
-        email: user?.email,
-        authUserId: user?.id 
+        email: user?.email
       });
       
       if (!user?.id) {
@@ -38,11 +37,11 @@ export const useBarberCommissionsQuery = () => {
         return { commissions: [], stats: null };
       }
 
-      // Buscar staff ID usando o user_id do auth
+      // Buscar staff ID usando o email do auth
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
-        .select('id, name, email, user_id')
-        .eq('user_id', user.id)
+        .select('id, name, email')
+        .eq('email', user.email)
         .eq('role', 'barber')
         .maybeSingle();
 
@@ -50,12 +49,12 @@ export const useBarberCommissionsQuery = () => {
         found: !!staffData, 
         staffId: staffData?.id,
         error: staffError,
-        searchingFor: user.id
+        searchingFor: user.email
       });
 
       const staffId = staffData?.id;
       if (!staffId) {
-        console.log('❌ Staff ID não encontrado para user_id:', user.id);
+        console.log('❌ Staff ID não encontrado para email:', user.email);
         return { commissions: [], stats: null };
       }
 
@@ -68,7 +67,7 @@ export const useBarberCommissionsQuery = () => {
         .eq('transaction_type', 'commission')
         .eq('barber_id', staffId)
         .order('transaction_date', { ascending: false })
-        .limit(50); // Limitar a 50 registros mais recentes
+        .limit(50);
 
       console.log('💰 Comissões encontradas:', { 
         count: commissionsData?.length, 
@@ -88,7 +87,6 @@ export const useBarberCommissionsQuery = () => {
 
       // Mapear dados
       const commissions: Commission[] = commissionsData.map((record) => {
-        const metadata = record.metadata as any;
         // Determinar tipo de comissão pela categoria e subcategoria
         const commissionType = record.category === 'staff_payments' 
           ? 'service' 
@@ -107,13 +105,13 @@ export const useBarberCommissionsQuery = () => {
         
         return {
           id: record.id,
-          amount: Number(record.net_amount),
+          amount: Number(record.net_amount || record.amount),
           status: record.status === 'completed' ? 'paid' : 'pending',
-          created_at: record.transaction_date,
+          created_at: record.transaction_date || record.created_at || '',
           commission_type: commissionType,
           item_name: record.description,
-          appointment_id: record.appointment_id,
-          product_sale_id: metadata?.product_sale_id || null
+          appointment_id: record.reference_id,
+          product_sale_id: null
         };
       });
 
@@ -131,9 +129,9 @@ export const useBarberCommissionsQuery = () => {
       return { commissions, stats };
     },
     enabled: !!user?.id,
-    staleTime: 30 * 1000, // 30 segundos
-    gcTime: 2 * 60 * 1000, // 2 minutos
-    refetchOnWindowFocus: true, // Refetch ao focar na janela
-    refetchOnMount: true, // Sempre refetch ao montar
+    staleTime: 30 * 1000,
+    gcTime: 2 * 60 * 1000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: true,
   });
 };

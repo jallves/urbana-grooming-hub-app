@@ -8,20 +8,6 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, ArrowDownCircle, DollarSign, Loader2 } from 'lucide-react';
 
-interface FinancialRecord {
-  id: string;
-  transaction_number: string;
-  transaction_type: string;
-  category: string;
-  gross_amount: number;
-  discount_amount: number;
-  net_amount: number;
-  status: string;
-  description: string;
-  transaction_date: string;
-  created_at: string;
-}
-
 export const FinancialTransactionsList: React.FC = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['financial-transactions'],
@@ -34,7 +20,7 @@ export const FinancialTransactionsList: React.FC = () => {
         .limit(50);
 
       if (error) throw error;
-      return data as FinancialRecord[];
+      return data || [];
     },
     refetchInterval: 10000
   });
@@ -61,14 +47,14 @@ export const FinancialTransactionsList: React.FC = () => {
     return labels[type] || type;
   };
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string | null) => {
     const variants: Record<string, { label: string; className: string }> = {
       completed: { label: 'Concluído', className: 'bg-green-100 text-green-700' },
       pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700' },
       canceled: { label: 'Cancelado', className: 'bg-red-100 text-red-700' }
     };
 
-    const config = variants[status] || { label: status, className: 'bg-gray-100 text-gray-700' };
+    const config = variants[status || 'pending'] || { label: status || 'Pendente', className: 'bg-gray-100 text-gray-700' };
 
     return (
       <Badge variant="outline" className={config.className}>
@@ -113,18 +99,18 @@ export const FinancialTransactionsList: React.FC = () => {
                   </p>
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
                     <span className="text-xs text-gray-600">
-                      {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                      {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                     </span>
                     <span className={`text-sm font-bold ${
                       transaction.transaction_type === 'revenue' 
                         ? 'text-green-600' 
                         : 'text-red-600'
                     }`}>
-                      R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                      R$ {(transaction.net_amount || transaction.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1 font-mono">
-                    #{transaction.transaction_number}
+                    #{transaction.id.substring(0, 8)}
                   </p>
                 </div>
               ))}
@@ -135,7 +121,7 @@ export const FinancialTransactionsList: React.FC = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Número</TableHead>
+                    <TableHead className="whitespace-nowrap">ID</TableHead>
                     <TableHead className="whitespace-nowrap">Tipo</TableHead>
                     <TableHead className="whitespace-nowrap">Descrição</TableHead>
                     <TableHead className="whitespace-nowrap">Data</TableHead>
@@ -147,7 +133,7 @@ export const FinancialTransactionsList: React.FC = () => {
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell className="font-mono text-xs">
-                        {transaction.transaction_number}
+                        {transaction.id.substring(0, 8)}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -159,7 +145,7 @@ export const FinancialTransactionsList: React.FC = () => {
                         {transaction.description}
                       </TableCell>
                       <TableCell className="text-sm">
-                        {format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                        {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         <span className={
@@ -167,7 +153,7 @@ export const FinancialTransactionsList: React.FC = () => {
                             ? 'text-green-600' 
                             : 'text-red-600'
                         }>
-                          R$ {transaction.net_amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {(transaction.net_amount || transaction.amount || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </TableCell>
                       <TableCell className="text-center">
