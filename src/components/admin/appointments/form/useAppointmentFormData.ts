@@ -93,7 +93,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
       const { data, error } = await supabase
         .from('painel_barbeiros')
         .select('*')
-        .eq('is_active', true)
+        .eq('ativo', true)
         .order('nome');
       if (error) throw new Error(error.message);
       return (data || []).map(b => ({ 
@@ -101,14 +101,14 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
         name: b.nome, 
         email: b.email, 
         phone: b.telefone, 
-        image_url: b.image_url, 
-        specialties: b.specialties, 
+        image_url: b.image_url || b.foto_url, 
+        specialties: Array.isArray(b.specialties) ? b.specialties.join(', ') : b.specialties, 
         experience: b.experience, 
-        commission_rate: b.commission_rate, 
-        is_active: b.is_active, 
-        role: b.role,
-        staff_id: b.staff_id // Incluir staff_id para uso nas RPCs
-      })) as (StaffMember & { staff_id?: string })[];
+        commission_rate: b.commission_rate || b.taxa_comissao, 
+        is_active: b.ativo, 
+        role: b.role || 'barber',
+        staff_id: b.staff_id
+      })) as StaffMember[];
     },
   });
 

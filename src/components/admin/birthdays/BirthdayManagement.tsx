@@ -14,14 +14,24 @@ const BirthdayManagement: React.FC = () => {
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['birthday-clients', filter],
     queryFn: async () => {
-      const targetMonth = new Date().getMonth() + 1;
-      const { data, error } = await supabase.rpc('get_birthday_clients', {
-        target_month: targetMonth,
-      });
+      // Fetch clients directly from painel_clientes instead of using RPC
+      const { data, error } = await supabase
+        .from('painel_clientes')
+        .select('id, nome, email, telefone, data_nascimento')
+        .not('data_nascimento', 'is', null);
 
       if (error) throw new Error(error.message);
 
-      let filteredData = data || [];
+      // Map to expected format
+      const mappedData = (data || []).map(c => ({
+        id: c.id,
+        name: c.nome,
+        email: c.email,
+        phone: c.telefone,
+        birth_date: c.data_nascimento
+      }));
+
+      let filteredData = mappedData;
       const today = new Date();
 
       if (filter === 'today') {
