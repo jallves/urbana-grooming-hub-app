@@ -79,33 +79,36 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
 
       console.log('🔍 [Cliente] Usando staff_id para RPC:', staffIdToUse);
 
-      // Usar a RPC otimizada que retorna todos os slots de uma vez
-      const { data: slotsData, error: rpcError } = await supabase.rpc('get_available_time_slots_optimized', {
-        p_staff_id: staffIdToUse,
-        p_date: formattedDate,
-        p_service_duration: serviceDuration
-      });
-
-      if (rpcError) {
-        console.error('❌ Erro ao buscar slots:', rpcError);
-        setAvailableSlots([]);
-        return;
+      // Buscar slots disponíveis usando a lógica padrão
+      // Gerar slots de 09:00 às 20:00 e verificar conflitos
+      const slots: TimeSlot[] = [];
+      const startHour = 9;
+      const endHour = 20;
+      
+      for (let hour = startHour; hour < endHour; hour++) {
+        for (let minute = 0; minute < 60; minute += 30) {
+          const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          
+          // Verificar disponibilidade usando RPC existente
+          const { data: isAvailable } = await supabase.rpc('check_barber_slot_availability', {
+            p_barber_id: staffIdToUse,
+            p_date: formattedDate,
+            p_time: time + ':00',
+            p_duration: serviceDuration
+          });
+          
+          slots.push({ time, available: isAvailable === true });
+        }
       }
 
-      // Converter dados do banco para o formato local
-      const slotsWithAvailability: TimeSlot[] = (slotsData || []).map((slot: any) => ({
-        time: typeof slot.time_slot === 'string' ? slot.time_slot : slot.time_slot.substring(0, 5),
-        available: slot.is_available
-      }));
-
-      const availableCount = slotsWithAvailability.filter(s => s.available).length;
+      const availableCount = slots.filter(s => s.available).length;
       console.log('✅ [Cliente] Slots disponíveis:', availableCount);
 
-      setAvailableSlots(slotsWithAvailability);
+      setAvailableSlots(slots);
       
       // Se o horário atual não está disponível, limpar seleção
       const currentTime = form.getValues('time');
-      if (currentTime && !slotsWithAvailability.find(s => s.time === currentTime && s.available)) {
+      if (currentTime && !slots.find(s => s.time === currentTime && s.available)) {
         form.setValue('time', '');
       }
     } catch (error) {

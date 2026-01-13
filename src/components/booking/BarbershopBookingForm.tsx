@@ -390,11 +390,15 @@ const BarbershopBookingForm: React.FC = () => {
       const endTime = new Date(startTime);
       endTime.setMinutes(endTime.getMinutes() + selectedService.duration);
 
-      // Verificar conflito antes de criar agendamento
-      const { data: hasConflict, error: conflictError } = await supabase.rpc('check_appointment_conflict', {
-        p_staff_id: data.staff_id,
-        p_start_time: startTime.toISOString(),
-        p_end_time: endTime.toISOString()
+      // Verificar conflito antes de criar agendamento usando RPC existente
+      const formattedDate = format(data.date, 'yyyy-MM-dd');
+      const formattedTime = data.time + ':00';
+      
+      const { data: isAvailable, error: conflictError } = await supabase.rpc('check_barber_slot_availability', {
+        p_barber_id: data.staff_id,
+        p_date: formattedDate,
+        p_time: formattedTime,
+        p_duration: selectedService.duration
       });
 
       if (conflictError) {
@@ -402,7 +406,7 @@ const BarbershopBookingForm: React.FC = () => {
         throw new Error('Erro ao verificar disponibilidade');
       }
 
-      if (hasConflict) {
+      if (!isAvailable) {
         throw new Error('Horário não disponível. Por favor, selecione outro horário.');
       }
 

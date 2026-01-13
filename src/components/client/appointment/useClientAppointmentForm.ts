@@ -113,13 +113,14 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
         id: b.id,
         name: b.nome,
         email: b.email || '',
-        phone: b.telefone,
+        phone: b.telefone || undefined,
         role: b.role || 'barber',
-        is_active: b.is_active,
-        image_url: b.image_url,
-        specialties: b.specialties,
-        experience: b.experience,
-        commission_rate: b.commission_rate
+        is_active: b.is_active ?? true,
+        image_url: b.image_url || undefined,
+        specialties: b.specialties as string[] | string | null,
+        experience: b.experience || null,
+        commission_rate: b.commission_rate ?? 50,
+        staff_id: b.staff_id || undefined
       })) as StaffMember[];
     },
   });
