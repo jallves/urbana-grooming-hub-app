@@ -114,8 +114,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       let query = supabase
         .from('painel_barbeiros')
         .select('id, nome, image_url, staff_id')
-        .eq('is_active', true)
-        .eq('available_for_booking', true)
+        .eq('ativo', true)
         .order('nome');
 
       // Se há barbeiros vinculados, filtrar apenas eles

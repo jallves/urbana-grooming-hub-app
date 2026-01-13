@@ -60,8 +60,9 @@ const TotemAppointmentsList: React.FC = () => {
     try {
       const appointmentIds = appointments.map((a: Appointment) => a.id);
       
+      // Use appointment_totem_sessions table instead of totem_sessions
       const { data: sessions, error } = await supabase
-        .from('totem_sessions')
+        .from('appointment_totem_sessions')
         .select('*')
         .in('appointment_id', appointmentIds)
         .order('created_at', { ascending: false });
@@ -74,7 +75,7 @@ const TotemAppointmentsList: React.FC = () => {
         if (!checkIns[session.appointment_id]) {
           checkIns[session.appointment_id] = {
             appointment_id: session.appointment_id,
-            check_in_time: session.check_in_time || session.created_at,
+            check_in_time: session.created_at || '',
             session_id: session.id
           };
         }

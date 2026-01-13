@@ -59,9 +59,8 @@ const TotemBarbeiro: React.FC = () => {
 
       let query = supabase
         .from('painel_barbeiros')
-        .select('id, nome, specialties, image_url, is_active, staff_id')
-        .eq('is_active', true)
-        .eq('available_for_booking', true)
+        .select('id, nome, specialties, image_url, is_active, staff_id, ativo')
+        .eq('ativo', true)
         .order('nome');
 
       // Se há barbeiros vinculados, filtrar apenas eles
@@ -76,14 +75,24 @@ const TotemBarbeiro: React.FC = () => {
       if (error) throw error;
 
       // Mapear dados do Supabase para o tipo Barber
-      const mappedBarbers: Barber[] = (data || []).map(b => ({
-        id: b.id,
-        nome: b.nome,
-        especialidade: b.specialties || undefined,
-        foto_url: b.image_url || undefined,
-        ativo: b.is_active,
-        staff_id: (b as any).staff_id || b.id // Incluir staff_id para uso nas funções RPC
-      }));
+      const mappedBarbers: Barber[] = (data || []).map(b => {
+        // Handle specialties - can be array or string
+        let specialtyStr: string | undefined;
+        if (Array.isArray(b.specialties)) {
+          specialtyStr = b.specialties.join(', ');
+        } else if (typeof b.specialties === 'string') {
+          specialtyStr = b.specialties;
+        }
+        
+        return {
+          id: b.id,
+          nome: b.nome,
+          especialidade: specialtyStr,
+          foto_url: b.image_url || undefined,
+          ativo: b.ativo ?? b.is_active ?? true,
+          staff_id: b.staff_id || b.id
+        };
+      });
 
       setBarbers(mappedBarbers);
       

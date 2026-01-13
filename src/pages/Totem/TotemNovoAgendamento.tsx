@@ -125,20 +125,29 @@ const TotemNovoAgendamento: React.FC = () => {
         const { data: barbersData, error: barbersError } = await supabase
           .from('painel_barbeiros')
           .select('*')
-          .eq('is_active', true)
-          .eq('available_for_booking', true)
+          .eq('ativo', true)
           .order('nome');
 
         if (barbersError) throw barbersError;
 
         // Transformar para o formato esperado pelo componente
-        return (barbersData || []).map(b => ({
-          id: b.id,
-          nome: b.nome,
-          specialties: b.specialties,
-          image_url: b.image_url,
-          experience: b.experience
-        }));
+        return (barbersData || []).map(b => {
+          // Handle specialties - can be array or string
+          let specialtiesStr: string | undefined;
+          if (Array.isArray(b.specialties)) {
+            specialtiesStr = b.specialties.join(', ');
+          } else if (typeof b.specialties === 'string') {
+            specialtiesStr = b.specialties;
+          }
+          
+          return {
+            id: b.id,
+            nome: b.nome,
+            specialties: specialtiesStr,
+            image_url: b.image_url || undefined,
+            experience: b.experience || undefined
+          };
+        });
       },
       'carregar barbeiros'
     );
