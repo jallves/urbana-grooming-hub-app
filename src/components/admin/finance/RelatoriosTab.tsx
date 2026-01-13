@@ -167,13 +167,16 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
         .from('barber_commissions')
         .select(`
           *,
-          staff:barber_id(name)
+          painel_barbeiros:barber_id(nome)
         `)
         .eq('status', 'paid')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString());
 
-      const comissoes = comissoesData as Commission[];
+      const comissoes = (comissoesData || []).map(c => ({
+        ...c,
+        staff: (c as any).painel_barbeiros ? { name: (c as any).painel_barbeiros.nome } : null
+      })) as Commission[];
 
       const exportData = [];
 

@@ -51,11 +51,10 @@ const CategoryChart: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('cash_flow_categories')
-        .select('*')
-        .eq('is_active', true);
+        .select('*');
 
       if (error) throw error;
-      return data;
+      return data || [];
     },
   });
 

@@ -24,16 +24,14 @@ export type ProductCategory = Database['public']['Tables']['product_categories']
 export interface BarbershopProduct {
   id: string;
   nome: string;
-  descricao?: string;
+  descricao?: string | null;
   preco: number;
   estoque: number;
-  estoque_minimo: number;
-  categoria: string;
-  imagens: string[];
-  is_active: boolean;
-  destaque: boolean;
-  created_at: string;
-  updated_at: string;
+  categoria?: string | null;
+  imagem_url?: string | null;
+  ativo: boolean;
+  created_at?: string | null;
+  updated_at?: string | null;
 }
 
 export interface CartItem {

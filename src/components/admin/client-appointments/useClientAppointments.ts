@@ -16,37 +16,38 @@ export interface PainelAgendamento {
   status_totem: string | null;
   created_at: string;
   updated_at: string;
+  notas?: string | null;
   painel_clientes: {
     nome: string;
-    email: string;
-    whatsapp: string;
-  };
+    email: string | null;
+    whatsapp: string | null;
+  } | null;
   painel_barbeiros: {
     nome: string;
-    email: string;
-    telefone: string;
-    image_url: string;
-    specialties: string;
-    experience: string;
-    commission_rate: number;
-    is_active: boolean;
-    role: string;
-    staff_id: string;
-  };
+    email: string | null;
+    telefone: string | null;
+    image_url: string | null;
+    specialties: string[] | null;
+    experience: string | null;
+    commission_rate: number | null;
+    is_active: boolean | null;
+    role: string | null;
+    staff_id: string | null;
+  } | null;
   painel_servicos: {
     nome: string;
     preco: number;
     duracao: number;
-  };
-  totem_sessions?: {
+  } | null;
+  totem_sessions?: Array<{
     check_in_time: string | null;
     check_out_time: string | null;
-    status: string;
-  }[];
-  vendas?: {
+    status: string | null;
+  }>;
+  vendas?: Array<{
     id: string;
-    status: string;
-  }[];
+    status: string | null;
+  }>;
 }
 
 export const useClientAppointments = () => {
@@ -62,10 +63,9 @@ export const useClientAppointments = () => {
         .from('painel_agendamentos')
         .select(`
           *,
-          painel_clientes!inner(nome, email, whatsapp),
-          painel_barbeiros!inner(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
-          painel_servicos!inner(nome, preco, duracao),
-          totem_sessions(check_in_time, check_out_time, status),
+          painel_clientes(nome, email, whatsapp),
+          painel_barbeiros(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
+          painel_servicos(nome, preco, duracao),
           vendas(id, status)
         `)
         .order('data', { ascending: false })
@@ -73,7 +73,7 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
 
-      setAppointments(data || []);
+      setAppointments((data || []) as unknown as PainelAgendamento[]);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
       toast.error('Erro ao carregar agendamentos');
@@ -331,12 +331,11 @@ export const useClientAppointments = () => {
       console.log('📋 Validando exclusão de agendamento:', {
         id: appointmentId,
         status: appointment.status,
-        totem_sessions: appointment.totem_sessions,
         vendas: appointment.vendas
       });
 
-      const hasCheckIn = appointment.totem_sessions?.some((s: any) => s.check_in_time);
-      const hasSales = appointment.vendas?.length > 0;
+      const hasCheckIn = false; // totem_sessions relation removed
+      const hasSales = Array.isArray(appointment.vendas) && appointment.vendas.length > 0;
       const statusUpper = appointment.status?.toUpperCase() || '';
       const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
       const isCancelled = statusUpper === 'CANCELADO';

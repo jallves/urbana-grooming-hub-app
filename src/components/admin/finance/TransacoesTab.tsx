@@ -56,7 +56,6 @@ const TransacoesTab: React.FC<TransacoesTabProps> = ({ filters }) => {
       const { data } = await supabase
         .from('cash_flow_categories')
         .select('*')
-        .eq('is_active', true)
         .order('name');
       return data || [];
     }

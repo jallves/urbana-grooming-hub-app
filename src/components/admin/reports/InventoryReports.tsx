@@ -1,87 +1,65 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
   PieChart,
   Pie,
-  Cell
+  Cell,
+  Tooltip
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 
-interface CategoryData {
-  name: string;
-  productCount: number;
-  totalValue: number;
+interface Product {
+  id: string;
+  nome: string;
+  preco: number;
+  estoque: number;
+  categoria: string | null;
+  ativo: boolean;
 }
 
 const InventoryReports: React.FC = () => {
-  // Fetch products data
-  const { data: productsData, isLoading } = useQuery({
+  // Fetch products data from painel_produtos
+  const { data: products, isLoading } = useQuery({
     queryKey: ['inventory-reports'],
     queryFn: async () => {
-      const { data: products, error: productsError } = await supabase
-        .from('products')
-        .select(`
-          *,
-          product_category_relations(
-            product_categories(name)
-          )
-        `);
-      
-      if (productsError) throw productsError;
-
-      const { data: categories, error: categoriesError } = await supabase
-        .from('product_categories')
+      const { data, error } = await supabase
+        .from('painel_produtos')
         .select('*');
       
-      if (categoriesError) throw categoriesError;
-      
-      return { products: products || [], categories: categories || [] };
+      if (error) throw error;
+      return (data || []) as Product[];
     }
   });
 
   // Process low stock products
   const lowStockProducts = React.useMemo(() => {
-    if (!productsData?.products) return [];
+    if (!products) return [];
     
-    return productsData.products
-      .filter(product => (product.stock_quantity || 0) < 10)
-      .sort((a, b) => (a.stock_quantity || 0) - (b.stock_quantity || 0))
+    return products
+      .filter(product => (product.estoque || 0) < 10)
+      .sort((a, b) => (a.estoque || 0) - (b.estoque || 0))
       .slice(0, 10);
-  }, [productsData?.products]);
+  }, [products]);
 
   // Process inventory by category
-  const categoryData = React.useMemo((): CategoryData[] => {
-    if (!productsData?.products || !productsData?.categories) return [];
+  const categoryData = React.useMemo(() => {
+    if (!products) return [];
     
     const categoryStats: Record<string, { productCount: number; totalValue: number }> = {};
     
-    // Initialize categories
-    productsData.categories.forEach(category => {
-      categoryStats[category.name] = { productCount: 0, totalValue: 0 };
-    });
-    
-    // Count products by category
-    productsData.products.forEach(product => {
-      const categoryName = product.product_category_relations?.[0]?.product_categories?.name || 'Sem Categoria';
+    products.forEach(product => {
+      const categoryName = product.categoria || 'Sem Categoria';
       
       if (!categoryStats[categoryName]) {
         categoryStats[categoryName] = { productCount: 0, totalValue: 0 };
       }
       
       categoryStats[categoryName].productCount++;
-      categoryStats[categoryName].totalValue += (Number(product.price) || 0) * (product.stock_quantity || 0);
+      categoryStats[categoryName].totalValue += (Number(product.preco) || 0) * (product.estoque || 0);
     });
     
     return Object.entries(categoryStats).map(([name, stats]) => ({
@@ -89,32 +67,32 @@ const InventoryReports: React.FC = () => {
       productCount: stats.productCount,
       totalValue: stats.totalValue
     }));
-  }, [productsData]);
+  }, [products]);
 
   // Process stock value distribution
   const stockValueData = React.useMemo(() => {
-    if (!productsData?.products) return [];
+    if (!products) return [];
     
-    return productsData.products
+    return products
       .map(product => ({
-        name: product.name,
-        value: (Number(product.price) || 0) * (product.stock_quantity || 0)
+        name: product.nome,
+        value: (Number(product.preco) || 0) * (product.estoque || 0)
       }))
       .filter(item => item.value > 0)
       .sort((a, b) => b.value - a.value)
       .slice(0, 5);
-  }, [productsData?.products]);
+  }, [products]);
 
   // Calculate summary metrics
   const summaryMetrics = React.useMemo(() => {
-    if (!productsData?.products) return {};
+    if (!products) return {};
     
-    const totalProducts = productsData.products.length;
-    const totalStockValue = productsData.products.reduce((total, product) => {
-      return total + ((Number(product.price) || 0) * (product.stock_quantity || 0));
+    const totalProducts = products.length;
+    const totalStockValue = products.reduce((total, product) => {
+      return total + ((Number(product.preco) || 0) * (product.estoque || 0));
     }, 0);
-    const lowStockCount = productsData.products.filter(p => (p.stock_quantity || 0) < 10).length;
-    const outOfStockCount = productsData.products.filter(p => (p.stock_quantity || 0) === 0).length;
+    const lowStockCount = products.filter(p => (p.estoque || 0) < 10).length;
+    const outOfStockCount = products.filter(p => (p.estoque || 0) === 0).length;
     
     return {
       totalProducts,
@@ -122,7 +100,7 @@ const InventoryReports: React.FC = () => {
       lowStockCount,
       outOfStockCount
     };
-  }, [productsData?.products]);
+  }, [products]);
 
   if (isLoading) {
     return (
@@ -248,17 +226,17 @@ const InventoryReports: React.FC = () => {
               {lowStockProducts.map((product, index) => (
                 <div key={index} className="flex justify-between items-center p-4 border rounded-lg">
                   <div>
-                    <p className="font-medium">{product.name}</p>
+                    <p className="font-medium">{product.nome}</p>
                     <p className="text-sm text-muted-foreground">
-                      R$ {Number(product.price).toLocaleString('pt-BR')}
+                      R$ {Number(product.preco).toLocaleString('pt-BR')}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className={`font-bold ${
-                      (product.stock_quantity || 0) === 0 ? 'text-red-600' : 
-                      (product.stock_quantity || 0) < 5 ? 'text-orange-600' : 'text-yellow-600'
+                      (product.estoque || 0) === 0 ? 'text-red-600' : 
+                      (product.estoque || 0) < 5 ? 'text-orange-600' : 'text-yellow-600'
                     }`}>
-                      {product.stock_quantity || 0} unidades
+                      {product.estoque || 0} unidades
                     </p>
                   </div>
                 </div>

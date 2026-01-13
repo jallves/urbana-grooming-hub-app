@@ -45,7 +45,7 @@ const CommissionPayments: React.FC = () => {
     queryFn: async () => {
       let query = supabase
         .from('barber_commissions')
-        .select('*, staff:barber_id(id, name)')
+        .select('*, painel_barbeiros:barber_id(id, nome)')
         .order('created_at', { ascending: false });
 
       if (statusFilter !== 'all') {
@@ -54,7 +54,11 @@ const CommissionPayments: React.FC = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return data as Commission[];
+      // Map painel_barbeiros to staff format
+      return (data || []).map(c => ({
+        ...c,
+        staff: c.painel_barbeiros ? { id: c.painel_barbeiros.id, name: c.painel_barbeiros.nome } : null
+      })) as Commission[];
     },
   });
 
@@ -63,16 +67,22 @@ const CommissionPayments: React.FC = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('barber_commissions')
-        .select('amount, status, staff:barber_id(name)');
+        .select('amount, status, painel_barbeiros:barber_id(nome)');
 
       if (error) throw error;
+      
+      // Map data to include staff property
+      const mappedData = (data || []).map(c => ({
+        ...c,
+        staff: c.painel_barbeiros ? { name: c.painel_barbeiros.nome } : null
+      }));
 
-      const totalPending = data?.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
-      const totalPaid = data?.filter(c => c.status === 'paid').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
-      const totalCancelled = data?.filter(c => c.status === 'cancelled').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      const totalPending = mappedData.filter(c => c.status === 'pending').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      const totalPaid = mappedData.filter(c => c.status === 'paid').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
+      const totalCancelled = mappedData.filter(c => c.status === 'cancelled').reduce((sum, c) => sum + Number(c.amount), 0) || 0;
 
       // Resumo por barbeiro
-      const byBarber = data?.reduce((acc, commission) => {
+      const byBarber = mappedData.reduce((acc, commission) => {
         const barberName = commission.staff?.name || 'Barbeiro';
         if (!acc[barberName]) {
           acc[barberName] = { pending: 0, paid: 0, total: 0 };
@@ -109,15 +119,16 @@ const CommissionPayments: React.FC = () => {
       // Registrar no fluxo de caixa
       const { data: commissionsData } = await supabase
         .from('barber_commissions')
-        .select('*, staff:barber_id(name)')
+        .select('*, painel_barbeiros:barber_id(nome)')
         .in('id', commissionIds);
 
       if (commissionsData) {
         for (const commission of commissionsData) {
+          const barberName = (commission as any).painel_barbeiros?.nome || 'Barbeiro';
           await supabase.from('cash_flow').insert({
             transaction_type: 'expense',
             amount: commission.amount,
-            description: `Pagamento de comissão - ${commission.staff?.name || 'Barbeiro'}`,
+            description: `Pagamento de comissão - ${barberName}`,
             category: 'Comissões',
             payment_method: method,
             reference_id: commission.id,

@@ -82,10 +82,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       price: productData.preco || 0,
       cost_price: 0,
       stock_quantity: productData.estoque || 0,
-      is_active: productData.is_active ?? true,
-      images: Array.isArray(productData.imagens) ? productData.imagens.filter((img): img is string => typeof img === 'string') : [],
-      commission_value: productData.commission_value || 0,
-      commission_percentage: productData.commission_percentage || 0,
+      is_active: productData.ativo ?? true,
+      images: productData.imagem_url ? [productData.imagem_url] : [],
+      commission_value: 0,
+      commission_percentage: 0,
     } : undefined,
   });
   
@@ -121,10 +121,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           descricao: values.description,
           preco: values.price,
           estoque: values.stock_quantity || 0,
-          is_active: values.is_active,
-          imagens: values.images,
-          commission_value: values.commission_value || 0,
-          commission_percentage: values.commission_percentage || 0,
+          ativo: values.is_active,
+          imagem_url: values.images[0] || null,
         };
         
         console.log('📝 Update data:', updateData);
@@ -148,13 +146,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           descricao: values.description || null,
           preco: values.price,
           estoque: values.stock_quantity || 0,
-          estoque_minimo: 0,
           categoria: 'Geral',
-          imagens: values.images,
-          is_active: values.is_active,
-          destaque: false,
-          commission_value: values.commission_value || 0,
-          commission_percentage: values.commission_percentage || 0,
+          imagem_url: values.images[0] || null,
+          ativo: values.is_active,
         };
 
         console.log('📝 Insert data:', productData);
