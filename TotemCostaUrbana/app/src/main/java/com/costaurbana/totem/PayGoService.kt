@@ -88,6 +88,14 @@ class PayGoService(private val context: Context) {
     // Dados de transação pendente (para resolução)
     private var lastPendingData: JSONObject? = null
     
+    // ════════════════════════════════════════════════════════════════════════════
+    // CRÍTICO: URI ORIGINAL do TransacaoPendenteDados
+    // Conforme documentação oficial PayGo (GitHub mobile-integracao-uri):
+    // A string retornada em TransacaoPendenteDados JÁ É uma URI completa
+    // que deve ser usada DIRETAMENTE no broadcast, sem reconstrução!
+    // ════════════════════════════════════════════════════════════════════════════
+    private var originalPendingUri: String? = null
+    
     // SharedPreferences para persistir dados de pendência
     private val prefs: SharedPreferences = context.getSharedPreferences("paygo_pending", Context.MODE_PRIVATE)
     
@@ -659,6 +667,12 @@ class PayGoService(private val context: Context) {
                 addLog("[PERSIST] Erro ao carregar pendência: ${e.message}")
             }
         }
+        
+        // CRÍTICO: Carregar URI original do TransacaoPendenteDados
+        originalPendingUri = prefs.getString("original_pending_uri", null)
+        if (originalPendingUri != null) {
+            addLog("[PERSIST] URI original carregada: $originalPendingUri")
+        }
     }
     
     /**
@@ -667,9 +681,12 @@ class PayGoService(private val context: Context) {
      */
     fun clearPersistedPendingData() {
         lastPendingData = null
+        originalPendingUri = null  // CRÍTICO: Limpar também a URI original
         prefs.edit()
             .remove("pending_data")
             .remove("pending_timestamp")
+            .remove("original_pending_uri")  // CRÍTICO: Limpar URI original
+            .remove("pending_source")
             .apply()
         addLog("[PERSIST] ✅ Dados de pendência limpos (validação confirmada)")
     }
@@ -809,41 +826,71 @@ class PayGoService(private val context: Context) {
     
     /**
      * Resolve pendência usando dados completos (providerName, merchantId, etc)
-     * Conforme documentação OFICIAL: https://github.com/adminti2/mobile-integracao-uri#343-resolução-de-pendência
      * 
-     * IMPORTANTE: A documentação mostra que são necessários DOIS extras:
-     * 1. "uri" = URI da pendência (app://resolve/pendingTransaction?providerName=xxx&...)
-     * 2. "Confirmacao" = URI de confirmação (app://resolve/confirmation?transactionStatus=xxx)
+     * ════════════════════════════════════════════════════════════════════════════
+     * IMPLEMENTAÇÃO CONFORME DOCUMENTAÇÃO OFICIAL PAYGO (GitHub mobile-integracao-uri)
+     * ════════════════════════════════════════════════════════════════════════════
      * 
-     * Exemplo da doc:
-     * transacao.putExtra("uri", uriPendencia);
-     * transacao.putExtra("Confirmacao", "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO");
+     * A documentação mostra que o TransacaoPendenteDados JÁ É uma URI completa
+     * que deve ser usada DIRETAMENTE no broadcast, sem reconstrução!
+     * 
+     * Código oficial do exemplo (MainActivity.java):
+     * ```java
+     * transacaoPendente = intent.getStringExtra("TransacaoPendenteDados");
+     * Intent transacao = startConfirmacao(transacaoPendente); // USA DIRETAMENTE!
+     * transacao.putExtra("Confirmacao", "app://resolve/confirmation?transactionStatus=...");
+     * this.sendBroadcast(transacao);
+     * ```
+     * 
+     * PRIORIDADE:
+     * 1. Usar URI ORIGINAL do TransacaoPendenteDados (se disponível)
+     * 2. Fallback: Reconstruir URI a partir dos dados parseados
      */
     private fun resolvePendingWithFullData(pendingData: JSONObject, status: String, callback: (JSONObject) -> Unit) {
         try {
-            // 1. URI da pendência (DADOS da transação pendente)
-            // Formato: app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&hostNsu=xxx&localNsu=xxx&transactionNsu=xxx
-            val pendingUri = Uri.Builder()
-                .scheme("app")
-                .authority("resolve")
-                .appendPath("pendingTransaction")
-                .appendQueryParameter("merchantId", pendingData.optString("merchantId", ""))
-                .appendQueryParameter("providerName", pendingData.optString("providerName", ""))
-                .appendQueryParameter("hostNsu", pendingData.optString("hostNsu", ""))
-                .appendQueryParameter("localNsu", pendingData.optString("localNsu", ""))
-                .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu", ""))
-                .build()
+            addLog("[RESOLVE] ════════════════════════════════════════")
+            addLog("[RESOLVE] RESOLUÇÃO DE PENDÊNCIA")
+            addLog("[RESOLVE] Status desejado: $status")
+            addLog("[RESOLVE] ════════════════════════════════════════")
             
-            // 2. URI de confirmação (STATUS desejado)
+            // ════════════════════════════════════════════════════════════════
+            // PRIORIDADE 1: Usar URI ORIGINAL do TransacaoPendenteDados
+            // Conforme documentação oficial, usar a string EXATA recebida do PayGo
+            // ════════════════════════════════════════════════════════════════
+            val savedOriginalUri = prefs.getString("original_pending_uri", null)
+            val pendingUriToUse: String
+            
+            if (!savedOriginalUri.isNullOrEmpty()) {
+                addLog("[RESOLVE] ✅ USANDO URI ORIGINAL do TransacaoPendenteDados")
+                addLog("[RESOLVE] URI Original: $savedOriginalUri")
+                pendingUriToUse = savedOriginalUri
+            } else {
+                // FALLBACK: Reconstruir URI (caso não tenha original - ex: dados de sessão)
+                addLog("[RESOLVE] ⚠️ URI original não disponível, reconstruindo...")
+                val reconstructedUri = Uri.Builder()
+                    .scheme("app")
+                    .authority("resolve")
+                    .appendPath("pendingTransaction")
+                    .appendQueryParameter("merchantId", pendingData.optString("merchantId", ""))
+                    .appendQueryParameter("providerName", pendingData.optString("providerName", ""))
+                    .appendQueryParameter("hostNsu", pendingData.optString("hostNsu", ""))
+                    .appendQueryParameter("localNsu", pendingData.optString("localNsu", ""))
+                    .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu", ""))
+                    .build()
+                pendingUriToUse = reconstructedUri.toString()
+                addLog("[RESOLVE] URI Reconstruída: $pendingUriToUse")
+            }
+            
+            // URI de confirmação (STATUS desejado)
             // Formato: app://resolve/confirmation?transactionStatus=CONFIRMADO_MANUAL ou DESFEITO_MANUAL
             val confirmationUri = "app://resolve/confirmation?transactionStatus=$status"
             
-            addLog("[RESOLVE] ════════════════════════════════════════")
-            addLog("[RESOLVE] RESOLUÇÃO DE PENDÊNCIA (2 URIs)")
-            addLog("[RESOLVE] URI Pendência: $pendingUri")
-            addLog("[RESOLVE] URI Confirmação: $confirmationUri")
-            addLog("[RESOLVE] Status desejado: $status")
-            addLog("[RESOLVE] ════════════════════════════════════════")
+            addLog("[RESOLVE] ────────────────────────────────────────")
+            addLog("[RESOLVE] BROADCAST PAYGO (seção 3.4.3)")
+            addLog("[RESOLVE] Action: $ACTION_CONFIRMATION")
+            addLog("[RESOLVE] Extra 'uri': $pendingUriToUse")
+            addLog("[RESOLVE] Extra 'Confirmacao': $confirmationUri")
+            addLog("[RESOLVE] ────────────────────────────────────────")
             
             // ════════════════════════════════════════════════════════════════
             // ENVIAR BROADCAST CONFORME DOCUMENTAÇÃO OFICIAL (seção 3.4.3)
@@ -851,33 +898,20 @@ class PayGoService(private val context: Context) {
             // Extras: "uri" (dados pendência) + "Confirmacao" (status)
             // ════════════════════════════════════════════════════════════════
             
-            addLog("[RESOLVE] 📡 Preparando broadcast para PayGo...")
-            addLog("[RESOLVE] Action: $ACTION_CONFIRMATION")
-            addLog("[RESOLVE] Extra 'uri': ${pendingUri}")
-            addLog("[RESOLVE] Extra 'Confirmacao': $confirmationUri")
-            
             val intent = Intent().apply {
                 action = ACTION_CONFIRMATION
-                putExtra(EXTRA_URI, pendingUri.toString())           // "uri" = dados da pendência
+                putExtra(EXTRA_URI, pendingUriToUse)                  // "uri" = URI original ou reconstruída
                 putExtra(EXTRA_CONFIRMACAO, confirmationUri)          // "Confirmacao" = status
                 addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
             }
             
-            // Log detalhado para debug
-            addLog("[RESOLVE] Intent Action: ${intent.action}")
-            addLog("[RESOLVE] Intent Flags: ${intent.flags}")
-            addLog("[RESOLVE] Intent Extras: uri=${intent.getStringExtra(EXTRA_URI)?.take(100)}...")
-            
+            addLog("[RESOLVE] 📡 Enviando broadcast...")
             context.sendBroadcast(intent)
-            addLog("[RESOLVE] ✅ Broadcast enviado!")
+            addLog("[RESOLVE] ✅ sendBroadcast() executado!")
             
             // ════════════════════════════════════════════════════════════════
             // LIMPAR DADOS LOCAIS APÓS ENVIAR BROADCAST
             // ════════════════════════════════════════════════════════════════
-            // O broadcast de resolução não tem resposta (conforme documentação oficial).
-            // Portanto, devemos assumir que foi processado e limpar os dados locais.
-            // Se não limparmos, getPendingInfo() continuará retornando hasPendingData=true
-            // e o frontend entrará em loop de validação infinito.
             addLog("[RESOLVE] 🧹 Limpando dados locais após envio...")
             clearPersistedPendingData()
             addLog("[RESOLVE] ✅ Dados locais limpos")
@@ -885,13 +919,14 @@ class PayGoService(private val context: Context) {
             callback(JSONObject().apply {
                 put("status", "resolvido")
                 put("mensagem", "Resolução de pendência ($status) enviada ao PayGo")
-                put("metodo", "full_pending_data_2_uris")
+                put("metodo", if (!savedOriginalUri.isNullOrEmpty()) "URI_ORIGINAL_TransacaoPendenteDados" else "URI_RECONSTRUIDA_fallback")
+                put("usouUriOriginal", !savedOriginalUri.isNullOrEmpty())
                 put("providerName", pendingData.optString("providerName"))
                 put("merchantId", pendingData.optString("merchantId"))
                 put("localNsu", pendingData.optString("localNsu"))
                 put("transactionNsu", pendingData.optString("transactionNsu"))
                 put("hostNsu", pendingData.optString("hostNsu"))
-                put("uriPendencia", pendingUri.toString())
+                put("uriEnviada", pendingUriToUse)
                 put("uriConfirmacao", confirmationUri)
                 put("pendingDataCleared", true)
             })
@@ -980,11 +1015,24 @@ class PayGoService(private val context: Context) {
     }
     
     /**
-     * NOVO: Salva dados de pendência a partir da URI "TransacaoPendenteDados"
+     * CRÍTICO: Salva dados de pendência a partir da URI "TransacaoPendenteDados"
      * 
-     * CRÍTICO: Esta função é chamada quando o PayGo retorna o extra "TransacaoPendenteDados"
-     * no Intent de resposta. Esses dados são da transação PENDENTE REAL, não da transação
-     * em curso que retornou erro (-2599).
+     * ════════════════════════════════════════════════════════════════════════════
+     * IMPLEMENTAÇÃO CONFORME DOCUMENTAÇÃO OFICIAL PAYGO (GitHub mobile-integracao-uri)
+     * ════════════════════════════════════════════════════════════════════════════
+     * 
+     * O TransacaoPendenteDados retornado pelo PayGo JÁ É uma URI completa que
+     * deve ser usada DIRETAMENTE no broadcast de resolução, sem reconstrução!
+     * 
+     * Código oficial do exemplo (MainActivity.java):
+     * ```java
+     * transacaoPendente = intent.getStringExtra("TransacaoPendenteDados");
+     * Intent transacao = startConfirmacao(transacaoPendente); // USA DIRETAMENTE!
+     * ```
+     * 
+     * Esta função:
+     * 1. SALVA A URI ORIGINAL (para uso direto no broadcast)
+     * 2. Também parseia os dados para exibição no frontend
      * 
      * Conforme documentação PayGo (seção 3.3.4):
      * - providerName: Provedor com o qual a transação está pendente
@@ -993,24 +1041,35 @@ class PayGoService(private val context: Context) {
      * - transactionNsu: NSU do servidor TEF da transação pendente
      * - hostNsu: NSU do provedor da transação pendente
      * 
-     * @param pendingDataUri URI no formato app://resolve/pendingTransaction?...
+     * @param pendingDataUri URI completa no formato app://resolve/pendingTransaction?...
      */
     fun savePendingDataFromUri(pendingDataUri: String) {
         addLog("[PENDING-URI] ════════════════════════════════════════")
         addLog("[PENDING-URI] RECEBIDO TransacaoPendenteDados do PayGo!")
-        addLog("[PENDING-URI] URI: $pendingDataUri")
+        addLog("[PENDING-URI] ════════════════════════════════════════")
+        addLog("[PENDING-URI] URI ORIGINAL (será usada diretamente):")
+        addLog("[PENDING-URI] $pendingDataUri")
+        addLog("[PENDING-URI] ────────────────────────────────────────")
         
         try {
+            // ════════════════════════════════════════════════════════════════
+            // CRÍTICO: SALVAR URI ORIGINAL PRIMEIRO!
+            // Conforme documentação oficial, esta URI deve ser usada DIRETAMENTE
+            // no broadcast de resolução, sem reconstrução.
+            // ════════════════════════════════════════════════════════════════
+            originalPendingUri = pendingDataUri
+            addLog("[PENDING-URI] ✅ URI ORIGINAL salva em memória")
+            
+            // Parsear para extrair dados (apenas para exibição/debug)
             val uri = Uri.parse(pendingDataUri)
             
-            // Extrair parâmetros da URI de pendência
             val providerName = uri.getQueryParameter("providerName") ?: ""
             val merchantId = uri.getQueryParameter("merchantId") ?: ""
             val localNsu = uri.getQueryParameter("localNsu") ?: ""
             val transactionNsu = uri.getQueryParameter("transactionNsu")?.takeIf { it.isNotEmpty() } ?: localNsu
             val hostNsu = uri.getQueryParameter("hostNsu")?.takeIf { it.isNotEmpty() } ?: transactionNsu
             
-            addLog("[PENDING-URI] Dados parseados:")
+            addLog("[PENDING-URI] Dados parseados (para exibição):")
             addLog("[PENDING-URI]   providerName: $providerName")
             addLog("[PENDING-URI]   merchantId: $merchantId")
             addLog("[PENDING-URI]   localNsu: $localNsu")
@@ -1019,33 +1078,48 @@ class PayGoService(private val context: Context) {
             
             // Validar campos obrigatórios
             if (providerName.isEmpty() || merchantId.isEmpty()) {
-                addLog("[PENDING-URI] ⚠️ ALERTA: providerName ou merchantId vazios!")
+                addLog("[PENDING-URI] ⚠️ ALERTA: providerName ou merchantId vazios na URI!")
             }
             
-            // Criar objeto de pendência com os dados REAIS da transação pendente
+            // Criar objeto de pendência com os dados (para frontend)
             lastPendingData = JSONObject().apply {
                 put("providerName", providerName)
                 put("merchantId", merchantId)
                 put("localNsu", localNsu)
                 put("transactionNsu", transactionNsu)
                 put("hostNsu", hostNsu)
-                put("source", "TransacaoPendenteDados")  // Marcar a origem
+                put("source", "TransacaoPendenteDados")
+                put("originalUri", pendingDataUri)  // Incluir URI original no objeto também
                 put("timestamp", System.currentTimeMillis())
             }
             
-            // Persistir em SharedPreferences
+            // ════════════════════════════════════════════════════════════════
+            // PERSISTIR TUDO EM SHAREDPREFERENCES
+            // CRÍTICO: Salvar original_pending_uri para sobreviver reinícios
+            // ════════════════════════════════════════════════════════════════
             prefs.edit()
                 .putString("pending_data", lastPendingData.toString())
+                .putString("original_pending_uri", pendingDataUri)  // ← CRÍTICO!
                 .putString("pending_source", "TransacaoPendenteDados")
                 .putLong("pending_timestamp", System.currentTimeMillis())
                 .apply()
             
+            addLog("[PENDING-URI] ✅ URI ORIGINAL persistida em SharedPreferences")
             addLog("[PENDING-URI] ✅ Dados da transação PENDENTE REAL salvos!")
             addLog("[PENDING-URI] ════════════════════════════════════════")
             
         } catch (e: Exception) {
-            Log.e(TAG, "Erro ao parsear TransacaoPendenteDados: ${e.message}", e)
+            Log.e(TAG, "Erro ao processar TransacaoPendenteDados: ${e.message}", e)
             addLog("[PENDING-URI] ❌ ERRO: ${e.message}")
+            
+            // Mesmo em caso de erro no parse, tentar salvar a URI original
+            if (pendingDataUri.isNotEmpty()) {
+                originalPendingUri = pendingDataUri
+                prefs.edit()
+                    .putString("original_pending_uri", pendingDataUri)
+                    .apply()
+                addLog("[PENDING-URI] ⚠️ URI original salva mesmo com erro de parse")
+            }
         }
     }
 
