@@ -955,47 +955,40 @@ export default function TotemTEFHomologacaoV3() {
                   </div>
                 )}
                 
-                {/* DESTAQUE: Micro-transação se já tentou resolver */}
-                {(showMicroTransactionOffer || resolutionAttempted) && (
-                  <div className="bg-green-900/70 p-2 rounded border border-green-500">
-                    <p className="text-green-300 font-bold text-[10px] mb-1">🚀 FORÇAR RESOLUÇÃO</p>
+                {/* Botões de resolução - SEMPRE VISÍVEIS */}
+                <div className="space-y-2">
+                  {/* Linha 1: CONFIRMAR e DESFAZER */}
+                  <div className="grid grid-cols-2 gap-1">
                     <Button 
-                      className={`${btnBase} bg-green-600 text-white w-full h-8 text-xs font-bold`}
-                      onPointerDown={() => {
-                        setShowMicroTransactionOffer(false);
-                        setResolutionAttempted(false);
-                        clearPendingData();
-                        iniciarVenda(1);
-                      }}
+                      className={`${btnPrimary} h-8 text-[10px]`}
+                      onPointerDown={() => resolverPendencia('confirmar')}
                     >
-                      <Send className="w-3 h-3 mr-1" />
-                      MICRO-TRANSAÇÃO R$ 0,01
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      CONFIRMAR
+                    </Button>
+                    <Button 
+                      className={`${btnDanger} h-8 text-[10px]`}
+                      onPointerDown={() => resolverPendencia('desfazer')}
+                    >
+                      <XCircle className="w-3 h-3 mr-1" />
+                      DESFAZER
                     </Button>
                   </div>
-                )}
-                
-                {/* Botões de resolução broadcast */}
-                {!showMicroTransactionOffer && !resolutionAttempted && (
-                  <div className="space-y-1">
-                    <p className="text-[9px] text-gray-500">Tentar via broadcast:</p>
-                    <div className="grid grid-cols-2 gap-1">
-                      <Button 
-                        className={`${btnPrimary} h-8 text-[10px]`}
-                        onPointerDown={() => resolverPendencia('confirmar')}
-                      >
-                        <CheckCircle className="w-3 h-3 mr-1" />
-                        CONFIRMAR
-                      </Button>
-                      <Button 
-                        className={`${btnDanger} h-8 text-[10px]`}
-                        onPointerDown={() => resolverPendencia('desfazer')}
-                      >
-                        <XCircle className="w-3 h-3 mr-1" />
-                        DESFAZER
-                      </Button>
-                    </div>
-                  </div>
-                )}
+                  
+                  {/* Linha 2: MICRO-TRANSAÇÃO - SEMPRE VISÍVEL */}
+                  <Button 
+                    className={`${btnBase} bg-green-600 text-white w-full h-10 text-xs font-bold border-2 border-green-400`}
+                    onPointerDown={() => {
+                      setShowMicroTransactionOffer(false);
+                      setResolutionAttempted(false);
+                      clearPendingData();
+                      iniciarVenda(1);
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-1" />
+                    🚀 MICRO-TRANSAÇÃO R$ 0,01 (FORÇA RESOLUÇÃO)
+                  </Button>
+                </div>
                 
                 {/* Ações auxiliares */}
                 <div className="flex gap-1">
