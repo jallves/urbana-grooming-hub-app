@@ -113,6 +113,10 @@ export default function TotemTEFHomologacaoV3() {
   const [showSuccessModal, setShowSuccessModal] = useState(false);
   const [approvedTransaction, setApprovedTransaction] = useState<PayGoTransactionResponse | null>(null);
   
+  // Estado para oferecer micro-transação após falha na resolução
+  const [showMicroTransactionOffer, setShowMicroTransactionOffer] = useState(false);
+  const [resolutionAttempted, setResolutionAttempted] = useState(false);
+  
   // Refs
   const processingRef = useRef(false);
   const logsEndRef = useRef<HTMLDivElement>(null);
@@ -556,6 +560,9 @@ export default function TotemTEFHomologacaoV3() {
     addLog('info', '');
     addLog('info', '⏳ Aguardando 1.5s para verificar se SDK removeu pendência...');
 
+    // Marcar que tentamos resolver
+    setResolutionAttempted(true);
+
     setTimeout(() => {
       try {
         if (window.TEF?.hasPendingTransaction) {
@@ -747,7 +754,7 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex-1 md:w-1/2 p-2 md:p-4 flex flex-col gap-3 overflow-y-auto">
           
           {/* Alerta de Pendência */}
-          {status === 'pending_detected' && pendingData && (
+          {status === 'pending_detected' && (
             <Card className="bg-red-900/50 border-red-500">
               <CardHeader className="p-3 pb-2">
                 <CardTitle className="text-red-400 flex items-center gap-2 text-sm md:text-base">
@@ -756,56 +763,72 @@ export default function TotemTEFHomologacaoV3() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3 pt-0 space-y-2">
+                
+                {/* DESTAQUE: Micro-transação como solução principal após tentativa de resolução */}
+                {(showMicroTransactionOffer || resolutionAttempted) && (
+                  <div className="bg-green-900/70 p-3 rounded border-2 border-green-500 animate-pulse">
+                    <p className="text-green-300 font-bold text-sm mb-2">
+                      🚀 PRÓXIMO PASSO RECOMENDADO
+                    </p>
+                    <p className="text-[10px] md:text-xs text-green-200 mb-3">
+                      A tentativa de broadcast foi enviada, mas em <strong>modo autoatendimento</strong> a resolução real só acontece na <strong>próxima transação</strong>.
+                    </p>
+                    <Button 
+                      className={`${btnBase} bg-green-600 text-white w-full h-12 text-sm font-bold shadow-lg`}
+                      onPointerDown={() => {
+                        setShowMicroTransactionOffer(false);
+                        setResolutionAttempted(false);
+                        setStatus('idle');
+                        iniciarVenda(1);
+                      }}
+                    >
+                      <Send className="w-5 h-5 mr-2" />
+                      EXECUTAR MICRO-TRANSAÇÃO R$ 0,01
+                    </Button>
+                    <p className="text-[8px] md:text-[10px] text-green-400 mt-2 text-center">
+                      Isso força o PayGo a resolver automaticamente antes de processar
+                    </p>
+                  </div>
+                )}
+                
                 {/* Aviso sobre modo autoatendimento */}
                 <div className="text-[10px] md:text-xs text-yellow-400 bg-yellow-900/30 p-2 rounded border border-yellow-700">
                   <p className="font-bold mb-1">⚠️ MODO AUTOATENDIMENTO</p>
-                  <p>Conforme documentação PayGo, em modo autoatendimento o broadcast de resolução pode não funcionar.</p>
-                  <p className="mt-1">A pendência será resolvida automaticamente na <strong>próxima transação</strong>.</p>
+                  <p>Conforme documentação PayGo, o broadcast de resolução pode não funcionar.</p>
                 </div>
                 
-                <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
-                  <p>Provider: {pendingData.providerName}</p>
-                  <p>Merchant: {pendingData.merchantId}</p>
-                  <p>NSU: {pendingData.transactionNsu}</p>
-                </div>
+                {pendingData && (
+                  <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
+                    <p>Provider: {pendingData.providerName}</p>
+                    <p>Merchant: {pendingData.merchantId}</p>
+                    <p>NSU: {pendingData.transactionNsu}</p>
+                  </div>
+                )}
                 
-                {/* Botões de resolução via broadcast (pode não funcionar em autoatendimento) */}
-                <div className="grid grid-cols-2 gap-2">
-                  <Button 
-                    className={`${btnPrimary} h-10 md:h-12 text-xs md:text-sm`}
-                    onPointerDown={() => resolverPendencia('confirmar')}
-                  >
-                    <CheckCircle className="w-4 h-4 mr-1" />
-                    CONFIRMAR
-                  </Button>
-                  <Button 
-                    className={`${btnDanger} h-10 md:h-12 text-xs md:text-sm`}
-                    onPointerDown={() => resolverPendencia('desfazer')}
-                  >
-                    <XCircle className="w-4 h-4 mr-1" />
-                    DESFAZER
-                  </Button>
-                </div>
+                {/* Botões de resolução via broadcast (fallback) */}
+                {!showMicroTransactionOffer && !resolutionAttempted && (
+                  <>
+                    <p className="text-[10px] text-gray-400">Tentar resolução via broadcast (pode não funcionar):</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button 
+                        className={`${btnPrimary} h-10 md:h-12 text-xs md:text-sm`}
+                        onPointerDown={() => resolverPendencia('confirmar')}
+                      >
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        CONFIRMAR
+                      </Button>
+                      <Button 
+                        className={`${btnDanger} h-10 md:h-12 text-xs md:text-sm`}
+                        onPointerDown={() => resolverPendencia('desfazer')}
+                      >
+                        <XCircle className="w-4 h-4 mr-1" />
+                        DESFAZER
+                      </Button>
+                    </div>
+                  </>
+                )}
                 
-                {/* SOLUÇÃO PRINCIPAL: Micro-transação para forçar resolução automática */}
-                <div className="bg-blue-900/50 p-2 rounded border border-blue-600">
-                  <p className="text-[10px] text-blue-300 mb-2">
-                    💡 <strong>SOLUÇÃO RECOMENDADA:</strong> Fazer uma micro-transação de R$ 0,01 para forçar o PayGo a resolver automaticamente a pendência antes de processar.
-                  </p>
-                  <Button 
-                    className={`${btnBase} bg-blue-600 text-white w-full h-10 text-xs font-bold`}
-                    onPointerDown={() => {
-                      // Limpar o estado de pendência para permitir a transação
-                      setStatus('idle');
-                      // Iniciar micro-transação de 1 centavo
-                      iniciarVenda(1);
-                    }}
-                  >
-                    <Send className="w-4 h-4 mr-2" />
-                    MICRO-TRANSAÇÃO R$ 0,01 (FORÇA RESOLUÇÃO)
-                  </Button>
-                </div>
-                
+                {/* Opções adicionais */}
                 <div className="flex gap-2">
                   <Button 
                     className={`${btnWarning} flex-1 h-8 text-xs`}
@@ -816,10 +839,14 @@ export default function TotemTEFHomologacaoV3() {
                   </Button>
                   <Button 
                     className={`${btnOutline} flex-1 h-8 text-xs`}
-                    onPointerDown={clearPendingData}
+                    onPointerDown={() => {
+                      clearPendingData();
+                      setShowMicroTransactionOffer(false);
+                      setResolutionAttempted(false);
+                    }}
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
-                    Limpar Local
+                    Limpar/Fechar
                   </Button>
                 </div>
               </CardContent>
