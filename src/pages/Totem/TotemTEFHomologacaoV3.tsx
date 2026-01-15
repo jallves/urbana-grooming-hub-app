@@ -285,6 +285,34 @@ export default function TotemTEFHomologacaoV3() {
     addLog('error', `❌ Negada: ${response.transactionResult}`);
     setApprovedTransaction(response);
     setShowSuccessModal(true);
+
+    // IMPORTANTE: pode existir pendência mesmo quando a UI viu "negada".
+    // Em modo unattended, o SDK pode manter/reativar pendência e a próxima venda falha.
+    try {
+      const hasPendingNow = !!window.TEF?.hasPendingTransaction?.();
+      if (hasPendingNow && window.TEF?.getPendingTransactionInfo) {
+        const info = window.TEF.getPendingTransactionInfo();
+        const parsed = JSON.parse(info);
+        addLog('warning', '⚠️ Pendência detectada após NEGADA', parsed);
+
+        const pendingInfo: PendingTransactionData = {
+          providerName: parsed.providerName || raw.providerName || 'DEMO',
+          merchantId: parsed.merchantId || raw.merchantId || '',
+          localNsu: parsed.localNsu || raw.localNsu || raw.terminalNsu || '',
+          transactionNsu: parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
+          hostNsu: parsed.hostNsu || raw.hostNsu || parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
+          timestamp: Date.now(),
+        };
+
+        setPendingData(pendingInfo);
+        savePendingDataToStorage(pendingInfo);
+        setStatus('pending_detected');
+        return;
+      }
+    } catch (e) {
+      addLog('debug', 'Erro ao checar pendência após NEGADA', e);
+    }
+
     setStatus('error');
   }, [addLog]);
   
@@ -987,23 +1015,25 @@ export default function TotemTEFHomologacaoV3() {
         open={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
-          
-          // CRÍTICO: Se é uma pendência (-2599), NÃO resetar para idle!
-          // Manter o status 'pending_detected' para forçar resolução antes de nova transação
-          const isPendingError = approvedTransaction?.transactionResult === -2599;
-          
-          if (isPendingError) {
-            // Manter pendingData e status para forçar resolução
-            addLog('warning', '⚠️ Modal fechado - PENDÊNCIA ainda precisa ser resolvida!');
+
+          // Regra: se ainda há pendência no SDK (ou pendingData local), não deixar voltar para idle.
+          // Isso evita o cenário: "UI mostra NEGADA", fecha modal, tenta nova venda, e estoura -2599.
+          let hasPendingNow = false;
+          try {
+            hasPendingNow = !!window.TEF?.hasPendingTransaction?.();
+          } catch {
+            hasPendingNow = false;
+          }
+
+          const mustResolvePending = hasPendingNow || !!pendingData || approvedTransaction?.transactionResult === -2599;
+
+          if (mustResolvePending) {
+            addLog('warning', '⚠️ Modal fechado - pendência ainda existe (resolver antes de nova venda)');
             setStatus('pending_detected');
-          } else if (approvedTransaction?.transactionResult === 0) {
-            // Transação aprovada - pode voltar para idle
-            setStatus('idle');
           } else {
-            // Transação negada (não é pendência) - pode voltar para idle
             setStatus('idle');
           }
-          
+
           setApprovedTransaction(null);
         }}
         transaction={approvedTransaction}
