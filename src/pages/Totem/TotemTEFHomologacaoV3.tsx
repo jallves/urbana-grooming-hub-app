@@ -747,321 +747,319 @@ export default function TotemTEFHomologacaoV3() {
         </div>
       </div>
       
-      {/* Main Content */}
+      {/* Main Content - Layout Unificado */}
       <div className="flex-1 flex flex-col md:flex-row overflow-hidden">
         
-        {/* Left Panel - Controles */}
-        <div className="flex-1 md:w-1/2 p-2 md:p-4 flex flex-col gap-3 overflow-y-auto">
+        {/* Left Panel - Controles (dividido em 2 seções) */}
+        <div className="flex-1 md:w-1/2 flex flex-col overflow-hidden">
           
-          {/* Alerta de Pendência */}
-          {status === 'pending_detected' && (
-            <Card className="bg-red-900/50 border-red-500">
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="text-red-400 flex items-center gap-2 text-sm md:text-base">
-                  <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
-                  PENDÊNCIA DETECTADA (-2599)
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-2">
+          {/* SEÇÃO SUPERIOR: Vendas */}
+          <div className="flex-1 p-2 md:p-3 overflow-y-auto border-b border-gray-700">
+            
+            {/* Painel de Confirmação (Passo 33) */}
+            {status === 'awaiting_confirmation' && lastTransaction && (
+              <Card className="bg-yellow-900/50 border-yellow-500 mb-3">
+                <CardHeader className="p-3 pb-2">
+                  <CardTitle className="text-yellow-400 flex items-center gap-2 text-sm md:text-base">
+                    <Clock className="w-4 h-4 md:w-5 md:h-5" />
+                    AGUARDANDO CONFIRMAÇÃO
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-3 pt-0 space-y-2">
+                  <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
+                    <p>ID: {lastTransaction.confirmationTransactionId}</p>
+                    <p>Valor: R$ {((lastTransaction.amount || 0) / 100).toFixed(2)}</p>
+                    <p>NSU: {lastTransaction.transactionNsu}</p>
+                  </div>
+                  <Button 
+                    className={`${btnPrimary} w-full h-10 text-sm`}
+                    onPointerDown={confirmarTransacao}
+                  >
+                    <CheckCircle className="w-4 h-4 mr-1" />
+                    CONFIRMAR
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Sucesso rápido */}
+            {status === 'success' && (
+              <Card className="bg-green-900/50 border-green-500 mb-3">
+                <CardContent className="p-4 text-center">
+                  <CheckCircle className="w-10 h-10 text-green-400 mx-auto mb-2" />
+                  <p className="text-green-400 text-lg font-bold">CONCLUÍDA</p>
+                  <Button 
+                    className={`${btnSecondary} mt-2 h-8 text-xs`}
+                    onPointerDown={() => setStatus('idle')}
+                  >
+                    Nova Transação
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Processing */}
+            {status === 'processing' && (
+              <Card className="bg-blue-900/50 border-blue-500 mb-3">
+                <CardContent className="p-4 text-center">
+                  <Loader2 className="w-10 h-10 text-blue-400 mx-auto mb-2 animate-spin" />
+                  <p className="text-blue-400 text-lg font-bold">PROCESSANDO...</p>
+                  <p className="text-gray-400 text-xs">Aguarde o pinpad</p>
+                </CardContent>
+              </Card>
+            )}
+            
+            {/* Método de Pagamento e Teclado - sempre visível exceto quando processing */}
+            {status !== 'processing' && (
+              <div className="space-y-2">
+                {/* Método de Pagamento compacto */}
+                <div className="grid grid-cols-3 gap-1">
+                  <Button 
+                    className={`h-10 flex flex-col items-center justify-center gap-0.5 ${
+                      paymentMethod === 'credit' 
+                        ? 'bg-blue-600 text-white border-blue-400' 
+                        : 'bg-gray-700 text-gray-300 border-gray-600'
+                    } ${btnBase} border`}
+                    onPointerDown={() => setPaymentMethod('credit')}
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-[8px]">CRÉDITO</span>
+                  </Button>
+                  <Button 
+                    className={`h-10 flex flex-col items-center justify-center gap-0.5 ${
+                      paymentMethod === 'debit' 
+                        ? 'bg-green-600 text-white border-green-400' 
+                        : 'bg-gray-700 text-gray-300 border-gray-600'
+                    } ${btnBase} border`}
+                    onPointerDown={() => setPaymentMethod('debit')}
+                  >
+                    <Banknote className="w-4 h-4" />
+                    <span className="text-[8px]">DÉBITO</span>
+                  </Button>
+                  <Button 
+                    className={`h-10 flex flex-col items-center justify-center gap-0.5 ${
+                      paymentMethod === 'pix' 
+                        ? 'bg-teal-600 text-white border-teal-400' 
+                        : 'bg-gray-700 text-gray-300 border-gray-600'
+                    } ${btnBase} border`}
+                    onPointerDown={() => setPaymentMethod('pix')}
+                  >
+                    <QrCode className="w-4 h-4" />
+                    <span className="text-[8px]">PIX</span>
+                  </Button>
+                </div>
                 
-                {/* DESTAQUE: Micro-transação como solução principal após tentativa de resolução */}
-                {(showMicroTransactionOffer || resolutionAttempted) && (
-                  <div className="bg-green-900/70 p-3 rounded border-2 border-green-500 animate-pulse">
-                    <p className="text-green-300 font-bold text-sm mb-2">
-                      🚀 PRÓXIMO PASSO RECOMENDADO
-                    </p>
-                    <p className="text-[10px] md:text-xs text-green-200 mb-3">
-                      A tentativa de broadcast foi enviada, mas em <strong>modo autoatendimento</strong> a resolução real só acontece na <strong>próxima transação</strong>.
-                    </p>
-                    <Button 
-                      className={`${btnBase} bg-green-600 text-white w-full h-12 text-sm font-bold shadow-lg`}
-                      onPointerDown={() => {
-                        setShowMicroTransactionOffer(false);
-                        setResolutionAttempted(false);
-                        setStatus('idle');
-                        iniciarVenda(1);
-                      }}
-                    >
-                      <Send className="w-5 h-5 mr-2" />
-                      EXECUTAR MICRO-TRANSAÇÃO R$ 0,01
-                    </Button>
-                    <p className="text-[8px] md:text-[10px] text-green-400 mt-2 text-center">
-                      Isso força o PayGo a resolver automaticamente antes de processar
-                    </p>
+                {/* Parcelas compacto - só crédito */}
+                {paymentMethod === 'credit' && (
+                  <div className="grid grid-cols-6 gap-0.5">
+                    {PARCELAS_OPCOES.map(p => (
+                      <Button 
+                        key={p}
+                        className={`h-6 text-[10px] ${
+                          parcelas === p 
+                            ? 'bg-blue-600 text-white' 
+                            : 'bg-gray-700 text-gray-300'
+                        } ${btnBase}`}
+                        onPointerDown={() => setParcelas(p)}
+                      >
+                        {p}x
+                      </Button>
+                    ))}
                   </div>
                 )}
                 
-                {/* Aviso sobre modo autoatendimento */}
-                <div className="text-[10px] md:text-xs text-yellow-400 bg-yellow-900/30 p-2 rounded border border-yellow-700">
-                  <p className="font-bold mb-1">⚠️ MODO AUTOATENDIMENTO</p>
-                  <p>Conforme documentação PayGo, o broadcast de resolução pode não funcionar.</p>
+                {/* Valor */}
+                <div className="text-2xl font-bold text-center py-2 bg-black/50 rounded border border-yellow-600/50">
+                  <span className="text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
+                    {formatarValor(valorCentavos)}
+                  </span>
                 </div>
                 
+                {/* Atalhos homologação */}
+                <div className="grid grid-cols-2 gap-1">
+                  <Button 
+                    className={`${btnOutline} text-yellow-400 border-yellow-500 text-[9px] h-6`}
+                    onPointerDown={() => setValorCentavos(PASSOS_HOMOLOGACAO.PASSO_33.valor.toString())}
+                  >
+                    P33 (R$ 1.005,60)
+                  </Button>
+                  <Button 
+                    className={`${btnOutline} text-orange-400 border-orange-500 text-[9px] h-6`}
+                    onPointerDown={() => setValorCentavos(PASSOS_HOMOLOGACAO.PASSO_34.valor.toString())}
+                  >
+                    P34 (R$ 1.005,61)
+                  </Button>
+                </div>
+                
+                {/* Teclado compacto */}
+                <div className="grid grid-cols-3 gap-1">
+                  {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => (
+                    <Button 
+                      key={d} 
+                      className={`${btnSecondary} h-8 text-lg`}
+                      onPointerDown={() => handleDigit(d)}
+                    >
+                      {d}
+                    </Button>
+                  ))}
+                  <Button 
+                    className={`${btnOutline} h-8 text-xs`}
+                    onPointerDown={handleClear}
+                  >
+                    C
+                  </Button>
+                  <Button 
+                    className={`${btnSecondary} h-8 text-lg`}
+                    onPointerDown={() => handleDigit('0')}
+                  >
+                    0
+                  </Button>
+                  <Button 
+                    className={`${btnOutline} h-8 text-sm`}
+                    onPointerDown={handleBackspace}
+                  >
+                    ←
+                  </Button>
+                </div>
+                
+                {/* Botão de Venda */}
+                <Button 
+                  className={`${btnPrimary} w-full h-10 text-sm`}
+                  onPointerDown={handleConfirm}
+                  disabled={!valorCentavos || parseInt(valorCentavos) === 0 || status === 'pending_detected'}
+                >
+                  <Send className="w-4 h-4 mr-1" />
+                  {status === 'pending_detected' ? 'RESOLVA PENDÊNCIA PRIMEIRO' : 'INICIAR VENDA'}
+                </Button>
+              </div>
+            )}
+          </div>
+          
+          {/* SEÇÃO INFERIOR: Painel de Resolução de Pendência - SEMPRE VISÍVEL */}
+          <div className="h-48 md:h-56 p-2 md:p-3 overflow-y-auto bg-gray-800/50 flex-shrink-0">
+            <div className="text-xs font-bold text-gray-400 mb-2 flex items-center gap-1">
+              <AlertTriangle className="w-3 h-3" />
+              RESOLUÇÃO DE PENDÊNCIA
+              {(status === 'pending_detected' || pendingData) && <Badge className="bg-red-600 text-white text-[10px] ml-1 animate-pulse">ATIVA</Badge>}
+            </div>
+            
+            {/* Pendência Detectada */}
+            {status === 'pending_detected' || pendingData ? (
+              <div className="space-y-2">
+                {/* Dados da pendência */}
                 {pendingData && (
-                  <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
+                  <div className="text-[9px] text-gray-300 font-mono bg-black/30 p-1.5 rounded grid grid-cols-3 gap-1">
                     <p>Provider: {pendingData.providerName}</p>
                     <p>Merchant: {pendingData.merchantId}</p>
                     <p>NSU: {pendingData.transactionNsu}</p>
                   </div>
                 )}
                 
-                {/* Botões de resolução via broadcast (fallback) */}
+                {/* DESTAQUE: Micro-transação se já tentou resolver */}
+                {(showMicroTransactionOffer || resolutionAttempted) && (
+                  <div className="bg-green-900/70 p-2 rounded border border-green-500">
+                    <p className="text-green-300 font-bold text-[10px] mb-1">🚀 FORÇAR RESOLUÇÃO</p>
+                    <Button 
+                      className={`${btnBase} bg-green-600 text-white w-full h-8 text-xs font-bold`}
+                      onPointerDown={() => {
+                        setShowMicroTransactionOffer(false);
+                        setResolutionAttempted(false);
+                        clearPendingData();
+                        iniciarVenda(1);
+                      }}
+                    >
+                      <Send className="w-3 h-3 mr-1" />
+                      MICRO-TRANSAÇÃO R$ 0,01
+                    </Button>
+                  </div>
+                )}
+                
+                {/* Botões de resolução broadcast */}
                 {!showMicroTransactionOffer && !resolutionAttempted && (
-                  <>
-                    <p className="text-[10px] text-gray-400">Tentar resolução via broadcast (pode não funcionar):</p>
-                    <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <p className="text-[9px] text-gray-500">Tentar via broadcast:</p>
+                    <div className="grid grid-cols-2 gap-1">
                       <Button 
-                        className={`${btnPrimary} h-10 md:h-12 text-xs md:text-sm`}
+                        className={`${btnPrimary} h-8 text-[10px]`}
                         onPointerDown={() => resolverPendencia('confirmar')}
                       >
-                        <CheckCircle className="w-4 h-4 mr-1" />
+                        <CheckCircle className="w-3 h-3 mr-1" />
                         CONFIRMAR
                       </Button>
                       <Button 
-                        className={`${btnDanger} h-10 md:h-12 text-xs md:text-sm`}
+                        className={`${btnDanger} h-8 text-[10px]`}
                         onPointerDown={() => resolverPendencia('desfazer')}
                       >
-                        <XCircle className="w-4 h-4 mr-1" />
+                        <XCircle className="w-3 h-3 mr-1" />
                         DESFAZER
                       </Button>
                     </div>
-                  </>
+                  </div>
                 )}
                 
-                {/* Opções adicionais */}
-                <div className="flex gap-2">
+                {/* Ações auxiliares */}
+                <div className="flex gap-1">
                   <Button 
-                    className={`${btnWarning} flex-1 h-8 text-xs`}
+                    className={`${btnWarning} flex-1 h-7 text-[9px]`}
                     onPointerDown={abrirMenuAdministrativo}
                   >
-                    <Menu className="w-3 h-3 mr-1" />
-                    Menu PayGo
+                    <Menu className="w-3 h-3 mr-0.5" />
+                    PayGo
                   </Button>
                   <Button 
-                    className={`${btnOutline} flex-1 h-8 text-xs`}
+                    className={`${btnOutline} flex-1 h-7 text-[9px]`}
                     onPointerDown={() => {
                       clearPendingData();
                       setShowMicroTransactionOffer(false);
                       setResolutionAttempted(false);
                     }}
                   >
-                    <Trash2 className="w-3 h-3 mr-1" />
-                    Limpar/Fechar
+                    <Trash2 className="w-3 h-3 mr-0.5" />
+                    Limpar
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Painel de Confirmação (Passo 33) */}
-          {status === 'awaiting_confirmation' && lastTransaction && (
-            <Card className="bg-yellow-900/50 border-yellow-500">
-              <CardHeader className="p-3 pb-2">
-                <CardTitle className="text-yellow-400 flex items-center gap-2 text-sm md:text-base">
-                  <Clock className="w-4 h-4 md:w-5 md:h-5" />
-                  AGUARDANDO CONFIRMAÇÃO
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-3 pt-0 space-y-2">
-                <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
-                  <p>ID: {lastTransaction.confirmationTransactionId}</p>
-                  <p>Valor: R$ {((lastTransaction.amount || 0) / 100).toFixed(2)}</p>
-                  <p>NSU: {lastTransaction.transactionNsu}</p>
-                </div>
-                
-                <Button 
-                  className={`${btnPrimary} w-full h-12 text-sm md:text-base`}
-                  onPointerDown={confirmarTransacao}
-                >
-                  <CheckCircle className="w-5 h-5 mr-2" />
-                  CONFIRMAR TRANSAÇÃO
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Sucesso */}
-          {status === 'success' && (
-            <Card className="bg-green-900/50 border-green-500">
-              <CardContent className="p-6 text-center">
-                <CheckCircle className="w-12 h-12 md:w-16 md:h-16 text-green-400 mx-auto mb-3" />
-                <p className="text-green-400 text-lg md:text-xl font-bold">TRANSAÇÃO CONCLUÍDA</p>
-                <Button 
-                  className={`${btnSecondary} mt-4`}
-                  onPointerDown={() => setStatus('idle')}
-                >
-                  Nova Transação
-                </Button>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Processing */}
-          {status === 'processing' && (
-            <Card className="bg-blue-900/50 border-blue-500">
-              <CardContent className="p-6 text-center">
-                <Loader2 className="w-12 h-12 md:w-16 md:h-16 text-blue-400 mx-auto mb-3 animate-spin" />
-                <p className="text-blue-400 text-lg md:text-xl font-bold">PROCESSANDO...</p>
-                <p className="text-gray-400 text-sm mt-2">Aguarde a resposta do pinpad</p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {/* Teclado e Método de Pagamento */}
-          {!['pending_detected', 'processing', 'awaiting_confirmation', 'success'].includes(status) && (
-            <>
-              {/* Método de Pagamento */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="text-white text-sm md:text-base">Método de Pagamento</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0 space-y-3">
-                  <div className="grid grid-cols-3 gap-2">
-                    <Button 
-                      className={`h-12 md:h-14 flex flex-col items-center justify-center gap-1 ${
-                        paymentMethod === 'credit' 
-                          ? 'bg-blue-600 text-white border-blue-400' 
-                          : 'bg-gray-700 text-gray-300 border-gray-600'
-                      } ${btnBase} border`}
-                      onPointerDown={() => setPaymentMethod('credit')}
-                    >
-                      <CreditCard className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs">CRÉDITO</span>
-                    </Button>
-                    <Button 
-                      className={`h-12 md:h-14 flex flex-col items-center justify-center gap-1 ${
-                        paymentMethod === 'debit' 
-                          ? 'bg-green-600 text-white border-green-400' 
-                          : 'bg-gray-700 text-gray-300 border-gray-600'
-                      } ${btnBase} border`}
-                      onPointerDown={() => setPaymentMethod('debit')}
-                    >
-                      <Banknote className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs">DÉBITO</span>
-                    </Button>
-                    <Button 
-                      className={`h-12 md:h-14 flex flex-col items-center justify-center gap-1 ${
-                        paymentMethod === 'pix' 
-                          ? 'bg-teal-600 text-white border-teal-400' 
-                          : 'bg-gray-700 text-gray-300 border-gray-600'
-                      } ${btnBase} border`}
-                      onPointerDown={() => setPaymentMethod('pix')}
-                    >
-                      <QrCode className="w-5 h-5 md:w-6 md:h-6" />
-                      <span className="text-[10px] md:text-xs">PIX</span>
-                    </Button>
-                  </div>
-                  
-                  {/* Parcelas - só para crédito */}
-                  {paymentMethod === 'credit' && (
-                    <div>
-                      <p className="text-xs text-gray-400 mb-2">Parcelas:</p>
-                      <div className="grid grid-cols-6 gap-1">
-                        {PARCELAS_OPCOES.map(p => (
-                          <Button 
-                            key={p}
-                            className={`h-8 md:h-10 text-xs md:text-sm ${
-                              parcelas === p 
-                                ? 'bg-blue-600 text-white' 
-                                : 'bg-gray-700 text-gray-300'
-                            } ${btnBase}`}
-                            onPointerDown={() => setParcelas(p)}
-                          >
-                            {p}x
-                          </Button>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-              
-              {/* Valor e Teclado */}
-              <Card className="bg-gray-800 border-gray-700">
-                <CardHeader className="p-3 pb-2">
-                  <CardTitle className="text-white text-sm md:text-base">Valor da Venda</CardTitle>
-                </CardHeader>
-                <CardContent className="p-3 pt-0">
-                  <div className="text-3xl md:text-4xl font-bold text-center py-4 bg-black/50 rounded-lg mb-3 border border-yellow-600/50">
-                    <span className="text-yellow-400 drop-shadow-[0_0_8px_rgba(234,179,8,0.5)]">
-                      {formatarValor(valorCentavos)}
-                    </span>
-                  </div>
-                  
-                  {/* Atalhos */}
-                  <div className="grid grid-cols-2 gap-2 mb-3">
-                    <Button 
-                      className={`${btnOutline} text-yellow-400 border-yellow-500 text-[10px] md:text-xs h-8`}
-                      onPointerDown={() => setValorCentavos(PASSOS_HOMOLOGACAO.PASSO_33.valor.toString())}
-                    >
-                      Passo 33 (R$ 1.005,60)
-                    </Button>
-                    <Button 
-                      className={`${btnOutline} text-orange-400 border-orange-500 text-[10px] md:text-xs h-8`}
-                      onPointerDown={() => setValorCentavos(PASSOS_HOMOLOGACAO.PASSO_34.valor.toString())}
-                    >
-                      Passo 34 (R$ 1.005,61)
-                    </Button>
-                  </div>
-                  
-                  {/* Teclado */}
-                  <div className="grid grid-cols-3 gap-1 md:gap-2">
-                    {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map(d => (
-                      <Button 
-                        key={d} 
-                        className={`${btnSecondary} h-10 md:h-12 text-lg md:text-xl`}
-                        onPointerDown={() => handleDigit(d)}
-                      >
-                        {d}
-                      </Button>
-                    ))}
-                    <Button 
-                      className={`${btnOutline} h-10 md:h-12 text-sm`}
-                      onPointerDown={handleClear}
-                    >
-                      C
-                    </Button>
-                    <Button 
-                      className={`${btnSecondary} h-10 md:h-12 text-lg md:text-xl`}
-                      onPointerDown={() => handleDigit('0')}
-                    >
-                      0
-                    </Button>
-                    <Button 
-                      className={`${btnOutline} h-10 md:h-12 text-lg`}
-                      onPointerDown={handleBackspace}
-                    >
-                      ←
-                    </Button>
-                  </div>
-                  
                   <Button 
-                    className={`${btnPrimary} w-full mt-3 h-12 md:h-14 text-base md:text-lg`}
-                    onPointerDown={handleConfirm}
-                    disabled={!valorCentavos || parseInt(valorCentavos) === 0}
+                    className={`${btnSecondary} flex-1 h-7 text-[9px]`}
+                    onPointerDown={checkForPendingTransaction}
                   >
-                    <Send className="w-5 h-5 mr-2" />
-                    INICIAR VENDA
+                    <RefreshCw className="w-3 h-3 mr-0.5" />
+                    Checar
                   </Button>
-                </CardContent>
-              </Card>
-            </>
-          )}
-          
-          {/* Ações rápidas */}
-          <div className="flex gap-2 flex-wrap">
-            <Button className={`${btnOutline} h-8 text-xs`} onPointerDown={checkPinpad}>
-              <RefreshCw className="w-3 h-3 mr-1" />
-              Pinpad
-            </Button>
-            <Button className={`${btnOutline} h-8 text-xs`} onPointerDown={abrirMenuAdministrativo}>
-              <Menu className="w-3 h-3 mr-1" />
-              Admin
-            </Button>
-            <Button className={`${btnOutline} h-8 text-xs`} onPointerDown={clearLogs}>
-              <Trash2 className="w-3 h-3 mr-1" />
-              Logs
-            </Button>
+                </div>
+              </div>
+            ) : (
+              /* Estado sem pendência */
+              <div className="text-center py-4">
+                <CheckCircle className="w-8 h-8 text-green-500/50 mx-auto mb-2" />
+                <p className="text-[10px] text-gray-500">Nenhuma pendência detectada</p>
+                <div className="flex gap-1 justify-center mt-2">
+                  <Button 
+                    className={`${btnOutline} h-7 text-[9px]`}
+                    onPointerDown={checkForPendingTransaction}
+                  >
+                    <RefreshCw className="w-3 h-3 mr-0.5" />
+                    Verificar SDK
+                  </Button>
+                  <Button 
+                    className={`${btnOutline} h-7 text-[9px]`}
+                    onPointerDown={abrirMenuAdministrativo}
+                  >
+                    <Menu className="w-3 h-3 mr-0.5" />
+                    Menu PayGo
+                  </Button>
+                  <Button 
+                    className={`${btnWarning} h-7 text-[9px]`}
+                    onPointerDown={() => {
+                      // Forçar modo de pendência manual
+                      setStatus('pending_detected');
+                      addLog('warning', '⚠️ Modo manual ativado');
+                    }}
+                  >
+                    <AlertTriangle className="w-3 h-3 mr-0.5" />
+                    Forçar
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
