@@ -11,8 +11,9 @@ import { ArrowLeft, Smartphone, Wifi, WifiOff, CheckCircle, XCircle, AlertTriang
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { isAndroidTEFAvailable } from '@/lib/tef/tefAndroidBridge';
+import TEFTransactionSuccessModal from '@/components/admin/tef/TEFTransactionSuccessModal';
 
 // ============================================================================
 // TIPOS
@@ -89,6 +90,7 @@ const btnWarning = `${btnBase} bg-yellow-600 text-black border-0`;
 
 export default function TotemTEFHomologacaoV3() {
   const navigate = useNavigate();
+  const location = useLocation();
   
   // Estado principal
   const [status, setStatus] = useState<PDVStatus>('idle');
@@ -104,6 +106,10 @@ export default function TotemTEFHomologacaoV3() {
   // Dados da transação atual
   const [lastTransaction, setLastTransaction] = useState<PayGoTransactionResponse | null>(null);
   const [pendingData, setPendingData] = useState<PendingTransactionData | null>(null);
+  
+  // Modal de transação aprovada
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [approvedTransaction, setApprovedTransaction] = useState<PayGoTransactionResponse | null>(null);
   
   // Refs
   const processingRef = useRef(false);
@@ -234,6 +240,10 @@ export default function TotemTEFHomologacaoV3() {
         localStorage.removeItem('tef_pending_v3');
         setPendingData(null);
       }
+      
+      // Mostrar modal de sucesso com dados da transação
+      setApprovedTransaction(response);
+      setShowSuccessModal(true);
       
       if (response.requiresConfirmation && response.confirmationTransactionId) {
         addLog('info', `Aguardando confirmação: ${response.confirmationTransactionId}`);
@@ -582,7 +592,16 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button 
             className={`${btnOutline} p-2`}
-            onPointerDown={() => navigate('/totem')}
+            onPointerDown={() => {
+              // Verifica se veio de alguma rota específica, senão volta para admin TEF
+              const from = location.state?.from;
+              if (from) {
+                navigate(from);
+              } else {
+                // Por padrão, volta para a página anterior ou fica no PDV
+                navigate(-1);
+              }
+            }}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -943,6 +962,19 @@ export default function TotemTEFHomologacaoV3() {
           </div>
         </div>
       </div>
+      
+      {/* Modal de Transação Aprovada */}
+      <TEFTransactionSuccessModal
+        open={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          setApprovedTransaction(null);
+          setStatus('idle');
+        }}
+        transaction={approvedTransaction}
+        onPrintMerchant={() => addLog('info', '📄 Imprimindo via lojista...')}
+        onPrintCustomer={() => addLog('info', '📄 Imprimindo via cliente...')}
+      />
     </div>
   );
 }
