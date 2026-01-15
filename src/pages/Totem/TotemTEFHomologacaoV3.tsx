@@ -25,8 +25,10 @@ interface PayGoTransactionResponse {
   requiresConfirmation: boolean;
   confirmationTransactionId?: string;
   amount?: number;
+  localNsu?: string;
   transactionNsu?: string;
   terminalNsu?: string;
+  hostNsu?: string;
   authorizationCode?: string;
   merchantId?: string;
   providerName?: string;
@@ -195,8 +197,11 @@ export default function TotemTEFHomologacaoV3() {
       requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true',
       confirmationTransactionId: raw.confirmationTransactionId || '',
       amount: raw.amount || raw.valor,
+      // NSU Local é o campo principal para a planilha PayGo
+      localNsu: raw.localNsu || raw.terminalNsu || '',
       transactionNsu: raw.transactionNsu || raw.nsu || '',
       terminalNsu: raw.terminalNsu || raw.localNsu || '',
+      hostNsu: raw.hostNsu || '',
       authorizationCode: raw.authorizationCode || raw.autorizacao || '',
       merchantId: raw.merchantId || '',
       providerName: raw.providerName || '',
@@ -269,11 +274,17 @@ export default function TotemTEFHomologacaoV3() {
       if (!pendingFromError.hostNsu) pendingFromError.hostNsu = pendingFromError.transactionNsu;
       setPendingData(pendingFromError);
       savePendingDataToStorage(pendingFromError);
+      // Mostrar modal com dados da pendência
+      setApprovedTransaction(response);
+      setShowSuccessModal(true);
       setStatus('pending_detected');
       return;
     }
     
+    // Transação negada - mostrar modal com dados para registro
     addLog('error', `❌ Negada: ${response.transactionResult}`);
+    setApprovedTransaction(response);
+    setShowSuccessModal(true);
     setStatus('error');
   }, [addLog]);
   
