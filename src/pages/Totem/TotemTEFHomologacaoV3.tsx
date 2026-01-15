@@ -569,15 +569,20 @@ export default function TotemTEFHomologacaoV3() {
           addLog(stillPending ? 'error' : 'success',
             stillPending
               ? '❌ RESULTADO: Pendência AINDA existe no SDK PayGo'
-              : '✅ RESULTADO: Pendência removida do SDK PayGo');
+              : '✅ RESULTADO: SDK reportou pendência removida');
           addLog('info', '══════════════════════════════════════════════════════════════════');
 
+          // IMPORTANTE:
+          // Em modo autoatendimento (unattended), o SDK pode reportar que não há pendência,
+          // mas ainda assim bloquear a próxima transação com -2599.
+          // Por isso, NÃO limpamos automaticamente a pendência local aqui.
+          // A forma mais confiável de “destravar” é a micro-transação (R$ 0,01) ou uma venda aprovada.
           if (!stillPending) {
-            if (typeof (window.TEF as any)?.limparPendingData === 'function') {
-              (window.TEF as any).limparPendingData();
-            }
-            clearPendingData();
+            addLog('warning', '⚠️ Se a próxima venda ainda falhar com -2599, use a MICRO-TRANSAÇÃO R$ 0,01 para forçar a resolução automática.');
+            // Mantém status em pending_detected para deixar os botões visíveis
+            setStatus('pending_detected');
           }
+
           return;
         }
       } catch (e) {
