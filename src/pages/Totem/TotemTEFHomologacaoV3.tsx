@@ -604,14 +604,22 @@ export default function TotemTEFHomologacaoV3() {
           <Button 
             className={`${btnOutline} p-2`}
             onPointerDown={() => {
-              // Verifica se veio de alguma rota específica, senão volta para admin TEF
+              // Se o modal estiver aberto, a seta deve apenas fechar o modal
+              if (showSuccessModal) {
+                setShowSuccessModal(false);
+                setApprovedTransaction(null);
+                return;
+              }
+
+              // Verifica se veio de alguma rota específica
               const from = location.state?.from;
               if (from) {
                 navigate(from);
-              } else {
-                // Por padrão, volta para a página anterior ou fica no PDV
-                navigate(-1);
+                return;
               }
+
+              // Nunca voltar para a Home do Totem por padrão (evita sair do PDV)
+              navigate('/totem/tef-homologacao');
             }}
           >
             <ArrowLeft className="w-5 h-5" />
