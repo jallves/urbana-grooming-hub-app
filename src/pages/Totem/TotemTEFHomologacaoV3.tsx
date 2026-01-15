@@ -226,6 +226,15 @@ export default function TotemTEFHomologacaoV3() {
     // Aprovado
     if (response.transactionResult === 0) {
       addLog('success', '✅ APROVADA');
+      
+      // IMPORTANTE: Transação aprovada significa que o PayGo resolveu automaticamente 
+      // qualquer pendência anterior. Limpar dados locais de pendência.
+      if (pendingData) {
+        addLog('success', '🧹 Pendência anterior resolvida automaticamente pelo PayGo');
+        localStorage.removeItem('tef_pending_v3');
+        setPendingData(null);
+      }
+      
       if (response.requiresConfirmation && response.confirmationTransactionId) {
         addLog('info', `Aguardando confirmação: ${response.confirmationTransactionId}`);
         setStatus('awaiting_confirmation');
@@ -618,16 +627,24 @@ export default function TotemTEFHomologacaoV3() {
               <CardHeader className="p-3 pb-2">
                 <CardTitle className="text-red-400 flex items-center gap-2 text-sm md:text-base">
                   <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
-                  PENDÊNCIA DETECTADA
+                  PENDÊNCIA DETECTADA (-2599)
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-3 pt-0 space-y-2">
+                {/* Aviso sobre modo autoatendimento */}
+                <div className="text-[10px] md:text-xs text-yellow-400 bg-yellow-900/30 p-2 rounded border border-yellow-700">
+                  <p className="font-bold mb-1">⚠️ MODO AUTOATENDIMENTO</p>
+                  <p>Conforme documentação PayGo, em modo autoatendimento o broadcast de resolução pode não funcionar.</p>
+                  <p className="mt-1">A pendência será resolvida automaticamente na <strong>próxima transação</strong>.</p>
+                </div>
+                
                 <div className="text-[10px] md:text-xs text-gray-300 font-mono bg-black/30 p-2 rounded">
                   <p>Provider: {pendingData.providerName}</p>
                   <p>Merchant: {pendingData.merchantId}</p>
                   <p>NSU: {pendingData.transactionNsu}</p>
                 </div>
                 
+                {/* Botões de resolução via broadcast (pode não funcionar em autoatendimento) */}
                 <div className="grid grid-cols-2 gap-2">
                   <Button 
                     className={`${btnPrimary} h-10 md:h-12 text-xs md:text-sm`}
@@ -645,6 +662,25 @@ export default function TotemTEFHomologacaoV3() {
                   </Button>
                 </div>
                 
+                {/* SOLUÇÃO PRINCIPAL: Micro-transação para forçar resolução automática */}
+                <div className="bg-blue-900/50 p-2 rounded border border-blue-600">
+                  <p className="text-[10px] text-blue-300 mb-2">
+                    💡 <strong>SOLUÇÃO RECOMENDADA:</strong> Fazer uma micro-transação de R$ 0,01 para forçar o PayGo a resolver automaticamente a pendência antes de processar.
+                  </p>
+                  <Button 
+                    className={`${btnBase} bg-blue-600 text-white w-full h-10 text-xs font-bold`}
+                    onPointerDown={() => {
+                      // Limpar o estado de pendência para permitir a transação
+                      setStatus('idle');
+                      // Iniciar micro-transação de 1 centavo
+                      iniciarVenda(1);
+                    }}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    MICRO-TRANSAÇÃO R$ 0,01 (FORÇA RESOLUÇÃO)
+                  </Button>
+                </div>
+                
                 <div className="flex gap-2">
                   <Button 
                     className={`${btnWarning} flex-1 h-8 text-xs`}
@@ -658,7 +694,7 @@ export default function TotemTEFHomologacaoV3() {
                     onPointerDown={clearPendingData}
                   >
                     <Trash2 className="w-3 h-3 mr-1" />
-                    Limpar
+                    Limpar Local
                   </Button>
                 </div>
               </CardContent>
