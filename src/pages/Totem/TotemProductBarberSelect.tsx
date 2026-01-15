@@ -57,10 +57,9 @@ const TotemProductBarberSelect: React.FC = () => {
           specialties,
           commission_rate,
           staff_id,
-          is_active
+          ativo
         `)
-        .eq('is_active', true)
-        .eq('available_for_booking', true)
+        .eq('ativo', true)
         .order('nome');
 
       if (error) {
