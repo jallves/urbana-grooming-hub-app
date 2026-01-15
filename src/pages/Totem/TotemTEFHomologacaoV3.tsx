@@ -659,11 +659,65 @@ export default function TotemTEFHomologacaoV3() {
         </div>
         
         <div className="flex items-center gap-1 md:gap-2">
+          {/* ATALHO RESOLVER PENDÊNCIA - SEMPRE VISÍVEL */}
+          <Button 
+            className={`${btnDanger} px-2 py-1 text-xs flex items-center gap-1`}
+            onPointerDown={() => {
+              // Força verificação de pendência no APK
+              if (window.TEF?.hasPendingTransaction) {
+                const hasPending = window.TEF.hasPendingTransaction();
+                if (hasPending && window.TEF.getPendingTransactionInfo) {
+                  try {
+                    const info = window.TEF.getPendingTransactionInfo();
+                    const parsed = JSON.parse(info);
+                    addLog('info', '🔍 Pendência encontrada via atalho', parsed);
+                    const pendingInfo: PendingTransactionData = {
+                      providerName: parsed.providerName || 'DEMO',
+                      merchantId: parsed.merchantId || '',
+                      localNsu: parsed.localNsu || '',
+                      transactionNsu: parsed.transactionNsu || parsed.localNsu || '',
+                      hostNsu: parsed.hostNsu || parsed.transactionNsu || parsed.localNsu || '',
+                      timestamp: Date.now()
+                    };
+                    setPendingData(pendingInfo);
+                    setStatus('pending_detected');
+                  } catch (e) {
+                    addLog('error', 'Erro ao parsear pendência', e);
+                  }
+                } else {
+                  addLog('info', '✅ Nenhuma pendência detectada no SDK');
+                  // Mostrar pendência local se existir
+                  const saved = localStorage.getItem('tef_pending_v3');
+                  if (saved) {
+                    try {
+                      const parsed = JSON.parse(saved);
+                      addLog('warning', '📦 Pendência local encontrada', parsed);
+                      setPendingData(parsed);
+                      setStatus('pending_detected');
+                    } catch (e) {}
+                  } else {
+                    // Forçar estado de pendência para mostrar botões
+                    setStatus('pending_detected');
+                    addLog('warning', '⚠️ Modo manual - use Menu PayGo para verificar');
+                  }
+                }
+              } else {
+                // Sem TEF disponível, forçar estado de pendência para mostrar opções
+                setStatus('pending_detected');
+                addLog('warning', '⚠️ TEF não disponível - Modo manual ativado');
+              }
+            }}
+          >
+            <AlertTriangle className="w-3 h-3" />
+            <span className="hidden md:inline">RESOLVER</span>
+            <span className="md:hidden">FIX</span>
+          </Button>
+          
           {status === 'processing' && (
             <Badge className="bg-blue-600 text-white text-xs">Processando...</Badge>
           )}
           {status === 'pending_detected' && (
-            <Badge className="bg-red-600 text-white text-xs">PENDÊNCIA</Badge>
+            <Badge className="bg-red-600 text-white text-xs animate-pulse">PENDÊNCIA</Badge>
           )}
           {status === 'success' && (
             <Badge className="bg-green-600 text-white text-xs">✅ OK</Badge>
