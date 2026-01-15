@@ -3,11 +3,15 @@ Updated: now
 
 ## Documentação Oficial PayGo (GitHub mobile-integracao-uri)
 
+### Implementação v1.5.0 - Uso de URI Original
+
+A partir desta versão, o APK **salva e usa a URI original** do `TransacaoPendenteDados` conforme documentação oficial.
+
 ### Fluxo Correto de Resolução de Pendência
 
 1. **Captura**: O PayGo retorna `TransacaoPendenteDados` como extra no Intent de resposta
-2. **Formato**: Essa string JÁ É uma URI completa: `app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&hostNsu=xxx&localNsu=xxx&transactionNsu=xxx`
-3. **Uso direto**: A documentação oficial mostra que essa URI deve ser usada **diretamente** no broadcast, sem reconstrução
+2. **Salvamento**: A URI é salva **exatamente como recebida** em `original_pending_uri`
+3. **Resolução**: No broadcast, usa-se a **URI original diretamente** (prioridade 1) ou reconstruída (fallback)
 
 ### Código Oficial (MainActivity.java - GitHub PayGo)
 ```java
@@ -19,17 +23,55 @@ if (transacaoPendente != null) {
 }
 ```
 
-### Problema Potencial na Implementação Atual
-O APK atual **reconstrói** a URI via Uri.Builder() em vez de usar a string original. Isso pode causar:
-- Diferenças na ordem dos parâmetros
-- Diferenças na codificação de caracteres
-- SDK não reconhecendo a URI reconstruída
+### Implementação Atual no APK (PayGoService.kt)
 
-### Solução Recomendada
-Modificar `PayGoService.kt` para:
-1. **Salvar a URI original completa** do `TransacaoPendenteDados`
-2. No broadcast de resolução, usar a **URI original** diretamente no extra "uri"
-3. Manter fallback para reconstrução apenas quando a URI original não estiver disponível
+#### savePendingDataFromUri()
+```kotlin
+fun savePendingDataFromUri(pendingDataUri: String) {
+    // CRÍTICO: Salvar URI original primeiro
+    originalPendingUri = pendingDataUri
+    
+    // Persistir em SharedPreferences
+    prefs.edit()
+        .putString("original_pending_uri", pendingDataUri)  // ← URI original
+        .putString("pending_data", lastPendingData.toString())
+        .apply()
+}
+```
+
+#### resolvePendingWithFullData()
+```kotlin
+private fun resolvePendingWithFullData(...) {
+    // PRIORIDADE 1: Usar URI ORIGINAL
+    val savedOriginalUri = prefs.getString("original_pending_uri", null)
+    
+    val pendingUriToUse = if (!savedOriginalUri.isNullOrEmpty()) {
+        savedOriginalUri  // ← Usa URI original!
+    } else {
+        // Fallback: Reconstruir
+        Uri.Builder().scheme("app")...build().toString()
+    }
+    
+    val intent = Intent().apply {
+        action = ACTION_CONFIRMATION
+        putExtra("uri", pendingUriToUse)
+        putExtra("Confirmacao", confirmationUri)
+    }
+    context.sendBroadcast(intent)
+}
+```
+
+### Resposta do Callback
+
+A resposta agora inclui informação sobre qual método foi usado:
+```json
+{
+  "status": "resolvido",
+  "metodo": "URI_ORIGINAL_TransacaoPendenteDados",  // ou "URI_RECONSTRUIDA_fallback"
+  "usouUriOriginal": true,
+  "uriEnviada": "app://resolve/pendingTransaction?..."
+}
+```
 
 ### Parâmetros Obrigatórios (seção 3.3.4)
 | Parâmetro | Presença | Descrição |
@@ -39,3 +81,6 @@ Modificar `PayGoService.kt` para:
 | localNsu | M | NSU local da transação pendente |
 | transactionNsu | M | NSU do servidor TEF |
 | hostNsu | M | NSU do provedor |
+
+### Versão do APK
+Esta implementação requer **APK v1.5.0 ou superior**.
