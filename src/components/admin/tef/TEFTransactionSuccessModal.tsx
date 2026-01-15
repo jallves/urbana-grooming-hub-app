@@ -77,7 +77,23 @@ const TEFTransactionSuccessModal: React.FC<TEFTransactionSuccessModalProps> = ({
     onPrintCustomer?.();
   };
 
+  const hasApprovalText = /autorizad/i.test(transaction.resultMessage || '');
+
   const getStatusConfig = () => {
+    // Caso raro (já vimos em homologação): código negativo/ausente mas mensagem indica "autorizada".
+    // Aqui mostramos como "inconsistente" para evitar confusão.
+    if (isDenied && hasApprovalText) {
+      return {
+        icon: <AlertTriangle className="w-8 h-8" />,
+        title: 'RESULTADO INCONSISTENTE',
+        titleColor: 'text-yellow-400',
+        borderColor: 'border-yellow-500',
+        bgColor: 'bg-yellow-900/50',
+        valueBorderColor: 'border-yellow-600',
+        valueTextColor: 'text-yellow-400'
+      };
+    }
+
     if (isApproved) {
       return {
         icon: <CheckCircle className="w-8 h-8" />,
