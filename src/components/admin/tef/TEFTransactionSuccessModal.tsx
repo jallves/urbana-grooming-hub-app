@@ -1,7 +1,7 @@
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { CheckCircle, Printer, X, CreditCard, FileText, XCircle, AlertTriangle, Copy, Check } from 'lucide-react';
+import { CheckCircle, X, CreditCard, FileText, XCircle, AlertTriangle, Copy, Check } from 'lucide-react';
 import { useState } from 'react';
 
 interface TransactionData {
@@ -60,53 +60,19 @@ const TEFTransactionSuccessModal: React.FC<TEFTransactionSuccessModalProps> = ({
   const nsuLocal = transaction.localNsu || transaction.terminalNsu || '';
 
   const handlePrintMerchant = () => {
+    // IMPORTANTE (Totem/Android WebView): window.open/print pode “sequestrar” a WebView
+    // e fazer o app parecer que saiu do PDV. Para homologação, copiamos o comprovante.
     if (transaction.merchantReceipt) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Via Lojista</title>
-              <style>
-                body { font-family: monospace; font-size: 12px; padding: 20px; }
-                pre { white-space: pre-wrap; }
-              </style>
-            </head>
-            <body>
-              <h3>VIA LOJISTA</h3>
-              <pre>${transaction.merchantReceipt}</pre>
-              <script>window.print(); setTimeout(() => window.close(), 500);</script>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
+      copyToClipboard(transaction.merchantReceipt, 'merchantReceipt');
     }
     onPrintMerchant?.();
   };
 
   const handlePrintCustomer = () => {
+    // IMPORTANTE (Totem/Android WebView): window.open/print pode “sequestrar” a WebView
+    // e fazer o app parecer que saiu do PDV. Para homologação, copiamos o comprovante.
     if (transaction.cardholderReceipt) {
-      const printWindow = window.open('', '_blank');
-      if (printWindow) {
-        printWindow.document.write(`
-          <html>
-            <head>
-              <title>Via Cliente</title>
-              <style>
-                body { font-family: monospace; font-size: 12px; padding: 20px; }
-                pre { white-space: pre-wrap; }
-              </style>
-            </head>
-            <body>
-              <h3>VIA CLIENTE</h3>
-              <pre>${transaction.cardholderReceipt}</pre>
-              <script>window.print(); setTimeout(() => window.close(), 500);</script>
-            </body>
-          </html>
-        `);
-        printWindow.document.close();
-      }
+      copyToClipboard(transaction.cardholderReceipt, 'cardholderReceipt');
     }
     onPrintCustomer?.();
   };
@@ -287,8 +253,8 @@ const TEFTransactionSuccessModal: React.FC<TEFTransactionSuccessModalProps> = ({
                   className="bg-blue-600 text-white h-12 flex flex-col items-center justify-center gap-1"
                   disabled={!transaction.merchantReceipt}
                 >
-                  <Printer className="w-4 h-4" />
-                  <span className="text-xs">Via Lojista</span>
+                  <Copy className="w-4 h-4" />
+                  <span className="text-xs">Copiar Lojista</span>
                 </Button>
                 
                 <Button 
@@ -296,10 +262,16 @@ const TEFTransactionSuccessModal: React.FC<TEFTransactionSuccessModalProps> = ({
                   className="bg-purple-600 text-white h-12 flex flex-col items-center justify-center gap-1"
                   disabled={!transaction.cardholderReceipt}
                 >
-                  <Printer className="w-4 h-4" />
-                  <span className="text-xs">Via Cliente</span>
+                  <Copy className="w-4 h-4" />
+                  <span className="text-xs">Copiar Cliente</span>
                 </Button>
               </div>
+
+              {(copiedField === 'merchantReceipt' || copiedField === 'cardholderReceipt') && (
+                <p className="text-xs text-green-400 text-center">
+                  Comprovante copiado para a área de transferência.
+                </p>
+              )}
               
               {!transaction.merchantReceipt && !transaction.cardholderReceipt && (
                 <p className="text-xs text-gray-500 text-center">
