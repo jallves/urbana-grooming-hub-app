@@ -168,11 +168,41 @@ class MainActivity : AppCompatActivity() {
      * Processa Intent de resposta do PayGo Integrado
      * Action: br.com.setis.interfaceautomacao.SERVICO
      */
+    /**
+     * Processa Intent de resposta do PayGo Integrado
+     * Action: br.com.setis.interfaceautomacao.SERVICO
+     * 
+     * IMPORTANTE (Documentação PayGo):
+     * Quando há transação pendente e a nova transação retorna erro (-2599),
+     * o Intent contém um extra "TransacaoPendenteDados" com os dados da
+     * transação PENDENTE ORIGINAL (não da transação em curso).
+     * 
+     * Esses dados devem ser usados para resolver a pendência corretamente.
+     */
     private fun handlePayGoIntent(intent: Intent?) {
         if (intent == null) return
         
         val action = intent.action
         addLog("handlePayGoIntent: action=$action")
+        
+        // ════════════════════════════════════════════════════════════════════
+        // CAPTURA DO EXTRA "TransacaoPendenteDados" (CRÍTICO para Passo 34)
+        // Conforme documentação: https://github.com/adminti2/mobile-integracao-uri
+        // ════════════════════════════════════════════════════════════════════
+        val transacaoPendenteDados = intent.getStringExtra("TransacaoPendenteDados")
+        if (!transacaoPendenteDados.isNullOrEmpty()) {
+            addLog("════════════════════════════════════════")
+            addLog("⚠️ TRANSAÇÃO PENDENTE DETECTADA!")
+            addLog("TransacaoPendenteDados: $transacaoPendenteDados")
+            addLog("════════════════════════════════════════")
+            
+            // Parsear os dados da transação pendente
+            // Formato esperado: URI app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&...
+            payGoService?.savePendingDataFromUri(transacaoPendenteDados)
+            
+            // Notificar o WebView sobre a pendência detectada
+            notifyWebViewPendingTransaction(transacaoPendenteDados)
+        }
         
         // Verificar se é resposta do PayGo
         if (action == PayGoService.ACTION_RESPONSE) {
@@ -195,6 +225,9 @@ class MainActivity : AppCompatActivity() {
                 // Tentar verificar extras
                 intent.extras?.let { extras ->
                     addLog("Intent extras: ${extras.keySet().joinToString()}")
+                    extras.keySet().forEach { key ->
+                        addLog("  Extra '$key': ${extras.get(key)}")
+                    }
                 }
             }
         }
@@ -206,6 +239,83 @@ class MainActivity : AppCompatActivity() {
                 payGoService?.handlePayGoResponse(uri)
                 notifyWebViewPaymentResult(uri)
             }
+        }
+    }
+    
+    /**
+     * Notifica o WebView sobre uma transação pendente detectada
+     * Isso permite que o frontend capture os dados corretos para resolução
+     */
+    private fun notifyWebViewPendingTransaction(pendingDataUri: String) {
+        val currentWebView = webView ?: return
+        
+        try {
+            // Parsear a URI de pendência para JSON
+            val uri = android.net.Uri.parse(pendingDataUri)
+            val jsonParams = JSONObject()
+            
+            uri.queryParameterNames.forEach { key ->
+                uri.getQueryParameter(key)?.let { value ->
+                    jsonParams.put(key, value)
+                }
+            }
+            
+            val jsonString = jsonParams.toString()
+            addLog("📤 Notificando WebView sobre pendência: $jsonString")
+            
+            val js = """
+                (function() {
+                    console.log('[Android] ═══════════════════════════════════════');
+                    console.log('[Android] ⚠️ TRANSAÇÃO PENDENTE DETECTADA');
+                    console.log('[Android] TransacaoPendenteDados recebido do PayGo');
+                    console.log('[Android] Dados:', JSON.stringify($jsonString, null, 2));
+                    console.log('[Android] ═══════════════════════════════════════');
+                    
+                    // Salvar dados da pendência REAL (não da transação em curso)
+                    var pendingData = $jsonString;
+                    pendingData._source = 'TransacaoPendenteDados';
+                    pendingData._capturedAt = new Date().toISOString();
+                    
+                    try {
+                        localStorage.setItem('tef_real_pending_data', JSON.stringify(pendingData));
+                        sessionStorage.setItem('tef_real_pending_data', JSON.stringify(pendingData));
+                        console.log('[Android] ✅ Dados da pendência REAL salvos no storage');
+                    } catch(e) {
+                        console.error('[Android] Erro ao salvar pendência:', e);
+                    }
+                    
+                    // Disparar evento customizado
+                    try {
+                        var event = new CustomEvent('tefPendingTransactionDetected', { 
+                            detail: pendingData,
+                            bubbles: true
+                        });
+                        window.dispatchEvent(event);
+                        console.log('[Android] ✅ Evento tefPendingTransactionDetected disparado');
+                    } catch(e) {
+                        console.error('[Android] Erro no CustomEvent:', e);
+                    }
+                    
+                    // Callback direto se existir
+                    if (typeof window.onTefPendingDetected === 'function') {
+                        try {
+                            window.onTefPendingDetected(pendingData);
+                            console.log('[Android] ✅ onTefPendingDetected chamado');
+                        } catch(e) {
+                            console.error('[Android] Erro em onTefPendingDetected:', e);
+                        }
+                    }
+                })();
+            """.trimIndent()
+            
+            runOnUiThread {
+                if (!isFinishing && !isDestroyed) {
+                    currentWebView.evaluateJavascript(js, null)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error notifying WebView pending transaction: ${e.message}", e)
+            addLog("❌ Erro ao notificar pendência: ${e.message}")
         }
     }
     

@@ -586,9 +586,60 @@ export function savePendingDataToLocalStorage(data: Record<string, unknown>): vo
 /**
  * Obtém dados de pendência salvos no localStorage
  * APLICA FALLBACKS automaticamente para garantir que campos obrigatórios estejam preenchidos
+ * 
+ * PRIORIDADE (conforme feedback PayGo):
+ * 1. tef_real_pending_data: Dados do "TransacaoPendenteDados" recebidos do PayGo
+ *    (estes são os dados da transação PENDENTE REAL, não da transação em curso)
+ * 2. tef_pending_data: Dados salvos pelo frontend (pode ser da transação em curso)
  */
 function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
   try {
+    // ========================================================================
+    // PRIORIDADE 1: Dados do TransacaoPendenteDados (REAL pending data)
+    // Estes vêm diretamente do PayGo quando detecta uma pendência
+    // ========================================================================
+    const realPendingData = localStorage.getItem('tef_real_pending_data');
+    if (realPendingData) {
+      const data = JSON.parse(realPendingData);
+      // Verificar se não está muito antigo (30 minutos)
+      const capturedAt = data._capturedAt ? new Date(data._capturedAt).getTime() : 0;
+      const isRecent = capturedAt && (Date.now() - capturedAt) < 30 * 60 * 1000;
+      
+      if (isRecent || data.providerName) {
+        // Aplicar fallbacks
+        const localNsu = String(data.localNsu || '').trim();
+        const transactionNsu = String(data.transactionNsu || '').trim() || localNsu;
+        const hostNsu = String(data.hostNsu || '').trim() || transactionNsu;
+        
+        const dataWithFallbacks = {
+          ...data,
+          localNsu,
+          transactionNsu,
+          hostNsu,
+          _source: 'TransacaoPendenteDados',
+        };
+        
+        console.log('[TEFBridge] ╔═══════════════════════════════════════════════════════════╗');
+        console.log('[TEFBridge] ║  📥 DADOS DE PENDÊNCIA REAL (TransacaoPendenteDados)      ║');
+        console.log('[TEFBridge] ╠═══════════════════════════════════════════════════════════╣');
+        console.log('[TEFBridge] ║ providerName:', dataWithFallbacks.providerName);
+        console.log('[TEFBridge] ║ merchantId:', dataWithFallbacks.merchantId);
+        console.log('[TEFBridge] ║ localNsu:', dataWithFallbacks.localNsu);
+        console.log('[TEFBridge] ║ transactionNsu:', dataWithFallbacks.transactionNsu);
+        console.log('[TEFBridge] ║ hostNsu:', dataWithFallbacks.hostNsu);
+        console.log('[TEFBridge] ╚═══════════════════════════════════════════════════════════╝');
+        
+        return dataWithFallbacks;
+      } else {
+        console.log('[TEFBridge] ⚠️ Dados de pendência REAL muito antigos, descartando');
+        localStorage.removeItem('tef_real_pending_data');
+        sessionStorage.removeItem('tef_real_pending_data');
+      }
+    }
+    
+    // ========================================================================
+    // PRIORIDADE 2: Dados salvos pelo frontend (fallback)
+    // ========================================================================
     const saved = localStorage.getItem('tef_pending_data');
     if (saved) {
       const data = JSON.parse(saved);
@@ -604,9 +655,10 @@ function getSavedPendingDataFromLocalStorage(): Record<string, unknown> | null {
           localNsu,
           transactionNsu,
           hostNsu,
+          _source: 'frontend_saved',
         };
         
-        console.log('[TEFBridge] 📥 Dados de pendência recuperados (com fallbacks):', {
+        console.log('[TEFBridge] 📥 Dados de pendência (frontend) recuperados:', {
           providerName: dataWithFallbacks.providerName,
           merchantId: dataWithFallbacks.merchantId,
           localNsu: dataWithFallbacks.localNsu,
@@ -634,6 +686,10 @@ export function clearSavedPendingData(): void {
   try {
     // Limpar dados de pendência principal
     localStorage.removeItem('tef_pending_data');
+    
+    // CRÍTICO: Limpar dados do TransacaoPendenteDados (pendência REAL)
+    localStorage.removeItem('tef_real_pending_data');
+    sessionStorage.removeItem('tef_real_pending_data');
     
     // CRÍTICO: Também limpar confirmationId e dados relacionados
     // Esses dados são usados na verificação de pendência em checkPending()

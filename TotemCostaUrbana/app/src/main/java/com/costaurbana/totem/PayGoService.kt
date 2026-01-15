@@ -978,6 +978,76 @@ class PayGoService(private val context: Context) {
         addLog("[PERSIST-JS]   transactionNsu: $transactionNsu")
         addLog("[PERSIST-JS]   hostNsu: $hostNsu")
     }
+    
+    /**
+     * NOVO: Salva dados de pendência a partir da URI "TransacaoPendenteDados"
+     * 
+     * CRÍTICO: Esta função é chamada quando o PayGo retorna o extra "TransacaoPendenteDados"
+     * no Intent de resposta. Esses dados são da transação PENDENTE REAL, não da transação
+     * em curso que retornou erro (-2599).
+     * 
+     * Conforme documentação PayGo (seção 3.3.4):
+     * - providerName: Provedor com o qual a transação está pendente
+     * - merchantId: Identificador do estabelecimento
+     * - localNsu: NSU local da transação pendente
+     * - transactionNsu: NSU do servidor TEF da transação pendente
+     * - hostNsu: NSU do provedor da transação pendente
+     * 
+     * @param pendingDataUri URI no formato app://resolve/pendingTransaction?...
+     */
+    fun savePendingDataFromUri(pendingDataUri: String) {
+        addLog("[PENDING-URI] ════════════════════════════════════════")
+        addLog("[PENDING-URI] RECEBIDO TransacaoPendenteDados do PayGo!")
+        addLog("[PENDING-URI] URI: $pendingDataUri")
+        
+        try {
+            val uri = Uri.parse(pendingDataUri)
+            
+            // Extrair parâmetros da URI de pendência
+            val providerName = uri.getQueryParameter("providerName") ?: ""
+            val merchantId = uri.getQueryParameter("merchantId") ?: ""
+            val localNsu = uri.getQueryParameter("localNsu") ?: ""
+            val transactionNsu = uri.getQueryParameter("transactionNsu")?.takeIf { it.isNotEmpty() } ?: localNsu
+            val hostNsu = uri.getQueryParameter("hostNsu")?.takeIf { it.isNotEmpty() } ?: transactionNsu
+            
+            addLog("[PENDING-URI] Dados parseados:")
+            addLog("[PENDING-URI]   providerName: $providerName")
+            addLog("[PENDING-URI]   merchantId: $merchantId")
+            addLog("[PENDING-URI]   localNsu: $localNsu")
+            addLog("[PENDING-URI]   transactionNsu: $transactionNsu")
+            addLog("[PENDING-URI]   hostNsu: $hostNsu")
+            
+            // Validar campos obrigatórios
+            if (providerName.isEmpty() || merchantId.isEmpty()) {
+                addLog("[PENDING-URI] ⚠️ ALERTA: providerName ou merchantId vazios!")
+            }
+            
+            // Criar objeto de pendência com os dados REAIS da transação pendente
+            lastPendingData = JSONObject().apply {
+                put("providerName", providerName)
+                put("merchantId", merchantId)
+                put("localNsu", localNsu)
+                put("transactionNsu", transactionNsu)
+                put("hostNsu", hostNsu)
+                put("source", "TransacaoPendenteDados")  // Marcar a origem
+                put("timestamp", System.currentTimeMillis())
+            }
+            
+            // Persistir em SharedPreferences
+            prefs.edit()
+                .putString("pending_data", lastPendingData.toString())
+                .putString("pending_source", "TransacaoPendenteDados")
+                .putLong("pending_timestamp", System.currentTimeMillis())
+                .apply()
+            
+            addLog("[PENDING-URI] ✅ Dados da transação PENDENTE REAL salvos!")
+            addLog("[PENDING-URI] ════════════════════════════════════════")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao parsear TransacaoPendenteDados: ${e.message}", e)
+            addLog("[PENDING-URI] ❌ ERRO: ${e.message}")
+        }
+    }
 
     // ========================================================================
     // CANCELAMENTO (DESFAZER)
