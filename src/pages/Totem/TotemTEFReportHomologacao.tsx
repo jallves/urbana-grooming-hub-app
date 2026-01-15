@@ -425,7 +425,8 @@ export default function TotemTEFReportHomologacao() {
               variant="ghost" 
               size="icon"
               className="h-8 w-8 bg-gray-700 hover:bg-gray-600"
-              onClick={() => navigate('/totem/tef-homologacao')}
+              onPointerDown={() => navigate('/totem/tef-homologacao')}
+              style={{ touchAction: 'manipulation' }}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
