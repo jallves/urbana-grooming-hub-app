@@ -195,25 +195,59 @@ export default function TotemTEFHomologacaoV3() {
   const handleTransactionResponse = useCallback((raw: any) => {
     processingRef.current = false;
     
+    const parseResultCode = (value: unknown): number | null => {
+      if (typeof value === 'number' && Number.isFinite(value)) return value;
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (!trimmed) return null;
+        const n = Number.parseInt(trimmed, 10);
+        return Number.isFinite(n) ? n : null;
+      }
+      return null;
+    };
+
+    const rawMessage = (raw?.resultMessage || raw?.mensagem || '') as string;
+
+    // Muitos retornos chegam via TEFResultado (hook/bridge), então cobrimos os aliases.
+    const codeFromPayload =
+      parseResultCode(raw?.transactionResult) ??
+      parseResultCode(raw?.codigoResposta) ??
+      parseResultCode(raw?.codigoErro) ??
+      null;
+
+    // Fallback: se o payload vier sem código, mas indicar aprovação.
+    const looksApproved =
+      raw?.status === 'aprovado' ||
+      raw?.requiresConfirmation === true ||
+      raw?.requiresConfirmation === 'true' ||
+      !!raw?.confirmationTransactionId ||
+      /autorizad/i.test(rawMessage);
+
+    const normalizedTransactionResult = codeFromPayload ?? (looksApproved ? 0 : -99);
+
     const response: PayGoTransactionResponse = {
-      operation: raw.operation || 'VENDA',
-      transactionResult: parseInt(raw.transactionResult || raw.codigoResposta || '-99', 10),
-      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true',
-      confirmationTransactionId: raw.confirmationTransactionId || '',
-      amount: raw.amount || raw.valor,
+      operation: raw?.operation || 'VENDA',
+      transactionResult: normalizedTransactionResult,
+      requiresConfirmation: raw?.requiresConfirmation === true || raw?.requiresConfirmation === 'true',
+      confirmationTransactionId: raw?.confirmationTransactionId || '',
+      amount: raw?.amount ?? raw?.valor,
       // NSU Local é o campo principal para a planilha PayGo
-      localNsu: raw.localNsu || raw.terminalNsu || '',
-      transactionNsu: raw.transactionNsu || raw.nsu || '',
-      terminalNsu: raw.terminalNsu || raw.localNsu || '',
-      hostNsu: raw.hostNsu || '',
-      authorizationCode: raw.authorizationCode || raw.autorizacao || '',
-      merchantId: raw.merchantId || '',
-      providerName: raw.providerName || '',
-      cardName: raw.cardName || raw.bandeira || '',
-      resultMessage: raw.resultMessage || raw.mensagem || '',
-      pendingTransactionExists: raw.pendingTransactionExists === true || raw.pendingTransactionExists === 'true',
-      merchantReceipt: raw.merchantReceipt || raw.comprovanteLojista || '',
-      cardholderReceipt: raw.cardholderReceipt || raw.comprovanteCliente || ''
+      localNsu: raw?.localNsu || raw?.terminalNsu || '',
+      transactionNsu: raw?.transactionNsu || raw?.nsu || '',
+      terminalNsu: raw?.terminalNsu || raw?.localNsu || '',
+      hostNsu: raw?.hostNsu || '',
+      authorizationCode: raw?.authorizationCode || raw?.autorizacao || '',
+      merchantId: raw?.merchantId || '',
+      providerName: raw?.providerName || '',
+      cardName: raw?.cardName || raw?.bandeira || '',
+      resultMessage: rawMessage,
+      pendingTransactionExists:
+        raw?.pendingTransactionExists === true ||
+        raw?.pendingTransactionExists === 'true' ||
+        raw?.hasPendingData === true ||
+        raw?.hasPendingTransaction === true,
+      merchantReceipt: raw?.merchantReceipt || raw?.comprovanteLojista || '',
+      cardholderReceipt: raw?.cardholderReceipt || raw?.comprovanteCliente || ''
     };
     
     setLastTransaction(response);
@@ -285,26 +319,28 @@ export default function TotemTEFHomologacaoV3() {
       return;
     }
     
-    // Transação negada - mostrar modal com dados para registro
-    addLog('error', `❌ Negada: ${response.transactionResult}`);
+    // Transação negada/erro
+    addLog('error', `❌ Não aprovada: ${response.transactionResult}`);
     setApprovedTransaction(response);
     setShowSuccessModal(true);
 
-    // IMPORTANTE: pode existir pendência mesmo quando a UI viu "negada".
-    // Em modo unattended, o SDK pode manter/reativar pendência e a próxima venda falha.
+    // REGRA DE OURO (homologação): após QUALQUER não-aprovação, checar o SDK imediatamente.
+    // Isso evita o caso relatado: fecha o pop-up e não aparece o painel para resolver.
     try {
       const hasPendingNow = !!window.TEF?.hasPendingTransaction?.();
       if (hasPendingNow && window.TEF?.getPendingTransactionInfo) {
         const info = window.TEF.getPendingTransactionInfo();
         const parsed = JSON.parse(info);
-        addLog('warning', '⚠️ Pendência detectada após NEGADA', parsed);
+        addLog('warning', '⚠️ Pendência detectada após retorno não-aprovado', parsed);
 
         const pendingInfo: PendingTransactionData = {
           providerName: parsed.providerName || raw.providerName || 'DEMO',
           merchantId: parsed.merchantId || raw.merchantId || '',
           localNsu: parsed.localNsu || raw.localNsu || raw.terminalNsu || '',
-          transactionNsu: parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
-          hostNsu: parsed.hostNsu || raw.hostNsu || parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
+          transactionNsu:
+            parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
+          hostNsu:
+            parsed.hostNsu || raw.hostNsu || parsed.transactionNsu || raw.transactionNsu || parsed.localNsu || raw.localNsu || '',
           timestamp: Date.now(),
         };
 
@@ -313,8 +349,15 @@ export default function TotemTEFHomologacaoV3() {
         setStatus('pending_detected');
         return;
       }
+
+      // Fallback: se o texto indicar pendência, forçar painel mesmo que o SDK não reporte agora.
+      if (/pendent/i.test(response.resultMessage || '') || response.transactionResult === -2599) {
+        addLog('warning', '⚠️ Mensagem/código indica pendência; painel de resolução ativado.');
+        setStatus('pending_detected');
+        return;
+      }
     } catch (e) {
-      addLog('debug', 'Erro ao checar pendência após NEGADA', e);
+      addLog('debug', 'Erro ao checar pendência após não-aprovação', e);
     }
 
     setStatus('error');
