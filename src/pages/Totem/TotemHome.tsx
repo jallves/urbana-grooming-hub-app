@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
@@ -22,6 +22,44 @@ const TotemHome: React.FC = () => {
   
   // Hook para status TEF Android
   const { isAndroidAvailable, isPinpadConnected } = useTEFAndroid();
+  
+  // Estado para pendência TEF
+  const [hasTefPending, setHasTefPending] = useState(false);
+  
+  // Verificar pendência TEF no SDK
+  const checkTefPending = useCallback(() => {
+    try {
+      // Verificar via SDK Android
+      if (window.TEF?.hasPendingTransaction) {
+        const hasPending = window.TEF.hasPendingTransaction();
+        if (hasPending) {
+          setHasTefPending(true);
+          return;
+        }
+      }
+      // Verificar via localStorage (fallback)
+      const savedPending = localStorage.getItem('tef_pending_v3');
+      if (savedPending) {
+        const parsed = JSON.parse(savedPending);
+        if (parsed.timestamp && (Date.now() - parsed.timestamp) < 30 * 60 * 1000) {
+          setHasTefPending(true);
+          return;
+        }
+      }
+      const realPending = localStorage.getItem('tef_real_pending_data');
+      if (realPending) {
+        const parsed = JSON.parse(realPending);
+        const capturedAt = parsed._capturedAt ? new Date(parsed._capturedAt).getTime() : 0;
+        if (capturedAt && (Date.now() - capturedAt) < 30 * 60 * 1000) {
+          setHasTefPending(true);
+          return;
+        }
+      }
+      setHasTefPending(false);
+    } catch {
+      setHasTefPending(false);
+    }
+  }, []);
 
   // Sistema de timeout aprimorado
   const { showWarning, formatTimeLeft, extendTime } = useTotemTimeout({
@@ -36,6 +74,12 @@ const TotemHome: React.FC = () => {
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
+    
+    // Verificar pendência TEF ao montar
+    checkTefPending();
+    
+    // Verificar periodicamente (a cada 5s)
+    const intervalId = setInterval(checkTefPending, 5000);
     
     // Abrir modal de diagnóstico TEF se vier do PDV Homologação
     const state = location.state as { openTEFDiagnostics?: boolean } | null;
@@ -53,8 +97,9 @@ const TotemHome: React.FC = () => {
     
     return () => {
       document.documentElement.classList.remove('totem-mode');
+      clearInterval(intervalId);
     };
-  }, [location.state]);
+  }, [location.state, checkTefPending]);
 
   const handleCloseNewFeatures = () => {
     setShowNewFeatures(false);
@@ -140,6 +185,20 @@ const TotemHome: React.FC = () => {
 
       {/* TEF Status Indicator - Canto inferior esquerdo */}
       <div className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 md:bottom-4 md:left-4 z-10 flex items-center gap-2">
+        {/* BOTÃO DE PENDÊNCIA TEF - Atalho direto para PDV */}
+        {hasTefPending && (
+          <Button
+            onClick={() => navigate('/totem/tef-homologacao')}
+            variant="ghost"
+            size="sm"
+            className="h-8 px-3 gap-1.5 bg-red-600/90 hover:bg-red-700 text-white border-0 animate-pulse rounded-lg"
+            style={{ touchAction: 'manipulation' }}
+          >
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-xs font-bold">PENDÊNCIA TEF</span>
+          </Button>
+        )}
+        
         {/* Status Badge */}
         <div 
           className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium backdrop-blur-sm border ${
