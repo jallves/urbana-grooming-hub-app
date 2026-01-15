@@ -982,13 +982,29 @@ export default function TotemTEFHomologacaoV3() {
         </div>
       </div>
       
-      {/* Modal de Transação Aprovada */}
+      {/* Modal de Resultado da Transação */}
       <TEFTransactionSuccessModal
         open={showSuccessModal}
         onClose={() => {
           setShowSuccessModal(false);
+          
+          // CRÍTICO: Se é uma pendência (-2599), NÃO resetar para idle!
+          // Manter o status 'pending_detected' para forçar resolução antes de nova transação
+          const isPendingError = approvedTransaction?.transactionResult === -2599;
+          
+          if (isPendingError) {
+            // Manter pendingData e status para forçar resolução
+            addLog('warning', '⚠️ Modal fechado - PENDÊNCIA ainda precisa ser resolvida!');
+            setStatus('pending_detected');
+          } else if (approvedTransaction?.transactionResult === 0) {
+            // Transação aprovada - pode voltar para idle
+            setStatus('idle');
+          } else {
+            // Transação negada (não é pendência) - pode voltar para idle
+            setStatus('idle');
+          }
+          
           setApprovedTransaction(null);
-          setStatus('idle');
         }}
         transaction={approvedTransaction}
         onPrintMerchant={() => addLog('info', '📄 Imprimindo via lojista...')}
