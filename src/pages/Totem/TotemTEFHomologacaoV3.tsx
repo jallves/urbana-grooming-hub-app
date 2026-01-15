@@ -573,7 +573,7 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button 
             className={`${btnOutline} p-2`}
-            onPointerDown={() => navigate(-1)}
+            onPointerDown={() => navigate('/totem')}
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
