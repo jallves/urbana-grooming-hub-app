@@ -70,17 +70,17 @@ Deno.serve(async (req) => {
     // ===================================================================
     // ETAPA 1: VALIDAR WHATSAPP DUPLICADO (ANTES DE CRIAR USUÁRIO)
     // ===================================================================
-    console.log('🔍 [1/4] Verificando WhatsApp único em todas as tabelas...');
+    console.log('🔍 [1/4] Verificando WhatsApp único em painel_clientes...');
     
-    // Verificar em client_profiles (excluir temporários temp-*)
-    const { data: existingInProfiles, error: profilesCheckError } = await supabaseAdmin
-      .from('client_profiles')
+    // Verificar em painel_clientes (tabela correta com nome, whatsapp)
+    const { data: existingClients, error: clientsCheckError } = await supabaseAdmin
+      .from('painel_clientes')
       .select('nome, whatsapp')
-      .not('whatsapp', 'like', 'temp-%')
+      .not('whatsapp', 'is', null)
       .limit(1000);
 
-    if (profilesCheckError) {
-      console.error('❌ Erro ao verificar WhatsApp em client_profiles:', profilesCheckError);
+    if (clientsCheckError) {
+      console.error('❌ Erro ao verificar WhatsApp em painel_clientes:', clientsCheckError);
       return new Response(
         JSON.stringify({ 
           success: false, 
@@ -91,9 +91,9 @@ Deno.serve(async (req) => {
     }
 
     // Verificar se algum WhatsApp normalizado corresponde
-    const whatsappDuplicado = existingInProfiles?.find(profile => {
-      const profileWhatsappNormalizado = normalizeWhatsApp(profile.whatsapp || '');
-      return profileWhatsappNormalizado === whatsappNormalizado;
+    const whatsappDuplicado = existingClients?.find(client => {
+      const clientWhatsappNormalizado = normalizeWhatsApp(client.whatsapp || '');
+      return clientWhatsappNormalizado === whatsappNormalizado;
     });
 
     if (whatsappDuplicado) {
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('✅ WhatsApp disponível em todas as tabelas');
+    console.log('✅ WhatsApp disponível');
 
     // ===================================================================
     // ETAPA 2: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
@@ -178,43 +178,47 @@ Deno.serve(async (req) => {
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
-    // ETAPA 3: CRIAR/ATUALIZAR PERFIL DO CLIENTE (UPSERT)
+    // ETAPA 3: CRIAR PERFIL DO CLIENTE EM painel_clientes
     // ===================================================================
-    console.log('🔍 [3/4] Criando/atualizando perfil do cliente...');
+    console.log('🔍 [3/4] Criando perfil do cliente em painel_clientes...');
     
-    // IMPORTANTE: Usar UPSERT pois pode haver um trigger que já criou o perfil
-    const { error: profileError } = await supabaseAdmin
-      .from('client_profiles')
-      .upsert({
-        id: authData.user.id,
+    const { error: clientError } = await supabaseAdmin
+      .from('painel_clientes')
+      .insert({
+        user_id: authData.user.id,
         nome: nome.trim(),
-        email: email.trim().toLowerCase(), // Salvar email no perfil
+        email: email.trim().toLowerCase(),
         whatsapp: whatsapp.trim(),
-        data_nascimento: data_nascimento,
-        updated_at: new Date().toISOString()
-      }, {
-        onConflict: 'id',
-        ignoreDuplicates: false
+        data_nascimento: data_nascimento
       });
 
-    if (profileError) {
-      console.error('❌ Erro ao criar/atualizar perfil:', profileError);
+    if (clientError) {
+      console.error('❌ Erro ao criar perfil:', clientError);
       
       // IMPORTANTE: Perfil falhou, DELETAR usuário criado
       console.log('🗑️ Deletando usuário criado (rollback)...');
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
       
-      // Verificar se é erro de WhatsApp duplicado
-      if (profileError.code === '23505' && profileError.message?.includes('whatsapp')) {
-        console.error('⚠️ WhatsApp duplicado detectado ao atualizar perfil');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: '📱 Este número de WhatsApp já está cadastrado em nosso sistema!\n\n' +
-                   'Por favor, use um número diferente.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
+      // Verificar se é erro de duplicado
+      if (clientError.code === '23505') {
+        if (clientError.message?.includes('whatsapp')) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: '📱 Este número de WhatsApp já está cadastrado em nosso sistema!\n\nPor favor, use um número diferente.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        if (clientError.message?.includes('email')) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: '📧 Este e-mail já está cadastrado em nosso sistema!\n\nClique em "Já tenho conta" para fazer login.'
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
       }
       
       return new Response(
@@ -226,7 +230,7 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('✅ Perfil criado com sucesso');
+    console.log('✅ Perfil criado com sucesso em painel_clientes');
 
     // ===================================================================
     // ETAPA 4: VERIFICAR STATUS DO EMAIL
