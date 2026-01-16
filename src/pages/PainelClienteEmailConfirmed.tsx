@@ -1,26 +1,79 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Loader2 } from 'lucide-react';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function PainelClienteEmailConfirmed() {
   const navigate = useNavigate();
   const { cliente, loading } = usePainelClienteAuth();
   const [countdown, setCountdown] = useState(5);
+  const [exchanging, setExchanging] = useState(true);
 
+  // 1) Primeiro: se a URL veio do link do Supabase (confirm email), capturar tokens/código e criar sessão
   useEffect(() => {
-    console.log('[PainelClienteEmailConfirmed] 🔍 Estado atual:', { loading, hasCliente: !!cliente });
-    
-    // Aguardar até que o loading termine e o cliente esteja carregado
-    if (!loading) {
-      console.log('[PainelClienteEmailConfirmed] ✅ Loading concluído');
-      
-      // Iniciar countdown independente de ter cliente ou não
-      // Pois o usuário acabou de confirmar o e-mail e deve estar autenticado
+    let mounted = true;
+
+    const exchangeFromUrl = async () => {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const code = searchParams.get('code');
+
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        const access_token = hashParams.get('access_token');
+        const refresh_token = hashParams.get('refresh_token');
+
+        console.log('[PainelClienteEmailConfirmed] 🔗 Params:', {
+          hasCode: !!code,
+          hasAccessToken: !!access_token,
+          hasRefreshToken: !!refresh_token,
+        });
+
+        // Fluxo PKCE (code)
+        if (code) {
+          const { error } = await supabase.auth.exchangeCodeForSession(code);
+          if (error) throw error;
+
+          // limpar URL (remove ?code=...)
+          const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+
+        // Fluxo implicit (hash com tokens)
+        if (access_token && refresh_token) {
+          const { error } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (error) throw error;
+
+          // limpar hash
+          const cleanUrl = `${window.location.origin}${window.location.pathname}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
+      } catch (error: any) {
+        console.error('[PainelClienteEmailConfirmed] ❌ Falha ao criar sessão a partir do link:', error);
+        // não bloqueia a tela; o usuário ainda pode logar manualmente
+      } finally {
+        if (mounted) setExchanging(false);
+      }
+    };
+
+    exchangeFromUrl();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  // 2) Depois: quando o auth/context parar de carregar (e já tentamos trocar token), redireciona
+  useEffect(() => {
+    console.log('[PainelClienteEmailConfirmed] 🔍 Estado atual:', { loading, exchanging, hasCliente: !!cliente });
+
+    if (!loading && !exchanging) {
+      console.log('[PainelClienteEmailConfirmed] ✅ Pronto para redirecionar');
+
       const timer = setInterval(() => {
-        setCountdown(prev => {
+        setCountdown((prev) => {
           if (prev <= 1) {
             clearInterval(timer);
             console.log('[PainelClienteEmailConfirmed] ⏰ Redirecionando para dashboard...');
@@ -33,9 +86,9 @@ export default function PainelClienteEmailConfirmed() {
 
       return () => clearInterval(timer);
     }
-  }, [loading, navigate]);
+  }, [loading, exchanging, cliente, navigate]);
 
-  if (loading) {
+  if (loading || exchanging) {
     return (
       <AuthContainer title="Costa Urbana" subtitle="Verificando...">
         <div className="flex flex-col items-center justify-center py-12 space-y-4">
