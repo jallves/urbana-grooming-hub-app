@@ -117,8 +117,9 @@ Deno.serve(async (req) => {
     // ===================================================================
     console.log('🔍 [2/4] ✅ WhatsApp validado! Criando usuário...');
     
-    // Redirecionar para página de confirmação de e-mail após clicar no link
-    const redirectUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovableproject.com')}/painel-cliente/email-confirmado`;
+    // URL de redirecionamento após confirmação do e-mail
+    // Usar a URL publicada da aplicação
+    const redirectUrl = 'https://barbeariacostaurbana.lovable.app/painel-cliente/email-confirmado';
     
     const { data: authData, error: signUpError } = await supabaseAnon.auth.signUp({
       email: email.trim().toLowerCase(),
