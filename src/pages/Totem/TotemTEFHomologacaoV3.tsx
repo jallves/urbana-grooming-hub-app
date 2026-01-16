@@ -1158,8 +1158,12 @@ export default function TotemTEFHomologacaoV3() {
           if (mustResolvePending) {
             addLog('warning', '⚠️ Modal fechado - pendência ainda existe (resolver antes de nova venda)');
             setStatus('pending_detected');
+            // Navegar para o PDV garantindo que exibirá o painel de pendências
+            navigate('/totem/tef-homologacao', { replace: true });
           } else {
             setStatus('idle');
+            // Navegar de volta ao PDV inicial limpo
+            navigate('/totem/tef-homologacao', { replace: true });
           }
 
           setApprovedTransaction(null);
