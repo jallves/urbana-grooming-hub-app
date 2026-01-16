@@ -58,32 +58,57 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setRolesChecked(true);
   };
 
-  const checkUserRoles = async (userId: string): Promise<'master' | 'admin' | 'manager' | 'barber' | 'client' | null> => {
-    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', userId);
-    
+  const inferRoleFromMetadata = (u: User): 'master' | 'admin' | 'manager' | 'barber' | 'client' | null => {
+    const userType = (u.user_metadata as any)?.user_type;
+
+    // Atualmente o cadastro de clientes grava user_type="client" no user_metadata
+    if (userType === 'client') return 'client';
+
+    // (Opcional) se no futuro vocês gravarem algo como user_type="barber" etc.
+    if (userType === 'barber') return 'barber';
+    if (userType === 'manager') return 'manager';
+    if (userType === 'admin') return 'admin';
+    if (userType === 'master') return 'master';
+
+    return null;
+  };
+
+  const checkUserRoles = async (
+    u: User
+  ): Promise<'master' | 'admin' | 'manager' | 'barber' | 'client' | null> => {
+    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', u.id);
+
     try {
-      // Buscar role diretamente na tabela user_roles sem timeout agressivo
+      // 1) Preferência: role “oficial” na tabela user_roles
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
+        .eq('user_id', u.id)
         .maybeSingle();
 
       if (roleError) {
         console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
-        return null;
+        // Se a consulta falhar por RLS/config, ainda tentamos inferir pelo metadata
+        return inferRoleFromMetadata(u);
       }
 
-      if (roleData) {
-        console.log('[AuthContext] ✅ Role encontrada:', roleData.role);
+      if (roleData?.role) {
+        console.log('[AuthContext] ✅ Role encontrada (user_roles):', roleData.role);
         return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
       }
 
-      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles');
+      // 2) Fallback: inferir via user_metadata (resolve o caso “login ok mas não entra no painel”)
+      const inferred = inferRoleFromMetadata(u);
+      if (inferred) {
+        console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles; usando role via user_metadata:', inferred);
+        return inferred;
+      }
+
+      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles e sem user_type no metadata');
       return null;
     } catch (error: any) {
       console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
-      return null;
+      return inferRoleFromMetadata(u);
     }
   };
 
@@ -121,7 +146,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               if (!mounted) return;
               try {
                 console.log('[AuthContext] 🔍 Buscando role para:', currentSession.user.id);
-                const role = await checkUserRoles(currentSession.user.id);
+                const role = await checkUserRoles(currentSession.user);
                 console.log('[AuthContext] ✅ Role encontrada:', role);
                 if (mounted) {
                   applyRole(role);
