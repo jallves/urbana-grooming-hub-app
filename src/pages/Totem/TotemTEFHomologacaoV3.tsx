@@ -1,11 +1,11 @@
 /**
  * PDV TEF Homologação V3
- * 
+ *
  * 100% BASEADO NA DOCUMENTAÇÃO OFICIAL PayGo:
  * https://github.com/adminti2/mobile-integracao-uri
  */
 
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Smartphone, Wifi, WifiOff, CheckCircle, XCircle, AlertTriangle, 
          Clock, Trash2, Send, RefreshCw, Loader2, Menu, CreditCard, Banknote, QrCode } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -686,19 +686,18 @@ export default function TotemTEFHomologacaoV3() {
         <div className="flex items-center gap-2 md:gap-3">
           <Button
             className={`${btnOutline} p-2`}
+            type="button"
             onPointerDown={() => {
               if (showSuccessModal) {
                 setShowSuccessModal(false);
                 setApprovedTransaction(null);
                 return;
               }
-
               const from = location.state?.from;
               if (from) {
                 navigate(from);
                 return;
               }
-
               navigate('/totem/tef-homologacao');
             }}
             onClick={() => {
@@ -707,16 +706,13 @@ export default function TotemTEFHomologacaoV3() {
                 setApprovedTransaction(null);
                 return;
               }
-
               const from = location.state?.from;
               if (from) {
                 navigate(from);
                 return;
               }
-
               navigate('/totem/tef-homologacao');
             }}
-            type="button"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -725,7 +721,6 @@ export default function TotemTEFHomologacaoV3() {
             <p className="text-[10px] md:text-xs text-gray-400">PayGo Homologação</p>
           </div>
         </div>
-
         <div className="flex items-center gap-1 md:gap-2">
           {/* ATALHO RESOLVER PENDÊNCIA - SEMPRE VISÍVEL */}
           <Button 
