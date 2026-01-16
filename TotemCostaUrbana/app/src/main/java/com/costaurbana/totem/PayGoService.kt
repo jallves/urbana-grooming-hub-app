@@ -493,17 +493,29 @@ class PayGoService(private val context: Context) {
             }
             
         // Verificar se requer confirmação
-        // IMPORTANTE: NÃO confirmar automaticamente!
-        // A confirmação deve ser feita pelo frontend APÓS processar comprovante (email/impressão)
-        // Isso segue a documentação PayGo: aprovação → comprovante → confirmação
+        // IMPLEMENTAÇÃO CORRETA conforme documentação PayGo:
+        // Se requiresConfirmation=true E NÃO há pendência (TransacaoPendenteDados), 
+        // confirmar automaticamente AGORA.
+        // 
+        // Ref: https://github.com/adminti2/mobile-integracao-uri#342-confirmação
+        // Função verificaConfirmacao() do exemplo MainActivity.java da PayGo
         val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
         val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
         
-        if (requiresConfirmation && confirmationId != null) {
-            addLog("[RESP] ⚠️ Transação REQUER confirmação manual pelo frontend")
+        if (requiresConfirmation && confirmationId != null && !pendingExists) {
+            // Transação normal aprovada que requer confirmação
+            // NÃO é pendência - é o fluxo padrão de confirmação automática
+            addLog("[RESP] ✅ Transação aprovada requer confirmação")
             addLog("[RESP] confirmationTransactionId: $confirmationId")
-            // NÃO chamar sendConfirmation aqui - o frontend é responsável
-            // sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+            addLog("[RESP] 📤 Enviando confirmação AUTOMÁTICA...")
+            
+            // Confirmar automaticamente conforme documentação PayGo
+            sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+            
+            addLog("[RESP] ✅ Confirmação automática enviada!")
+        } else if (requiresConfirmation && confirmationId != null && pendingExists) {
+            // É uma pendência - a resolução será tratada pelo TransacaoPendenteDados
+            addLog("[RESP] ⚠️ Transação pendente - confirmação via tratamento de pendência")
         }
             
             callback(result)
@@ -1120,6 +1132,69 @@ class PayGoService(private val context: Context) {
                     .apply()
                 addLog("[PENDING-URI] ⚠️ URI original salva mesmo com erro de parse")
             }
+        }
+    }
+    
+    // ========================================================================
+    // CONFIRMAÇÃO AUTOMÁTICA DE PENDÊNCIA (NOVO - Conforme exemplo PayGo oficial)
+    // ========================================================================
+    
+    /**
+     * Envia resolução automática de pendência quando TransacaoPendenteDados é recebido
+     * 
+     * CONFORME EXEMPLO OFICIAL PAYGO (MainActivity.java):
+     * ```java
+     * transacaoPendente = intent.getStringExtra("TransacaoPendenteDados");
+     * if (transacaoPendente != null) {
+     *     Intent transacao = startConfirmacao(transacaoPendente);
+     *     transacao.putExtra("Confirmacao", "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO");
+     *     this.sendBroadcast(transacao);
+     * }
+     * ```
+     * 
+     * @param pendingDataUri URI TransacaoPendenteDados recebida do PayGo (ex: app://resolve/pendingTransaction?...)
+     * @param transactionStatus CONFIRMADO_AUTOMATICO ou DESFEITO_MANUAL
+     */
+    fun sendPendingResolution(pendingDataUri: String, transactionStatus: String = "CONFIRMADO_AUTOMATICO") {
+        addLog("[PENDING-RESOLVE] ════════════════════════════════════════")
+        addLog("[PENDING-RESOLVE] RESOLUÇÃO AUTOMÁTICA DE PENDÊNCIA")
+        addLog("[PENDING-RESOLVE] (Conforme exemplo oficial PayGo)")
+        addLog("[PENDING-RESOLVE] ════════════════════════════════════════")
+        addLog("[PENDING-RESOLVE] URI da pendência: $pendingDataUri")
+        addLog("[PENDING-RESOLVE] Status: $transactionStatus")
+        
+        try {
+            // URI de confirmação (status desejado)
+            // Formato: app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO
+            val confirmationUri = "app://resolve/confirmation?transactionStatus=$transactionStatus"
+            
+            addLog("[PENDING-RESOLVE] ────────────────────────────────────────")
+            addLog("[PENDING-RESOLVE] Broadcast PayGo:")
+            addLog("[PENDING-RESOLVE]   Action: $ACTION_CONFIRMATION")
+            addLog("[PENDING-RESOLVE]   Extra 'uri': $pendingDataUri")
+            addLog("[PENDING-RESOLVE]   Extra 'Confirmacao': $confirmationUri")
+            addLog("[PENDING-RESOLVE] ────────────────────────────────────────")
+            
+            // EXATAMENTE conforme exemplo oficial startConfirmacao():
+            // Intent.action = "br.com.setis.confirmation.TRANSACTION"
+            // Intent.putExtra("uri", pendingDataUri)
+            // Intent.putExtra("Confirmacao", confirmationUri)
+            // addFlags(FLAG_INCLUDE_STOPPED_PACKAGES)
+            val intent = Intent().apply {
+                action = ACTION_CONFIRMATION
+                putExtra(EXTRA_URI, pendingDataUri)           // "uri" = TransacaoPendenteDados
+                putExtra(EXTRA_CONFIRMACAO, confirmationUri)  // "Confirmacao" = status
+                addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+            }
+            
+            addLog("[PENDING-RESOLVE] 📡 Enviando broadcast...")
+            context.sendBroadcast(intent)
+            addLog("[PENDING-RESOLVE] ✅ sendBroadcast() executado!")
+            addLog("[PENDING-RESOLVE] ════════════════════════════════════════")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao enviar resolução de pendência: ${e.message}", e)
+            addLog("[PENDING-RESOLVE] ❌ ERRO: ${e.message}")
         }
     }
 

@@ -200,6 +200,12 @@ class MainActivity : AppCompatActivity() {
             // Formato esperado: URI app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&...
             payGoService?.savePendingDataFromUri(transacaoPendenteDados)
             
+            // CONFORME EXEMPLO PAYGO (MainActivity.java linha 101-105):
+            // Quando há TransacaoPendenteDados, enviar broadcast de resolução
+            // com Confirmacao = "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO"
+            addLog("📤 Enviando confirmação automática para resolver pendência...")
+            payGoService?.sendPendingResolution(transacaoPendenteDados, "CONFIRMADO_AUTOMATICO")
+            
             // Notificar o WebView sobre a pendência detectada
             notifyWebViewPendingTransaction(transacaoPendenteDados)
         }
