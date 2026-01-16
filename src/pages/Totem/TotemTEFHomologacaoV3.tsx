@@ -684,26 +684,39 @@ export default function TotemTEFHomologacaoV3() {
       {/* Header */}
       <div className="bg-gray-800 border-b border-gray-700 p-2 md:p-3 flex items-center justify-between">
         <div className="flex items-center gap-2 md:gap-3">
-          <Button 
+          <Button
             className={`${btnOutline} p-2`}
             onPointerDown={() => {
-              // Se o modal estiver aberto, a seta deve apenas fechar o modal
               if (showSuccessModal) {
                 setShowSuccessModal(false);
                 setApprovedTransaction(null);
                 return;
               }
 
-              // Verifica se veio de alguma rota específica
               const from = location.state?.from;
               if (from) {
                 navigate(from);
                 return;
               }
 
-              // Nunca voltar para a Home do Totem por padrão (evita sair do PDV)
               navigate('/totem/tef-homologacao');
             }}
+            onClick={() => {
+              if (showSuccessModal) {
+                setShowSuccessModal(false);
+                setApprovedTransaction(null);
+                return;
+              }
+
+              const from = location.state?.from;
+              if (from) {
+                navigate(from);
+                return;
+              }
+
+              navigate('/totem/tef-homologacao');
+            }}
+            type="button"
           >
             <ArrowLeft className="w-5 h-5" />
           </Button>
@@ -712,7 +725,7 @@ export default function TotemTEFHomologacaoV3() {
             <p className="text-[10px] md:text-xs text-gray-400">PayGo Homologação</p>
           </div>
         </div>
-        
+
         <div className="flex items-center gap-1 md:gap-2">
           {/* ATALHO RESOLVER PENDÊNCIA - SEMPRE VISÍVEL */}
           <Button 
