@@ -223,6 +223,7 @@ const mergeUniqueTEFTransactions = (
 
 export default function TotemTEFReportHomologacao() {
   const navigate = useNavigate();
+  const goBackToPDV = () => navigate('/totem/tef-homologacao', { replace: true });
   const [transactions, setTransactions] = useState<TEFTransactionRecord[]>([]);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -425,7 +426,8 @@ export default function TotemTEFReportHomologacao() {
               variant="ghost" 
               size="icon"
               className="h-8 w-8 bg-gray-700 hover:bg-gray-600"
-              onPointerDown={() => navigate('/totem/tef-homologacao')}
+              onPointerDown={goBackToPDV}
+              onClick={goBackToPDV}
               style={{ touchAction: 'manipulation' }}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -442,6 +444,16 @@ export default function TotemTEFReportHomologacao() {
           </div>
           
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={goBackToPDV}
+              className="h-7 text-xs bg-gray-700 border-gray-600 text-white"
+            >
+              <ArrowLeft className="h-3 w-3 mr-1" />
+              Voltar ao PDV
+            </Button>
+
             <Button
               variant="outline"
               size="sm"
