@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Users } from 'lucide-react';
+import { Loader2, Users, Home, CheckCircle } from 'lucide-react';
 
 interface ServiceFormProps {
   serviceId: string | null;
@@ -24,6 +24,7 @@ interface ServiceFormData {
   preco: number;
   duracao: number;
   is_active: boolean;
+  exibir_home: boolean;
 }
 
 interface StaffMember {
@@ -41,26 +42,30 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     descricao: '',
     preco: 0,
     duracao: 30,
-    is_active: true
+    is_active: true,
+    exibir_home: false
   });
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
   useEffect(() => {
-    loadStaff();
-    if (serviceId) {
-      loadServiceData();
-    } else {
-      resetForm();
+    if (isOpen) {
+      loadStaff();
+      if (serviceId) {
+        loadServiceData();
+      } else {
+        resetForm();
+      }
     }
-  }, [serviceId]);
+  }, [serviceId, isOpen]);
 
   const loadStaff = async () => {
     try {
+      // Usar 'ativo' (o campo correto na tabela painel_barbeiros)
       const { data, error } = await supabase
         .from('painel_barbeiros')
         .select('id, nome, email, role')
-        .eq('is_active', true)
+        .eq('ativo', true)
         .order('nome');
 
       if (error) throw error;
@@ -77,7 +82,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       descricao: '',
       preco: 0,
       duracao: 30,
-      is_active: true
+      is_active: true,
+      exibir_home: false
     });
     setSelectedStaffIds([]);
   };
@@ -99,7 +105,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           descricao: data.descricao || '',
           preco: data.preco || 0,
           duracao: data.duracao || 30,
-          is_active: data.is_active ?? true
+          is_active: data.is_active ?? data.ativo ?? true,
+          exibir_home: data.exibir_home ?? false
         });
 
         // Carregar barbeiros vinculados ao serviço
@@ -155,6 +162,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             preco: formData.preco,
             duracao: formData.duracao,
             is_active: formData.is_active,
+            ativo: formData.is_active,
+            exibir_home: formData.exibir_home,
             updated_at: new Date().toISOString()
           })
           .eq('id', serviceId);
@@ -170,7 +179,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             preco: formData.preco,
             duracao: formData.duracao,
             is_active: formData.is_active,
-            display_order: 0
+            ativo: formData.is_active,
+            exibir_home: formData.exibir_home
           })
           .select()
           .single();
@@ -228,44 +238,46 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md bg-background border border-border shadow-xl">
         <DialogHeader>
-          <DialogTitle>
+          <DialogTitle className="text-foreground">
             {serviceId ? 'Editar Serviço' : 'Novo Serviço'}
           </DialogTitle>
         </DialogHeader>
 
         {loadingData ? (
-          <div className="flex items-center justify-center py-8">
+          <div className="flex items-center justify-center py-8 bg-background">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="nome">Nome do Serviço *</Label>
+              <Label htmlFor="nome" className="text-foreground">Nome do Serviço *</Label>
               <Input
                 id="nome"
                 value={formData.nome}
                 onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
                 placeholder="Ex: Corte + Barba"
                 required
+                className="bg-background border-input"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="descricao">Descrição</Label>
+              <Label htmlFor="descricao" className="text-foreground">Descrição</Label>
               <Textarea
                 id="descricao"
                 value={formData.descricao}
                 onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
                 placeholder="Descreva o serviço..."
                 rows={3}
+                className="bg-background border-input"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="preco">Preço (R$) *</Label>
+                <Label htmlFor="preco" className="text-foreground">Preço (R$) *</Label>
                 <Input
                   id="preco"
                   type="number"
@@ -275,11 +287,12 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                   onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) })}
                   placeholder="0.00"
                   required
+                  className="bg-background border-input"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="duracao">Duração (min) *</Label>
+                <Label htmlFor="duracao" className="text-foreground">Duração (min) *</Label>
                 <Input
                   id="duracao"
                   type="number"
@@ -288,6 +301,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                   onChange={(e) => setFormData({ ...formData, duracao: parseInt(e.target.value) })}
                   placeholder="30"
                   required
+                  className="bg-background border-input"
                 />
               </div>
             </div>
@@ -296,20 +310,20 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             <div className="space-y-3">
               <div className="flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
-                <Label>Barbeiros que realizam este serviço</Label>
+                <Label className="text-foreground">Barbeiros que realizam este serviço</Label>
               </div>
               <p className="text-sm text-muted-foreground">
                 Selecione os barbeiros que podem realizar este serviço
               </p>
-              <ScrollArea className="h-48 rounded-md border p-4">
+              <ScrollArea className="h-48 rounded-md border border-input bg-background p-4">
                 <div className="space-y-3">
                   {allStaff.length === 0 ? (
                     <p className="text-sm text-muted-foreground text-center py-4">
-                      Nenhum barbeiro cadastrado
+                      Nenhum barbeiro ativo cadastrado
                     </p>
                   ) : (
                     allStaff.map((staff) => (
-                      <div key={staff.id} className="flex items-center space-x-2">
+                      <div key={staff.id} className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50">
                         <Checkbox
                           id={`staff-${staff.id}`}
                           checked={selectedStaffIds.includes(staff.id)}
@@ -323,10 +337,13 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                         />
                         <Label
                           htmlFor={`staff-${staff.id}`}
-                          className="text-sm font-normal cursor-pointer flex-1"
+                          className="text-sm font-normal cursor-pointer flex-1 text-foreground"
                         >
                           {staff.nome}
                         </Label>
+                        {selectedStaffIds.includes(staff.id) && (
+                          <CheckCircle className="h-4 w-4 text-green-500" />
+                        )}
                       </div>
                     ))
                   )}
@@ -340,19 +357,42 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
               </p>
             </div>
 
-            <div className="space-y-3">
+            {/* Switches de Status */}
+            <div className="space-y-4 p-4 rounded-lg border border-input bg-muted/30">
               <div className="flex items-center justify-between">
-                <Label htmlFor="is_active">Serviço Ativo</Label>
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="h-4 w-4 text-primary" />
+                  <Label htmlFor="is_active" className="text-foreground">Serviço Ativo</Label>
+                </div>
                 <Switch
                   id="is_active"
                   checked={formData.is_active}
                   onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
                 />
               </div>
+              <p className="text-xs text-muted-foreground">
+                Serviços inativos não aparecem para agendamento
+              </p>
 
+              <div className="border-t border-input pt-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Home className="h-4 w-4 text-primary" />
+                    <Label htmlFor="exibir_home" className="text-foreground">Exibir na Homepage</Label>
+                  </div>
+                  <Switch
+                    id="exibir_home"
+                    checked={formData.exibir_home}
+                    onCheckedChange={(checked) => setFormData({ ...formData, exibir_home: checked })}
+                  />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Exibir este serviço na página inicial do site
+                </p>
+              </div>
             </div>
 
-            <DialogFooter className="gap-2">
+            <DialogFooter className="gap-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
