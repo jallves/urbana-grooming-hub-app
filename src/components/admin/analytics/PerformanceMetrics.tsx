@@ -43,8 +43,7 @@ const PerformanceMetrics: React.FC = () => {
             name: staffName, 
             appointments: 0, 
             completed: 0, 
-            revenue: 0,
-            avgRating: 4.5 // Simulado
+            revenue: 0
           };
         }
         acc[staffName].appointments += 1;
@@ -73,13 +72,47 @@ const PerformanceMetrics: React.FC = () => {
 
       const totalCombinedRevenue = totalRevenue + cashFlowRevenue;
 
+      // Calcular métricas reais baseadas em dados
+      const efficiency = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
+      const revenueScore = totalCombinedRevenue > 0 ? Math.min((totalCombinedRevenue / 50000) * 100, 100) : 0;
+      
+      // Calcular taxa de retenção real (clientes que retornaram)
+      const clientAppointments = appointments?.reduce((acc, apt) => {
+        const clientName = apt.painel_clientes?.nome;
+        if (clientName) {
+          acc[clientName] = (acc[clientName] || 0) + 1;
+        }
+        return acc;
+      }, {} as Record<string, number>) || {};
+      
+      const totalClients = Object.keys(clientAppointments).length;
+      const returningClients = Object.values(clientAppointments).filter(count => count > 1).length;
+      const retentionRate = totalClients > 0 ? (returningClients / totalClients) * 100 : 0;
+
+      // Calcular pontualidade (agendamentos não cancelados / total)
+      const cancelledAppointments = appointments?.filter(apt => apt.status === 'cancelado').length || 0;
+      const punctualityRate = totalAppointments > 0 ? ((totalAppointments - cancelledAppointments) / totalAppointments) * 100 : 0;
+
+      // Calcular qualidade (baseado na taxa de conclusão por barbeiro)
+      const qualityScore = staffData.length > 0 
+        ? staffData.reduce((sum, staff) => sum + staff.completionRate, 0) / staffData.length 
+        : 0;
+
+      // Performance score geral (média ponderada)
+      const performanceScore = Math.round(
+        (efficiency * 0.25) + 
+        (revenueScore * 0.25) + 
+        (retentionRate * 0.2) + 
+        (punctualityRate * 0.15) + 
+        (qualityScore * 0.15)
+      );
+
       const performanceRadar = [
-        { metric: 'Eficiência', value: completedAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0 },
-        { metric: 'Receita', value: totalCombinedRevenue > 0 ? Math.min((totalCombinedRevenue / 50000) * 100, 100) : 0 },
-        { metric: 'Satisfação', value: 85 }, // Simulado
-        { metric: 'Retenção', value: 78 }, // Simulado
-        { metric: 'Pontualidade', value: 92 }, // Simulado
-        { metric: 'Qualidade', value: 88 } // Simulado
+        { metric: 'Eficiência', value: Math.round(efficiency) },
+        { metric: 'Receita', value: Math.round(revenueScore) },
+        { metric: 'Retenção', value: Math.round(retentionRate) },
+        { metric: 'Pontualidade', value: Math.round(punctualityRate) },
+        { metric: 'Qualidade', value: Math.round(qualityScore) }
       ];
 
       return {
@@ -91,7 +124,8 @@ const PerformanceMetrics: React.FC = () => {
         avgTicket: completedAppointments > 0 ? totalRevenue / completedAppointments : 0,
         efficiency: totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0,
         staffData,
-        performanceRadar
+        performanceRadar,
+        performanceScore
       };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -119,7 +153,7 @@ const PerformanceMetrics: React.FC = () => {
     },
     {
       title: 'Performance Score',
-      value: '87/100',
+      value: `${performanceData?.performanceScore || 0}/100`,
       icon: Zap,
       color: 'text-yellow-400'
     }
