@@ -4,7 +4,7 @@ interface ReceiptItem {
   name: string;
   quantity?: number;
   unitPrice?: number;
-  price: number;
+  price: number; // total da linha
   type?: 'service' | 'product';
 }
 
@@ -18,6 +18,7 @@ interface ReceiptEmailData {
   transactionDate: string;
   nsu?: string;
   barberName?: string;
+  tipAmount?: number;
 }
 
 export async function sendReceiptEmail(data: ReceiptEmailData): Promise<{ success: boolean; error?: string }> {

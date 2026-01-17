@@ -81,14 +81,14 @@ const TotemPaymentPix: React.FC = () => {
       console.log('✅ [PIX] Autorização:', transactionData.autorizacao);
       console.log('✅ [PIX] ═══════════════════════════════════════');
       
-      // Atualizar status do pagamento
+      // Atualizar status do pagamento (schema atual: sem paid_at/nsu/authorization_code)
       await supabase
         .from('totem_payments')
         .update({
           status: 'completed',
-          paid_at: new Date().toISOString(),
-          ...(transactionData.nsu && { nsu: transactionData.nsu }),
-          ...(transactionData.autorizacao && { authorization_code: transactionData.autorizacao })
+          transaction_id: transactionData.nsu || transactionData.autorizacao || null,
+          updated_at: new Date().toISOString(),
+          error_message: null,
         })
         .eq('id', paymentId);
 
@@ -125,6 +125,7 @@ const TotemPaymentPix: React.FC = () => {
           body: {
             action: 'finish',
             venda_id: venda_id,
+            agendamento_id: appointment?.id,
             session_id: session_id,
             payment_id: paymentId,
             tipAmount: tipAmount
