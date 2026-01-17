@@ -5,7 +5,7 @@ import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemGrid } from '@/components/totem/TotemLayout';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
@@ -58,7 +58,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [creating, setCreating] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
 
-  const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
+  const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
   // Carregar serviços
   useEffect(() => {
@@ -176,8 +176,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         console.log(`📅 Verificando data: ${format(date, 'dd/MM/yyyy')} para barbeiro ${selectedBarber!.nome}`);
         
         // Buscar horários disponíveis PARA ESTE BARBEIRO ESPECÍFICO
+        // Usar o id do painel_barbeiros diretamente para consistência
         const slots = await getAvailableTimeSlots(
-          selectedBarber!.staff_id,
+          selectedBarber!.id,
           date,
           selectedService!.duracao
         );
@@ -227,8 +228,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       });
 
       // Buscar slots ESPECÍFICOS para este barbeiro
+      // Usar o id do painel_barbeiros diretamente para consistência
       const slots = await getAvailableTimeSlots(
-        selectedBarber.staff_id,
+        selectedBarber.id,
         selectedDate,
         selectedService.duracao
       );
@@ -308,9 +310,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       // Mostrar toast de progresso
       progressToast = toast.loading('⏳ Validando disponibilidade...');
 
-      // 1. Validar disponibilidade final
+      // 1. Validar disponibilidade final usando id do painel_barbeiros
       const validation = await validateAppointment(
-        selectedBarber.staff_id,
+        selectedBarber.id,
         selectedDate,
         selectedTime,
         selectedService.duracao
