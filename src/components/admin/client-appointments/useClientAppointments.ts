@@ -39,13 +39,22 @@ export interface PainelAgendamento {
     preco: number;
     duracao: number;
   } | null;
-  totem_sessions?: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
+  appointment_totem_sessions?: Array<{
+    totem_session_id: string | null;
     status: string | null;
+    totem_sessions: {
+      id: string;
+      created_at: string | null;
+    } | null;
   }>;
   vendas?: Array<{
     id: string;
+    status: string | null;
+  }>;
+  // Legacy - mantido para compatibilidade
+  totem_sessions?: Array<{
+    check_in_time: string | null;
+    check_out_time: string | null;
     status: string | null;
   }>;
 }
@@ -66,7 +75,15 @@ export const useClientAppointments = () => {
           painel_clientes(nome, email, whatsapp),
           painel_barbeiros(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
           painel_servicos(nome, preco, duracao),
-          vendas(id, status)
+          vendas(id, status),
+          appointment_totem_sessions(
+            totem_session_id,
+            status,
+            totem_sessions(
+              id,
+              created_at
+            )
+          )
         `)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
