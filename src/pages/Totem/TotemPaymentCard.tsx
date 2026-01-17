@@ -181,7 +181,7 @@ const TotemPaymentCard: React.FC = () => {
 
       console.log('✅ [CARD] Checkout finalizado com sucesso!');
       
-      // 3. Navegar para tela de sucesso
+      // 3. Navegar para tela de sucesso (emailAlreadySent = true porque já enviamos via modal)
       navigate('/totem/payment-success', { 
         state: { 
           appointment, 
@@ -192,7 +192,9 @@ const TotemPaymentCard: React.FC = () => {
           transactionData: pendingTransactionData,
           selectedProducts,
           extraServices,
-          resumo
+          resumo,
+          emailAlreadySent: true, // Evita duplicação - e-mail já foi enviado no modal de opções
+          tipAmount
         } 
       });
     } catch (error) {
