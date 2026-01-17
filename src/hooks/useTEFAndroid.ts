@@ -340,7 +340,10 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       return false;
     }
 
-    if (!isPinpadConnected) {
+    // CRÍTICO: PIX pode funcionar sem Pinpad físico (usa QR Code no terminal)
+    // Apenas cartão (credit/debit) requer Pinpad conectado
+    if (!isPinpadConnected && params.tipo !== 'pix') {
+      console.warn('[useTEFAndroid] Pinpad não conectado (obrigatório para cartão)');
       toast.error('Pinpad não conectado');
       return false;
     }

@@ -298,18 +298,15 @@ const TotemPaymentPix: React.FC = () => {
     console.log('🔍 [PIX] window.TEF disponível:', typeof window.TEF !== 'undefined');
     console.log('🔍 [PIX] ═══════════════════════════════════════');
 
-    // Se TEF disponível E Pinpad conectado, usar TEF PayGo
-    if (isAndroidAvailable && isPinpadConnected) {
-      console.log('✅ [PIX] TEF + Pinpad disponíveis - Iniciando pagamento PIX via PayGo');
+    // CRÍTICO: PIX via PayGo - Tentar SEMPRE quando Android disponível
+    // PIX pode funcionar mesmo sem Pinpad físico (usa QR Code na tela do terminal)
+    if (isAndroidAvailable) {
+      console.log('✅ [PIX] Android TEF disponível - Iniciando pagamento PIX via PayGo');
+      console.log('✅ [PIX] isPinpadConnected:', isPinpadConnected, '(não obrigatório para PIX)');
       iniciarPagamentoPix();
-    } else if (isAndroidAvailable && !isPinpadConnected) {
-      // Android disponível mas pinpad não conectado - erro
-      console.error('❌ [PIX] Android TEF disponível mas Pinpad NÃO CONECTADO');
-      toast.error('Pinpad não conectado', { description: 'Verifique a conexão do terminal' });
-      setError('Pinpad não conectado');
     } else {
-      // Caso contrário, usar simulação (ambiente web)
-      console.log('⚠️ [PIX] TEF não disponível, iniciando modo simulação...');
+      // Ambiente web - usar simulação
+      console.log('⚠️ [PIX] Android não disponível, iniciando modo simulação...');
       iniciarPagamentoSimulado();
     }
   }, [isAndroidAvailable, isPinpadConnected, venda_id, total, isCheckingConnection]);
