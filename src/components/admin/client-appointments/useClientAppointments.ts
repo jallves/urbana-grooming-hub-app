@@ -75,15 +75,7 @@ export const useClientAppointments = () => {
           painel_clientes(nome, email, whatsapp),
           painel_barbeiros(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
           painel_servicos(nome, preco, duracao),
-          vendas(id, status),
-          appointment_totem_sessions(
-            totem_session_id,
-            status,
-            totem_sessions(
-              id,
-              created_at
-            )
-          )
+          vendas(id, status)
         `)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
@@ -336,26 +328,37 @@ export const useClientAppointments = () => {
         .select(`
           *,
           painel_clientes(nome),
-          vendas(id, status),
-          appointment_totem_sessions(status, totem_session_id)
+          vendas(id, status)
         `)
         .eq('id', appointmentId)
-        .single();
+        .maybeSingle();
 
       if (fetchError) throw fetchError;
+      if (!appointment) {
+        toast.error('Agendamento não encontrado');
+        return false;
+      }
+
+      // Buscar sessão do totem separadamente (não há FK no PostgREST entre painel_agendamentos e appointment_totem_sessions)
+      const { data: totemSessions, error: totemError } = await supabase
+        .from('appointment_totem_sessions')
+        .select('id')
+        .eq('appointment_id', appointmentId)
+        .limit(1);
+
+      if (totemError) throw totemError;
 
       // Validações de integridade (com log detalhado)
       console.log('📋 Validando exclusão de agendamento:', {
         id: appointmentId,
         status: appointment.status,
-        vendas: appointment.vendas,
-        totem_sessions: appointment.appointment_totem_sessions
+        vendas: (appointment as any).vendas,
+        totemSessionsCount: totemSessions?.length || 0
       });
 
       // Verificar se tem sessão de totem (check-in feito)
-      const hasCheckIn = Array.isArray(appointment.appointment_totem_sessions) && 
-                         appointment.appointment_totem_sessions.length > 0;
-      const hasSales = Array.isArray(appointment.vendas) && appointment.vendas.length > 0;
+      const hasCheckIn = Array.isArray(totemSessions) && totemSessions.length > 0;
+      const hasSales = Array.isArray((appointment as any).vendas) && (appointment as any).vendas.length > 0;
       const statusUpper = appointment.status?.toUpperCase() || '';
       const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
       const isCancelled = statusUpper === 'CANCELADO';
@@ -364,7 +367,7 @@ export const useClientAppointments = () => {
       if (hasCheckIn) {
         console.error('❌ BLOQUEIO: Agendamento possui check-in', {
           appointmentId,
-          appointment_totem_sessions: appointment.appointment_totem_sessions
+          totemSessionsCount: totemSessions?.length || 0
         });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento com check-in realizado'
@@ -375,7 +378,7 @@ export const useClientAppointments = () => {
       if (hasSales) {
         console.error('❌ BLOQUEIO: Agendamento possui vendas associadas', {
           appointmentId,
-          vendas: appointment.vendas
+          vendas: (appointment as any).vendas
         });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento com vendas associadas'
