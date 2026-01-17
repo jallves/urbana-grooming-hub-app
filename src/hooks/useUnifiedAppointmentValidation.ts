@@ -395,19 +395,28 @@ export const useUnifiedAppointmentValidation = () => {
         .eq('id', barberId)
         .maybeSingle();
 
-      const staffId = barberData?.staff_id || barberId;
+      const authStaffId = barberData?.staff_id || barberId;
 
-      // Buscar horário de trabalho usando staff_id
+      // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
+      const { data: staffRecord } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('staff_id', authStaffId)
+        .maybeSingle();
+
+      const staffTableId = staffRecord?.id || authStaffId;
+
+      // Buscar horário de trabalho usando staff.id (não auth.uid)
       const { data: workingHours } = await supabase
         .from('working_hours')
         .select('start_time, end_time')
-        .eq('staff_id', staffId)
+        .eq('staff_id', staffTableId)
         .eq('day_of_week', dayOfWeek)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!workingHours) {
-        console.log('⚠️ Nenhum horário de trabalho encontrado para staff_id:', staffId, 'dia:', dayOfWeek);
+        console.log('⚠️ Nenhum horário de trabalho encontrado para staff_id:', staffTableId, 'dia:', dayOfWeek);
         return [];
       }
 
