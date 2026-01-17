@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, addDays, setHours, setMinutes } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { useAvailabilityCheck } from '@/hooks/totem/useAvailabilityCheck';
+import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { useRetryOperation } from '@/components/totem/RetryOperation';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
@@ -57,7 +57,7 @@ const TotemNovoAgendamento: React.FC = () => {
   const [hoveredBarber, setHoveredBarber] = useState<Barber | null>(null);
 
   // Hooks robustos
-  const { getAvailableTimeSlots, checkAvailability, isChecking } = useAvailabilityCheck();
+  const { getAvailableTimeSlots, validateAppointment, isValidating: isChecking } = useUnifiedAppointmentValidation();
   const { execute: executeWithRetry, isExecuting } = useRetryOperation(3, 2000);
   
   // Sistema de timeout
@@ -234,13 +234,15 @@ const TotemNovoAgendamento: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Verificação robusta antes de criar
+      // Verificação robusta antes de criar usando validação unificada
       console.log('🔍 Verificando disponibilidade final...');
-      const availabilityCheck = await checkAvailability(
+      const availabilityCheck = await validateAppointment(
         selectedBarber.id,
         selectedDate,
         selectedTime,
-        selectedService.duracao
+        selectedService.duracao,
+        undefined, // excludeAppointmentId
+        false // não mostrar toast aqui, tratamos manualmente abaixo
       );
 
       if (!availabilityCheck.valid) {

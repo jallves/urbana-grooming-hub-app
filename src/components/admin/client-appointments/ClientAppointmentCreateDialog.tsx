@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { Calendar as CalendarIcon, Clock, Scissors, User, ArrowLeft, Check, X } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -91,7 +91,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     serviceName: string;
   } | null>(null);
 
-  const { getAvailableTimeSlots, validateAppointment, isValidating } = useAppointmentValidation();
+  const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -259,8 +259,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       for (let i = 0; dates.length < 10 && i < 30; i++) {
         const date = addDays(today, i);
         
+        // Usar o id do painel_barbeiros para consistência
         const slots = await getAvailableTimeSlots(
-          selectedBarber!.staff_id,
+          selectedBarber!.id,
           date,
           selectedService!.duracao
         );
@@ -297,8 +298,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
     setLoading(true);
     try {
+      // Usar o id do painel_barbeiros para consistência
       const slots = await getAvailableTimeSlots(
-        selectedBarber.staff_id,
+        selectedBarber.id,
         selectedDate,
         selectedService.duracao
       );
@@ -410,12 +412,14 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
 
       console.log('2️⃣ Validando disponibilidade...');
 
-      // Validar disponibilidade
+      // Validar disponibilidade usando id do painel_barbeiros
       const validation = await validateAppointment(
-        selectedBarber.staff_id,
+        selectedBarber.id,
         selectedDate,
         selectedTime,
-        selectedService.duracao
+        selectedService.duracao,
+        undefined, // excludeAppointmentId
+        false // não mostrar toast, tratamos manualmente
       );
 
       console.log('📊 Resultado da validação:', validation);
