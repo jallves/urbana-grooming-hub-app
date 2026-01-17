@@ -1,14 +1,17 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, Loader2, WifiOff, QrCode, XCircle, RefreshCw } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, QrCode, XCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
+import { sendReceiptEmail } from '@/services/receiptEmailService';
+import { format } from 'date-fns';
+import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemPaymentPix: React.FC = () => {
@@ -17,7 +20,6 @@ const TotemPaymentPix: React.FC = () => {
   const { venda_id, session_id, appointment, client, total, selectedProducts = [], extraServices = [], resumo, isDirect = false, tipAmount = 0 } = location.state || {};
   
   const [processing, setProcessing] = useState(false);
-  const [currentPaymentId, setCurrentPaymentId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
@@ -27,78 +29,102 @@ const TotemPaymentPix: React.FC = () => {
   const [simulationTimeLeft, setSimulationTimeLeft] = useState(8);
   const [simulationStatus, setSimulationStatus] = useState<'waiting' | 'approved'>('waiting');
   
-  const isProcessingRef = useRef(false);
-  const finalizingRef = useRef(false);
-  const currentPaymentIdRef = useRef<string | null>(null);
-
-  // CRÍTICO: Recuperar payment ID do localStorage ao montar
-  useEffect(() => {
-    const storedPaymentId = localStorage.getItem('currentPaymentId');
-    const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
-    
-    if (storedPaymentId && storedPaymentTime) {
-      const age = Date.now() - parseInt(storedPaymentTime, 10);
-      if (age < 300000) {
-        console.log('[PIX] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
-        currentPaymentIdRef.current = storedPaymentId;
-        setCurrentPaymentId(storedPaymentId);
-        setPaymentStarted(true);
-        setProcessing(true);
-      } else {
-        localStorage.removeItem('currentPaymentId');
-        localStorage.removeItem('currentPaymentIdTime');
-      }
-    }
-  }, []);
-
-  // Atualizar ref E persistir no localStorage
-  useEffect(() => {
-    currentPaymentIdRef.current = currentPaymentId;
-    if (currentPaymentId) {
-      localStorage.setItem('currentPaymentId', currentPaymentId);
-      localStorage.setItem('currentPaymentIdTime', Date.now().toString());
-      console.log('[PIX] 💾 Payment ID salvo no localStorage:', currentPaymentId);
-    }
-  }, [currentPaymentId]);
-
-  // Função para finalizar pagamento
-  const finalizePayment = useCallback(async (paymentId: string, transactionData: {
+  // Estado para modal de opções de comprovante (IGUAL AO CARTÃO)
+  const [showReceiptModal, setShowReceiptModal] = useState(false);
+  const [pendingTransactionData, setPendingTransactionData] = useState<{
     nsu?: string;
     autorizacao?: string;
-  }) => {
-    // Evitar finalização duplicada
-    if (finalizingRef.current) {
-      console.log('[PIX] ⚠️ Finalização já em andamento');
-      return;
-    }
-    finalizingRef.current = true;
+  } | null>(null);
+  
+  // Ref para evitar finalização duplicada
+  const finalizingRef = useRef(false);
+
+  // Função para enviar e-mail de comprovante
+  const handleSendReceiptEmail = useCallback(async (): Promise<boolean> => {
+    if (!client?.email) return false;
     
     try {
-      console.log('✅ [PIX] ═══════════════════════════════════════');
-      console.log('✅ [PIX] FINALIZANDO PAGAMENTO PIX');
-      console.log('✅ [PIX] Payment ID:', paymentId);
-      console.log('✅ [PIX] NSU:', transactionData.nsu);
-      console.log('✅ [PIX] Autorização:', transactionData.autorizacao);
-      console.log('✅ [PIX] ═══════════════════════════════════════');
-      
-      // Atualizar status do pagamento (schema atual: sem paid_at/nsu/authorization_code)
-      await supabase
-        .from('totem_payments')
-        .update({
-          status: 'completed',
-          transaction_id: transactionData.nsu || transactionData.autorizacao || null,
-          updated_at: new Date().toISOString(),
-          error_message: null,
-        })
-        .eq('id', paymentId);
+      const items: Array<{ name: string; quantity?: number; unitPrice?: number; price: number; type: 'service' | 'product' }> = [];
 
-      // Finalizar venda
+      if (resumo?.original_service) {
+        items.push({ name: resumo.original_service.nome, quantity: 1, unitPrice: resumo.original_service.preco, price: resumo.original_service.preco, type: 'service' });
+      } else if (appointment?.servico) {
+        const p = appointment.servico.preco || 0;
+        items.push({ name: appointment.servico.nome, quantity: 1, unitPrice: p, price: p, type: 'service' });
+      }
+
+      if (resumo?.extra_services) {
+        resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
+        });
+      } else if (extraServices?.length > 0) {
+        extraServices.forEach((service: { nome: string; preco: number }) => {
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
+        });
+      }
+
+      if (selectedProducts?.length > 0) {
+        selectedProducts.forEach((product: { nome: string; preco: number; quantidade: number }) => {
+          items.push({
+            name: product.nome,
+            quantity: product.quantidade,
+            unitPrice: product.preco,
+            price: product.preco * product.quantidade,
+            type: 'product'
+          });
+        });
+      }
+
+      if (items.length === 0) {
+        items.push({ name: 'Serviço', price: total, type: 'service' });
+      }
+
+      const hasServices = items.some(item => item.type === 'service');
+      const hasProducts = items.some(item => item.type === 'product');
+      let transactionType: 'service' | 'product' | 'mixed' = 'service';
+      if (hasServices && hasProducts) {
+        transactionType = 'mixed';
+      } else if (hasProducts) {
+        transactionType = 'product';
+      }
+
+      const result = await sendReceiptEmail({
+        clientName: client.nome,
+        clientEmail: client.email,
+        transactionType,
+        items,
+        total,
+        paymentMethod: 'PIX',
+        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
+        nsu: pendingTransactionData?.nsu,
+        barberName: appointment?.barbeiro?.nome,
+        tipAmount: Number(tipAmount || 0),
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('[PIX] Erro ao enviar e-mail:', error);
+      return false;
+    }
+  }, [client, resumo, appointment, extraServices, selectedProducts, total, pendingTransactionData, tipAmount]);
+
+  // Função chamada após comprovante enviado/impresso - finaliza tudo (IGUAL AO CARTÃO)
+  const handleReceiptComplete = useCallback(async () => {
+    if (!pendingTransactionData) return;
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    
+    console.log('✅ [PIX] ═══════════════════════════════════════');
+    console.log('✅ [PIX] COMPROVANTE PROCESSADO - FINALIZANDO');
+    console.log('✅ [PIX] ═══════════════════════════════════════');
+    
+    try {
       if (isDirect) {
         await supabase.functions.invoke('totem-direct-sale', {
           body: {
             action: 'finish',
             venda_id: venda_id,
-            payment_id: paymentId
+            transaction_data: pendingTransactionData
           }
         });
       } else {
@@ -120,30 +146,22 @@ const TotemPaymentPix: React.FC = () => {
           }
         }
 
-        // Finalizar checkout
         await supabase.functions.invoke('totem-checkout', {
           body: {
             action: 'finish',
             venda_id: venda_id,
             agendamento_id: appointment?.id,
             session_id: session_id,
-            payment_id: paymentId,
+            transaction_data: pendingTransactionData,
             payment_method: 'PIX',
             tipAmount: tipAmount,
-            // Snapshot de itens (fallback caso start falhe e a venda esteja sem itens)
             extras: (extraServices || []).map((s: any) => ({ id: s.id })),
             products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
           }
         });
       }
 
-      console.log('✅ [PIX] Pagamento finalizado com sucesso!');
-      toast.success('Pagamento PIX confirmado!');
-      
-      // Limpar localStorage após sucesso
-      localStorage.removeItem('currentPaymentId');
-      localStorage.removeItem('currentPaymentIdTime');
-      localStorage.removeItem('currentPaymentType');
+      console.log('✅ [PIX] Checkout finalizado com sucesso!');
       
       navigate('/totem/payment-success', { 
         state: { 
@@ -152,67 +170,38 @@ const TotemPaymentPix: React.FC = () => {
           total,
           paymentMethod: 'pix',
           isDirect,
-          transactionData,
+          transactionData: pendingTransactionData,
           selectedProducts,
           extraServices,
-          resumo
-        },
-        replace: true
+          resumo,
+          emailAlreadySent: true,
+          tipAmount
+        } 
       });
     } catch (error) {
       console.error('❌ [PIX] Erro ao finalizar:', error);
-      toast.error('Erro ao processar pagamento');
-      setProcessing(false);
-      finalizingRef.current = false;
+      toast.error('Erro ao finalizar checkout', {
+        description: 'O pagamento foi aprovado. Procure a recepção.'
+      });
+      navigate('/totem/home');
     }
-  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, tipAmount]);
+  }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount]);
 
-  // Handler para resultado do TEF
-  // IMPORTANTE: Usa refs E localStorage para garantir acesso aos valores
+  // Handler para resultado do TEF - IGUAL AO CARTÃO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PIX] ═══════════════════════════════════════');
     console.log('📞 [PIX] handleTEFResult CHAMADO');
     console.log('📞 [PIX] Status:', resultado.status);
-    console.log('📞 [PIX] currentPaymentIdRef:', currentPaymentIdRef.current);
-    console.log('📞 [PIX] currentPaymentId (state):', currentPaymentId);
-    
-    // CRÍTICO: Tentar múltiplas fontes para o paymentId
-    let paymentId = currentPaymentIdRef.current || currentPaymentId;
-    
-    // Se não encontrou em ref/state, tentar localStorage (sobrevive reload do WebView)
-    if (!paymentId) {
-      const storedPaymentId = localStorage.getItem('currentPaymentId');
-      const storedPaymentTime = localStorage.getItem('currentPaymentIdTime');
-      
-      if (storedPaymentId && storedPaymentTime) {
-        const age = Date.now() - parseInt(storedPaymentTime, 10);
-        if (age < 300000) { // 5 minutos
-          console.log('[PIX] 🔄 Recuperando payment ID do localStorage:', storedPaymentId);
-          paymentId = storedPaymentId;
-          currentPaymentIdRef.current = storedPaymentId;
-        }
-      }
-    }
-    
-    console.log('📞 [PIX] PaymentId final:', paymentId);
     console.log('📞 [PIX] ═══════════════════════════════════════');
     
     switch (resultado.status) {
       case 'aprovado':
-        console.log('✅ [PIX] Pagamento APROVADO pelo PayGo');
-        console.log('✅ [PIX] PaymentId disponível:', paymentId);
-        if (paymentId) {
-          finalizePayment(paymentId, {
-            nsu: resultado.nsu,
-            autorizacao: resultado.autorizacao
-          });
-        } else {
-          console.error('❌ [PIX] currentPaymentId não disponível - tentando recuperar...');
-          console.log('❌ [PIX] Dados do resultado:', JSON.stringify(resultado, null, 2));
-          toast.error('Erro interno - ID do pagamento não encontrado. Procure um atendente.');
-          setProcessing(false);
-          setPaymentStarted(false);
-        }
+        console.log('✅ [PIX] Pagamento APROVADO - Mostrando opções de comprovante');
+        setPendingTransactionData({
+          nsu: resultado.nsu,
+          autorizacao: resultado.autorizacao
+        });
+        setShowReceiptModal(true);
         break;
         
       case 'negado':
@@ -238,263 +227,113 @@ const TotemPaymentPix: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, [finalizePayment, currentPaymentId]);
+  }, []);
 
-  // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
+  // Hook dedicado para receber resultado do PayGo
   useTEFPaymentResult({
     enabled: paymentStarted && processing,
     onResult: handleTEFResult,
     pollingInterval: 500,
-    maxWaitTime: 180000 // 3 minutos
+    maxWaitTime: 180000
   });
 
-  // Hook TEF Android (APENAS para iniciar pagamento - NÃO para receber resultado)
+  // Hook TEF Android
   const {
     isAndroidAvailable,
     isPinpadConnected,
     iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF
-  } = useTEFAndroid({
-    // NÃO passamos callbacks aqui para evitar processamento duplicado
-    // O useTEFPaymentResult é o único responsável por receber e processar resultados
-  });
+    cancelarPagamento: cancelarPagamentoTEF,
+    verificarConexao
+  } = useTEFAndroid({});
 
-  // Estado para timeout de segurança
-  const [tefTimeout, setTefTimeout] = useState(false);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  
-  // Delay inicial para verificar conexão TEF - REDUZIDO para melhor UX
-  // Verificação progressiva: 500ms, 1000ms, 1500ms
+  // Delay inicial para verificar conexão TEF
   useEffect(() => {
-    console.log('🔄 [PIX] Iniciando verificação de conexão TEF...');
-    let attempts = 0;
-    
-    const checkConnection = () => {
-      attempts++;
-      const tefAvailable = typeof window.TEF !== 'undefined';
-      console.log(`🔍 [PIX] Tentativa ${attempts}: window.TEF=${tefAvailable}, isAndroidAvailable=${isAndroidAvailable}`);
-      
-      // Se TEF está disponível, podemos prosseguir imediatamente
-      if (tefAvailable && isAndroidAvailable) {
-        console.log('✅ [PIX] TEF detectado na tentativa', attempts);
-        setIsCheckingConnection(false);
-        return;
-      }
-      
-      // Após 3 tentativas (1.5s total), finalizar verificação
-      if (attempts >= 3) {
-        console.log('⏱️ [PIX] Verificação concluída após', attempts, 'tentativas');
-        setIsCheckingConnection(false);
-        return;
-      }
-      
-      // Próxima tentativa
-      setTimeout(checkConnection, 500);
-    };
-    
-    // Primeira verificação imediata
-    checkConnection();
-    
-    return () => {};
-  }, [isAndroidAvailable]);
+    const timer = setTimeout(() => {
+      setIsCheckingConnection(false);
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, []);
 
-  // Iniciar pagamento PIX - Via TEF ou Simulação
+  // Log status do TEF ao montar
   useEffect(() => {
-    if (!venda_id || !total) {
-      console.error('❌ [PIX] Dados incompletos');
-      toast.error('Dados de pagamento incompletos');
-      navigate('/totem/home');
-      return;
-    }
+    console.log('🔌 [PIX] Status TEF Android:', {
+      isAndroidAvailable,
+      isPinpadConnected,
+      processing,
+      paymentStarted,
+      isCheckingConnection
+    });
+  }, [isAndroidAvailable, isPinpadConnected, processing, paymentStarted, isCheckingConnection]);
 
-    if (isCheckingConnection) {
-      console.log('🔄 [PIX] Aguardando verificação de conexão...');
-      return;
-    }
-
-    if (isProcessingRef.current) {
-      console.log('⚠️ [PIX] Já em processamento, ignorando...');
-      return;
-    }
-
-    // Log detalhado para diagnóstico
-    console.log('🔍 [PIX] ═══════════════════════════════════════');
-    console.log('🔍 [PIX] DECISÃO DE FLUXO DE PAGAMENTO');
-    console.log('🔍 [PIX] isAndroidAvailable:', isAndroidAvailable);
-    console.log('🔍 [PIX] isPinpadConnected:', isPinpadConnected);
-    console.log('🔍 [PIX] window.TEF disponível:', typeof window.TEF !== 'undefined');
-    console.log('🔍 [PIX] ═══════════════════════════════════════');
-
-    // CRÍTICO: PIX via PayGo - Tentar SEMPRE quando Android disponível
-    // PIX usa PAGAMENTO_CARTEIRA_VIRTUAL no PayGo (QR Code na tela do terminal)
-    if (isAndroidAvailable) {
-      console.log('✅ [PIX] Android TEF disponível - Iniciando pagamento PIX via PayGo');
-      console.log('✅ [PIX] Método: PAGAMENTO_CARTEIRA_VIRTUAL (QR Code no terminal)');
-      iniciarPagamentoPix();
-    } else {
-      // Ambiente web - usar simulação
-      console.log('⚠️ [PIX] Android não disponível, iniciando modo simulação...');
-      iniciarPagamentoSimulado();
-    }
-  }, [isAndroidAvailable, isPinpadConnected, venda_id, total, isCheckingConnection]);
-
-  const iniciarPagamentoPix = async () => {
-    if (isProcessingRef.current) return;
-    isProcessingRef.current = true;
-    
+  // IGUAL AO CARTÃO: Usuário clica no botão para iniciar PIX
+  const handleStartPix = async () => {
     console.log('💚 [PIX] ═══════════════════════════════════════');
-    console.log('💚 [PIX] INICIANDO PAGAMENTO PIX VIA TEF PAYGO');
+    console.log('💚 [PIX] INICIANDO PAGAMENTO PIX VIA PAYGO');
     console.log('💚 [PIX] Venda ID:', venda_id);
     console.log('💚 [PIX] Total:', total);
-    console.log('💚 [PIX] Método PayGo: pix -> PAGAMENTO_CARTEIRA_VIRTUAL');
     console.log('💚 [PIX] ═══════════════════════════════════════');
-    
-    setProcessing(true);
+
+    if (processing || paymentStarted) return;
+
     setError(null);
-    setPaymentStarted(true);
-    setTefTimeout(false);
     finalizingRef.current = false;
 
+    // Checar diretamente o objeto injetado pelo WebView
+    const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
+
+    if (!hasNativeBridge) {
+      // Ambiente web - usar simulação
+      console.log('⚠️ [PIX] Bridge TEF não disponível - iniciando simulação');
+      setIsSimulating(true);
+      setSimulationStatus('waiting');
+      setSimulationTimeLeft(8);
+      setProcessing(true);
+      return;
+    }
+
+    // Revalidar pinpad antes de iniciar
+    const status = verificarConexao();
+    const connected = !!status?.conectado;
+
+    if (!connected) {
+      toast.error('Pinpad não conectado', {
+        description: 'Verifique a conexão da maquininha e tente novamente.'
+      });
+      return;
+    }
+
+    setProcessing(true);
+    setPaymentStarted(true);
+
     try {
-      // Criar registro de pagamento PRIMEIRO e aguardar sincronização
-      console.log('💚 [PIX] Criando registro de pagamento...');
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: session_id,
-          payment_method: 'pix',
-          amount: total,
-          status: 'processing',
-          transaction_id: `PIX${Date.now()}`
-        })
-        .select()
-        .single();
+      const ordemId = (venda_id as string) || `PIX_${Date.now()}`;
 
-      if (paymentError) {
-        console.error('❌ [PIX] Erro ao criar registro:', paymentError);
-        throw paymentError;
-      }
-
-      console.log('✅ [PIX] Registro criado:', payment.id);
-      
-      // CRÍTICO: Atualizar ref IMEDIATAMENTE antes de qualquer outra operação
-      currentPaymentIdRef.current = payment.id;
-      setCurrentPaymentId(payment.id);
-      
-      // Log de confirmação
-      console.log('✅ [PIX] currentPaymentIdRef.current ATUALIZADO:', currentPaymentIdRef.current);
-
-      // TIMEOUT DE SEGURANÇA: Se não receber resposta em 120 segundos, mostrar erro
-      timeoutRef.current = setTimeout(() => {
-        if (isProcessingRef.current && !finalizingRef.current) {
-          console.error('⏱️ [PIX] TIMEOUT - Nenhuma resposta do PayGo em 120 segundos');
-          setTefTimeout(true);
-          setError('Tempo esgotado aguardando resposta do PayGo');
-          toast.error('Timeout no pagamento PIX', { 
-            description: 'Verifique se o PayGo está funcionando corretamente' 
-          });
-        }
-      }, 120000);
-
-      // Chamar TEF Android para PIX
-      console.log('🔌 [PIX] Chamando TEF PayGo para PIX...');
-      console.log('🔌 [PIX] Parâmetros: ordemId=' + payment.id + ', valor=' + total + ', tipo=pix');
-      
+      // CHAMAR PAYGO COM TIPO PIX - PayGo abrirá a tela de seleção de carteiras digitais
       const success = await iniciarPagamentoTEF({
-        ordemId: payment.id,
+        ordemId,
         valor: total,
         tipo: 'pix',
         parcelas: 1
       });
 
       if (!success) {
-        console.error('❌ [PIX] Falha ao iniciar TEF - iniciarPagamentoTEF retornou false');
-        
-        // Limpar timeout
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        
-        // Atualizar status do pagamento para erro
-        await supabase
-          .from('totem_payments')
-          .update({ status: 'failed', error_message: 'Falha ao iniciar TEF' })
-          .eq('id', payment.id);
-        
         toast.error('Erro ao iniciar pagamento PIX', {
-          description: 'Não foi possível conectar com o PayGo'
+          description: 'A bridge TEF retornou falha ao iniciar a transação.'
         });
-        setError('Falha ao iniciar TEF');
         setProcessing(false);
         setPaymentStarted(false);
-        isProcessingRef.current = false;
       } else {
-        console.log('✅ [PIX] TEF iniciado, aguardando resposta do PayGo...');
-        console.log('✅ [PIX] O QR Code será exibido no terminal PayGo');
+        console.log('✅ [PIX] PayGo iniciado - aguardando seleção de carteira digital');
       }
-
     } catch (error) {
       console.error('❌ [PIX] Erro:', error);
-      
-      // Limpar timeout
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
       setPaymentStarted(false);
-      isProcessingRef.current = false;
     }
   };
 
-  // Iniciar pagamento em modo simulação (quando TEF não disponível)
-  const iniciarPagamentoSimulado = async () => {
-    if (isProcessingRef.current) return;
-    isProcessingRef.current = true;
-    
-    console.log('🎭 [PIX] ═══════════════════════════════════════');
-    console.log('🎭 [PIX] INICIANDO PAGAMENTO PIX EM MODO SIMULAÇÃO');
-    console.log('🎭 [PIX] Venda ID:', venda_id);
-    console.log('🎭 [PIX] Total:', total);
-    console.log('🎭 [PIX] ═══════════════════════════════════════');
-    
-    setIsSimulating(true);
-    setSimulationStatus('waiting');
-    setSimulationTimeLeft(8);
-    setProcessing(true);
-    setError(null);
-    finalizingRef.current = false;
-
-    try {
-      // Criar registro de pagamento
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: session_id,
-          payment_method: 'pix',
-          amount: total,
-          status: 'processing',
-          transaction_id: `PIX-SIM-${Date.now()}`
-        })
-        .select()
-        .single();
-
-      if (paymentError) {
-        console.error('❌ [PIX-SIM] Erro ao criar registro:', paymentError);
-        throw paymentError;
-      }
-
-      console.log('✅ [PIX-SIM] Registro criado:', payment.id);
-      currentPaymentIdRef.current = payment.id;
-      setCurrentPaymentId(payment.id);
-
-    } catch (error) {
-      console.error('❌ [PIX-SIM] Erro:', error);
-      toast.error('Erro ao processar pagamento');
-      setProcessing(false);
-      setIsSimulating(false);
-      isProcessingRef.current = false;
-    }
-  };
-
-  // Timer para simulação
+  // Timer para simulação - IGUAL AO CARTÃO
   useEffect(() => {
     if (!isSimulating || simulationStatus !== 'waiting') return;
 
@@ -504,16 +343,14 @@ const TotemPaymentPix: React.FC = () => {
           clearInterval(interval);
           setSimulationStatus('approved');
           
-          // Aprovar pagamento simulado
-          const paymentId = currentPaymentIdRef.current;
-          if (paymentId) {
-            setTimeout(() => {
-              finalizePayment(paymentId, {
-                nsu: `SIM${Date.now()}`,
-                autorizacao: `AUTH${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-              });
-            }, 1500);
-          }
+          setTimeout(() => {
+            // Em simulação, mostrar modal de opções também
+            setPendingTransactionData({
+              nsu: `SIM${Date.now()}`,
+              autorizacao: `AUTH${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+            });
+            setShowReceiptModal(true);
+          }, 1500);
           return 0;
         }
         return prev - 1;
@@ -521,15 +358,9 @@ const TotemPaymentPix: React.FC = () => {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isSimulating, simulationStatus, finalizePayment]);
+  }, [isSimulating, simulationStatus]);
 
   const handleCancelPayment = () => {
-    // Limpar timeout de segurança
-    if (timeoutRef.current) {
-      clearTimeout(timeoutRef.current);
-      timeoutRef.current = null;
-    }
-    
     if (isSimulating) {
       setIsSimulating(false);
       setSimulationStatus('waiting');
@@ -538,24 +369,36 @@ const TotemPaymentPix: React.FC = () => {
     }
     setProcessing(false);
     setPaymentStarted(false);
-    setTefTimeout(false);
-    isProcessingRef.current = false;
     finalizingRef.current = false;
     toast.info('Pagamento cancelado');
     navigate('/totem/checkout', { state: location.state });
   };
-  
-  // Cleanup ao desmontar
-  useEffect(() => {
-    return () => {
-      if (timeoutRef.current) {
-        clearTimeout(timeoutRef.current);
-      }
-    };
-  }, []);
 
-  // Gerar código PIX para exibição
+  // Gerar código PIX para exibição (simulação)
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${venda_id || 'test'}520400005303986540${total?.toFixed(2) || '0.00'}5802BR5913COSTA URBANA6009SAO PAULO62070503***6304`;
+
+  // Modal de opções de comprovante (IGUAL AO CARTÃO)
+  if (showReceiptModal) {
+    return (
+      <>
+        <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
+          <div className="absolute inset-0 z-0">
+            <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-urbana-black/60" />
+          </div>
+        </div>
+        <TotemReceiptOptionsModal
+          isOpen={showReceiptModal}
+          onClose={() => setShowReceiptModal(false)}
+          onComplete={handleReceiptComplete}
+          onSendEmail={handleSendReceiptEmail}
+          clientEmail={client?.email}
+          clientName={client?.nome || 'Cliente'}
+          total={total}
+        />
+      </>
+    );
+  }
 
   // Renderização para simulação (QR Code na tela)
   if (isSimulating) {
@@ -668,7 +511,7 @@ const TotemPaymentPix: React.FC = () => {
     );
   }
 
-  // Renderização para TEF PayGo (máquina Android)
+  // Renderização principal - BOTÃO PARA INICIAR PIX (IGUAL AO CARTÃO)
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-3 sm:p-4 md:p-6 font-poppins overflow-hidden relative">
       {/* Background */}
@@ -686,22 +529,18 @@ const TotemPaymentPix: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6 z-10">
         <Button
-          onClick={handleCancelPayment}
+          onClick={() => navigate('/totem/checkout', { state: location.state })}
           variant="ghost"
           size="lg"
           className="h-10 sm:h-12 md:h-14 px-3 sm:px-4 md:px-6 text-sm sm:text-base md:text-lg text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/20"
         >
           <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 mr-1 sm:mr-2" />
-          <span className="hidden sm:inline">Cancelar</span>
+          <span className="hidden sm:inline">Voltar</span>
         </Button>
         <div className="text-center flex-1">
           <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
             Pagamento via PIX
           </h1>
-          <p className="text-xs sm:text-sm md:text-base text-green-400 mt-1 flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-3 h-3" />
-            PayGo conectado
-          </p>
         </div>
         <div className="w-12 sm:w-16 md:w-24"></div>
       </div>
@@ -710,20 +549,24 @@ const TotemPaymentPix: React.FC = () => {
       <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
         <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 bg-black/30 backdrop-blur-xl border-2 border-green-500/30 shadow-[0_8px_32px_rgba(34,197,94,0.3)] text-center rounded-3xl">
           
-          {/* Mostrar erro ou timeout */}
-          {(error || tefTimeout) ? (
+          {/* Verificando conexão */}
+          {isCheckingConnection ? (
+            <div className="flex flex-col items-center justify-center py-8 space-y-4">
+              <Loader2 className="w-12 h-12 text-green-400 animate-spin" />
+              <p className="text-lg text-gray-300">Verificando conexão...</p>
+            </div>
+          ) : error ? (
+            /* Erro */
             <>
-              {/* Status de Erro */}
               <div className="bg-gradient-to-r from-red-500/20 via-red-400/15 to-red-500/20 border-2 border-red-500/40 rounded-xl p-4">
                 <div className="flex items-center justify-center gap-2">
                   <XCircle className="w-5 h-5 text-red-400" />
                   <p className="text-base sm:text-lg font-bold text-red-400">
-                    {tefTimeout ? 'Tempo esgotado' : 'Erro no pagamento'}
+                    Erro no pagamento
                   </p>
                 </div>
               </div>
 
-              {/* Ícone de Erro */}
               <div className="flex justify-center py-6">
                 <div className="relative">
                   <div className="absolute -inset-3 bg-red-500/20 rounded-full blur-xl" />
@@ -733,36 +576,20 @@ const TotemPaymentPix: React.FC = () => {
                 </div>
               </div>
 
-              {/* Mensagem */}
               <div className="space-y-4">
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  {tefTimeout ? 'O tempo de espera esgotou' : 'Falha no pagamento PIX'}
+                  Falha no pagamento PIX
                 </p>
                 <p className="text-base sm:text-lg text-gray-300">
-                  {error || 'Nenhuma resposta do PayGo. Por favor, tente novamente.'}
+                  {error}
                 </p>
               </div>
 
-              {/* Botões de ação */}
               <div className="flex flex-col sm:flex-row gap-3 justify-center">
                 <Button
                   onClick={() => {
-                    // Limpar estados e tentar novamente
                     setError(null);
-                    setTefTimeout(false);
-                    isProcessingRef.current = false;
                     finalizingRef.current = false;
-                    setPaymentStarted(false);
-                    setProcessing(false);
-                    
-                    // Aguardar um momento e reiniciar
-                    setTimeout(() => {
-                      if (isAndroidAvailable) {
-                        iniciarPagamentoPix();
-                      } else {
-                        iniciarPagamentoSimulado();
-                      }
-                    }, 500);
                   }}
                   size="lg"
                   className="bg-green-600 hover:bg-green-500 text-white"
@@ -771,7 +598,7 @@ const TotemPaymentPix: React.FC = () => {
                   Tentar Novamente
                 </Button>
                 <Button
-                  onClick={handleCancelPayment}
+                  onClick={() => navigate('/totem/checkout', { state: location.state })}
                   variant="outline"
                   size="lg"
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
@@ -780,9 +607,9 @@ const TotemPaymentPix: React.FC = () => {
                 </Button>
               </div>
             </>
-          ) : (
+          ) : processing ? (
+            /* Processando - PayGo aberto */
             <>
-              {/* Status TEF Normal */}
               <div className="bg-gradient-to-r from-green-500/20 via-green-400/15 to-green-500/20 border-2 border-green-500/40 rounded-xl p-4">
                 <div className="flex items-center justify-center gap-2">
                   <div className="relative">
@@ -790,12 +617,11 @@ const TotemPaymentPix: React.FC = () => {
                     <div className="w-2 h-2 bg-green-400 rounded-full" />
                   </div>
                   <p className="text-base sm:text-lg font-bold text-green-400">
-                    ✅ PayGo Integrado - Aguardando pagamento PIX...
+                    ✅ PayGo aberto - Selecione a opção de PIX
                   </p>
                 </div>
               </div>
 
-              {/* Visual do QR Code (indicação que está no pinpad) */}
               <div className="flex justify-center py-6">
                 <div className="relative">
                   <div className="absolute -inset-3 bg-green-500/20 rounded-2xl blur-xl animate-pulse" />
@@ -805,17 +631,15 @@ const TotemPaymentPix: React.FC = () => {
                 </div>
               </div>
 
-              {/* Instrução */}
               <div className="space-y-4">
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  Escaneie o QR Code na maquininha
+                  Complete o pagamento no PayGo
                 </p>
                 <p className="text-base sm:text-lg text-gray-300">
-                  O código PIX está sendo exibido no pinpad
+                  Selecione a carteira digital ou PIX na tela da maquininha
                 </p>
               </div>
 
-              {/* Amount */}
               <div className="space-y-2 p-5 bg-gradient-to-r from-green-500/10 via-green-400/10 to-green-500/10 rounded-xl border-2 border-green-500/30">
                 <p className="text-lg text-gray-400 font-medium">Valor total</p>
                 <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
@@ -823,30 +647,10 @@ const TotemPaymentPix: React.FC = () => {
                 </p>
               </div>
 
-              {/* Progress Steps */}
-              <div className="flex items-center justify-center gap-2 sm:gap-3">
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-                  <span className="text-xs sm:text-sm text-urbana-light">TEF</span>
-                </div>
-                <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
-                <div className="flex items-center gap-1.5">
-                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-                  <span className="text-xs sm:text-sm text-urbana-light">QR Code</span>
-                </div>
-                <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
-                <div className="flex items-center gap-1.5">
-                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-400 rounded-full animate-pulse" />
-                  <span className="text-xs sm:text-sm text-urbana-light">Pagamento</span>
-                </div>
-              </div>
-
-              {/* Loader */}
               <div className="flex justify-center">
                 <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
               </div>
 
-              {/* Cancel Button */}
               <Button
                 onClick={handleCancelPayment}
                 variant="outline"
@@ -854,6 +658,53 @@ const TotemPaymentPix: React.FC = () => {
                 className="border-red-500/50 text-red-400 hover:bg-red-500/10"
               >
                 Cancelar Pagamento
+              </Button>
+            </>
+          ) : (
+            /* Tela inicial - BOTÃO PARA INICIAR PIX */
+            <>
+              <div className="flex justify-center py-6">
+                <div className="relative">
+                  <div className="absolute -inset-3 bg-green-500/20 rounded-2xl blur-xl" />
+                  <div className="relative bg-gradient-to-br from-green-500/20 to-green-600/20 p-8 rounded-2xl border-2 border-green-500/40">
+                    <QrCode className="w-24 h-24 sm:w-32 sm:h-32 text-green-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                  Pagar com PIX
+                </p>
+                <p className="text-base sm:text-lg text-gray-300">
+                  Clique no botão abaixo para iniciar o pagamento via PIX na maquininha
+                </p>
+              </div>
+
+              <div className="space-y-2 p-5 bg-gradient-to-r from-green-500/10 via-green-400/10 to-green-500/10 rounded-xl border-2 border-green-500/30">
+                <p className="text-lg text-gray-400 font-medium">Valor total</p>
+                <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
+                  R$ {total?.toFixed(2)}
+                </p>
+              </div>
+
+              <Button
+                onClick={handleStartPix}
+                size="lg"
+                className="w-full h-16 sm:h-20 text-xl sm:text-2xl font-bold bg-gradient-to-r from-green-600 to-green-500 hover:from-green-500 hover:to-green-400 text-white rounded-xl shadow-lg"
+              >
+                <QrCode className="w-6 h-6 sm:w-8 sm:h-8 mr-3" />
+                Pagar com PIX
+              </Button>
+
+              <Button
+                onClick={() => navigate('/totem/checkout', { state: location.state })}
+                variant="outline"
+                size="lg"
+                className="border-urbana-gold/50 text-urbana-gold hover:bg-urbana-gold/10"
+              >
+                <ArrowLeft className="w-5 h-5 mr-2" />
+                Voltar ao Checkout
               </Button>
             </>
           )}
