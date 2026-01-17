@@ -154,11 +154,20 @@ export const useUnifiedAppointmentValidation = () => {
     const startMinutes = timeToMinutes(time);
     const endMinutes = startMinutes + serviceDuration;
 
-    // Buscar horário de trabalho - tenta primeiro pelo id do barbeiro
+    // Buscar o staff_id do barbeiro (necessário para working_hours)
+    const { data: barberData } = await supabase
+      .from('painel_barbeiros')
+      .select('staff_id')
+      .eq('id', barberId)
+      .maybeSingle();
+
+    const staffId = barberData?.staff_id || barberId;
+
+    // Buscar horário de trabalho usando staff_id
     let { data: workingHours, error } = await supabase
       .from('working_hours')
       .select('start_time, end_time, is_active')
-      .eq('staff_id', barberId)
+      .eq('staff_id', staffId)
       .eq('day_of_week', dayOfWeek)
       .eq('is_active', true)
       .maybeSingle();
@@ -169,6 +178,7 @@ export const useUnifiedAppointmentValidation = () => {
     }
 
     if (!workingHours) {
+      console.log('⚠️ Nenhum horário de trabalho encontrado para staff_id:', staffId, 'dia:', dayOfWeek);
       return { valid: false, error: 'O barbeiro não trabalha neste dia' };
     }
 
@@ -378,16 +388,26 @@ export const useUnifiedAppointmentValidation = () => {
       const dayOfWeek = date.getDay();
       const isToday = isDateToday(date);
 
-      // Buscar horário de trabalho
+      // Buscar o staff_id do barbeiro (necessário para working_hours)
+      const { data: barberData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
+
+      const staffId = barberData?.staff_id || barberId;
+
+      // Buscar horário de trabalho usando staff_id
       const { data: workingHours } = await supabase
         .from('working_hours')
         .select('start_time, end_time')
-        .eq('staff_id', barberId)
+        .eq('staff_id', staffId)
         .eq('day_of_week', dayOfWeek)
         .eq('is_active', true)
         .maybeSingle();
 
       if (!workingHours) {
+        console.log('⚠️ Nenhum horário de trabalho encontrado para staff_id:', staffId, 'dia:', dayOfWeek);
         return [];
       }
 
