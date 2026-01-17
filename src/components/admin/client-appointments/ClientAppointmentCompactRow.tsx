@@ -57,13 +57,22 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   } | null;
-  totem_sessions?: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
+  appointment_totem_sessions?: Array<{
+    totem_session_id: string | null;
     status: string | null;
+    totem_sessions: {
+      id: string;
+      created_at: string | null;
+    } | null;
   }>;
   vendas?: Array<{
     id: string;
+    status: string | null;
+  }>;
+  // Legacy - mantido para compatibilidade
+  totem_sessions?: Array<{
+    check_in_time: string | null;
+    check_out_time: string | null;
     status: string | null;
   }>;
 }
@@ -88,7 +97,12 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
   const getActualStatus = () => {
     const statusLower = appointment.status?.toLowerCase() || '';
     
-    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
+    // PRIORIDADE 1: Status finais do banco (concluido, ausente, cancelado)
+    // Se o banco diz "concluido", o checkout foi feito - não precisa de totem_sessions
+    if (statusLower === 'concluido') {
+      return 'concluido';
+    }
+    
     if (statusLower === 'ausente') {
       return 'ausente';
     }
@@ -97,12 +111,24 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
       return 'cancelado';
     }
 
-    // PRIORIDADE 2: Status baseado em check-in/check-out
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    // PRIORIDADE 2: Verificar venda paga (checkout foi feito pelo Totem)
+    const hasPaidSale = appointment.vendas && 
+      Array.isArray(appointment.vendas) &&
+      appointment.vendas.some((v: any) => v.status === 'pago');
     
-    const hasCheckOut = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_out_time);
+    if (hasPaidSale) {
+      return 'concluido';
+    }
+
+    // PRIORIDADE 3: Status baseado em totem_sessions (check-in/check-out)
+    const hasCheckIn = appointment.appointment_totem_sessions && 
+      Array.isArray(appointment.appointment_totem_sessions) &&
+      appointment.appointment_totem_sessions.length > 0;
+    
+    const hasCheckOut = hasCheckIn && 
+      appointment.appointment_totem_sessions.some((s: any) => 
+        s.status === 'completed' || s.status === 'checkout_completed'
+      );
 
     // 3 ESTADOS AUTOMÁTICOS:
     // 1. Cliente agendou, não fez check-in ainda
