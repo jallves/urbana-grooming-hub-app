@@ -58,6 +58,14 @@ const ClientMetrics: React.FC = () => {
                clientDate.getFullYear() === thisMonth.getFullYear();
       }).length || 0;
 
+      const lastMonth = new Date();
+      lastMonth.setMonth(lastMonth.getMonth() - 1);
+      const newLastMonth = clients?.filter(client => {
+        const clientDate = new Date(client.created_at);
+        return clientDate.getMonth() === lastMonth.getMonth() && 
+               clientDate.getFullYear() === lastMonth.getFullYear();
+      }).length || 0;
+
       const activeClients = appointments?.filter(apt => apt.status === 'concluido')
         .reduce((acc, apt) => {
           if (apt.painel_clientes?.nome) {
@@ -66,13 +74,39 @@ const ClientMetrics: React.FC = () => {
           return acc;
         }, new Set()).size || 0;
 
+      // Calcular taxa de crescimento real
+      const growthRate = newLastMonth > 0 ? ((newThisMonth - newLastMonth) / newLastMonth) * 100 : 0;
+
+      // Calcular tempo médio de retenção (meses desde o primeiro agendamento)
+      const clientFirstAppointment = appointments?.reduce((acc, apt) => {
+        const clientName = apt.painel_clientes?.nome;
+        if (clientName) {
+          const aptDate = new Date(apt.data);
+          if (!acc[clientName] || aptDate < acc[clientName]) {
+            acc[clientName] = aptDate;
+          }
+        }
+        return acc;
+      }, {} as Record<string, Date>) || {};
+
+      const now = new Date();
+      const retentionMonths = Object.values(clientFirstAppointment).map(firstDate => {
+        const months = (now.getFullYear() - firstDate.getFullYear()) * 12 + (now.getMonth() - firstDate.getMonth());
+        return months;
+      });
+      const avgRetentionMonths = retentionMonths.length > 0 
+        ? retentionMonths.reduce((a, b) => a + b, 0) / retentionMonths.length 
+        : 0;
+
       return {
         totalClients,
         newThisMonth,
         activeClients,
         retentionRate: totalClients > 0 ? (activeClients / totalClients) * 100 : 0,
         monthlyData,
-        topClients
+        topClients,
+        growthRate,
+        avgRetentionMonths
       };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
@@ -209,15 +243,17 @@ const ClientMetrics: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <span className="text-gray-700">Taxa de crescimento mensal</span>
-                  <span className="text-green-600 font-semibold">+15.2%</span>
+                  <span className={`font-semibold ${(clientData?.growthRate || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    {(clientData?.growthRate || 0) >= 0 ? '+' : ''}{clientData?.growthRate?.toFixed(1) || '0'}%
+                  </span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
                   <span className="text-gray-700">Tempo médio de retenção</span>
-                  <span className="text-blue-600 font-semibold">8.5 meses</span>
+                  <span className="text-blue-600 font-semibold">{clientData?.avgRetentionMonths?.toFixed(1) || '0'} meses</span>
                 </div>
                 <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-200">
-                  <span className="text-gray-700">Satisfação média</span>
-                  <span className="text-yellow-600 font-semibold">4.8/5</span>
+                  <span className="text-gray-700">Taxa de retenção</span>
+                  <span className="text-purple-600 font-semibold">{clientData?.retentionRate?.toFixed(1) || '0'}%</span>
                 </div>
               </div>
             </CardContent>

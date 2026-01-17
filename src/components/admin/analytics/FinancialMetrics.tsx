@@ -77,13 +77,39 @@ const FinancialMetrics: React.FC = () => {
       
       const avgTicket = appointments?.length ? totalRevenue / appointments.length : 0;
       const thisMonth = new Date().getMonth();
+      const lastMonth = thisMonth === 0 ? 11 : thisMonth - 1;
+      
       const currentMonthRevenue = appointments?.filter(apt => 
         parseISO(apt.data).getMonth() === thisMonth
+      ).reduce((sum, apt) => sum + (apt.painel_servicos?.preco || 0), 0) || 0;
+
+      const lastMonthRevenue = appointments?.filter(apt => 
+        parseISO(apt.data).getMonth() === lastMonth
       ).reduce((sum, apt) => sum + (apt.painel_servicos?.preco || 0), 0) || 0;
 
       const currentMonthCashFlow = cashFlow?.filter(transaction => 
         new Date(transaction.transaction_date).getMonth() === thisMonth
       ).reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+
+      const lastMonthCashFlow = cashFlow?.filter(transaction => 
+        new Date(transaction.transaction_date).getMonth() === lastMonth
+      ).reduce((sum, transaction) => sum + transaction.amount, 0) || 0;
+
+      // Calcular crescimento real
+      const currentTotal = currentMonthRevenue + currentMonthCashFlow;
+      const lastTotal = lastMonthRevenue + lastMonthCashFlow;
+      const realGrowth = lastTotal > 0 ? ((currentTotal - lastTotal) / lastTotal) * 100 : 0;
+
+      // Crescimento por categoria
+      const serviceGrowth = lastMonthRevenue > 0 ? ((currentMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100 : 0;
+      const cashFlowGrowth = lastMonthCashFlow > 0 ? ((currentMonthCashFlow - lastMonthCashFlow) / lastMonthCashFlow) * 100 : 0;
+
+      // Crescimento do ticket médio
+      const currentMonthAppointments = appointments?.filter(apt => parseISO(apt.data).getMonth() === thisMonth).length || 0;
+      const lastMonthAppointments = appointments?.filter(apt => parseISO(apt.data).getMonth() === lastMonth).length || 0;
+      const currentAvgTicket = currentMonthAppointments > 0 ? currentMonthRevenue / currentMonthAppointments : 0;
+      const lastAvgTicket = lastMonthAppointments > 0 ? lastMonthRevenue / lastMonthAppointments : 0;
+      const ticketGrowth = lastAvgTicket > 0 ? ((currentAvgTicket - lastAvgTicket) / lastAvgTicket) * 100 : 0;
 
       return {
         totalRevenue: totalCombinedRevenue,
@@ -92,47 +118,57 @@ const FinancialMetrics: React.FC = () => {
         avgTicket,
         currentMonthRevenue: currentMonthRevenue + currentMonthCashFlow,
         monthlyRevenue: monthlyRevenue.slice(-6), // Últimos 6 meses
-        growth: 12.5 // Simulado
+        growth: realGrowth,
+        serviceGrowth,
+        cashFlowGrowth,
+        ticketGrowth
       };
     },
     staleTime: 1000 * 60 * 5, // 5 minutes
     refetchInterval: 1000 * 60 * 5 // 5 minutes
   });
 
-  const metrics = useMemo(() => [
-    {
-      title: 'Receita Total',
-      value: `R$ ${financialData?.totalRevenue?.toLocaleString('pt-BR') || '0'}`,
-      change: '+12.5%',
-      trend: 'up',
-      icon: DollarSign,
-      color: 'text-green-400'
-    },
-    {
-      title: 'Receita Serviços',
-      value: `R$ ${financialData?.serviceRevenue?.toLocaleString('pt-BR') || '0'}`,
-      change: '+8.3%',
-      trend: 'up',
-      icon: Target,
-      color: 'text-blue-400'
-    },
-    {
-      title: 'Receita Adicional',
-      value: `R$ ${financialData?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}`,
-      change: '+15.2%',
-      trend: 'up',
-      icon: TrendingUp,
-      color: 'text-purple-400'
-    },
-    {
-      title: 'Ticket Médio',
-      value: `R$ ${financialData?.avgTicket?.toFixed(2) || '0'}`,
-      change: '+5.1%',
-      trend: 'up',
-      icon: Target,
-      color: 'text-cyan-400'
-    }
-  ], [financialData]);
+  const metrics = useMemo(() => {
+    const formatGrowth = (value: number) => {
+      if (value === 0) return '0%';
+      return value > 0 ? `+${value.toFixed(1)}%` : `${value.toFixed(1)}%`;
+    };
+
+    return [
+      {
+        title: 'Receita Total',
+        value: `R$ ${financialData?.totalRevenue?.toLocaleString('pt-BR') || '0'}`,
+        change: formatGrowth(financialData?.growth || 0),
+        trend: (financialData?.growth || 0) >= 0 ? 'up' : 'down',
+        icon: DollarSign,
+        color: 'text-green-400'
+      },
+      {
+        title: 'Receita Serviços',
+        value: `R$ ${financialData?.serviceRevenue?.toLocaleString('pt-BR') || '0'}`,
+        change: formatGrowth(financialData?.serviceGrowth || 0),
+        trend: (financialData?.serviceGrowth || 0) >= 0 ? 'up' : 'down',
+        icon: Target,
+        color: 'text-blue-400'
+      },
+      {
+        title: 'Receita Adicional',
+        value: `R$ ${financialData?.cashFlowRevenue?.toLocaleString('pt-BR') || '0'}`,
+        change: formatGrowth(financialData?.cashFlowGrowth || 0),
+        trend: (financialData?.cashFlowGrowth || 0) >= 0 ? 'up' : 'down',
+        icon: TrendingUp,
+        color: 'text-purple-400'
+      },
+      {
+        title: 'Ticket Médio',
+        value: `R$ ${financialData?.avgTicket?.toFixed(2) || '0'}`,
+        change: formatGrowth(financialData?.ticketGrowth || 0),
+        trend: (financialData?.ticketGrowth || 0) >= 0 ? 'up' : 'down',
+        icon: Target,
+        color: 'text-cyan-400'
+      }
+    ];
+  }, [financialData]);
 
   if (isLoading) {
     return (
