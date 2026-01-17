@@ -47,7 +47,9 @@ const TotemPaymentSuccess: React.FC = () => {
     transactionData,
     selectedProducts = [] as SelectedProduct[],
     extraServices = [] as ExtraService[],
-    resumo
+    resumo,
+    emailAlreadySent = false, // Flag para evitar envio duplicado
+    tipAmount = 0
   } = location.state || {};
 
   useEffect(() => {
@@ -65,9 +67,12 @@ const TotemPaymentSuccess: React.FC = () => {
       return;
     }
 
-    // Enviar comprovante por e-mail com todos os itens
+    // Enviar comprovante por e-mail (APENAS se não foi enviado antes)
     const sendEmailReceipt = async () => {
-      if (emailSentRef.current) return;
+      if (emailSentRef.current || emailAlreadySent) {
+        console.log('[PaymentSuccess] E-mail já enviado anteriormente, pulando...');
+        return;
+      }
       emailSentRef.current = true;
 
       // Usar o e-mail do cliente cadastrado
@@ -152,7 +157,7 @@ const TotemPaymentSuccess: React.FC = () => {
         transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
         nsu: transactionData?.nsu,
         barberName: appointment?.barbeiro?.nome,
-        tipAmount: Number((location.state as any)?.tipAmount || 0),
+        tipAmount: Number(tipAmount || 0),
       });
 
       if (result.success) {
@@ -183,7 +188,7 @@ const TotemPaymentSuccess: React.FC = () => {
       clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo]);
+  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
 
   if (!total || !client) {
     return null;
