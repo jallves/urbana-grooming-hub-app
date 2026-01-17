@@ -12,18 +12,14 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, action, venda_id, session_id, payment_id, transaction_data, tipAmount } = await req.json()
+    const { agendamento_id, extras, action, venda_id, session_id, payment_method, tipAmount } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
-      console.log('🛒 Iniciando checkout para agendamento:', agendamento_id, 'sessão fornecida:', session_id)
+      console.log('🛒 Iniciando checkout para agendamento:', agendamento_id)
 
-      // 🔒 SUPORTE UNIFICADO: Buscar agendamento em ambas as tabelas
-      let agendamento
-      let barbeiro_staff_id
-      
-      // Tentar buscar em painel_agendamentos primeiro
-      const painelResult = await supabase
+      // Buscar agendamento em painel_agendamentos
+      const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -32,329 +28,182 @@ Deno.serve(async (req) => {
           servico:painel_servicos(*)
         `)
         .eq('id', agendamento_id)
-        .maybeSingle()
+        .single()
 
-      if (painelResult.data) {
-        console.log('✅ Agendamento encontrado em painel_agendamentos')
-        agendamento = painelResult.data
-        
-        // Buscar staff_id do barbeiro
-        const { data: barbeiro } = await supabase
-          .from('painel_barbeiros')
-          .select('staff_id')
-          .eq('id', agendamento.barbeiro_id)
-          .single()
-        
-        barbeiro_staff_id = barbeiro?.staff_id
-      } else {
-        // Tentar em appointments
-        console.log('⚠️ Não encontrado em painel_agendamentos, buscando em appointments...')
-        const appointmentsResult = await supabase
-          .from('appointments')
-          .select(`
-            *,
-            client:clients(*),
-            staff:staff(*),
-            service:services(*)
-          `)
-          .eq('id', agendamento_id)
-          .maybeSingle()
-
-        if (appointmentsResult.data) {
-          console.log('✅ Agendamento encontrado em appointments')
-          const apt = appointmentsResult.data
-          
-          // Normalizar estrutura
-          agendamento = {
-            id: apt.id,
-            cliente_id: apt.client_id,
-            barbeiro_id: apt.staff_id,
-            servico_id: apt.service_id,
-            data: apt.start_time?.split('T')[0],
-            hora: apt.start_time?.split('T')[1]?.substring(0, 5),
-            cliente: {
-              id: apt.client?.id,
-              nome: apt.client?.name
-            },
-            barbeiro: {
-              id: apt.staff?.id,
-              nome: apt.staff?.name
-            },
-            servico: {
-              id: apt.service?.id,
-              nome: apt.service?.name,
-              preco: apt.service?.price
-            }
-          }
-          
-          barbeiro_staff_id = apt.staff_id
-        }
+      if (agendError || !agendamento) {
+        console.error('❌ Agendamento não encontrado:', agendamento_id, agendError)
+        throw new Error('Agendamento não encontrado')
       }
 
-      if (!agendamento) {
-        console.error('❌ Agendamento não encontrado:', agendamento_id)
-        throw new Error('Agendamento não encontrado em nenhuma tabela')
-      }
+      console.log('✅ Agendamento encontrado:', agendamento.id, 'Cliente:', agendamento.cliente?.nome)
 
-      console.log('✅ Agendamento encontrado:', agendamento.id, 'Cliente:', agendamento.cliente?.nome, 'Hora:', agendamento.hora)
+      // Verificar se já existe venda para este agendamento
+      const { data: vendaExistente } = await supabase
+        .from('painel_agendamentos')
+        .select('venda_id')
+        .eq('id', agendamento_id)
+        .single()
 
-      // Se session_id foi fornecido, usar diretamente. Caso contrário, buscar
-      let totemSession
-      
-      if (session_id) {
-        console.log('🔍 Buscando sessão específica:', session_id)
-        const { data: specificSession, error: specificError } = await supabase
-          .from('totem_sessions')
-          .select('*')
-          .eq('id', session_id)
-          .single()
-        
-        if (specificError || !specificSession) {
-          console.error('❌ Sessão específica não encontrada:', session_id, specificError)
-          throw new Error('Sessão não encontrada')
-        }
-        
-        totemSession = specificSession
-        console.log('✅ Sessão específica encontrada:', totemSession.id, 'Status:', totemSession.status)
-      } else {
-        console.log('🔍 Buscando sessão ativa mais recente para agendamento:', agendamento_id)
-        // Buscar sessão totem ativa MAIS RECENTE para este agendamento
-        const { data: foundSession, error: sessionError } = await supabase
-          .from('totem_sessions')
-          .select('*')
-          .eq('appointment_id', agendamento_id)
-          .in('status', ['check_in', 'in_service', 'checkout'])
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-
-        if (sessionError) {
-          console.error('❌ Erro ao buscar sessão totem:', sessionError)
-          throw new Error('Erro ao buscar sessão do totem')
-        }
-
-        if (!foundSession) {
-          console.error('❌ Nenhuma sessão ativa encontrada para agendamento:', agendamento_id)
-          throw new Error('Sessão não encontrada. Faça check-in primeiro.')
-        }
-
-        totemSession = foundSession
-        console.log('✅ Sessão ativa encontrada:', totemSession.id, 'Status:', totemSession.status, 'Check-in:', totemSession.check_in_time)
-      }
-
-      // barbeiro_staff_id já foi definido acima na busca unificada
-
-      // 🔒 CORREÇÃO CRÍTICA: Verificar venda ABERTA por AGENDAMENTO primeiro
       let venda
-      
-      // Buscar venda ABERTA por agendamento (não só por sessão)
-      const { data: vendaExistentePorAgendamento } = await supabase
-        .from('vendas')
-        .select('*')
-        .eq('agendamento_id', agendamento_id)
-        .eq('status', 'ABERTA')
-        .order('updated_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
+      let vendaId = vendaExistente?.venda_id
 
-      if (vendaExistentePorAgendamento) {
-        console.log('✅ Venda ABERTA encontrada para agendamento:', agendamento_id, '- venda:', vendaExistentePorAgendamento.id)
-        venda = vendaExistentePorAgendamento
-        
-        // Vincular venda à sessão atual se ainda não estiver vinculada
-        if (venda.totem_session_id !== totemSession.id) {
-          console.log('🔄 Vinculando venda existente à nova sessão:', totemSession.id)
+      if (vendaId) {
+        // Buscar venda existente
+        const { data: vendaData } = await supabase
+          .from('vendas')
+          .select('*')
+          .eq('id', vendaId)
+          .single()
+
+        if (vendaData && vendaData.status !== 'pago') {
+          venda = vendaData
+          console.log('✅ Venda existente encontrada:', venda.id)
+
+          // Limpar itens para recalcular
           await supabase
-            .from('vendas')
-            .update({ totem_session_id: totemSession.id })
-            .eq('id', venda.id)
+            .from('vendas_itens')
+            .delete()
+            .eq('venda_id', venda.id)
         }
-        
-        // Deletar itens antigos para recalcular
-        console.log('🗑️ Deletando itens antigos para recalcular total...')
-        await supabase
-          .from('vendas_itens')
-          .delete()
-          .eq('venda_id', venda.id)
-      } else {
-        // Criar nova venda vinculada à sessão
-        console.log('➕ Criando nova venda para agendamento:', agendamento_id)
+      }
+
+      // Se não existe venda, criar nova
+      if (!venda) {
+        console.log('➕ Criando nova venda...')
         const { data: novaVenda, error: vendaError } = await supabase
           .from('vendas')
           .insert({
-            agendamento_id: agendamento_id,
             cliente_id: agendamento.cliente_id,
-            barbeiro_id: barbeiro_staff_id,
-            totem_session_id: totemSession.id,
-            status: 'ABERTA'
+            barbeiro_id: agendamento.barbeiro_id,
+            valor_total: 0,
+            status: 'pendente'
           })
           .select()
           .single()
 
         if (vendaError) {
-          console.error('❌ Erro detalhado ao criar venda:', vendaError)
-          throw new Error(`Erro ao criar venda: ${vendaError.message}`)
-        }
-
-        if (!novaVenda) {
-          throw new Error('Venda não foi criada')
+          console.error('❌ Erro ao criar venda:', vendaError)
+          throw new Error('Erro ao criar venda')
         }
 
         venda = novaVenda
-        console.log('✅ Nova venda criada - ID:', venda.id, 'sessão:', totemSession.id)
+        console.log('✅ Nova venda criada:', venda.id)
+
+        // Vincular venda ao agendamento
+        await supabase
+          .from('painel_agendamentos')
+          .update({ venda_id: venda.id })
+          .eq('id', agendamento_id)
       }
 
-      console.log('📝 Venda ID:', venda.id, 'vinculada à sessão:', totemSession.id)
+      // Preparar itens - Serviço principal
+      const itens = [{
+        venda_id: venda.id,
+        tipo: 'SERVICO',
+        item_id: agendamento.servico_id,
+        nome: agendamento.servico.nome,
+        quantidade: 1,
+        preco_unitario: agendamento.servico.preco,
+        subtotal: agendamento.servico.preco,
+        barbeiro_id: agendamento.barbeiro_id
+      }]
 
-
-      // Adicionar serviço principal
-      const itens = [
-        {
-          venda_id: venda.id,
-          tipo: 'SERVICO',
-          ref_id: agendamento.servico_id,
-          nome: agendamento.servico.nome,
-          quantidade: 1,
-          preco_unit: agendamento.servico.preco,
-          total: agendamento.servico.preco
-        }
-      ]
-
-      // Buscar serviços extras se existirem
-      console.log('🔍 Buscando serviços extras para agendamento:', agendamento_id)
-      
-      const { data: servicos_extras, error: extrasError } = await supabase
+      // Buscar serviços extras
+      const { data: servicos_extras } = await supabase
         .from('appointment_extra_services')
         .select(`
           service_id,
-          painel_servicos!inner (
-            id,
-            nome,
-            preco
-          )
+          painel_servicos!inner (id, nome, preco)
         `)
         .eq('appointment_id', agendamento_id)
 
-      if (extrasError) {
-        console.error('❌ Erro ao buscar serviços extras:', extrasError)
-      } else {
-        console.log('📦 Serviços extras encontrados:', servicos_extras?.length || 0)
-      }
-
       if (servicos_extras && servicos_extras.length > 0) {
-        // 🔒 IMPORTANTE: Processar CADA serviço extra, mesmo se for igual ao principal
-        for (let i = 0; i < servicos_extras.length; i++) {
-          const extra = servicos_extras[i]
-          const servico = extra.painel_servicos
-          console.log(`➕ Adicionando serviço extra #${i + 1} ao checkout:`, servico.nome, 'R$', servico.preco)
-          
+        console.log('📦 Serviços extras encontrados:', servicos_extras.length)
+        for (const extra of servicos_extras) {
+          const servico = extra.painel_servicos as any
           itens.push({
             venda_id: venda.id,
             tipo: 'SERVICO_EXTRA',
-            ref_id: extra.service_id,
+            item_id: extra.service_id,
             nome: servico.nome,
             quantidade: 1,
-            preco_unit: servico.preco,
-            total: servico.preco
+            preco_unitario: servico.preco,
+            subtotal: servico.preco,
+            barbeiro_id: agendamento.barbeiro_id
           })
         }
-        console.log(`📦 Total de serviços extras adicionados: ${servicos_extras.length}`)
       }
 
-      // Adicionar extras fornecidos (se houver)
+      // Adicionar extras fornecidos (produtos)
       if (extras && extras.length > 0) {
         for (const extra of extras) {
-          // Buscar dados do serviço/produto
-          if (extra.tipo === 'servico') {
-            const { data: servico } = await supabase
-              .from('painel_servicos')
+          if (extra.tipo === 'produto') {
+            const { data: produto } = await supabase
+              .from('painel_produtos')
               .select('nome, preco')
               .eq('id', extra.id)
               .single()
 
-            if (servico) {
-              itens.push({
-                venda_id: venda.id,
-                tipo: 'SERVICO',
-                ref_id: extra.id,
-                nome: servico.nome,
-                quantidade: extra.quantidade || 1,
-                preco_unit: servico.preco,
-                total: servico.preco * (extra.quantidade || 1)
-              })
-            }
-          } else if (extra.tipo === 'produto') {
-            const { data: produto } = await supabase
-              .from('produtos')
-              .select('nome, preco_venda')
-              .eq('id', extra.id)
-              .single()
-
             if (produto) {
+              const qty = extra.quantidade || 1
               itens.push({
                 venda_id: venda.id,
                 tipo: 'PRODUTO',
-                ref_id: extra.id,
+                item_id: extra.id,
                 nome: produto.nome,
-                quantidade: extra.quantidade || 1,
-                preco_unit: produto.preco_venda,
-                total: produto.preco_venda * (extra.quantidade || 1)
+                quantidade: qty,
+                preco_unitario: produto.preco,
+                subtotal: produto.preco * qty,
+                barbeiro_id: agendamento.barbeiro_id
               })
             }
           }
         }
       }
 
-      // Inserir itens da venda
+      // Inserir itens
       const { error: itensError } = await supabase
         .from('vendas_itens')
         .insert(itens)
 
       if (itensError) {
-        console.error('Erro ao inserir itens:', itensError)
-        throw new Error('Erro ao adicionar itens da venda')
+        console.error('❌ Erro ao inserir itens:', itensError)
+        throw new Error('Erro ao adicionar itens')
       }
 
-      // Calcular totais
-      const subtotal = itens.reduce((sum, item) => sum + Number(item.total), 0)
-      const desconto = 0 // Pode implementar lógica de desconto aqui
-      const total = subtotal - desconto
+      // Calcular total
+      const total = itens.reduce((sum, item) => sum + Number(item.subtotal), 0)
 
-      // Atualizar venda com totais
+      // Atualizar venda com total
       await supabase
         .from('vendas')
-        .update({
-          subtotal,
-          desconto,
-          total
-        })
+        .update({ valor_total: total })
         .eq('id', venda.id)
 
-      // Atualizar sessão para checkout
-      await supabase
-        .from('totem_sessions')
-        .update({ status: 'checkout' })
-        .eq('id', totemSession.id)
-
-      console.log('✅ Checkout iniciado com sucesso - Venda:', venda.id, 'Sessão:', totemSession.id, 'Total:', total)
+      console.log('✅ Checkout iniciado - Venda:', venda.id, 'Total: R$', total)
 
       return new Response(
         JSON.stringify({
           success: true,
           venda_id: venda.id,
-          session_id: totemSession.id,
+          session_id: session_id,
           resumo: {
             original_service: {
               nome: agendamento.servico.nome,
               preco: agendamento.servico.preco
             },
-            extra_services: itens.slice(1).map(i => ({
+            extra_services: itens.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => ({
               nome: i.nome,
-              preco: i.preco_unit
+              preco: i.preco_unitario
             })),
-            subtotal,
-            discount: desconto,
-            total
+            products: itens.filter(i => i.tipo === 'PRODUTO').map(i => ({
+              nome: i.nome,
+              quantidade: i.quantidade,
+              preco: i.preco_unitario
+            })),
+            subtotal: total,
+            discount: 0,
+            total: total
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -363,56 +212,16 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: FINISH ====================
     if (action === 'finish') {
-      console.log('🎯 Finalizando checkout - venda:', venda_id, 'session:', session_id)
-      console.log('📝 Transaction data:', JSON.stringify(transaction_data))
+      console.log('🎯 Finalizando checkout - venda:', venda_id)
 
-      if (!venda_id || !session_id) {
-        console.error('❌ Dados insuficientes:', { venda_id, session_id })
-        throw new Error('Dados insuficientes para finalizar checkout (venda_id e session_id obrigatórios)')
+      if (!venda_id) {
+        throw new Error('venda_id é obrigatório')
       }
-
-      // Buscar pagamento mais recente da sessão (se existir)
-      // NOTA: Agora não é mais obrigatório ter payment_id
-      let payment = null
-      if (payment_id) {
-        const { data: paymentData } = await supabase
-          .from('totem_payments')
-          .select('*')
-          .eq('id', payment_id)
-          .single()
-        payment = paymentData
-      } else {
-        // Buscar o pagamento mais recente da sessão
-        const { data: paymentData } = await supabase
-          .from('totem_payments')
-          .select('*')
-          .eq('session_id', session_id)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle()
-        payment = paymentData
-      }
-
-      // Se encontrou pagamento, atualizar para completed
-      if (payment && payment.status !== 'completed') {
-        console.log('💳 Atualizando pagamento para completed:', payment.id)
-        await supabase
-          .from('totem_payments')
-          .update({ 
-            status: 'completed',
-            paid_at: toBrazilISOString(),
-            ...(transaction_data?.nsu && { nsu: transaction_data.nsu }),
-            ...(transaction_data?.autorizacao && { authorization_code: transaction_data.autorizacao })
-          })
-          .eq('id', payment.id)
-      }
-
-      console.log('✅ Pagamento processado:', payment?.id || 'Sem pagamento registrado')
 
       // Buscar venda
       const { data: venda, error: vendaError } = await supabase
         .from('vendas')
-        .select('*, barbeiro_id, agendamento_id')
+        .select('*')
         .eq('id', venda_id)
         .single()
 
@@ -421,299 +230,160 @@ Deno.serve(async (req) => {
         throw new Error('Venda não encontrada')
       }
 
-      // 🔒 VERIFICAR SE JÁ EXISTE TRANSAÇÃO FINANCEIRA PARA ESTA VENDA (idempotência)
-      const { data: existingTransactions } = await supabase
-        .from('financial_records')
-        .select('id')
-        .eq('appointment_id', venda.agendamento_id)
-        .limit(1)
-
-      const hasFinancialRecords = existingTransactions && existingTransactions.length > 0
-
-      // Verificar se venda já foi finalizada
-      if (venda.status === 'PAGA' || venda.status === 'FINALIZADA') {
-        console.log('⚠️ Venda já foi finalizada anteriormente')
+      // Verificar se já foi paga (idempotência)
+      if (venda.status === 'pago') {
+        console.log('⚠️ Venda já foi finalizada')
         return new Response(
-          JSON.stringify({
-            success: true,
-            message: 'Checkout já foi finalizado anteriormente',
-            already_completed: true,
-            has_financial_records: hasFinancialRecords
-          }),
+          JSON.stringify({ success: true, message: 'Venda já foi finalizada', already_completed: true }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      console.log('✅ Venda encontrada:', venda.id, 'Agendamento:', venda.agendamento_id)
-
-      // Buscar sessão
-      const { data: session, error: sessionError } = await supabase
-        .from('totem_sessions')
-        .select('appointment_id')
-        .eq('id', session_id)
-        .single()
-
-      if (sessionError || !session) {
-        console.error('❌ Sessão não encontrada:', session_id)
-        throw new Error('Sessão não encontrada')
-      }
-
-      console.log('✅ Sessão encontrada:', session.id)
-
-      // Buscar agendamento
-      const { data: agendamento, error: agendError } = await supabase
+      // Buscar agendamento vinculado
+      const { data: agendamento } = await supabase
         .from('painel_agendamentos')
-        .select('barbeiro_id, status')
-        .eq('id', venda.agendamento_id)
+        .select('*, barbeiro:painel_barbeiros(*)')
+        .eq('venda_id', venda_id)
         .single()
 
-      if (agendError || !agendamento) {
-        console.error('❌ Agendamento não encontrado:', venda.agendamento_id)
+      if (!agendamento) {
+        console.error('❌ Agendamento não encontrado para venda:', venda_id)
         throw new Error('Agendamento não encontrado')
       }
 
-      console.log('✅ Agendamento encontrado:', venda.agendamento_id, 'Status atual:', agendamento.status)
+      // Buscar itens da venda
+      const { data: vendaItens } = await supabase
+        .from('vendas_itens')
+        .select('*')
+        .eq('venda_id', venda_id)
 
-      // 1. Atualizar sessão totem para completed
-      console.log('🔄 Finalizando sessão...')
-      await supabase
-        .from('totem_sessions')
-        .update({ 
-          status: 'completed',
-          check_out_time: toBrazilISOString()
-        })
-        .eq('id', session_id)
+      // Calcular total com gorjeta
+      const subtotal = vendaItens?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
+      const gorjeta = tipAmount || 0
+      const totalFinal = subtotal + gorjeta
 
-      // 3. Atualizar venda para PAGA
-      console.log('💰 Marcando venda como PAGA...')
+      console.log('💰 Subtotal:', subtotal, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
+
+      // Atualizar venda para PAGA
       await supabase
         .from('vendas')
-        .update({ 
-          status: 'PAGA',
-          updated_at: toBrazilISOString()
+        .update({
+          status: 'pago',
+          valor_total: totalFinal,
+          gorjeta: gorjeta,
+          forma_pagamento: payment_method || 'CARTAO',
+          updated_at: new Date().toISOString()
         })
         .eq('id', venda_id)
 
-      // 🔒 CORREÇÃO CRÍTICA: Re-sincronizar serviços extras antes de finalizar
-      // Isso garante que serviços adicionados APÓS o início do checkout sejam incluídos
-      console.log('🔄 Re-sincronizando serviços extras para agendamento:', venda.agendamento_id)
-      
-      const { data: servicos_extras_atuais } = await supabase
-        .from('appointment_extra_services')
-        .select(`
-          service_id,
-          painel_servicos!inner (
-            id,
-            nome,
-            preco
-          )
-        `)
-        .eq('appointment_id', venda.agendamento_id)
+      // Atualizar agendamento para CONCLUÍDO
+      await supabase
+        .from('painel_agendamentos')
+        .update({
+          status: 'concluido',
+          status_totem: 'FINALIZADO',
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', agendamento.id)
 
-      // Buscar itens atuais da venda
-      const { data: vendaItensAtuais } = await supabase
-        .from('vendas_itens')
-        .select('*')
-        .eq('venda_id', venda_id)
+      // ==================== INTEGRAÇÃO ERP ====================
+      // Verificar se já existem registros financeiros (idempotência)
+      const { data: existingRecords } = await supabase
+        .from('financial_records')
+        .select('id')
+        .eq('reference_id', venda_id)
+        .limit(1)
 
-      // Verificar se há serviços extras que ainda não estão na venda
-      if (servicos_extras_atuais && servicos_extras_atuais.length > 0) {
-        const extrasJaNaVenda = vendaItensAtuais?.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => i.ref_id) || []
-        
-        for (const extra of servicos_extras_atuais) {
-          if (!extrasJaNaVenda.includes(extra.service_id)) {
-            const servico = extra.painel_servicos
-            console.log('⚠️ Serviço extra faltando na venda, adicionando:', servico.nome)
-            
-            // Adicionar serviço extra faltante
-            await supabase
-              .from('vendas_itens')
-              .insert({
-                venda_id: venda_id,
-                tipo: 'SERVICO_EXTRA',
-                ref_id: extra.service_id,
-                nome: servico.nome,
-                quantidade: 1,
-                preco_unit: servico.preco,
-                total: servico.preco
-              })
-          }
-        }
-      }
+      if (!existingRecords || existingRecords.length === 0) {
+        console.log('💰 Criando registros financeiros...')
 
-      // 4. Buscar itens da venda para integrar com ERP Financeiro (APÓS sincronização)
-      console.log('📦 Buscando itens da venda para ERP...')
-      const { data: vendaItens, error: itensError } = await supabase
-        .from('vendas_itens')
-        .select('*')
-        .eq('venda_id', venda_id)
+        // Buscar staff_id do barbeiro
+        const staffId = agendamento.barbeiro?.staff_id || agendamento.barbeiro_id
+        const barberName = agendamento.barbeiro?.nome || 'Barbeiro'
 
-      if (itensError) {
-        console.error('❌ Erro ao buscar itens:', itensError)
-        throw new Error('Erro ao buscar itens da venda')
-      }
+        // Preparar itens para ERP
+        const erpItems = vendaItens?.map(item => ({
+          type: item.tipo === 'PRODUTO' ? 'product' : 'service',
+          id: item.item_id,
+          name: item.nome,
+          quantity: item.quantidade,
+          price: Number(item.preco_unitario),
+          discount: 0,
+          isExtra: item.tipo === 'SERVICO_EXTRA'
+        })) || []
 
-      console.log('✅ Itens da venda encontrados:', vendaItens.length)
-
-      // Recalcular total da venda com itens atualizados
-      const novoSubtotal = vendaItens.reduce((sum, item) => sum + Number(item.total), 0)
-      if (novoSubtotal !== Number(venda.subtotal)) {
-        console.log('🔄 Atualizando total da venda:', venda.subtotal, '->', novoSubtotal)
-        await supabase
-          .from('vendas')
-          .update({ subtotal: novoSubtotal, total: novoSubtotal - Number(venda.desconto || 0) })
-          .eq('id', venda_id)
-        
-        // Atualizar objeto venda local
-        venda.subtotal = novoSubtotal
-        venda.total = novoSubtotal - Number(venda.desconto || 0)
-      }
-
-      // 5. Buscar barbeiro staff_id
-      const { data: barbeiro, error: barbeiroError } = await supabase
-        .from('painel_barbeiros')
-        .select('staff_id')
-        .eq('id', agendamento.barbeiro_id)
-        .single()
-
-      if (barbeiroError) {
-        console.error('❌ Erro ao buscar barbeiro:', barbeiroError)
-      }
-
-      const barber_staff_id = barbeiro?.staff_id || venda.barbeiro_id
-
-      // 6. Preparar itens para o ERP (formato CheckoutItem)
-      const erpItems = vendaItens.map(item => ({
-        type: item.tipo === 'SERVICO' || item.tipo === 'SERVICO_EXTRA' ? 'service' : 'product',
-        id: item.ref_id,
-        name: item.nome,
-        quantity: item.quantidade,
-        price: Number(item.preco_unit),
-        discount: 0,
-        isExtra: item.tipo === 'SERVICO_EXTRA'
-      }))
-
-      // Determinar payment_method a partir do pagamento ou usar default
-      const paymentMethodRaw = payment?.payment_method || 'credit'
-      
-      console.log('💰 Integrando com ERP Financeiro...', {
-        appointment_id: venda.agendamento_id,
-        client_id: venda.cliente_id,
-        barber_id: barber_staff_id,
-        items_count: erpItems.length,
-        payment_method: paymentMethodRaw,
-        total: venda.total
-      })
-
-      // Normalizar payment_method para os valores corretos do ENUM
-      const paymentMethodMap: Record<string, string> = {
-        'credit': 'credit_card',
-        'debit': 'debit_card',
-        'pix': 'pix',
-        'cash': 'cash',
-        'bank_transfer': 'bank_transfer',
-        'credit_card': 'credit_card',
-        'debit_card': 'debit_card'
-      }
-      const normalizedPaymentMethod = paymentMethodMap[paymentMethodRaw] || paymentMethodRaw
-
-      console.log('🔄 Payment method normalizado:', payment?.payment_method, '->', normalizedPaymentMethod)
-
-      // 🔒 IDEMPOTÊNCIA: Só chamar ERP se não existir transação financeira
-      if (hasFinancialRecords) {
-        console.log('⚠️ Transações financeiras já existem para este agendamento - PULANDO integração ERP')
-      } else {
-        // 7. Chamar edge function para criar registros financeiros completos
-        console.log('💰 Criando transações financeiras...')
-        console.log('💝 Gorjeta recebida:', tipAmount)
-        
+        // Chamar edge function de transação financeira
         const { data: erpResult, error: erpError } = await supabase.functions.invoke(
           'create-financial-transaction',
           {
             body: {
-              appointment_id: venda.agendamento_id,
+              appointment_id: agendamento.id,
               client_id: venda.cliente_id,
-              barber_id: barber_staff_id,
+              barber_id: staffId,
               items: erpItems,
-              payment_method: normalizedPaymentMethod,
+              payment_method: payment_method || 'credit_card',
               discount_amount: Number(venda.desconto) || 0,
-              notes: `Checkout Totem - Sessão ${session_id}`,
-              tip_amount: tipAmount || 0
+              notes: `Checkout Totem - Venda ${venda_id}`,
+              tip_amount: gorjeta
             }
           }
         )
 
         if (erpError) {
           console.error('❌ Erro ao integrar com ERP:', erpError)
-          // Não bloquear finalização por erro no ERP, apenas logar
-          console.log('⚠️ Continuando finalização sem integração ERP')
         } else {
-          console.log('✅ ERP Financeiro integrado com sucesso:', erpResult)
+          console.log('✅ ERP integrado com sucesso:', erpResult)
         }
+      } else {
+        console.log('⚠️ Registros financeiros já existem - pulando')
       }
 
-      // 8. Atualizar agendamento para CONCLUÍDO
-      console.log('✅ Finalizando agendamento...')
-      const { error: updateError } = await supabase
-        .from('painel_agendamentos')
-        .update({ 
-          status: 'concluido',
-          status_totem: 'FINALIZADO',
-          updated_at: toBrazilISOString()
-        })
-        .eq('id', venda.agendamento_id)
-      
-      if (updateError) {
-        console.error('❌ Erro ao atualizar agendamento:', updateError)
-        throw new Error('Erro ao finalizar agendamento: ' + updateError.message)
+      // Atualizar sessão do totem se fornecida
+      if (session_id) {
+        await supabase
+          .from('appointment_totem_sessions')
+          .update({ status: 'completed' })
+          .eq('appointment_id', agendamento.id)
       }
 
-      console.log('✅ Agendamento atualizado para CONCLUÍDO')
-
-      // 5. Notificar barbeiro via Realtime
-      console.log('📢 Notificando barbeiro...')
+      // Notificar via Realtime
       const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)
       await channel.send({
         type: 'broadcast',
         event: 'FINALIZADO',
         payload: {
           tipo: 'FINALIZADO',
-          agendamento_id: venda.agendamento_id,
+          agendamento_id: agendamento.id,
           venda_id: venda_id,
-          total: venda.total,
-          timestamp: toBrazilISOString()
+          total: totalFinal,
+          timestamp: new Date().toISOString()
         }
       })
 
       console.log('✅ Checkout finalizado com sucesso!')
-      console.log('   💰 Venda:', venda.id)
-      console.log('   📅 Agendamento:', venda.agendamento_id)
-      console.log('   💳 Pagamento:', payment.id)
-      console.log('   💵 Total:', venda.total)
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Checkout finalizado com sucesso',
+          message: 'Checkout finalizado',
           data: {
-            venda_id: venda.id,
-            agendamento_id: venda.agendamento_id,
-            total: venda.total,
-            payment_id: payment.id
+            venda_id: venda_id,
+            agendamento_id: agendamento.id,
+            total: totalFinal,
+            gorjeta: gorjeta
           }
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Action inválida
     return new Response(
-      JSON.stringify({ error: 'Action inválida' }),
+      JSON.stringify({ error: 'Action inválida. Use: start ou finish' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
     )
 
   } catch (error) {
-    console.error('Erro no checkout:', error)
+    console.error('❌ Erro no checkout:', error)
     return new Response(
       JSON.stringify({ error: error.message }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
