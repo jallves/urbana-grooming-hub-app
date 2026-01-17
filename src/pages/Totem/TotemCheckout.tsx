@@ -334,60 +334,109 @@ const TotemCheckout: React.FC = () => {
             Adicionar serviços / produtos
           </Button>
 
-          {/* Service Summary */}
+          {/* Service Summary - Nota Fiscal Style */}
           {resumo && (
-            <div className="space-y-2 mb-4 flex-1 overflow-y-auto">
-              {/* Main Service */}
-              <div className="flex justify-between items-center p-3 bg-urbana-black/30 rounded-xl">
-                <div className="flex items-center gap-2">
-                  <Package className="w-4 h-4 text-urbana-gold" />
-                  <span className="text-urbana-light text-sm">{resumo.original_service.nome}</span>
+            <div className="flex-1 overflow-y-auto mb-4">
+              {/* Receipt Header */}
+              <div className="bg-urbana-black/40 rounded-t-xl border-2 border-b-0 border-urbana-gold/30 p-3">
+                <div className="text-center border-b border-dashed border-urbana-gold/30 pb-2 mb-2">
+                  <p className="text-urbana-gold font-bold text-sm tracking-wider">COSTA URBANA BARBEARIA</p>
+                  <p className="text-urbana-light/50 text-xs">CUPOM DE ATENDIMENTO</p>
                 </div>
-                <span className="text-urbana-gold font-bold">R$ {resumo.original_service.preco.toFixed(2)}</span>
+                
+                {/* Table Header */}
+                <div className="grid grid-cols-12 gap-1 text-xs text-urbana-light/60 font-medium border-b border-urbana-gold/20 pb-2">
+                  <div className="col-span-6">DESCRIÇÃO</div>
+                  <div className="col-span-2 text-center">QTD</div>
+                  <div className="col-span-2 text-right">UNIT</div>
+                  <div className="col-span-2 text-right">TOTAL</div>
+                </div>
               </div>
 
-              {/* Extra Services */}
-              {resumo.extra_services && resumo.extra_services.length > 0 &&
-                resumo.extra_services.map((extra, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 bg-urbana-black/20 rounded-xl">
-                    <span className="text-urbana-light/80 text-sm">+ {extra.nome}</span>
-                    <span className="text-urbana-gold/80">R$ {extra.preco.toFixed(2)}</span>
+              {/* Items List */}
+              <div className="bg-urbana-black/30 border-2 border-t-0 border-b-0 border-urbana-gold/30 divide-y divide-urbana-gold/10">
+                {/* Main Service */}
+                <div className="grid grid-cols-12 gap-1 p-3 items-center">
+                  <div className="col-span-6 flex items-center gap-2">
+                    <Package className="w-4 h-4 text-urbana-gold flex-shrink-0" />
+                    <div>
+                      <p className="text-urbana-light text-sm font-medium leading-tight">{resumo.original_service.nome}</p>
+                      <p className="text-urbana-light/50 text-xs">Serviço Principal</p>
+                    </div>
                   </div>
-                ))}
-
-              {/* Products */}
-              {resumo.products && resumo.products.length > 0 &&
-                resumo.products.map((prod, idx) => (
-                  <div key={idx} className="flex justify-between items-center p-3 bg-urbana-black/20 rounded-xl">
-                    <span className="text-urbana-light/80 text-sm">{prod.quantidade}x {prod.nome}</span>
-                    <span className="text-urbana-gold/80">R$ {(prod.preco * prod.quantidade).toFixed(2)}</span>
-                  </div>
-                ))}
-
-              {/* Tip Input */}
-              <div className="p-3 bg-pink-500/10 rounded-xl border border-pink-500/30">
-                <div className="flex items-center gap-2 mb-2">
-                  <Heart className="w-4 h-4 text-pink-400" />
-                  <span className="text-pink-300 text-sm font-medium">Gorjeta (opcional)</span>
+                  <div className="col-span-2 text-center text-urbana-light/80 text-sm">1</div>
+                  <div className="col-span-2 text-right text-urbana-light/80 text-sm">R$ {resumo.original_service.preco.toFixed(2)}</div>
+                  <div className="col-span-2 text-right text-urbana-gold font-bold text-sm">R$ {resumo.original_service.preco.toFixed(2)}</div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-pink-300">R$</span>
-                  <Input
-                    type="text"
-                    inputMode="numeric"
-                    placeholder="0,00"
-                    value={tipInput}
-                    onChange={(e) => handleTipChange(e.target.value)}
-                    className="flex-1 bg-urbana-black/50 border-pink-500/30 text-urbana-light text-right"
-                  />
-                </div>
-                <p className="text-xs text-pink-300/60 mt-1">100% destinada ao seu barbeiro</p>
+
+                {/* Extra Services */}
+                {resumo.extra_services && resumo.extra_services.length > 0 &&
+                  resumo.extra_services.map((extra, idx) => (
+                    <div key={`extra-${idx}`} className="grid grid-cols-12 gap-1 p-3 items-center bg-emerald-500/5">
+                      <div className="col-span-6 flex items-center gap-2">
+                        <Plus className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-urbana-light text-sm font-medium leading-tight">{extra.nome}</p>
+                          <p className="text-emerald-400/60 text-xs">Serviço Extra</p>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center text-urbana-light/80 text-sm">1</div>
+                      <div className="col-span-2 text-right text-urbana-light/80 text-sm">R$ {extra.preco.toFixed(2)}</div>
+                      <div className="col-span-2 text-right text-emerald-400 font-bold text-sm">R$ {extra.preco.toFixed(2)}</div>
+                    </div>
+                  ))}
+
+                {/* Products */}
+                {resumo.products && resumo.products.length > 0 &&
+                  resumo.products.map((prod, idx) => (
+                    <div key={`prod-${idx}`} className="grid grid-cols-12 gap-1 p-3 items-center bg-blue-500/5">
+                      <div className="col-span-6 flex items-center gap-2">
+                        <Package className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                        <div>
+                          <p className="text-urbana-light text-sm font-medium leading-tight">{prod.nome}</p>
+                          <p className="text-blue-400/60 text-xs">Produto</p>
+                        </div>
+                      </div>
+                      <div className="col-span-2 text-center text-urbana-light/80 text-sm">{prod.quantidade}</div>
+                      <div className="col-span-2 text-right text-urbana-light/80 text-sm">R$ {prod.preco.toFixed(2)}</div>
+                      <div className="col-span-2 text-right text-blue-400 font-bold text-sm">R$ {(prod.preco * prod.quantidade).toFixed(2)}</div>
+                    </div>
+                  ))}
               </div>
 
-              {/* Total */}
-              <div className="flex justify-between items-center p-4 bg-urbana-gold/20 rounded-xl border-2 border-urbana-gold/50 mt-2">
-                <span className="text-lg font-bold text-urbana-light">TOTAL</span>
-                <span className="text-2xl font-bold text-urbana-gold">R$ {totalComGorjeta.toFixed(2)}</span>
+              {/* Subtotal & Tip */}
+              <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-3 space-y-2">
+                {/* Subtotal */}
+                <div className="flex justify-between items-center text-sm border-b border-dashed border-urbana-gold/20 pb-2">
+                  <span className="text-urbana-light/70">SUBTOTAL</span>
+                  <span className="text-urbana-light font-medium">R$ {subtotal.toFixed(2)}</span>
+                </div>
+
+                {/* Tip Input */}
+                <div className="p-3 bg-pink-500/10 rounded-xl border border-pink-500/30">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Heart className="w-4 h-4 text-pink-400" />
+                    <span className="text-pink-300 text-sm font-medium">Gorjeta (opcional)</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-pink-300">R$</span>
+                    <Input
+                      type="text"
+                      inputMode="numeric"
+                      placeholder="0,00"
+                      value={tipInput}
+                      onChange={(e) => handleTipChange(e.target.value)}
+                      className="flex-1 bg-urbana-black/50 border-pink-500/30 text-urbana-light text-right"
+                    />
+                  </div>
+                  <p className="text-xs text-pink-300/60 mt-1">100% destinada ao seu barbeiro</p>
+                </div>
+
+                {/* Total */}
+                <div className="flex justify-between items-center p-4 bg-urbana-gold/20 rounded-xl border-2 border-urbana-gold/50">
+                  <span className="text-lg font-bold text-urbana-light">TOTAL A PAGAR</span>
+                  <span className="text-2xl font-bold text-urbana-gold">R$ {totalComGorjeta.toFixed(2)}</span>
+                </div>
               </div>
             </div>
           )}
