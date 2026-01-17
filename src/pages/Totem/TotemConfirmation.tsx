@@ -90,8 +90,8 @@ const TotemConfirmation: React.FC = () => {
       console.log('📦 [TOTEM] Session ID retornada:', data.session_id);
       console.log('📊 [TOTEM] Dados completos:', data);
 
-      // Navegar para tela de sucesso
-      navigate('/totem/check-in-success', {
+      // Navegar para tela de upsell (adicionar extras/produtos)
+      navigate('/totem/upsell', {
         state: {
           client,
           appointment,

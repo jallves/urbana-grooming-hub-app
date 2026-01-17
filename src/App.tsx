@@ -84,6 +84,7 @@ import TotemProductPaymentSuccess from './pages/Totem/TotemProductPaymentSuccess
 import TotemProductSale from './pages/Totem/TotemProductSale';
 import TotemError from './pages/Totem/TotemError';
 import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
+import TotemUpsell from './pages/Totem/TotemUpsell';
 import AdminProductsManagement from './pages/AdminProductsManagement';
 import Install from './pages/Install';
 import InstallContext from './pages/InstallContext';
@@ -425,6 +426,11 @@ function App() {
                   <Route path="/totem/check-in-success" element={
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemCheckInSuccess /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/upsell" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemUpsell /></TotemProtectedRoute>
                     </AdminRedirectGuard>
                   } />
                   <Route path="/totem/checkout" element={
