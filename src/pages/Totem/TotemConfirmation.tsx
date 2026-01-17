@@ -90,9 +90,9 @@ const TotemConfirmation: React.FC = () => {
       console.log('📦 [TOTEM] Session ID retornada:', data.session_id);
       console.log('📊 [TOTEM] Dados completos:', data);
 
-      // Após o check-in, ir DIRETO para o checkout.
-      // Check-in aqui é somente confirmação de chegada.
-      navigate('/totem/checkout', {
+      // Após o check-in, ir para a tela de sucesso.
+      // O cliente faz o serviço e só depois vai ao checkout.
+      navigate('/totem/check-in-success', {
         state: {
           client,
           appointment,
