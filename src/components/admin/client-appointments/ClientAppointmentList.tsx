@@ -3,7 +3,7 @@ import { useClientAppointments, type PainelAgendamento } from './useClientAppoin
 import ClientAppointmentFilters from './ClientAppointmentFilters';
 import ClientAppointmentTable from './ClientAppointmentTable';
 import ClientAppointmentEditDialog from './ClientAppointmentEditDialog';
-import { parseISO } from 'date-fns';
+
 
 const ClientAppointmentList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -20,34 +20,46 @@ const ClientAppointmentList: React.FC = () => {
     handleUpdateAppointment
   } = useClientAppointments();
   
-  // LEI PÉTREA: Filtrar agendamentos baseado nos estados (incluindo ausente e cancelado do banco)
-  const filteredAppointments = appointments.filter((appointment: PainelAgendamento) => {
+  // Função para calcular status real baseado em appointment_totem_sessions e vendas
+  const getActualStatus = (appointment: PainelAgendamento): string => {
     const statusFromDB = appointment.status?.toLowerCase() || '';
-    let currentStatus: string;
     
-    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
-    if (statusFromDB === 'ausente') {
-      currentStatus = 'ausente';
-    } else if (statusFromDB === 'cancelado') {
-      currentStatus = 'cancelado';
-    } else {
-      // PRIORIDADE 2: Status baseado em check-in/check-out
-      const hasCheckIn = appointment.totem_sessions && 
-        appointment.totem_sessions.length > 0 && 
-        appointment.totem_sessions.some(s => s.check_in_time);
-      
-      const hasCheckOut = appointment.totem_sessions && 
-        appointment.totem_sessions.some(s => s.check_out_time);
-
-      // Determinar status automático
-      if (!hasCheckIn) {
-        currentStatus = 'agendado'; // Check-in Pendente
-      } else if (hasCheckIn && !hasCheckOut) {
-        currentStatus = 'check_in_finalizado'; // Checkout Pendente
-      } else {
-        currentStatus = 'concluido'; // Concluído
-      }
+    // PRIORIDADE 1: Status finais do banco (ausente, cancelado, concluido)
+    if (statusFromDB === 'ausente' || statusFromDB === 'cancelado' || statusFromDB === 'concluido') {
+      return statusFromDB;
     }
+    
+    // PRIORIDADE 2: Venda paga = concluído
+    const hasPaidSale = appointment.vendas && 
+      Array.isArray(appointment.vendas) &&
+      appointment.vendas.some((v: any) => v.status === 'pago');
+    
+    if (hasPaidSale) {
+      return 'concluido';
+    }
+    
+    // PRIORIDADE 3: Status baseado em appointment_totem_sessions (tabela correta)
+    const sessions = appointment.appointment_totem_sessions;
+    const hasCheckIn = sessions && 
+      Array.isArray(sessions) &&
+      sessions.length > 0;
+    
+    const hasCheckOut = hasCheckIn && 
+      sessions.some((s: any) => s.status === 'completed' || s.status === 'checkout_completed');
+    
+    // Determinar status automático
+    if (!hasCheckIn) {
+      return 'agendado'; // Check-in Pendente
+    } else if (hasCheckIn && !hasCheckOut) {
+      return 'check_in_finalizado'; // Checkout Pendente
+    } else {
+      return 'concluido'; // Concluído
+    }
+  };
+
+  // LEI PÉTREA: Filtrar agendamentos baseado nos estados calculados
+  const filteredAppointments = appointments.filter((appointment: PainelAgendamento) => {
+    const currentStatus = getActualStatus(appointment);
 
     // Aplicar filtro de status
     if (statusFilter !== 'all' && currentStatus !== statusFilter) {
