@@ -2,3 +2,6 @@ project_id = "apizqnknnmjqpqovlkux"
 
 [functions.resend-confirmation]
 verify_jwt = false
+
+[functions.register-barber]
+verify_jwt = false
