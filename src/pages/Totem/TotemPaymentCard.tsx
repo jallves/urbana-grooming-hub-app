@@ -274,7 +274,8 @@ const TotemPaymentCard: React.FC = () => {
     isPinpadConnected,
     isProcessing: tefProcessing,
     iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF
+    cancelarPagamento: cancelarPagamentoTEF,
+    verificarConexao
   } = useTEFAndroid({
     // NÃO passamos callbacks aqui para evitar processamento duplicado
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
@@ -309,21 +310,32 @@ const TotemPaymentCard: React.FC = () => {
     console.log('💳 [CARD] Total:', total);
     console.log('💳 [CARD] TEF disponível:', isAndroidAvailable && isPinpadConnected);
     console.log('💳 [CARD] ═══════════════════════════════════════');
-    
+
     setPaymentType(type);
-    setProcessing(true);
     setError(null);
     finalizingRef.current = false;
 
-    // Se TEF não disponível, usar simulação
-    if (!isAndroidAvailable || !isPinpadConnected) {
-      console.log('🎭 [CARD] TEF não disponível, iniciando modo simulação...');
-      setIsSimulating(true);
-      setSimulationStatus('processing');
-      setSimulationTimeLeft(5);
+    // PayGo REAL: se não estiver no Totem Android, não simular
+    if (!isAndroidAvailable) {
+      toast.error('PayGo indisponível', {
+        description: 'O pagamento com cartão funciona apenas no Totem Android (PayGo).'
+      });
       return;
     }
 
+    // Tentar revalidar conexão do pinpad antes de iniciar
+    if (!isPinpadConnected) {
+      const status = verificarConexao();
+      const connected = !!status?.conectado;
+      if (!connected) {
+        toast.error('Pinpad não conectado', {
+          description: 'Verifique a conexão da maquininha e tente novamente.'
+        });
+        return;
+      }
+    }
+
+    setProcessing(true);
     setPaymentStarted(true);
 
     try {
@@ -494,8 +506,9 @@ const TotemPaymentCard: React.FC = () => {
               PayGo conectado
             </p>
           ) : (
-            <p className="text-xs sm:text-sm md:text-base text-urbana-gold mt-0.5">
-              Modo demonstração
+            <p className="text-xs sm:text-sm md:text-base text-red-400 mt-0.5 flex items-center justify-center gap-1">
+              <WifiOff className="w-3 h-3" />
+              PayGo / Pinpad desconectado
             </p>
           )}
         </div>
