@@ -112,23 +112,25 @@ serve(async (req) => {
       const brazilTime = getBrazilDateTime();
       console.log('📅 Usando horário do Brasil:', brazilTime);
       
-      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
-        'create-financial-transaction',
-        {
-          body: {
-            client_id: venda.cliente_id,
-            barber_id: venda.barbeiro_id, // ✅ INCLUIR barbeiro para comissões
-            items: transactionItems,
-            payment_method: payment.payment_method,
-            discount_amount: 0,
-            notes: venda.barbeiro_id 
-              ? `Venda direta de produtos no totem - ID: ${venda_id} - Com barbeiro`
-              : `Venda direta de produtos no totem - ID: ${venda_id}`,
-            transaction_date: brazilTime.date,
-            transaction_datetime: brazilTime.datetime
-          }
-        }
-      )
+       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+         'create-financial-transaction',
+         {
+           body: {
+             client_id: venda.cliente_id,
+             barber_id: venda.barbeiro_id, // painel_barbeiros.id
+             reference_id: venda_id,
+             reference_type: 'totem_venda_direta',
+             items: transactionItems,
+             payment_method: payment.payment_method,
+             discount_amount: 0,
+             notes: venda.barbeiro_id 
+               ? `Venda direta de produtos no totem - ID: ${venda_id} - Com barbeiro`
+               : `Venda direta de produtos no totem - ID: ${venda_id}`,
+             transaction_date: brazilTime.date,
+             transaction_datetime: brazilTime.datetime
+           }
+         }
+       )
 
       if (erpError) {
         console.error('❌ Erro ao criar transação no ERP:', erpError)

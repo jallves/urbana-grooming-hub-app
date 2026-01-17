@@ -299,8 +299,6 @@ Deno.serve(async (req) => {
       if (!existingRecords || existingRecords.length === 0) {
         console.log('💰 Criando registros financeiros...')
 
-        // Buscar staff_id do barbeiro
-        const staffId = agendamento.barbeiro?.staff_id || agendamento.barbeiro_id
         const barberName = agendamento.barbeiro?.nome || 'Barbeiro'
 
         // Preparar itens para ERP
@@ -321,7 +319,10 @@ Deno.serve(async (req) => {
             body: {
               appointment_id: agendamento.id,
               client_id: venda.cliente_id,
-              barber_id: staffId,
+              // IMPORTANT: financial_records.barber_id referencia painel_barbeiros.id
+              barber_id: agendamento.barbeiro_id,
+              reference_id: venda_id,
+              reference_type: 'totem_venda',
               items: erpItems,
               payment_method: payment_method || 'credit_card',
               discount_amount: Number(venda.desconto) || 0,
