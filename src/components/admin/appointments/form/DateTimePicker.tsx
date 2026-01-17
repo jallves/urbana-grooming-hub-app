@@ -10,7 +10,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UseFormReturn } from 'react-hook-form';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 
 interface DateTimePickerProps {
   form: UseFormReturn<any>;
@@ -25,7 +25,7 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({
 }) => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
-  const { getAvailableTimeSlots } = useAppointmentValidation();
+  const { getAvailableTimeSlots } = useUnifiedAppointmentValidation();
   
   const selectedDate = form.watch('date');
 
