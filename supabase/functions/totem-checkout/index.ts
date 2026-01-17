@@ -241,17 +241,47 @@ Deno.serve(async (req) => {
         )
       }
 
-      // Buscar agendamento vinculado
-      const { data: agendamento } = await supabase
+      // Buscar agendamento vinculado (tentar por venda_id primeiro, depois por agendamento_id se fornecido)
+      let agendamento = null
+      
+      // Primeiro, tentar buscar por venda_id
+      const { data: agendamentoByVenda } = await supabase
         .from('painel_agendamentos')
         .select('*, barbeiro:painel_barbeiros(*)')
         .eq('venda_id', venda_id)
-        .single()
+        .maybeSingle()
+      
+      agendamento = agendamentoByVenda
+      
+      // Se não encontrou e temos agendamento_id no request, buscar diretamente
+      if (!agendamento) {
+        const requestBody = await req.clone().json()
+        if (requestBody.agendamento_id) {
+          const { data: agendamentoById } = await supabase
+            .from('painel_agendamentos')
+            .select('*, barbeiro:painel_barbeiros(*)')
+            .eq('id', requestBody.agendamento_id)
+            .maybeSingle()
+          
+          agendamento = agendamentoById
+          
+          // Vincular venda ao agendamento se encontrou
+          if (agendamento) {
+            await supabase
+              .from('painel_agendamentos')
+              .update({ venda_id: venda_id })
+              .eq('id', agendamento.id)
+            console.log('🔗 Venda vinculada ao agendamento:', agendamento.id)
+          }
+        }
+      }
 
       if (!agendamento) {
         console.error('❌ Agendamento não encontrado para venda:', venda_id)
         throw new Error('Agendamento não encontrado')
       }
+      
+      console.log('✅ Agendamento encontrado:', agendamento.id, 'Status atual:', agendamento.status)
 
       // Buscar itens da venda
       const { data: vendaItens } = await supabase
