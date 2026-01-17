@@ -128,7 +128,11 @@ const TotemPaymentPix: React.FC = () => {
             agendamento_id: appointment?.id,
             session_id: session_id,
             payment_id: paymentId,
-            tipAmount: tipAmount
+            payment_method: 'PIX',
+            tipAmount: tipAmount,
+            // Snapshot de itens (fallback caso start falhe e a venda esteja sem itens)
+            extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+            products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
           }
         });
       }
