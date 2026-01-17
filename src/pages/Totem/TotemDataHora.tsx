@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { TotemLayout, TotemContentContainer, TotemGrid } from '@/components/totem/TotemLayout';
 import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemButton } from '@/components/totem/TotemButton';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
+import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
 
 interface TimeSlot {
@@ -33,7 +33,7 @@ const TotemDataHora: React.FC = () => {
   const [loadingDates, setLoadingDates] = useState(true);
   const [creating, setCreating] = useState(false);
 
-  const { getAvailableTimeSlots, validateAppointment, isValidating, extractDatabaseError } = useAppointmentValidation();
+  const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
   // Verificar se uma data tem horários disponíveis
   const hasAvailableSlots = async (date: Date): Promise<boolean> => {
@@ -168,7 +168,7 @@ const TotemDataHora: React.FC = () => {
     setLoading(true);
     try {
       const slots = await getAvailableTimeSlots(
-        barber.staff_id || barber.id,
+        barber.id, // CRÍTICO: Sempre usar painel_barbeiros.id (não staff_id)
         selectedDate,
         service.duracao || 60
       );
@@ -266,8 +266,7 @@ const TotemDataHora: React.FC = () => {
 
       if (response.error) {
         console.error('❌ Erro do banco:', response.error);
-        // Usar extração de erro do banco de dados
-        const errorMessage = extractDatabaseError(response.error);
+        const errorMessage = response.error.message || 'Erro ao criar agendamento';
         toast.error(errorMessage);
         
         // Recarregar horários se for erro de conflito
