@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -12,7 +13,26 @@ interface CheckoutSummary {
     nome: string;
     preco: number;
   };
+  extra_services?: Array<{
+    nome: string;
+    preco: number;
+  }>;
+  products?: Array<{
+    nome: string;
+    preco: number;
+    quantidade: number;
+  }>;
+  subtotal: number;
+  discount: number;
   total: number;
+}
+
+interface BarberInfo {
+  id: string;
+  nome: string;
+  foto_url?: string;
+  image_url?: string;
+  especialidade?: string;
 }
 
 const TotemCheckout: React.FC = () => {
@@ -20,8 +40,12 @@ const TotemCheckout: React.FC = () => {
   const location = useLocation();
   const { appointment, client, session } = location.state || {};
   const [resumo, setResumo] = useState<CheckoutSummary | null>(null);
+  const [barber, setBarber] = useState<BarberInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
+  const [tipAmount, setTipAmount] = useState<number>(0);
+  const [tipInput, setTipInput] = useState<string>('');
+  const [vendaId, setVendaId] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -41,17 +65,61 @@ const TotemCheckout: React.FC = () => {
   const loadCheckout = async () => {
     setLoading(true);
     try {
-      // Build summary from appointment data
-      const serviceName = appointment?.servico?.nome || 'Serviço';
-      const servicePrice = Number(appointment?.servico?.preco) || 0;
+      // Buscar dados do barbeiro
+      if (appointment?.barbeiro_id) {
+        const { data: barberData } = await supabase
+          .from('painel_barbeiros')
+          .select('id, nome, foto_url, image_url, specialties')
+          .eq('id', appointment.barbeiro_id)
+          .single();
+        
+        if (barberData) {
+          setBarber({
+            id: barberData.id,
+            nome: barberData.nome,
+            foto_url: barberData.foto_url || barberData.image_url,
+            image_url: barberData.image_url,
+            especialidade: Array.isArray(barberData.specialties) 
+              ? barberData.specialties.join(', ') 
+              : barberData.specialties
+          });
+        }
+      }
 
-      setResumo({
-        original_service: {
-          nome: serviceName,
-          preco: servicePrice
-        },
-        total: servicePrice
-      });
+      // Iniciar checkout via edge function para criar venda
+      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
+        'totem-checkout',
+        {
+          body: {
+            action: 'start',
+            agendamento_id: appointment.id,
+            session_id: session.id
+          }
+        }
+      );
+
+      if (checkoutError) {
+        console.error('Erro ao iniciar checkout:', checkoutError);
+        toast.error('Erro ao iniciar checkout');
+        
+        // Fallback: Build summary from appointment data
+        const serviceName = appointment?.servico?.nome || 'Serviço';
+        const servicePrice = Number(appointment?.servico?.preco) || 0;
+
+        setResumo({
+          original_service: {
+            nome: serviceName,
+            preco: servicePrice
+          },
+          subtotal: servicePrice,
+          discount: 0,
+          total: servicePrice
+        });
+      } else {
+        console.log('✅ Checkout iniciado:', checkoutData);
+        setVendaId(checkoutData.venda_id);
+        setResumo(checkoutData.resumo);
+      }
     } catch (error) {
       console.error('Erro ao carregar checkout:', error);
       toast.error('Erro ao carregar checkout');
@@ -60,57 +128,122 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
+  const handleTipChange = (value: string) => {
+    // Remove tudo que não for número ou vírgula
+    const cleanValue = value.replace(/[^\d,]/g, '');
+    setTipInput(cleanValue);
+    
+    // Converter para número
+    const numericValue = parseFloat(cleanValue.replace(',', '.')) || 0;
+    setTipAmount(numericValue);
+  };
+
   const handlePayment = async (method: 'pix' | 'card') => {
     if (!resumo) return;
     
     setProcessing(true);
     
     try {
-      // Create venda record
-      const { data: venda, error: vendaError } = await supabase
-        .from('vendas')
-        .insert({
-          cliente_id: client?.id,
-          barbeiro_id: appointment?.barbeiro_id,
-          valor_total: resumo.total,
-          forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
-          status: 'pago'
-        })
-        .select()
-        .single();
+      const totalComGorjeta = resumo.total + tipAmount;
 
-      if (vendaError) throw vendaError;
+      // Se não temos venda_id (fallback), criar venda diretamente
+      if (!vendaId) {
+        const { data: venda, error: vendaError } = await supabase
+          .from('vendas')
+          .insert({
+            cliente_id: client?.id,
+            barbeiro_id: appointment?.barbeiro_id,
+            valor_total: totalComGorjeta,
+            gorjeta: tipAmount,
+            forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
+            status: 'ABERTA'
+          })
+          .select()
+          .single();
 
-      // Create vendas_itens record
-      await supabase
-        .from('vendas_itens')
-        .insert({
-          venda_id: venda.id,
-          item_id: appointment?.servico_id || appointment?.servico?.id,
-          tipo: 'SERVICO',
-          nome: resumo.original_service.nome,
-          preco_unitario: resumo.original_service.preco,
-          quantidade: 1,
-          subtotal: resumo.original_service.preco
-        });
+        if (vendaError) throw vendaError;
 
-      // Update appointment status
-      await supabase
-        .from('painel_agendamentos')
-        .update({ 
-          status: 'concluido',
-          venda_id: venda.id 
-        })
-        .eq('id', appointment.id);
+        // Create vendas_itens record
+        await supabase
+          .from('vendas_itens')
+          .insert({
+            venda_id: venda.id,
+            item_id: appointment?.servico_id || appointment?.servico?.id,
+            tipo: 'SERVICO',
+            nome: resumo.original_service.nome,
+            preco_unitario: resumo.original_service.preco,
+            quantidade: 1,
+            subtotal: resumo.original_service.preco
+          });
 
-      toast.success('Pagamento realizado com sucesso!');
-      
-      navigate('/totem/success', {
-        state: {
-          message: 'Pagamento realizado com sucesso!',
-          total: resumo.total
+        // Navegar para pagamento
+        if (method === 'pix') {
+          navigate('/totem/payment-pix', {
+            state: {
+              venda: venda,
+              session,
+              appointment,
+              client,
+              total: totalComGorjeta,
+              tipAmount
+            }
+          });
+        } else {
+          navigate('/totem/card-type', {
+            state: {
+              venda: venda,
+              session,
+              appointment,
+              client,
+              total: totalComGorjeta,
+              tipAmount
+            }
+          });
         }
-      });
+      } else {
+        // Atualizar venda com gorjeta
+        if (tipAmount > 0) {
+          await supabase
+            .from('vendas')
+            .update({ 
+              gorjeta: tipAmount,
+              total: totalComGorjeta
+            })
+            .eq('id', vendaId);
+        }
+
+        // Buscar venda atualizada
+        const { data: vendaAtualizada } = await supabase
+          .from('vendas')
+          .select('*')
+          .eq('id', vendaId)
+          .single();
+
+        // Navegar para pagamento
+        if (method === 'pix') {
+          navigate('/totem/payment-pix', {
+            state: {
+              venda: vendaAtualizada,
+              session,
+              appointment,
+              client,
+              total: totalComGorjeta,
+              tipAmount
+            }
+          });
+        } else {
+          navigate('/totem/card-type', {
+            state: {
+              venda: vendaAtualizada,
+              session,
+              appointment,
+              client,
+              total: totalComGorjeta,
+              tipAmount
+            }
+          });
+        }
+      }
     } catch (error) {
       console.error('Erro no pagamento:', error);
       toast.error('Erro ao processar pagamento');
@@ -130,6 +263,8 @@ const TotemCheckout: React.FC = () => {
     );
   }
 
+  const totalComGorjeta = (resumo?.total || 0) + tipAmount;
+
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 sm:p-6 font-poppins relative overflow-hidden">
       {/* Background */}
@@ -139,7 +274,7 @@ const TotemCheckout: React.FC = () => {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 z-10">
+      <div className="flex items-center justify-between mb-4 z-10">
         <Button
           onClick={() => navigate('/totem/home')}
           variant="ghost"
@@ -152,60 +287,152 @@ const TotemCheckout: React.FC = () => {
         <div className="w-24" />
       </div>
 
-      {/* Content */}
-      <div className="flex-1 z-10 flex flex-col items-center justify-center max-w-2xl mx-auto w-full">
-        <Card className="w-full p-6 sm:p-8 bg-white/10 backdrop-blur-xl border-2 border-urbana-gold/30 rounded-2xl">
-          <div className="text-center mb-8">
-            <CheckCircle2 className="w-16 h-16 text-urbana-gold mx-auto mb-4" />
-            <h2 className="text-2xl font-bold text-urbana-light mb-2">
+      {/* Content Grid */}
+      <div className="flex-1 z-10 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full overflow-hidden">
+        
+        {/* Barber Info Card */}
+        {barber && (
+          <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
+            <h2 className="text-base font-bold text-urbana-light mb-3 flex items-center gap-2">
+              <User className="w-5 h-5 text-urbana-gold" />
+              Seu Barbeiro
+            </h2>
+            
+            <div className="flex items-center gap-4 p-3 bg-urbana-gold/10 backdrop-blur-sm rounded-xl border border-urbana-gold/30">
+              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-urbana-gold flex-shrink-0">
+                {barber.foto_url || barber.image_url ? (
+                  <img 
+                    src={barber.foto_url || barber.image_url} 
+                    alt={barber.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-urbana-gold/20">
+                    <User className="w-8 h-8 text-urbana-gold" />
+                  </div>
+                )}
+              </div>
+              
+              <div className="flex-1 min-w-0">
+                <p className="text-lg font-bold text-urbana-light truncate">{barber.nome}</p>
+                {barber.especialidade && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <Award className="w-4 h-4 text-urbana-gold flex-shrink-0" />
+                    <p className="text-sm text-urbana-light/70 truncate">{barber.especialidade}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Order Summary */}
+        <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
+          <div className="text-center mb-4">
+            <CheckCircle2 className="w-12 h-12 text-urbana-gold mx-auto mb-2" />
+            <h2 className="text-xl font-bold text-urbana-light">
               Olá, {client?.nome?.split(' ')[0]}!
             </h2>
-            <p className="text-urbana-light/70">Finalize seu atendimento</p>
+            <p className="text-urbana-light/70 text-sm">Finalize seu atendimento</p>
           </div>
 
           {/* Service Summary */}
           {resumo && (
-            <div className="space-y-4 mb-8">
-              <div className="flex justify-between items-center p-4 bg-urbana-black/30 rounded-xl">
-                <span className="text-urbana-light">{resumo.original_service.nome}</span>
+            <div className="space-y-2 mb-4 flex-1 overflow-y-auto">
+              {/* Main Service */}
+              <div className="flex justify-between items-center p-3 bg-urbana-black/30 rounded-xl">
+                <div className="flex items-center gap-2">
+                  <Package className="w-4 h-4 text-urbana-gold" />
+                  <span className="text-urbana-light text-sm">{resumo.original_service.nome}</span>
+                </div>
                 <span className="text-urbana-gold font-bold">
                   R$ {resumo.original_service.preco.toFixed(2)}
                 </span>
               </div>
 
-              <div className="flex justify-between items-center p-4 bg-urbana-gold/20 rounded-xl border-2 border-urbana-gold/50">
-                <span className="text-xl font-bold text-urbana-light">Total</span>
+              {/* Extra Services */}
+              {resumo.extra_services && resumo.extra_services.length > 0 && (
+                resumo.extra_services.map((extra, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-urbana-black/20 rounded-xl">
+                    <span className="text-urbana-light/80 text-sm">+ {extra.nome}</span>
+                    <span className="text-urbana-gold/80">
+                      R$ {extra.preco.toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
+
+              {/* Products */}
+              {resumo.products && resumo.products.length > 0 && (
+                resumo.products.map((prod, idx) => (
+                  <div key={idx} className="flex justify-between items-center p-3 bg-urbana-black/20 rounded-xl">
+                    <span className="text-urbana-light/80 text-sm">{prod.quantidade}x {prod.nome}</span>
+                    <span className="text-urbana-gold/80">
+                      R$ {(prod.preco * prod.quantidade).toFixed(2)}
+                    </span>
+                  </div>
+                ))
+              )}
+
+              {/* Tip Input */}
+              <div className="p-3 bg-pink-500/10 rounded-xl border border-pink-500/30">
+                <div className="flex items-center gap-2 mb-2">
+                  <Heart className="w-4 h-4 text-pink-400" />
+                  <span className="text-pink-300 text-sm font-medium">Gorjeta (opcional)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-pink-300">R$</span>
+                  <Input
+                    type="text"
+                    placeholder="0,00"
+                    value={tipInput}
+                    onChange={(e) => handleTipChange(e.target.value)}
+                    className="flex-1 bg-urbana-black/50 border-pink-500/30 text-urbana-light text-right"
+                  />
+                </div>
+                <p className="text-xs text-pink-300/60 mt-1">100% destinada ao seu barbeiro</p>
+              </div>
+
+              {/* Total */}
+              <div className="flex justify-between items-center p-4 bg-urbana-gold/20 rounded-xl border-2 border-urbana-gold/50 mt-2">
+                <span className="text-lg font-bold text-urbana-light">TOTAL</span>
                 <span className="text-2xl font-bold text-urbana-gold">
-                  R$ {resumo.total.toFixed(2)}
+                  R$ {totalComGorjeta.toFixed(2)}
                 </span>
               </div>
             </div>
           )}
+        </Card>
 
-          {/* Payment Methods */}
-          <div className="grid grid-cols-2 gap-4">
+        {/* Payment Methods */}
+        <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
+          <h3 className="text-base font-bold text-urbana-light mb-4 text-center">
+            Forma de Pagamento
+          </h3>
+
+          <div className="grid grid-cols-2 gap-3">
             <Button
               onClick={() => handlePayment('pix')}
               disabled={processing}
-              className="h-20 bg-green-600 hover:bg-green-700 text-white text-lg font-bold rounded-xl"
+              className="h-24 bg-gradient-to-br from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-2"
             >
-              <DollarSign className="w-6 h-6 mr-2" />
+              <DollarSign className="w-8 h-8" />
               PIX
             </Button>
             <Button
               onClick={() => handlePayment('card')}
               disabled={processing}
-              className="h-20 bg-blue-600 hover:bg-blue-700 text-white text-lg font-bold rounded-xl"
+              className="h-24 bg-gradient-to-br from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-2"
             >
-              <CreditCard className="w-6 h-6 mr-2" />
+              <CreditCard className="w-8 h-8" />
               Cartão
             </Button>
           </div>
 
           {processing && (
-            <div className="mt-6 text-center">
+            <div className="mt-4 text-center">
               <div className="w-8 h-8 border-2 border-urbana-gold/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-2" />
-              <p className="text-urbana-light">Processando pagamento...</p>
+              <p className="text-urbana-light text-sm">Processando...</p>
             </div>
           )}
         </Card>
