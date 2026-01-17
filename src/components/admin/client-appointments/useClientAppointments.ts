@@ -96,10 +96,11 @@ export const useClientAppointments = () => {
   useEffect(() => {
     fetchAppointments();
 
-    // ADICIONAR REALTIME LISTENERS ADMIN
-    console.log('🔴 [Admin Realtime] Configurando listeners globais');
+    // ADICIONAR REALTIME LISTENERS ADMIN - DUPLO CANAL (agendamentos + vendas)
+    console.log('🔴 [Admin Realtime] Configurando listeners globais para agendamentos E vendas');
 
-    const channel = supabase
+    // Canal principal: escutar painel_agendamentos
+    const appointmentsChannel = supabase
       .channel('admin-appointments')
       .on(
         'postgres_changes',
@@ -140,7 +141,7 @@ export const useClientAppointments = () => {
             setAppointments(prev => {
               const updated = prev.map(a => 
                 a.id === appointmentId 
-                  ? { ...a, status: newStatus, updated_at: (payload.new as any).updated_at }
+                  ? { ...a, status: newStatus, status_totem: (payload.new as any).status_totem, updated_at: (payload.new as any).updated_at }
                   : a
               );
               
@@ -175,9 +176,59 @@ export const useClientAppointments = () => {
       )
       .subscribe();
 
+    // Canal secundário: escutar vendas (status 'pago' indica checkout concluído)
+    const salesChannel = supabase
+      .channel('admin-sales-status')
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'vendas'
+        },
+        (payload) => {
+          const oldStatus = (payload.old as any)?.status;
+          const newStatus = (payload.new as any)?.status;
+          const vendaId = (payload.new as any)?.id;
+          
+          console.log('💰 [ADMIN REALTIME] Venda atualizada:', { vendaId, oldStatus, newStatus });
+          
+          // Se o status da venda mudou para 'pago', significa que um checkout foi concluído
+          if (newStatus === 'pago' && oldStatus !== 'pago') {
+            console.log('✅ [ADMIN REALTIME] Venda PAGA - Atualizando lista de agendamentos');
+            
+            // Atualizar localmente os agendamentos vinculados a esta venda
+            setAppointments(prev => {
+              const updated = prev.map(a => {
+                // Se a venda deste agendamento foi paga, atualizar status
+                const hasThisVenda = a.vendas?.some(v => v.id === vendaId);
+                if (hasThisVenda) {
+                  console.log(`📋 [ADMIN REALTIME] Agendamento ${a.id} tem venda ${vendaId} - marcando como concluído`);
+                  return { 
+                    ...a, 
+                    vendas: a.vendas?.map(v => v.id === vendaId ? { ...v, status: 'pago' } : v)
+                  };
+                }
+                return a;
+              });
+              return updated;
+            });
+            
+            toast.success('Checkout concluído!', {
+              description: 'Pagamento confirmado no totem'
+            });
+            
+            // Refetch completo para garantir sincronização
+            fetchAppointments();
+          }
+        }
+      )
+      .subscribe();
+
     return () => {
       console.log('🔴 [Admin Realtime] Removendo listeners');
-      supabase.removeChannel(channel);
+      supabase.removeChannel(appointmentsChannel);
+      supabase.removeChannel(salesChannel);
     };
   }, [fetchAppointments]);
 

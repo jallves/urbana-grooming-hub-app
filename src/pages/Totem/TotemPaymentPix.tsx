@@ -259,14 +259,17 @@ const TotemPaymentPix: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
-  // Delay inicial para verificar conexão TEF
+  // Delay inicial para verificar conexão TEF (aumentado para garantir detecção)
   useEffect(() => {
+    console.log('🔄 [PIX] Iniciando verificação de conexão TEF...');
     const timer = setTimeout(() => {
+      console.log('✅ [PIX] Verificação de conexão concluída');
+      console.log('🔍 [PIX] Estado final - Android:', isAndroidAvailable, 'Pinpad:', isPinpadConnected);
       setIsCheckingConnection(false);
-    }, 1500);
+    }, 2000); // Aumentado para 2 segundos
     
     return () => clearTimeout(timer);
-  }, []);
+  }, [isAndroidAvailable, isPinpadConnected]);
 
   // Iniciar pagamento PIX - Via TEF ou Simulação
   useEffect(() => {
@@ -278,18 +281,34 @@ const TotemPaymentPix: React.FC = () => {
     }
 
     if (isCheckingConnection) {
+      console.log('🔄 [PIX] Aguardando verificação de conexão...');
       return;
     }
 
     if (isProcessingRef.current) {
+      console.log('⚠️ [PIX] Já em processamento, ignorando...');
       return;
     }
 
-    // Se TEF disponível, usar TEF
+    // Log detalhado para diagnóstico
+    console.log('🔍 [PIX] ═══════════════════════════════════════');
+    console.log('🔍 [PIX] DECISÃO DE FLUXO DE PAGAMENTO');
+    console.log('🔍 [PIX] isAndroidAvailable:', isAndroidAvailable);
+    console.log('🔍 [PIX] isPinpadConnected:', isPinpadConnected);
+    console.log('🔍 [PIX] window.TEF disponível:', typeof window.TEF !== 'undefined');
+    console.log('🔍 [PIX] ═══════════════════════════════════════');
+
+    // Se TEF disponível E Pinpad conectado, usar TEF PayGo
     if (isAndroidAvailable && isPinpadConnected) {
+      console.log('✅ [PIX] TEF + Pinpad disponíveis - Iniciando pagamento PIX via PayGo');
       iniciarPagamentoPix();
+    } else if (isAndroidAvailable && !isPinpadConnected) {
+      // Android disponível mas pinpad não conectado - erro
+      console.error('❌ [PIX] Android TEF disponível mas Pinpad NÃO CONECTADO');
+      toast.error('Pinpad não conectado', { description: 'Verifique a conexão do terminal' });
+      setError('Pinpad não conectado');
     } else {
-      // Caso contrário, usar simulação
+      // Caso contrário, usar simulação (ambiente web)
       console.log('⚠️ [PIX] TEF não disponível, iniciando modo simulação...');
       iniciarPagamentoSimulado();
     }
