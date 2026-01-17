@@ -42,10 +42,14 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   } | null;
-  totem_sessions?: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
+  // CORRIGIDO: Usar appointment_totem_sessions (tabela correta)
+  appointment_totem_sessions?: Array<{
+    totem_session_id: string | null;
     status: string | null;
+    totem_sessions: {
+      id: string;
+      created_at: string | null;
+    } | null;
   }>;
   vendas?: Array<{
     id: string;

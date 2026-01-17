@@ -55,10 +55,14 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   } | null;
-  totem_sessions?: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
+  // CORRIGIDO: Usar appointment_totem_sessions (tabela correta)
+  appointment_totem_sessions?: Array<{
+    totem_session_id: string | null;
     status: string | null;
+    totem_sessions: {
+      id: string;
+      created_at: string | null;
+    } | null;
   }>;
   vendas?: Array<{
     id: string;
@@ -82,36 +86,59 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
 
-  // LEI PÉTREA: Determinar status didático do agendamento
+  // LEI PÉTREA: Determinar status didático do agendamento (ALINHADO com ClientAppointmentCompactRow)
   const getActualStatus = () => {
-    // Verificar se foi cancelado ou marcado como ausente manualmente
-    const statusUpper = appointment.status?.toUpperCase() || '';
-    if (statusUpper === 'CANCELADO') {
-      return 'cancelado';
+    const statusLower = appointment.status?.toLowerCase() || '';
+    
+    // PRIORIDADE 1: Status finais do banco (concluido, ausente, cancelado)
+    if (statusLower === 'concluido') {
+      return 'concluido';
     }
-    if (statusUpper === 'AUSENTE') {
+    
+    if (statusLower === 'ausente') {
       return 'ausente';
     }
-
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
     
-    const hasCheckOut = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_out_time);
-
-    // 3 ESTADOS AUTOMÁTICOS:
-    if (!hasCheckIn) {
-      return 'agendado';
+    if (statusLower === 'cancelado') {
+      return 'cancelado';
     }
 
-    if (hasCheckIn && !hasCheckOut) {
-      return 'check_in_finalizado';
-    }
-
-    if (hasCheckIn && hasCheckOut) {
+    // PRIORIDADE 2: Verificar venda paga (checkout foi feito pelo Totem)
+    const hasPaidSale = appointment.vendas && 
+      Array.isArray(appointment.vendas) &&
+      appointment.vendas.some((v: any) => v.status === 'pago');
+    
+    if (hasPaidSale) {
       return 'concluido';
     }
 
+    // PRIORIDADE 3: Status baseado em appointment_totem_sessions (check-in/check-out)
+    const hasCheckIn = appointment.appointment_totem_sessions && 
+      Array.isArray(appointment.appointment_totem_sessions) &&
+      appointment.appointment_totem_sessions.length > 0;
+    
+    const hasCheckOut = hasCheckIn && 
+      appointment.appointment_totem_sessions?.some((s: any) => 
+        s.status === 'completed' || s.status === 'checkout_completed'
+      );
+
+    // 3 ESTADOS AUTOMÁTICOS:
+    // 1. Cliente agendou, não fez check-in ainda
+    if (!hasCheckIn) {
+      return 'agendado'; // "Agendado / Check-in Pendente"
+    }
+
+    // 2. Cliente fez check-in, mas não fez checkout ainda
+    if (hasCheckIn && !hasCheckOut) {
+      return 'check_in_finalizado'; // "Check-in Finalizado / Checkout Pendente"
+    }
+
+    // 3. Cliente fez checkout (processo completo)
+    if (hasCheckIn && hasCheckOut) {
+      return 'concluido'; // "Concluído"
+    }
+
+    // Fallback
     return 'agendado';
   };
 
@@ -169,8 +196,10 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
 
   // Verificar se o agendamento pode ser excluído
   const canDelete = () => {
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    // CORRIGIDO: Usar appointment_totem_sessions
+    const hasCheckIn = appointment.appointment_totem_sessions && 
+      Array.isArray(appointment.appointment_totem_sessions) &&
+      appointment.appointment_totem_sessions.length > 0;
     
     const hasSales = appointment.vendas && appointment.vendas.length > 0;
     
@@ -219,8 +248,10 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
   };
 
   const getDeleteBlockedReason = () => {
-    const hasCheckIn = appointment.totem_sessions && 
-      appointment.totem_sessions.some((s: any) => s.check_in_time);
+    // CORRIGIDO: Usar appointment_totem_sessions
+    const hasCheckIn = appointment.appointment_totem_sessions && 
+      Array.isArray(appointment.appointment_totem_sessions) &&
+      appointment.appointment_totem_sessions.length > 0;
     
     const hasSales = appointment.vendas && appointment.vendas.length > 0;
     
