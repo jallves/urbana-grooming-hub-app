@@ -92,8 +92,17 @@ const TotemPendingCheckouts: React.FC = () => {
     }
   };
 
-  const handleGoToCheckout = (appointment: PendingCheckout) => {
-    navigate('/totem/checkout', {
+  const handleGoToCheckout = async (appointment: PendingCheckout) => {
+    // Buscar sessão existente para este agendamento
+    const { data: sessionLink } = await supabase
+      .from('appointment_totem_sessions')
+      .select('totem_session_id')
+      .eq('appointment_id', appointment.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    navigate('/totem/upsell', {
       state: {
         appointment: {
           id: appointment.id,
@@ -117,6 +126,11 @@ const TotemPendingCheckouts: React.FC = () => {
           },
         },
         client: cliente,
+        session: {
+          id: sessionLink?.totem_session_id || appointment.id,
+          appointment_id: appointment.id,
+          status: 'check_in'
+        }
       },
     });
   };
