@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CheckCircle2, Loader2, WifiOff, QrCode } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Loader2, WifiOff, QrCode, XCircle, RefreshCw } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
@@ -259,17 +259,44 @@ const TotemPaymentPix: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
-  // Delay inicial para verificar conexão TEF (aumentado para garantir detecção)
+  // Estado para timeout de segurança
+  const [tefTimeout, setTefTimeout] = useState(false);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  
+  // Delay inicial para verificar conexão TEF - REDUZIDO para melhor UX
+  // Verificação progressiva: 500ms, 1000ms, 1500ms
   useEffect(() => {
     console.log('🔄 [PIX] Iniciando verificação de conexão TEF...');
-    const timer = setTimeout(() => {
-      console.log('✅ [PIX] Verificação de conexão concluída');
-      console.log('🔍 [PIX] Estado final - Android:', isAndroidAvailable, 'Pinpad:', isPinpadConnected);
-      setIsCheckingConnection(false);
-    }, 2000); // Aumentado para 2 segundos
+    let attempts = 0;
     
-    return () => clearTimeout(timer);
-  }, [isAndroidAvailable, isPinpadConnected]);
+    const checkConnection = () => {
+      attempts++;
+      const tefAvailable = typeof window.TEF !== 'undefined';
+      console.log(`🔍 [PIX] Tentativa ${attempts}: window.TEF=${tefAvailable}, isAndroidAvailable=${isAndroidAvailable}`);
+      
+      // Se TEF está disponível, podemos prosseguir imediatamente
+      if (tefAvailable && isAndroidAvailable) {
+        console.log('✅ [PIX] TEF detectado na tentativa', attempts);
+        setIsCheckingConnection(false);
+        return;
+      }
+      
+      // Após 3 tentativas (1.5s total), finalizar verificação
+      if (attempts >= 3) {
+        console.log('⏱️ [PIX] Verificação concluída após', attempts, 'tentativas');
+        setIsCheckingConnection(false);
+        return;
+      }
+      
+      // Próxima tentativa
+      setTimeout(checkConnection, 500);
+    };
+    
+    // Primeira verificação imediata
+    checkConnection();
+    
+    return () => {};
+  }, [isAndroidAvailable]);
 
   // Iniciar pagamento PIX - Via TEF ou Simulação
   useEffect(() => {
@@ -299,10 +326,10 @@ const TotemPaymentPix: React.FC = () => {
     console.log('🔍 [PIX] ═══════════════════════════════════════');
 
     // CRÍTICO: PIX via PayGo - Tentar SEMPRE quando Android disponível
-    // PIX pode funcionar mesmo sem Pinpad físico (usa QR Code na tela do terminal)
+    // PIX usa PAGAMENTO_CARTEIRA_VIRTUAL no PayGo (QR Code na tela do terminal)
     if (isAndroidAvailable) {
       console.log('✅ [PIX] Android TEF disponível - Iniciando pagamento PIX via PayGo');
-      console.log('✅ [PIX] isPinpadConnected:', isPinpadConnected, '(não obrigatório para PIX)');
+      console.log('✅ [PIX] Método: PAGAMENTO_CARTEIRA_VIRTUAL (QR Code no terminal)');
       iniciarPagamentoPix();
     } else {
       // Ambiente web - usar simulação
@@ -319,11 +346,13 @@ const TotemPaymentPix: React.FC = () => {
     console.log('💚 [PIX] INICIANDO PAGAMENTO PIX VIA TEF PAYGO');
     console.log('💚 [PIX] Venda ID:', venda_id);
     console.log('💚 [PIX] Total:', total);
+    console.log('💚 [PIX] Método PayGo: pix -> PAGAMENTO_CARTEIRA_VIRTUAL');
     console.log('💚 [PIX] ═══════════════════════════════════════');
     
     setProcessing(true);
     setError(null);
     setPaymentStarted(true);
+    setTefTimeout(false);
     finalizingRef.current = false;
 
     try {
@@ -355,8 +384,22 @@ const TotemPaymentPix: React.FC = () => {
       // Log de confirmação
       console.log('✅ [PIX] currentPaymentIdRef.current ATUALIZADO:', currentPaymentIdRef.current);
 
+      // TIMEOUT DE SEGURANÇA: Se não receber resposta em 120 segundos, mostrar erro
+      timeoutRef.current = setTimeout(() => {
+        if (isProcessingRef.current && !finalizingRef.current) {
+          console.error('⏱️ [PIX] TIMEOUT - Nenhuma resposta do PayGo em 120 segundos');
+          setTefTimeout(true);
+          setError('Tempo esgotado aguardando resposta do PayGo');
+          toast.error('Timeout no pagamento PIX', { 
+            description: 'Verifique se o PayGo está funcionando corretamente' 
+          });
+        }
+      }, 120000);
+
       // Chamar TEF Android para PIX
       console.log('🔌 [PIX] Chamando TEF PayGo para PIX...');
+      console.log('🔌 [PIX] Parâmetros: ordemId=' + payment.id + ', valor=' + total + ', tipo=pix');
+      
       const success = await iniciarPagamentoTEF({
         ordemId: payment.id,
         valor: total,
@@ -365,17 +408,35 @@ const TotemPaymentPix: React.FC = () => {
       });
 
       if (!success) {
-        console.error('❌ [PIX] Falha ao iniciar TEF');
-        toast.error('Erro ao iniciar pagamento PIX');
+        console.error('❌ [PIX] Falha ao iniciar TEF - iniciarPagamentoTEF retornou false');
+        
+        // Limpar timeout
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        
+        // Atualizar status do pagamento para erro
+        await supabase
+          .from('totem_payments')
+          .update({ status: 'failed', error_message: 'Falha ao iniciar TEF' })
+          .eq('id', payment.id);
+        
+        toast.error('Erro ao iniciar pagamento PIX', {
+          description: 'Não foi possível conectar com o PayGo'
+        });
+        setError('Falha ao iniciar TEF');
         setProcessing(false);
         setPaymentStarted(false);
         isProcessingRef.current = false;
       } else {
         console.log('✅ [PIX] TEF iniciado, aguardando resposta do PayGo...');
+        console.log('✅ [PIX] O QR Code será exibido no terminal PayGo');
       }
 
     } catch (error) {
       console.error('❌ [PIX] Erro:', error);
+      
+      // Limpar timeout
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      
       toast.error('Erro ao processar pagamento');
       setProcessing(false);
       setPaymentStarted(false);
@@ -463,6 +524,12 @@ const TotemPaymentPix: React.FC = () => {
   }, [isSimulating, simulationStatus, finalizePayment]);
 
   const handleCancelPayment = () => {
+    // Limpar timeout de segurança
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    
     if (isSimulating) {
       setIsSimulating(false);
       setSimulationStatus('waiting');
@@ -471,10 +538,21 @@ const TotemPaymentPix: React.FC = () => {
     }
     setProcessing(false);
     setPaymentStarted(false);
+    setTefTimeout(false);
     isProcessingRef.current = false;
+    finalizingRef.current = false;
     toast.info('Pagamento cancelado');
     navigate('/totem/checkout', { state: location.state });
   };
+  
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   // Gerar código PIX para exibição
   const pixCode = `00020126580014BR.GOV.BCB.PIX0136${venda_id || 'test'}520400005303986540${total?.toFixed(2) || '0.00'}5802BR5913COSTA URBANA6009SAO PAULO62070503***6304`;
@@ -632,79 +710,153 @@ const TotemPaymentPix: React.FC = () => {
       <div className="flex-1 flex items-center justify-center overflow-y-auto py-2 z-10">
         <Card className="w-full max-w-xl sm:max-w-2xl md:max-w-3xl p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 bg-black/30 backdrop-blur-xl border-2 border-green-500/30 shadow-[0_8px_32px_rgba(34,197,94,0.3)] text-center rounded-3xl">
           
-          {/* Status TEF */}
-          <div className="bg-gradient-to-r from-green-500/20 via-green-400/15 to-green-500/20 border-2 border-green-500/40 rounded-xl p-4">
-            <div className="flex items-center justify-center gap-2">
-              <div className="relative">
-                <div className="w-2 h-2 bg-green-400 rounded-full animate-ping absolute" />
-                <div className="w-2 h-2 bg-green-400 rounded-full" />
+          {/* Mostrar erro ou timeout */}
+          {(error || tefTimeout) ? (
+            <>
+              {/* Status de Erro */}
+              <div className="bg-gradient-to-r from-red-500/20 via-red-400/15 to-red-500/20 border-2 border-red-500/40 rounded-xl p-4">
+                <div className="flex items-center justify-center gap-2">
+                  <XCircle className="w-5 h-5 text-red-400" />
+                  <p className="text-base sm:text-lg font-bold text-red-400">
+                    {tefTimeout ? 'Tempo esgotado' : 'Erro no pagamento'}
+                  </p>
+                </div>
               </div>
-              <p className="text-base sm:text-lg font-bold text-green-400">
-                ✅ PayGo Integrado - Aguardando pagamento PIX...
-              </p>
-            </div>
-          </div>
 
-          {/* Visual do QR Code (indicação que está no pinpad) */}
-          <div className="flex justify-center py-6">
-            <div className="relative">
-              <div className="absolute -inset-3 bg-green-500/20 rounded-2xl blur-xl animate-pulse" />
-              <div className="relative bg-gradient-to-br from-green-500/20 to-green-600/20 p-8 rounded-2xl border-2 border-green-500/40">
-                <QrCode className="w-24 h-24 sm:w-32 sm:h-32 text-green-400" />
+              {/* Ícone de Erro */}
+              <div className="flex justify-center py-6">
+                <div className="relative">
+                  <div className="absolute -inset-3 bg-red-500/20 rounded-full blur-xl" />
+                  <div className="relative bg-gradient-to-br from-red-500/20 to-red-600/20 p-6 rounded-full border-2 border-red-500/40">
+                    <XCircle className="w-20 h-20 sm:w-24 sm:h-24 text-red-400" />
+                  </div>
+                </div>
               </div>
-            </div>
-          </div>
 
-          {/* Instrução */}
-          <div className="space-y-4">
-            <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-              Escaneie o QR Code na maquininha
-            </p>
-            <p className="text-base sm:text-lg text-gray-300">
-              O código PIX está sendo exibido no pinpad
-            </p>
-          </div>
+              {/* Mensagem */}
+              <div className="space-y-4">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                  {tefTimeout ? 'O tempo de espera esgotou' : 'Falha no pagamento PIX'}
+                </p>
+                <p className="text-base sm:text-lg text-gray-300">
+                  {error || 'Nenhuma resposta do PayGo. Por favor, tente novamente.'}
+                </p>
+              </div>
 
-          {/* Amount */}
-          <div className="space-y-2 p-5 bg-gradient-to-r from-green-500/10 via-green-400/10 to-green-500/10 rounded-xl border-2 border-green-500/30">
-            <p className="text-lg text-gray-400 font-medium">Valor total</p>
-            <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
-              R$ {total?.toFixed(2)}
-            </p>
-          </div>
+              {/* Botões de ação */}
+              <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                <Button
+                  onClick={() => {
+                    // Limpar estados e tentar novamente
+                    setError(null);
+                    setTefTimeout(false);
+                    isProcessingRef.current = false;
+                    finalizingRef.current = false;
+                    setPaymentStarted(false);
+                    setProcessing(false);
+                    
+                    // Aguardar um momento e reiniciar
+                    setTimeout(() => {
+                      if (isAndroidAvailable) {
+                        iniciarPagamentoPix();
+                      } else {
+                        iniciarPagamentoSimulado();
+                      }
+                    }, 500);
+                  }}
+                  size="lg"
+                  className="bg-green-600 hover:bg-green-500 text-white"
+                >
+                  <RefreshCw className="w-5 h-5 mr-2" />
+                  Tentar Novamente
+                </Button>
+                <Button
+                  onClick={handleCancelPayment}
+                  variant="outline"
+                  size="lg"
+                  className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                >
+                  Cancelar
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              {/* Status TEF Normal */}
+              <div className="bg-gradient-to-r from-green-500/20 via-green-400/15 to-green-500/20 border-2 border-green-500/40 rounded-xl p-4">
+                <div className="flex items-center justify-center gap-2">
+                  <div className="relative">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-ping absolute" />
+                    <div className="w-2 h-2 bg-green-400 rounded-full" />
+                  </div>
+                  <p className="text-base sm:text-lg font-bold text-green-400">
+                    ✅ PayGo Integrado - Aguardando pagamento PIX...
+                  </p>
+                </div>
+              </div>
 
-          {/* Progress Steps */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-              <span className="text-xs sm:text-sm text-urbana-light">TEF</span>
-            </div>
-            <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
-            <div className="flex items-center gap-1.5">
-              <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
-              <span className="text-xs sm:text-sm text-urbana-light">QR Code</span>
-            </div>
-            <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
-            <div className="flex items-center gap-1.5">
-              <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-400 rounded-full animate-pulse" />
-              <span className="text-xs sm:text-sm text-urbana-light">Pagamento</span>
-            </div>
-          </div>
+              {/* Visual do QR Code (indicação que está no pinpad) */}
+              <div className="flex justify-center py-6">
+                <div className="relative">
+                  <div className="absolute -inset-3 bg-green-500/20 rounded-2xl blur-xl animate-pulse" />
+                  <div className="relative bg-gradient-to-br from-green-500/20 to-green-600/20 p-8 rounded-2xl border-2 border-green-500/40">
+                    <QrCode className="w-24 h-24 sm:w-32 sm:h-32 text-green-400" />
+                  </div>
+                </div>
+              </div>
 
-          {/* Loader */}
-          <div className="flex justify-center">
-            <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
-          </div>
+              {/* Instrução */}
+              <div className="space-y-4">
+                <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
+                  Escaneie o QR Code na maquininha
+                </p>
+                <p className="text-base sm:text-lg text-gray-300">
+                  O código PIX está sendo exibido no pinpad
+                </p>
+              </div>
 
-          {/* Cancel Button */}
-          <Button
-            onClick={handleCancelPayment}
-            variant="outline"
-            size="lg"
-            className="border-red-500/50 text-red-400 hover:bg-red-500/10"
-          >
-            Cancelar Pagamento
-          </Button>
+              {/* Amount */}
+              <div className="space-y-2 p-5 bg-gradient-to-r from-green-500/10 via-green-400/10 to-green-500/10 rounded-xl border-2 border-green-500/30">
+                <p className="text-lg text-gray-400 font-medium">Valor total</p>
+                <p className="text-4xl sm:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 via-green-300 to-green-400">
+                  R$ {total?.toFixed(2)}
+                </p>
+              </div>
+
+              {/* Progress Steps */}
+              <div className="flex items-center justify-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                  <span className="text-xs sm:text-sm text-urbana-light">TEF</span>
+                </div>
+                <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 sm:w-5 sm:h-5 text-green-500" />
+                  <span className="text-xs sm:text-sm text-urbana-light">QR Code</span>
+                </div>
+                <div className="w-6 sm:w-8 h-0.5 bg-green-500/30" />
+                <div className="flex items-center gap-1.5">
+                  <div className="w-4 h-4 sm:w-5 sm:h-5 border-2 border-green-400 rounded-full animate-pulse" />
+                  <span className="text-xs sm:text-sm text-urbana-light">Pagamento</span>
+                </div>
+              </div>
+
+              {/* Loader */}
+              <div className="flex justify-center">
+                <Loader2 className="w-10 h-10 text-green-400 animate-spin" />
+              </div>
+
+              {/* Cancel Button */}
+              <Button
+                onClick={handleCancelPayment}
+                variant="outline"
+                size="lg"
+                className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+              >
+                Cancelar Pagamento
+              </Button>
+            </>
+          )}
         </Card>
       </div>
     </div>
