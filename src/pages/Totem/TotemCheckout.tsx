@@ -38,7 +38,15 @@ interface BarberInfo {
 const TotemCheckout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { appointment, client, session } = location.state || {};
+  // Receber extras do TotemUpsell
+  const { 
+    appointment, 
+    client, 
+    session, 
+    extraServices: stateExtraServices = [], 
+    productCart: stateProductCart = [] 
+  } = location.state || {};
+  
   const [resumo, setResumo] = useState<CheckoutSummary | null>(null);
   const [barber, setBarber] = useState<BarberInfo | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,14 +94,32 @@ const TotemCheckout: React.FC = () => {
         }
       }
 
+      console.log('📦 Extras do state:', {
+        extraServices: stateExtraServices.length,
+        products: stateProductCart.length
+      });
+
       // Iniciar checkout via edge function para criar venda
+      // Passar extras para a edge function processar
       const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke(
         'totem-checkout',
         {
           body: {
             action: 'start',
             agendamento_id: appointment.id,
-            session_id: session.id
+            session_id: session.id,
+            extras: stateExtraServices.map((s: any) => ({
+              id: s.id,
+              nome: s.nome,
+              preco: s.preco,
+              tipo: 'SERVICO_EXTRA'
+            })),
+            products: stateProductCart.map((p: any) => ({
+              id: p.id,
+              nome: p.nome,
+              preco: p.preco,
+              quantidade: p.quantidade
+            }))
           }
         }
       );
@@ -102,18 +128,31 @@ const TotemCheckout: React.FC = () => {
         console.error('Erro ao iniciar checkout:', checkoutError);
         toast.error('Erro ao iniciar checkout');
         
-        // Fallback: Build summary from appointment data
+        // Fallback: Build summary from appointment data + state extras
         const serviceName = appointment?.servico?.nome || 'Serviço';
         const servicePrice = Number(appointment?.servico?.preco) || 0;
+        
+        const extraServicesTotal = stateExtraServices.reduce((sum: number, s: any) => sum + s.preco, 0);
+        const productsTotal = stateProductCart.reduce((sum: number, p: any) => sum + (p.preco * p.quantidade), 0);
+        const totalFallback = servicePrice + extraServicesTotal + productsTotal;
 
         setResumo({
           original_service: {
             nome: serviceName,
             preco: servicePrice
           },
-          subtotal: servicePrice,
+          extra_services: stateExtraServices.map((s: any) => ({
+            nome: s.nome,
+            preco: s.preco
+          })),
+          products: stateProductCart.map((p: any) => ({
+            nome: p.nome,
+            preco: p.preco,
+            quantidade: p.quantidade
+          })),
+          subtotal: totalFallback,
           discount: 0,
-          total: servicePrice
+          total: totalFallback
         });
       } else {
         console.log('✅ Checkout iniciado:', checkoutData);
@@ -163,7 +202,7 @@ const TotemCheckout: React.FC = () => {
 
         if (vendaError) throw vendaError;
 
-        // Create vendas_itens record
+        // Create vendas_itens record para serviço principal
         await supabase
           .from('vendas_itens')
           .insert({
@@ -173,32 +212,63 @@ const TotemCheckout: React.FC = () => {
             nome: resumo.original_service.nome,
             preco_unitario: resumo.original_service.preco,
             quantidade: 1,
-            subtotal: resumo.original_service.preco
+            subtotal: resumo.original_service.preco,
+            barbeiro_id: appointment?.barbeiro_id
           });
 
-        // Navegar para pagamento
+        // Criar itens para serviços extras
+        if (resumo.extra_services && resumo.extra_services.length > 0) {
+          for (const extra of stateExtraServices) {
+            await supabase
+              .from('vendas_itens')
+              .insert({
+                venda_id: venda.id,
+                item_id: extra.id,
+                tipo: 'SERVICO_EXTRA',
+                nome: extra.nome,
+                preco_unitario: extra.preco,
+                quantidade: 1,
+                subtotal: extra.preco,
+                barbeiro_id: appointment?.barbeiro_id
+              });
+          }
+        }
+
+        // Criar itens para produtos
+        if (resumo.products && resumo.products.length > 0) {
+          for (const prod of stateProductCart) {
+            await supabase
+              .from('vendas_itens')
+              .insert({
+                venda_id: venda.id,
+                item_id: prod.id,
+                tipo: 'PRODUTO',
+                nome: prod.nome,
+                preco_unitario: prod.preco,
+                quantidade: prod.quantidade,
+                subtotal: prod.preco * prod.quantidade,
+                barbeiro_id: appointment?.barbeiro_id
+              });
+          }
+        }
+
+        // Navegar para pagamento - USAR /totem/payment-card que chama PayGo
+        const paymentState = {
+          venda_id: venda.id,
+          session_id: session.id,
+          appointment,
+          client,
+          total: totalComGorjeta,
+          tipAmount,
+          resumo,
+          extraServices: stateExtraServices,
+          selectedProducts: stateProductCart
+        };
+
         if (method === 'pix') {
-          navigate('/totem/payment-pix', {
-            state: {
-              venda: venda,
-              session,
-              appointment,
-              client,
-              total: totalComGorjeta,
-              tipAmount
-            }
-          });
+          navigate('/totem/payment-pix', { state: paymentState });
         } else {
-          navigate('/totem/card-type', {
-            state: {
-              venda: venda,
-              session,
-              appointment,
-              client,
-              total: totalComGorjeta,
-              tipAmount
-            }
-          });
+          navigate('/totem/payment-card', { state: paymentState });
         }
       } else {
         // Atualizar venda com gorjeta
@@ -207,41 +277,28 @@ const TotemCheckout: React.FC = () => {
             .from('vendas')
             .update({ 
               gorjeta: tipAmount,
-              total: totalComGorjeta
+              valor_total: totalComGorjeta
             })
             .eq('id', vendaId);
         }
 
-        // Buscar venda atualizada
-        const { data: vendaAtualizada } = await supabase
-          .from('vendas')
-          .select('*')
-          .eq('id', vendaId)
-          .single();
+        // Navegar para pagamento - USAR /totem/payment-card que chama PayGo
+        const paymentState = {
+          venda_id: vendaId,
+          session_id: session.id,
+          appointment,
+          client,
+          total: totalComGorjeta,
+          tipAmount,
+          resumo,
+          extraServices: stateExtraServices,
+          selectedProducts: stateProductCart
+        };
 
-        // Navegar para pagamento
         if (method === 'pix') {
-          navigate('/totem/payment-pix', {
-            state: {
-              venda: vendaAtualizada,
-              session,
-              appointment,
-              client,
-              total: totalComGorjeta,
-              tipAmount
-            }
-          });
+          navigate('/totem/payment-pix', { state: paymentState });
         } else {
-          navigate('/totem/card-type', {
-            state: {
-              venda: vendaAtualizada,
-              session,
-              appointment,
-              client,
-              total: totalComGorjeta,
-              tipAmount
-            }
-          });
+          navigate('/totem/payment-card', { state: paymentState });
         }
       }
     } catch (error) {

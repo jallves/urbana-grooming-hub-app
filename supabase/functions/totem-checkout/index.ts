@@ -12,11 +12,13 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, action, venda_id, session_id, payment_method, tipAmount } = await req.json()
+    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
       console.log('🛒 Iniciando checkout para agendamento:', agendamento_id)
+      console.log('📦 Extras recebidos:', extras?.length || 0)
+      console.log('📦 Produtos recebidos:', products?.length || 0)
 
       // Buscar agendamento em painel_agendamentos
       const { data: agendamento, error: agendError } = await supabase
@@ -108,55 +110,55 @@ Deno.serve(async (req) => {
         barbeiro_id: agendamento.barbeiro_id
       }]
 
-      // Buscar serviços extras
-      const { data: servicos_extras } = await supabase
-        .from('appointment_extra_services')
-        .select(`
-          service_id,
-          painel_servicos!inner (id, nome, preco)
-        `)
-        .eq('appointment_id', agendamento_id)
+      // Processar serviços extras passados via frontend (parâmetro extras)
+      if (extras && extras.length > 0) {
+        console.log('📦 Processando serviços extras do frontend:', extras.length)
+        for (const extra of extras) {
+          // Buscar dados do serviço
+          const { data: servicoExtra } = await supabase
+            .from('painel_servicos')
+            .select('id, nome, preco')
+            .eq('id', extra.id)
+            .single()
 
-      if (servicos_extras && servicos_extras.length > 0) {
-        console.log('📦 Serviços extras encontrados:', servicos_extras.length)
-        for (const extra of servicos_extras) {
-          const servico = extra.painel_servicos as any
-          itens.push({
-            venda_id: venda.id,
-            tipo: 'SERVICO_EXTRA',
-            item_id: extra.service_id,
-            nome: servico.nome,
-            quantidade: 1,
-            preco_unitario: servico.preco,
-            subtotal: servico.preco,
-            barbeiro_id: agendamento.barbeiro_id
-          })
+          if (servicoExtra) {
+            itens.push({
+              venda_id: venda.id,
+              tipo: 'SERVICO_EXTRA',
+              item_id: servicoExtra.id,
+              nome: servicoExtra.nome,
+              quantidade: 1,
+              preco_unitario: servicoExtra.preco,
+              subtotal: servicoExtra.preco,
+              barbeiro_id: agendamento.barbeiro_id
+            })
+          }
         }
       }
 
-      // Adicionar extras fornecidos (produtos)
-      if (extras && extras.length > 0) {
-        for (const extra of extras) {
-          if (extra.tipo === 'produto') {
-            const { data: produto } = await supabase
-              .from('painel_produtos')
-              .select('nome, preco')
-              .eq('id', extra.id)
-              .single()
+      // Processar produtos passados via frontend (parâmetro products)
+      if (products && products.length > 0) {
+        console.log('📦 Processando produtos do frontend:', products.length)
+        for (const product of products) {
+          // Buscar dados do produto
+          const { data: produto } = await supabase
+            .from('painel_produtos')
+            .select('id, nome, preco')
+            .eq('id', product.id)
+            .single()
 
-            if (produto) {
-              const qty = extra.quantidade || 1
-              itens.push({
-                venda_id: venda.id,
-                tipo: 'PRODUTO',
-                item_id: extra.id,
-                nome: produto.nome,
-                quantidade: qty,
-                preco_unitario: produto.preco,
-                subtotal: produto.preco * qty,
-                barbeiro_id: agendamento.barbeiro_id
-              })
-            }
+          if (produto) {
+            const qty = product.quantidade || 1
+            itens.push({
+              venda_id: venda.id,
+              tipo: 'PRODUTO',
+              item_id: produto.id,
+              nome: produto.nome,
+              quantidade: qty,
+              preco_unitario: produto.preco,
+              subtotal: produto.preco * qty,
+              barbeiro_id: agendamento.barbeiro_id
+            })
           }
         }
       }
