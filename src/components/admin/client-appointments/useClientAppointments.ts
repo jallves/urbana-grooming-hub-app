@@ -336,8 +336,8 @@ export const useClientAppointments = () => {
         .select(`
           *,
           painel_clientes(nome),
-          totem_sessions(check_in_time, check_out_time, status),
-          vendas(id, status)
+          vendas(id, status),
+          appointment_totem_sessions(status, totem_session_id)
         `)
         .eq('id', appointmentId)
         .single();
@@ -348,10 +348,13 @@ export const useClientAppointments = () => {
       console.log('📋 Validando exclusão de agendamento:', {
         id: appointmentId,
         status: appointment.status,
-        vendas: appointment.vendas
+        vendas: appointment.vendas,
+        totem_sessions: appointment.appointment_totem_sessions
       });
 
-      const hasCheckIn = false; // totem_sessions relation removed
+      // Verificar se tem sessão de totem (check-in feito)
+      const hasCheckIn = Array.isArray(appointment.appointment_totem_sessions) && 
+                         appointment.appointment_totem_sessions.length > 0;
       const hasSales = Array.isArray(appointment.vendas) && appointment.vendas.length > 0;
       const statusUpper = appointment.status?.toUpperCase() || '';
       const isFinalized = statusUpper === 'FINALIZADO' || statusUpper === 'CONCLUIDO';
@@ -361,7 +364,7 @@ export const useClientAppointments = () => {
       if (hasCheckIn) {
         console.error('❌ BLOQUEIO: Agendamento possui check-in', {
           appointmentId,
-          totem_sessions: appointment.totem_sessions
+          appointment_totem_sessions: appointment.appointment_totem_sessions
         });
         toast.error('Operação bloqueada', {
           description: 'Não é possível excluir agendamento com check-in realizado'
