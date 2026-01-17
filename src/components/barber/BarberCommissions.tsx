@@ -81,7 +81,8 @@ const BarberCommissionsComponent: React.FC = () => {
     pending: 0,
     paid: 0,
     serviceCommissions: 0,
-    productCommissions: 0
+    productCommissions: 0,
+    tipCommissions: 0
   };
 
   const getStatusBadge = (status: string) => {
@@ -134,7 +135,7 @@ const BarberCommissionsComponent: React.FC = () => {
       </div>
 
       {/* Cards de Estatísticas - Mobile First Responsive */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
         {[
           {
             label: "Total",
@@ -171,6 +172,13 @@ const BarberCommissionsComponent: React.FC = () => {
             IconComponent: Package,
             variant: 'default' as const,
           },
+          {
+            label: "Gorjetas",
+            value: `R$ ${(stats.tipCommissions || 0).toFixed(2)}`,
+            subtitle: "100% suas",
+            IconComponent: Heart,
+            variant: 'default' as const,
+          },
         ].map((stat, i) => {
           const IconComp = stat.IconComponent;
           return (
@@ -186,7 +194,8 @@ const BarberCommissionsComponent: React.FC = () => {
                     stat.variant === 'warning' && 'text-yellow-400',
                     stat.variant === 'success' && 'text-green-400',
                     stat.variant === 'info' && 'text-blue-400',
-                    stat.variant === 'default' && 'text-purple-400'
+                    stat.variant === 'default' && 'text-purple-400',
+                    stat.label === 'Gorjetas' && 'text-pink-400'
                   )} />
                 </div>
               </PainelBarbeiroCardHeader>
