@@ -98,9 +98,14 @@ export const FinancialTransactionsList: React.FC = () => {
                     {transaction.description}
                   </p>
                   <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-200">
-                    <span className="text-xs text-gray-600">
-                      {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="text-xs text-gray-600">
+                        {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                      </span>
+                      <span className="text-xs text-gray-500">
+                        {transaction.created_at && format(parseISO(transaction.created_at), 'HH:mm', { locale: ptBR })}
+                      </span>
+                    </div>
                     <span className={`text-sm font-bold ${
                       transaction.transaction_type === 'revenue' 
                         ? 'text-green-600' 
@@ -110,7 +115,7 @@ export const FinancialTransactionsList: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1 font-mono">
-                    #{transaction.id.substring(0, 8)}
+                    ID: {transaction.id.substring(0, 8)}
                   </p>
                 </div>
               ))}
@@ -122,9 +127,9 @@ export const FinancialTransactionsList: React.FC = () => {
                 <TableHeader>
                   <TableRow>
                     <TableHead className="whitespace-nowrap">ID</TableHead>
+                    <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
                     <TableHead className="whitespace-nowrap">Tipo</TableHead>
                     <TableHead className="whitespace-nowrap">Descrição</TableHead>
-                    <TableHead className="whitespace-nowrap">Data</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
                     <TableHead className="text-center whitespace-nowrap">Status</TableHead>
                   </TableRow>
@@ -132,8 +137,18 @@ export const FinancialTransactionsList: React.FC = () => {
                 <TableBody>
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
-                      <TableCell className="font-mono text-xs">
+                      <TableCell className="font-mono text-xs text-gray-600">
                         {transaction.id.substring(0, 8)}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        <div className="flex flex-col">
+                          <span className="font-medium">
+                            {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {transaction.created_at && format(parseISO(transaction.created_at), 'HH:mm:ss', { locale: ptBR })}
+                          </span>
+                        </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
@@ -143,9 +158,6 @@ export const FinancialTransactionsList: React.FC = () => {
                       </TableCell>
                       <TableCell className="max-w-xs truncate text-sm">
                         {transaction.description}
-                      </TableCell>
-                      <TableCell className="text-sm">
-                        {transaction.transaction_date && format(parseISO(transaction.transaction_date + 'T00:00:00'), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell className="text-right font-semibold">
                         <span className={
