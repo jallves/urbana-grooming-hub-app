@@ -46,7 +46,7 @@ Deno.serve(async (req) => {
         .eq('id', agendamento_id)
         .single()
 
-      let venda
+      let venda: any = null
       let vendaId = vendaExistente?.venda_id
 
       if (vendaId) {
@@ -57,15 +57,13 @@ Deno.serve(async (req) => {
           .eq('id', vendaId)
           .single()
 
+        // Se já foi paga, não mexe
         if (vendaData && vendaData.status !== 'pago') {
           venda = vendaData
           console.log('✅ Venda existente encontrada:', venda.id)
-
-          // Limpar itens para recalcular
-          await supabase
-            .from('vendas_itens')
-            .delete()
-            .eq('venda_id', venda.id)
+        } else if (vendaData) {
+          console.log('⚠️ Venda já paga encontrada, não será alterada:', vendaData.id)
+          venda = vendaData
         }
       }
 
@@ -98,8 +96,33 @@ Deno.serve(async (req) => {
           .eq('id', agendamento_id)
       }
 
-      // Preparar itens - Serviço principal
-      const itens = [{
+      // Se a venda já estiver paga, só retorna (idempotente)
+      if (venda?.status === 'pago') {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            venda_id: venda.id,
+            session_id,
+            resumo: null,
+            message: 'Venda já paga - start idempotente'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        )
+      }
+
+      // Buscar itens atuais (para reconciliar sem “delete-all”)
+      const { data: existingItems } = await supabase
+        .from('vendas_itens')
+        .select('*')
+        .eq('venda_id', venda.id)
+
+      const existingByKey = new Map<string, any>()
+      for (const it of existingItems || []) {
+        existingByKey.set(`${it.tipo}:${it.item_id}`, it)
+      }
+
+      // Preparar itens desejados - Serviço principal
+      const desired: any[] = [{
         venda_id: venda.id,
         tipo: 'SERVICO',
         item_id: agendamento.servico_id,
@@ -107,14 +130,13 @@ Deno.serve(async (req) => {
         quantidade: 1,
         preco_unitario: agendamento.servico.preco,
         subtotal: agendamento.servico.preco,
-        barbeiro_id: agendamento.barbeiro_id
+        barbeiro_id: agendamento.barbeiro_id,
       }]
 
-      // Processar serviços extras passados via frontend (parâmetro extras)
+      // Serviços extras
       if (extras && extras.length > 0) {
         console.log('📦 Processando serviços extras do frontend:', extras.length)
         for (const extra of extras) {
-          // Buscar dados do serviço
           const { data: servicoExtra } = await supabase
             .from('painel_servicos')
             .select('id, nome, preco')
@@ -122,7 +144,7 @@ Deno.serve(async (req) => {
             .single()
 
           if (servicoExtra) {
-            itens.push({
+            desired.push({
               venda_id: venda.id,
               tipo: 'SERVICO_EXTRA',
               item_id: servicoExtra.id,
@@ -130,17 +152,16 @@ Deno.serve(async (req) => {
               quantidade: 1,
               preco_unitario: servicoExtra.preco,
               subtotal: servicoExtra.preco,
-              barbeiro_id: agendamento.barbeiro_id
+              barbeiro_id: agendamento.barbeiro_id,
             })
           }
         }
       }
 
-      // Processar produtos passados via frontend (parâmetro products)
+      // Produtos
       if (products && products.length > 0) {
         console.log('📦 Processando produtos do frontend:', products.length)
         for (const product of products) {
-          // Buscar dados do produto
           const { data: produto } = await supabase
             .from('painel_produtos')
             .select('id, nome, preco')
@@ -149,7 +170,7 @@ Deno.serve(async (req) => {
 
           if (produto) {
             const qty = product.quantidade || 1
-            itens.push({
+            desired.push({
               venda_id: venda.id,
               tipo: 'PRODUTO',
               item_id: produto.id,
@@ -157,24 +178,48 @@ Deno.serve(async (req) => {
               quantidade: qty,
               preco_unitario: produto.preco,
               subtotal: produto.preco * qty,
-              barbeiro_id: agendamento.barbeiro_id
+              barbeiro_id: agendamento.barbeiro_id,
             })
           }
         }
       }
 
-      // Inserir itens
-      const { error: itensError } = await supabase
-        .from('vendas_itens')
-        .insert(itens)
+      // 1) Upsert/update itens desejados
+      for (const item of desired) {
+        const key = `${item.tipo}:${item.item_id}`
+        const existing = existingByKey.get(key)
 
-      if (itensError) {
-        console.error('❌ Erro ao inserir itens:', itensError)
-        throw new Error('Erro ao adicionar itens')
+        if (existing?.id) {
+          await supabase
+            .from('vendas_itens')
+            .update({
+              nome: item.nome,
+              quantidade: item.quantidade,
+              preco_unitario: item.preco_unitario,
+              subtotal: item.subtotal,
+              barbeiro_id: item.barbeiro_id,
+            })
+            .eq('id', existing.id)
+        } else {
+          await supabase.from('vendas_itens').insert(item)
+        }
+      }
+
+      // 2) Remover itens que não estão mais no carrinho (somente extras/produtos)
+      const desiredKeys = new Set(desired.map((d) => `${d.tipo}:${d.item_id}`))
+      const toDelete = (existingItems || [])
+        .filter((it: any) => (it.tipo === 'SERVICO_EXTRA' || it.tipo === 'PRODUTO'))
+        .filter((it: any) => !desiredKeys.has(`${it.tipo}:${it.item_id}`))
+
+      if (toDelete.length > 0) {
+        await supabase
+          .from('vendas_itens')
+          .delete()
+          .in('id', toDelete.map((d: any) => d.id))
       }
 
       // Calcular total
-      const total = itens.reduce((sum, item) => sum + Number(item.subtotal), 0)
+      const total = desired.reduce((sum, item) => sum + Number(item.subtotal), 0)
 
       // Atualizar venda com total
       await supabase
@@ -194,11 +239,11 @@ Deno.serve(async (req) => {
               nome: agendamento.servico.nome,
               preco: agendamento.servico.preco
             },
-            extra_services: itens.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => ({
+            extra_services: desired.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => ({
               nome: i.nome,
               preco: i.preco_unitario
             })),
-            products: itens.filter(i => i.tipo === 'PRODUTO').map(i => ({
+            products: desired.filter(i => i.tipo === 'PRODUTO').map(i => ({
               nome: i.nome,
               quantidade: i.quantidade,
               preco: i.preco_unitario
@@ -280,10 +325,95 @@ Deno.serve(async (req) => {
       console.log('✅ Agendamento encontrado:', agendamento.id, 'Status atual:', agendamento.status)
 
       // Buscar itens da venda
-      const { data: vendaItens } = await supabase
+      let { data: vendaItens } = await supabase
         .from('vendas_itens')
         .select('*')
         .eq('venda_id', venda_id)
+
+      // Fallback crítico: se a venda estiver sem itens, reconstruir (para não perder migração ERP)
+      if (!vendaItens || vendaItens.length === 0) {
+        console.log('⚠️ Venda sem itens - reconstruindo itens antes de migrar para ERP...')
+
+        const { data: servicoPrincipal, error: servicoError } = await supabase
+          .from('painel_servicos')
+          .select('id, nome, preco')
+          .eq('id', agendamento.servico_id)
+          .maybeSingle()
+
+        if (servicoError || !servicoPrincipal) {
+          console.error('❌ Não foi possível buscar serviço principal para reconstrução:', servicoError)
+        } else {
+          const rebuild: any[] = [{
+            venda_id,
+            tipo: 'SERVICO',
+            item_id: servicoPrincipal.id,
+            nome: servicoPrincipal.nome,
+            quantidade: 1,
+            preco_unitario: servicoPrincipal.preco,
+            subtotal: servicoPrincipal.preco,
+            barbeiro_id: agendamento.barbeiro_id,
+          }]
+
+          // Extras (snapshot do frontend, se vier)
+          if (extras && extras.length > 0) {
+            for (const extra of extras) {
+              const { data: servicoExtra } = await supabase
+                .from('painel_servicos')
+                .select('id, nome, preco')
+                .eq('id', extra.id)
+                .maybeSingle()
+
+              if (servicoExtra) {
+                rebuild.push({
+                  venda_id,
+                  tipo: 'SERVICO_EXTRA',
+                  item_id: servicoExtra.id,
+                  nome: servicoExtra.nome,
+                  quantidade: 1,
+                  preco_unitario: servicoExtra.preco,
+                  subtotal: servicoExtra.preco,
+                  barbeiro_id: agendamento.barbeiro_id,
+                })
+              }
+            }
+          }
+
+          // Produtos (snapshot do frontend, se vier)
+          if (products && products.length > 0) {
+            for (const product of products) {
+              const { data: produto } = await supabase
+                .from('painel_produtos')
+                .select('id, nome, preco')
+                .eq('id', product.id)
+                .maybeSingle()
+
+              if (produto) {
+                const qty = product.quantidade || 1
+                rebuild.push({
+                  venda_id,
+                  tipo: 'PRODUTO',
+                  item_id: produto.id,
+                  nome: produto.nome,
+                  quantidade: qty,
+                  preco_unitario: produto.preco,
+                  subtotal: produto.preco * qty,
+                  barbeiro_id: agendamento.barbeiro_id,
+                })
+              }
+            }
+          }
+
+          await supabase.from('vendas_itens').insert(rebuild)
+
+          // Refetch
+          const { data: refetched } = await supabase
+            .from('vendas_itens')
+            .select('*')
+            .eq('venda_id', venda_id)
+
+          vendaItens = refetched || []
+        }
+      }
 
       // Calcular total com gorjeta
       const subtotal = vendaItens?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0

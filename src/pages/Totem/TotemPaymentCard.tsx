@@ -152,7 +152,11 @@ const TotemPaymentCard: React.FC = () => {
             agendamento_id: appointment?.id,
             session_id: session_id,
             transaction_data: pendingTransactionData,
-            tipAmount: tipAmount
+            payment_method: paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO',
+            tipAmount: tipAmount,
+            // Snapshot de itens (fallback caso start falhe e a venda esteja sem itens)
+            extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+            products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
           }
         });
       }

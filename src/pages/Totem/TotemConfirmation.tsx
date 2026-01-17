@@ -90,18 +90,19 @@ const TotemConfirmation: React.FC = () => {
       console.log('📦 [TOTEM] Session ID retornada:', data.session_id);
       console.log('📊 [TOTEM] Dados completos:', data);
 
-      // Navegar para tela de upsell (adicionar extras/produtos)
-      navigate('/totem/upsell', {
+      // Após o check-in, ir DIRETO para o checkout.
+      // Check-in aqui é somente confirmação de chegada.
+      navigate('/totem/checkout', {
         state: {
           client,
           appointment,
-          session: { 
+          session: {
             id: data.session_id,
             appointment_id: appointment.id,
-            status: 'check_in'
-          }
+            status: 'check_in',
+          },
         },
-        replace: true
+        replace: true,
       });
     } catch (error: any) {
       console.error('❌ Erro inesperado no check-in:', error);
