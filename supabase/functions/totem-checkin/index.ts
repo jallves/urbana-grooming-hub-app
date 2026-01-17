@@ -158,26 +158,30 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Verificar se já existe sessão ativa
-    const { data: existingSession } = await supabase
-      .from('totem_sessions')
-      .select('*')
+    // Verificar se já existe sessão ativa para este agendamento via tabela intermediária
+    const { data: existingSessionLink } = await supabase
+      .from('appointment_totem_sessions')
+      .select('*, totem_session:totem_sessions(*)')
       .eq('appointment_id', agendamento_id)
-      .in('status', ['check_in', 'in_service', 'checkout'])
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
 
-    let session = existingSession
+    let session = existingSessionLink?.totem_session
 
     // Se não existe sessão ativa, criar nova
-    if (!existingSession) {
+    if (!session) {
+      // Gerar token único para a sessão
+      const token = crypto.randomUUID()
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
+      
+      // Criar sessão na tabela totem_sessions
       const { data: newSession, error: sessionError } = await supabase
         .from('totem_sessions')
         .insert({
-          appointment_id: agendamento_id,
-          status: 'check_in',
-          check_in_time: new Date().toISOString()
+          token: token,
+          expires_at: expiresAt,
+          is_valid: true
         })
         .select()
         .single()
@@ -187,10 +191,33 @@ Deno.serve(async (req) => {
         throw new Error('Erro ao criar sessão do totem')
       }
 
+      // Criar link na tabela intermediária
+      const { error: linkError } = await supabase
+        .from('appointment_totem_sessions')
+        .insert({
+          appointment_id: agendamento_id,
+          totem_session_id: newSession.id,
+          status: 'check_in'
+        })
+
+      if (linkError) {
+        console.error('Erro ao criar link da sessão:', linkError)
+        // Limpar sessão órfã
+        await supabase.from('totem_sessions').delete().eq('id', newSession.id)
+        throw new Error('Erro ao vincular sessão ao agendamento')
+      }
+
       session = newSession
-      console.log('Nova sessão criada:', session.id)
+      console.log('✅ Nova sessão criada:', session.id)
     } else {
-      console.log('Sessão existente encontrada:', session.id)
+      console.log('✅ Sessão existente encontrada:', session.id)
+      
+      // Atualizar status do link se necessário
+      await supabase
+        .from('appointment_totem_sessions')
+        .update({ status: 'check_in' })
+        .eq('appointment_id', agendamento_id)
+        .eq('totem_session_id', session.id)
     }
 
     // Publicar evento realtime
