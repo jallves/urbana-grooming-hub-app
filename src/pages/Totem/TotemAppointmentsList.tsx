@@ -8,13 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-
-// ============================================
-// 🚨 MODO HOMOLOGAÇÃO - BYPASS DE VALIDAÇÃO DE HORÁRIO
-// Para voltar ao normal: alterar para false
-// ============================================
-const HOMOLOGATION_MODE = true;
-// ============================================
+import { HOMOLOGATION_MODE } from '@/lib/utils/timeCalculations';
 
 interface Appointment {
   id: string;

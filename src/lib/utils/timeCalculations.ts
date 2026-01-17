@@ -4,21 +4,37 @@
  * REGRAS DO SISTEMA:
  * - Buffer de 10 minutos entre agendamentos
  * - Horário de funcionamento: 
- *   Segunda a Sábado: 08:00 às 20:00 (portas)
- *   Primeiro atendimento: 08:30 (tempo de preparação de 08:00-08:30)
+ *   Segunda a Sábado: 09:00 às 20:00
  *   Último atendimento: calculado dinamicamente baseado na duração do serviço
  *   Exemplo: serviço de 60min -> último slot 19:00, serviço de 30min -> último slot 19:30
- *   Domingo: 09:00 às 13:00
+ *   Domingo: 09:00 às 13:00 (quando habilitado)
  * - Slots de 30 minutos
+ * 
+ * MODO HOMOLOGAÇÃO:
+ * - Check-in liberado independente do horário do agendamento
+ * - Domingo habilitado para testes
+ * - Em produção: alterar HOMOLOGATION_MODE para false
  */
+
+// ============================================
+// 🚨 MODO HOMOLOGAÇÃO - CONFIGURAÇÃO GLOBAL
+// Para produção: alterar para false
+// ============================================
+export const HOMOLOGATION_MODE = true;
+// ============================================
 
 export const BUFFER_MINUTES = 10;
 export const SLOT_INTERVAL_MINUTES = 30;
-export const BUSINESS_START_HOUR = 8; // Barbearia abre às 08:00
-export const BUSINESS_START_MINUTE = 30; // Primeiro atendimento às 08:30
+export const BUSINESS_START_HOUR = 9; // Barbearia abre às 09:00
+export const BUSINESS_START_MINUTE = 0; // Primeiro atendimento às 09:00
 export const BUSINESS_END_HOUR = 20; // Barbearia fecha às 20:00
 export const SUNDAY_START_HOUR = 9; // Domingo inicia às 09:00
 export const SUNDAY_END_HOUR = 13; // Domingo termina às 13:00
+
+// Em homologação, domingo funciona igual aos outros dias
+export const getSundayHours = () => HOMOLOGATION_MODE 
+  ? { start: BUSINESS_START_HOUR, end: BUSINESS_END_HOUR }
+  : { start: SUNDAY_START_HOUR, end: SUNDAY_END_HOUR };
 
 /**
  * Converte string de hora para minutos totais desde meia-noite
@@ -100,15 +116,15 @@ export const hasTimeOverlap = (
 /**
  * Valida se um horário está dentro do expediente
  * Considera que o serviço precisa terminar antes do fechamento
- * REGRA: Primeiro atendimento às 08:30, fechamento às 20:00
+ * REGRA: Primeiro atendimento às 09:00, fechamento às 20:00
  * REGRA: O último slot depende da duração do serviço (serviço deve terminar até 20:00)
  */
 export const isWithinBusinessHours = (startTime: string, serviceDuration: number): boolean => {
   const startMinutes = timeToMinutes(startTime);
-  const businessStartMinutes = BUSINESS_START_HOUR * 60 + BUSINESS_START_MINUTE; // 08:30 = 510 min
+  const businessStartMinutes = BUSINESS_START_HOUR * 60 + BUSINESS_START_MINUTE; // 09:00 = 540 min
   const businessEndMinutes = BUSINESS_END_HOUR * 60; // 20:00 = 1200 min
   
-  // Verificar se o início é após o horário de abertura para atendimentos (08:30)
+  // Verificar se o início é após o horário de abertura para atendimentos (09:00)
   if (startMinutes < businessStartMinutes) {
     return false;
   }

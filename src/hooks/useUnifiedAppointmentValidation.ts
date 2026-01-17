@@ -8,7 +8,9 @@ import {
   BUSINESS_START_MINUTE,
   BUSINESS_END_HOUR,
   SUNDAY_START_HOUR,
-  SUNDAY_END_HOUR
+  SUNDAY_END_HOUR,
+  getSundayHours,
+  HOMOLOGATION_MODE
 } from '@/lib/utils/timeCalculations';
 
 
@@ -29,10 +31,11 @@ export interface TimeSlot {
  * 
  * REGRAS DE NEGÓCIO:
  * - Buffer de 10 minutos entre agendamentos
- * - Horário Segunda a Sábado: 08:30 às 20:00 (primeiro atendimento às 08:30)
- * - Horário Domingo: 09:00 às 13:00
+ * - Horário Segunda a Sábado: 09:00 às 20:00
+ * - Horário Domingo: 09:00 às 13:00 (em produção) / igual aos outros dias (em homologação)
  * - Slots de 30 minutos
  * - Serviço deve terminar antes do fechamento
+ * - HOMOLOGATION_MODE: Configurado em timeCalculations.ts
  */
 export const useUnifiedAppointmentValidation = () => {
   const [isValidating, setIsValidating] = useState(false);
@@ -91,6 +94,7 @@ export const useUnifiedAppointmentValidation = () => {
 
   /**
    * Valida horário de funcionamento considerando o dia da semana
+   * Em HOMOLOGATION_MODE, domingo funciona igual aos outros dias
    */
   const validateBusinessHours = useCallback((
     date: Date, 
@@ -101,22 +105,23 @@ export const useUnifiedAppointmentValidation = () => {
     const startMinutes = timeToMinutes(time);
     const endMinutes = startMinutes + serviceDuration;
     
-    // Domingo tem horário especial
+    // Domingo tem horário especial (exceto em homologação)
     if (dayOfWeek === 0) {
-      const sundayStart = SUNDAY_START_HOUR * 60;
-      const sundayEnd = SUNDAY_END_HOUR * 60;
+      const sundayHours = getSundayHours();
+      const sundayStart = sundayHours.start * 60;
+      const sundayEnd = sundayHours.end * 60;
       
       if (startMinutes < sundayStart || endMinutes > sundayEnd) {
         return {
           valid: false,
-          error: `Horário de domingo: ${SUNDAY_START_HOUR}:00 às ${SUNDAY_END_HOUR}:00`
+          error: `Horário de domingo: ${sundayHours.start}:00 às ${sundayHours.end}:00`
         };
       }
       return { valid: true };
     }
     
     // Segunda a Sábado
-    const businessStart = BUSINESS_START_HOUR * 60 + BUSINESS_START_MINUTE; // 08:30
+    const businessStart = BUSINESS_START_HOUR * 60 + BUSINESS_START_MINUTE; // 09:00
     const businessEnd = BUSINESS_END_HOUR * 60; // 20:00
     
     if (startMinutes < businessStart) {
