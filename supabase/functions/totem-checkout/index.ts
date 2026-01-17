@@ -233,48 +233,44 @@ Deno.serve(async (req) => {
       }
 
       // Verificar se já foi paga (idempotência)
-      if (venda.status === 'pago') {
-        console.log('⚠️ Venda já foi finalizada')
-        return new Response(
-          JSON.stringify({ success: true, message: 'Venda já foi finalizada', already_completed: true }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        )
+      const alreadyPaid = venda.status === 'pago'
+      if (alreadyPaid) {
+        console.log('⚠️ Venda já está paga - garantindo status do agendamento e ERP (idempotente)')
       }
 
+
       // Buscar agendamento vinculado (tentar por venda_id primeiro, depois por agendamento_id se fornecido)
-      let agendamento = null
-      
-      // Primeiro, tentar buscar por venda_id
+      let agendamento: any = null
+
+      // 1) Tentar buscar por venda_id
       const { data: agendamentoByVenda } = await supabase
         .from('painel_agendamentos')
         .select('*, barbeiro:painel_barbeiros(*)')
         .eq('venda_id', venda_id)
         .maybeSingle()
-      
+
       agendamento = agendamentoByVenda
-      
-      // Se não encontrou e temos agendamento_id no request, buscar diretamente
-      if (!agendamento) {
-        const requestBody = await req.clone().json()
-        if (requestBody.agendamento_id) {
-          const { data: agendamentoById } = await supabase
+
+      // 2) Se não encontrou, tentar pelo agendamento_id recebido no body
+      if (!agendamento && agendamento_id) {
+        const { data: agendamentoById } = await supabase
+          .from('painel_agendamentos')
+          .select('*, barbeiro:painel_barbeiros(*)')
+          .eq('id', agendamento_id)
+          .maybeSingle()
+
+        agendamento = agendamentoById
+
+        // Vincular venda ao agendamento se encontrou
+        if (agendamento) {
+          await supabase
             .from('painel_agendamentos')
-            .select('*, barbeiro:painel_barbeiros(*)')
-            .eq('id', requestBody.agendamento_id)
-            .maybeSingle()
-          
-          agendamento = agendamentoById
-          
-          // Vincular venda ao agendamento se encontrou
-          if (agendamento) {
-            await supabase
-              .from('painel_agendamentos')
-              .update({ venda_id: venda_id })
-              .eq('id', agendamento.id)
-            console.log('🔗 Venda vinculada ao agendamento:', agendamento.id)
-          }
+            .update({ venda_id: venda_id })
+            .eq('id', agendamento.id)
+          console.log('🔗 Venda vinculada ao agendamento:', agendamento.id)
         }
       }
+
 
       if (!agendamento) {
         console.error('❌ Agendamento não encontrado para venda:', venda_id)
@@ -296,17 +292,20 @@ Deno.serve(async (req) => {
 
       console.log('💰 Subtotal:', subtotal, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
 
-      // Atualizar venda para PAGA
-      await supabase
-        .from('vendas')
-        .update({
-          status: 'pago',
-          valor_total: totalFinal,
-          gorjeta: gorjeta,
-          forma_pagamento: payment_method || 'CARTAO',
-          updated_at: new Date().toISOString()
-        })
-        .eq('id', venda_id)
+      // Atualizar venda para PAGA (somente se ainda não estiver paga)
+      if (!alreadyPaid) {
+        await supabase
+          .from('vendas')
+          .update({
+            status: 'pago',
+            valor_total: totalFinal,
+            gorjeta: gorjeta,
+            forma_pagamento: payment_method || 'CARTAO',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', venda_id)
+      }
+
 
       // Atualizar agendamento para CONCLUÍDO
       await supabase
@@ -319,57 +318,45 @@ Deno.serve(async (req) => {
         .eq('id', agendamento.id)
 
       // ==================== INTEGRAÇÃO ERP ====================
-      // Verificar se já existem registros financeiros (idempotência)
-      const { data: existingRecords } = await supabase
-        .from('financial_records')
-        .select('id')
-        .eq('reference_id', venda_id)
-        .limit(1)
+      // Sempre invocar (idempotente) para garantir migração completa
+      console.log('💰 Garantindo registros financeiros (idempotente)...')
 
-      if (!existingRecords || existingRecords.length === 0) {
-        console.log('💰 Criando registros financeiros...')
+      // Preparar itens para ERP
+      const erpItems = (vendaItens || []).map((item: any) => ({
+        type: item.tipo === 'PRODUTO' ? 'product' : 'service',
+        id: item.item_id,
+        name: item.nome,
+        quantity: Number(item.quantidade || 1),
+        price: Number(item.preco_unitario || 0),
+        discount: 0,
+        isExtra: item.tipo === 'SERVICO_EXTRA',
+      }))
 
-        const barberName = agendamento.barbeiro?.nome || 'Barbeiro'
-
-        // Preparar itens para ERP
-        const erpItems = vendaItens?.map(item => ({
-          type: item.tipo === 'PRODUTO' ? 'product' : 'service',
-          id: item.item_id,
-          name: item.nome,
-          quantity: item.quantidade,
-          price: Number(item.preco_unitario),
-          discount: 0,
-          isExtra: item.tipo === 'SERVICO_EXTRA'
-        })) || []
-
-        // Chamar edge function de transação financeira
-        const { data: erpResult, error: erpError } = await supabase.functions.invoke(
-          'create-financial-transaction',
-          {
-            body: {
-              appointment_id: agendamento.id,
-              client_id: venda.cliente_id,
-              // IMPORTANT: financial_records.barber_id referencia painel_barbeiros.id
-              barber_id: agendamento.barbeiro_id,
-              reference_id: venda_id,
-              reference_type: 'totem_venda',
-              items: erpItems,
-              payment_method: payment_method || 'credit_card',
-              discount_amount: Number(venda.desconto) || 0,
-              notes: `Checkout Totem - Venda ${venda_id}`,
-              tip_amount: gorjeta
-            }
-          }
-        )
-
-        if (erpError) {
-          console.error('❌ Erro ao integrar com ERP:', erpError)
-        } else {
-          console.log('✅ ERP integrado com sucesso:', erpResult)
+      const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+        'create-financial-transaction',
+        {
+          body: {
+            appointment_id: agendamento.id,
+            client_id: venda.cliente_id,
+            // IMPORTANT: financial_records.barber_id referencia painel_barbeiros.id
+            barber_id: agendamento.barbeiro_id,
+            reference_id: venda_id,
+            reference_type: 'totem_venda',
+            items: erpItems,
+            payment_method: payment_method || 'credit_card',
+            discount_amount: Number(venda.desconto) || 0,
+            notes: `Checkout Totem - Venda ${venda_id}`,
+            tip_amount: gorjeta,
+          },
         }
+      )
+
+      if (erpError) {
+        console.error('❌ Erro ao integrar com ERP:', erpError)
       } else {
-        console.log('⚠️ Registros financeiros já existem - pulando')
+        console.log('✅ ERP integrado com sucesso:', erpResult)
       }
+
 
       // Atualizar sessão do totem se fornecida
       if (session_id) {

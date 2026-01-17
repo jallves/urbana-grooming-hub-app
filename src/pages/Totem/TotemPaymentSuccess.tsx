@@ -77,20 +77,25 @@ const TotemPaymentSuccess: React.FC = () => {
         return;
       }
 
-      // Montar lista completa de itens para o e-mail com tipo explícito
-      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
+      // Montar lista completa de itens para o e-mail com tipo explícito (formato “nota”)
+      const items: Array<{ name: string; quantity?: number; unitPrice?: number; price: number; type: 'service' | 'product' }> = [];
 
       // 1. Serviço principal
       if (resumo?.original_service) {
         items.push({
           name: resumo.original_service.nome,
+          quantity: 1,
+          unitPrice: resumo.original_service.preco,
           price: resumo.original_service.preco,
           type: 'service'
         });
       } else if (appointment?.servico) {
+        const p = appointment.servico.preco || 0;
         items.push({
           name: appointment.servico.nome,
-          price: appointment.servico.preco || 0,
+          quantity: 1,
+          unitPrice: p,
+          price: p,
           type: 'service'
         });
       }
@@ -98,19 +103,11 @@ const TotemPaymentSuccess: React.FC = () => {
       // 2. Serviços extras
       if (resumo?.extra_services && resumo.extra_services.length > 0) {
         resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
-          items.push({
-            name: service.nome,
-            price: service.preco,
-            type: 'service'
-          });
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
         });
       } else if (extraServices && extraServices.length > 0) {
         extraServices.forEach((service: ExtraService) => {
-          items.push({
-            name: service.nome,
-            price: service.preco,
-            type: 'service'
-          });
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
         });
       }
 
@@ -120,6 +117,7 @@ const TotemPaymentSuccess: React.FC = () => {
           items.push({
             name: product.nome,
             quantity: product.quantidade,
+            unitPrice: product.preco,
             price: product.preco * product.quantidade,
             type: 'product'
           });
@@ -153,7 +151,8 @@ const TotemPaymentSuccess: React.FC = () => {
         paymentMethod: paymentMethod || 'card',
         transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
         nsu: transactionData?.nsu,
-        barberName: appointment?.barbeiro?.nome
+        barberName: appointment?.barbeiro?.nome,
+        tipAmount: Number((location.state as any)?.tipAmount || 0),
       });
 
       if (result.success) {

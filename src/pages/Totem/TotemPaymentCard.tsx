@@ -52,32 +52,25 @@ const TotemPaymentCard: React.FC = () => {
     if (!client?.email) return false;
     
     try {
-      // Montar itens para o e-mail
-      const items: Array<{ name: string; quantity?: number; price: number; type: 'service' | 'product' }> = [];
+      // Montar itens para o e-mail (formato “nota”)
+      const items: Array<{ name: string; quantity?: number; unitPrice?: number; price: number; type: 'service' | 'product' }> = [];
 
       // Serviço principal
       if (resumo?.original_service) {
-        items.push({
-          name: resumo.original_service.nome,
-          price: resumo.original_service.preco,
-          type: 'service'
-        });
+        items.push({ name: resumo.original_service.nome, quantity: 1, unitPrice: resumo.original_service.preco, price: resumo.original_service.preco, type: 'service' });
       } else if (appointment?.servico) {
-        items.push({
-          name: appointment.servico.nome,
-          price: appointment.servico.preco || 0,
-          type: 'service'
-        });
+        const p = appointment.servico.preco || 0;
+        items.push({ name: appointment.servico.nome, quantity: 1, unitPrice: p, price: p, type: 'service' });
       }
 
       // Serviços extras
       if (resumo?.extra_services) {
         resumo.extra_services.forEach((service: { nome: string; preco: number }) => {
-          items.push({ name: service.nome, price: service.preco, type: 'service' });
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
         });
       } else if (extraServices?.length > 0) {
         extraServices.forEach((service: { nome: string; preco: number }) => {
-          items.push({ name: service.nome, price: service.preco, type: 'service' });
+          items.push({ name: service.nome, quantity: 1, unitPrice: service.preco, price: service.preco, type: 'service' });
         });
       }
 
@@ -87,6 +80,7 @@ const TotemPaymentCard: React.FC = () => {
           items.push({
             name: product.nome,
             quantity: product.quantidade,
+            unitPrice: product.preco,
             price: product.preco * product.quantidade,
             type: 'product'
           });
@@ -115,7 +109,8 @@ const TotemPaymentCard: React.FC = () => {
         paymentMethod: paymentTypeRef.current === 'credit' ? 'Crédito' : 'Débito',
         transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
         nsu: pendingTransactionData?.nsu,
-        barberName: appointment?.barbeiro?.nome
+        barberName: appointment?.barbeiro?.nome,
+        tipAmount: Number(tipAmount || 0),
       });
 
       return result.success;
@@ -154,6 +149,7 @@ const TotemPaymentCard: React.FC = () => {
           body: {
             action: 'finish',
             venda_id: venda_id,
+            agendamento_id: appointment?.id,
             session_id: session_id,
             transaction_data: pendingTransactionData,
             tipAmount: tipAmount

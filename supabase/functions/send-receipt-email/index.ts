@@ -26,6 +26,7 @@ interface ReceiptEmailRequest {
   transactionDate: string;
   nsu?: string;
   barberName?: string;
+  tipAmount?: number;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -59,7 +60,8 @@ const handler = async (req: Request): Promise<Response> => {
       paymentMethod,
       transactionDate,
       nsu,
-      barberName
+      barberName,
+      tipAmount
     } = body;
 
     if (!clientName || !clientEmail || !items || !total || !paymentMethod) {
@@ -99,22 +101,28 @@ const handler = async (req: Request): Promise<Response> => {
     
     console.log(`📧 Email: ${services.length} serviços, ${products.length} produtos`);
 
-    // Calcular subtotais
+    // Calcular subtotais (apenas dos itens, gorjeta é separada)
     const servicesSubtotal = services.reduce((sum, item) => sum + item.price, 0);
     const productsSubtotal = products.reduce((sum, item) => sum + item.price, 0);
+    const tipValue = Number(tipAmount || 0);
 
     // Gerar HTML dos serviços (formato mobile-first em lista)
-    const servicesHtml = services.map(item => `
+    const servicesHtml = services.map(item => {
+      const qty = item.quantity || 1;
+      const unitPrice = item.unitPrice ?? (item.price / qty);
+      const subtotal = item.price;
+      return `
       <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
         <div style="margin-bottom: 8px;">
           <span style="color: #333; font-weight: 600; font-size: 14px;">✂️ ${item.name}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #888; font-size: 13px;">1 un. × R$ ${item.price.toFixed(2).replace('.', ',')}</span>
-          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px; margin-left: 20px;">R$ ${item.price.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #888; font-size: 13px;">${qty} un. × R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
+          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px; margin-left: 20px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
         </div>
       </div>
-    `).join('');
+    `
+    }).join('');
 
     // Função para determinar emoji baseado no nome do produto
     const getProductEmoji = (productName: string): string => {
@@ -237,6 +245,16 @@ const handler = async (req: Request): Promise<Response> => {
                 <div style="display: flex; justify-content: space-between; padding: 12px 14px; background: #f0f0f0; border-radius: 6px; margin-top: 12px;">
                   <span style="color: #555; font-size: 13px; font-weight: 600;">Subtotal Produtos</span>
                   <span style="color: #333; font-size: 15px; font-weight: 700; margin-left: 20px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</span>
+                </div>
+              </div>
+              ` : ''}
+
+              <!-- GORJETA (se houver) -->
+              ${tipValue > 0 ? `
+              <div style="background: #fff; border: 1px solid #f3d7ac; border-radius: 10px; padding: 14px; margin-top: 16px;">
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                  <span style="color: #333; font-weight: 700; font-size: 14px;">💖 Gorjeta</span>
+                  <span style="color: #1a1a2e; font-weight: 800; font-size: 16px; margin-left: 20px;">R$ ${tipValue.toFixed(2).replace('.', ',')}</span>
                 </div>
               </div>
               ` : ''}
