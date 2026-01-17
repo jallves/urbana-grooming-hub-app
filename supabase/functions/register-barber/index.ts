@@ -50,7 +50,19 @@ Deno.serve(async (req) => {
     const existingUser = existingUsers?.users?.find(u => u.email === email.toLowerCase());
     
     if (existingUser) {
-      console.log('⚠️ Usuário já existe, atualizando staff_id...');
+      console.log('⚠️ Usuário já existe, atualizando senha e staff_id...');
+      
+      // Update password for existing user
+      const { error: updatePasswordError } = await supabaseAdmin.auth.admin.updateUserById(
+        existingUser.id,
+        { password: senha }
+      );
+      
+      if (updatePasswordError) {
+        console.error('❌ Erro ao atualizar senha:', updatePasswordError);
+      } else {
+        console.log('✅ Senha atualizada com sucesso');
+      }
       
       // Update painel_barbeiros with existing user's auth.uid
       const { error: updateError } = await supabaseAdmin
