@@ -57,7 +57,6 @@ const TotemCheckout: React.FC = () => {
   const [productCart, setProductCart] = useState<CheckoutProductCartItem[]>(location.state?.productCart || []);
   const [extrasModalOpen, setExtrasModalOpen] = useState(false);
 
-  const [resumo, setResumo] = useState<CheckoutSummary | null>(null);
   const [barber, setBarber] = useState<BarberInfo | null>(null);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
@@ -65,6 +64,42 @@ const TotemCheckout: React.FC = () => {
   const [tipAmount, setTipAmount] = useState<number>(0);
   const [tipInput, setTipInput] = useState<string>('0,00');
   const [vendaId, setVendaId] = useState<string | null>(null);
+
+  // ============================================================
+  // CÁLCULO AUTOMÁTICO EM TEMPO REAL (sem depender de rede)
+  // ============================================================
+  const originalService = useMemo(() => {
+    const nome = appointment?.servico?.nome || 'Serviço';
+    const preco = Number(appointment?.servico?.preco) || 0;
+    return { nome, preco };
+  }, [appointment?.servico?.nome, appointment?.servico?.preco]);
+
+  const extraServicesTotal = useMemo(
+    () => extraServices.reduce((sum, s) => sum + (Number(s.preco) || 0), 0),
+    [extraServices]
+  );
+
+  const productsTotal = useMemo(
+    () => productCart.reduce((sum, p) => sum + (Number(p.preco) || 0) * (p.quantidade || 1), 0),
+    [productCart]
+  );
+
+  const subtotal = useMemo(
+    () => originalService.preco + extraServicesTotal + productsTotal,
+    [originalService.preco, extraServicesTotal, productsTotal]
+  );
+
+  const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
+
+  // Resumo local sempre atualizado automaticamente
+  const resumo: CheckoutSummary = useMemo(() => ({
+    original_service: originalService,
+    extra_services: extraServices.map((s) => ({ nome: s.nome, preco: s.preco })),
+    products: productCart.map((p) => ({ nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
+    subtotal,
+    discount: 0,
+    total: subtotal,
+  }), [originalService, extraServices, productCart, subtotal]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -81,24 +116,6 @@ const TotemCheckout: React.FC = () => {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [appointment?.id, session?.id]);
-
-  const buildFallbackSummary = () => {
-    const serviceName = appointment?.servico?.nome || 'Serviço';
-    const servicePrice = Number(appointment?.servico?.preco) || 0;
-
-    const extraServicesTotal = extraServices.reduce((sum, s) => sum + (Number(s.preco) || 0), 0);
-    const productsTotal = productCart.reduce((sum, p) => sum + (Number(p.preco) || 0) * (p.quantidade || 0), 0);
-    const totalFallback = servicePrice + extraServicesTotal + productsTotal;
-
-    setResumo({
-      original_service: { nome: serviceName, preco: servicePrice },
-      extra_services: extraServices.map((s) => ({ nome: s.nome, preco: s.preco })),
-      products: productCart.map((p) => ({ nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
-      subtotal: totalFallback,
-      discount: 0,
-      total: totalFallback,
-    });
-  };
 
   const loadCheckout = async () => {
     setLoading(true);
@@ -148,15 +165,15 @@ const TotemCheckout: React.FC = () => {
       if (checkoutError) {
         console.error('Erro ao iniciar checkout:', checkoutError);
         toast.error('Erro ao iniciar checkout');
-        buildFallbackSummary();
+        // fallback: usa o cálculo local (resumo já é useMemo)
       } else {
         setVendaId(checkoutData.venda_id);
-        setResumo(checkoutData.resumo);
+        // Sincronizar estado local com dados do servidor se necessário
+        // (já estão no useMemo, mas garantir venda_id foi setado)
       }
     } catch (error) {
       console.error('Erro ao carregar checkout:', error);
       toast.error('Erro ao carregar checkout');
-      buildFallbackSummary();
     } finally {
       setLoading(false);
     }
@@ -170,15 +187,13 @@ const TotemCheckout: React.FC = () => {
     setTipAmount(amount);
   };
 
-  const totalComGorjeta = useMemo(() => (resumo?.total || 0) + tipAmount, [resumo?.total, tipAmount]);
-
   const syncItemsAndReloadSummary = async (nextExtras: CheckoutExtraService[], nextProducts: CheckoutProductCartItem[]) => {
+    // Atualiza estados locais IMEDIATAMENTE (total recalcula automático via useMemo)
     setExtraServices(nextExtras);
     setProductCart(nextProducts);
 
-    // Recalcula resumo e garante que os itens existam na venda (idempotente)
+    // Sincroniza com backend (idempotente) em background
     try {
-      setLoading(true);
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'start',
@@ -188,18 +203,12 @@ const TotemCheckout: React.FC = () => {
           products: nextProducts.map((p) => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
         },
       });
-      if (error) throw error;
-      setVendaId(data.venda_id);
-      setResumo(data.resumo);
+      if (!error && data?.venda_id) {
+        setVendaId(data.venda_id);
+      }
     } catch (e) {
       console.error('[TotemCheckout] Erro ao sincronizar itens:', e);
-      toast.error('Erro ao atualizar itens');
-      // fallback local
-      setExtraServices(nextExtras);
-      setProductCart(nextProducts);
-      buildFallbackSummary();
-    } finally {
-      setLoading(false);
+      // Não bloqueia UI - cálculo local já está correto
     }
   };
 
