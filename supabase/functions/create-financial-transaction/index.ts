@@ -135,6 +135,53 @@ async function ensureContasPagar(
   return data.id
 }
 
+async function ensureBarberCommission(
+  supabase: any,
+  params: {
+    barber_id: string
+    barber_name: string | null
+    appointment_id: string | null
+    venda_id: string | null
+    valor: number
+    commission_rate: number
+    status: string
+    tipo: string
+  }
+) {
+  // Estratégia idempotente (sem constraint no DB):
+  // considerar uma comissão "igual" quando bate (barber_id + venda_id + tipo + valor + appointment_id)
+  const { data: existing } = await supabase
+    .from('barber_commissions')
+    .select('id')
+    .eq('barber_id', params.barber_id)
+    .eq('venda_id', params.venda_id)
+    .eq('tipo', params.tipo)
+    .eq('valor', params.valor)
+    .eq('appointment_id', params.appointment_id)
+    .maybeSingle()
+
+  if (existing?.id) return existing.id
+
+  const { data, error } = await supabase
+    .from('barber_commissions')
+    .insert({
+      barber_id: params.barber_id,
+      barber_name: params.barber_name,
+      appointment_id: params.appointment_id,
+      venda_id: params.venda_id,
+      valor: params.valor,
+      amount: params.valor,
+      commission_rate: params.commission_rate,
+      status: params.status,
+      tipo: params.tipo,
+    })
+    .select('id')
+    .single()
+
+  if (error) throw error
+  return data.id
+}
+
 async function upsertFinancialRecord(
   supabase: any,
   payload: any,
@@ -266,18 +313,20 @@ Deno.serve(async (req) => {
         { reference_id, reference_type, sub_ref: subRef }
       )
 
-      if (!alreadyExisted && reference_id) {
-        await ensureContasReceber(supabase, {
-          descricao: description,
-          valor: net,
-          data_vencimento: transaction_date,
-          data_recebimento: transaction_date,
-          cliente_id: body.client_id || null,
-          status: 'recebido',
-          categoria: category,
-          observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-        })
-      }
+       // Sempre garantir contas_receber (idempotente por observacoes),
+       // mesmo quando o financial_record já existia (caso de migração parcial).
+       if (reference_id) {
+         await ensureContasReceber(supabase, {
+           descricao: description,
+           valor: net,
+           data_vencimento: transaction_date,
+           data_recebimento: transaction_date,
+           cliente_id: body.client_id || null,
+           status: 'recebido',
+           categoria: category,
+           observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+         })
+       }
 
       created.push({ kind: 'revenue', item_type: item.type, financial_record_id: financialId, amount: net, obs })
     }
@@ -329,31 +378,30 @@ Deno.serve(async (req) => {
           { reference_id, reference_type, sub_ref: subRef }
         )
 
-        if (!alreadyExisted) {
-          // Barber commissions (schema real): usa "valor" obrigatória
-          await supabase.from('barber_commissions').insert({
-            barber_id: body.barber_id,
-            barber_name: barberName,
-            appointment_id: body.appointment_id || null,
-            venda_id: reference_id,
-            valor: commissionAmount,
-            amount: commissionAmount,
-            commission_rate: serviceCommissionRate,
-            status: 'pending',
-            tipo: item.isExtra ? 'servico_extra' : 'servico',
-          })
+         if (commissionAmount > 0) {
+           // Sempre garantir replica no painel do barbeiro + contas a pagar (idempotentes)
+           await ensureBarberCommission(supabase, {
+             barber_id: body.barber_id,
+             barber_name: barberName,
+             appointment_id: body.appointment_id || null,
+             venda_id: reference_id,
+             valor: commissionAmount,
+             commission_rate: serviceCommissionRate,
+             status: 'pending',
+             tipo: item.isExtra ? 'servico_extra' : 'servico',
+           })
 
-          await ensureContasPagar(supabase, {
-            descricao,
-            valor: commissionAmount,
-            data_vencimento: transaction_date,
-            data_pagamento: null,
-            status: 'pendente',
-            categoria: 'staff_payments',
-            fornecedor: barberName,
-            observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-          })
-        }
+           await ensureContasPagar(supabase, {
+             descricao: description,
+             valor: commissionAmount,
+             data_vencimento: transaction_date,
+             data_pagamento: null,
+             status: 'pendente',
+             categoria: 'staff_payments',
+             fornecedor: barberName,
+             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+           })
+         }
 
         created.push({ kind: 'commission_service', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
       }
@@ -407,30 +455,29 @@ Deno.serve(async (req) => {
           { reference_id, reference_type, sub_ref: subRef }
         )
 
-        if (!alreadyExisted) {
-          await supabase.from('barber_commissions').insert({
-            barber_id: body.barber_id,
-            barber_name: barberName,
-            appointment_id: body.appointment_id || null,
-            venda_id: reference_id,
-            valor: commissionAmount,
-            amount: commissionAmount,
-            commission_rate: commissionRate,
-            status: 'pending',
-            tipo: 'produto',
-          })
+         if (commissionAmount > 0) {
+           await ensureBarberCommission(supabase, {
+             barber_id: body.barber_id,
+             barber_name: barberName,
+             appointment_id: body.appointment_id || null,
+             venda_id: reference_id,
+             valor: commissionAmount,
+             commission_rate: commissionRate,
+             status: 'pending',
+             tipo: 'produto',
+           })
 
-          await ensureContasPagar(supabase, {
-            descricao: description,
-            valor: commissionAmount,
-            data_vencimento: transaction_date,
-            data_pagamento: null,
-            status: 'pendente',
-            categoria: 'products',
-            fornecedor: barberName,
-            observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-          })
-        }
+           await ensureContasPagar(supabase, {
+             descricao: description,
+             valor: commissionAmount,
+             data_vencimento: transaction_date,
+             data_pagamento: null,
+             status: 'pendente',
+             categoria: 'products',
+             fornecedor: barberName,
+             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+           })
+         }
 
         created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
       }
@@ -460,18 +507,18 @@ Deno.serve(async (req) => {
         { reference_id, reference_type, sub_ref: tipRevenueSubRef }
       )
 
-      if (!tipRevenueExisted && reference_id) {
-        await ensureContasReceber(supabase, {
-          descricao: 'Gorjeta recebida',
-          valor: tip_amount,
-          data_vencimento: transaction_date,
-          data_recebimento: transaction_date,
-          cliente_id: body.client_id || null,
-          status: 'recebido',
-          categoria: 'tips',
-          observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
-        })
-      }
+       if (reference_id) {
+         await ensureContasReceber(supabase, {
+           descricao: 'Gorjeta recebida',
+           valor: tip_amount,
+           data_vencimento: transaction_date,
+           data_recebimento: transaction_date,
+           cliente_id: body.client_id || null,
+           status: 'recebido',
+           categoria: 'tips',
+           observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
+         })
+       }
 
       created.push({ kind: 'tip_revenue', financial_record_id: tipRevenueId, amount: tip_amount })
 
@@ -499,30 +546,28 @@ Deno.serve(async (req) => {
           { reference_id, reference_type, sub_ref: tipPayableSubRef }
         )
 
-        if (!tipPayableExisted) {
-          await supabase.from('barber_commissions').insert({
-            barber_id: body.barber_id,
-            barber_name: barberName,
-            appointment_id: body.appointment_id || null,
-            venda_id: reference_id,
-            valor: tip_amount,
-            amount: tip_amount,
-            commission_rate: 100,
-            status: 'pending',
-            tipo: 'gorjeta',
-          })
+         // Sempre garantir réplica no painel do barbeiro + contas a pagar (idempotentes)
+         await ensureBarberCommission(supabase, {
+           barber_id: body.barber_id,
+           barber_name: barberName,
+           appointment_id: body.appointment_id || null,
+           venda_id: reference_id,
+           valor: tip_amount,
+           commission_rate: 100,
+           status: 'pending',
+           tipo: 'gorjeta',
+         })
 
-          await ensureContasPagar(supabase, {
-            descricao: 'Gorjeta a pagar ao barbeiro',
-            valor: tip_amount,
-            data_vencimento: transaction_date,
-            data_pagamento: null,
-            status: 'pendente',
-            categoria: 'tips',
-            fornecedor: barberName,
-            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
-          })
-        }
+         await ensureContasPagar(supabase, {
+           descricao: 'Gorjeta a pagar ao barbeiro',
+           valor: tip_amount,
+           data_vencimento: transaction_date,
+           data_pagamento: null,
+           status: 'pendente',
+           categoria: 'tips',
+           fornecedor: barberName,
+           observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
+         })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })
       }
