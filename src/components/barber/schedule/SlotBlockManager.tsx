@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBarberData } from '@/hooks/barber/useBarberData';
-import { Button } from '@/components/ui/button';
+
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
@@ -35,6 +35,7 @@ interface WorkingHours {
 
 const SlotBlockManager: React.FC = () => {
   const { barberData } = useBarberData();
+  const [staffTableId, setStaffTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -44,15 +45,41 @@ const SlotBlockManager: React.FC = () => {
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
   const [isDayOff, setIsDayOff] = useState(false);
 
+  // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
+  useEffect(() => {
+    const resolveStaffId = async () => {
+      if (!barberData?.staff_id) {
+        setStaffTableId(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('staff_id', barberData.staff_id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[SlotBlockManager] Erro ao resolver staff.id:', error);
+        setStaffTableId(null);
+        return;
+      }
+
+      setStaffTableId(data?.id ?? null);
+    };
+
+    resolveStaffId();
+  }, [barberData?.staff_id]);
+
   // Buscar working_hours do barbeiro
   useEffect(() => {
     const fetchWorkingHours = async () => {
-      if (!barberData?.staff_id) return;
+      if (!staffTableId) return;
 
       const { data, error } = await supabase
         .from('working_hours')
         .select('day_of_week, start_time, end_time, is_active')
-        .eq('staff_id', barberData.staff_id);
+        .eq('staff_id', staffTableId);
 
       if (!error && data) {
         setWorkingHours(data);
@@ -60,7 +87,7 @@ const SlotBlockManager: React.FC = () => {
     };
 
     fetchWorkingHours();
-  }, [barberData?.staff_id]);
+  }, [staffTableId]);
 
   // Verificar se o dia selecionado é dia de trabalho
   useEffect(() => {
@@ -99,7 +126,7 @@ const SlotBlockManager: React.FC = () => {
 
   // Buscar bloqueios e agendamentos para a data selecionada
   const fetchData = useCallback(async () => {
-    if (!barberData?.staff_id || isDayOff) {
+    if (!staffTableId || isDayOff) {
       setBlockedSlots([]);
       setAppointments([]);
       return;
@@ -111,7 +138,7 @@ const SlotBlockManager: React.FC = () => {
       const { data: blocksData, error: blocksError } = await supabase
         .from('barber_availability')
         .select('*')
-        .eq('barber_id', barberData.staff_id)
+        .eq('barber_id', staffTableId)
         .eq('date', selectedDate);
 
       if (blocksError) throw blocksError;
@@ -144,7 +171,7 @@ const SlotBlockManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [barberData?.staff_id, selectedDate, isDayOff]);
+  }, [staffTableId, selectedDate, isDayOff]);
 
   useEffect(() => {
     fetchData();
@@ -152,7 +179,7 @@ const SlotBlockManager: React.FC = () => {
 
   // Realtime subscription para atualização automática
   useEffect(() => {
-    if (!barberData?.staff_id) return;
+    if (!staffTableId) return;
 
     const channel = supabase
       .channel('barber-availability-changes')
@@ -162,7 +189,7 @@ const SlotBlockManager: React.FC = () => {
           event: '*',
           schema: 'public',
           table: 'barber_availability',
-          filter: `barber_id=eq.${barberData.staff_id}`,
+          filter: `barber_id=eq.${staffTableId}`,
         },
         () => {
           fetchData();
@@ -173,7 +200,7 @@ const SlotBlockManager: React.FC = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [barberData?.staff_id, fetchData]);
+  }, [staffTableId, fetchData]);
   useEffect(() => {
     if (isDayOff) {
       setSlots([]);
@@ -227,7 +254,7 @@ const SlotBlockManager: React.FC = () => {
 
   // Bloquear/Desbloquear slot
   const toggleSlotBlock = async (slot: TimeSlot) => {
-    if (!barberData?.staff_id) return;
+    if (!staffTableId) return;
     if (slot.hasAppointment) {
       toast.error('Este horário possui um agendamento');
       return;
@@ -258,7 +285,7 @@ const SlotBlockManager: React.FC = () => {
         const { error } = await supabase
           .from('barber_availability')
           .insert({
-            barber_id: barberData.staff_id,
+            barber_id: staffTableId,
             date: selectedDate,
             start_time: `${slot.time}:00`,
             end_time: `${endTime}:00`,
@@ -337,7 +364,7 @@ const SlotBlockManager: React.FC = () => {
     }
   };
 
-  if (!barberData?.staff_id) {
+  if (!staffTableId) {
     return (
       <div className="text-center py-8 text-gray-400">
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />

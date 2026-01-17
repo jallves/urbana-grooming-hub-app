@@ -33,25 +33,52 @@ const DAYS_OF_WEEK = [
 
 const WorkingHoursManager: React.FC = () => {
   const { barberData } = useBarberData();
+  const [staffTableId, setStaffTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [workingHours, setWorkingHours] = useState<WorkingHour[]>([]);
 
+  // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
   useEffect(() => {
-    if (barberData?.staff_id) {
-      fetchWorkingHours();
-    }
+    const resolveStaffId = async () => {
+      if (!barberData?.staff_id) {
+        setStaffTableId(null);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('staff_id', barberData.staff_id)
+        .maybeSingle();
+
+      if (error) {
+        console.error('[WorkingHoursManager] Erro ao resolver staff.id:', error);
+        setStaffTableId(null);
+        return;
+      }
+
+      setStaffTableId(data?.id ?? null);
+    };
+
+    resolveStaffId();
   }, [barberData?.staff_id]);
 
+  useEffect(() => {
+    if (staffTableId) {
+      fetchWorkingHours();
+    }
+  }, [staffTableId]);
+
   const fetchWorkingHours = async () => {
-    if (!barberData?.staff_id) return;
+    if (!staffTableId) return;
 
     try {
       setLoading(true);
       const { data, error } = await supabase
         .from('working_hours')
         .select('*')
-        .eq('staff_id', barberData.staff_id)
+        .eq('staff_id', staffTableId)
         .order('day_of_week');
 
       if (error) throw error;
@@ -104,7 +131,7 @@ const WorkingHoursManager: React.FC = () => {
   };
 
   const handleSave = async () => {
-    if (!barberData?.staff_id) {
+    if (!staffTableId) {
       toast.error('Dados do barbeiro não encontrados');
       return;
     }
@@ -114,7 +141,7 @@ const WorkingHoursManager: React.FC = () => {
       await supabase
         .from('working_hours')
         .delete()
-        .eq('staff_id', barberData.staff_id);
+        .eq('staff_id', staffTableId);
 
       const activeHours = workingHours.filter(h => h.is_active);
       
@@ -129,7 +156,7 @@ const WorkingHoursManager: React.FC = () => {
         .from('working_hours')
         .insert(
           activeHours.map(hour => ({
-            staff_id: barberData.staff_id,
+            staff_id: staffTableId,
             day_of_week: hour.day_of_week,
             start_time: hour.start_time,
             end_time: hour.end_time,
