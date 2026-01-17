@@ -24,13 +24,57 @@ const ClientAppointmentDashboard: React.FC = () => {
     handleUpdateAppointment,
   } = useClientAppointments();
 
+  // Função para calcular status real baseado em appointment_totem_sessions e vendas
+  const getActualStatus = useCallback((appointment: any): string => {
+    const statusFromDB = appointment.status?.toLowerCase() || '';
+    
+    // PRIORIDADE 1: Status finais do banco (ausente, cancelado, concluido)
+    if (statusFromDB === 'ausente' || statusFromDB === 'cancelado' || statusFromDB === 'concluido') {
+      return statusFromDB;
+    }
+    
+    // PRIORIDADE 2: Venda paga = concluído
+    const hasPaidSale = appointment.vendas && 
+      Array.isArray(appointment.vendas) &&
+      appointment.vendas.some((v: any) => v.status === 'pago');
+    
+    if (hasPaidSale) {
+      return 'concluido';
+    }
+    
+    // PRIORIDADE 3: Status baseado em appointment_totem_sessions
+    const sessions = appointment.appointment_totem_sessions;
+    const hasCheckIn = sessions && 
+      Array.isArray(sessions) &&
+      sessions.length > 0;
+    
+    const hasCheckOut = hasCheckIn && 
+      sessions.some((s: any) => s.status === 'completed' || s.status === 'checkout_completed');
+    
+    // Determinar status automático
+    if (!hasCheckIn) {
+      return 'agendado'; // Check-in Pendente
+    } else if (hasCheckIn && !hasCheckOut) {
+      return 'check_in_finalizado'; // Checkout Pendente
+    } else {
+      return 'concluido'; // Concluído
+    }
+  }, []);
+
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
-      if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
+      const actualStatus = getActualStatus(appointment);
+      
+      // Filtrar por status
+      if (statusFilter !== 'all' && actualStatus !== statusFilter) {
+        return false;
+      }
+      
+      // Filtrar por busca
       const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
       return clientName.includes(searchQuery.toLowerCase());
     });
-  }, [appointments, statusFilter, searchQuery]);
+  }, [appointments, statusFilter, searchQuery, getActualStatus]);
 
   const handleEditAppointment = useCallback((appointmentId: string) => {
     setSelectedAppointment(appointmentId);
