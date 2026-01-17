@@ -308,67 +308,61 @@ const TotemPaymentCard: React.FC = () => {
     console.log('💳 [CARD] Tipo:', type);
     console.log('💳 [CARD] Venda ID:', venda_id);
     console.log('💳 [CARD] Total:', total);
-    console.log('💳 [CARD] TEF disponível:', isAndroidAvailable && isPinpadConnected);
+    console.log('💳 [CARD] TEF (state):', { isAndroidAvailable, isPinpadConnected });
     console.log('💳 [CARD] ═══════════════════════════════════════');
+
+    // Evitar duplo clique / reentrada
+    if (processing || paymentStarted) return;
 
     setPaymentType(type);
     setError(null);
     finalizingRef.current = false;
 
-    // PayGo REAL: se não estiver no Totem Android, não simular
-    if (!isAndroidAvailable) {
+    // IMPORTANTÍSSIMO: não confiar só no state do hook (pode estar atrasado)
+    // Checar diretamente o objeto injetado pelo WebView.
+    const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
+
+    if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
-        description: 'O pagamento com cartão funciona apenas no Totem Android (PayGo).'
+        description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
       });
       return;
     }
 
-    // Tentar revalidar conexão do pinpad antes de iniciar
-    if (!isPinpadConnected) {
-      const status = verificarConexao();
-      const connected = !!status?.conectado;
-      if (!connected) {
-        toast.error('Pinpad não conectado', {
-          description: 'Verifique a conexão da maquininha e tente novamente.'
-        });
-        return;
-      }
+    // Revalidar pinpad antes de iniciar
+    const status = verificarConexao();
+    const connected = !!status?.conectado;
+
+    if (!connected) {
+      toast.error('Pinpad não conectado', {
+        description: 'Verifique a conexão da maquininha e tente novamente.'
+      });
+      return;
     }
 
     setProcessing(true);
     setPaymentStarted(true);
 
     try {
-      const { data: payment, error: paymentError } = await supabase
-        .from('totem_payments')
-        .insert({
-          session_id: session_id,
-          payment_method: type,
-          amount: total,
-          status: 'processing',
-          transaction_id: `CARD${Date.now()}`
-        })
-        .select()
-        .single();
-
-      if (paymentError) throw paymentError;
-
-      console.log('✅ [CARD] Registro criado:', payment.id);
+      // Não bloquear a chamada PayGo por registro em tabela (isso estava impedindo o pagamento)
+      // A ordemId precisa ser estável para a transação; usar venda_id.
+      const ordemId = (venda_id as string) || `CARD_${Date.now()}`;
 
       const success = await iniciarPagamentoTEF({
-        ordemId: payment.id,
+        ordemId,
         valor: total,
         tipo: type,
         parcelas: 1
       });
 
       if (!success) {
-        toast.error('Erro ao iniciar pagamento');
+        toast.error('Erro ao iniciar pagamento', {
+          description: 'A bridge TEF retornou falha ao iniciar a transação.'
+        });
         setProcessing(false);
         setPaymentType(null);
         setPaymentStarted(false);
       }
-
     } catch (error) {
       console.error('❌ Erro no pagamento:', error);
       toast.error('Erro no pagamento');
