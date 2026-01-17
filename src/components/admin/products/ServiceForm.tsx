@@ -238,7 +238,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-md bg-background border border-border shadow-xl">
+      <DialogContent className="max-w-md !bg-card bg-opacity-100 border border-border shadow-2xl backdrop-blur-none" style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}>
         <DialogHeader>
           <DialogTitle className="text-foreground">
             {serviceId ? 'Editar Serviço' : 'Novo Serviço'}
