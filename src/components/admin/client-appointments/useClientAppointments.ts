@@ -64,10 +64,12 @@ export const useClientAppointments = () => {
   const [isLoading, setIsLoading] = useState(true);
   const { completing, completeAppointment } = useAppointmentCompletion();
 
-  // Função para buscar agendamentos
+  // Função para buscar agendamentos COM appointment_totem_sessions (crítico para status automático)
   const fetchAppointments = useCallback(async () => {
     setIsLoading(true);
     try {
+      console.log('🔄 [ADMIN] Buscando agendamentos com totem_sessions...');
+      
       const { data, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -75,12 +77,27 @@ export const useClientAppointments = () => {
           painel_clientes(nome, email, whatsapp),
           painel_barbeiros(nome, email, telefone, image_url, specialties, experience, commission_rate, is_active, role, staff_id),
           painel_servicos(nome, preco, duracao),
-          vendas(id, status)
+          vendas(id, status),
+          appointment_totem_sessions(
+            id,
+            totem_session_id,
+            status,
+            created_at,
+            totem_sessions(id, created_at, is_valid)
+          )
         `)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
 
       if (error) throw error;
+
+      console.log(`✅ [ADMIN] ${data?.length || 0} agendamentos carregados`);
+      
+      // Log para debug de status
+      data?.slice(0, 3).forEach(a => {
+        const sessions = (a as any).appointment_totem_sessions;
+        console.log(`📋 [DEBUG] ${a.id}: status=${a.status}, sessions=${sessions?.length || 0}, venda_paga=${(a as any).vendas?.some((v: any) => v.status === 'pago')}`);
+      });
 
       setAppointments((data || []) as unknown as PainelAgendamento[]);
     } catch (error) {
@@ -225,10 +242,67 @@ export const useClientAppointments = () => {
       )
       .subscribe();
 
+    // Canal terciário: escutar appointment_totem_sessions (check-in/checkout em tempo real)
+    const totemSessionsChannel = supabase
+      .channel('admin-totem-sessions')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointment_totem_sessions'
+        },
+        (payload) => {
+          const appointmentId = (payload.new as any)?.appointment_id;
+          const sessionStatus = (payload.new as any)?.status;
+          
+          console.log('✅ [ADMIN REALTIME] Check-in detectado:', { appointmentId, sessionStatus });
+          
+          toast.info('Check-in realizado!', {
+            description: 'Cliente chegou na barbearia'
+          });
+          
+          // Refetch para atualizar status visual
+          fetchAppointments();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'appointment_totem_sessions'
+        },
+        (payload) => {
+          const appointmentId = (payload.new as any)?.appointment_id;
+          const oldSessionStatus = (payload.old as any)?.status;
+          const newSessionStatus = (payload.new as any)?.status;
+          
+          console.log('🔄 [ADMIN REALTIME] Sessão totem atualizada:', { 
+            appointmentId, 
+            oldSessionStatus, 
+            newSessionStatus 
+          });
+          
+          // Detectar checkout
+          if (newSessionStatus === 'completed' || newSessionStatus === 'checkout_completed') {
+            console.log('🎉 [ADMIN REALTIME] Checkout detectado via totem_sessions');
+            toast.success('Checkout finalizado!', {
+              description: 'Atendimento concluído com sucesso'
+            });
+          }
+          
+          // Refetch para atualizar status visual
+          fetchAppointments();
+        }
+      )
+      .subscribe();
+
     return () => {
       console.log('🔴 [Admin Realtime] Removendo listeners');
       supabase.removeChannel(appointmentsChannel);
       supabase.removeChannel(salesChannel);
+      supabase.removeChannel(totemSessionsChannel);
     };
   }, [fetchAppointments]);
 
@@ -244,18 +318,50 @@ export const useClientAppointments = () => {
         return;
       }
 
-      const hasCheckIn = appointment.totem_sessions?.some((s: any) => s.check_in_time);
-      const hasCheckOut = appointment.totem_sessions?.some((s: any) => s.check_out_time);
+      // Usar appointment_totem_sessions (tabela correta) para verificar check-in/checkout
+      const hasCheckIn = appointment.appointment_totem_sessions && 
+        Array.isArray(appointment.appointment_totem_sessions) &&
+        appointment.appointment_totem_sessions.length > 0;
       
-      // Determinar status atual
+      const hasCheckOut = hasCheckIn && 
+        appointment.appointment_totem_sessions?.some((s: any) => 
+          s.status === 'completed' || s.status === 'checkout_completed'
+        );
+      
+      // Verificar venda paga também
+      const hasPaidSale = appointment.vendas && 
+        Array.isArray(appointment.vendas) &&
+        appointment.vendas.some((v: any) => v.status === 'pago');
+      
+      // Determinar status atual baseado na mesma lógica do getActualStatus
       let currentStatus: string;
-      if (!hasCheckIn) {
+      
+      // Prioridade 1: Status finais do banco
+      const statusLower = appointment.status?.toLowerCase() || '';
+      if (statusLower === 'concluido' || statusLower === 'ausente' || statusLower === 'cancelado') {
+        currentStatus = statusLower;
+      }
+      // Prioridade 2: Venda paga
+      else if (hasPaidSale) {
+        currentStatus = 'concluido';
+      }
+      // Prioridade 3: Check-in/checkout
+      else if (!hasCheckIn) {
         currentStatus = 'agendado';
       } else if (hasCheckIn && !hasCheckOut) {
         currentStatus = 'check_in_finalizado';
       } else {
         currentStatus = 'concluido';
       }
+      
+      console.log('📊 [ADMIN] Status atual calculado:', { 
+        appointmentId, 
+        currentStatus, 
+        hasCheckIn, 
+        hasCheckOut, 
+        hasPaidSale,
+        dbStatus: appointment.status 
+      });
 
       // *** CONCLUIR USANDO EDGE FUNCTION ***
       if (newStatus === 'concluido') {
