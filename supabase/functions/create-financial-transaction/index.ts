@@ -109,6 +109,7 @@ async function ensureContasPagar(
     observacoes: string
     categoria?: string | null
     fornecedor?: string | null
+    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
   }
 ) {
   const { data: existing } = await supabase
@@ -130,6 +131,7 @@ async function ensureContasPagar(
       fornecedor: params.fornecedor || null,
       status: params.status,
       observacoes: params.observacoes,
+      transaction_id: params.transaction_id || null, // ID da transação eletrônica
     })
     .select('id')
     .single()
@@ -290,8 +292,9 @@ Deno.serve(async (req) => {
       const net = Math.max(0, gross - discount)
 
       const isService = item.type === 'service'
-      const category = isService ? 'services' : 'products'
-      const subcategory = isService ? (item.isExtra ? 'service_extra' : 'service') : 'product'
+      // Categorias em PORTUGUÊS para o ERP
+      const category = isService ? 'servico' : 'produto'
+      const subcategory = isService ? (item.isExtra ? 'servico_extra' : 'servico') : 'produto'
       const description = isService ? `Serviço: ${item.name || 'Serviço'}` : `Produto: ${item.name || 'Produto'}`
 
       const subRef = `revenue:${item.type}:${item.id}:${subcategory}`
@@ -360,7 +363,8 @@ Deno.serve(async (req) => {
         const net = Math.max(0, gross - discount)
 
         const commissionAmount = Number((net * (serviceCommissionRate / 100)).toFixed(2))
-        const subcategory = item.isExtra ? 'service_extra_commission' : 'service_commission'
+        // Categorias em PORTUGUÊS para o ERP
+        const subcategory = item.isExtra ? 'servico_extra_comissao' : 'servico_comissao'
         const description = `Comissão ${serviceCommissionRate}% - ${item.name || 'Serviço'}`
         const subRef = `commission:service:${item.id}:${subcategory}`
 
@@ -368,7 +372,7 @@ Deno.serve(async (req) => {
           supabase,
           {
             transaction_type: 'commission',
-            category: 'staff_payments',
+            category: 'comissao', // Categoria em PORTUGUÊS
             subcategory,
             amount: commissionAmount,
             net_amount: commissionAmount,
@@ -404,9 +408,10 @@ Deno.serve(async (req) => {
              data_vencimento: transaction_date,
              data_pagamento: null,
              status: 'pendente',
-             categoria: 'staff_payments',
+             categoria: 'comissao', // Categoria em PORTUGUÊS
              fornecedor: barberName,
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+             transaction_id: transaction_id, // Mesmo ID da transação para conciliação
            })
          }
 
@@ -438,15 +443,16 @@ Deno.serve(async (req) => {
           commissionAmount = Number((net * (commissionRate / 100)).toFixed(2))
         }
 
+        // Categoria em PORTUGUÊS para o ERP
         const description = `Comissão produto - ${item.name || 'Produto'}`
-        const subRef = `commission:product:${item.id}:product_commission`
+        const subRef = `commission:product:${item.id}:produto_comissao`
 
         const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
           supabase,
           {
             transaction_type: 'commission',
-            category: 'products',
-            subcategory: 'product_commission',
+            category: 'produto', // Categoria em PORTUGUÊS
+            subcategory: 'produto_comissao',
             amount: commissionAmount,
             net_amount: commissionAmount,
             status: 'pending',
@@ -480,9 +486,10 @@ Deno.serve(async (req) => {
              data_vencimento: transaction_date,
              data_pagamento: null,
              status: 'pendente',
-             categoria: 'products',
+             categoria: 'produto', // Categoria em PORTUGUÊS
              fornecedor: barberName,
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+             transaction_id: transaction_id, // Mesmo ID da transação para conciliação
            })
          }
 
@@ -497,8 +504,8 @@ Deno.serve(async (req) => {
         supabase,
         {
           transaction_type: 'revenue',
-          category: 'tips',
-          subcategory: 'tip_received',
+          category: 'gorjeta', // Categoria em PORTUGUÊS
+          subcategory: 'gorjeta_recebida',
           amount: tip_amount,
           net_amount: tip_amount,
           status: 'completed',
@@ -522,8 +529,9 @@ Deno.serve(async (req) => {
            data_recebimento: transaction_date,
            cliente_id: body.client_id || null,
            status: 'recebido',
-           categoria: 'tips',
+           categoria: 'gorjeta', // Categoria em PORTUGUÊS
            observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
+           transaction_id: transaction_id, // ID da transação eletrônica
          })
        }
 
@@ -536,8 +544,8 @@ Deno.serve(async (req) => {
           supabase,
           {
             transaction_type: 'commission',
-            category: 'tips',
-            subcategory: 'tip_payable',
+            category: 'gorjeta', // Categoria em PORTUGUÊS
+            subcategory: 'gorjeta_pagar',
             amount: tip_amount,
             net_amount: tip_amount,
             status: 'pending',
@@ -571,9 +579,10 @@ Deno.serve(async (req) => {
            data_vencimento: transaction_date,
            data_pagamento: null,
            status: 'pendente',
-           categoria: 'tips',
+           categoria: 'gorjeta', // Categoria em PORTUGUÊS
            fornecedor: barberName,
            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
+           transaction_id: transaction_id, // Mesmo ID da transação para conciliação
          })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })
