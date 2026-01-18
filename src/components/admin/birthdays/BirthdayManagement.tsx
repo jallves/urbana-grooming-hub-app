@@ -14,20 +14,21 @@ const BirthdayManagement: React.FC = () => {
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['birthday-clients', filter],
     queryFn: async () => {
-      // Fetch clients directly from painel_clientes instead of using RPC
+      // Fetch clients directly from painel_clientes including whatsapp field
       const { data, error } = await supabase
         .from('painel_clientes')
-        .select('id, nome, email, telefone, data_nascimento')
+        .select('id, nome, email, telefone, data_nascimento, whatsapp')
         .not('data_nascimento', 'is', null);
 
       if (error) throw new Error(error.message);
 
-      // Map to expected format
+      // Map to expected format with whatsapp support
       const mappedData = (data || []).map(c => ({
         id: c.id,
         name: c.nome,
         email: c.email,
-        phone: c.telefone,
+        phone: c.telefone || c.whatsapp,
+        whatsapp: c.whatsapp,
         birth_date: c.data_nascimento
       }));
 
