@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount } = await req.json()
+    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount, transaction_data } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
@@ -462,6 +462,19 @@ Deno.serve(async (req) => {
         isExtra: item.tipo === 'SERVICO_EXTRA',
       }))
 
+      // Extrair transaction_id do PayGo (NSU ou confirmationId)
+      // Prioridade: NSU > confirmationId > gerar interno
+      let transactionId: string | null = null
+      if (transaction_data) {
+        transactionId = transaction_data.nsu || transaction_data.confirmationId || null
+        console.log('💳 Transaction ID do PayGo:', transactionId)
+      }
+      // Fallback: gerar ID interno se não veio do PayGo (ex: PIX sem NSU)
+      if (!transactionId) {
+        transactionId = `INT-${venda_id.substring(0, 8)}-${Date.now()}`
+        console.log('💳 Transaction ID gerado internamente:', transactionId)
+      }
+
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
@@ -477,6 +490,7 @@ Deno.serve(async (req) => {
             discount_amount: Number(venda.desconto) || 0,
             notes: `Checkout Totem - Venda ${venda_id}`,
             tip_amount: gorjeta,
+            transaction_id: transactionId, // ID da transação eletrônica para rastreio
           },
         }
       )
