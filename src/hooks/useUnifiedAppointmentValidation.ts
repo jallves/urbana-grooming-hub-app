@@ -385,6 +385,34 @@ export const useUnifiedAppointmentValidation = () => {
    * Busca horários disponíveis para um barbeiro em uma data
    * Considera buffer de 10 minutos entre agendamentos
    */
+  /**
+   * Resolve o staff_id correto para queries de working_hours
+   * Retorna o ID da tabela staff ou o barberId como fallback
+   */
+  const resolveStaffId = useCallback(async (barberId: string): Promise<string> => {
+    // Primeiro, buscar o staff_id do barbeiro na tabela painel_barbeiros
+    const { data: barberData } = await supabase
+      .from('painel_barbeiros')
+      .select('staff_id')
+      .eq('id', barberId)
+      .maybeSingle();
+
+    const authStaffId = barberData?.staff_id || barberId;
+
+    // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
+    const { data: staffRecord } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('staff_id', authStaffId)
+      .maybeSingle();
+
+    return staffRecord?.id || authStaffId;
+  }, []);
+
+  /**
+   * Busca horários disponíveis para um barbeiro em uma data
+   * OTIMIZADO: Queries em paralelo para melhor performance
+   */
   const getAvailableTimeSlots = useCallback(async (
     barberId: string,
     date: Date,
@@ -397,47 +425,51 @@ export const useUnifiedAppointmentValidation = () => {
       const dayOfWeek = date.getDay();
       const isToday = isDateToday(date);
 
-      // Buscar o staff_id do barbeiro (necessário para working_hours)
-      const { data: barberData } = await supabase
-        .from('painel_barbeiros')
-        .select('staff_id')
-        .eq('id', barberId)
-        .maybeSingle();
+      console.log('🔍 [getAvailableTimeSlots] Iniciando busca:', { barberId, dateStr, dayOfWeek, serviceDuration });
 
-      const authStaffId = barberData?.staff_id || barberId;
+      // OTIMIZAÇÃO: Resolver staff_id primeiro
+      const staffTableId = await resolveStaffId(barberId);
+      console.log('🔗 [getAvailableTimeSlots] Staff ID resolvido:', staffTableId);
 
-      // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
-      const { data: staffRecord } = await supabase
-        .from('staff')
-        .select('id')
-        .eq('staff_id', authStaffId)
-        .maybeSingle();
+      // OTIMIZAÇÃO: Executar queries em paralelo
+      const [workingHoursResult, specificAvailabilityResult, existingAppointmentsResult] = await Promise.all([
+        // 1. Buscar horário de trabalho
+        supabase
+          .from('working_hours')
+          .select('start_time, end_time')
+          .eq('staff_id', staffTableId)
+          .eq('day_of_week', dayOfWeek)
+          .eq('is_active', true)
+          .maybeSingle(),
+        
+        // 2. Verificar disponibilidade específica (folgas/bloqueios)
+        supabase
+          .from('barber_availability')
+          .select('is_available, start_time, end_time')
+          .eq('barber_id', barberId)
+          .eq('date', dateStr)
+          .maybeSingle(),
+        
+        // 3. Buscar agendamentos existentes
+        supabase
+          .from('painel_agendamentos')
+          .select('hora, servico:painel_servicos(duracao)')
+          .eq('barbeiro_id', barberId)
+          .eq('data', dateStr)
+          .not('status', 'in', '("cancelado","ausente")')
+      ]);
 
-      const staffTableId = staffRecord?.id || authStaffId;
-
-      // Buscar horário de trabalho usando staff.id (não auth.uid)
-      const { data: workingHours } = await supabase
-        .from('working_hours')
-        .select('start_time, end_time')
-        .eq('staff_id', staffTableId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true)
-        .maybeSingle();
+      const workingHours = workingHoursResult.data;
+      const specificAvailability = specificAvailabilityResult.data;
+      const existingAppointments = existingAppointmentsResult.data;
 
       if (!workingHours) {
-        console.log('⚠️ Nenhum horário de trabalho encontrado para staff_id:', staffTableId, 'dia:', dayOfWeek);
+        console.log('⚠️ [getAvailableTimeSlots] Nenhum horário de trabalho para staff_id:', staffTableId, 'dia:', dayOfWeek);
         return [];
       }
 
-      // Verificar disponibilidade específica
-      const { data: specificAvailability } = await supabase
-        .from('barber_availability')
-        .select('is_available, start_time, end_time')
-        .eq('barber_id', barberId)
-        .eq('date', dateStr)
-        .maybeSingle();
-
       if (specificAvailability?.is_available === false) {
+        console.log('⚠️ [getAvailableTimeSlots] Barbeiro não disponível neste dia');
         return []; // Barbeiro não disponível neste dia
       }
 
@@ -451,14 +483,6 @@ export const useUnifiedAppointmentValidation = () => {
       if (specificAvailability?.end_time) {
         effectiveEnd = specificAvailability.end_time;
       }
-
-      // Buscar agendamentos existentes
-      const { data: existingAppointments } = await supabase
-        .from('painel_agendamentos')
-        .select('hora, servico:painel_servicos(duracao)')
-        .eq('barbeiro_id', barberId)
-        .eq('data', dateStr)
-        .not('status', 'in', '("cancelado","ausente")');
 
       // Mapear períodos ocupados com buffer
       const occupiedPeriods: { start: number; end: number }[] = [];
@@ -502,14 +526,15 @@ export const useUnifiedAppointmentValidation = () => {
         slots.push({ time: timeString, available, reason });
       }
 
+      console.log('✅ [getAvailableTimeSlots] Slots gerados:', slots.filter(s => s.available).length, 'disponíveis de', slots.length);
       return slots;
     } catch (error) {
-      console.error('Erro ao buscar horários disponíveis:', error);
+      console.error('❌ [getAvailableTimeSlots] Erro:', error);
       return [];
     } finally {
       setIsValidating(false);
     }
-  }, [formatDateLocal, isDateToday, timeToMinutes, minutesToTime]);
+  }, [formatDateLocal, isDateToday, timeToMinutes, minutesToTime, resolveStaffId]);
 
   return {
     isValidating,

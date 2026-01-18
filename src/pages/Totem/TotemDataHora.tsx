@@ -35,63 +35,6 @@ const TotemDataHora: React.FC = () => {
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
-  // Verificar se uma data tem horários disponíveis
-  const hasAvailableSlots = async (date: Date): Promise<boolean> => {
-    const now = new Date();
-    const today = startOfToday();
-    
-    // Comparar datas sem conversão de timezone
-    const dateDay = date.getDate();
-    const dateMonth = date.getMonth();
-    const dateYear = date.getFullYear();
-    const todayDay = today.getDate();
-    const todayMonth = today.getMonth();
-    const todayYear = today.getFullYear();
-    const isToday = dateDay === todayDay && dateMonth === todayMonth && dateYear === todayYear;
-    
-    // Gerar horários de 9h às 20h
-    for (let hour = 9; hour <= 20; hour++) {
-      for (let minute of [0, 30]) {
-        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Se é hoje, permitir horários até 10 minutos após passar
-        if (isToday) {
-          const [slotHour, slotMinute] = timeStr.split(':').map(Number);
-          const slotTime = new Date(today);
-          slotTime.setHours(slotHour, slotMinute, 0, 0);
-          
-          // Permitir até 10 minutos depois do horário passar
-          const minTime = new Date(now.getTime() - 10 * 60 * 1000);
-          
-          if (slotTime < minTime) continue;
-        }
-        
-        // Verificar se horário está disponível
-        // Garantir data local sem conversão de timezone
-        const year = date.getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, '0');
-        const day = String(date.getDate()).padStart(2, '0');
-        const dataLocal = `${year}-${month}-${day}`;
-        
-        // @ts-ignore
-        const response = await supabase
-          .from('painel_agendamentos')
-          .select('*')
-          .eq('data', dataLocal)
-          .eq('hora', timeStr)
-          .eq('barbeiro_id', barber.id)
-          .neq('status', 'cancelado');
-
-        // Se encontrou pelo menos um horário disponível, retornar true
-        if (!response.data || response.data.length === 0) {
-          return true;
-        }
-      }
-    }
-    
-    return false;
-  };
-
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
@@ -100,30 +43,46 @@ const TotemDataHora: React.FC = () => {
       return;
     }
     
-    // Carregar datas disponíveis
+    // Carregar datas disponíveis usando o hook otimizado
     const loadAvailableDates = async () => {
       setLoadingDates(true);
+      console.log('📅 [TotemDataHora] Iniciando carregamento de datas para:', barber.nome);
+      
       try {
         const dates: Date[] = [];
+        const today = startOfToday();
         
         // Verificar próximos 14 dias para garantir pelo menos 7 dias com horários
+        // OTIMIZADO: Usar getAvailableTimeSlots que já faz queries em paralelo
         for (let i = 0; i < 14 && dates.length < 7; i++) {
-          const date = addDays(startOfToday(), i);
-          const hasSlots = await hasAvailableSlots(date);
+          const date = addDays(today, i);
           
-          if (hasSlots) {
+          // IMPORTANTE: Usar barber.id (painel_barbeiros.id) consistentemente
+          const slots = await getAvailableTimeSlots(
+            barber.id, // SEMPRE usar painel_barbeiros.id
+            date,
+            service.duracao || 60
+          );
+          
+          const availableCount = slots.filter(s => s.available).length;
+          console.log(`📅 [TotemDataHora] ${format(date, 'dd/MM')}: ${availableCount} slots disponíveis`);
+          
+          if (availableCount > 0) {
             dates.push(date);
           }
         }
         
+        console.log(`✅ [TotemDataHora] Total de datas disponíveis: ${dates.length}`);
         setAvailableDates(dates);
         
         // Selecionar a primeira data disponível automaticamente
         if (dates.length > 0) {
           setSelectedDate(dates[0]);
+        } else {
+          toast.warning('Não há horários disponíveis nos próximos dias');
         }
       } catch (error) {
-        console.error('Erro ao carregar datas:', error);
+        console.error('❌ [TotemDataHora] Erro ao carregar datas:', error);
         toast.error('Erro ao carregar datas disponíveis');
       } finally {
         setLoadingDates(false);
@@ -135,7 +94,7 @@ const TotemDataHora: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, service, barber, navigate]);
+  }, [client, service, barber, navigate, getAvailableTimeSlots]);
 
   useEffect(() => {
     if (selectedDate) {
@@ -208,28 +167,30 @@ const TotemDataHora: React.FC = () => {
   };
 
   const handleConfirm = async () => {
-    console.log('🔘 Botão confirmar clicado!', { selectedTime, selectedDate });
+    console.log('🔘 [TotemDataHora] Botão confirmar clicado!', { selectedTime, selectedDate });
     
     if (!selectedTime || !selectedDate) {
       toast.error('Selecione uma data e horário');
       return;
     }
 
-    console.log('✅ Iniciando criação de agendamento...');
+    console.log('✅ [TotemDataHora] Iniciando criação de agendamento...');
     setCreating(true);
     try {
-      // Validação robusta antes de criar
-      console.log('🔐 Iniciando validação...');
+      // CRÍTICO: Usar barber.id (painel_barbeiros.id) CONSISTENTEMENTE
+      // O hook resolve internamente o staff_id correto para working_hours
+      console.log('🔐 [TotemDataHora] Validando com barbeiro_id:', barber.id);
       const validation = await validateAppointment(
-        barber.staff_id || barber.id,
+        barber.id, // SEMPRE usar painel_barbeiros.id - o hook resolve o staff_id internamente
         selectedDate,
         selectedTime,
         service.duracao || 60
       );
 
       if (!validation.valid) {
-        console.log('❌ Validação falhou:', validation.error);
-        // Erro já foi mostrado pelo hook
+        console.log('❌ [TotemDataHora] Validação falhou:', validation.error);
+        // Recarregar horários para refletir estado atual
+        await loadTimeSlots();
         setCreating(false);
         return;
       }

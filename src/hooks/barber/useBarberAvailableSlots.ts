@@ -1,15 +1,43 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, addMinutes, parse } from 'date-fns';
+import { BUFFER_MINUTES } from '@/lib/utils/timeCalculations';
 
 interface TimeSlot {
   time: string;
   available: boolean;
 }
 
+/**
+ * Hook otimizado para buscar horários disponíveis de um barbeiro
+ * OTIMIZADO: Queries em paralelo para melhor performance
+ */
 export const useBarberAvailableSlots = () => {
   const [loading, setLoading] = useState(false);
   const [slots, setSlots] = useState<TimeSlot[]>([]);
+
+  /**
+   * Resolve o staff_id correto para queries de working_hours
+   */
+  const resolveStaffId = async (barberId: string): Promise<string> => {
+    // Buscar o staff_id do barbeiro na tabela painel_barbeiros
+    const { data: barberData } = await supabase
+      .from('painel_barbeiros')
+      .select('staff_id')
+      .eq('id', barberId)
+      .maybeSingle();
+
+    const authStaffId = barberData?.staff_id || barberId;
+
+    // Resolver o ID correto da tabela staff
+    const { data: staffRecord } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('staff_id', authStaffId)
+      .maybeSingle();
+
+    return staffRecord?.id || authStaffId;
+  };
 
   const fetchAvailableSlots = useCallback(async (
     barberId: string,
@@ -33,40 +61,32 @@ export const useBarberAvailableSlots = () => {
       const currentMinute = now.getMinutes();
       const isCurrentDay = isToday(date);
       
-      // Primeiro, determinar qual tipo de ID foi recebido
-      let painelBarbeiroId = barberId;
-      
-      // Verificar se é um painel_barbeiros.id válido
-      const { data: barbeiroCheck } = await supabase
-        .from('painel_barbeiros')
-        .select('id, staff_id')
-        .eq('id', barberId)
-        .maybeSingle();
-      
-      if (!barbeiroCheck) {
-        // Não é painel_barbeiros.id, pode ser staff_id
-        const { data: barbeiroByStaff } = await supabase
-          .from('painel_barbeiros')
-          .select('id, staff_id')
-          .eq('staff_id', barberId)
-          .maybeSingle();
-          
-        if (barbeiroByStaff) {
-          painelBarbeiroId = barbeiroByStaff.id;
-          console.log('🔄 [BarberSlots] Convertido staff_id para painel_barbeiros.id:', painelBarbeiroId);
-        }
-      }
+      // Resolver staff_id primeiro
+      const staffTableId = await resolveStaffId(barberId);
+      console.log('🔗 [BarberSlots] Staff ID resolvido:', staffTableId);
 
-      console.log('🔍 [BarberSlots] Usando painel_barbeiros.id:', painelBarbeiroId);
+      // OTIMIZAÇÃO: Queries em paralelo
+      const [workingHoursResult, appointmentsResult] = await Promise.all([
+        // Buscar horários de trabalho
+        supabase
+          .from('working_hours')
+          .select('start_time, end_time')
+          .eq('staff_id', staffTableId)
+          .eq('day_of_week', dayOfWeek)
+          .eq('is_active', true)
+          .maybeSingle(),
+        
+        // Buscar agendamentos existentes
+        supabase
+          .from('painel_agendamentos')
+          .select('id, hora, servico:painel_servicos(duracao)')
+          .eq('barbeiro_id', barberId)
+          .eq('data', formattedDate)
+          .neq('status', 'cancelado')
+      ]);
 
-      // Buscar horários de trabalho
-      const { data: workingHours } = await supabase
-        .from('working_hours')
-        .select('start_time, end_time')
-        .eq('staff_id', barbeiroCheck?.staff_id || barberId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true)
-        .maybeSingle();
+      const workingHours = workingHoursResult.data;
+      const appointments = appointmentsResult.data;
 
       if (!workingHours) {
         console.log('❌ [BarberSlots] Sem horário de trabalho para este dia');
@@ -74,22 +94,20 @@ export const useBarberAvailableSlots = () => {
         return;
       }
 
-      // Buscar agendamentos existentes
-      const { data: appointments } = await supabase
-        .from('painel_agendamentos')
-        .select('hora, servico:painel_servicos(duracao)')
-        .eq('barbeiro_id', painelBarbeiroId)
-        .eq('data', formattedDate)
-        .neq('status', 'cancelado');
-
       const occupiedSlots = new Set<string>();
       
-      // Marcar todos os slots ocupados considerando a duração
+      // Marcar todos os slots ocupados considerando a duração e buffer
       appointments?.forEach((apt) => {
+        // Ignorar o agendamento sendo editado
+        if (excludeAppointmentId && apt.id === excludeAppointmentId) return;
+        
         const aptDuration = (apt.servico as any)?.duracao || 60;
         const aptStart = parse(apt.hora, 'HH:mm:ss', new Date());
         
-        for (let i = 0; i < aptDuration; i += 30) {
+        // Adicionar buffer de 10 minutos
+        const totalDuration = aptDuration + BUFFER_MINUTES;
+        
+        for (let i = 0; i < totalDuration; i += 30) {
           const slot = format(addMinutes(aptStart, i), 'HH:mm');
           occupiedSlots.add(slot);
         }
@@ -115,7 +133,7 @@ export const useBarberAvailableSlots = () => {
             continue;
           }
 
-          // Se for hoje, verificar se já passou
+          // Se for hoje, verificar se já passou (com 30 min de antecedência)
           let isPast = false;
           if (isCurrentDay) {
             const slotTotalMinutes = hour * 60 + minute;
