@@ -186,8 +186,38 @@ export default function PainelClienteMeusAgendamentos() {
     : agendamentos.filter(a => a.status === filtroStatus);
 
   if (!cliente) {
-    navigate('/painel-cliente/login');
-    return null;
+    return (
+      <PainelClienteContentContainer noPadding>
+        <div className="w-full px-6 md:px-8 lg:px-12 pt-10 pb-10">
+          <Card className="bg-slate-900/50 border border-slate-700/50 backdrop-blur-xl">
+            <CardHeader>
+              <CardTitle className="text-white">Não encontramos seu perfil de cliente</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-gray-300">
+                Você está logado, mas ainda não existe um cadastro de cliente vinculado a esta conta.
+                Para ver seus agendamentos, finalize seu cadastro.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button
+                  onClick={() => navigate('/painel-cliente/register')}
+                  className="bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant hover:from-urbana-gold-vibrant hover:to-urbana-gold text-urbana-black font-semibold"
+                >
+                  Criar/Completar cadastro
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => navigate('/painel-cliente/login')}
+                  className="text-urbana-light border border-urbana-gold/30 bg-transparent hover:bg-urbana-gold/10"
+                >
+                  Ir para login
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </PainelClienteContentContainer>
+    );
   }
 
   const containerVariants = {

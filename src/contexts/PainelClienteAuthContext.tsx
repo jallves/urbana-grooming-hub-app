@@ -63,7 +63,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
       try {
         console.log('[PainelClienteAuthContext] 🔍 Carregando perfil do cliente:', user.id);
         
-        // Usar painel_clientes que tem as colunas corretas
+        // 1) Buscar por user_id
         const { data: profile, error } = await supabase
           .from('painel_clientes')
           .select('*')
@@ -79,8 +79,30 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
           return;
         }
 
-        if (!profile) {
-          console.warn('[PainelClienteAuthContext] ⚠️ Perfil não encontrado');
+        // 2) Se não existir, tentar auto-vincular por e-mail via edge function (robusto)
+        let finalProfile = profile;
+        if (!finalProfile) {
+          console.warn('[PainelClienteAuthContext] ⚠️ Perfil não encontrado por user_id; tentando vincular por e-mail...');
+
+          const { data: linkResult, error: linkErr } = await supabase.functions.invoke('link-client-profile');
+
+          if (linkErr) {
+            console.error('[PainelClienteAuthContext] ❌ Falha ao vincular perfil:', linkErr);
+          } else if (linkResult?.success && linkResult?.profile) {
+            finalProfile = linkResult.profile;
+            console.log('[PainelClienteAuthContext] ✅ Perfil vinculado/recuperado:', { linked: linkResult.linked });
+          }
+        }
+
+        if (!finalProfile) {
+          console.warn('[PainelClienteAuthContext] ⚠️ Perfil do cliente não encontrado');
+          toast({
+            variant: 'destructive',
+            title: 'Conta sem perfil de cliente',
+            description: 'Não encontramos seu cadastro de cliente. Faça o cadastro para ver seus agendamentos.',
+            duration: 6000,
+          });
+
           if (mounted) {
             setCliente(null);
             setLoading(false);
@@ -90,12 +112,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
         if (mounted) {
           const clienteData: Cliente = {
-            id: profile.id,
-            nome: profile.nome,
-            email: profile.email || user.email || '',
-            whatsapp: profile.whatsapp || '',
-            data_nascimento: profile.data_nascimento || undefined,
-            created_at: profile.created_at || ''
+            id: finalProfile.id,
+            nome: finalProfile.nome,
+            email: finalProfile.email || user.email || '',
+            whatsapp: finalProfile.whatsapp || '',
+            data_nascimento: finalProfile.data_nascimento || undefined,
+            created_at: finalProfile.created_at || ''
           };
           
           setCliente(clienteData);
@@ -222,7 +244,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         .from('painel_clientes')
         .select('*')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile) {
         setCliente({
