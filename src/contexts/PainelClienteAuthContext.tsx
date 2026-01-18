@@ -82,15 +82,25 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         // 2) Se não existir, tentar auto-vincular por e-mail via edge function (robusto)
         let finalProfile = profile;
         if (!finalProfile) {
-          console.warn('[PainelClienteAuthContext] ⚠️ Perfil não encontrado por user_id; tentando vincular por e-mail...');
+          console.log('[PainelClienteAuthContext] ⚠️ Perfil não encontrado por user_id; tentando vincular por e-mail...');
 
-          const { data: linkResult, error: linkErr } = await supabase.functions.invoke('link-client-profile');
+          try {
+            const { data: linkResult, error: linkErr } = await supabase.functions.invoke('link-client-profile');
 
-          if (linkErr) {
-            console.error('[PainelClienteAuthContext] ❌ Falha ao vincular perfil:', linkErr);
-          } else if (linkResult?.success && linkResult?.profile) {
-            finalProfile = linkResult.profile;
-            console.log('[PainelClienteAuthContext] ✅ Perfil vinculado/recuperado:', { linked: linkResult.linked });
+            // Tratar resposta - 404 significa "não existe perfil" (situação válida, não erro crítico)
+            if (linkErr) {
+              // Edge function pode retornar 404 quando não encontra perfil - isso é esperado
+              console.log('[PainelClienteAuthContext] ℹ️ Nenhum perfil existente para vincular:', linkErr.message || linkErr);
+            } else if (linkResult?.success && linkResult?.profile) {
+              finalProfile = linkResult.profile;
+              console.log('[PainelClienteAuthContext] ✅ Perfil vinculado/recuperado:', { linked: linkResult.linked });
+            } else if (linkResult && !linkResult.success) {
+              // Resposta de erro da função (ex: perfil não encontrado por email)
+              console.log('[PainelClienteAuthContext] ℹ️ Resposta da função:', linkResult.error || 'Sem perfil');
+            }
+          } catch (invokeError) {
+            // Capturar erros de rede ou outros problemas na invocação
+            console.log('[PainelClienteAuthContext] ℹ️ Não foi possível vincular perfil:', invokeError);
           }
         }
 
