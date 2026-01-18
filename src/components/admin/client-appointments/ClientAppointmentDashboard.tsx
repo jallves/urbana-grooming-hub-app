@@ -24,6 +24,14 @@ const ClientAppointmentDashboard: React.FC = () => {
     handleUpdateAppointment,
   } = useClientAppointments();
 
+  // Função auxiliar para normalizar vendas (pode ser objeto ou array)
+  const normalizeVendas = useCallback((vendas: any): Array<{ id: string; status: string | null }> => {
+    if (!vendas) return [];
+    if (Array.isArray(vendas)) return vendas;
+    // Se for objeto único, converter para array
+    return [vendas];
+  }, []);
+
   // Função para calcular status real baseado em appointment_totem_sessions e vendas
   const getActualStatus = useCallback((appointment: any): string => {
     const statusFromDB = appointment.status?.toLowerCase() || '';
@@ -33,10 +41,9 @@ const ClientAppointmentDashboard: React.FC = () => {
       return statusFromDB;
     }
     
-    // PRIORIDADE 2: Venda paga = concluído
-    const hasPaidSale = appointment.vendas && 
-      Array.isArray(appointment.vendas) &&
-      appointment.vendas.some((v: any) => v.status === 'pago');
+    // PRIORIDADE 2: Venda paga = concluído (normalizar vendas para array)
+    const vendasArray = normalizeVendas(appointment.vendas);
+    const hasPaidSale = vendasArray.some((v: any) => v.status === 'pago');
     
     if (hasPaidSale) {
       return 'concluido';
@@ -59,7 +66,7 @@ const ClientAppointmentDashboard: React.FC = () => {
     } else {
       return 'concluido'; // Concluído
     }
-  }, []);
+  }, [normalizeVendas]);
 
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
