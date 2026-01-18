@@ -60,6 +60,20 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return;
       }
 
+      // IMPORTANTE: Só carregar perfil de cliente se o usuário for do tipo 'client'
+      // Evita que admins/barbeiros disparem erro 404 ao acessar o sistema
+      const userType = user.user_metadata?.user_type;
+      const isClientUser = userType === 'client' || userType === 'cliente';
+      
+      if (!isClientUser) {
+        console.log('[PainelClienteAuthContext] ℹ️ Usuário não é cliente, ignorando carregamento de perfil');
+        if (mounted) {
+          setCliente(null);
+          setLoading(false);
+        }
+        return;
+      }
+
       try {
         console.log('[PainelClienteAuthContext] 🔍 Carregando perfil do cliente:', user.id);
         
