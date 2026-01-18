@@ -43,14 +43,20 @@ export default function PainelClienteMeusAgendamentos() {
   const fetchAgendamentos = useCallback(async () => {
     if (!cliente) return;
 
+    // CRÍTICO: Usar LEFT JOIN (sem !inner) para evitar que agendamentos sumam
+    // quando barbeiro/serviço está inativo (RLS bloqueia o join)
     const { data, error } = await supabase
       .from('painel_agendamentos')
-      .select('*, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco, duracao)')  
+      .select('*, painel_barbeiros(nome), painel_servicos(nome, preco, duracao)')  
       .eq('cliente_id', cliente.id)
       .order('data', { ascending: false })
       .order('hora', { ascending: false });
 
-    if (!error) setAgendamentos(data || []);
+    if (error) {
+      console.error('[MeusAgendamentos] Erro ao buscar:', error);
+    }
+    
+    setAgendamentos(data || []);
   }, [cliente]);
 
   useEffect(() => {
