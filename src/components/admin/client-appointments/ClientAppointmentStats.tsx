@@ -35,37 +35,53 @@ interface PainelAgendamento {
     preco: number;
     duracao: number;
   } | null;
-  totem_sessions?: Array<{
-    check_in_time: string | null;
-    check_out_time: string | null;
+  // CORRIGIDO: Usar appointment_totem_sessions (tabela correta)
+  appointment_totem_sessions?: Array<{
+    totem_session_id: string | null;
     status: string | null;
+    totem_sessions: {
+      id: string;
+      created_at: string | null;
+    } | null;
   }>;
+  vendas?: Array<{ id: string; status: string | null }> | { id: string; status: string | null };
 }
 
 interface ClientAppointmentStatsProps {
   appointments: PainelAgendamento[];
 }
 
+// Função auxiliar para normalizar vendas (pode ser objeto ou array)
+const normalizeVendas = (vendas: any): Array<{ id: string; status: string | null }> => {
+  if (!vendas) return [];
+  if (Array.isArray(vendas)) return vendas;
+  return [vendas];
+};
+
 const ClientAppointmentStats: React.FC<ClientAppointmentStatsProps> = ({ appointments }) => {
   // LEI PÉTREA: Calcular estatísticas baseadas nos estados (incluindo ausente)
   const getAppointmentStatus = (apt: PainelAgendamento): string => {
     const statusLower = apt.status?.toLowerCase() || '';
     
-    // PRIORIDADE 1: Status manual do banco (ausente, cancelado)
-    if (statusLower === 'ausente') {
-      return 'ausente';
-    }
-    
-    if (statusLower === 'cancelado') {
-      return 'cancelado';
+    // PRIORIDADE 1: Status manual do banco (ausente, cancelado, concluido)
+    if (statusLower === 'ausente' || statusLower === 'cancelado' || statusLower === 'concluido') {
+      return statusLower;
     }
 
-    // PRIORIDADE 2: Status baseado em check-in/check-out
-    const hasCheckIn = apt.totem_sessions && 
-      apt.totem_sessions.some(s => s.check_in_time);
+    // PRIORIDADE 2: Venda paga = concluído (normalizado para array)
+    const vendasArray = normalizeVendas(apt.vendas);
+    const hasPaidSale = vendasArray.some((v: any) => v.status === 'pago');
     
-    const hasCheckOut = apt.totem_sessions && 
-      apt.totem_sessions.some(s => s.check_out_time);
+    if (hasPaidSale) {
+      return 'concluido';
+    }
+
+    // PRIORIDADE 3: Status baseado em appointment_totem_sessions (CORRIGIDO)
+    const sessions = apt.appointment_totem_sessions;
+    const hasCheckIn = sessions && Array.isArray(sessions) && sessions.length > 0;
+    const hasCheckOut = hasCheckIn && sessions.some((s: any) => 
+      s.status === 'completed' || s.status === 'checkout_completed'
+    );
 
     if (!hasCheckIn) return 'agendado'; // Check-in Pendente
     if (hasCheckIn && !hasCheckOut) return 'check_in_finalizado'; // Checkout Pendente

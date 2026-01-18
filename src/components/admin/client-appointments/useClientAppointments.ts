@@ -328,10 +328,16 @@ export const useClientAppointments = () => {
           s.status === 'completed' || s.status === 'checkout_completed'
         );
       
-      // Verificar venda paga também
-      const hasPaidSale = appointment.vendas && 
-        Array.isArray(appointment.vendas) &&
-        appointment.vendas.some((v: any) => v.status === 'pago');
+      // Função auxiliar para normalizar vendas (pode ser objeto ou array)
+      const normalizeVendas = (vendas: any): Array<{ id: string; status: string | null }> => {
+        if (!vendas) return [];
+        if (Array.isArray(vendas)) return vendas;
+        return [vendas];
+      };
+      
+      // Verificar venda paga também (normalizado para array)
+      const vendasArray = normalizeVendas(appointment.vendas);
+      const hasPaidSale = vendasArray.some((v: any) => v.status === 'pago');
       
       // Determinar status atual baseado na mesma lógica do getActualStatus
       let currentStatus: string;
