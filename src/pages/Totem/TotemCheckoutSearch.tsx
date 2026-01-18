@@ -84,6 +84,7 @@ const TotemCheckoutSearch: React.FC = () => {
 
       // REGRA: Verificar se tem check-in realizado (não pode checkout sem check-in)
       // Buscar agendamentos com check-in finalizado e checkout pendente
+      // status_totem = 'CHEGOU' é setado pela edge function totem-checkin
       const { data: agendamentosComCheckin, error: checkinError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -92,7 +93,7 @@ const TotemCheckoutSearch: React.FC = () => {
           barbeiro:painel_barbeiros(*)
         `)
         .eq('cliente_id', cliente.id)
-        .eq('status_totem', 'checkin')
+        .eq('status_totem', 'CHEGOU')
         .in('status', ['confirmado', 'em_atendimento'])
         .order('created_at', { ascending: false });
 
@@ -117,12 +118,13 @@ const TotemCheckoutSearch: React.FC = () => {
         console.log('❌ Nenhum agendamento com check-in finalizado');
         
         // Verificar se tem agendamentos pendentes de check-in
+        // Agendamentos sem status_totem ou com status diferente de CHEGOU
         const { data: agendamentosPendentes } = await supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, status')
+          .select('id, data, hora, status, status_totem')
           .eq('cliente_id', cliente.id)
           .in('status', ['agendado', 'confirmado'])
-          .neq('status_totem', 'checkin');
+          .or('status_totem.is.null,status_totem.neq.CHEGOU');
         
         if (agendamentosPendentes && agendamentosPendentes.length > 0) {
           // Tem agendamento mas não fez check-in

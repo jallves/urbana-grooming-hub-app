@@ -113,13 +113,13 @@ const TotemSearch: React.FC = () => {
       console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
       // 🔔 VERIFICAR CHECKOUTS PENDENTES (prioridade máxima)
-      // Regra: Cliente com check-in finalizado (status_totem = 'checkin') deve finalizar checkout antes de qualquer outra ação
+      // Regra: Cliente com check-in finalizado (status_totem = 'CHEGOU') deve finalizar checkout antes de qualquer outra ação
       console.log('🔍 Verificando checkouts pendentes para:', cliente.nome);
       const { data: checkoutsPendentes, error: checkoutsError } = await supabase
         .from('painel_agendamentos')
         .select('id, data, hora, status, status_totem')
         .eq('cliente_id', cliente.id)
-        .eq('status_totem', 'checkin')
+        .eq('status_totem', 'CHEGOU')
         .in('status', ['confirmado', 'em_atendimento']);
 
       if (!checkoutsError && checkoutsPendentes && checkoutsPendentes.length > 0) {
