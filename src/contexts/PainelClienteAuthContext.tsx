@@ -45,7 +45,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user } = useAuth(); // Depende do AuthContext unificado
+  const { user, isClient } = useAuth(); // Depende do AuthContext unificado
 
   // Carregar perfil quando houver sessão ativa (depende do AuthContext)
   useEffect(() => {
@@ -60,13 +60,11 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return;
       }
 
-      // IMPORTANTE: Só carregar perfil de cliente se o usuário for do tipo 'client'
-      // Evita que admins/barbeiros disparem erro 404 ao acessar o sistema
-      const userType = user.user_metadata?.user_type;
-      const isClientUser = userType === 'client' || userType === 'cliente';
-      
-      if (!isClientUser) {
-        console.log('[PainelClienteAuthContext] ℹ️ Usuário não é cliente, ignorando carregamento de perfil');
+      // IMPORTANTE: este provider é montado globalmente (App.tsx), então NÃO podemos
+      // carregar/vincular perfil de cliente para usuários que não são clientes.
+      // Usamos o role inferido pelo AuthContext (user_roles/user_metadata) em vez de depender
+      // diretamente de user.user_metadata.user_type.
+      if (!isClient) {
         if (mounted) {
           setCliente(null);
           setLoading(false);
