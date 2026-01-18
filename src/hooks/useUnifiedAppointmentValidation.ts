@@ -142,19 +142,11 @@ export const useUnifiedAppointmentValidation = () => {
   }, [timeToMinutes]);
 
   /**
-   * Verifica horário de trabalho do barbeiro
+   * Resolve o staff_id correto para queries de working_hours
+   * Retorna o ID da tabela staff ou o barberId como fallback
    */
-  const checkBarberWorkingHours = useCallback(async (
-    barberId: string,
-    date: Date,
-    time: string,
-    serviceDuration: number
-  ): Promise<ValidationResult> => {
-    const dayOfWeek = date.getDay();
-    const startMinutes = timeToMinutes(time);
-    const endMinutes = startMinutes + serviceDuration;
-
-    // Buscar o staff_id do barbeiro (necessário para working_hours)
+  const resolveStaffId = useCallback(async (barberId: string): Promise<string> => {
+    // Primeiro, buscar o staff_id do barbeiro na tabela painel_barbeiros
     const { data: barberData } = await supabase
       .from('painel_barbeiros')
       .select('staff_id')
@@ -170,10 +162,25 @@ export const useUnifiedAppointmentValidation = () => {
       .eq('staff_id', authStaffId)
       .maybeSingle();
 
-    const staffTableId = staffRecord?.id || authStaffId;
+    return staffRecord?.id || authStaffId;
+  }, []);
+
+  /**
+   * Verifica horário de trabalho do barbeiro
+   * OTIMIZADO: Recebe staffTableId já resolvido para evitar queries duplicadas
+   */
+  const checkBarberWorkingHoursWithStaffId = useCallback(async (
+    staffTableId: string,
+    date: Date,
+    time: string,
+    serviceDuration: number
+  ): Promise<ValidationResult> => {
+    const dayOfWeek = date.getDay();
+    const startMinutes = timeToMinutes(time);
+    const endMinutes = startMinutes + serviceDuration;
 
     // Buscar horário de trabalho usando staff.id (não auth.uid)
-    let { data: workingHours, error } = await supabase
+    const { data: workingHours, error } = await supabase
       .from('working_hours')
       .select('start_time, end_time, is_active')
       .eq('staff_id', staffTableId)
@@ -203,6 +210,19 @@ export const useUnifiedAppointmentValidation = () => {
 
     return { valid: true };
   }, [timeToMinutes]);
+
+  /**
+   * Wrapper para manter compatibilidade com chamadas antigas
+   */
+  const checkBarberWorkingHours = useCallback(async (
+    barberId: string,
+    date: Date,
+    time: string,
+    serviceDuration: number
+  ): Promise<ValidationResult> => {
+    const staffTableId = await resolveStaffId(barberId);
+    return checkBarberWorkingHoursWithStaffId(staffTableId, date, time, serviceDuration);
+  }, [resolveStaffId, checkBarberWorkingHoursWithStaffId]);
 
   /**
    * Verifica disponibilidade específica (folgas/bloqueios)
@@ -309,8 +329,9 @@ export const useUnifiedAppointmentValidation = () => {
   }, [formatDateLocal, timeToMinutes, minutesToTime]);
 
   /**
-   * Validação completa de agendamento
+   * Validação completa de agendamento - OTIMIZADO
    * Ordem: horário passado -> horário funcionamento -> horário barbeiro -> folgas -> conflitos
+   * Resolve staffId uma única vez e executa queries em paralelo quando possível
    */
   const validateAppointment = useCallback(async (
     barberId: string,
@@ -323,50 +344,61 @@ export const useUnifiedAppointmentValidation = () => {
     setIsValidating(true);
 
     try {
-      // 1. Verificar horário passado
+      console.log('🔍 [validateAppointment] Iniciando validação:', { barberId, date: date.toISOString(), time, serviceDuration });
+
+      // 1. Verificar horário passado (síncrono, rápido)
       const pastCheck = validateNotPastTime(date, time);
       if (!pastCheck.valid) {
+        console.log('❌ [validateAppointment] Horário passado');
         if (showToast) toast.error(pastCheck.error);
         return pastCheck;
       }
 
-      // 2. Verificar horário de funcionamento
+      // 2. Verificar horário de funcionamento (síncrono, rápido)
       const businessCheck = validateBusinessHours(date, time, serviceDuration);
       if (!businessCheck.valid) {
+        console.log('❌ [validateAppointment] Fora do horário de funcionamento');
         if (showToast) toast.error(businessCheck.error);
         return businessCheck;
       }
 
-      // 3. Verificar horário de trabalho do barbeiro
-      const workingCheck = await checkBarberWorkingHours(barberId, date, time, serviceDuration);
+      // 3. OTIMIZAÇÃO: Resolver staffId uma única vez
+      const staffTableId = await resolveStaffId(barberId);
+      console.log('🔗 [validateAppointment] Staff ID resolvido:', { barberId, staffTableId });
+
+      // 4. Executar verificações assíncronas em PARALELO
+      const [workingCheck, availabilityCheck, conflictCheck] = await Promise.all([
+        // Verificar horário de trabalho do barbeiro usando staffTableId já resolvido
+        checkBarberWorkingHoursWithStaffId(staffTableId, date, time, serviceDuration),
+        // Verificar disponibilidade específica (folgas)
+        checkBarberSpecificAvailability(barberId, date, time, serviceDuration),
+        // Verificar conflitos com outros agendamentos
+        checkAppointmentConflicts(barberId, date, time, serviceDuration, excludeAppointmentId)
+      ]);
+
+      // Processar resultados na ordem de prioridade
       if (!workingCheck.valid) {
+        console.log('❌ [validateAppointment] Fora do horário do barbeiro');
         if (showToast) toast.error(workingCheck.error);
         return workingCheck;
       }
 
-      // 4. Verificar disponibilidade específica (folgas)
-      const availabilityCheck = await checkBarberSpecificAvailability(barberId, date, time, serviceDuration);
       if (!availabilityCheck.valid) {
+        console.log('❌ [validateAppointment] Barbeiro indisponível');
         if (showToast) toast.error(availabilityCheck.error);
         return availabilityCheck;
       }
 
-      // 5. Verificar conflitos com outros agendamentos
-      const conflictCheck = await checkAppointmentConflicts(
-        barberId,
-        date,
-        time,
-        serviceDuration,
-        excludeAppointmentId
-      );
       if (!conflictCheck.valid) {
+        console.log('❌ [validateAppointment] Conflito de horário');
         if (showToast) toast.error(conflictCheck.error);
         return conflictCheck;
       }
 
+      console.log('✅ [validateAppointment] Validação OK!');
       return { valid: true };
     } catch (error) {
-      console.error('Erro na validação de agendamento:', error);
+      console.error('💥 [validateAppointment] Erro na validação:', error);
       const errorMsg = 'Erro ao validar agendamento. Tente novamente.';
       if (showToast) toast.error(errorMsg);
       return { valid: false, error: errorMsg };
@@ -376,38 +408,11 @@ export const useUnifiedAppointmentValidation = () => {
   }, [
     validateNotPastTime,
     validateBusinessHours,
-    checkBarberWorkingHours,
+    resolveStaffId,
+    checkBarberWorkingHoursWithStaffId,
     checkBarberSpecificAvailability,
     checkAppointmentConflicts
   ]);
-
-  /**
-   * Busca horários disponíveis para um barbeiro em uma data
-   * Considera buffer de 10 minutos entre agendamentos
-   */
-  /**
-   * Resolve o staff_id correto para queries de working_hours
-   * Retorna o ID da tabela staff ou o barberId como fallback
-   */
-  const resolveStaffId = useCallback(async (barberId: string): Promise<string> => {
-    // Primeiro, buscar o staff_id do barbeiro na tabela painel_barbeiros
-    const { data: barberData } = await supabase
-      .from('painel_barbeiros')
-      .select('staff_id')
-      .eq('id', barberId)
-      .maybeSingle();
-
-    const authStaffId = barberData?.staff_id || barberId;
-
-    // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
-    const { data: staffRecord } = await supabase
-      .from('staff')
-      .select('id')
-      .eq('staff_id', authStaffId)
-      .maybeSingle();
-
-    return staffRecord?.id || authStaffId;
-  }, []);
 
   /**
    * Busca horários disponíveis para um barbeiro em uma data
