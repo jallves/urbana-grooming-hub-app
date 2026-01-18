@@ -82,8 +82,9 @@ const TotemCheckoutSearch: React.FC = () => {
       const cliente = clientesFiltrados[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // Buscar agendamentos do cliente com check-in realizado
-      const { data: agendamentos, error: agendError } = await supabase
+      // REGRA: Verificar se tem check-in realizado (não pode checkout sem check-in)
+      // Buscar agendamentos com check-in finalizado e checkout pendente
+      const { data: agendamentosComCheckin, error: checkinError } = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
@@ -91,11 +92,12 @@ const TotemCheckoutSearch: React.FC = () => {
           barbeiro:painel_barbeiros(*)
         `)
         .eq('cliente_id', cliente.id)
+        .eq('status_totem', 'checkin')
         .in('status', ['confirmado', 'em_atendimento'])
         .order('created_at', { ascending: false });
 
-      if (agendError) {
-        console.error('❌ Erro ao buscar agendamentos:', agendError);
+      if (checkinError) {
+        console.error('❌ Erro ao buscar agendamentos com check-in:', checkinError);
         setIsSearching(false);
         
         navigate('/totem/error', {
@@ -110,9 +112,35 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      if (!agendamentos || agendamentos.length === 0) {
-        setIsSearching(false);
+      // Se não há agendamentos com check-in finalizado
+      if (!agendamentosComCheckin || agendamentosComCheckin.length === 0) {
+        console.log('❌ Nenhum agendamento com check-in finalizado');
         
+        // Verificar se tem agendamentos pendentes de check-in
+        const { data: agendamentosPendentes } = await supabase
+          .from('painel_agendamentos')
+          .select('id, data, hora, status')
+          .eq('cliente_id', cliente.id)
+          .in('status', ['agendado', 'confirmado'])
+          .neq('status_totem', 'checkin');
+        
+        if (agendamentosPendentes && agendamentosPendentes.length > 0) {
+          // Tem agendamento mas não fez check-in
+          setIsSearching(false);
+          navigate('/totem/error', {
+            state: {
+              title: 'Check-in Pendente',
+              message: 'Você possui agendamento(s) aguardando check-in. Por favor, realize o check-in primeiro.',
+              type: 'warning',
+              showRetry: false,
+              showGoHome: true
+            }
+          });
+          return;
+        }
+        
+        // Não tem nenhum agendamento
+        setIsSearching(false);
         navigate('/totem/error', {
           state: {
             title: 'Checkout não disponível',
@@ -125,8 +153,8 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const appointment = agendamentos[0];
-      console.log('✅ Agendamento encontrado para checkout:', appointment);
+      const appointment = agendamentosComCheckin[0];
+      console.log('✅ Agendamento com check-in encontrado para checkout:', appointment);
 
       // Create a simple session object
       const session = {

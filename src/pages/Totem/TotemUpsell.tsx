@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { cn } from '@/lib/utils';
+import { resolveProductImageUrl } from '@/utils/productImages';
 
 interface ExtraService {
   id: string;
@@ -326,17 +327,20 @@ const TotemUpsell: React.FC = () => {
                   >
                     {/* Product Image */}
                     <div className="aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 relative">
-                      {product.imagem_url ? (
-                        <img
-                          src={product.imagem_url}
-                          alt={product.nome}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-12 h-12 text-urbana-gold/40" />
-                        </div>
-                      )}
+                      {(() => {
+                        const resolvedImageUrl = resolveProductImageUrl(product.imagem_url);
+                        return resolvedImageUrl ? (
+                          <img
+                            src={resolvedImageUrl}
+                            alt={product.nome}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package className="w-12 h-12 text-urbana-gold/40" />
+                          </div>
+                        );
+                      })()}
                       <div className="absolute bottom-2 right-2 bg-urbana-black/80 text-urbana-light px-2 py-1 rounded text-xs">
                         Estoque: {product.estoque}
                       </div>
