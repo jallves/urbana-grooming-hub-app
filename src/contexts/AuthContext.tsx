@@ -34,7 +34,7 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<any>(null); // CRÍTICO: Armazenar session completa
+  const [session, setSession] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isBarber, setIsBarber] = useState(false);
@@ -49,6 +49,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useForceLogoutListener(user?.id);
 
   const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | 'client' | null) => {
+    console.log('[AuthContext] 🎯 Aplicando role:', role);
     setUserRole(role);
     setIsMaster(role === 'master');
     setIsAdmin(role === 'admin' || role === 'master');
@@ -61,10 +62,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const inferRoleFromMetadata = (u: User): 'master' | 'admin' | 'manager' | 'barber' | 'client' | null => {
     const userType = (u.user_metadata as any)?.user_type;
 
-    // Atualmente o cadastro de clientes grava user_type="client" no user_metadata
     if (userType === 'client') return 'client';
-
-    // (Opcional) se no futuro vocês gravarem algo como user_type="barber" etc.
     if (userType === 'barber') return 'barber';
     if (userType === 'manager') return 'manager';
     if (userType === 'admin') return 'admin';
@@ -76,10 +74,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkUserRoles = async (
     u: User
   ): Promise<'master' | 'admin' | 'manager' | 'barber' | 'client' | null> => {
-    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', u.id);
+    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', u.id, '- Email:', u.email);
 
     try {
-      // 1) Preferência: role “oficial” na tabela user_roles
+      // PASSO 1: Verificar user_metadata PRIMEIRO (mais rápido, não requer query)
+      // Isso garante que clientes recém-cadastrados tenham acesso imediato
+      const metadataRole = inferRoleFromMetadata(u);
+      console.log('[AuthContext] 📋 Role via metadata:', metadataRole);
+      
+      // Se é cliente (via metadata), retornar imediatamente para evitar delays
+      if (metadataRole === 'client') {
+        console.log('[AuthContext] ✅ Cliente identificado via metadata - acesso imediato');
+        return 'client';
+      }
+
+      // PASSO 2: Verificar tabela user_roles para roles admin/barber/etc
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
@@ -87,9 +96,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         .maybeSingle();
 
       if (roleError) {
-        console.error('[AuthContext] ❌ Erro ao buscar role:', roleError.message);
-        // Se a consulta falhar por RLS/config, ainda tentamos inferir pelo metadata
-        return inferRoleFromMetadata(u);
+        console.error('[AuthContext] ❌ Erro ao buscar role na tabela:', roleError.message);
+        // Se falhou a query mas temos metadata, usar metadata
+        if (metadataRole) {
+          console.log('[AuthContext] ⚠️ Usando fallback metadata após erro:', metadataRole);
+          return metadataRole;
+        }
+        return null;
       }
 
       if (roleData?.role) {
@@ -97,18 +110,35 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
       }
 
-      // 2) Fallback: inferir via user_metadata (resolve o caso “login ok mas não entra no painel”)
-      const inferred = inferRoleFromMetadata(u);
-      if (inferred) {
-        console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles; usando role via user_metadata:', inferred);
-        return inferred;
+      // PASSO 3: Verificar se existe perfil em painel_clientes (para usuários antigos)
+      if (!metadataRole) {
+        console.log('[AuthContext] 🔍 Verificando se existe perfil de cliente...');
+        const { data: clientProfile, error: clientError } = await supabase
+          .from('painel_clientes')
+          .select('id')
+          .eq('user_id', u.id)
+          .maybeSingle();
+        
+        if (!clientError && clientProfile) {
+          console.log('[AuthContext] ✅ Cliente identificado via painel_clientes');
+          return 'client';
+        }
       }
 
-      console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles e sem user_type no metadata');
+      // PASSO 4: Retornar metadata se tiver, senão null
+      if (metadataRole) {
+        console.warn('[AuthContext] ⚠️ Usuário sem role na user_roles; usando metadata:', metadataRole);
+        return metadataRole;
+      }
+
+      console.warn('[AuthContext] ⚠️ Usuário sem role identificável');
       return null;
     } catch (error: any) {
-      console.error('[AuthContext] ❌ Erro ao verificar roles:', error.message);
-      return inferRoleFromMetadata(u);
+      console.error('[AuthContext] ❌ Erro crítico ao verificar roles:', error.message);
+      // Em caso de erro, tentar metadata como último recurso
+      const fallback = inferRoleFromMetadata(u);
+      console.log('[AuthContext] ⚠️ Fallback final via metadata:', fallback);
+      return fallback;
     }
   };
 
@@ -155,7 +185,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               } catch (error) {
                 console.error('[AuthContext] ❌ Erro ao verificar role:', error);
                 if (mounted) {
-                  applyRole(null);
+                  // Em caso de erro, tentar inferir via metadata
+                  const fallbackRole = inferRoleFromMetadata(currentSession.user);
+                  applyRole(fallbackRole);
                   setLoading(false);
                 }
               }
@@ -200,13 +232,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsClient(false);
     setUserRole(null);
     setUser(null);
-    setSession(null); // CRÍTICO: Limpar session também
+    setSession(null);
     setRolesChecked(true);
     setLoading(false);
     
     // 2. LIMPAR TODO O LOCALSTORAGE IMEDIATAMENTE (síncrono)
     localStorage.removeItem('admin_last_route');
-    localStorage.removeItem('barber_last_route'); // CRÍTICO: Limpa rota salva
+    localStorage.removeItem('barber_last_route');
     localStorage.removeItem('client_last_route');
     localStorage.removeItem('totem_last_route');
     localStorage.removeItem('user_role_cache');
