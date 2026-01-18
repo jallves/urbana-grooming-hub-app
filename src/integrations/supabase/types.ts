@@ -611,6 +611,7 @@ export type Database = {
           id: string
           observacoes: string | null
           status: string | null
+          transaction_id: string | null
           updated_at: string | null
           valor: number
         }
@@ -624,6 +625,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
           valor: number
         }
@@ -637,6 +639,7 @@ export type Database = {
           id?: string
           observacoes?: string | null
           status?: string | null
+          transaction_id?: string | null
           updated_at?: string | null
           valor?: number
         }

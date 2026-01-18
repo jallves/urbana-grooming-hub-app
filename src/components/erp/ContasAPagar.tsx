@@ -10,11 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, Pencil, Trash2, CheckCircle2, CheckSquare, Filter, Users, Calendar, CreditCard } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter } from 'lucide-react';
 import { toast } from 'sonner';
-import { useCashFlowSync } from '@/hooks/financial/useCashFlowSync';
 import FinancialRecordForm from './FinancialRecordForm';
-import { getCategoryLabel } from '@/utils/categoryMappings';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,154 +24,127 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// Using database schema directly
-interface FinancialRecord {
+// Interface para contas_pagar (tabela ERP real)
+interface ContaPagar {
   id: string;
-  transaction_type: string;
-  category: string | null;
-  subcategory: string | null;
-  amount: number;
-  net_amount: number | null;
+  descricao: string;
+  valor: number;
+  data_vencimento: string;
+  data_pagamento: string | null;
+  categoria: string | null;
+  fornecedor: string | null;
   status: string | null;
-  description: string | null;
-  transaction_date: string;
+  observacoes: string | null;
+  transaction_id: string | null; // ID da transação eletrônica (NSU, PIX, etc.)
   created_at: string | null;
-  payment_date: string | null;
-  barber_id: string | null;
-  barber_name: string | null;
-  notes: string | null;
+  updated_at: string | null;
 }
+
+// Mapeamento de categorias para português
+const getCategoryLabel = (category: string | null): string => {
+  if (!category) return '-';
+  const map: Record<string, string> = {
+    'services': 'Serviço',
+    'servico': 'Serviço',
+    'products': 'Produto',
+    'produto': 'Produto',
+    'tips': 'Gorjeta',
+    'gorjeta': 'Gorjeta',
+    'staff_payments': 'Comissão',
+    'comissao': 'Comissão',
+  };
+  return map[category.toLowerCase()] || category;
+};
 
 export const ContasAPagar: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [recordToDelete, setRecordToDelete] = useState<string | null>(null);
   const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
   const [recordToPay, setRecordToPay] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [batchPaymentDialogOpen, setBatchPaymentDialogOpen] = useState(false);
   
   // Filtros
-  const [filterBarber, setFilterBarber] = useState<string>('all');
+  const [filterFornecedor, setFilterFornecedor] = useState<string>('all');
   const [filterCategory, setFilterCategory] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterDateStart, setFilterDateStart] = useState<string>('');
   const [filterDateEnd, setFilterDateEnd] = useState<string>('');
   
   const queryClient = useQueryClient();
-  const { syncToCashFlowAsync } = useCashFlowSync();
 
-  // Buscar lista de barbeiros
-  const { data: barbers } = useQuery({
-    queryKey: ['barbers-list'],
+  // Query para contas_pagar (tabela ERP real com transaction_id)
+  const { data: contasPagar, isLoading } = useQuery({
+    queryKey: ['contas-pagar-erp'],
     queryFn: async () => {
       const { data, error } = await supabase
-        .from('painel_barbeiros')
-        .select('id, nome')
-        .eq('ativo', true)
-        .order('nome');
-      if (error) throw error;
-      return data || [];
-    }
-  });
-
-  const { data: payables, isLoading } = useQuery({
-    queryKey: ['contas-pagar'],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('financial_records')
+        .from('contas_pagar')
         .select('*')
-        .in('transaction_type', ['expense', 'commission'])
-        .order('transaction_date', { ascending: false })
+        .order('data_vencimento', { ascending: false })
         .limit(500);
 
       if (error) throw error;
-      return (data || []) as FinancialRecord[];
+      return (data || []) as ContaPagar[];
     },
     refetchInterval: 10000
   });
 
+  // Buscar lista de fornecedores únicos (barbeiros)
+  const fornecedores = useMemo(() => {
+    if (!contasPagar) return [];
+    const forn = new Set(contasPagar.map(r => r.fornecedor).filter(Boolean));
+    return Array.from(forn) as string[];
+  }, [contasPagar]);
+
   // Aplicar filtros
   const filteredPayables = useMemo(() => {
-    if (!payables) return [];
+    if (!contasPagar) return [];
     
-    return payables.filter(record => {
-      if (filterBarber !== 'all' && record.barber_id !== filterBarber) {
+    return contasPagar.filter(record => {
+      if (filterFornecedor !== 'all' && record.fornecedor !== filterFornecedor) {
         return false;
       }
-      if (filterCategory !== 'all' && record.category !== filterCategory) {
+      if (filterCategory !== 'all' && record.categoria !== filterCategory) {
         return false;
       }
       if (filterStatus !== 'all' && record.status !== filterStatus) {
         return false;
       }
-      if (filterDateStart && record.transaction_date < filterDateStart) {
+      if (filterDateStart && record.data_vencimento < filterDateStart) {
         return false;
       }
-      if (filterDateEnd && record.transaction_date > filterDateEnd) {
+      if (filterDateEnd && record.data_vencimento > filterDateEnd) {
         return false;
       }
       return true;
     });
-  }, [payables, filterBarber, filterCategory, filterStatus, filterDateStart, filterDateEnd]);
+  }, [contasPagar, filterFornecedor, filterCategory, filterStatus, filterDateStart, filterDateEnd]);
 
   // Categorias únicas para filtro
   const uniqueCategories = useMemo(() => {
-    if (!payables) return [];
-    const cats = new Set(payables.map(r => r.category).filter(Boolean));
+    if (!contasPagar) return [];
+    const cats = new Set(contasPagar.map(r => r.categoria).filter(Boolean));
     return Array.from(cats) as string[];
-  }, [payables]);
+  }, [contasPagar]);
 
   const markAsPaidMutation = useMutation({
     mutationFn: async (recordId: string) => {
-      const { data: record, error: fetchError } = await supabase
-        .from('financial_records')
-        .select('*')
-        .eq('id', recordId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      const paymentDate = new Date().toISOString();
+      const paymentDate = format(new Date(), 'yyyy-MM-dd');
 
       const { error } = await supabase
-        .from('financial_records')
+        .from('contas_pagar')
         .update({ 
-          status: 'completed',
-          payment_date: paymentDate,
-          updated_at: paymentDate,
+          status: 'pago',
+          data_pagamento: paymentDate,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', recordId);
 
       if (error) throw error;
-
-      // Sync with barber_commissions if it's a commission
-      if (record.transaction_type === 'commission' && record.barber_id) {
-        await supabase
-          .from('barber_commissions')
-          .update({ 
-            status: 'paid',
-            payment_date: paymentDate,
-          })
-          .eq('barber_id', record.barber_id);
-      }
-
-      await syncToCashFlowAsync({
-        financialRecordId: recordId,
-        transactionType: record.transaction_type as 'expense' | 'commission',
-        amount: record.net_amount || record.amount,
-        description: record.description || '',
-        category: record.category || 'other',
-        paymentMethod: 'other',
-        transactionDate: record.transaction_date,
-        metadata: {}
-      });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-      queryClient.invalidateQueries({ queryKey: ['commissions'] });
       toast.success('Pagamento registrado!');
     },
     onError: (error: any) => {
@@ -183,91 +154,25 @@ export const ContasAPagar: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: async (values: any) => {
-      const netAmount = values.amount - (values.discount_amount || 0);
-
-      const { error } = await supabase.from('financial_records').insert({
-        transaction_type: values.transaction_type || 'expense',
-        category: values.category,
-        subcategory: values.subcategory,
-        amount: values.amount,
-        net_amount: netAmount,
-        status: values.status,
-        description: values.description,
-        transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
-        payment_date: values.status === 'completed' ? new Date().toISOString() : null,
+      const { error } = await supabase.from('contas_pagar').insert({
+        descricao: values.description,
+        valor: values.amount,
+        data_vencimento: format(values.transaction_date, 'yyyy-MM-dd'),
+        data_pagamento: values.status === 'completed' ? format(new Date(), 'yyyy-MM-dd') : null,
+        categoria: values.category,
+        fornecedor: values.barber_name || null,
+        status: values.status === 'completed' ? 'pago' : 'pendente',
       });
 
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
       toast.success('Lançamento criado com sucesso!');
       setFormOpen(false);
     },
     onError: (error: any) => {
       toast.error('Erro ao criar lançamento', { description: error.message });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: async ({ id, values }: { id: string; values: any }) => {
-      const netAmount = values.amount - (values.discount_amount || 0);
-      const paymentDate = values.status === 'completed' ? new Date().toISOString() : null;
-
-      const { error } = await supabase
-        .from('financial_records')
-        .update({
-          category: values.category,
-          subcategory: values.subcategory,
-          amount: values.amount,
-          net_amount: netAmount,
-          status: values.status,
-          description: values.description,
-          transaction_date: format(values.transaction_date, 'yyyy-MM-dd'),
-          payment_date: paymentDate,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', id);
-
-      if (error) throw error;
-
-      if (values.status === 'completed') {
-        await syncToCashFlowAsync({
-          financialRecordId: id,
-          transactionType: values.transaction_type || 'expense',
-          amount: netAmount,
-          description: values.description,
-          category: values.category,
-          paymentMethod: 'other',
-          transactionDate: format(values.transaction_date, 'yyyy-MM-dd'),
-          metadata: {}
-        });
-      }
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Lançamento atualizado!');
-      setFormOpen(false);
-      setEditingRecord(null);
-    },
-    onError: (error: any) => {
-      toast.error('Erro ao atualizar lançamento', { description: error.message });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from('financial_records').delete().eq('id', id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
-      toast.success('Lançamento excluído!');
-      setDeleteDialogOpen(false);
-      setRecordToDelete(null);
-    },
-    onError: (error: any) => {
-      toast.error('Erro ao excluir lançamento', { description: error.message });
     },
   });
 
@@ -286,7 +191,7 @@ export const ContasAPagar: React.FC = () => {
 
   // Seleção múltipla
   const pendingFilteredRecords = useMemo(() => {
-    return filteredPayables.filter(r => r.status === 'pending');
+    return filteredPayables.filter(r => r.status === 'pendente');
   }, [filteredPayables]);
 
   const handleSelectRecord = (recordId: string, checked: boolean) => {
@@ -312,21 +217,21 @@ export const ContasAPagar: React.FC = () => {
   const selectedTotal = useMemo(() => {
     return filteredPayables
       .filter(r => selectedRecords.has(r.id))
-      .reduce((sum, r) => sum + Number(r.net_amount || r.amount), 0);
+      .reduce((sum, r) => sum + Number(r.valor), 0);
   }, [filteredPayables, selectedRecords]);
 
   // Pagamento em lote
   const batchPayMutation = useMutation({
     mutationFn: async (recordIds: string[]) => {
-      const paymentDate = new Date().toISOString();
+      const paymentDate = format(new Date(), 'yyyy-MM-dd');
       
       for (const recordId of recordIds) {
         const { error } = await supabase
-          .from('financial_records')
+          .from('contas_pagar')
           .update({ 
-            status: 'completed',
-            payment_date: paymentDate,
-            updated_at: paymentDate,
+            status: 'pago',
+            data_pagamento: paymentDate,
+            updated_at: new Date().toISOString(),
           })
           .eq('id', recordId);
 
@@ -338,7 +243,7 @@ export const ContasAPagar: React.FC = () => {
       return { successCount: recordIds.length, totalCount: recordIds.length };
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['contas-pagar'] });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
       queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
       toast.success(`${selectedRecords.size} pagamentos registrados com sucesso!`);
       setSelectedRecords(new Set());
@@ -350,31 +255,8 @@ export const ContasAPagar: React.FC = () => {
     }
   });
 
-  const handleEdit = (record: FinancialRecord) => {
-    setEditingRecord({
-      id: record.id,
-      transaction_type: record.transaction_type,
-      category: record.category,
-      subcategory: record.subcategory,
-      amount: record.amount,
-      description: record.description,
-      transaction_date: new Date(record.transaction_date),
-      status: record.status,
-    });
-    setFormOpen(true);
-  };
-
-  const handleDelete = (id: string) => {
-    setRecordToDelete(id);
-    setDeleteDialogOpen(true);
-  };
-
   const handleFormSubmit = async (values: any) => {
-    if (editingRecord?.id) {
-      await updateMutation.mutateAsync({ id: editingRecord.id, values });
-    } else {
-      await createMutation.mutateAsync(values);
-    }
+    await createMutation.mutateAsync(values);
   };
 
   const handleCloseForm = () => {
@@ -387,37 +269,30 @@ export const ContasAPagar: React.FC = () => {
     if (!filteredPayables) return { total: 0, pending: 0, completed: 0 };
     
     return {
-      total: filteredPayables.reduce((sum, r) => sum + Number(r.net_amount || r.amount), 0),
+      total: filteredPayables.reduce((sum, r) => sum + Number(r.valor), 0),
       pending: filteredPayables
-        .filter(r => r.status === 'pending')
-        .reduce((sum, r) => sum + Number(r.net_amount || r.amount), 0),
+        .filter(r => r.status === 'pendente')
+        .reduce((sum, r) => sum + Number(r.valor), 0),
       completed: filteredPayables
-        .filter(r => r.status === 'completed')
-        .reduce((sum, r) => sum + Number(r.net_amount || r.amount), 0)
+        .filter(r => r.status === 'pago')
+        .reduce((sum, r) => sum + Number(r.valor), 0)
     };
   }, [filteredPayables]);
 
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, { label: string; className: string }> = {
-      completed: { label: 'Pago', className: 'bg-green-100 text-green-700 border-green-300' },
-      pending: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
-      canceled: { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' }
+      pago: { label: 'Pago', className: 'bg-green-100 text-green-700 border-green-300' },
+      pendente: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
+      cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' }
     };
 
-    const config = variants[status || 'pending'] || { label: status || 'Pendente', className: 'bg-gray-100 text-gray-700' };
+    const config = variants[status || 'pendente'] || { label: status || 'Pendente', className: 'bg-gray-100 text-gray-700' };
 
     return (
       <Badge variant="outline" className={config.className}>
         {config.label}
       </Badge>
     );
-  };
-
-  const getTypeBadge = (type: string) => {
-    if (type === 'commission') {
-      return <Badge className="bg-purple-100 text-purple-700 border-purple-300">Comissão</Badge>;
-    }
-    return <Badge className="bg-red-100 text-red-700 border-red-300">Despesa</Badge>;
   };
 
   if (isLoading) {
@@ -461,14 +336,14 @@ export const ContasAPagar: React.FC = () => {
             </CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Select value={filterBarber} onValueChange={setFilterBarber}>
+            <Select value={filterFornecedor} onValueChange={setFilterFornecedor}>
               <SelectTrigger>
-                <SelectValue placeholder="Barbeiro" />
+                <SelectValue placeholder="Fornecedor/Barbeiro" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Todos Barbeiros</SelectItem>
-                {barbers?.map(b => (
-                  <SelectItem key={b.id} value={b.id}>{b.nome}</SelectItem>
+                <SelectItem value="all">Todos Fornecedores</SelectItem>
+                {fornecedores.map(f => (
+                  <SelectItem key={f} value={f}>{f}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -491,23 +366,23 @@ export const ContasAPagar: React.FC = () => {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="pending">Pendente</SelectItem>
-                <SelectItem value="completed">Pago</SelectItem>
+                <SelectItem value="pendente">Pendente</SelectItem>
+                <SelectItem value="pago">Pago</SelectItem>
               </SelectContent>
             </Select>
             
             <Input 
               type="date" 
-              value={filterDateStart} 
-              onChange={(e) => setFilterDateStart(e.target.value)}
               placeholder="Data Início"
+              value={filterDateStart}
+              onChange={(e) => setFilterDateStart(e.target.value)}
             />
             
             <Input 
               type="date" 
-              value={filterDateEnd} 
-              onChange={(e) => setFilterDateEnd(e.target.value)}
               placeholder="Data Fim"
+              value={filterDateEnd}
+              onChange={(e) => setFilterDateEnd(e.target.value)}
             />
           </CardContent>
         </Card>
@@ -557,20 +432,21 @@ export const ContasAPagar: React.FC = () => {
           </Card>
         </div>
 
+        {/* Seleção e total selecionado */}
         {selectedRecords.size > 0 && (
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="py-3 flex items-center justify-between">
               <span className="text-blue-700 font-medium">
-                {selectedRecords.size} item(s) selecionado(s)
+                {selectedRecords.size} itens selecionados
               </span>
-              <span className="text-blue-900 font-bold">
+              <span className="text-blue-900 font-bold text-lg">
                 Total: R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </span>
             </CardContent>
           </Card>
         )}
 
-        {/* Tabela */}
+        {/* Tabela de Contas a Pagar (ERP real com transaction_id) */}
         <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-semibold text-gray-900">
@@ -584,77 +460,62 @@ export const ContasAPagar: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead className="w-10">
-                        <Checkbox 
+                        <Checkbox
                           checked={pendingFilteredRecords.length > 0 && selectedRecords.size === pendingFilteredRecords.length}
                           onCheckedChange={handleSelectAll}
                         />
                       </TableHead>
                       <TableHead>Data</TableHead>
-                      <TableHead>Tipo</TableHead>
+                      <TableHead className="whitespace-nowrap">ID Transação</TableHead>
                       <TableHead>Descrição</TableHead>
+                      <TableHead>Fornecedor</TableHead>
                       <TableHead>Categoria</TableHead>
-                      <TableHead>Barbeiro</TableHead>
                       <TableHead className="text-right">Valor</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredPayables.map((record) => (
-                      <TableRow key={record.id}>
+                    {filteredPayables.map((conta) => (
+                      <TableRow key={conta.id}>
                         <TableCell>
-                          {record.status === 'pending' && (
-                            <Checkbox 
-                              checked={selectedRecords.has(record.id)}
-                              onCheckedChange={(checked) => handleSelectRecord(record.id, checked as boolean)}
+                          {conta.status === 'pendente' && (
+                            <Checkbox
+                              checked={selectedRecords.has(conta.id)}
+                              onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
                             />
                           )}
                         </TableCell>
                         <TableCell>
-                          {format(parseISO(record.transaction_date), 'dd/MM/yyyy', { locale: ptBR })}
+                          {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
                         </TableCell>
-                        <TableCell>{getTypeBadge(record.transaction_type)}</TableCell>
+                        <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
+                          {conta.transaction_id || '-'}
+                        </TableCell>
                         <TableCell className="max-w-[200px] truncate">
-                          {record.description || '-'}
+                          {conta.descricao || '-'}
                         </TableCell>
                         <TableCell>
-                          {record.category ? getCategoryLabel(record.category) : '-'}
+                          {conta.fornecedor || '-'}
                         </TableCell>
                         <TableCell>
-                          {record.barber_name || '-'}
+                          {getCategoryLabel(conta.categoria)}
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          R$ {Number(record.net_amount || record.amount).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell>{getStatusBadge(record.status)}</TableCell>
+                        <TableCell>{getStatusBadge(conta.status)}</TableCell>
                         <TableCell className="text-right">
-                          <div className="flex justify-end gap-1">
-                            {record.status === 'pending' && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                                onClick={() => handleMarkAsPaid(record.id)}
-                              >
-                                <CheckCircle className="h-4 w-4" />
-                              </Button>
-                            )}
+                          {conta.status === 'pendente' && (
                             <Button
+                              variant="outline"
                               size="sm"
-                              variant="ghost"
-                              onClick={() => handleEdit(record)}
+                              onClick={() => handleMarkAsPaid(conta.id)}
+                              className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
                             >
-                              <Pencil className="h-4 w-4" />
+                              <CheckCircle className="h-4 w-4" />
                             </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                              onClick={() => handleDelete(record.id)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -663,82 +524,62 @@ export const ContasAPagar: React.FC = () => {
               </div>
             ) : (
               <div className="text-center py-8 text-gray-500">
-                Nenhum lançamento encontrado
+                Nenhuma conta a pagar encontrada
               </div>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Form Modal */}
-      {formOpen && (
-        <FinancialRecordForm
-          open={formOpen}
-          onClose={handleCloseForm}
-          onSubmit={handleFormSubmit}
-          initialData={editingRecord}
-        />
-      )}
-
-      {/* Delete Dialog */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Excluir Lançamento</AlertDialogTitle>
-            <AlertDialogDescription>
-              Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => recordToDelete && deleteMutation.mutate(recordToDelete)}>
-              Excluir
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Payment Confirmation Dialog */}
+      {/* Dialog de confirmação de pagamento individual */}
       <AlertDialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar Pagamento</AlertDialogTitle>
             <AlertDialogDescription>
-              Deseja marcar este lançamento como pago? A data de pagamento será registrada como hoje.
+              Deseja marcar esta despesa como paga? Esta ação não pode ser desfeita.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmPayment} className="bg-green-600 hover:bg-green-700">
+            <AlertDialogAction onClick={confirmPayment}>
               Confirmar Pagamento
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Batch Payment Dialog */}
+      {/* Dialog de pagamento em lote */}
       <AlertDialog open={batchPaymentDialogOpen} onOpenChange={setBatchPaymentDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Pagamento em Lote</AlertDialogTitle>
             <AlertDialogDescription>
-              <p>Deseja marcar {selectedRecords.size} lançamento(s) como pago(s)?</p>
-              <p className="font-bold mt-2">
-                Total: R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-              </p>
+              Deseja marcar {selectedRecords.size} despesas como pagas?
+              <br />
+              <strong>Total: R$ {selectedTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancelar</AlertDialogCancel>
             <AlertDialogAction 
-              onClick={() => batchPayMutation.mutate(Array.from(selectedRecords))} 
-              className="bg-green-600 hover:bg-green-700"
+              onClick={() => batchPayMutation.mutate(Array.from(selectedRecords))}
+              disabled={batchPayMutation.isPending}
             >
-              Confirmar Pagamentos
+              {batchPayMutation.isPending ? 'Processando...' : 'Confirmar Pagamentos'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Form para nova despesa */}
+      <FinancialRecordForm
+        open={formOpen}
+        onClose={handleCloseForm}
+        onSubmit={handleFormSubmit}
+        initialData={editingRecord}
+        isLoading={createMutation.isPending}
+      />
     </>
   );
 };
