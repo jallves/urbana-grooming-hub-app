@@ -159,40 +159,50 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadAvailableDates = async () => {
     setLoading(true);
     try {
-      console.log('🔍 Iniciando loadAvailableDates', {
+      console.log('🔍 [PainelCliente] Iniciando loadAvailableDates', {
         selectedBarber: selectedBarber?.nome,
-        staff_id: selectedBarber?.staff_id,
         selectedService: selectedService?.nome,
         serviceDuration: selectedService?.duracao
       });
 
-      const dates: Date[] = [];
       const today = startOfToday();
+      const datesToCheck: Date[] = [];
       
-      // Carregar até 10 dias disponíveis (buscar em até 30 dias)
-      for (let i = 0; dates.length < 10 && i < 30; i++) {
-        const date = addDays(today, i);
+      // Preparar lista de datas para verificar (próximos 30 dias)
+      for (let i = 0; i < 30; i++) {
+        datesToCheck.push(addDays(today, i));
+      }
+      
+      // OTIMIZAÇÃO: Verificar múltiplas datas em paralelo (em lotes de 5)
+      const dates: Date[] = [];
+      const batchSize = 5;
+      
+      for (let batchStart = 0; batchStart < datesToCheck.length && dates.length < 10; batchStart += batchSize) {
+        const batch = datesToCheck.slice(batchStart, batchStart + batchSize);
         
-        console.log(`📅 Verificando data: ${format(date, 'dd/MM/yyyy')} para barbeiro ${selectedBarber!.nome}`);
-        
-        // Buscar horários disponíveis PARA ESTE BARBEIRO ESPECÍFICO
-        // Usar o id do painel_barbeiros diretamente para consistência
-        const slots = await getAvailableTimeSlots(
-          selectedBarber!.id,
-          date,
-          selectedService!.duracao
+        // Executar verificações em paralelo para o lote
+        const results = await Promise.all(
+          batch.map(async (date) => {
+            const slots = await getAvailableTimeSlots(
+              selectedBarber!.id, // SEMPRE usar painel_barbeiros.id
+              date,
+              selectedService!.duracao
+            );
+            const availableCount = slots.filter(s => s.available).length;
+            return { date, availableCount };
+          })
         );
-
-        const availableCount = slots.filter(s => s.available).length;
-        console.log(`   → ${slots.length} slots totais, ${availableCount} disponíveis para ${selectedBarber!.nome}`);
-
-        // Se tem pelo menos 1 horário disponível, adicionar a data
-        if (availableCount > 0) {
-          dates.push(date);
+        
+        // Adicionar datas com slots disponíveis
+        for (const result of results) {
+          if (result.availableCount > 0 && dates.length < 10) {
+            dates.push(result.date);
+            console.log(`📅 [PainelCliente] ${format(result.date, 'dd/MM')}: ${result.availableCount} slots disponíveis`);
+          }
         }
       }
       
-      console.log(`✅ Total de datas disponíveis para ${selectedBarber!.nome}: ${dates.length}`);
+      console.log(`✅ [PainelCliente] Total de datas disponíveis: ${dates.length}`);
       setAvailableDates(dates);
       
       // Se não há datas disponíveis
@@ -200,7 +210,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
       }
     } catch (error) {
-      console.error('❌ Erro ao carregar datas disponíveis:', error);
+      console.error('❌ [PainelCliente] Erro ao carregar datas disponíveis:', error);
       toast.error('Erro ao carregar datas disponíveis');
     } finally {
       setLoading(false);
