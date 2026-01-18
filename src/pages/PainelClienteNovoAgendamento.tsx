@@ -124,16 +124,29 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       }
       // Se não há vínculo, mostrar todos os barbeiros
 
+      // Adicionar foto_url à query
+      query = supabase
+        .from('painel_barbeiros')
+        .select('id, nome, image_url, foto_url, staff_id')
+        .eq('ativo', true)
+        .order('nome');
+
+      // Se há barbeiros vinculados, filtrar apenas eles
+      if (!staffError && serviceStaff && serviceStaff.length > 0) {
+        const staffIds = serviceStaff.map(s => s.staff_id);
+        query = query.in('id', staffIds);
+      }
+
       const { data, error } = await query;
 
       if (error) throw error;
       
-      // Mapear dados - usar staff_id real para compatibilidade com RPCs
+      // Mapear dados - usar staff_id real e foto_url como fallback
       const mappedBarbers = (data || []).map(b => ({
         id: b.id,
-        staff_id: (b as any).staff_id || b.id, // Usar staff_id real se disponível
+        staff_id: (b as any).staff_id || b.id,
         nome: b.nome,
-        image_url: b.image_url
+        image_url: b.image_url || (b as any).foto_url // Usar foto_url como fallback
       }));
       
       setBarbers(mappedBarbers);
