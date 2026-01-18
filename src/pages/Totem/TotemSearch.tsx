@@ -113,20 +113,14 @@ const TotemSearch: React.FC = () => {
       console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
       // 🔔 VERIFICAR CHECKOUTS PENDENTES (prioridade máxima)
+      // Regra: Cliente com check-in finalizado (status_totem = 'checkin') deve finalizar checkout antes de qualquer outra ação
       console.log('🔍 Verificando checkouts pendentes para:', cliente.nome);
       const { data: checkoutsPendentes, error: checkoutsError } = await supabase
         .from('painel_agendamentos')
-        .select(`
-          id,
-          totem_sessions!inner(
-            id,
-            check_in_time,
-            check_out_time
-          )
-        `)
+        .select('id, data, hora, status, status_totem')
         .eq('cliente_id', cliente.id)
-        .not('totem_sessions.check_in_time', 'is', null)
-        .is('totem_sessions.check_out_time', null);
+        .eq('status_totem', 'checkin')
+        .in('status', ['confirmado', 'em_atendimento']);
 
       if (!checkoutsError && checkoutsPendentes && checkoutsPendentes.length > 0) {
         console.log(`🔔 ALERTA: ${checkoutsPendentes.length} checkout(s) pendente(s) detectado(s)!`);
@@ -135,7 +129,10 @@ const TotemSearch: React.FC = () => {
           duration: 5000
         });
         
-        // Redirecionar para tela de checkouts pendentes
+        // REGRA: Cliente com checkout pendente NÃO pode:
+        // - Fazer novo agendamento
+        // - Fazer novo check-in
+        // Deve finalizar o checkout primeiro
         navigate('/totem/pending-checkouts', {
           state: {
             whatsapp: cliente.whatsapp,

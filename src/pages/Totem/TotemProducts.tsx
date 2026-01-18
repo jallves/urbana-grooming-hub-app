@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BarbershopProduct, CartItem } from '@/types/product';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { resolveProductImageUrl } from '@/utils/productImages';
 
 const TotemProducts: React.FC = () => {
   const navigate = useNavigate();
@@ -210,21 +211,24 @@ const TotemProducts: React.FC = () => {
                 >
                 {/* Product Image */}
                   <div className="relative aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 overflow-hidden">
-                    {product.imagem_url ? (
-                      <>
-                        <img
-                          src={product.imagem_url}
-                          alt={product.nome}
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                        />
-                        {/* Dark overlay on hover */}
-                        <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/90 via-urbana-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-                      </>
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black/80 to-urbana-brown/60">
-                        <Package className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
-                      </div>
-                    )}
+                    {(() => {
+                      const resolvedImageUrl = resolveProductImageUrl(product.imagem_url);
+                      return resolvedImageUrl ? (
+                        <>
+                          <img
+                            src={resolvedImageUrl}
+                            alt={product.nome}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          />
+                          {/* Dark overlay on hover */}
+                          <div className="absolute inset-0 bg-gradient-to-t from-urbana-black/90 via-urbana-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black/80 to-urbana-brown/60">
+                          <Package className="w-16 h-16 sm:w-20 sm:h-20 text-urbana-gold/40 group-hover:text-urbana-gold/60 transition-colors" />
+                        </div>
+                      );
+                    })()}
 
                     {/* Stock Badge - DESTAQUE MAIOR */}
                     <div className="absolute bottom-2 right-2 bg-urbana-black/90 backdrop-blur-sm text-urbana-light px-3 py-1.5 rounded-lg text-sm font-bold border-2 border-urbana-gold/50 shadow-lg z-10">

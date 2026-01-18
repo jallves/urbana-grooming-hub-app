@@ -7,7 +7,7 @@ import { useRealtime } from '@/contexts/RealtimeContext';
 const COLORS = {
   'Serviços': '#1e40af', // blue-800 - muito profissional
   'Produtos': '#065f46', // emerald-800 - muito profissional
-  'Outros': '#5b21b6', // violet-800 - muito profissional
+  'Gorjetas': '#b45309', // amber-700 - para gorjetas
 };
 
 interface RevenueChartProps {
@@ -39,16 +39,26 @@ const RevenueChart: React.FC<RevenueChartProps> = ({ startDate, endDate }) => {
         throw error;
       }
 
-      // Agrupar por categoria
+      // Agrupar por categoria - MAPEAMENTO COMPLETO
       const categoryTotals: Record<string, number> = {};
       data?.forEach(transaction => {
-        const category = transaction.category;
-        let categoryLabel = 'Outros';
+        const category = transaction.category?.toLowerCase() || 'outros';
+        let categoryLabel: string;
         
-        if (category === 'services') categoryLabel = 'Serviços';
-        else if (category === 'products') categoryLabel = 'Produtos';
+        // Mapeamento completo de categorias (inglês e português)
+        if (category === 'services' || category === 'servico' || category === 'serviço') {
+          categoryLabel = 'Serviços';
+        } else if (category === 'products' || category === 'produto' || category === 'product') {
+          categoryLabel = 'Produtos';
+        } else if (category === 'tips' || category === 'gorjeta' || category === 'tip') {
+          categoryLabel = 'Gorjetas';
+        } else {
+          // Para categorias desconhecidas, usar "Serviços" como fallback
+          // já que a maioria das receitas vem de serviços
+          categoryLabel = 'Serviços';
+        }
         
-        categoryTotals[categoryLabel] = (categoryTotals[categoryLabel] || 0) + Number(transaction.net_amount);
+        categoryTotals[categoryLabel] = (categoryTotals[categoryLabel] || 0) + Number(transaction.net_amount || transaction.amount || 0);
       });
 
       // Converter para formato do gráfico
