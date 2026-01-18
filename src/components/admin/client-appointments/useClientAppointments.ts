@@ -93,13 +93,31 @@ export const useClientAppointments = () => {
 
       console.log(`✅ [ADMIN] ${data?.length || 0} agendamentos carregados`);
       
+      // Normalizar relacionamentos que podem vir como objeto (1:1) ou array (1:N)
+      const normalized = (data || []).map((a: any) => {
+        const vendas = Array.isArray(a.vendas) ? a.vendas : a.vendas ? [a.vendas] : [];
+        const appointment_totem_sessions = Array.isArray(a.appointment_totem_sessions)
+          ? a.appointment_totem_sessions
+          : a.appointment_totem_sessions
+            ? [a.appointment_totem_sessions]
+            : [];
+
+        return {
+          ...a,
+          vendas,
+          appointment_totem_sessions,
+        };
+      });
+      
       // Log para debug de status
-      data?.slice(0, 3).forEach(a => {
-        const sessions = (a as any).appointment_totem_sessions;
-        console.log(`📋 [DEBUG] ${a.id}: status=${a.status}, sessions=${sessions?.length || 0}, venda_paga=${(a as any).vendas?.some((v: any) => v.status === 'pago')}`);
+      normalized.slice(0, 3).forEach((a: any) => {
+        const sessions = a.appointment_totem_sessions;
+        console.log(
+          `📋 [DEBUG] ${a.id}: status=${a.status}, sessions=${sessions?.length || 0}, venda_paga=${a.vendas?.some((v: any) => v.status === 'pago')}`
+        );
       });
 
-      setAppointments((data || []) as unknown as PainelAgendamento[]);
+      setAppointments(normalized as unknown as PainelAgendamento[]);
     } catch (error) {
       console.error('Erro ao buscar agendamentos:', error);
       toast.error('Erro ao carregar agendamentos');
