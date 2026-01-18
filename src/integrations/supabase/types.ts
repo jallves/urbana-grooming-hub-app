@@ -147,6 +147,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "appointment_totem_sessions_painel_agendamentos_fk"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "appointment_totem_sessions_totem_session_id_fkey"
             columns: ["totem_session_id"]
             isOneToOne: false
