@@ -22,7 +22,23 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// Using database schema directly
+// Interface para contas_receber (tabela ERP real)
+interface ContaReceber {
+  id: string;
+  descricao: string;
+  valor: number;
+  data_vencimento: string;
+  data_recebimento: string | null;
+  categoria: string | null;
+  cliente_id: string | null;
+  status: string | null;
+  observacoes: string | null;
+  transaction_id: string | null; // ID da transação eletrônica (NSU, PIX, etc.)
+  created_at: string | null;
+  updated_at: string | null;
+}
+
+// Using database schema directly (financial_records - legado)
 interface FinancialRecord {
   id: string;
   transaction_type: string;
@@ -48,6 +64,23 @@ export const ContasAReceber: React.FC = () => {
   const queryClient = useQueryClient();
   const { syncToCashFlowAsync } = useCashFlowSync();
 
+  // Query para contas_receber (tabela ERP real com transaction_id)
+  const { data: contasReceber, isLoading: isLoadingContas } = useQuery({
+    queryKey: ['contas-receber-erp'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_receber')
+        .select('*')
+        .order('data_vencimento', { ascending: false })
+        .limit(100);
+
+      if (error) throw error;
+      return (data || []) as ContaReceber[];
+    },
+    refetchInterval: 10000
+  });
+
+  // Query legada para financial_records (para compatibilidade)
   const { data: receivables, isLoading } = useQuery({
     queryKey: ['contas-receber'],
     queryFn: async () => {
@@ -341,11 +374,68 @@ export const ContasAReceber: React.FC = () => {
           </Card>
         </div>
 
-        {/* Tabela de Contas a Receber */}
+        {/* Tabela de Contas a Receber (ERP real com transaction_id) */}
         <Card className="bg-white border-gray-200">
           <CardHeader className="pb-3">
             <CardTitle className="text-lg font-semibold text-gray-900">
-              Receitas Recentes
+              Receitas Recentes (Contas a Receber)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {contasReceber && contasReceber.length > 0 ? (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Data</TableHead>
+                      <TableHead className="whitespace-nowrap">ID Transação</TableHead>
+                      <TableHead>Descrição</TableHead>
+                      <TableHead>Categoria</TableHead>
+                      <TableHead className="text-right">Valor</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {contasReceber.map((conta) => (
+                      <TableRow key={conta.id}>
+                        <TableCell>
+                          {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                        </TableCell>
+                        <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
+                          {conta.transaction_id || '-'}
+                        </TableCell>
+                        <TableCell className="max-w-[200px] truncate">
+                          {conta.descricao || '-'}
+                        </TableCell>
+                        <TableCell>
+                          {conta.categoria || '-'}
+                        </TableCell>
+                        <TableCell className="text-right font-medium">
+                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(conta.status === 'recebido' ? 'completed' : conta.status)}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : isLoadingContas ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                Nenhuma conta a receber encontrada
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Tabela de Financial Records (legado) */}
+        <Card className="bg-white border-gray-200">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Registros Financeiros (Detalhado)
             </CardTitle>
           </CardHeader>
           <CardContent>

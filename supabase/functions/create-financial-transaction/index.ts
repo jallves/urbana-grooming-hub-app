@@ -39,6 +39,7 @@ type RequestBody = {
   tip_amount?: number
   reference_id?: string | null
   reference_type?: string | null
+  transaction_id?: string | null // ID da transação eletrônica (NSU PayGo, código PIX, etc.)
 }
 
 function normalizePaymentMethod(raw: string | null | undefined) {
@@ -66,6 +67,7 @@ async function ensureContasReceber(
     status: 'pendente' | 'recebido'
     observacoes: string
     categoria?: string | null
+    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
   }
 ) {
   const { data: existing } = await supabase
@@ -87,6 +89,7 @@ async function ensureContasReceber(
       cliente_id: params.cliente_id,
       status: params.status,
       observacoes: params.observacoes,
+      transaction_id: params.transaction_id || null, // ID da transação eletrônica
     })
     .select('id')
     .single()
@@ -249,6 +252,8 @@ Deno.serve(async (req) => {
     const reference_id = body.reference_id || null
     const reference_type = body.reference_type || (body.appointment_id ? 'totem_appointment' : 'totem_sale')
 
+    const transaction_id = body.transaction_id || null // ID da transação eletrônica (NSU, PIX, etc.)
+
     console.log('💰 create-financial-transaction:', {
       reference_id,
       reference_type,
@@ -260,6 +265,7 @@ Deno.serve(async (req) => {
       transaction_date,
       transaction_datetime,
       tip_amount,
+      transaction_id,
     })
 
     // Buscar nome do barbeiro (se tiver)
@@ -325,6 +331,7 @@ Deno.serve(async (req) => {
            status: 'recebido',
            categoria: category,
            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+           transaction_id: transaction_id, // ID da transação eletrônica (NSU, PIX, etc.)
          })
        }
 
