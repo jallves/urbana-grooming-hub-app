@@ -6,8 +6,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Star, Send, Home, Sparkles, Calendar } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { supabase } from '@/integrations/supabase/client';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-
 const TotemRating: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -76,11 +76,27 @@ const TotemRating: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      console.log('[RATING] Salvando avaliação localmente (tabela appointment_ratings não existe)');
+      console.log('[RATING] Salvando avaliação no banco de dados...');
       
-      // Por enquanto, apenas simula o salvamento já que a tabela não existe
-      // Em produção, você pode criar a tabela appointment_ratings
-      console.log('[RATING] ✅ Avaliação registrada:', { rating, comment });
+      // Inserir avaliação no banco de dados
+      const { data: insertedRating, error: insertError } = await supabase
+        .from('appointment_ratings')
+        .insert({
+          appointment_id: appointment?.id || null,
+          client_id: client?.id || null,
+          barber_id: appointment?.barbeiro_id || null,
+          rating: rating,
+          comment: comment.trim() || null
+        })
+        .select()
+        .single();
+
+      if (insertError) {
+        console.error('[RATING] ❌ Erro ao salvar avaliação:', insertError);
+        throw insertError;
+      }
+
+      console.log('[RATING] ✅ Avaliação salva com sucesso:', insertedRating);
       
       setSubmitted(true);
       

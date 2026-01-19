@@ -33,11 +33,25 @@ export const useHomeStatistics = () => {
         .from('painel_clientes')
         .select('*', { count: 'exact', head: true });
 
+      // Buscar avaliações para calcular a taxa de satisfação real
+      const { data: ratings, error: ratingsError } = await supabase
+        .from('appointment_ratings')
+        .select('rating');
+
+      let positiveRating = BASE_STATS.positiveRating;
+
+      if (!ratingsError && ratings && ratings.length > 0) {
+        // Calcular % de avaliações positivas (4 ou 5 estrelas)
+        const positiveCount = ratings.filter(r => r.rating >= 4).length;
+        positiveRating = Math.round((positiveCount / ratings.length) * 100 * 10) / 10;
+        console.log('[Statistics] Avaliações positivas:', positiveCount, 'de', ratings.length, '=', positiveRating, '%');
+      }
+
       setStats({
         yearsOfExcellence: BASE_STATS.yearsOfExcellence,
         satisfiedClients: BASE_STATS.satisfiedClients + (uniqueClients || 0),
         servicesCompleted: BASE_STATS.servicesCompleted + (completedServices || 0),
-        positiveRating: BASE_STATS.positiveRating
+        positiveRating
       });
     } catch (error) {
       console.error('[Statistics] Erro ao carregar:', error);
@@ -65,8 +79,26 @@ export const useHomeStatistics = () => {
       )
       .subscribe();
 
+    // Realtime para avaliações
+    const ratingsChannel = supabase
+      .channel('ratings_stats_changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'appointment_ratings'
+        },
+        () => {
+          console.log('[Statistics] Nova avaliação detectada, atualizando...');
+          fetchStatistics();
+        }
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(appointmentsChannel);
+      supabase.removeChannel(ratingsChannel);
     };
   }, []);
 

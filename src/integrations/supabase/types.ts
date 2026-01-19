@@ -88,6 +88,61 @@ export type Database = {
         }
         Relationships: []
       }
+      appointment_ratings: {
+        Row: {
+          appointment_id: string | null
+          barber_id: string | null
+          client_id: string | null
+          comment: string | null
+          created_at: string
+          id: string
+          rating: number
+          updated_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating: number
+          updated_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          client_id?: string | null
+          comment?: string | null
+          created_at?: string
+          id?: string
+          rating?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointment_ratings_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_ratings_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointment_ratings_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       appointment_slots: {
         Row: {
           created_at: string | null
