@@ -70,7 +70,7 @@ const STATUS_CONFIRMACAO = {
   DESFEITO_MANUAL: 'DESFEITO_MANUAL'
 } as const;
 
-const PARCELAS_OPCOES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12];
+const PARCELAS_OPCOES = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 18, 24, 36, 48, 99];
 
 const PASSOS_HOMOLOGACAO = {
   PASSO_33: { valor: 100560, descricao: 'Venda R$ 1.005,60 + CONFIRMAR' },
