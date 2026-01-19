@@ -105,7 +105,29 @@ const TotemProductPaymentPix: React.FC = () => {
         console.error('❌ Erro ao integrar com ERP:', erpError);
       }
 
-      // 4. Atualizar venda para PAGA
+      // 4. Decrementar estoque dos produtos vendidos
+      console.log('📦 [PRODUCT-PIX] Atualizando estoque de', saleItems?.length || 0, 'produtos');
+      
+      for (const item of saleItems || []) {
+        const productId = item.item_id;
+        const quantity = Number(item.quantidade) || 1;
+        
+        console.log('📦 [PRODUCT-PIX] Diminuindo estoque:', { productId, quantity });
+        
+        // Chamada RPC com cast para evitar erro de tipos (função existe no DB)
+        const { error: stockErr } = await supabase.rpc('decrease_product_stock' as any, {
+          p_product_id: productId,
+          p_quantity: quantity
+        });
+        
+        if (stockErr) {
+          console.error('❌ Erro ao atualizar estoque do produto:', productId, stockErr);
+        } else {
+          console.log('✅ Estoque atualizado para produto:', productId);
+        }
+      }
+
+      // 5. Atualizar venda para PAGA
       await supabase
         .from('vendas')
         .update({ status: 'PAGA', updated_at: new Date().toISOString() })
