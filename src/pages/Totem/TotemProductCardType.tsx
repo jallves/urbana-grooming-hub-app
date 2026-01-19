@@ -28,17 +28,20 @@ const TotemProductCardType: React.FC = () => {
     };
   }, [client, cart, navigate]);
 
-  const cartTotal = cart.reduce((sum: number, item: any) => sum + (item.product.preco * item.quantity), 0);
+  const cartTotal = cart?.reduce((sum: number, item: any) => sum + (item.product.preco * item.quantity), 0) || 0;
+  
+  // Garantir que sale tenha campo total para compatibilidade
+  const saleWithTotal = sale ? { ...sale, total: sale.total || sale.valor_total || cartTotal } : null;
 
   const handleCardTypeSelect = async (cardType: 'debit' | 'credit') => {
     setIsProcessing(true);
 
     try {
-      console.log('💳 Selecionando tipo de cartão:', cardType);
+      console.log('💳 Selecionando tipo de cartão:', cardType, 'Total:', cartTotal);
 
       // Navegar para tela de processamento do cartão
       navigate('/totem/product-payment-card', {
-        state: { sale, client, cart, barber, cardType }
+        state: { sale: saleWithTotal, client, cart, barber, cardType }
       });
 
     } catch (error) {

@@ -14,7 +14,14 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductPaymentCard: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sale, client, cardType, barber } = location.state || {};
+  const { sale: saleFromState, client, cardType, barber } = location.state || {};
+  
+  // Garantir que sale tenha campo total para compatibilidade
+  const sale = saleFromState ? { 
+    ...saleFromState, 
+    total: saleFromState.total || saleFromState.valor_total || 0 
+  } : null;
+  
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);

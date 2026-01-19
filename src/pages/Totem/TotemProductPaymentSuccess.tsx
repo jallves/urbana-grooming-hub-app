@@ -12,7 +12,13 @@ const TotemProductPaymentSuccess: React.FC = () => {
   const location = useLocation();
   const { toast } = useToast();
   const emailSentRef = useRef(false);
-  const { sale, client, transactionData } = location.state || {};
+  const { sale: saleFromState, client, transactionData } = location.state || {};
+  
+  // Garantir que sale tenha campo total para compatibilidade
+  const sale = saleFromState ? { 
+    ...saleFromState, 
+    total: saleFromState.total || saleFromState.valor_total || 0 
+  } : null;
 
   useEffect(() => {
     if (!sale || !client) {
