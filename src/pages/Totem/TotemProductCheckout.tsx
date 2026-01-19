@@ -104,23 +104,25 @@ const TotemProductCheckout: React.FC = () => {
     try {
       console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
       
-      const { data: sale, error: saleError } = await supabase
+      const { data: saleData, error: saleError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: client.id,
           barbeiro_id: barber.staff_id,
-          subtotal: cartTotal,
-          total: cartTotal,
+          valor_total: cartTotal,
           desconto: 0,
           status: 'ABERTA'
         })
         .select()
         .single();
+      
+      // Criar objeto sale com campo total para compatibilidade
+      const sale = { ...saleData, total: cartTotal };
 
       if (saleError) throw saleError;
 
       const saleItems = cart.map(item => ({
-        venda_id: sale.id,
+        venda_id: saleData.id,
         tipo: 'PRODUTO',
         item_id: item.product.id,
         nome: item.product.nome,
@@ -135,7 +137,7 @@ const TotemProductCheckout: React.FC = () => {
 
       if (itemsError) throw itemsError;
 
-      console.log('✅ Venda criada com barbeiro:', sale.id, barber.staff_id);
+      console.log('✅ Venda criada com barbeiro:', saleData.id, barber.staff_id);
 
       if (paymentMethod === 'pix') {
         navigate('/totem/product-payment-pix', {
