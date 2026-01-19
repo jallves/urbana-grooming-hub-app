@@ -329,103 +329,107 @@ export const ContasAPagar: React.FC = () => {
 
         {/* Filtros */}
         <Card className="bg-white border-gray-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Filter className="h-4 w-4" />
+          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6">
+            <CardTitle className="text-xs sm:text-sm font-medium flex items-center gap-2">
+              <Filter className="h-3 w-3 sm:h-4 sm:w-4" />
               Filtros
             </CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <Select value={filterFornecedor} onValueChange={setFilterFornecedor}>
-              <SelectTrigger>
-                <SelectValue placeholder="Fornecedor/Barbeiro" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Fornecedores</SelectItem>
-                {fornecedores.map(f => (
-                  <SelectItem key={f} value={f}>{f}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={filterCategory} onValueChange={setFilterCategory}>
-              <SelectTrigger>
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Categorias</SelectItem>
-                {uniqueCategories.map(cat => (
-                  <SelectItem key={cat} value={cat}>{getCategoryLabel(cat)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger>
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todos Status</SelectItem>
-                <SelectItem value="pendente">Pendente</SelectItem>
-                <SelectItem value="pago">Pago</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            <Input 
-              type="date" 
-              placeholder="Data Início"
-              value={filterDateStart}
-              onChange={(e) => setFilterDateStart(e.target.value)}
-            />
-            
-            <Input 
-              type="date" 
-              placeholder="Data Fim"
-              value={filterDateEnd}
-              onChange={(e) => setFilterDateEnd(e.target.value)}
-            />
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
+              <Select value={filterFornecedor} onValueChange={setFilterFornecedor}>
+                <SelectTrigger className="text-xs sm:text-sm h-9 sm:h-10">
+                  <SelectValue placeholder="Fornecedor" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  {fornecedores.map(f => (
+                    <SelectItem key={f} value={f}>{f}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterCategory} onValueChange={setFilterCategory}>
+                <SelectTrigger className="text-xs sm:text-sm h-9 sm:h-10">
+                  <SelectValue placeholder="Categoria" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todas</SelectItem>
+                  {uniqueCategories.map(cat => (
+                    <SelectItem key={cat} value={cat}>{getCategoryLabel(cat)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              
+              <Select value={filterStatus} onValueChange={setFilterStatus}>
+                <SelectTrigger className="text-xs sm:text-sm h-9 sm:h-10">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Todos</SelectItem>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                </SelectContent>
+              </Select>
+              
+              <Input 
+                type="date" 
+                placeholder="Data Início"
+                value={filterDateStart}
+                onChange={(e) => setFilterDateStart(e.target.value)}
+                className="text-xs sm:text-sm h-9 sm:h-10"
+              />
+              
+              <Input 
+                type="date" 
+                placeholder="Data Fim"
+                value={filterDateEnd}
+                onChange={(e) => setFilterDateEnd(e.target.value)}
+                className="text-xs sm:text-sm h-9 sm:h-10 col-span-2 lg:col-span-1"
+              />
+            </div>
           </CardContent>
         </Card>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
           <Card className="bg-gradient-to-br from-red-50 to-rose-50 border-red-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-red-700 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Total a Pagar
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-red-700 flex items-center gap-1 sm:gap-2">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Total a Pagar</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-red-700">
                 R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-                <ArrowDownCircle className="h-4 w-4" />
-                Pendente
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-yellow-700 flex items-center gap-1 sm:gap-2">
+                <ArrowDownCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Pendente</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-yellow-700">
                 R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Pago
+          <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 col-span-2 md:col-span-1">
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-green-700 flex items-center gap-1 sm:gap-2">
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Pago</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-green-700">
                 R$ {totals.completed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
@@ -446,82 +450,142 @@ export const ContasAPagar: React.FC = () => {
           </Card>
         )}
 
-        {/* Tabela de Contas a Pagar (ERP real com transaction_id) */}
+        {/* Lista de Contas a Pagar */}
         <Card className="bg-white border-gray-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardHeader className="pb-3 px-3 sm:px-6">
+            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Despesas e Comissões
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {filteredPayables && filteredPayables.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-10">
-                        <Checkbox
-                          checked={pendingFilteredRecords.length > 0 && selectedRecords.size === pendingFilteredRecords.length}
-                          onCheckedChange={handleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="whitespace-nowrap">ID Transação</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Fornecedor</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {filteredPayables.map((conta) => (
-                      <TableRow key={conta.id}>
-                        <TableCell>
-                          {conta.status === 'pendente' && (
-                            <Checkbox
-                              checked={selectedRecords.has(conta.id)}
-                              onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
-                            />
+              <>
+                {/* Layout Mobile: Cards */}
+                <div className="block lg:hidden space-y-3">
+                  {filteredPayables.map((conta) => (
+                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-start gap-2 mb-2">
+                        {conta.status === 'pendente' && (
+                          <Checkbox
+                            checked={selectedRecords.has(conta.id)}
+                            onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
+                            className="mt-0.5"
+                          />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-start justify-between gap-2">
+                            <p className="text-sm font-medium text-gray-900 truncate">
+                              {conta.descricao || '-'}
+                            </p>
+                            {getStatusBadge(conta.status)}
+                          </div>
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            <span className="text-xs text-gray-500">{conta.fornecedor || '-'}</span>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-gray-500">{getCategoryLabel(conta.categoria)}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-600">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                          {conta.transaction_id && (
+                            <span className="text-xs text-gray-400 font-mono">
+                              {conta.transaction_id.substring(0, 12)}...
+                            </span>
                           )}
-                        </TableCell>
-                        <TableCell>
-                          {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
-                          {conta.transaction_id || '-'}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {conta.descricao || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {conta.fornecedor || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {getCategoryLabel(conta.categoria)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
-                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(conta.status)}</TableCell>
-                        <TableCell className="text-right">
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-bold text-red-600">
+                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
                           {conta.status === 'pendente' && (
                             <Button
                               variant="outline"
                               size="sm"
                               onClick={() => handleMarkAsPaid(conta.id)}
-                              className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                              className="h-8 w-8 p-0 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
                             >
                               <CheckCircle className="h-4 w-4" />
                             </Button>
                           )}
-                        </TableCell>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Layout Desktop: Tabela */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox
+                            checked={pendingFilteredRecords.length > 0 && selectedRecords.size === pendingFilteredRecords.length}
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="whitespace-nowrap">ID Transação</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Fornecedor</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Ações</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredPayables.map((conta) => (
+                        <TableRow key={conta.id}>
+                          <TableCell>
+                            {conta.status === 'pendente' && (
+                              <Checkbox
+                                checked={selectedRecords.has(conta.id)}
+                                onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
+                            {conta.transaction_id || '-'}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {conta.descricao || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {conta.fornecedor || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {getCategoryLabel(conta.categoria)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-red-600">
+                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(conta.status)}</TableCell>
+                          <TableCell className="text-right">
+                            {conta.status === 'pendente' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkAsPaid(conta.id)}
+                                className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                              >
+                                <CheckCircle className="h-4 w-4" />
+                              </Button>
+                            )}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 Nenhuma conta a pagar encontrada

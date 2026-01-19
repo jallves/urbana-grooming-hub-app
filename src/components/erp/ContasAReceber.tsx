@@ -158,95 +158,132 @@ export const ContasAReceber: React.FC = () => {
         </div>
 
         {/* Cards de Resumo */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-green-700 flex items-center gap-2">
-                <DollarSign className="h-4 w-4" />
-                Total a Receber
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-green-700 flex items-center gap-1 sm:gap-2">
+                <DollarSign className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Total a Receber</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-green-700">
                 R$ {totals.total.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
           <Card className="bg-gradient-to-br from-yellow-50 to-amber-50 border-yellow-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-yellow-700 flex items-center gap-2">
-                <ArrowUpCircle className="h-4 w-4" />
-                Pendente
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-yellow-700 flex items-center gap-1 sm:gap-2">
+                <ArrowUpCircle className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Pendente</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-yellow-700">
                 R$ {totals.pending.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-emerald-700 flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4" />
-                Recebido
+          <Card className="bg-gradient-to-br from-emerald-50 to-teal-50 border-emerald-200 col-span-2 md:col-span-1">
+            <CardHeader className="pb-1 sm:pb-2 px-3 sm:px-6 pt-3 sm:pt-6">
+              <CardTitle className="text-xs sm:text-sm font-medium text-emerald-700 flex items-center gap-1 sm:gap-2">
+                <CheckCircle2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="truncate">Recebido</span>
               </CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-emerald-700">
+            <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+              <div className="text-lg sm:text-2xl font-bold text-emerald-700">
                 R$ {totals.completed.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Tabela de Contas a Receber (ERP real com transaction_id) */}
+        {/* Lista de Contas a Receber */}
         <Card className="bg-white border-gray-200">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardHeader className="pb-3 px-3 sm:px-6">
+            <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Receitas Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {contasReceber && contasReceber.length > 0 ? (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Data</TableHead>
-                      <TableHead className="whitespace-nowrap">ID Transação</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead className="text-right">Valor</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {contasReceber.map((conta) => (
-                      <TableRow key={conta.id}>
-                        <TableCell>
-                          {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
-                          {conta.transaction_id || '-'}
-                        </TableCell>
-                        <TableCell className="max-w-[200px] truncate">
-                          {conta.descricao || '-'}
-                        </TableCell>
-                        <TableCell>
-                          {getCategoryLabel(conta.categoria)}
-                        </TableCell>
-                        <TableCell className="text-right font-medium">
+              <>
+                {/* Layout Mobile: Cards */}
+                <div className="block lg:hidden space-y-3">
+                  {contasReceber.map((conta) => (
+                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                      <div className="flex items-start justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">
+                            {conta.descricao || '-'}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {getCategoryLabel(conta.categoria)}
+                          </p>
+                        </div>
+                        {getStatusBadge(conta.status)}
+                      </div>
+                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
+                        <div className="flex flex-col">
+                          <span className="text-xs text-gray-600">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                          {conta.transaction_id && (
+                            <span className="text-xs text-gray-400 font-mono">
+                              {conta.transaction_id.substring(0, 12)}...
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm font-bold text-green-600">
                           R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell>{getStatusBadge(conta.status)}</TableCell>
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Layout Desktop: Tabela */}
+                <div className="hidden lg:block overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data</TableHead>
+                        <TableHead className="whitespace-nowrap">ID Transação</TableHead>
+                        <TableHead>Descrição</TableHead>
+                        <TableHead>Categoria</TableHead>
+                        <TableHead className="text-right">Valor</TableHead>
+                        <TableHead>Status</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {contasReceber.map((conta) => (
+                        <TableRow key={conta.id}>
+                          <TableCell>
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
+                            {conta.transaction_id || '-'}
+                          </TableCell>
+                          <TableCell className="max-w-[200px] truncate">
+                            {conta.descricao || '-'}
+                          </TableCell>
+                          <TableCell>
+                            {getCategoryLabel(conta.categoria)}
+                          </TableCell>
+                          <TableCell className="text-right font-medium text-green-600">
+                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>{getStatusBadge(conta.status)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             ) : (
               <div className="text-center py-8 text-gray-500">
                 Nenhuma conta a receber encontrada
