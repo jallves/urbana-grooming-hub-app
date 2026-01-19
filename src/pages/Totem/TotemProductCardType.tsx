@@ -18,7 +18,7 @@ const TotemProductCardType: React.FC = () => {
     document.documentElement.classList.add('totem-mode');
     
     if (!client || !cart || cart.length === 0 || !barber || !sale) {
-      toast.error('Dados incompletos');
+      console.warn('[PRODUCT-CARD-TYPE] Dados incompletos, redirecionando...');
       navigate('/totem/home');
       return;
     }
@@ -26,7 +26,7 @@ const TotemProductCardType: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, cart, navigate]);
+  }, [client, cart, barber, sale, navigate]);
 
   const cartTotal = cart?.reduce((sum: number, item: any) => sum + (item.product.preco * item.quantity), 0) || 0;
   

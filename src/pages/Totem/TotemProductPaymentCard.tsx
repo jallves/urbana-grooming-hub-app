@@ -304,9 +304,11 @@ const TotemProductPaymentCard: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
-  // Hook backup para receber resultado do PayGo (fallback caso useTEFAndroid falhe)
+  // Hook para receber resultado do PayGo
+  // CRÍTICO: Só ativar APÓS paymentStarted ser true (não antes!)
+  // Isso evita capturar resultados residuais de transações anteriores
   useTEFPaymentResult({
-    enabled: paymentStarted && isProcessing,
+    enabled: paymentStarted && isProcessing && !finalizingRef.current && !successNavigatedRef.current,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000
@@ -342,6 +344,18 @@ const TotemProductPaymentCard: React.FC = () => {
 
     setError(null);
     finalizingRef.current = false;
+    successNavigatedRef.current = false;
+    
+    // CRÍTICO: Limpar storage de resultados anteriores para evitar captura de resultado residual
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+      console.log('[PRODUCT-CARD] 🧹 Storage de resultados TEF limpo');
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
+    }
 
     // Checar diretamente o objeto injetado pelo WebView - IGUAL AO SERVIÇO
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
@@ -392,13 +406,13 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   };
 
-  // Verificar dados ao montar
+  // Verificar dados ao montar - SILENCIOSO, sem toast de erro prematuro
   useEffect(() => {
     if (!sale || !client || !barber) {
-      toast.error('Dados incompletos');
+      console.warn('[PRODUCT-CARD] Dados incompletos, redirecionando...');
       navigate('/totem/home');
     }
-  }, [sale, client, barber, navigate]);
+  }, []);
 
   const handleCancel = () => {
     cancelarPagamentoTEF();
