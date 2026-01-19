@@ -12,11 +12,12 @@ import { resolveProductImageUrl } from '@/utils/productImages';
 const TotemProducts: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client } = location.state || {};
+  const { client, cart: existingCart, barber } = location.state || {};
   
   const [products, setProducts] = useState<BarbershopProduct[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // Inicializar carrinho com itens existentes (quando volta do checkout)
+  const [cart, setCart] = useState<CartItem[]>(existingCart || []);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
 
   useEffect(() => {
@@ -103,15 +104,23 @@ const TotemProducts: React.FC = () => {
       return;
     }
 
-    console.log('🛒 Redirecionando para seleção de barbeiro com:', {
+    console.log('🛒 Redirecionando para checkout/seleção de barbeiro com:', {
       client: { id: client.id, nome: client.nome },
-      cart: cart.map(i => ({ produto: i.product.nome, qtd: i.quantity }))
+      cart: cart.map(i => ({ produto: i.product.nome, qtd: i.quantity })),
+      barber: barber ? barber.nome : 'não selecionado'
     });
 
-    // Redirecionar para seleção de barbeiro primeiro
-    navigate('/totem/product-barber-select', {
-      state: { client, cart }
-    });
+    // Se já tem barbeiro selecionado, ir direto pro checkout
+    if (barber) {
+      navigate('/totem/product-checkout', {
+        state: { client, cart, barber }
+      });
+    } else {
+      // Senão, redirecionar para seleção de barbeiro primeiro
+      navigate('/totem/product-barber-select', {
+        state: { client, cart }
+      });
+    }
   };
 
   if (loading) {

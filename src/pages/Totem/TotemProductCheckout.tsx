@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
@@ -11,8 +11,10 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 const TotemProductCheckout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart, barber } = location.state || {};
+  const { client, cart: initialCart, barber } = location.state || {};
   
+  // Estado local do carrinho para permitir edição
+  const [cart, setCart] = useState<CartItem[]>(initialCart || []);
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -36,22 +38,77 @@ const TotemProductCheckout: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, cart, barber, navigate]);
+  }, [client, barber, navigate]);
 
-  const cartTotal = (cart as CartItem[]).reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
+  // Cálculo do total em tempo real
+  const cartTotal = useMemo(() => {
+    return cart.reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
+  }, [cart]);
+
+  const cartItemsCount = useMemo(() => {
+    return cart.reduce((sum, item) => sum + item.quantity, 0);
+  }, [cart]);
+
+  // Funções para manipular o carrinho
+  const increaseQuantity = (productId: string) => {
+    setCart(prevCart => 
+      prevCart.map(item => {
+        if (item.product.id === productId) {
+          if (item.quantity >= item.product.estoque) {
+            toast.error('Estoque insuficiente');
+            return item;
+          }
+          return { ...item, quantity: item.quantity + 1 };
+        }
+        return item;
+      })
+    );
+  };
+
+  const decreaseQuantity = (productId: string) => {
+    setCart(prevCart => {
+      const item = prevCart.find(i => i.product.id === productId);
+      if (item && item.quantity > 1) {
+        return prevCart.map(i =>
+          i.product.id === productId
+            ? { ...i, quantity: i.quantity - 1 }
+            : i
+        );
+      } else {
+        // Remove o item se quantidade for 1
+        return prevCart.filter(i => i.product.id !== productId);
+      }
+    });
+  };
+
+  const removeItem = (productId: string) => {
+    setCart(prevCart => prevCart.filter(item => item.product.id !== productId));
+    toast.success('Item removido');
+  };
+
+  // Navegar para adicionar mais produtos
+  const handleAddMoreProducts = () => {
+    navigate('/totem/products', { 
+      state: { client, cart, barber } 
+    });
+  };
 
   const handlePayment = async (paymentMethod: 'pix' | 'card') => {
+    if (cart.length === 0) {
+      toast.error('Carrinho vazio');
+      return;
+    }
+
     setIsProcessing(true);
 
     try {
       console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
       
-      // 🔒 CORREÇÃO: Criar venda com barbeiro_id
       const { data: sale, error: saleError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          barbeiro_id: barber.staff_id, // ✅ Incluir barbeiro
+          barbeiro_id: barber.staff_id,
           subtotal: cartTotal,
           total: cartTotal,
           desconto: 0,
@@ -62,8 +119,7 @@ const TotemProductCheckout: React.FC = () => {
 
       if (saleError) throw saleError;
 
-      // Criar itens da venda usando vendas_itens com campos corretos
-      const saleItems = (cart as CartItem[]).map(item => ({
+      const saleItems = cart.map(item => ({
         venda_id: sale.id,
         tipo: 'PRODUTO',
         item_id: item.product.id,
@@ -99,7 +155,17 @@ const TotemProductCheckout: React.FC = () => {
     }
   };
 
-  if (!cart) return null;
+  // Verificar se carrinho está vazio após remoções
+  useEffect(() => {
+    if (cart.length === 0 && initialCart && initialCart.length > 0) {
+      toast.info('Carrinho esvaziado. Redirecionando...');
+      setTimeout(() => {
+        navigate('/totem/products', { state: { client } });
+      }, 1500);
+    }
+  }, [cart.length, initialCart, client, navigate]);
+
+  if (!initialCart) return null;
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-2 sm:p-3 md:p-4 font-poppins overflow-hidden">
@@ -144,7 +210,7 @@ const TotemProductCheckout: React.FC = () => {
       <div className="flex-1 overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
         {/* Left Column - Barber Info */}
         {barber && (
-          <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0">
+          <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0 h-fit">
             <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
               Barbeiro
@@ -178,32 +244,115 @@ const TotemProductCheckout: React.FC = () => {
           </Card>
         )}
 
-        {/* Center Column - Order Summary */}
+        {/* Center Column - Order Summary (Nota Fiscal Style) */}
         <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
-          <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
-            <Package className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
-            Resumo do Pedido
-          </h2>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light flex items-center gap-2">
+              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
+              Resumo do Pedido
+            </h2>
+            <span className="text-xs sm:text-sm text-urbana-light/60">
+              {cartItemsCount} {cartItemsCount === 1 ? 'item' : 'itens'}
+            </span>
+          </div>
 
-          <div className="space-y-1.5 flex-1 overflow-y-auto max-h-[calc(100vh-280px)]">
-            {(cart as CartItem[]).map((item, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-white/5 backdrop-blur-md rounded-lg border border-urbana-gold/20">
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-bold text-urbana-light truncate">{item.product.nome}</p>
-                  <p className="text-[10px] sm:text-xs text-urbana-light/60">
-                    {item.quantity}x R$ {item.product.preco.toFixed(2)}
-                  </p>
+          {/* Botão Adicionar Mais Produtos */}
+          <Button
+            onClick={handleAddMoreProducts}
+            className="mb-3 h-10 sm:h-11 bg-urbana-gold/15 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20 active:bg-urbana-gold/30"
+          >
+            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+            Adicionar mais produtos
+          </Button>
+
+          {/* Receipt Style Header */}
+          <div className="bg-urbana-black/40 rounded-t-xl border-2 border-b-0 border-urbana-gold/30 p-2 sm:p-3">
+            <div className="text-center border-b border-dashed border-urbana-gold/30 pb-2 mb-2">
+              <p className="text-urbana-gold font-bold text-xs sm:text-sm tracking-wider">COSTA URBANA BARBEARIA</p>
+              <p className="text-urbana-light/50 text-[10px] sm:text-xs">CUPOM DE VENDA - PRODUTOS</p>
+            </div>
+            
+            {/* Table Header */}
+            <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-xs text-urbana-light/60 font-medium border-b border-urbana-gold/20 pb-2">
+              <div className="col-span-5">PRODUTO</div>
+              <div className="col-span-3 text-center">QTD</div>
+              <div className="col-span-2 text-right">UNIT</div>
+              <div className="col-span-2 text-right">TOTAL</div>
+            </div>
+          </div>
+
+          {/* Items List */}
+          <div className="bg-urbana-black/30 border-2 border-t-0 border-b-0 border-urbana-gold/30 flex-1 overflow-y-auto max-h-[calc(100vh-400px)]">
+            {cart.map((item) => (
+              <div 
+                key={item.product.id} 
+                className="grid grid-cols-12 gap-1 p-2 sm:p-3 items-center border-b border-urbana-gold/10 last:border-b-0"
+              >
+                {/* Produto */}
+                <div className="col-span-5 flex items-center gap-2">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border border-urbana-gold/30 flex-shrink-0 bg-urbana-black/50">
+                    {item.product.imagem_url ? (
+                      <img 
+                        src={item.product.imagem_url} 
+                        alt={item.product.nome}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="w-4 h-4 text-urbana-gold/50" />
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-urbana-light text-xs sm:text-sm font-medium leading-tight truncate">
+                      {item.product.nome}
+                    </p>
+                    <button 
+                      onClick={() => removeItem(item.product.id)}
+                      className="text-red-400/70 text-[10px] flex items-center gap-0.5 hover:text-red-400 mt-0.5"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Remover
+                    </button>
+                  </div>
                 </div>
-                <p className="text-sm sm:text-base font-bold text-urbana-gold whitespace-nowrap ml-2">
+                
+                {/* Quantidade com controles */}
+                <div className="col-span-3 flex items-center justify-center gap-1">
+                  <button
+                    onClick={() => decreaseQuantity(item.product.id)}
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 flex items-center justify-center active:bg-red-500/30 transition-colors"
+                  >
+                    <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </button>
+                  <span className="text-urbana-gold font-bold text-sm sm:text-base min-w-[24px] text-center">
+                    {item.quantity}
+                  </span>
+                  <button
+                    onClick={() => increaseQuantity(item.product.id)}
+                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-green-500/20 text-green-300 border border-green-500/40 flex items-center justify-center active:bg-green-500/30 transition-colors"
+                  >
+                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                  </button>
+                </div>
+                
+                {/* Preço Unitário */}
+                <div className="col-span-2 text-right text-urbana-light/80 text-[10px] sm:text-xs">
+                  R$ {item.product.preco.toFixed(2)}
+                </div>
+                
+                {/* Total do Item */}
+                <div className="col-span-2 text-right text-urbana-gold font-bold text-xs sm:text-sm">
                   R$ {(item.product.preco * item.quantity).toFixed(2)}
-                </p>
+                </div>
               </div>
             ))}
           </div>
 
-          <div className="pt-2 mt-2 border-t-2 border-urbana-gold/30">
+          {/* Footer - Total */}
+          <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-2 sm:p-3">
             <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30">
-              <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL:</p>
+              <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL A PAGAR:</p>
               <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
                 R$ {cartTotal.toFixed(2)}
               </p>
@@ -212,7 +361,7 @@ const TotemProductCheckout: React.FC = () => {
         </Card>
 
         {/* Right Column - Payment Methods */}
-        <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30">
+        <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
           <h3 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 sm:mb-3 text-center">
             Forma de Pagamento
           </h3>
@@ -221,7 +370,7 @@ const TotemProductCheckout: React.FC = () => {
             {/* PIX Button */}
             <button
               onClick={() => handlePayment('pix')}
-              disabled={isProcessing}
+              disabled={isProcessing || cart.length === 0}
               className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
@@ -237,7 +386,7 @@ const TotemProductCheckout: React.FC = () => {
             {/* Card Button */}
             <button
               onClick={() => handlePayment('card')}
-              disabled={isProcessing}
+              disabled={isProcessing || cart.length === 0}
               className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
