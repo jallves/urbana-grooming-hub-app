@@ -443,57 +443,57 @@ Deno.serve(async (req) => {
           commissionAmount = Number((net * (commissionRate / 100)).toFixed(2))
         }
 
-        // Categoria em PORTUGUÊS para o ERP
-        const description = `Comissão produto - ${item.name || 'Produto'}`
-        const subRef = `commission:product:${item.id}:produto_comissao`
+        // Só cria registros financeiros se houver comissão configurada
+        if (commissionAmount > 0) {
+          const description = `Comissão produto - ${item.name || 'Produto'}`
+          const subRef = `commission:product:${item.id}:produto_comissao`
 
-        const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
-          supabase,
-          {
-            transaction_type: 'commission',
-            category: 'produto', // Categoria em PORTUGUÊS
-            subcategory: 'produto_comissao',
-            amount: commissionAmount,
-            net_amount: commissionAmount,
-            status: 'pending',
-            description,
-            transaction_date,
-            due_date: transaction_date,
+          const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
+            supabase,
+            {
+              transaction_type: 'commission',
+              category: 'produto',
+              subcategory: 'produto_comissao',
+              amount: commissionAmount,
+              net_amount: commissionAmount,
+              status: 'pending',
+              description,
+              transaction_date,
+              due_date: transaction_date,
+              barber_id: body.barber_id,
+              barber_name: barberName,
+              client_id: body.client_id,
+              reference_id,
+              reference_type,
+            },
+            { reference_id, reference_type, sub_ref: subRef }
+          )
+
+          await ensureBarberCommission(supabase, {
             barber_id: body.barber_id,
             barber_name: barberName,
-            client_id: body.client_id,
-            reference_id,
-            reference_type,
-          },
-          { reference_id, reference_type, sub_ref: subRef }
-        )
+            appointment_id: body.appointment_id || null,
+            venda_id: reference_id,
+            valor: commissionAmount,
+            commission_rate: commissionRate,
+            status: 'pending',
+            tipo: 'produto',
+          })
 
-         if (commissionAmount > 0) {
-           await ensureBarberCommission(supabase, {
-             barber_id: body.barber_id,
-             barber_name: barberName,
-             appointment_id: body.appointment_id || null,
-             venda_id: reference_id,
-             valor: commissionAmount,
-             commission_rate: commissionRate,
-             status: 'pending',
-             tipo: 'produto',
-           })
+          await ensureContasPagar(supabase, {
+            descricao: description,
+            valor: commissionAmount,
+            data_vencimento: transaction_date,
+            data_pagamento: null,
+            status: 'pendente',
+            categoria: 'produto',
+            fornecedor: barberName,
+            observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+            transaction_id: transaction_id,
+          })
 
-           await ensureContasPagar(supabase, {
-             descricao: description,
-             valor: commissionAmount,
-             data_vencimento: transaction_date,
-             data_pagamento: null,
-             status: 'pendente',
-             categoria: 'produto', // Categoria em PORTUGUÊS
-             fornecedor: barberName,
-             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-             transaction_id: transaction_id, // Mesmo ID da transação para conciliação
-           })
-         }
-
-        created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
+          created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
+        }
       }
     }
 
