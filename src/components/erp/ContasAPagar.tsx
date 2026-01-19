@@ -154,9 +154,12 @@ export const ContasAPagar: React.FC = () => {
 
   const createMutation = useMutation({
     mutationFn: async (values: any) => {
+      // Mapear gross_amount para valor (campo usado pelo FinancialRecordForm)
+      const valorFinal = values.gross_amount || values.amount || 0;
+      
       const { error } = await supabase.from('contas_pagar').insert({
         descricao: values.description,
-        valor: values.amount,
+        valor: valorFinal,
         data_vencimento: format(values.transaction_date, 'yyyy-MM-dd'),
         data_pagamento: values.status === 'completed' ? format(new Date(), 'yyyy-MM-dd') : null,
         categoria: values.category,
