@@ -104,22 +104,22 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
   );
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid grid-cols-2 gap-4">
+    <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="space-y-2">
-          <Label className="text-gray-300">Tipo de Transação</Label>
+          <Label className="text-gray-700 text-sm">Tipo de Transação</Label>
           <Select 
             value={formData.transaction_type} 
             onValueChange={(value: 'income' | 'expense') => setFormData({ ...formData, transaction_type: value, category: '' })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="bg-white border-gray-300 text-gray-900 h-9 text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
-              <SelectItem value="income" className="text-green-400">
+            <SelectContent className="bg-white border-gray-300">
+              <SelectItem value="income" className="text-green-700">
                 Receita
               </SelectItem>
-              <SelectItem value="expense" className="text-red-400">
+              <SelectItem value="expense" className="text-red-700">
                 Despesa
               </SelectItem>
             </SelectContent>
@@ -127,40 +127,40 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
         </div>
 
         <div className="space-y-2">
-          <Label className="text-gray-300">Valor (R$)</Label>
+          <Label className="text-gray-700 text-sm">Valor (R$)</Label>
           <Input
             type="number"
             step="0.01"
             value={formData.amount}
             onChange={(e) => setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })}
-            className="bg-gray-800 border-gray-600 text-white"
+            className="bg-white border-gray-300 text-gray-900 h-9 text-sm"
             required
           />
         </div>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-gray-300">Descrição</Label>
+        <Label className="text-gray-700 text-sm">Descrição</Label>
         <Input
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-white border-gray-300 text-gray-900 h-9 text-sm"
           placeholder="Ex: Corte de cabelo - João Silva"
           required
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
         <div className="space-y-2">
-          <Label className="text-gray-300">Categoria</Label>
+          <Label className="text-gray-700 text-sm">Categoria</Label>
           <Select 
             value={formData.category} 
             onValueChange={(value) => setFormData({ ...formData, category: value })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="bg-white border-gray-300 text-gray-900 h-9 text-sm">
               <SelectValue placeholder="Selecione uma categoria" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-white border-gray-300">
               {filteredCategories?.filter(category => category.name && category.name.trim() !== '').map((category) => (
                 <SelectItem key={category.id} value={category.name}>
                   {category.name}
@@ -171,15 +171,15 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
         </div>
 
         <div className="space-y-2">
-          <Label className="text-gray-300">Método de Pagamento</Label>
+          <Label className="text-gray-700 text-sm">Método de Pagamento</Label>
           <Select 
             value={formData.payment_method || ''} 
             onValueChange={(value) => setFormData({ ...formData, payment_method: value })}
           >
-            <SelectTrigger className="bg-gray-800 border-gray-600 text-white">
+            <SelectTrigger className="bg-white border-gray-300 text-gray-900 h-9 text-sm">
               <SelectValue placeholder="Selecione o método" />
             </SelectTrigger>
-            <SelectContent className="bg-gray-800 border-gray-600">
+            <SelectContent className="bg-white border-gray-300">
               <SelectItem value="money">Dinheiro</SelectItem>
               <SelectItem value="debit">Cartão de Débito</SelectItem>
               <SelectItem value="credit">Cartão de Crédito</SelectItem>
@@ -192,53 +192,52 @@ const CashFlowForm: React.FC<CashFlowFormProps> = ({ onSuccess, editingTransacti
       </div>
 
       <div className="space-y-2">
-        <Label className="text-gray-300">Data da Transação</Label>
+        <Label className="text-gray-700 text-sm">Data da Transação</Label>
         <Popover>
           <PopoverTrigger asChild>
             <Button
               variant="outline"
-              className="w-full justify-start text-left font-normal bg-gray-800 border-gray-600 text-white hover:bg-gray-700"
+              className="w-full justify-start text-left font-normal bg-white border-gray-300 text-gray-900 hover:bg-gray-50 h-9 text-sm"
             >
               <CalendarIcon className="mr-2 h-4 w-4" />
               {formData.transaction_date ? format(formData.transaction_date, "dd 'de' MMMM 'de' yyyy", { locale: ptBR }) : "Selecione uma data"}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 bg-gray-800 border-gray-600">
+          <PopoverContent className="w-auto p-0 bg-white border-gray-300">
             <Calendar
               mode="single"
               selected={formData.transaction_date}
               onSelect={(date) => date && setFormData({ ...formData, transaction_date: date })}
               initialFocus
-              className="text-white"
             />
           </PopoverContent>
         </Popover>
       </div>
 
       <div className="space-y-2">
-        <Label className="text-gray-300">Observações (opcional)</Label>
+        <Label className="text-gray-700 text-sm">Observações (opcional)</Label>
         <Textarea
           value={formData.notes || ''}
           onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-          className="bg-gray-800 border-gray-600 text-white"
+          className="bg-white border-gray-300 text-gray-900 text-sm"
           placeholder="Informações adicionais sobre a transação..."
           rows={3}
         />
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4">
+      <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 sm:gap-3 pt-3 sm:pt-4">
         <Button
           type="button"
           variant="outline"
           onClick={onSuccess}
-          className="border-gray-600 text-gray-300 hover:bg-gray-800"
+          className="border-gray-300 text-gray-700 hover:bg-gray-50 w-full sm:w-auto"
         >
           Cancelar
         </Button>
         <Button
           type="submit"
           disabled={mutation.isPending}
-          className="bg-gradient-to-r from-urbana-gold to-urbana-gold/80 hover:from-urbana-gold/90 hover:to-urbana-gold text-urbana-black font-semibold"
+          className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold w-full sm:w-auto"
         >
           {mutation.isPending ? 'Salvando...' : editingTransaction ? 'Atualizar' : 'Criar'}
         </Button>

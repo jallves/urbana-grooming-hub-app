@@ -20,6 +20,21 @@ const CashFlowManagement: React.FC = () => {
           <h1 className="text-lg sm:text-xl font-bold text-black">Fluxo de Caixa</h1>
           <p className="text-xs sm:text-sm text-gray-700">Controle centralizado de todas as movimentações financeiras</p>
         </div>
+        <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
+          <DialogTrigger asChild>
+            <Button className="w-full sm:w-auto">
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Nova Entrada</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Nova Transação</DialogTitle>
+            </DialogHeader>
+            <CashFlowForm onSuccess={() => setIsFormOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
 
       <div className="flex-1 min-h-0 p-2 sm:p-3 lg:p-4">

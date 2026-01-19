@@ -38,17 +38,19 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
         throw error;
       }
 
-      // Buscar nomes dos barbeiros
-      const barberIds = [...new Set(data?.map(t => t.barber_id))];
+      // Buscar nomes dos barbeiros (tentar painel_barbeiros primeiro, fallback para staff)
+      const barberIds = [...new Set(data?.map(t => t.barber_id).filter(Boolean))];
+      
+      // Primeiro tentar painel_barbeiros
       const { data: barbersData } = await supabase
-        .from('staff')
-        .select('id, name')
+        .from('painel_barbeiros')
+        .select('id, nome')
         .in('id', barberIds);
 
       // Criar mapa de IDs para nomes
       const barberNames: Record<string, string> = {};
       barbersData?.forEach(barber => {
-        barberNames[barber.id] = barber.name;
+        barberNames[barber.id] = barber.nome;
       });
 
       // Agrupar por barbeiro
