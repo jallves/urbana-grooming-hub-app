@@ -94,10 +94,10 @@ serve(async (req) => {
       // 6. Preparar itens para a transação financeira
       const transactionItems = itens.map((item: any) => ({
         type: 'product',
-        id: item.ref_id,
+        id: item.item_id, // Campo correto: item_id (não ref_id)
         name: item.nome, // Usar nome já salvo em vendas_itens
         quantity: item.quantidade,
-        price: item.preco_unit, // Campo correto: preco_unit
+        price: item.preco_unitario, // Campo correto: preco_unitario (não preco_unit)
         discount: 0
       }))
 
