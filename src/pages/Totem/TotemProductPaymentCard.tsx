@@ -289,7 +289,9 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [handlePaymentSuccess]);
 
-  // Hook TEF Android COM callbacks - CRÍTICO: passar callbacks para garantir processamento
+  // Hook TEF Android (APENAS para iniciar pagamento - NÃO para receber resultado)
+  // O resultado é recebido exclusivamente pelo useTEFPaymentResult abaixo
+  // IGUAL AO TotemPaymentCard.tsx que funciona!
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -298,29 +300,8 @@ const TotemProductPaymentCard: React.FC = () => {
     cancelarPagamento: cancelarPagamentoTEF,
     verificarConexao
   } = useTEFAndroid({
-    onSuccess: (resultado) => {
-      console.log('✅ [PRODUCT-CARD] onSuccess via useTEFAndroid:', resultado);
-      handlePaymentSuccess({
-        nsu: resultado.nsu,
-        autorizacao: resultado.autorizacao,
-        bandeira: resultado.bandeira
-      });
-    },
-    onError: (erro, resultadoCompleto) => {
-      console.log('❌ [PRODUCT-CARD] onError via useTEFAndroid:', erro, resultadoCompleto);
-      lastFailureRef.current = (resultadoCompleto || { status: 'negado', mensagem: erro }) as TEFResultado;
-      const code = resultadoCompleto?.codigoResposta ? ` (cód. ${resultadoCompleto.codigoResposta})` : '';
-      toast.error(`Pagamento negado${code}`, { description: erro });
-      setError({ title: 'Pagamento Negado', message: `${erro}${code}` });
-      setIsProcessing(false);
-      setPaymentStarted(false);
-    },
-    onCancelled: () => {
-      console.log('⚠️ [PRODUCT-CARD] onCancelled via useTEFAndroid');
-      toast.info('Pagamento cancelado');
-      setIsProcessing(false);
-      setPaymentStarted(false);
-    }
+    // NÃO passamos callbacks aqui para evitar processamento duplicado
+    // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
   // Hook backup para receber resultado do PayGo (fallback caso useTEFAndroid falhe)
