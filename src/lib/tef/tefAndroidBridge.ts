@@ -282,28 +282,45 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
   }
   
   // Converter de formato PayGo bruto
-  const transactionResult = typeof raw.transactionResult === 'number' 
-    ? raw.transactionResult 
-    : parseInt(raw.transactionResult as string || '-99', 10);
-  
-  let status: TEFResultado['status'];
-  if (transactionResult === 0) {
-    status = 'aprovado';
-  } else if (transactionResult >= 1 && transactionResult <= 99) {
-    status = 'negado';
-  } else if (transactionResult === -1) {
-    status = 'cancelado';
-  } else {
-    status = 'erro';
+  // ATENÇÃO: transactionResult pode não existir - NÃO usar '-99' como default (isso vira erro falso)
+  let transactionResult: number | undefined;
+
+  if (typeof raw.transactionResult === 'number') {
+    transactionResult = raw.transactionResult;
+  } else if (typeof raw.transactionResult === 'string' && raw.transactionResult !== '') {
+    transactionResult = parseInt(raw.transactionResult, 10);
   }
-  
+
+  let status: TEFResultado['status'];
+  if (transactionResult !== undefined) {
+    if (transactionResult === 0) {
+      status = 'aprovado';
+    } else if (transactionResult >= 1 && transactionResult <= 99) {
+      status = 'negado';
+    } else if (transactionResult === -1) {
+      status = 'cancelado';
+    } else {
+      status = 'erro';
+    }
+  } else {
+    // Fallback: se não tem transactionResult, verificar se tem NSU/autorização
+    const hasApprovalData = raw.transactionNsu || raw.nsu || raw.authorizationCode || raw.autorizacao;
+    if (hasApprovalData) {
+      status = 'aprovado';
+    } else if (raw.cancelled === true) {
+      status = 'cancelado';
+    } else {
+      status = 'erro';
+    }
+  }
+
   return {
     status,
     valor: typeof raw.amount === 'number' ? raw.amount : undefined,
     bandeira: (raw.cardName || '') as string,
     nsu: (raw.transactionNsu || '') as string,
     autorizacao: (raw.authorizationCode || '') as string,
-    codigoResposta: transactionResult.toString(),
+    codigoResposta: transactionResult?.toString() || raw.codigoResposta?.toString() || '',
     mensagem: (raw.resultMessage || '') as string,
     comprovanteCliente: (raw.cardholderReceipt || '') as string,
     comprovanteLojista: (raw.merchantReceipt || '') as string,
