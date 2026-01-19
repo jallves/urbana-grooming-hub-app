@@ -84,8 +84,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       stock_quantity: productData.estoque || 0,
       is_active: productData.ativo ?? true,
       images: productData.imagem_url ? [productData.imagem_url] : [],
-      commission_value: 0,
-      commission_percentage: 0,
+      commission_value: productData.commission_value || 0,
+      commission_percentage: productData.commission_percentage || 0,
     } : undefined,
   });
   
@@ -123,6 +123,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           estoque: values.stock_quantity || 0,
           ativo: values.is_active,
           imagem_url: values.images[0] || null,
+          commission_value: values.commission_value || 0,
+          commission_percentage: values.commission_percentage || 0,
         };
         
         console.log('📝 Update data:', updateData);
@@ -149,6 +151,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           categoria: 'Geral',
           imagem_url: values.images[0] || null,
           ativo: values.is_active,
+          commission_value: values.commission_value || 0,
+          commission_percentage: values.commission_percentage || 0,
         };
 
         console.log('📝 Insert data:', productData);

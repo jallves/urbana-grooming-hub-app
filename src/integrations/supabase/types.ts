@@ -1304,6 +1304,8 @@ export type Database = {
         Row: {
           ativo: boolean | null
           categoria: string | null
+          commission_percentage: number | null
+          commission_value: number | null
           created_at: string | null
           descricao: string | null
           estoque: number | null
@@ -1316,6 +1318,8 @@ export type Database = {
         Insert: {
           ativo?: boolean | null
           categoria?: string | null
+          commission_percentage?: number | null
+          commission_value?: number | null
           created_at?: string | null
           descricao?: string | null
           estoque?: number | null
@@ -1328,6 +1332,8 @@ export type Database = {
         Update: {
           ativo?: boolean | null
           categoria?: string | null
+          commission_percentage?: number | null
+          commission_value?: number | null
           created_at?: string | null
           descricao?: string | null
           estoque?: number | null
