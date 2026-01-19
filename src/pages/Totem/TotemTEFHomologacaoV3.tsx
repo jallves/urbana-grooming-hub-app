@@ -457,13 +457,22 @@ export default function TotemTEFHomologacaoV3() {
     }
     
     if (window.TEF?.iniciarPagamento) {
+      // Mapear método de pagamento para formato esperado pelo APK PayGo
+      // credit -> credito, debit -> debito, pix -> pix
+      const metodoPayGo = paymentMethod === 'credit' 
+        ? (parcelas > 1 ? 'credito_parcelado' : 'credito')
+        : paymentMethod === 'debit' 
+          ? 'debito' 
+          : 'pix';
+      
       const params = {
         ordemId: transactionId,
         valorCentavos: valorEmCentavos,
-        metodo: paymentMethod,
+        metodo: metodoPayGo,
         parcelas: paymentMethod === 'credit' ? parcelas : 1
       };
       addLog('debug', 'Params:', params);
+      addLog('info', `📤 Enviando para PayGo: ${metodoPayGo.toUpperCase()}`);
       window.TEF.iniciarPagamento(JSON.stringify(params));
     } else {
       addLog('error', '❌ TEF.iniciarPagamento indisponível');
