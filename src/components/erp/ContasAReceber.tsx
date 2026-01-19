@@ -245,48 +245,60 @@ export const ContasAReceber: React.FC = () => {
         </div>
 
         {/* Lista de Contas a Receber */}
-        <Card className="bg-white border-gray-200">
+        <Card className="bg-white border-gray-200 overflow-hidden">
           <CardHeader className="pb-3 px-3 sm:px-6">
             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Receitas Recentes
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
+          <CardContent className="px-0 sm:px-3">
             {contasReceber && contasReceber.length > 0 ? (
               <>
-                {/* Layout Mobile: Cards */}
-                <div className="block lg:hidden space-y-3">
+                {/* Layout Mobile/Tablet: Cards - sem scroll horizontal */}
+                <div className="block xl:hidden space-y-2 px-3">
                   {contasReceber.map((conta) => (
                     <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-start justify-between mb-2">
+                      {/* Linha 1: Descrição + Status */}
+                      <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-gray-900 break-words line-clamp-2">
                             {conta.descricao || '-'}
                           </p>
-                          <p className="text-xs text-gray-500 mt-0.5">
-                            {getCategoryLabel(conta.categoria)}
-                          </p>
                         </div>
-                        {getStatusBadge(conta.status)}
+                        <div className="flex-shrink-0">
+                          {getStatusBadge(conta.status)}
+                        </div>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-600">
-                              {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                      
+                      {/* Linha 2: Categoria */}
+                      <div className="mt-2">
+                        <Badge variant="outline" className="text-xs py-0 px-1.5 bg-gray-100">
+                          {getCategoryLabel(conta.categoria)}
+                        </Badge>
+                      </div>
+                      
+                      {/* Linha 3: Data, horário e ID */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
+                        <span>{format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        <span className="flex items-center gap-0.5">
+                          <Clock className="h-3 w-3" />
+                          {formatTransactionTime(conta.created_at)}
+                        </span>
+                        {conta.transaction_id && (
+                          <>
+                            <span className="text-gray-300">|</span>
+                            <span className="font-mono text-gray-400">
+                              {conta.transaction_id.length > 12 
+                                ? `${conta.transaction_id.substring(0, 12)}...`
+                                : conta.transaction_id}
                             </span>
-                            <span className="text-xs text-gray-400 flex items-center gap-0.5">
-                              <Clock className="h-3 w-3" />
-                              {formatTransactionTime(conta.created_at)}
-                            </span>
-                          </div>
-                          {conta.transaction_id && (
-                            <span className="text-xs text-gray-400 font-mono">
-                              {conta.transaction_id.substring(0, 12)}...
-                            </span>
-                          )}
-                        </div>
-                        <span className="text-sm font-bold text-green-600">
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Linha 4: Valor */}
+                      <div className="flex items-center justify-end mt-3 pt-2 border-t border-gray-200">
+                        <span className="text-base font-bold text-green-600">
                           R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </span>
                       </div>
@@ -294,45 +306,49 @@ export const ContasAReceber: React.FC = () => {
                   ))}
                 </div>
 
-                {/* Layout Desktop: Tabela */}
-                <div className="hidden lg:block overflow-x-auto">
+                {/* Layout Desktop XL+: Tabela compacta */}
+                <div className="hidden xl:block">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead>Data</TableHead>
-                        <TableHead className="whitespace-nowrap">Horário</TableHead>
-                        <TableHead className="whitespace-nowrap">ID Transação</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                        <TableHead>Status</TableHead>
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="px-3 text-xs">Data</TableHead>
+                        <TableHead className="px-2 text-xs">Hora</TableHead>
+                        <TableHead className="px-2 text-xs">Descrição</TableHead>
+                        <TableHead className="px-2 text-xs">Categoria</TableHead>
+                        <TableHead className="px-2 text-xs text-right">Valor</TableHead>
+                        <TableHead className="px-3 text-xs text-center">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {contasReceber.map((conta) => (
-                        <TableRow key={conta.id}>
-                          <TableCell>
-                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                        <TableRow key={conta.id} className="hover:bg-gray-50">
+                          <TableCell className="px-3 py-2 text-xs whitespace-nowrap">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yy', { locale: ptBR })}
                           </TableCell>
-                          <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              {formatTransactionTime(conta.created_at)}
-                            </div>
+                          <TableCell className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
+                            {formatTransactionTime(conta.created_at)}
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
-                            {conta.transaction_id || '-'}
+                          <TableCell className="px-2 py-2 text-xs max-w-[200px]">
+                            <span className="block truncate" title={conta.descricao || '-'}>
+                              {conta.descricao || '-'}
+                            </span>
+                            {conta.transaction_id && (
+                              <span className="block text-[10px] font-mono text-gray-400 truncate" title={conta.transaction_id}>
+                                ID: {conta.transaction_id.substring(0, 10)}...
+                              </span>
+                            )}
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {conta.descricao || '-'}
+                          <TableCell className="px-2 py-2">
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-gray-100">
+                              {getCategoryLabel(conta.categoria)}
+                            </Badge>
                           </TableCell>
-                          <TableCell>
-                            {getCategoryLabel(conta.categoria)}
-                          </TableCell>
-                          <TableCell className="text-right font-medium text-green-600">
+                          <TableCell className="px-2 py-2 text-xs text-right font-semibold text-green-600 whitespace-nowrap">
                             R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell>{getStatusBadge(conta.status)}</TableCell>
+                          <TableCell className="px-3 py-2 text-center">
+                            {getStatusBadge(conta.status)}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -340,7 +356,7 @@ export const ContasAReceber: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 px-3">
                 Nenhuma conta a receber encontrada
               </div>
             )}

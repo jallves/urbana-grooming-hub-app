@@ -493,104 +493,125 @@ export const ContasAPagar: React.FC = () => {
         )}
 
         {/* Lista de Contas a Pagar */}
-        <Card className="bg-white border-gray-200">
+        <Card className="bg-white border-gray-200 overflow-hidden">
           <CardHeader className="pb-3 px-3 sm:px-6">
             <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
               Despesas e Comissões
             </CardTitle>
           </CardHeader>
-          <CardContent className="px-3 sm:px-6">
+          <CardContent className="px-0 sm:px-3">
             {filteredPayables && filteredPayables.length > 0 ? (
               <>
-                {/* Layout Mobile: Cards */}
-                <div className="block lg:hidden space-y-3">
+                {/* Layout Mobile/Tablet: Cards - Sempre vertical, sem scroll horizontal */}
+                <div className="block xl:hidden space-y-2 px-3">
+                  {/* Botão Selecionar Todos (apenas pendentes) */}
+                  {pendingFilteredRecords.length > 0 && (
+                    <div className="flex items-center gap-2 py-2 border-b border-gray-200 mb-2">
+                      <Checkbox
+                        checked={pendingFilteredRecords.length > 0 && selectedRecords.size === pendingFilteredRecords.length}
+                        onCheckedChange={handleSelectAll}
+                      />
+                      <span className="text-sm text-gray-600">Selecionar todos pendentes</span>
+                    </div>
+                  )}
+                  
                   {filteredPayables.map((conta) => (
                     <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                      <div className="flex items-start gap-2 mb-2">
+                      {/* Linha 1: Checkbox + Descrição + Status */}
+                      <div className="flex items-start gap-2">
                         {conta.status === 'pendente' && (
                           <Checkbox
                             checked={selectedRecords.has(conta.id)}
                             onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
-                            className="mt-0.5"
+                            className="mt-0.5 flex-shrink-0"
                           />
                         )}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium text-gray-900 truncate">
+                            <p className="text-sm font-medium text-gray-900 break-words line-clamp-2">
                               {conta.descricao || '-'}
                             </p>
-                            {getStatusBadge(conta.status)}
-                          </div>
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            <span className="text-xs text-gray-500">{conta.fornecedor || '-'}</span>
-                            <span className="text-xs text-gray-400">•</span>
-                            <span className="text-xs text-gray-500">{getCategoryLabel(conta.categoria)}</span>
+                            <div className="flex-shrink-0">
+                              {getStatusBadge(conta.status)}
+                            </div>
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <div className="flex flex-col gap-0.5">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs text-gray-600">
-                              {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                      
+                      {/* Linha 2: Fornecedor e Categoria */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
+                        <span className="font-medium">{conta.fornecedor || 'Sem fornecedor'}</span>
+                        <span className="text-gray-300">|</span>
+                        <Badge variant="outline" className="text-xs py-0 px-1.5 bg-gray-100">
+                          {getCategoryLabel(conta.categoria)}
+                        </Badge>
+                      </div>
+                      
+                      {/* Linha 3: Data, horário e ID */}
+                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
+                        <span>{format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
+                        <span className="flex items-center gap-0.5">
+                          <Clock className="h-3 w-3" />
+                          {formatTransactionTime(conta.created_at)}
+                        </span>
+                        {conta.transaction_id && (
+                          <>
+                            <span className="text-gray-300">|</span>
+                            <span className="font-mono text-gray-400">
+                              {conta.transaction_id.length > 12 
+                                ? `${conta.transaction_id.substring(0, 12)}...`
+                                : conta.transaction_id}
                             </span>
-                            <span className="text-xs text-gray-400 flex items-center gap-0.5">
-                              <Clock className="h-3 w-3" />
-                              {formatTransactionTime(conta.created_at)}
-                            </span>
-                          </div>
-                          {conta.transaction_id && (
-                            <span className="text-xs text-gray-400 font-mono">
-                              {conta.transaction_id.substring(0, 12)}...
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-red-600">
-                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
-                          {conta.status === 'pendente' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkAsPaid(conta.id)}
-                              className="h-8 w-8 p-0 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                            >
-                              <CheckCircle className="h-4 w-4" />
-                            </Button>
-                          )}
-                        </div>
+                          </>
+                        )}
+                      </div>
+                      
+                      {/* Linha 4: Valor + Ação */}
+                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
+                        <span className="text-base font-bold text-red-600">
+                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </span>
+                        {conta.status === 'pendente' && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleMarkAsPaid(conta.id)}
+                            className="h-8 px-3 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                          >
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Pagar
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
 
-                {/* Layout Desktop: Tabela */}
-                <div className="hidden lg:block overflow-x-auto">
+                {/* Layout Desktop XL+: Tabela compacta */}
+                <div className="hidden xl:block">
                   <Table>
                     <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-10">
+                      <TableRow className="bg-gray-50">
+                        <TableHead className="w-10 px-3">
                           <Checkbox
                             checked={pendingFilteredRecords.length > 0 && selectedRecords.size === pendingFilteredRecords.length}
                             onCheckedChange={handleSelectAll}
                           />
                         </TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead className="whitespace-nowrap">Horário</TableHead>
-                        <TableHead className="whitespace-nowrap">ID Transação</TableHead>
-                        <TableHead>Descrição</TableHead>
-                        <TableHead>Fornecedor</TableHead>
-                        <TableHead>Categoria</TableHead>
-                        <TableHead className="text-right">Valor</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead className="text-right">Ações</TableHead>
+                        <TableHead className="px-2 text-xs">Data</TableHead>
+                        <TableHead className="px-2 text-xs">Hora</TableHead>
+                        <TableHead className="px-2 text-xs">Descrição</TableHead>
+                        <TableHead className="px-2 text-xs">Fornecedor</TableHead>
+                        <TableHead className="px-2 text-xs">Categoria</TableHead>
+                        <TableHead className="px-2 text-xs text-right">Valor</TableHead>
+                        <TableHead className="px-2 text-xs text-center">Status</TableHead>
+                        <TableHead className="px-3 text-xs text-right">Ação</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {filteredPayables.map((conta) => (
-                        <TableRow key={conta.id}>
-                          <TableCell>
+                        <TableRow key={conta.id} className="hover:bg-gray-50">
+                          <TableCell className="px-3 py-2">
                             {conta.status === 'pendente' && (
                               <Checkbox
                                 checked={selectedRecords.has(conta.id)}
@@ -598,40 +619,45 @@ export const ContasAPagar: React.FC = () => {
                               />
                             )}
                           </TableCell>
-                          <TableCell>
-                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          <TableCell className="px-2 py-2 text-xs whitespace-nowrap">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yy', { locale: ptBR })}
                           </TableCell>
-                          <TableCell className="text-xs text-gray-600 whitespace-nowrap">
-                            <div className="flex items-center gap-1">
-                              <Clock className="h-3 w-3 text-gray-400" />
-                              {formatTransactionTime(conta.created_at)}
-                            </div>
+                          <TableCell className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
+                            {formatTransactionTime(conta.created_at)}
                           </TableCell>
-                          <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
-                            {conta.transaction_id || '-'}
+                          <TableCell className="px-2 py-2 text-xs max-w-[180px]">
+                            <span className="block truncate" title={conta.descricao || '-'}>
+                              {conta.descricao || '-'}
+                            </span>
+                            {conta.transaction_id && (
+                              <span className="block text-[10px] font-mono text-gray-400 truncate" title={conta.transaction_id}>
+                                ID: {conta.transaction_id.substring(0, 10)}...
+                              </span>
+                            )}
                           </TableCell>
-                          <TableCell className="max-w-[200px] truncate">
-                            {conta.descricao || '-'}
-                          </TableCell>
-                          <TableCell>
+                          <TableCell className="px-2 py-2 text-xs max-w-[100px] truncate">
                             {conta.fornecedor || '-'}
                           </TableCell>
-                          <TableCell>
-                            {getCategoryLabel(conta.categoria)}
+                          <TableCell className="px-2 py-2">
+                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-gray-100">
+                              {getCategoryLabel(conta.categoria)}
+                            </Badge>
                           </TableCell>
-                          <TableCell className="text-right font-medium text-red-600">
+                          <TableCell className="px-2 py-2 text-xs text-right font-semibold text-red-600 whitespace-nowrap">
                             R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell>{getStatusBadge(conta.status)}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="px-2 py-2 text-center">
+                            {getStatusBadge(conta.status)}
+                          </TableCell>
+                          <TableCell className="px-3 py-2 text-right">
                             {conta.status === 'pendente' && (
                               <Button
                                 variant="outline"
                                 size="sm"
                                 onClick={() => handleMarkAsPaid(conta.id)}
-                                className="bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                                className="h-7 w-7 p-0 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
                               >
-                                <CheckCircle className="h-4 w-4" />
+                                <CheckCircle className="h-3.5 w-3.5" />
                               </Button>
                             )}
                           </TableCell>
@@ -642,7 +668,7 @@ export const ContasAPagar: React.FC = () => {
                 </div>
               </>
             ) : (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-gray-500 px-3">
                 Nenhuma conta a pagar encontrada
               </div>
             )}
