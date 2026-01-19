@@ -26,33 +26,35 @@ const TotemProductPaymentCard: React.FC = () => {
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
+  const [paymentId, setPaymentId] = useState<string | null>(null);
   
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
   const successNavigatedRef = useRef(false);
   
-  // Função de sucesso - ROBUSTO E GARANTIDO
+  // Função de sucesso - IGUAL AO CHECKOUT DE SERVIÇO
+  // Delega tudo para a edge function totem-direct-sale
   const handlePaymentSuccess = useCallback(async (transactionData?: {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
   }) => {
-    // Validações iniciais críticas
+    // Validações críticas
     if (!sale?.id) {
       console.error('[PRODUCT-CARD] ❌ sale.id não existe!');
       toast.error('Erro crítico: ID da venda não encontrado');
       return;
     }
     
-    if (!barber?.id) {
-      console.error('[PRODUCT-CARD] ❌ barber.id não existe!');
-      toast.error('Erro crítico: Barbeiro não identificado');
+    if (!paymentId) {
+      console.error('[PRODUCT-CARD] ❌ paymentId não existe!');
+      toast.error('Erro crítico: ID do pagamento não encontrado');
       return;
     }
     
     // Prevenir múltiplas finalizações
     if (finalizingRef.current) {
-      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento - ignorando chamada duplicada');
+      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento');
       return;
     }
     
@@ -65,27 +67,47 @@ const TotemProductPaymentCard: React.FC = () => {
     finalizingRef.current = true;
     
     console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-    console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO DE PRODUTO');
+    console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO VIA EDGE FUNCTION');
     console.log('✅ [PRODUCT-CARD] Sale ID:', sale.id);
-    console.log('✅ [PRODUCT-CARD] Barber ID:', barber.id);
+    console.log('✅ [PRODUCT-CARD] Payment ID:', paymentId);
     console.log('✅ [PRODUCT-CARD] Transaction:', transactionData);
     console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
     
-    let saleItems: any[] = [];
-    
     try {
-      // 1. Buscar itens da venda - CRÍTICO
-      const { data: fetchedItems, error: itemsError } = await supabase
-        .from('vendas_itens')
-        .select('*')
-        .eq('venda_id', sale.id)
-        .eq('tipo', 'PRODUTO');
+      // Chamar edge function para finalizar - IGUAL AO SERVIÇO
+      const paymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
+      
+      const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+        body: {
+          action: 'finish',
+          venda_id: sale.id,
+          payment_id: paymentId,
+          payment_method: paymentMethod,
+          transaction_data: transactionData
+        }
+      });
 
-      if (itemsError) {
-        console.error('[PRODUCT-CARD] Erro ao buscar itens:', itemsError);
-        // Fallback: usar cart do state se disponível
+      if (finishError) {
+        console.error('❌ [PRODUCT-CARD] Erro ao finalizar:', finishError);
+        // Não bloquear - pagamento já foi aprovado
+      } else {
+        console.log('✅ [PRODUCT-CARD] Edge function executada com sucesso');
+      }
+      
+      // Buscar itens da venda para exibir no comprovante
+      let saleItems: any[] = [];
+      try {
+        const { data: fetchedItems } = await supabase
+          .from('vendas_itens')
+          .select('*')
+          .eq('venda_id', sale.id)
+          .eq('tipo', 'PRODUTO');
+        
+        saleItems = fetchedItems || [];
+      } catch (e) {
+        console.warn('[PRODUCT-CARD] Erro ao buscar itens para comprovante:', e);
+        // Usar cart do state como fallback
         if (cart && cart.length > 0) {
-          console.log('[PRODUCT-CARD] Usando cart do state como fallback');
           saleItems = cart.map((item: any) => ({
             item_id: item.product?.id || item.id,
             nome: item.product?.nome || item.nome,
@@ -93,105 +115,10 @@ const TotemProductPaymentCard: React.FC = () => {
             preco_unitario: item.product?.preco || item.preco,
             subtotal: (item.product?.preco || item.preco) * (item.quantity || 1)
           }));
-        } else {
-          throw new Error('Não foi possível buscar os itens da venda');
         }
-      } else {
-        saleItems = fetchedItems || [];
-      }
-
-      console.log('[PRODUCT-CARD] Itens encontrados:', saleItems.length);
-
-      // 2. Preparar itens para o ERP
-      const erpItems = saleItems.map((item: any) => ({
-        type: 'product' as const,
-        id: item.item_id,
-        name: item.nome,
-        quantity: Number(item.quantidade) || 1,
-        price: Number(item.preco_unitario),
-        discount: 0
-      }));
-
-      const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
-
-      console.log('📊 [PRODUCT-CARD] Enviando para ERP:', {
-        client_id: sale.cliente_id,
-        barber_id: barber.id,
-        reference_id: sale.id,
-        items: erpItems.length,
-        payment_method: normalizedPaymentMethod,
-        nsu: transactionData?.nsu
-      });
-
-      // 3. Chamar edge function - não bloquear em caso de erro
-      try {
-        const { error: erpError } = await supabase.functions.invoke(
-          'create-financial-transaction',
-          {
-            body: {
-              client_id: sale.cliente_id,
-              barber_id: barber.id,
-              items: erpItems,
-              payment_method: normalizedPaymentMethod,
-              discount_amount: Number(sale.desconto) || 0,
-              notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`,
-              reference_id: sale.id,
-              reference_type: 'totem_product_sale',
-              transaction_id: transactionData?.nsu || null
-            }
-          }
-        );
-
-        if (erpError) {
-          console.error('❌ [PRODUCT-CARD] Erro ERP (não bloqueante):', erpError);
-        } else {
-          console.log('✅ [PRODUCT-CARD] ERP integrado com sucesso');
-        }
-      } catch (erpErr) {
-        console.error('❌ [PRODUCT-CARD] Exceção ERP (não bloqueante):', erpErr);
-      }
-
-      // 4. Decrementar estoque - não bloquear em caso de erro
-      console.log('📦 [PRODUCT-CARD] Atualizando estoque de', saleItems.length, 'produtos');
-      
-      for (const item of saleItems) {
-        const productId = item.item_id;
-        const quantity = Number(item.quantidade) || 1;
-        
-        try {
-          const { error: stockErr } = await supabase.rpc('decrease_product_stock' as any, {
-            p_product_id: productId,
-            p_quantity: quantity
-          });
-          
-          if (stockErr) {
-            console.error('❌ Erro ao atualizar estoque:', productId, stockErr);
-          } else {
-            console.log('✅ Estoque atualizado:', productId);
-          }
-        } catch (stockException) {
-          console.error('❌ Exceção ao atualizar estoque:', productId, stockException);
-        }
-      }
-
-      // 5. Atualizar venda para PAGA - CRÍTICO
-      const { error: updateError } = await supabase
-        .from('vendas')
-        .update({ 
-          status: 'PAGA', 
-          forma_pagamento: normalizedPaymentMethod,
-          updated_at: new Date().toISOString() 
-        })
-        .eq('id', sale.id);
-
-      if (updateError) {
-        console.error('❌ [PRODUCT-CARD] Erro ao atualizar status da venda:', updateError);
-        // Continuar mesmo assim - pagamento já foi aprovado
-      } else {
-        console.log('✅ [PRODUCT-CARD] Venda marcada como PAGA');
       }
       
-      // 6. Navegar para tela de sucesso - GARANTIDO
+      // Navegar para tela de sucesso - GARANTIDO
       successNavigatedRef.current = true;
       toast.success('Pagamento aprovado!');
       
@@ -215,18 +142,17 @@ const TotemProductPaymentCard: React.FC = () => {
       });
       
     } catch (err) {
-      console.error('❌ [PRODUCT-CARD] Erro crítico ao processar:', err);
+      console.error('❌ [PRODUCT-CARD] Erro crítico:', err);
       
-      // IMPORTANTE: Se pagamento foi aprovado na maquininha, ainda navegar para sucesso
-      // O cliente já pagou - não podemos deixá-lo na tela de erro
+      // Se pagamento foi aprovado na maquininha, ainda navegar para sucesso
       if (transactionData?.nsu || transactionData?.autorizacao) {
-        console.log('⚠️ [PRODUCT-CARD] Pagamento aprovado na maquininha - navegando para sucesso mesmo com erro');
+        console.log('⚠️ [PRODUCT-CARD] Pagamento aprovado - navegando para sucesso mesmo com erro');
         successNavigatedRef.current = true;
         toast.warning('Pagamento aprovado com observações');
         
         navigate('/totem/product-payment-success', { 
           state: { 
-            sale: { ...sale, items: saleItems, total: sale.total || sale.valor_total }, 
+            sale: { ...sale, items: [], total: sale.total || sale.valor_total }, 
             client, 
             transactionData: { ...transactionData, paymentMethod: cardType } 
           } 
@@ -240,9 +166,9 @@ const TotemProductPaymentCard: React.FC = () => {
         finalizingRef.current = false;
       }
     }
-  }, [sale, client, cardType, barber, cart, navigate]);
+  }, [sale, client, cardType, cart, paymentId, navigate]);
 
-  // Handler para resultado do TEF
+  // Handler para resultado do TEF - IGUAL AO SERVIÇO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PRODUCT-CARD] handleTEFResult:', resultado.status);
     
@@ -289,9 +215,7 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [handlePaymentSuccess]);
 
-  // Hook TEF Android (APENAS para iniciar pagamento - NÃO para receber resultado)
-  // O resultado é recebido exclusivamente pelo useTEFPaymentResult abaixo
-  // IGUAL AO TotemPaymentCard.tsx que funciona!
+  // Hook TEF Android - NÃO passar callbacks (resultado via useTEFPaymentResult)
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -299,16 +223,11 @@ const TotemProductPaymentCard: React.FC = () => {
     iniciarPagamento: iniciarPagamentoTEF,
     cancelarPagamento: cancelarPagamentoTEF,
     verificarConexao
-  } = useTEFAndroid({
-    // NÃO passamos callbacks aqui para evitar processamento duplicado
-    // O useTEFPaymentResult é o único responsável por receber e processar resultados
-  });
+  } = useTEFAndroid({});
 
-  // Hook para receber resultado do PayGo
-  // CRÍTICO: Só ativar APÓS paymentStarted ser true (não antes!)
-  // Isso evita capturar resultados residuais de transações anteriores
+  // Hook para receber resultado do PayGo - IGUAL AO SERVIÇO
   useTEFPaymentResult({
-    enabled: paymentStarted && isProcessing && !finalizingRef.current && !successNavigatedRef.current,
+    enabled: paymentStarted && isProcessing,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000
@@ -327,7 +246,7 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('🔌 [PRODUCT-CARD] Status TEF:', { isAndroidAvailable, isPinpadConnected, isCheckingConnection });
   }, [isAndroidAvailable, isPinpadConnected, isCheckingConnection]);
 
-  // IGUAL AO CARTÃO DE SERVIÇO: Botão para iniciar pagamento
+  // Iniciar pagamento - IGUAL AO SERVIÇO
   const handleStartPayment = async () => {
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
     console.log('💳 [PRODUCT-CARD] INICIANDO PAGAMENTO DE PRODUTO');
@@ -346,28 +265,28 @@ const TotemProductPaymentCard: React.FC = () => {
     finalizingRef.current = false;
     successNavigatedRef.current = false;
     
-    // CRÍTICO: Limpar storage de resultados anteriores para evitar captura de resultado residual
+    // Limpar storage de resultados anteriores
     try {
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
       localStorage.removeItem('lastTefResult');
       localStorage.removeItem('lastTefResultTime');
-      console.log('[PRODUCT-CARD] 🧹 Storage de resultados TEF limpo');
+      console.log('[PRODUCT-CARD] 🧹 Storage limpo');
     } catch (e) {
       console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
     }
 
-    // Checar diretamente o objeto injetado pelo WebView - IGUAL AO SERVIÇO
+    // Checar bridge TEF
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
 
     if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
-        description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
+        description: 'O WebView não detectou a bridge TEF (window.TEF).'
       });
       return;
     }
 
-    // Revalidar pinpad antes de iniciar - IGUAL AO SERVIÇO
+    // Revalidar pinpad
     const status = verificarConexao();
     const connected = !!status?.conectado;
 
@@ -378,6 +297,41 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
+    // PASSO 1: Chamar edge function para criar totem_payments (IGUAL AO SERVIÇO)
+    const paymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
+    
+    console.log('[PRODUCT-CARD] Chamando totem-direct-sale start...');
+    
+    try {
+      const { data: startResult, error: startError } = await supabase.functions.invoke('totem-direct-sale', {
+        body: {
+          action: 'start',
+          venda_id: sale.id,
+          payment_method: paymentMethod
+        }
+      });
+
+      if (startError) {
+        console.error('[PRODUCT-CARD] Erro ao iniciar pagamento:', startError);
+        toast.error('Erro ao preparar pagamento');
+        return;
+      }
+
+      if (!startResult?.payment_id) {
+        console.error('[PRODUCT-CARD] payment_id não retornado');
+        toast.error('Erro ao criar registro de pagamento');
+        return;
+      }
+
+      console.log('[PRODUCT-CARD] ✅ Payment ID criado:', startResult.payment_id);
+      setPaymentId(startResult.payment_id);
+    } catch (e) {
+      console.error('[PRODUCT-CARD] Exceção ao iniciar:', e);
+      toast.error('Erro ao preparar pagamento');
+      return;
+    }
+
+    // PASSO 2: Iniciar pagamento no PayGo
     setIsProcessing(true);
     setPaymentStarted(true);
 
@@ -393,7 +347,7 @@ const TotemProductPaymentCard: React.FC = () => {
 
       if (!success) {
         toast.error('Erro ao iniciar pagamento', {
-          description: 'A bridge TEF retornou falha ao iniciar a transação.'
+          description: 'A bridge TEF retornou falha.'
         });
         setIsProcessing(false);
         setPaymentStarted(false);
@@ -406,7 +360,7 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   };
 
-  // Verificar dados ao montar - SILENCIOSO, sem toast de erro prematuro
+  // Verificar dados ao montar
   useEffect(() => {
     if (!sale || !client || !barber) {
       console.warn('[PRODUCT-CARD] Dados incompletos, redirecionando...');
@@ -430,42 +384,34 @@ const TotemProductPaymentCard: React.FC = () => {
         message={error.message}
         onRetry={async () => {
           const last = lastFailureRef.current;
-
           setError(null);
           finalizingRef.current = false;
 
-          // ROBUSTO: Sempre tentar resolver pendências antes de nova tentativa
-          // Isso evita erros "negado código 70" e similares
+          // Resolver pendências antes de retry
           try {
             const TEF = (window as any).TEF;
             
-            // Verificar se há pendência e resolver
             const shouldResolvePending = 
               last?.codigoResposta === '70' || 
               last?.requiresConfirmation === true ||
               (TEF?.hasPendingTransaction && TEF.hasPendingTransaction());
             
             if (shouldResolvePending || last?.codigoResposta) {
-              console.log('[PRODUCT-CARD] 🔧 Tentando resolver pendência antes de retry...');
-              toast.info('Preparando terminal...', {
-                description: 'Aguarde um instante'
-              });
+              console.log('[PRODUCT-CARD] 🔧 Resolvendo pendência...');
+              toast.info('Preparando terminal...', { description: 'Aguarde um instante' });
               
-              // Tentar resolver pendência de forma automática
               if (TEF?.autoResolvePending) {
                 TEF.autoResolvePending();
               } else if (TEF?.resolverPendencia) {
                 TEF.resolverPendencia('CONFIRMADO_MANUAL');
               } else {
-                // Fallback usando a função importada
                 resolverPendenciaAndroid('desfazer');
               }
               
-              // Aguardar resolução
               await new Promise(r => setTimeout(r, 1000));
             }
           } catch (e) {
-            console.warn('[PRODUCT-CARD] Erro ao resolver pendência (não crítico):', e);
+            console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
           }
 
           handleStartPayment();
@@ -475,7 +421,7 @@ const TotemProductPaymentCard: React.FC = () => {
     );
   }
 
-  // Tela quando TEF não está disponível (apenas após delay)
+  // Tela quando TEF não está disponível
   if (!isCheckingConnection && (!isAndroidAvailable || !isPinpadConnected)) {
     return (
       <div className="fixed inset-0 w-screen h-screen flex flex-col p-6 font-poppins overflow-hidden relative">
@@ -547,7 +493,7 @@ const TotemProductPaymentCard: React.FC = () => {
         <Card className="relative w-full max-w-2xl p-8 space-y-6 bg-urbana-black/60 backdrop-blur-2xl border-2 border-urbana-gold/40 shadow-2xl text-center">
           
           {!isProcessing ? (
-            // TELA INICIAL: Botão para iniciar pagamento - IGUAL AO SERVIÇO
+            // TELA INICIAL
             <>
               <div className="flex justify-center">
                 <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center">
