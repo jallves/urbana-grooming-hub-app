@@ -502,12 +502,17 @@ Deno.serve(async (req) => {
       }
 
 
-      // Atualizar sessão do totem se fornecida
-      if (session_id) {
-        await supabase
-          .from('appointment_totem_sessions')
-          .update({ status: 'completed' })
-          .eq('appointment_id', agendamento.id)
+      // SEMPRE atualizar sessão do totem para 'completed' (dispara realtime no admin)
+      // Usar agendamento.id para garantir que todas as sessões vinculadas sejam atualizadas
+      const { error: sessionUpdateError } = await supabase
+        .from('appointment_totem_sessions')
+        .update({ status: 'completed' })
+        .eq('appointment_id', agendamento.id)
+      
+      if (sessionUpdateError) {
+        console.warn('⚠️ Erro ao atualizar sessão do totem:', sessionUpdateError)
+      } else {
+        console.log('✅ Sessão do totem atualizada para completed')
       }
 
       // Notificar via Realtime
