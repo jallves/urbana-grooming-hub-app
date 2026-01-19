@@ -224,7 +224,12 @@ export const useClientAppointments = () => {
           fetchAppointments();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Admin Realtime] appointmentsChannel status:', status);
+        if (status === 'SUBSCRIBED') {
+          console.log('✅ [Admin Realtime] Conectado e escutando painel_agendamentos');
+        }
+      });
 
     // Canal secundário: escutar vendas (status 'pago' indica checkout concluído)
     const salesChannel = supabase
@@ -273,7 +278,9 @@ export const useClientAppointments = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Admin Realtime] salesChannel status:', status);
+      });
 
     // Canal terciário: escutar appointment_totem_sessions (check-in/checkout em tempo real)
     const totemSessionsChannel = supabase
@@ -329,7 +336,9 @@ export const useClientAppointments = () => {
           fetchAppointments();
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [Admin Realtime] totemSessionsChannel status:', status);
+      });
 
     return () => {
       console.log('🔴 [Admin Realtime] Removendo listeners');
