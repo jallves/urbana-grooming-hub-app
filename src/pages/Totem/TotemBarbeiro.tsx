@@ -57,9 +57,10 @@ const TotemBarbeiro: React.FC = () => {
         .select('staff_id')
         .eq('service_id', service.id);
 
+      // Buscar barbeiros da tabela painel_barbeiros
       let query = supabase
         .from('painel_barbeiros')
-        .select('id, nome, specialties, image_url, is_active, staff_id, ativo')
+        .select('id, nome, specialties, image_url, foto_url, is_active, staff_id, ativo')
         .eq('ativo', true)
         .order('nome');
 
@@ -68,15 +69,30 @@ const TotemBarbeiro: React.FC = () => {
         const staffIds = serviceStaff.map(s => s.staff_id);
         query = query.in('id', staffIds);
       }
-      // Se não há vínculo, mostrar todos os barbeiros
 
       const { data, error } = await query;
-
       if (error) throw error;
+
+      // Buscar fotos atualizadas da tabela staff (fonte principal de fotos)
+      const staffIds = (data || []).map(b => b.staff_id).filter(Boolean);
+      let staffPhotos: Record<string, string> = {};
+      
+      if (staffIds.length > 0) {
+        const { data: staffData } = await supabase
+          .from('staff')
+          .select('id, image_url')
+          .in('id', staffIds);
+        
+        if (staffData) {
+          staffPhotos = staffData.reduce((acc, s) => {
+            if (s.image_url) acc[s.id] = s.image_url;
+            return acc;
+          }, {} as Record<string, string>);
+        }
+      }
 
       // Mapear dados do Supabase para o tipo Barber
       const mappedBarbers: Barber[] = (data || []).map(b => {
-        // Handle specialties - can be array or string
         let specialtyStr: string | undefined;
         if (Array.isArray(b.specialties)) {
           specialtyStr = b.specialties.join(', ');
@@ -84,11 +100,16 @@ const TotemBarbeiro: React.FC = () => {
           specialtyStr = b.specialties;
         }
         
+        // Prioridade: staff.image_url > painel_barbeiros.image_url > painel_barbeiros.foto_url
+        const fotoUrl = (b.staff_id && staffPhotos[b.staff_id]) 
+          ? staffPhotos[b.staff_id] 
+          : (b.image_url || b.foto_url || undefined);
+        
         return {
           id: b.id,
           nome: b.nome,
           especialidade: specialtyStr,
-          foto_url: b.image_url || undefined,
+          foto_url: fotoUrl,
           ativo: b.ativo ?? b.is_active ?? true,
           staff_id: b.staff_id || b.id
         };

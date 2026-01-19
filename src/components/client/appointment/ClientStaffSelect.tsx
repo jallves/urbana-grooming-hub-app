@@ -3,6 +3,7 @@ import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/comp
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { UseFormReturn } from 'react-hook-form';
 import { User, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 // Tipo simplificado para Staff Member compatível com a tabela staff
 interface StaffMember {
@@ -82,15 +83,27 @@ const ClientStaffSelect: React.FC<ClientStaffSelectProps> = ({
                   <SelectItem 
                     key={staff.id} 
                     value={staff.id}
-                    className="cursor-pointer"
+                    className="cursor-pointer py-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{staff.name}</span>
-                      {staff.specialties && (
-                        <span className="text-xs text-muted-foreground">
-                          • {staff.specialties}
-                        </span>
-                      )}
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8 border border-primary/20">
+                        <AvatarImage 
+                          src={staff.image_url || undefined} 
+                          alt={staff.name}
+                          className="object-cover"
+                        />
+                        <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
+                          {staff.name?.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex flex-col">
+                        <span className="font-medium">{staff.name}</span>
+                        {staff.specialties && (
+                          <span className="text-xs text-muted-foreground">
+                            {staff.specialties}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </SelectItem>
                 ))

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Plus, Edit, Trash2, Package } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { resolveProductImageUrl } from '@/utils/productImages';
 import {
   Dialog,
   DialogContent,
@@ -170,17 +171,20 @@ const AdminProductsManagement: React.FC = () => {
           <Card key={product.id} className="p-3 sm:p-4 space-y-3">
             {/* Product Image */}
             <div className="aspect-square bg-muted rounded-lg overflow-hidden">
-              {product.imagem_url ? (
-                <img
-                  src={product.imagem_url}
-                  alt={product.nome}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center">
-                  <Package className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
-                </div>
-              )}
+              {(() => {
+                const resolvedImageUrl = resolveProductImageUrl(product.imagem_url);
+                return resolvedImageUrl ? (
+                  <img
+                    src={resolvedImageUrl}
+                    alt={product.nome}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center">
+                    <Package className="w-12 h-12 sm:w-16 sm:h-16 text-muted-foreground" />
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Product Info */}
