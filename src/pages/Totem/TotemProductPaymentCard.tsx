@@ -29,130 +29,218 @@ const TotemProductPaymentCard: React.FC = () => {
   
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
-  // Função de sucesso
+  const successNavigatedRef = useRef(false);
+  
+  // Função de sucesso - ROBUSTO E GARANTIDO
   const handlePaymentSuccess = useCallback(async (transactionData?: {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
   }) => {
-    if (!sale || !barber) return;
-    
-    if (finalizingRef.current) {
-      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento');
+    // Validações iniciais críticas
+    if (!sale?.id) {
+      console.error('[PRODUCT-CARD] ❌ sale.id não existe!');
+      toast.error('Erro crítico: ID da venda não encontrado');
       return;
     }
+    
+    if (!barber?.id) {
+      console.error('[PRODUCT-CARD] ❌ barber.id não existe!');
+      toast.error('Erro crítico: Barbeiro não identificado');
+      return;
+    }
+    
+    // Prevenir múltiplas finalizações
+    if (finalizingRef.current) {
+      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento - ignorando chamada duplicada');
+      return;
+    }
+    
+    // Prevenir navegação duplicada
+    if (successNavigatedRef.current) {
+      console.log('[PRODUCT-CARD] ⚠️ Já navegou para tela de sucesso');
+      return;
+    }
+    
     finalizingRef.current = true;
     
+    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+    console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO DE PRODUTO');
+    console.log('✅ [PRODUCT-CARD] Sale ID:', sale.id);
+    console.log('✅ [PRODUCT-CARD] Barber ID:', barber.id);
+    console.log('✅ [PRODUCT-CARD] Transaction:', transactionData);
+    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+    
+    let saleItems: any[] = [];
+    
     try {
-      console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-      console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO DE PRODUTO');
-      console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-      
-      // 1. Buscar itens da venda
-      const { data: saleItems, error: itemsError } = await supabase
+      // 1. Buscar itens da venda - CRÍTICO
+      const { data: fetchedItems, error: itemsError } = await supabase
         .from('vendas_itens')
         .select('*')
         .eq('venda_id', sale.id)
         .eq('tipo', 'PRODUTO');
 
       if (itemsError) {
-        console.error('Erro ao buscar itens:', itemsError);
-        setError({
-          title: 'Erro ao processar venda',
-          message: 'Não foi possível buscar os itens da venda. Procure um atendente.'
-        });
-        finalizingRef.current = false;
-        return;
+        console.error('[PRODUCT-CARD] Erro ao buscar itens:', itemsError);
+        // Fallback: usar cart do state se disponível
+        if (cart && cart.length > 0) {
+          console.log('[PRODUCT-CARD] Usando cart do state como fallback');
+          saleItems = cart.map((item: any) => ({
+            item_id: item.product?.id || item.id,
+            nome: item.product?.nome || item.nome,
+            quantidade: item.quantity || 1,
+            preco_unitario: item.product?.preco || item.preco,
+            subtotal: (item.product?.preco || item.preco) * (item.quantity || 1)
+          }));
+        } else {
+          throw new Error('Não foi possível buscar os itens da venda');
+        }
+      } else {
+        saleItems = fetchedItems || [];
       }
 
+      console.log('[PRODUCT-CARD] Itens encontrados:', saleItems.length);
+
       // 2. Preparar itens para o ERP
-      const erpItems = saleItems?.map(item => ({
+      const erpItems = saleItems.map((item: any) => ({
         type: 'product' as const,
         id: item.item_id,
         name: item.nome,
-        quantity: item.quantidade,
+        quantity: Number(item.quantidade) || 1,
         price: Number(item.preco_unitario),
         discount: 0
-      })) || [];
+      }));
 
       const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
 
       console.log('📊 [PRODUCT-CARD] Enviando para ERP:', {
         client_id: sale.cliente_id,
-        barber_id: barber.id, // ID da tabela painel_barbeiros
+        barber_id: barber.id,
         reference_id: sale.id,
         items: erpItems.length,
         payment_method: normalizedPaymentMethod,
         nsu: transactionData?.nsu
       });
 
-      // 3. Chamar edge function
-      const { error: erpError } = await supabase.functions.invoke(
-        'create-financial-transaction',
-        {
-          body: {
-            client_id: sale.cliente_id,
-            barber_id: barber.id, // ID da tabela painel_barbeiros (NÃO staff_id)
-            items: erpItems,
-            payment_method: normalizedPaymentMethod,
-            discount_amount: Number(sale.desconto) || 0,
-            notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`,
-            reference_id: sale.id, // ID da venda para idempotência
-            reference_type: 'totem_product_sale',
-            transaction_id: transactionData?.nsu || null // NSU da transação PayGo
+      // 3. Chamar edge function - não bloquear em caso de erro
+      try {
+        const { error: erpError } = await supabase.functions.invoke(
+          'create-financial-transaction',
+          {
+            body: {
+              client_id: sale.cliente_id,
+              barber_id: barber.id,
+              items: erpItems,
+              payment_method: normalizedPaymentMethod,
+              discount_amount: Number(sale.desconto) || 0,
+              notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`,
+              reference_id: sale.id,
+              reference_type: 'totem_product_sale',
+              transaction_id: transactionData?.nsu || null
+            }
           }
-        }
-      );
+        );
 
-      if (erpError) {
-        console.error('❌ Erro ao integrar com ERP:', erpError);
+        if (erpError) {
+          console.error('❌ [PRODUCT-CARD] Erro ERP (não bloqueante):', erpError);
+        } else {
+          console.log('✅ [PRODUCT-CARD] ERP integrado com sucesso');
+        }
+      } catch (erpErr) {
+        console.error('❌ [PRODUCT-CARD] Exceção ERP (não bloqueante):', erpErr);
       }
 
-      // 4. Decrementar estoque dos produtos vendidos
-      console.log('📦 [PRODUCT-CARD] Atualizando estoque de', saleItems?.length || 0, 'produtos');
+      // 4. Decrementar estoque - não bloquear em caso de erro
+      console.log('📦 [PRODUCT-CARD] Atualizando estoque de', saleItems.length, 'produtos');
       
-      for (const item of saleItems || []) {
+      for (const item of saleItems) {
         const productId = item.item_id;
         const quantity = Number(item.quantidade) || 1;
         
-        console.log('📦 [PRODUCT-CARD] Diminuindo estoque:', { productId, quantity });
-        
-        // Chamada RPC com cast para evitar erro de tipos (função existe no DB)
-        const { error: stockErr } = await supabase.rpc('decrease_product_stock' as any, {
-          p_product_id: productId,
-          p_quantity: quantity
-        });
-        
-        if (stockErr) {
-          console.error('❌ Erro ao atualizar estoque do produto:', productId, stockErr);
-        } else {
-          console.log('✅ Estoque atualizado para produto:', productId);
+        try {
+          const { error: stockErr } = await supabase.rpc('decrease_product_stock' as any, {
+            p_product_id: productId,
+            p_quantity: quantity
+          });
+          
+          if (stockErr) {
+            console.error('❌ Erro ao atualizar estoque:', productId, stockErr);
+          } else {
+            console.log('✅ Estoque atualizado:', productId);
+          }
+        } catch (stockException) {
+          console.error('❌ Exceção ao atualizar estoque:', productId, stockException);
         }
       }
 
-      // 5. Atualizar venda para PAGA
-      await supabase
+      // 5. Atualizar venda para PAGA - CRÍTICO
+      const { error: updateError } = await supabase
         .from('vendas')
-        .update({ status: 'PAGA', updated_at: new Date().toISOString() })
+        .update({ 
+          status: 'PAGA', 
+          forma_pagamento: normalizedPaymentMethod,
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', sale.id);
+
+      if (updateError) {
+        console.error('❌ [PRODUCT-CARD] Erro ao atualizar status da venda:', updateError);
+        // Continuar mesmo assim - pagamento já foi aprovado
+      } else {
+        console.log('✅ [PRODUCT-CARD] Venda marcada como PAGA');
+      }
       
+      // 6. Navegar para tela de sucesso - GARANTIDO
+      successNavigatedRef.current = true;
       toast.success('Pagamento aprovado!');
       
-      const saleWithItems = { ...sale, items: saleItems };
+      const saleWithItems = { 
+        ...sale, 
+        items: saleItems,
+        total: sale.total || sale.valor_total
+      };
+      
+      console.log('🚀 [PRODUCT-CARD] Navegando para tela de sucesso');
       
       navigate('/totem/product-payment-success', { 
-        state: { sale: saleWithItems, client, transactionData: { ...transactionData, paymentMethod: cardType } } 
+        state: { 
+          sale: saleWithItems, 
+          client, 
+          transactionData: { 
+            ...transactionData, 
+            paymentMethod: cardType 
+          } 
+        } 
       });
+      
     } catch (err) {
-      console.error('Erro ao processar pagamento:', err);
-      setError({
-        title: 'Erro inesperado',
-        message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
-      });
-      setIsProcessing(false);
-      finalizingRef.current = false;
+      console.error('❌ [PRODUCT-CARD] Erro crítico ao processar:', err);
+      
+      // IMPORTANTE: Se pagamento foi aprovado na maquininha, ainda navegar para sucesso
+      // O cliente já pagou - não podemos deixá-lo na tela de erro
+      if (transactionData?.nsu || transactionData?.autorizacao) {
+        console.log('⚠️ [PRODUCT-CARD] Pagamento aprovado na maquininha - navegando para sucesso mesmo com erro');
+        successNavigatedRef.current = true;
+        toast.warning('Pagamento aprovado com observações');
+        
+        navigate('/totem/product-payment-success', { 
+          state: { 
+            sale: { ...sale, items: saleItems, total: sale.total || sale.valor_total }, 
+            client, 
+            transactionData: { ...transactionData, paymentMethod: cardType } 
+          } 
+        });
+      } else {
+        setError({
+          title: 'Erro inesperado',
+          message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
+        });
+        setIsProcessing(false);
+        finalizingRef.current = false;
+      }
     }
-  }, [sale, client, cardType, barber, navigate]);
+  }, [sale, client, cardType, barber, cart, navigate]);
 
   // Handler para resultado do TEF
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
