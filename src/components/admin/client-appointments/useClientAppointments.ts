@@ -164,19 +164,27 @@ export const useClientAppointments = () => {
           console.log('📝 [ADMIN REALTIME] ID:', (payload.new as any).id);
           console.log('📝 [ADMIN REALTIME] Novo status:', (payload.new as any)?.status);
           console.log('📝 [ADMIN REALTIME] Status anterior:', (payload.old as any)?.status);
+          console.log('📝 [ADMIN REALTIME] Novo status_totem:', (payload.new as any)?.status_totem);
+          console.log('📝 [ADMIN REALTIME] status_totem anterior:', (payload.old as any)?.status_totem);
           
           const oldStatus = (payload.old as any)?.status;
           const newStatus = (payload.new as any)?.status;
+          const oldStatusTotem = (payload.old as any)?.status_totem;
+          const newStatusTotem = (payload.new as any)?.status_totem;
           const appointmentId = (payload.new as any)?.id;
           
-          if (oldStatus !== newStatus) {
-            console.log(`🔄 [ADMIN REALTIME] Status mudou de "${oldStatus}" para "${newStatus}"`);
+          // Detectar mudanças em status OU status_totem
+          const statusChanged = oldStatus !== newStatus;
+          const statusTotemChanged = oldStatusTotem !== newStatusTotem;
+          
+          if (statusChanged || statusTotemChanged) {
+            console.log(`🔄 [ADMIN REALTIME] Mudança detectada - status: "${oldStatus}" -> "${newStatus}", status_totem: "${oldStatusTotem}" -> "${newStatusTotem}"`);
             
             // Atualizar estado local imediatamente (se o appointment estiver na lista)
             setAppointments(prev => {
               const updated = prev.map(a => 
                 a.id === appointmentId 
-                  ? { ...a, status: newStatus, status_totem: (payload.new as any).status_totem, updated_at: (payload.new as any).updated_at }
+                  ? { ...a, status: newStatus, status_totem: newStatusTotem, updated_at: (payload.new as any).updated_at }
                   : a
               );
               
@@ -187,9 +195,16 @@ export const useClientAppointments = () => {
               return updated;
             });
             
-            toast.info('Agendamento atualizado!', {
-              description: `Status alterado para: ${newStatus}`
-            });
+            // Mostrar toast apropriado
+            if (statusTotemChanged && newStatusTotem === 'CHEGOU') {
+              toast.info('✅ Check-in realizado!', {
+                description: 'Cliente chegou na barbearia'
+              });
+            } else if (statusChanged) {
+              toast.info('Agendamento atualizado!', {
+                description: `Status alterado para: ${newStatus}`
+              });
+            }
           }
           
           // Fazer refetch completo para garantir sincronização total
