@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -28,7 +28,7 @@ const TotemProductPaymentCard: React.FC = () => {
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
   const finalizingRef = useRef(false);
-
+  const lastFailureRef = useRef<TEFResultado | null>(null);
   // Função de sucesso
   const handlePaymentSuccess = useCallback(async (transactionData?: {
     nsu?: string;
@@ -145,12 +145,18 @@ const TotemProductPaymentCard: React.FC = () => {
         });
         break;
         
-      case 'negado':
-        toast.error('Pagamento negado', { description: resultado.mensagem || 'Tente novamente' });
-        setError({ title: 'Pagamento Negado', message: resultado.mensagem || 'Tente novamente' });
+      case 'negado': {
+        lastFailureRef.current = resultado;
+        const code = resultado.codigoResposta ? ` (cód. ${resultado.codigoResposta})` : '';
+        toast.error(`Pagamento negado${code}`, { description: resultado.mensagem || 'Tente novamente' });
+        setError({
+          title: 'Pagamento Negado',
+          message: `${resultado.mensagem || 'Tente novamente'}${code}`
+        });
         setIsProcessing(false);
         setPaymentStarted(false);
         break;
+      }
         
       case 'cancelado':
         toast.info('Pagamento cancelado');
@@ -158,12 +164,18 @@ const TotemProductPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
         
-      case 'erro':
-        toast.error('Erro no pagamento', { description: resultado.mensagem });
-        setError({ title: 'Erro no Pagamento', message: resultado.mensagem || 'Erro desconhecido' });
+      case 'erro': {
+        lastFailureRef.current = resultado;
+        const code = resultado.codigoResposta ? ` (cód. ${resultado.codigoResposta})` : '';
+        toast.error(`Erro no pagamento${code}`, { description: resultado.mensagem });
+        setError({
+          title: 'Erro no Pagamento',
+          message: `${resultado.mensagem || 'Erro desconhecido'}${code}`
+        });
         setIsProcessing(false);
         setPaymentStarted(false);
         break;
+      }
     }
   }, [handlePaymentSuccess]);
 
@@ -186,8 +198,10 @@ const TotemProductPaymentCard: React.FC = () => {
     },
     onError: (erro, resultadoCompleto) => {
       console.log('❌ [PRODUCT-CARD] onError via useTEFAndroid:', erro, resultadoCompleto);
-      toast.error('Pagamento negado', { description: erro });
-      setError({ title: 'Pagamento Negado', message: erro });
+      lastFailureRef.current = (resultadoCompleto || { status: 'negado', mensagem: erro }) as TEFResultado;
+      const code = resultadoCompleto?.codigoResposta ? ` (cód. ${resultadoCompleto.codigoResposta})` : '';
+      toast.error(`Pagamento negado${code}`, { description: erro });
+      setError({ title: 'Pagamento Negado', message: `${erro}${code}` });
       setIsProcessing(false);
       setPaymentStarted(false);
     },
@@ -310,8 +324,24 @@ const TotemProductPaymentCard: React.FC = () => {
         title={error.title}
         message={error.message}
         onRetry={() => {
+          const last = lastFailureRef.current;
+
           setError(null);
           finalizingRef.current = false;
+
+          // PayGo: alguns "negados" (ex: cód. 70) podem indicar pendência/lock no terminal.
+          // Para robustez, tentamos desfazer a pendência antes de permitir nova tentativa.
+          const shouldResolvePending = last?.codigoResposta === '70' || last?.requiresConfirmation === true;
+          if (shouldResolvePending) {
+            toast.info('Resolvendo pendência PayGo...', {
+              description: 'Aguarde um instante e tente novamente.'
+            });
+
+            resolverPendenciaAndroid('desfazer');
+            setTimeout(() => handleStartPayment(), 800);
+            return;
+          }
+
           handleStartPayment();
         }}
         onGoHome={() => navigate('/totem')}
