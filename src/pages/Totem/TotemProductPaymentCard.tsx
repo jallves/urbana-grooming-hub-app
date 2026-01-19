@@ -207,7 +207,8 @@ const TotemProductPaymentCard: React.FC = () => {
     isPinpadConnected,
     isProcessing: tefProcessing,
     iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF
+    cancelarPagamento: cancelarPagamentoTEF,
+    verificarConexao
   } = useTEFAndroid({
     // NÃO passamos callbacks aqui para evitar processamento duplicado
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
@@ -222,65 +223,98 @@ const TotemProductPaymentCard: React.FC = () => {
     return () => clearTimeout(timer);
   }, []);
 
-  // Função para iniciar pagamento
+  // Função para iniciar pagamento - IGUAL AO CHECKOUT DE SERVIÇO
   const iniciarPagamentoReal = useCallback(async () => {
-    if (!isAndroidAvailable || !isPinpadConnected || !sale) {
-      return;
-    }
-
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
     console.log('💳 [PRODUCT-CARD] INICIANDO PAGAMENTO DE PRODUTO');
     console.log('💳 [PRODUCT-CARD] Tipo:', cardType);
-    console.log('💳 [PRODUCT-CARD] Valor:', sale.total);
-    console.log('💳 [PRODUCT-CARD] Venda ID:', sale.id);
+    console.log('💳 [PRODUCT-CARD] Valor:', sale?.total);
+    console.log('💳 [PRODUCT-CARD] Venda ID:', sale?.id);
+    console.log('💳 [PRODUCT-CARD] TEF (state):', { isAndroidAvailable, isPinpadConnected });
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
+
+    if (!sale) {
+      toast.error('Dados da venda não encontrados');
+      return;
+    }
+
+    // Evitar duplo clique / reentrada
+    if (isProcessing || paymentStarted) return;
+
+    setError(null);
+    finalizingRef.current = false;
+
+    // IMPORTANTÍSSIMO: não confiar só no state do hook (pode estar atrasado)
+    // Checar diretamente o objeto injetado pelo WebView - IGUAL AO CARTÃO DE SERVIÇO
+    const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
+
+    if (!hasNativeBridge) {
+      toast.error('PayGo indisponível', {
+        description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
+      });
+      return;
+    }
+
+    // Revalidar pinpad antes de iniciar
+    const status = verificarConexao();
+    const connected = !!status?.conectado;
+
+    if (!connected) {
+      toast.error('Pinpad não conectado', {
+        description: 'Verifique a conexão da maquininha e tente novamente.'
+      });
+      return;
+    }
 
     setIsProcessing(true);
     setPaymentStarted(true);
-    finalizingRef.current = false;
 
-    const success = await iniciarPagamentoTEF({
-      ordemId: sale.id,
-      valor: sale.total,
-      tipo: cardType === 'debit' ? 'debit' : 'credit',
-      parcelas: 1
-    });
+    try {
+      const ordemId = sale.id || `CARD_PRODUCT_${Date.now()}`;
 
-    if (!success) {
-      console.error('❌ [PRODUCT-CARD] Falha ao iniciar TEF');
-      toast.error('Erro ao iniciar pagamento', {
-        description: 'Verifique a conexão com o pinpad'
+      const success = await iniciarPagamentoTEF({
+        ordemId,
+        valor: sale.total,
+        tipo: cardType === 'debit' ? 'debit' : 'credit',
+        parcelas: 1
       });
+
+      if (!success) {
+        toast.error('Erro ao iniciar pagamento', {
+          description: 'A bridge TEF retornou falha ao iniciar a transação.'
+        });
+        setIsProcessing(false);
+        setPaymentStarted(false);
+      } else {
+        console.log('✅ [PRODUCT-CARD] TEF iniciado, aguardando resposta do PayGo...');
+      }
+    } catch (error) {
+      console.error('❌ [PRODUCT-CARD] Erro no pagamento:', error);
+      toast.error('Erro no pagamento');
       setIsProcessing(false);
       setPaymentStarted(false);
-    } else {
-      console.log('✅ [PRODUCT-CARD] TEF iniciado, aguardando resposta do PayGo...');
     }
-  }, [isAndroidAvailable, isPinpadConnected, sale, cardType, iniciarPagamentoTEF]);
+  }, [sale, cardType, isProcessing, paymentStarted, iniciarPagamentoTEF, verificarConexao, isAndroidAvailable, isPinpadConnected]);
 
-  // Iniciar pagamento quando tiver cardType e TEF disponível
+  // Verificar dados ao montar
   useEffect(() => {
-    console.log('💳 [TotemProductPaymentCard] Estado:', {
-      isAndroidAvailable,
-      isPinpadConnected,
-      cardType,
-      isProcessing,
-      tefProcessing,
-      sale_id: sale?.id
-    });
-    
     if (!sale || !client || !barber) {
       toast.error('Dados incompletos');
       navigate('/totem/home');
       return;
     }
+  }, [sale, client, barber, navigate]);
 
-    // Se TEF está disponível e conectado, iniciar pagamento
-    if (isAndroidAvailable && isPinpadConnected && cardType && !isProcessing && !tefProcessing) {
-      console.log('💳 [TotemProductPaymentCard] ✅ Todas condições OK - iniciando pagamento');
-      iniciarPagamentoReal();
-    }
-  }, [sale, client, barber, isAndroidAvailable, isPinpadConnected, cardType, isProcessing, tefProcessing, navigate, iniciarPagamentoReal]);
+  // Iniciar pagamento automaticamente quando TEF estiver disponível e após delay de conexão
+  useEffect(() => {
+    if (isCheckingConnection) return; // Aguardar verificação inicial
+    if (!sale || !cardType) return;
+    if (isProcessing || paymentStarted) return;
+    
+    // Iniciar pagamento automaticamente
+    console.log('💳 [TotemProductPaymentCard] ✅ Todas condições OK - iniciando pagamento automaticamente');
+    iniciarPagamentoReal();
+  }, [isCheckingConnection, sale, cardType, isProcessing, paymentStarted, iniciarPagamentoReal]);
 
   const handleCancelPayment = () => {
     cancelarPagamentoTEF();
