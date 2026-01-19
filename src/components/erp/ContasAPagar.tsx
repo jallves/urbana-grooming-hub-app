@@ -502,8 +502,8 @@ export const ContasAPagar: React.FC = () => {
           <CardContent className="px-0 sm:px-3">
             {filteredPayables && filteredPayables.length > 0 ? (
               <>
-                {/* Layout Mobile/Tablet: Cards - Sempre vertical, sem scroll horizontal */}
-                <div className="block xl:hidden space-y-2 px-3">
+                {/* Layout Mobile/Tablet: Cards - Texto completo sem cortes */}
+                <div className="block xl:hidden space-y-3 px-3">
                   {/* Botão Selecionar Todos (apenas pendentes) */}
                   {pendingFilteredRecords.length > 0 && (
                     <div className="flex items-center gap-2 py-2 border-b border-gray-200 mb-2">
@@ -516,67 +516,80 @@ export const ContasAPagar: React.FC = () => {
                   )}
                   
                   {filteredPayables.map((conta) => (
-                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                      {/* Linha 1: Checkbox + Descrição + Status */}
-                      <div className="flex items-start gap-2">
-                        {conta.status === 'pendente' && (
-                          <Checkbox
-                            checked={selectedRecords.has(conta.id)}
-                            onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
-                            className="mt-0.5 flex-shrink-0"
-                          />
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-start justify-between gap-2">
-                            <p className="text-sm font-medium text-gray-900 break-words line-clamp-2">
-                              {conta.descricao || '-'}
-                            </p>
-                            <div className="flex-shrink-0">
-                              {getStatusBadge(conta.status)}
-                            </div>
-                          </div>
+                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      {/* Checkbox + Status (linha superior) */}
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          {conta.status === 'pendente' && (
+                            <Checkbox
+                              checked={selectedRecords.has(conta.id)}
+                              onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
+                            />
+                          )}
+                          <Badge variant="outline" className="text-xs py-0.5 px-2 bg-gray-100">
+                            {getCategoryLabel(conta.categoria)}
+                          </Badge>
+                        </div>
+                        {getStatusBadge(conta.status)}
+                      </div>
+                      
+                      {/* Descrição - completa, sem cortes */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-0.5">Descrição</span>
+                        <p className="text-sm font-medium text-gray-900">
+                          {conta.descricao || '-'}
+                        </p>
+                      </div>
+                      
+                      {/* Fornecedor (Barbeiro) - completo, sem cortes */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-0.5">Fornecedor</span>
+                        <p className="text-sm text-gray-800">
+                          {conta.fornecedor || 'Não informado'}
+                        </p>
+                      </div>
+                      
+                      {/* Data e Horário */}
+                      <div className="flex flex-wrap gap-4 mb-2 text-sm">
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-0.5">Data</span>
+                          <span className="text-gray-800">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-0.5">Horário</span>
+                          <span className="text-gray-800 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTransactionTime(conta.created_at)}
+                          </span>
                         </div>
                       </div>
                       
-                      {/* Linha 2: Fornecedor e Categoria */}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
-                        <span className="font-medium">{conta.fornecedor || 'Sem fornecedor'}</span>
-                        <span className="text-gray-300">|</span>
-                        <Badge variant="outline" className="text-xs py-0 px-1.5 bg-gray-100">
-                          {getCategoryLabel(conta.categoria)}
-                        </Badge>
-                      </div>
+                      {/* ID da Transação - completo */}
+                      {conta.transaction_id && (
+                        <div className="mb-3">
+                          <span className="text-xs text-gray-500 block mb-0.5">ID Transação</span>
+                          <p className="text-xs font-mono text-gray-600 break-all">
+                            {conta.transaction_id}
+                          </p>
+                        </div>
+                      )}
                       
-                      {/* Linha 3: Data, horário e ID */}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
-                        <span>{format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                        <span className="flex items-center gap-0.5">
-                          <Clock className="h-3 w-3" />
-                          {formatTransactionTime(conta.created_at)}
-                        </span>
-                        {conta.transaction_id && (
-                          <>
-                            <span className="text-gray-300">|</span>
-                            <span className="font-mono text-gray-400">
-                              {conta.transaction_id.length > 12 
-                                ? `${conta.transaction_id.substring(0, 12)}...`
-                                : conta.transaction_id}
-                            </span>
-                          </>
-                        )}
-                      </div>
-                      
-                      {/* Linha 4: Valor + Ação */}
-                      <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-200">
-                        <span className="text-base font-bold text-red-600">
-                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
+                      {/* Valor + Ação */}
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-200">
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-0.5">Valor</span>
+                          <span className="text-lg font-bold text-red-600">
+                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
                         {conta.status === 'pendente' && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => handleMarkAsPaid(conta.id)}
-                            className="h-8 px-3 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                            className="h-9 px-4 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
                           >
                             <CheckCircle className="h-4 w-4 mr-1" />
                             Pagar

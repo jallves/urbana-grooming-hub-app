@@ -254,53 +254,61 @@ export const ContasAReceber: React.FC = () => {
           <CardContent className="px-0 sm:px-3">
             {contasReceber && contasReceber.length > 0 ? (
               <>
-                {/* Layout Mobile/Tablet: Cards - sem scroll horizontal */}
-                <div className="block xl:hidden space-y-2 px-3">
+                {/* Layout Mobile/Tablet: Cards - Texto completo sem cortes */}
+                <div className="block xl:hidden space-y-3 px-3">
                   {contasReceber.map((conta) => (
-                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                      {/* Linha 1: Descrição + Status */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium text-gray-900 break-words line-clamp-2">
-                            {conta.descricao || '-'}
-                          </p>
-                        </div>
-                        <div className="flex-shrink-0">
-                          {getStatusBadge(conta.status)}
-                        </div>
-                      </div>
-                      
-                      {/* Linha 2: Categoria */}
-                      <div className="mt-2">
-                        <Badge variant="outline" className="text-xs py-0 px-1.5 bg-gray-100">
+                    <div key={conta.id} className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                      {/* Categoria + Status (linha superior) */}
+                      <div className="flex items-center justify-between mb-2">
+                        <Badge variant="outline" className="text-xs py-0.5 px-2 bg-gray-100">
                           {getCategoryLabel(conta.categoria)}
                         </Badge>
+                        {getStatusBadge(conta.status)}
                       </div>
                       
-                      {/* Linha 3: Data, horário e ID */}
-                      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-2 text-xs text-gray-500">
-                        <span>{format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}</span>
-                        <span className="flex items-center gap-0.5">
-                          <Clock className="h-3 w-3" />
-                          {formatTransactionTime(conta.created_at)}
-                        </span>
-                        {conta.transaction_id && (
-                          <>
-                            <span className="text-gray-300">|</span>
-                            <span className="font-mono text-gray-400">
-                              {conta.transaction_id.length > 12 
-                                ? `${conta.transaction_id.substring(0, 12)}...`
-                                : conta.transaction_id}
-                            </span>
-                          </>
-                        )}
+                      {/* Descrição - completa, sem cortes */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-0.5">Descrição</span>
+                        <p className="text-sm font-medium text-gray-900">
+                          {conta.descricao || '-'}
+                        </p>
                       </div>
                       
-                      {/* Linha 4: Valor */}
-                      <div className="flex items-center justify-end mt-3 pt-2 border-t border-gray-200">
-                        <span className="text-base font-bold text-green-600">
-                          R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                        </span>
+                      {/* Data e Horário */}
+                      <div className="flex flex-wrap gap-4 mb-2 text-sm">
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-0.5">Data</span>
+                          <span className="text-gray-800">
+                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-xs text-gray-500 block mb-0.5">Horário</span>
+                          <span className="text-gray-800 flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {formatTransactionTime(conta.created_at)}
+                          </span>
+                        </div>
+                      </div>
+                      
+                      {/* ID da Transação - completo */}
+                      {conta.transaction_id && (
+                        <div className="mb-3">
+                          <span className="text-xs text-gray-500 block mb-0.5">ID Transação</span>
+                          <p className="text-xs font-mono text-gray-600 break-all">
+                            {conta.transaction_id}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {/* Valor */}
+                      <div className="flex items-center justify-end pt-3 border-t border-gray-200">
+                        <div className="text-right">
+                          <span className="text-xs text-gray-500 block mb-0.5">Valor</span>
+                          <span className="text-lg font-bold text-green-600">
+                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   ))}
