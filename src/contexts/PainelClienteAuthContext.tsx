@@ -52,6 +52,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     let mounted = true;
 
     const carregarPerfil = async () => {
+      // Aguardar o user existir
       if (!user) {
         if (mounted) {
           setCliente(null);
@@ -60,15 +61,12 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return;
       }
 
-      // IMPORTANTE: este provider é montado globalmente (App.tsx), então NÃO podemos
-      // carregar/vincular perfil de cliente para usuários que não são clientes.
-      // Usamos o role inferido pelo AuthContext (user_roles/user_metadata) em vez de depender
-      // diretamente de user.user_metadata.user_type.
+      // IMPORTANTE: Aguardar isClient ser true antes de carregar o perfil.
+      // O AuthContext precisa completar a verificação de roles primeiro.
+      // Se isClient for false, pode significar que ainda está verificando OU que não é cliente.
       if (!isClient) {
-        if (mounted) {
-          setCliente(null);
-          setLoading(false);
-        }
+        console.log('[PainelClienteAuthContext] ⏳ Aguardando verificação de role... isClient:', isClient);
+        // Não setar loading=false aqui, pois ainda pode mudar
         return;
       }
 
@@ -160,7 +158,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     return () => {
       mounted = false;
     };
-  }, [user]); // Recarregar quando user mudar
+  }, [user, isClient, toast]); // Recarregar quando user ou isClient mudar
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
