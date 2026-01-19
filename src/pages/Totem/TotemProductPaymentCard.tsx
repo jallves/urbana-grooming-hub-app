@@ -77,18 +77,29 @@ const TotemProductPaymentCard: React.FC = () => {
 
       const normalizedPaymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
 
+      console.log('📊 [PRODUCT-CARD] Enviando para ERP:', {
+        client_id: sale.cliente_id,
+        barber_id: barber.id, // ID da tabela painel_barbeiros
+        reference_id: sale.id,
+        items: erpItems.length,
+        payment_method: normalizedPaymentMethod,
+        nsu: transactionData?.nsu
+      });
+
       // 3. Chamar edge function
       const { error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
           body: {
             client_id: sale.cliente_id,
-            barber_id: barber.staff_id,
+            barber_id: barber.id, // ID da tabela painel_barbeiros (NÃO staff_id)
             items: erpItems,
             payment_method: normalizedPaymentMethod,
             discount_amount: Number(sale.desconto) || 0,
             notes: `Venda de Produtos - Totem ${cardType === 'debit' ? 'Débito' : 'Crédito'}`,
-            transaction_data: transactionData
+            reference_id: sale.id, // ID da venda para idempotência
+            reference_type: 'totem_product_sale',
+            transaction_id: transactionData?.nsu || null // NSU da transação PayGo
           }
         }
       );
