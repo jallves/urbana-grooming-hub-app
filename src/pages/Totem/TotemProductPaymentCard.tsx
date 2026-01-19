@@ -433,23 +433,44 @@ const TotemProductPaymentCard: React.FC = () => {
       <TotemErrorFeedback
         title={error.title}
         message={error.message}
-        onRetry={() => {
+        onRetry={async () => {
           const last = lastFailureRef.current;
 
           setError(null);
           finalizingRef.current = false;
 
-          // PayGo: alguns "negados" (ex: cód. 70) podem indicar pendência/lock no terminal.
-          // Para robustez, tentamos desfazer a pendência antes de permitir nova tentativa.
-          const shouldResolvePending = last?.codigoResposta === '70' || last?.requiresConfirmation === true;
-          if (shouldResolvePending) {
-            toast.info('Resolvendo pendência PayGo...', {
-              description: 'Aguarde um instante e tente novamente.'
-            });
-
-            resolverPendenciaAndroid('desfazer');
-            setTimeout(() => handleStartPayment(), 800);
-            return;
+          // ROBUSTO: Sempre tentar resolver pendências antes de nova tentativa
+          // Isso evita erros "negado código 70" e similares
+          try {
+            const TEF = (window as any).TEF;
+            
+            // Verificar se há pendência e resolver
+            const shouldResolvePending = 
+              last?.codigoResposta === '70' || 
+              last?.requiresConfirmation === true ||
+              (TEF?.hasPendingTransaction && TEF.hasPendingTransaction());
+            
+            if (shouldResolvePending || last?.codigoResposta) {
+              console.log('[PRODUCT-CARD] 🔧 Tentando resolver pendência antes de retry...');
+              toast.info('Preparando terminal...', {
+                description: 'Aguarde um instante'
+              });
+              
+              // Tentar resolver pendência de forma automática
+              if (TEF?.autoResolvePending) {
+                TEF.autoResolvePending();
+              } else if (TEF?.resolverPendencia) {
+                TEF.resolverPendencia('CONFIRMADO_MANUAL');
+              } else {
+                // Fallback usando a função importada
+                resolverPendenciaAndroid('desfazer');
+              }
+              
+              // Aguardar resolução
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          } catch (e) {
+            console.warn('[PRODUCT-CARD] Erro ao resolver pendência (não crítico):', e);
           }
 
           handleStartPayment();

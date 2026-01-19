@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentPix: React.FC = () => {
@@ -415,9 +415,30 @@ const TotemProductPaymentPix: React.FC = () => {
       <TotemErrorFeedback
         title={error.title}
         message={error.message}
-        onRetry={() => {
+        onRetry={async () => {
           setError(null);
           finalizingRef.current = false;
+          
+          // ROBUSTO: Tentar resolver pendências antes de nova tentativa
+          try {
+            const TEF = (window as any).TEF;
+            
+            if (TEF?.hasPendingTransaction && TEF.hasPendingTransaction()) {
+              console.log('[PRODUCT-PIX] 🔧 Tentando resolver pendência antes de retry...');
+              toast.info('Preparando terminal...', { description: 'Aguarde um instante' });
+              
+              if (TEF?.autoResolvePending) {
+                TEF.autoResolvePending();
+              } else if (TEF?.resolverPendencia) {
+                TEF.resolverPendencia('CONFIRMADO_MANUAL');
+              }
+              
+              await new Promise(r => setTimeout(r, 1000));
+            }
+          } catch (e) {
+            console.warn('[PRODUCT-PIX] Erro ao resolver pendência:', e);
+          }
+          
           handleStartPix();
         }}
         onGoHome={() => navigate('/totem')}

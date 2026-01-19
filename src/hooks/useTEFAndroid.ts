@@ -353,6 +353,50 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       return false;
     }
 
+    // ========================================================================
+    // IMPORTANTE: Verificar e resolver pendências ANTES de iniciar novo pagamento
+    // Isso evita erros "negado código 70" e similares
+    // ========================================================================
+    try {
+      const TEF = (window as any).TEF;
+      
+      // Método 1: Verificar via hasPendingTransaction (novo)
+      if (TEF?.hasPendingTransaction && TEF.hasPendingTransaction()) {
+        console.log('[useTEFAndroid] ⚠️ Pendência detectada via hasPendingTransaction - resolvendo...');
+        if (TEF.autoResolvePending) {
+          TEF.autoResolvePending();
+          // Aguardar um momento para a resolução
+          await new Promise(r => setTimeout(r, 500));
+        } else if (TEF.resolverPendencia) {
+          TEF.resolverPendencia('CONFIRMADO_MANUAL');
+          await new Promise(r => setTimeout(r, 500));
+        }
+      }
+      
+      // Método 2: Verificar via getPendingInfo (legado)
+      if (TEF?.getPendingInfo) {
+        try {
+          const pendingInfo = TEF.getPendingInfo();
+          if (pendingInfo && pendingInfo !== '{}' && pendingInfo !== 'null') {
+            const parsed = JSON.parse(pendingInfo);
+            if (parsed && Object.keys(parsed).length > 0) {
+              console.log('[useTEFAndroid] ⚠️ Pendência detectada via getPendingInfo - resolvendo...');
+              if (TEF.autoResolvePending) {
+                TEF.autoResolvePending();
+              } else if (TEF.resolverPendencia) {
+                TEF.resolverPendencia('CONFIRMADO_MANUAL');
+              }
+              await new Promise(r => setTimeout(r, 500));
+            }
+          }
+        } catch (e) {
+          // Ignorar erro de parsing
+        }
+      }
+    } catch (pendingCheckError) {
+      console.warn('[useTEFAndroid] Erro ao verificar pendências (não crítico):', pendingCheckError);
+    }
+
     // Limpar resultado anterior
     globalLastProcessedResult = null;
     try {
@@ -433,9 +477,14 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 /**
  * Normaliza o resultado do PayGo para o formato esperado
  */
+/**
+ * Normaliza o resultado do PayGo para o formato esperado
+ * IMPORTANTE: Esta função deve ser consistente com a versão em tefAndroidBridge.ts
+ */
 function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
-  // Se já tem status formatado, usar diretamente
-  if (raw.status && typeof raw.status === 'string') {
+  // Se já tem status formatado como string válida, usar diretamente
+  if (raw.status && typeof raw.status === 'string' && 
+      ['aprovado', 'negado', 'cancelado', 'erro'].includes(raw.status as string)) {
     return {
       status: raw.status as TEFResultado['status'],
       valor: typeof raw.valor === 'number' ? raw.valor : 
@@ -443,41 +492,76 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
       bandeira: (raw.bandeira || raw.cardName || '') as string,
       nsu: (raw.nsu || raw.transactionNsu || '') as string,
       autorizacao: (raw.autorizacao || raw.authorizationCode || '') as string,
-      codigoResposta: raw.transactionResult?.toString(),
+      codigoResposta: raw.transactionResult?.toString() || raw.codigoResposta?.toString(),
+      codigoErro: raw.codigoErro?.toString(),
       mensagem: (raw.mensagem || raw.resultMessage || '') as string,
       comprovanteCliente: (raw.comprovanteCliente || raw.cardholderReceipt || '') as string,
       comprovanteLojista: (raw.comprovanteLojista || raw.merchantReceipt || '') as string,
       ordemId: raw.ordemId as string,
-      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now()
+      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now(),
+      // Dados de confirmação - IMPORTANTES para resolver pendências
+      confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
     };
   }
   
-  // Converter de formato PayGo bruto
-  const transactionResult = typeof raw.transactionResult === 'number' 
-    ? raw.transactionResult 
-    : parseInt(raw.transactionResult as string || '-99', 10);
+  // Converter de formato PayGo bruto (quando recebemos transactionResult numérico)
+  // ATENÇÃO: transactionResult pode não existir - NÃO usar -99 como default que vira 'erro'
+  let transactionResult: number | undefined;
   
+  if (typeof raw.transactionResult === 'number') {
+    transactionResult = raw.transactionResult;
+  } else if (typeof raw.transactionResult === 'string' && raw.transactionResult !== '') {
+    transactionResult = parseInt(raw.transactionResult, 10);
+  }
+  
+  // Determinar status baseado no transactionResult do PayGo
+  // Códigos PayGo:
+  // 0 = Aprovado
+  // 1-99 = Negado (diversos motivos)
+  // -1 = Cancelado pelo usuário
+  // undefined = Verificar outros campos
   let status: TEFResultado['status'];
-  if (transactionResult === 0) {
-    status = 'aprovado';
-  } else if (transactionResult >= 1 && transactionResult <= 99) {
-    status = 'negado';
-  } else if (transactionResult === -1) {
-    status = 'cancelado';
+  
+  if (transactionResult !== undefined) {
+    if (transactionResult === 0) {
+      status = 'aprovado';
+    } else if (transactionResult === -1) {
+      status = 'cancelado';
+    } else if (transactionResult >= 1 && transactionResult <= 99) {
+      status = 'negado';
+    } else {
+      status = 'erro';
+    }
   } else {
-    status = 'erro';
+    // Fallback: se não tem transactionResult, verificar se tem NSU/autorização
+    // Se tem, provavelmente foi aprovado
+    const hasApprovalData = raw.transactionNsu || raw.nsu || raw.authorizationCode || raw.autorizacao;
+    if (hasApprovalData) {
+      status = 'aprovado';
+    } else if (raw.cancelled === true) {
+      status = 'cancelado';
+    } else {
+      // Se não temos nenhum dado, assumir erro
+      status = 'erro';
+    }
   }
   
   return {
     status,
-    valor: typeof raw.amount === 'number' ? raw.amount : undefined,
-    bandeira: (raw.cardName || '') as string,
-    nsu: (raw.transactionNsu || '') as string,
-    autorizacao: (raw.authorizationCode || '') as string,
-    codigoResposta: transactionResult.toString(),
-    mensagem: (raw.resultMessage || '') as string,
-    comprovanteCliente: (raw.cardholderReceipt || '') as string,
-    comprovanteLojista: (raw.merchantReceipt || '') as string,
-    timestamp: Date.now()
+    valor: typeof raw.amount === 'number' ? raw.amount : 
+           typeof raw.valor === 'number' ? raw.valor : undefined,
+    bandeira: (raw.cardName || raw.bandeira || '') as string,
+    nsu: (raw.transactionNsu || raw.nsu || '') as string,
+    autorizacao: (raw.authorizationCode || raw.autorizacao || '') as string,
+    codigoResposta: transactionResult?.toString() || '',
+    codigoErro: raw.codigoErro?.toString(),
+    mensagem: (raw.resultMessage || raw.mensagem || '') as string,
+    comprovanteCliente: (raw.cardholderReceipt || raw.comprovanteCliente || '') as string,
+    comprovanteLojista: (raw.merchantReceipt || raw.comprovanteLojista || '') as string,
+    timestamp: Date.now(),
+    // Dados de confirmação
+    confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+    requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
   };
 }
