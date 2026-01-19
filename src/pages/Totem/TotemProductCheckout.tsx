@@ -103,23 +103,31 @@ const TotemProductCheckout: React.FC = () => {
 
     try {
       console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
+      console.log('🔍 Barbeiro selecionado:', { id: barber.id, staff_id: barber.staff_id, nome: barber.nome });
       
+      // IMPORTANTE: vendas.barbeiro_id tem FK para painel_barbeiros.id
+      // Usar barber.id (que é o id da painel_barbeiros), NÃO barber.staff_id
       const { data: saleData, error: saleError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          barbeiro_id: barber.staff_id,
+          barbeiro_id: barber.id, // ID da tabela painel_barbeiros (não staff_id)
           valor_total: cartTotal,
           desconto: 0,
           status: 'ABERTA'
         })
         .select()
         .single();
+
+      if (saleError) {
+        console.error('❌ Erro ao criar venda:', saleError);
+        throw saleError;
+      }
       
       // Criar objeto sale com campo total para compatibilidade
       const sale = { ...saleData, total: cartTotal };
 
-      if (saleError) throw saleError;
+      console.log('✅ Venda criada:', saleData.id);
 
       const saleItems = cart.map(item => ({
         venda_id: saleData.id,
@@ -135,9 +143,12 @@ const TotemProductCheckout: React.FC = () => {
         .from('vendas_itens')
         .insert(saleItems);
 
-      if (itemsError) throw itemsError;
+      if (itemsError) {
+        console.error('❌ Erro ao criar itens:', itemsError);
+        throw itemsError;
+      }
 
-      console.log('✅ Venda criada com barbeiro:', saleData.id, barber.staff_id);
+      console.log('✅ Itens criados. Navegando para pagamento:', paymentMethod);
 
       if (paymentMethod === 'pix') {
         navigate('/totem/product-payment-pix', {
@@ -151,7 +162,7 @@ const TotemProductCheckout: React.FC = () => {
 
     } catch (error) {
       console.error('Erro ao processar pagamento:', error);
-      toast.error('Erro ao processar pagamento');
+      toast.error('Erro ao processar pagamento. Tente novamente.');
     } finally {
       setIsProcessing(false);
     }
