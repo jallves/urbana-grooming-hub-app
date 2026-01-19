@@ -39,7 +39,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
       }
 
       // Montar itens corretamente com nome, quantidade, preço unitário e total
-      // Os dados vêm de vendas_itens com campos: nome, quantidade, preco_unit, total
+      // Os dados vêm de vendas_itens com campos: nome, quantidade, preco_unitario, subtotal
       const items: Array<{ name: string; quantity: number; unitPrice: number; price: number; type: 'service' | 'product' }> = [];
       
       console.log('[ProductPaymentSuccess] sale.items raw:', JSON.stringify(sale.items, null, 2));
@@ -48,27 +48,28 @@ const TotemProductPaymentSuccess: React.FC = () => {
         sale.items.forEach((item: any) => {
           console.log('[ProductPaymentSuccess] Processando item:', item);
           
-          // Campos da tabela vendas_itens: nome, quantidade, preco_unit, total
+          // Campos da tabela vendas_itens: nome, quantidade, preco_unitario, subtotal
           const productName = item.nome || item.name || 'Produto';
           const quantity = Number(item.quantidade) || Number(item.quantity) || 1;
-          // preco_unit é o campo correto da tabela vendas_itens (string no banco, converter para number)
-          const unitPrice = Number(item.preco_unit) || Number(item.unitPrice) || 0;
-          const subtotal = Number(item.total) || (unitPrice * quantity);
+          // preco_unitario é o campo correto da tabela vendas_itens
+          const unitPrice = Number(item.preco_unitario) || Number(item.unitPrice) || 0;
+          // subtotal é o campo correto da tabela vendas_itens
+          const itemSubtotal = Number(item.subtotal) || Number(item.price) || (unitPrice * quantity);
           
           console.log('[ProductPaymentSuccess] Valores extraídos:', { 
             productName, 
             quantity, 
             unitPrice, 
-            subtotal,
-            raw_preco_unit: item.preco_unit,
-            raw_total: item.total
+            itemSubtotal,
+            raw_preco_unitario: item.preco_unitario,
+            raw_subtotal: item.subtotal
           });
           
           items.push({
             name: productName,
             quantity: quantity,
             unitPrice: unitPrice,
-            price: subtotal,
+            price: itemSubtotal,
             type: 'product' as const
           });
         });
@@ -175,7 +176,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
                       {item.quantidade || 1}x {item.nome}
                     </span>
                     <span className="text-urbana-gold font-medium">
-                      R$ {Number(item.total || (item.preco_unit * (item.quantidade || 1))).toFixed(2)}
+                      R$ {Number(item.subtotal || (item.preco_unitario * (item.quantidade || 1))).toFixed(2)}
                     </span>
                   </div>
                 ))}
