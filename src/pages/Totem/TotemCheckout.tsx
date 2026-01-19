@@ -39,11 +39,23 @@ interface BarberInfo {
   especialidade?: string;
 }
 
-function formatTipInputFromDigits(digits: string): { formatted: string; amount: number } {
-  const onlyDigits = (digits || '').replace(/\D/g, '').slice(0, 9);
-  const value = (parseInt(onlyDigits || '0', 10) / 100) || 0;
-  const formatted = value.toFixed(2).replace('.', ',');
-  return { formatted, amount: value };
+// Formatação de moeda em centavos: cada dígito digitado adiciona ao final
+// 1 -> 0,01 | 12 -> 0,12 | 123 -> 1,23 | 1234 -> 12,34 | 12345 -> 123,45
+function formatCurrencyFromDigits(rawDigits: string): { display: string; value: number } {
+  // Remove tudo que não é dígito e limita a 7 dígitos (máximo R$ 99.999,99)
+  const digits = (rawDigits || '').replace(/\D/g, '').slice(0, 7);
+  
+  // Converte para número em centavos e depois para reais
+  const cents = parseInt(digits || '0', 10);
+  const value = cents / 100;
+  
+  // Formata para exibição
+  const display = value.toLocaleString('pt-BR', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  });
+  
+  return { display, value };
 }
 
 const TotemCheckout: React.FC = () => {
@@ -180,10 +192,11 @@ const TotemCheckout: React.FC = () => {
   };
 
   const handleTipChange = (value: string) => {
-    // Máscara simples em centavos: 1 -> 0,01 | 1234 -> 12,34
+    // Formatação automática em centavos: cada dígito adiciona ao final
+    // 1 -> 0,01 | 12 -> 0,12 | 123 -> 1,23 | 1234 -> 12,34
     const digits = value.replace(/\D/g, '');
-    const { formatted, amount } = formatTipInputFromDigits(digits);
-    setTipInput(formatted);
+    const { display, value: amount } = formatCurrencyFromDigits(digits);
+    setTipInput(display);
     setTipAmount(amount);
   };
 
