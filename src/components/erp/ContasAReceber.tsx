@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2 } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import RevenueRecordForm from './RevenueRecordForm';
 import {
@@ -53,6 +53,17 @@ const getCategoryLabel = (category: string | null): string => {
   return map[category.toLowerCase()] || category;
 };
 
+// Função auxiliar para formatar horário da transação
+const formatTransactionTime = (dateString: string | null): string => {
+  if (!dateString) return '-';
+  try {
+    const date = parseISO(dateString);
+    return format(date, 'HH:mm:ss', { locale: ptBR });
+  } catch {
+    return '-';
+  }
+};
+
 export const ContasAReceber: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -65,14 +76,42 @@ export const ContasAReceber: React.FC = () => {
       const { data, error } = await supabase
         .from('contas_receber')
         .select('*')
-        .order('data_vencimento', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(100);
 
       if (error) throw error;
       return (data || []) as ContaReceber[];
     },
-    refetchInterval: 10000
   });
+
+  // Realtime subscription para contas_receber
+  useEffect(() => {
+    const channel = supabase
+      .channel('contas-receber-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contas_receber'
+        },
+        (payload) => {
+          console.log('🔔 [ERP Realtime] Contas a Receber atualizada:', payload.eventType);
+          queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
+          
+          if (payload.eventType === 'INSERT') {
+            toast.success('Nova receita registrada!');
+          } else if (payload.eventType === 'UPDATE') {
+            toast.info('Receita atualizada');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   const createMutation = useMutation({
     mutationFn: async (values: any) => {
@@ -231,10 +270,16 @@ export const ContasAReceber: React.FC = () => {
                         {getStatusBadge(conta.status)}
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-gray-600">
-                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
-                          </span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-600">
+                              {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                            </span>
+                            <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                              <Clock className="h-3 w-3" />
+                              {formatTransactionTime(conta.created_at)}
+                            </span>
+                          </div>
                           {conta.transaction_id && (
                             <span className="text-xs text-gray-400 font-mono">
                               {conta.transaction_id.substring(0, 12)}...
@@ -255,6 +300,7 @@ export const ContasAReceber: React.FC = () => {
                     <TableHeader>
                       <TableRow>
                         <TableHead>Data</TableHead>
+                        <TableHead className="whitespace-nowrap">Horário</TableHead>
                         <TableHead className="whitespace-nowrap">ID Transação</TableHead>
                         <TableHead>Descrição</TableHead>
                         <TableHead>Categoria</TableHead>
@@ -267,6 +313,12 @@ export const ContasAReceber: React.FC = () => {
                         <TableRow key={conta.id}>
                           <TableCell>
                             {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-xs text-gray-600 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-gray-400" />
+                              {formatTransactionTime(conta.created_at)}
+                            </div>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
                             {conta.transaction_id || '-'}
