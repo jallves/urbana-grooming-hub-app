@@ -167,15 +167,7 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [handlePaymentSuccess]);
 
-  // Hook para receber resultado do PayGo
-  useTEFPaymentResult({
-    enabled: paymentStarted && isProcessing,
-    onResult: handleTEFResult,
-    pollingInterval: 500,
-    maxWaitTime: 180000
-  });
-
-  // Hook TEF Android
+  // Hook TEF Android COM callbacks - CRÍTICO: passar callbacks para garantir processamento
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -183,7 +175,37 @@ const TotemProductPaymentCard: React.FC = () => {
     iniciarPagamento: iniciarPagamentoTEF,
     cancelarPagamento: cancelarPagamentoTEF,
     verificarConexao
-  } = useTEFAndroid({});
+  } = useTEFAndroid({
+    onSuccess: (resultado) => {
+      console.log('✅ [PRODUCT-CARD] onSuccess via useTEFAndroid:', resultado);
+      handlePaymentSuccess({
+        nsu: resultado.nsu,
+        autorizacao: resultado.autorizacao,
+        bandeira: resultado.bandeira
+      });
+    },
+    onError: (erro, resultadoCompleto) => {
+      console.log('❌ [PRODUCT-CARD] onError via useTEFAndroid:', erro, resultadoCompleto);
+      toast.error('Pagamento negado', { description: erro });
+      setError({ title: 'Pagamento Negado', message: erro });
+      setIsProcessing(false);
+      setPaymentStarted(false);
+    },
+    onCancelled: () => {
+      console.log('⚠️ [PRODUCT-CARD] onCancelled via useTEFAndroid');
+      toast.info('Pagamento cancelado');
+      setIsProcessing(false);
+      setPaymentStarted(false);
+    }
+  });
+
+  // Hook backup para receber resultado do PayGo (fallback caso useTEFAndroid falhe)
+  useTEFPaymentResult({
+    enabled: paymentStarted && isProcessing,
+    onResult: handleTEFResult,
+    pollingInterval: 500,
+    maxWaitTime: 180000
+  });
 
   // Delay inicial para verificar conexão TEF
   useEffect(() => {
