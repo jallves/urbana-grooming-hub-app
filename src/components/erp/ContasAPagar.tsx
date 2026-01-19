@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import FinancialRecordForm from './FinancialRecordForm';
 import {
@@ -56,6 +56,17 @@ const getCategoryLabel = (category: string | null): string => {
   return map[category.toLowerCase()] || category;
 };
 
+// Função auxiliar para formatar horário da transação
+const formatTransactionTime = (dateString: string | null): string => {
+  if (!dateString) return '-';
+  try {
+    const date = parseISO(dateString);
+    return format(date, 'HH:mm:ss', { locale: ptBR });
+  } catch {
+    return '-';
+  }
+};
+
 export const ContasAPagar: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
@@ -80,14 +91,42 @@ export const ContasAPagar: React.FC = () => {
       const { data, error } = await supabase
         .from('contas_pagar')
         .select('*')
-        .order('data_vencimento', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(500);
 
       if (error) throw error;
       return (data || []) as ContaPagar[];
     },
-    refetchInterval: 10000
   });
+
+  // Realtime subscription para contas_pagar
+  useEffect(() => {
+    const channel = supabase
+      .channel('contas-pagar-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contas_pagar'
+        },
+        (payload) => {
+          console.log('🔔 [ERP Realtime] Contas a Pagar atualizada:', payload.eventType);
+          queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+          
+          if (payload.eventType === 'INSERT') {
+            toast.success('Nova despesa registrada!');
+          } else if (payload.eventType === 'UPDATE') {
+            toast.info('Despesa atualizada');
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Buscar lista de fornecedores únicos (barbeiros)
   const fornecedores = useMemo(() => {
@@ -490,10 +529,16 @@ export const ContasAPagar: React.FC = () => {
                         </div>
                       </div>
                       <div className="flex items-center justify-between pt-2 border-t border-gray-200">
-                        <div className="flex flex-col">
-                          <span className="text-xs text-gray-600">
-                            {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
-                          </span>
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-1">
+                            <span className="text-xs text-gray-600">
+                              {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                            </span>
+                            <span className="text-xs text-gray-400 flex items-center gap-0.5">
+                              <Clock className="h-3 w-3" />
+                              {formatTransactionTime(conta.created_at)}
+                            </span>
+                          </div>
                           {conta.transaction_id && (
                             <span className="text-xs text-gray-400 font-mono">
                               {conta.transaction_id.substring(0, 12)}...
@@ -532,6 +577,7 @@ export const ContasAPagar: React.FC = () => {
                           />
                         </TableHead>
                         <TableHead>Data</TableHead>
+                        <TableHead className="whitespace-nowrap">Horário</TableHead>
                         <TableHead className="whitespace-nowrap">ID Transação</TableHead>
                         <TableHead>Descrição</TableHead>
                         <TableHead>Fornecedor</TableHead>
@@ -554,6 +600,12 @@ export const ContasAPagar: React.FC = () => {
                           </TableCell>
                           <TableCell>
                             {format(parseISO(conta.data_vencimento), 'dd/MM/yyyy', { locale: ptBR })}
+                          </TableCell>
+                          <TableCell className="text-xs text-gray-600 whitespace-nowrap">
+                            <div className="flex items-center gap-1">
+                              <Clock className="h-3 w-3 text-gray-400" />
+                              {formatTransactionTime(conta.created_at)}
+                            </div>
                           </TableCell>
                           <TableCell className="font-mono text-xs text-gray-600 whitespace-nowrap">
                             {conta.transaction_id || '-'}
