@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Edit, Trash2, Search, Plus, MoreVertical, Package, Image as ImageIcon } from 'lucide-react';
 import ProductForm from './ProductForm';
+import { resolveProductImageUrl } from '@/utils/productImages';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -159,27 +159,30 @@ const ProductList: React.FC = () => {
               <Card key={product.id} className="hover:shadow-md transition-all overflow-hidden flex flex-col h-full">
                 {/* Imagem do Produto */}
                 <div className="aspect-square bg-muted overflow-hidden flex-shrink-0">
-                  {product.imagem_url ? (
-                    <img 
-                      src={product.imagem_url} 
-                      alt={product.nome}
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        e.currentTarget.style.display = 'none';
-                        const parent = e.currentTarget.parentElement;
-                        if (parent) {
-                          parent.classList.add('flex', 'items-center', 'justify-center');
-                          const icon = document.createElement('div');
-                          icon.innerHTML = '<svg class="w-10 h-10 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
-                          parent.appendChild(icon);
-                        }
-                      }}
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Package className="h-10 w-10 text-muted-foreground/40" />
-                    </div>
-                  )}
+                  {(() => {
+                    const resolvedImageUrl = resolveProductImageUrl(product.imagem_url);
+                    return resolvedImageUrl ? (
+                      <img 
+                        src={resolvedImageUrl} 
+                        alt={product.nome}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          e.currentTarget.style.display = 'none';
+                          const parent = e.currentTarget.parentElement;
+                          if (parent) {
+                            parent.classList.add('flex', 'items-center', 'justify-center');
+                            const icon = document.createElement('div');
+                            icon.innerHTML = '<svg class="w-10 h-10 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>';
+                            parent.appendChild(icon);
+                          }
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Package className="h-10 w-10 text-muted-foreground/40" />
+                      </div>
+                    );
+                  })()}
                 </div>
                 
                 {/* Conteúdo do Card */}

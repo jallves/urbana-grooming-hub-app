@@ -6,6 +6,7 @@ import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus,
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
+import { resolveProductImageUrl } from '@/utils/productImages';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductCheckout: React.FC = () => {
@@ -304,17 +305,20 @@ const TotemProductCheckout: React.FC = () => {
                 {/* Produto */}
                 <div className="col-span-5 flex items-center gap-2">
                   <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border border-urbana-gold/30 flex-shrink-0 bg-urbana-black/50">
-                    {item.product.imagem_url ? (
-                      <img 
-                        src={item.product.imagem_url} 
-                        alt={item.product.nome}
-                        className="w-full h-full object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package className="w-4 h-4 text-urbana-gold/50" />
-                      </div>
-                    )}
+                    {(() => {
+                      const resolvedImageUrl = resolveProductImageUrl(item.product.imagem_url);
+                      return resolvedImageUrl ? (
+                        <img 
+                          src={resolvedImageUrl} 
+                          alt={item.product.nome}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="w-4 h-4 text-urbana-gold/50" />
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-urbana-light text-xs sm:text-sm font-medium leading-tight truncate">
