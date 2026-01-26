@@ -126,7 +126,7 @@ const SlotBlockManager: React.FC = () => {
 
   // Buscar bloqueios e agendamentos para a data selecionada
   const fetchData = useCallback(async () => {
-    if (!staffTableId || isDayOff) {
+    if (!staffTableId || isDayOff || !barberData?.staff_id) {
       setBlockedSlots([]);
       setAppointments([]);
       return;
@@ -134,36 +134,46 @@ const SlotBlockManager: React.FC = () => {
 
     setLoading(true);
     try {
-      // Buscar bloqueios
-      const { data: blocksData, error: blocksError } = await supabase
-        .from('barber_availability')
-        .select('*')
-        .eq('barber_id', staffTableId)
-        .eq('date', selectedDate);
-
-      if (blocksError) throw blocksError;
-      // Map data to include optional reason field
-      setBlockedSlots((blocksData || []).map(b => ({ ...b, reason: null })));
-
-      // Buscar o barbeiro_id do painel_barbeiros
-      const { data: barbeiroData } = await supabase
+      // Buscar o barbeiro_id do painel_barbeiros primeiro
+      const { data: barberRecord } = await supabase
         .from('painel_barbeiros')
         .select('id')
         .eq('staff_id', barberData.staff_id)
         .single();
 
-      if (barbeiroData) {
-        // Buscar agendamentos do dia usando os campos corretos (data e hora separados)
-        const { data: appointmentsData, error: appointmentsError } = await supabase
+      if (!barberRecord) {
+        console.error('[SlotBlockManager] Barbeiro não encontrado');
+        setBlockedSlots([]);
+        setAppointments([]);
+        return;
+      }
+
+      // Buscar bloqueios e agendamentos em paralelo
+      const [blocksResult, appointmentsResult] = await Promise.all([
+        // Buscar bloqueios usando staffTableId (referência à tabela staff)
+        supabase
+          .from('barber_availability')
+          .select('*')
+          .eq('barber_id', staffTableId)
+          .eq('date', selectedDate),
+        
+        // Buscar agendamentos do dia usando barbeiro_id do painel
+        supabase
           .from('painel_agendamentos')
           .select('id, data, hora, servico:servico_id(duracao, nome)')
-          .eq('barbeiro_id', barbeiroData.id)
+          .eq('barbeiro_id', barberRecord.id)
           .eq('data', selectedDate)
-          .not('status', 'in', '("cancelado","ausente")');
+          .not('status', 'in', '("cancelado","ausente")')
+      ]);
 
-        if (appointmentsError) throw appointmentsError;
-        setAppointments(appointmentsData || []);
-      }
+      if (blocksResult.error) throw blocksResult.error;
+      if (appointmentsResult.error) throw appointmentsResult.error;
+
+      // Map data to include optional reason field
+      setBlockedSlots((blocksResult.data || []).map(b => ({ ...b, reason: null })));
+      setAppointments(appointmentsResult.data || []);
+
+      console.log(`[SlotBlockManager] Data: ${selectedDate}, Agendamentos encontrados:`, appointmentsResult.data?.length || 0);
 
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
@@ -171,7 +181,7 @@ const SlotBlockManager: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  }, [staffTableId, selectedDate, isDayOff]);
+  }, [staffTableId, selectedDate, isDayOff, barberData?.staff_id]);
 
   useEffect(() => {
     fetchData();
