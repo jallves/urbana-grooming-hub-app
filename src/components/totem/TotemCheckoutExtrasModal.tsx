@@ -6,6 +6,7 @@ import { ArrowLeft, Check, Minus, Package, Plus, ShoppingBag, Sparkles } from "l
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { resolveProductImageUrl } from "@/utils/productImages";
 
 export interface CheckoutExtraService {
   id: string;
@@ -276,8 +277,8 @@ const TotemCheckoutExtrasModal: React.FC<TotemCheckoutExtrasModalProps> = ({
                     return (
                       <Card key={p.id} className="bg-urbana-black/50 border-2 border-urbana-gold/20 overflow-hidden">
                         <div className="aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 relative">
-                          {p.imagem_url ? (
-                            <img src={p.imagem_url} alt={p.nome} className="w-full h-full object-cover" loading="lazy" />
+                          {resolveProductImageUrl(p.imagem_url) ? (
+                            <img src={resolveProductImageUrl(p.imagem_url)!} alt={p.nome} className="w-full h-full object-cover" loading="lazy" />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
                               <Package className="w-12 h-12 text-urbana-gold/40" />
