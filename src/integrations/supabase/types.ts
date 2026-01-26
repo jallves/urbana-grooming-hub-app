@@ -1660,6 +1660,50 @@ export type Database = {
           },
         ]
       }
+      time_off: {
+        Row: {
+          barber_id: string
+          created_at: string | null
+          end_date: string
+          id: string
+          reason: string | null
+          start_date: string
+          status: string
+          type: string
+          updated_at: string | null
+        }
+        Insert: {
+          barber_id: string
+          created_at?: string | null
+          end_date: string
+          id?: string
+          reason?: string | null
+          start_date: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Update: {
+          barber_id?: string
+          created_at?: string | null
+          end_date?: string
+          id?: string
+          reason?: string | null
+          start_date?: string
+          status?: string
+          type?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "time_off_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       totem_auth: {
         Row: {
           created_at: string | null
