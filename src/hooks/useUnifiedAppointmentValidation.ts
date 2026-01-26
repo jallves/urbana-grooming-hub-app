@@ -225,7 +225,48 @@ export const useUnifiedAppointmentValidation = () => {
   }, [resolveStaffId, checkBarberWorkingHoursWithStaffId]);
 
   /**
-   * Verifica disponibilidade específica (folgas/bloqueios)
+   * Verifica folgas programadas (tabela time_off)
+   */
+  const checkBarberTimeOff = useCallback(async (
+    barberId: string,
+    date: Date
+  ): Promise<ValidationResult> => {
+    const dateStr = formatDateLocal(date);
+
+    const { data: timeOff, error } = await supabase
+      .from('time_off')
+      .select('id, type, reason')
+      .eq('barber_id', barberId)
+      .eq('status', 'ativo')
+      .lte('start_date', dateStr)
+      .gte('end_date', dateStr)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Erro ao verificar folgas:', error);
+      return { valid: true }; // Em caso de erro, não bloqueia
+    }
+
+    if (timeOff) {
+      const typeLabels: Record<string, string> = {
+        folga: 'folga',
+        ferias: 'férias',
+        licenca: 'licença',
+        feriado: 'feriado',
+        outro: 'ausência',
+      };
+      const typeLabel = typeLabels[timeOff.type] || 'ausência';
+      return { 
+        valid: false, 
+        error: `O barbeiro está em ${typeLabel} neste dia` 
+      };
+    }
+
+    return { valid: true };
+  }, [formatDateLocal]);
+
+  /**
+   * Verifica disponibilidade específica (bloqueios de horários)
    */
   const checkBarberSpecificAvailability = useCallback(async (
     barberId: string,
@@ -254,7 +295,7 @@ export const useUnifiedAppointmentValidation = () => {
     }
 
     if (!availability.is_available) {
-      return { valid: false, error: 'O barbeiro não está disponível neste dia' };
+      return { valid: false, error: 'O barbeiro não está disponível neste horário' };
     }
 
     // Se há horário específico, verificar
@@ -367,10 +408,12 @@ export const useUnifiedAppointmentValidation = () => {
       console.log('🔗 [validateAppointment] Staff ID resolvido:', { barberId, staffTableId });
 
       // 4. Executar verificações assíncronas em PARALELO
-      const [workingCheck, availabilityCheck, conflictCheck] = await Promise.all([
+      const [workingCheck, timeOffCheck, availabilityCheck, conflictCheck] = await Promise.all([
         // Verificar horário de trabalho do barbeiro usando staffTableId já resolvido
         checkBarberWorkingHoursWithStaffId(staffTableId, date, time, serviceDuration),
-        // Verificar disponibilidade específica (folgas)
+        // Verificar folgas programadas (tabela time_off)
+        checkBarberTimeOff(barberId, date),
+        // Verificar disponibilidade específica (bloqueios)
         checkBarberSpecificAvailability(barberId, date, time, serviceDuration),
         // Verificar conflitos com outros agendamentos
         checkAppointmentConflicts(barberId, date, time, serviceDuration, excludeAppointmentId)
@@ -381,6 +424,12 @@ export const useUnifiedAppointmentValidation = () => {
         console.log('❌ [validateAppointment] Fora do horário do barbeiro');
         if (showToast) toast.error(workingCheck.error);
         return workingCheck;
+      }
+
+      if (!timeOffCheck.valid) {
+        console.log('❌ [validateAppointment] Barbeiro em folga');
+        if (showToast) toast.error(timeOffCheck.error);
+        return timeOffCheck;
       }
 
       if (!availabilityCheck.valid) {
@@ -410,6 +459,7 @@ export const useUnifiedAppointmentValidation = () => {
     validateBusinessHours,
     resolveStaffId,
     checkBarberWorkingHoursWithStaffId,
+    checkBarberTimeOff,
     checkBarberSpecificAvailability,
     checkAppointmentConflicts
   ]);
@@ -437,7 +487,7 @@ export const useUnifiedAppointmentValidation = () => {
       console.log('🔗 [getAvailableTimeSlots] Staff ID resolvido:', staffTableId);
 
       // OTIMIZAÇÃO: Executar queries em paralelo
-      const [workingHoursResult, specificAvailabilityResult, existingAppointmentsResult] = await Promise.all([
+      const [workingHoursResult, timeOffResult, specificAvailabilityResult, existingAppointmentsResult] = await Promise.all([
         // 1. Buscar horário de trabalho
         supabase
           .from('working_hours')
@@ -447,7 +497,17 @@ export const useUnifiedAppointmentValidation = () => {
           .eq('is_active', true)
           .maybeSingle(),
         
-        // 2. Verificar disponibilidade específica (folgas/bloqueios)
+        // 2. Verificar folgas programadas (time_off)
+        supabase
+          .from('time_off')
+          .select('id, type')
+          .eq('barber_id', barberId)
+          .eq('status', 'ativo')
+          .lte('start_date', dateStr)
+          .gte('end_date', dateStr)
+          .maybeSingle(),
+        
+        // 3. Verificar disponibilidade específica (bloqueios)
         supabase
           .from('barber_availability')
           .select('is_available, start_time, end_time')
@@ -455,7 +515,7 @@ export const useUnifiedAppointmentValidation = () => {
           .eq('date', dateStr)
           .maybeSingle(),
         
-        // 3. Buscar agendamentos existentes
+        // 4. Buscar agendamentos existentes
         supabase
           .from('painel_agendamentos')
           .select('hora, servico:painel_servicos(duracao)')
@@ -465,12 +525,19 @@ export const useUnifiedAppointmentValidation = () => {
       ]);
 
       const workingHours = workingHoursResult.data;
+      const timeOff = timeOffResult.data;
       const specificAvailability = specificAvailabilityResult.data;
       const existingAppointments = existingAppointmentsResult.data;
 
       if (!workingHours) {
         console.log('⚠️ [getAvailableTimeSlots] Nenhum horário de trabalho para staff_id:', staffTableId, 'dia:', dayOfWeek);
         return [];
+      }
+
+      // Verificar folga programada
+      if (timeOff) {
+        console.log('⚠️ [getAvailableTimeSlots] Barbeiro em folga neste dia');
+        return []; // Barbeiro em folga
       }
 
       if (specificAvailability?.is_available === false) {
