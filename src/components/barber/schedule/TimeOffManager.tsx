@@ -274,7 +274,7 @@ const TimeOffManager: React.FC = () => {
             <Button
               variant="outline"
               onClick={() => setIsDialogOpen(false)}
-              className="border-urbana-gold/30 text-urbana-light hover:bg-transparent hover:text-urbana-light hover:border-urbana-gold/30"
+              className="border-urbana-gold/30 text-urbana-light hover:!bg-transparent hover:!text-urbana-light hover:!border-urbana-gold/30 focus:!ring-0 focus:!bg-transparent"
             >
               Cancelar
             </Button>
