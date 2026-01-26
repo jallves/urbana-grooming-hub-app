@@ -82,10 +82,10 @@ export const useHomeAvaliacoes = () => {
       const twoStarCount = ratings.filter(r => r.rating === 2).length;
       const oneStarCount = ratings.filter(r => r.rating === 1).length;
 
-      // Buscar avaliações recentes com comentários (últimas 10)
+      // Buscar avaliações recentes com comentários (últimas 5)
       const recentWithComments = ratings
         .filter(r => r.comment && r.comment.trim() !== '')
-        .slice(0, 10);
+        .slice(0, 5);
 
       // Buscar nomes dos clientes e barbeiros para os comentários recentes
       const clientIds = [...new Set(recentWithComments.map(r => r.client_id).filter(Boolean))];
