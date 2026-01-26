@@ -20,27 +20,35 @@ const TopBarbersWidget: React.FC = () => {
     queryKey: ['top-barbers-dashboard'],
     queryFn: async () => {
       const now = new Date();
-      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
 
-      const { data } = await supabase
+      // Fetch revenue records for the month
+      const { data: revenueData } = await supabase
         .from('financial_records')
-        .select(`
-          barber_id,
-          net_amount,
-          transaction_type,
-          staff:barber_id(name)
-        `)
+        .select('barber_id, net_amount')
         .eq('status', 'completed')
         .eq('transaction_type', 'revenue')
         .gte('transaction_date', firstDayOfMonth)
         .not('barber_id', 'is', null);
 
+      // Fetch barber names from painel_barbeiros
+      const { data: barbersData } = await supabase
+        .from('painel_barbeiros')
+        .select('id, nome')
+        .eq('ativo', true);
+
+      // Create a map of barber names
+      const barberNames: Record<string, string> = {};
+      barbersData?.forEach(barber => {
+        barberNames[barber.id] = barber.nome;
+      });
+
       // Aggregate by barber
       const barberMap = new Map<string, BarberStats>();
 
-      data?.forEach((record: any) => {
+      revenueData?.forEach((record) => {
         const barberId = record.barber_id;
-        const barberName = record.staff?.name || 'Barbeiro';
+        const barberName = barberNames[barberId] || 'Barbeiro';
         
         if (!barberMap.has(barberId)) {
           barberMap.set(barberId, {
@@ -54,7 +62,7 @@ const TopBarbersWidget: React.FC = () => {
         }
 
         const stats = barberMap.get(barberId)!;
-        stats.total_revenue += record.net_amount;
+        stats.total_revenue += record.net_amount || 0;
         stats.total_services += 1;
       });
 
@@ -67,10 +75,10 @@ const TopBarbersWidget: React.FC = () => {
         .gte('transaction_date', firstDayOfMonth)
         .not('barber_id', 'is', null);
 
-      commissions?.forEach((comm: any) => {
+      commissions?.forEach((comm) => {
         const stats = barberMap.get(comm.barber_id);
         if (stats) {
-          stats.total_commissions += Math.abs(comm.net_amount);
+          stats.total_commissions += Math.abs(comm.net_amount || 0);
         }
       });
 

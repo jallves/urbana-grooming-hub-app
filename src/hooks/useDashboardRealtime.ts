@@ -18,9 +18,45 @@ export function useDashboardRealtime() {
         () => {
           // Invalidate all dashboard-related queries
           queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-          queryClient.invalidateQueries({ queryKey: ['pending-accounts-dashboard'] });
           queryClient.invalidateQueries({ queryKey: ['top-barbers-dashboard'] });
           queryClient.invalidateQueries({ queryKey: ['financial-evolution-chart'] });
+          queryClient.invalidateQueries({ queryKey: ['operational-metrics-dashboard'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contas_receber'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['pending-contas-receber-dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['totais-contas-dashboard'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'contas_pagar'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['pending-contas-pagar-dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['totais-contas-dashboard'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'vendas'
+        },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['operational-metrics-dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
         }
       )
       .on(
@@ -31,8 +67,7 @@ export function useDashboardRealtime() {
           table: 'painel_agendamentos'
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-          queryClient.invalidateQueries({ queryKey: ['pending-accounts-dashboard'] });
+          queryClient.invalidateQueries({ queryKey: ['operational-metrics-dashboard'] });
         }
       )
       .subscribe();
