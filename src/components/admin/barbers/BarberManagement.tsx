@@ -129,14 +129,14 @@ const BarberManagement: React.FC = () => {
         <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-lg p-1 h-auto gap-1">
           <TabsTrigger 
             value="permissions"
-            className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-600 text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all"
+            className="bg-urbana-gold/20 text-urbana-gold data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all font-medium border border-urbana-gold/30"
           >
             <Shield className="h-4 w-4 mr-1.5" />
             Permissões
           </TabsTrigger>
           <TabsTrigger 
             value="blocks"
-            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-600 text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all"
+            className="bg-red-100 text-red-600 data-[state=active]:bg-red-600 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all font-medium border border-red-200"
           >
             <Lock className="h-4 w-4 mr-1.5" />
             Bloqueios de Horários
