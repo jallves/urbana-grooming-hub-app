@@ -1,32 +1,36 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Calendar, 
   Clock, 
   Lock, 
-  Trash2, 
+  Unlock,
   Loader2, 
   AlertCircle,
-  CalendarRange,
-  Users,
-  CheckCircle2
+  CalendarDays,
+  CalendarOff,
+  User
 } from 'lucide-react';
-import { format, addDays, eachDayOfInterval, getDay } from 'date-fns';
+import { format, addDays, isToday, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 
 interface Barber {
   id: string;
   nome: string;
+  foto_url: string | null;
   staff_id: string | null;
   staffTableId: string | null;
+}
+
+interface TimeSlot {
+  time: string;
+  isBlocked: boolean;
+  hasAppointment: boolean;
+  blockId?: string;
 }
 
 interface BlockedSlot {
@@ -35,7 +39,6 @@ interface BlockedSlot {
   start_time: string;
   end_time: string;
   is_available: boolean;
-  barber_id: string;
 }
 
 interface WorkingHours {
@@ -52,35 +55,31 @@ const AdminBarberBlockManager: React.FC = () => {
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
   const [blockedSlots, setBlockedSlots] = useState<BlockedSlot[]>([]);
+  const [appointments, setAppointments] = useState<any[]>([]);
+  const [slots, setSlots] = useState<TimeSlot[]>([]);
+  const [isDayOff, setIsDayOff] = useState(false);
   
   // Estados do formulário
-  const [blockType, setBlockType] = useState<'single' | 'range' | 'fullday'>('single');
-  const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [startTime, setStartTime] = useState('09:00');
-  const [endTime, setEndTime] = useState('20:00');
-  const [isFullDay, setIsFullDay] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   
   // Estados de loading
   const [loadingBarbers, setLoadingBarbers] = useState(true);
-  const [loadingBlocks, setLoadingBlocks] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState<string | null>(null);
 
   // Buscar todos os barbeiros ativos
   useEffect(() => {
     const fetchBarbers = async () => {
       setLoadingBarbers(true);
       try {
-        // Buscar barbeiros ativos com seus staff_ids
         const { data: barbersData, error: barbersError } = await supabase
           .from('painel_barbeiros')
-          .select('id, nome, staff_id')
+          .select('id, nome, foto_url, image_url, staff_id')
           .eq('ativo', true)
           .order('nome');
 
         if (barbersError) throw barbersError;
 
-        // Para cada barbeiro, resolver o staff.id para usar com working_hours e barber_availability
         const barbersWithStaffTableId: Barber[] = [];
         
         for (const barber of barbersData || []) {
@@ -99,6 +98,7 @@ const AdminBarberBlockManager: React.FC = () => {
           barbersWithStaffTableId.push({
             id: barber.id,
             nome: barber.nome,
+            foto_url: barber.foto_url || barber.image_url,
             staff_id: barber.staff_id,
             staffTableId
           });
@@ -116,7 +116,7 @@ const AdminBarberBlockManager: React.FC = () => {
     fetchBarbers();
   }, []);
 
-  // Quando selecionar um barbeiro, buscar seus horários de trabalho e bloqueios existentes
+  // Quando selecionar um barbeiro, buscar seus horários de trabalho
   useEffect(() => {
     const barber = barbers.find(b => b.id === selectedBarberId);
     setSelectedBarber(barber || null);
@@ -127,48 +127,38 @@ const AdminBarberBlockManager: React.FC = () => {
       return;
     }
 
-    const fetchBarberData = async () => {
-      setLoadingBlocks(true);
-      try {
-        const [whResult, blocksResult] = await Promise.all([
-          supabase
-            .from('working_hours')
-            .select('day_of_week, start_time, end_time, is_active')
-            .eq('staff_id', barber.staffTableId),
-          supabase
-            .from('barber_availability')
-            .select('*')
-            .eq('barber_id', barber.staffTableId)
-            .eq('is_available', false)
-            .gte('date', format(new Date(), 'yyyy-MM-dd'))
-            .order('date', { ascending: true })
-        ]);
+    const fetchWorkingHours = async () => {
+      const { data, error } = await supabase
+        .from('working_hours')
+        .select('day_of_week, start_time, end_time, is_active')
+        .eq('staff_id', barber.staffTableId);
 
-        if (!whResult.error) {
-          setWorkingHours(whResult.data || []);
-        }
-
-        if (!blocksResult.error) {
-          setBlockedSlots(blocksResult.data || []);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar dados do barbeiro:', error);
-      } finally {
-        setLoadingBlocks(false);
+      if (!error && data) {
+        setWorkingHours(data);
       }
     };
 
-    fetchBarberData();
+    fetchWorkingHours();
   }, [selectedBarberId, barbers]);
 
-  // Gerar slots de tempo disponíveis para um dia específico
-  const getTimeSlotsForDay = useCallback((date: Date): string[] => {
-    const dayOfWeek = getDay(date);
-    const daySchedule = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+  // Verificar se o dia selecionado é dia de trabalho
+  useEffect(() => {
+    const selectedDateObj = new Date(selectedDate + 'T12:00:00');
+    const dayOfWeek = getDay(selectedDateObj);
     
+    const daySchedule = workingHours.find(wh => wh.day_of_week === dayOfWeek);
+    setIsDayOff(!daySchedule || !daySchedule.is_active);
+  }, [selectedDate, workingHours]);
+
+  // Gerar slots baseados no horário de trabalho do dia
+  const generateTimeSlots = useCallback((): string[] => {
+    const selectedDateObj = new Date(selectedDate + 'T12:00:00');
+    const dayOfWeek = getDay(selectedDateObj);
+    
+    const daySchedule = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
     if (!daySchedule) return [];
 
-    const slots: string[] = [];
+    const generatedSlots: string[] = [];
     const [startHour, startMin] = daySchedule.start_time.split(':').map(Number);
     const [endHour, endMin] = daySchedule.end_time.split(':').map(Number);
     
@@ -178,446 +168,450 @@ const AdminBarberBlockManager: React.FC = () => {
     for (let minutes = startTotalMinutes; minutes < endTotalMinutes; minutes += 30) {
       const hour = Math.floor(minutes / 60);
       const min = minutes % 60;
-      slots.push(`${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`);
+      const timeString = `${hour.toString().padStart(2, '0')}:${min.toString().padStart(2, '0')}`;
+      generatedSlots.push(timeString);
     }
 
-    return slots;
-  }, [workingHours]);
+    return generatedSlots;
+  }, [selectedDate, workingHours]);
 
-  // Criar bloqueios
-  const handleCreateBlocks = async () => {
-    if (!selectedBarber?.staffTableId) {
-      toast.error('Selecione um barbeiro');
+  // Buscar bloqueios e agendamentos para a data selecionada
+  const fetchData = useCallback(async () => {
+    if (!selectedBarber?.staffTableId || isDayOff) {
+      setBlockedSlots([]);
+      setAppointments([]);
       return;
     }
 
-    setSaving(true);
+    setLoading(true);
     try {
-      const blocksToInsert: Array<{
-        barber_id: string;
-        date: string;
-        start_time: string;
-        end_time: string;
-        is_available: boolean;
-      }> = [];
-
-      // Determinar o intervalo de datas
-      const dates = blockType === 'range' 
-        ? eachDayOfInterval({ 
-            start: new Date(startDate + 'T12:00:00'), 
-            end: new Date(endDate + 'T12:00:00') 
-          })
-        : [new Date(startDate + 'T12:00:00')];
-
-      for (const date of dates) {
-        const dateStr = format(date, 'yyyy-MM-dd');
-        const dayOfWeek = getDay(date);
-        const daySchedule = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+      const [blocksResult, appointmentsResult] = await Promise.all([
+        supabase
+          .from('barber_availability')
+          .select('*')
+          .eq('barber_id', selectedBarber.staffTableId)
+          .eq('date', selectedDate),
         
-        // Pular dias que não são de trabalho
-        if (!daySchedule) continue;
+        supabase
+          .from('painel_agendamentos')
+          .select('id, data, hora, servico:servico_id(duracao, nome)')
+          .eq('barbeiro_id', selectedBarber.id)
+          .eq('data', selectedDate)
+          .not('status', 'in', '("cancelado","ausente")')
+      ]);
 
-        if (isFullDay || blockType === 'fullday') {
-          // Bloquear o dia inteiro
-          blocksToInsert.push({
+      if (blocksResult.error) throw blocksResult.error;
+      if (appointmentsResult.error) throw appointmentsResult.error;
+
+      setBlockedSlots(blocksResult.data || []);
+      setAppointments(appointmentsResult.data || []);
+
+    } catch (error) {
+      console.error('Erro ao buscar dados:', error);
+      toast.error('Erro ao carregar dados');
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedBarber, selectedDate, isDayOff]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  // Processar slots com status
+  useEffect(() => {
+    if (isDayOff || !selectedBarber) {
+      setSlots([]);
+      return;
+    }
+
+    const timeSlots = generateTimeSlots();
+    const now = new Date();
+    const currentTime = format(now, 'HH:mm');
+    const isSelectedDateToday = isToday(new Date(selectedDate + 'T12:00:00'));
+
+    const slotsWithStatus: TimeSlot[] = timeSlots.map(time => {
+      const block = blockedSlots.find(b => 
+        b.start_time.substring(0, 5) === time && !b.is_available
+      );
+
+      const [slotHour, slotMin] = time.split(':').map(Number);
+      const slotTotalMinutes = slotHour * 60 + slotMin;
+
+      const hasAppointment = appointments.some(apt => {
+        const aptTime = apt.hora?.substring(0, 5);
+        if (!aptTime) return false;
+        
+        const [aptHour, aptMin] = aptTime.split(':').map(Number);
+        const aptTotalMinutes = aptHour * 60 + aptMin;
+        
+        const duracao = apt.servico?.duracao || 30;
+        const aptEndMinutes = aptTotalMinutes + duracao;
+        
+        return slotTotalMinutes >= aptTotalMinutes && slotTotalMinutes < aptEndMinutes;
+      });
+
+      const isPast = isSelectedDateToday && time < currentTime;
+
+      return {
+        time,
+        isBlocked: !!block || isPast,
+        hasAppointment,
+        blockId: block?.id,
+      };
+    });
+
+    setSlots(slotsWithStatus);
+  }, [blockedSlots, appointments, selectedDate, generateTimeSlots, isDayOff, selectedBarber]);
+
+  // Bloquear/Desbloquear slot
+  const toggleSlotBlock = async (slot: TimeSlot) => {
+    if (!selectedBarber?.staffTableId) return;
+    if (slot.hasAppointment) {
+      toast.error('Este horário possui um agendamento');
+      return;
+    }
+
+    setSaving(slot.time);
+    try {
+      if (slot.isBlocked && slot.blockId) {
+        const { error } = await supabase
+          .from('barber_availability')
+          .delete()
+          .eq('id', slot.blockId);
+
+        if (error) throw error;
+        toast.success(`Horário ${slot.time} liberado!`);
+      } else {
+        const endTime = calculateEndTime(slot.time);
+        const { error } = await supabase
+          .from('barber_availability')
+          .insert({
             barber_id: selectedBarber.staffTableId,
-            date: dateStr,
-            start_time: daySchedule.start_time,
-            end_time: daySchedule.end_time,
-            is_available: false
+            date: selectedDate,
+            start_time: `${slot.time}:00`,
+            end_time: `${endTime}:00`,
+            is_available: false,
           });
-        } else {
-          // Bloquear faixa de horário específica
-          // Gerar slots de 30 em 30 minutos dentro da faixa selecionada
-          const [startH, startM] = startTime.split(':').map(Number);
-          const [endH, endM] = endTime.split(':').map(Number);
-          const startTotal = startH * 60 + startM;
-          const endTotal = endH * 60 + endM;
 
-          for (let minutes = startTotal; minutes < endTotal; minutes += 30) {
-            const slotStart = `${Math.floor(minutes / 60).toString().padStart(2, '0')}:${(minutes % 60).toString().padStart(2, '0')}:00`;
-            const slotEnd = `${Math.floor((minutes + 30) / 60).toString().padStart(2, '0')}:${((minutes + 30) % 60).toString().padStart(2, '0')}:00`;
-            
-            blocksToInsert.push({
-              barber_id: selectedBarber.staffTableId,
-              date: dateStr,
-              start_time: slotStart,
-              end_time: slotEnd,
-              is_available: false
-            });
-          }
+        if (error) throw error;
+        toast.success(`Horário ${slot.time} bloqueado!`);
+      }
+
+      await fetchData();
+    } catch (error: any) {
+      console.error('Erro ao alterar bloqueio:', error);
+      toast.error('Erro ao alterar status do horário');
+    } finally {
+      setSaving(null);
+    }
+  };
+
+  const calculateEndTime = (startTime: string): string => {
+    const [hours, minutes] = startTime.split(':').map(Number);
+    const totalMinutes = hours * 60 + minutes + 30;
+    const endHours = Math.floor(totalMinutes / 60);
+    const endMinutes = totalMinutes % 60;
+    return `${endHours.toString().padStart(2, '0')}:${endMinutes.toString().padStart(2, '0')}`;
+  };
+
+  // Navegação rápida de datas
+  const getQuickDateButtons = useCallback(() => {
+    const buttons: { label: string; date: Date }[] = [];
+    let daysChecked = 0;
+    let currentDate = new Date();
+
+    while (buttons.length < 3 && daysChecked < 14) {
+      const dayOfWeek = getDay(currentDate);
+      const daySchedule = workingHours.find(wh => wh.day_of_week === dayOfWeek && wh.is_active);
+
+      if (daySchedule) {
+        if (daysChecked === 0) {
+          buttons.push({ label: 'Hoje', date: new Date(currentDate) });
+        } else if (buttons.length === 1) {
+          buttons.push({ label: 'Próximo', date: new Date(currentDate) });
+        } else {
+          buttons.push({ label: format(currentDate, 'dd/MM'), date: new Date(currentDate) });
         }
       }
 
-      if (blocksToInsert.length === 0) {
-        toast.error('Nenhum horário para bloquear. Verifique se as datas selecionadas são dias de trabalho.');
-        return;
-      }
-
-      // Inserir bloqueios
-      const { error } = await supabase
-        .from('barber_availability')
-        .insert(blocksToInsert);
-
-      if (error) throw error;
-
-      toast.success(`${blocksToInsert.length} bloqueio(s) criado(s) com sucesso!`);
-      
-      // Recarregar bloqueios
-      const { data: newBlocks } = await supabase
-        .from('barber_availability')
-        .select('*')
-        .eq('barber_id', selectedBarber.staffTableId)
-        .eq('is_available', false)
-        .gte('date', format(new Date(), 'yyyy-MM-dd'))
-        .order('date', { ascending: true });
-      
-      setBlockedSlots(newBlocks || []);
-
-    } catch (error: any) {
-      console.error('Erro ao criar bloqueios:', error);
-      toast.error('Erro ao criar bloqueios');
-    } finally {
-      setSaving(false);
+      currentDate = addDays(currentDate, 1);
+      daysChecked++;
     }
+
+    return buttons;
+  }, [workingHours]);
+
+  const quickDateButtons = getQuickDateButtons();
+
+  const getSlotStatus = (slot: TimeSlot) => {
+    if (slot.hasAppointment) return 'occupied';
+    if (slot.isBlocked) return 'blocked';
+    return 'available';
   };
 
-  // Remover bloqueio
-  const handleDeleteBlock = async (blockId: string) => {
-    try {
-      const { error } = await supabase
-        .from('barber_availability')
-        .delete()
-        .eq('id', blockId);
-
-      if (error) throw error;
-
-      setBlockedSlots(prev => prev.filter(b => b.id !== blockId));
-      toast.success('Bloqueio removido com sucesso!');
-    } catch (error) {
-      console.error('Erro ao remover bloqueio:', error);
-      toast.error('Erro ao remover bloqueio');
-    }
-  };
-
-  // Remover todos os bloqueios de uma data
-  const handleDeleteAllBlocksForDate = async (date: string) => {
-    if (!selectedBarber?.staffTableId) return;
+  const getSlotClasses = (slot: TimeSlot) => {
+    const status = getSlotStatus(slot);
+    const base = 'flex items-center justify-between p-2.5 sm:p-3 rounded-lg border-2 transition-all duration-150';
     
-    try {
-      const { error } = await supabase
-        .from('barber_availability')
-        .delete()
-        .eq('barber_id', selectedBarber.staffTableId)
-        .eq('date', date)
-        .eq('is_available', false);
-
-      if (error) throw error;
-
-      setBlockedSlots(prev => prev.filter(b => b.date !== date));
-      toast.success('Todos os bloqueios do dia foram removidos!');
-    } catch (error) {
-      console.error('Erro ao remover bloqueios:', error);
-      toast.error('Erro ao remover bloqueios');
+    switch (status) {
+      case 'occupied':
+        return cn(base, 'bg-blue-50 border-blue-300 text-blue-700');
+      case 'blocked':
+        return cn(base, 'bg-red-50 border-red-300 text-red-700');
+      default:
+        return cn(base, 'bg-green-50 border-green-300 text-green-700 hover:bg-green-100');
     }
   };
 
-  // Agrupar bloqueios por data
-  const groupedBlocks = blockedSlots.reduce((acc, block) => {
-    if (!acc[block.date]) {
-      acc[block.date] = [];
-    }
-    acc[block.date].push(block);
-    return acc;
-  }, {} as Record<string, BlockedSlot[]>);
+  const getBarberInitials = (nome: string) => {
+    return nome.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+  };
+
+  if (loadingBarbers) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
+      </div>
+    );
+  }
 
   return (
-    <Card className="bg-white border-gray-200 shadow-sm">
-      <CardHeader className="p-4 sm:p-6 border-b border-gray-100">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-red-100 rounded-xl">
-            <Lock className="h-5 w-5 text-red-600" />
-          </div>
-          <div>
-            <CardTitle className="text-base sm:text-lg text-gray-900 font-playfair">
-              Gerenciar Bloqueios de Horários
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm text-gray-600">
-              Bloqueie horários específicos ou dias inteiros para os barbeiros
-            </CardDescription>
-          </div>
-        </div>
-      </CardHeader>
+    <div className="space-y-4">
+      {/* Header com informativo */}
+      <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 sm:p-4">
+        <p className="text-xs sm:text-sm text-amber-800 leading-relaxed flex items-start gap-2">
+          <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
+          <span>
+            Selecione um barbeiro e clique nos horários para bloquear/desbloquear. 
+            Os bloqueios serão refletidos em todas as plataformas de agendamento.
+          </span>
+        </p>
+      </div>
 
-      <CardContent className="p-4 sm:p-6 space-y-6">
-        {/* Seleção de Barbeiro */}
-        <div className="space-y-2">
-          <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Selecionar Barbeiro
-          </Label>
-          
-          {loadingBarbers ? (
-            <div className="flex items-center gap-2 text-gray-500 text-sm">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Carregando barbeiros...
-            </div>
-          ) : (
-            <Select value={selectedBarberId} onValueChange={setSelectedBarberId}>
-              <SelectTrigger className="w-full bg-white border-gray-300">
-                <SelectValue placeholder="Selecione um barbeiro" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-200 z-50">
-                {barbers.map(barber => (
-                  <SelectItem key={barber.id} value={barber.id}>
-                    {barber.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </div>
-
-        {selectedBarber && (
-          <>
-            {/* Alerta informativo */}
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <p className="text-xs sm:text-sm text-amber-800 flex items-start gap-2">
-                <AlertCircle className="h-4 w-4 mt-0.5 flex-shrink-0" />
-                <span>
-                  Os bloqueios criados aqui serão refletidos no painel do barbeiro e impedirão 
-                  agendamentos nestes horários em todas as plataformas (Totem, Painel Cliente, Admin).
+      {/* Seleção de Barbeiros com Cards */}
+      <div className="space-y-3">
+        <Label className="text-sm font-medium text-gray-700 flex items-center gap-2">
+          <User className="h-4 w-4" />
+          Selecionar Barbeiro
+        </Label>
+        
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          {barbers.map(barber => {
+            const isSelected = selectedBarberId === barber.id;
+            return (
+              <button
+                key={barber.id}
+                type="button"
+                onClick={() => setSelectedBarberId(barber.id)}
+                className={cn(
+                  'flex flex-col items-center gap-2 p-3 sm:p-4 rounded-xl border-2 transition-all',
+                  isSelected 
+                    ? 'border-urbana-gold bg-urbana-gold/10 shadow-md' 
+                    : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm'
+                )}
+              >
+                <Avatar className={cn(
+                  'h-14 w-14 sm:h-16 sm:w-16 border-2',
+                  isSelected ? 'border-urbana-gold' : 'border-gray-200'
+                )}>
+                  <AvatarImage src={barber.foto_url || ''} alt={barber.nome} />
+                  <AvatarFallback className={cn(
+                    'text-sm sm:text-base font-semibold',
+                    isSelected ? 'bg-urbana-gold text-black' : 'bg-gray-100 text-gray-600'
+                  )}>
+                    {getBarberInitials(barber.nome)}
+                  </AvatarFallback>
+                </Avatar>
+                <span className={cn(
+                  'text-xs sm:text-sm font-medium text-center line-clamp-1',
+                  isSelected ? 'text-gray-900' : 'text-gray-700'
+                )}>
+                  {barber.nome}
                 </span>
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Se nenhum barbeiro selecionado */}
+      {!selectedBarber && (
+        <div className="text-center py-12 bg-gray-50 rounded-xl border border-gray-200">
+          <User className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+          <p className="text-gray-600 font-medium">Selecione um barbeiro</p>
+          <p className="text-xs text-gray-500 mt-1">
+            para gerenciar seus bloqueios de horário
+          </p>
+        </div>
+      )}
+
+      {/* Conteúdo quando barbeiro selecionado */}
+      {selectedBarber && (
+        <div className="space-y-4 bg-white border border-gray-200 rounded-xl p-4 sm:p-5">
+          {/* Header com foto e nome do barbeiro */}
+          <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+            <Avatar className="h-12 w-12 border-2 border-urbana-gold">
+              <AvatarImage src={selectedBarber.foto_url || ''} alt={selectedBarber.nome} />
+              <AvatarFallback className="bg-urbana-gold text-black font-semibold">
+                {getBarberInitials(selectedBarber.nome)}
+              </AvatarFallback>
+            </Avatar>
+            <div>
+              <h3 className="font-semibold text-gray-900">{selectedBarber.nome}</h3>
+              <p className="text-xs text-gray-500">Gerenciando bloqueios de horário</p>
+            </div>
+          </div>
+
+          {/* Seletor de Data */}
+          <div className="space-y-3">
+            <Label className="text-gray-700 text-xs sm:text-sm flex items-center gap-2">
+              <CalendarDays className="h-4 w-4" />
+              Selecionar Data
+            </Label>
+            
+            {/* Botões de data rápida */}
+            {quickDateButtons.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {quickDateButtons.map(({ label, date }) => {
+                  const isSelected = selectedDate === format(date, 'yyyy-MM-dd');
+                  return (
+                    <button
+                      key={label}
+                      type="button"
+                      onClick={() => setSelectedDate(format(date, 'yyyy-MM-dd'))}
+                      className={cn(
+                        'px-3 py-1.5 text-xs sm:text-sm rounded-lg border transition-colors font-medium',
+                        isSelected 
+                          ? 'bg-urbana-gold border-urbana-gold text-black' 
+                          : 'bg-white border-gray-300 text-gray-700 hover:border-gray-400'
+                      )}
+                    >
+                      {label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            <Input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              min={format(new Date(), 'yyyy-MM-dd')}
+              className="bg-white border-gray-300 text-gray-900 h-10"
+            />
+
+            <p className="text-sm text-gray-900 font-medium">
+              {format(new Date(selectedDate + 'T12:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+            </p>
+          </div>
+
+          {/* Dia de folga */}
+          {isDayOff ? (
+            <div className="bg-gray-100 border border-gray-200 rounded-xl p-6 text-center">
+              <CalendarOff className="h-12 w-12 mx-auto mb-3 text-gray-400" />
+              <p className="text-gray-700 font-medium">Dia de Folga</p>
+              <p className="text-xs text-gray-500 mt-1">
+                O barbeiro não trabalha neste dia
               </p>
             </div>
-
-            {/* Formulário de Bloqueio */}
-            <div className="bg-gray-50 rounded-xl p-4 space-y-4">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-urbana-gold" />
-                Criar Novo Bloqueio
-              </h3>
-
-              {/* Tipo de Bloqueio */}
-              <div className="space-y-2">
-                <Label className="text-sm font-medium text-gray-700">Tipo de Bloqueio</Label>
-                <div className="flex flex-wrap gap-2">
-                  <Button
-                    type="button"
-                    variant={blockType === 'single' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setBlockType('single')}
-                    className={cn(
-                      blockType === 'single' 
-                        ? 'bg-urbana-gold hover:bg-urbana-gold/90 text-black' 
-                        : 'border-gray-300'
-                    )}
-                  >
-                    Data Única
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={blockType === 'range' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setBlockType('range')}
-                    className={cn(
-                      blockType === 'range' 
-                        ? 'bg-urbana-gold hover:bg-urbana-gold/90 text-black' 
-                        : 'border-gray-300'
-                    )}
-                  >
-                    <CalendarRange className="h-4 w-4 mr-1" />
-                    Período
-                  </Button>
-                  <Button
-                    type="button"
-                    variant={blockType === 'fullday' ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => { setBlockType('fullday'); setIsFullDay(true); }}
-                    className={cn(
-                      blockType === 'fullday' 
-                        ? 'bg-red-600 hover:bg-red-700 text-white' 
-                        : 'border-gray-300'
-                    )}
-                  >
-                    Dia Inteiro
-                  </Button>
+          ) : (
+            <>
+              {/* Legenda */}
+              <div className="flex flex-wrap gap-3 text-xs sm:text-sm">
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-green-100 border-2 border-green-400 flex items-center justify-center">
+                    <Unlock className="h-2.5 w-2.5 text-green-600" />
+                  </div>
+                  <span className="text-gray-700">Disponível</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-red-100 border-2 border-red-400 flex items-center justify-center">
+                    <Lock className="h-2.5 w-2.5 text-red-600" />
+                  </div>
+                  <span className="text-gray-700">Bloqueado</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400" />
+                  <span className="text-gray-700">Agendado</span>
                 </div>
               </div>
 
-              {/* Seleção de Datas */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label className="text-sm font-medium text-gray-700">
-                    {blockType === 'range' ? 'Data Inicial' : 'Data'}
-                  </Label>
-                  <Input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                    className="bg-white border-gray-300"
-                  />
-                </div>
-
-                {blockType === 'range' && (
-                  <div className="space-y-2">
-                    <Label className="text-sm font-medium text-gray-700">Data Final</Label>
-                    <Input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      min={startDate}
-                      className="bg-white border-gray-300"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Seleção de Horários (se não for dia inteiro) */}
-              {blockType !== 'fullday' && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <Switch
-                      checked={isFullDay}
-                      onCheckedChange={setIsFullDay}
-                      id="fullday-switch"
-                    />
-                    <Label htmlFor="fullday-switch" className="text-sm text-gray-700 cursor-pointer">
-                      Bloquear dia inteiro
-                    </Label>
-                  </div>
-
-                  {!isFullDay && (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          Hora Inicial
-                        </Label>
-                        <Input
-                          type="time"
-                          value={startTime}
-                          onChange={(e) => setStartTime(e.target.value)}
-                          className="bg-white border-gray-300"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                          <Clock className="h-3.5 w-3.5" />
-                          Hora Final
-                        </Label>
-                        <Input
-                          type="time"
-                          value={endTime}
-                          onChange={(e) => setEndTime(e.target.value)}
-                          className="bg-white border-gray-300"
-                        />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* Botão de Criar */}
-              <Button
-                onClick={handleCreateBlocks}
-                disabled={saving || !selectedBarberId}
-                className="w-full bg-red-600 hover:bg-red-700 text-white"
-              >
-                {saving ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Criando bloqueios...
-                  </>
-                ) : (
-                  <>
-                    <Lock className="h-4 w-4 mr-2" />
-                    Criar Bloqueio
-                  </>
-                )}
-              </Button>
-            </div>
-
-            {/* Lista de Bloqueios Existentes */}
-            <div className="space-y-4">
-              <h3 className="font-medium text-gray-900 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-gray-600" />
-                Bloqueios Ativos - {selectedBarber.nome}
-              </h3>
-
-              {loadingBlocks ? (
-                <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
-                </div>
-              ) : Object.keys(groupedBlocks).length === 0 ? (
-                <div className="text-center py-8 text-gray-500">
-                  <CheckCircle2 className="h-12 w-12 mx-auto mb-2 text-green-400" />
-                  <p>Nenhum bloqueio ativo para este barbeiro.</p>
+              {/* Grade de Horários */}
+              {loading ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
                 </div>
               ) : (
-                <div className="space-y-3">
-                  {Object.entries(groupedBlocks).map(([date, blocks]) => (
-                    <div 
-                      key={date} 
-                      className="border border-gray-200 rounded-lg p-4 bg-white"
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-red-500" />
-                          <span className="font-medium text-gray-900">
-                            {format(new Date(date + 'T12:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
-                          </span>
-                          <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">
-                            {blocks.length} slot(s)
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteAllBlocksForDate(date)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4 mr-1" />
-                          Remover todos
-                        </Button>
-                      </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                  {slots.map((slot) => {
+                    const status = getSlotStatus(slot);
+                    const isSaving = saving === slot.time;
+                    const canToggle = status !== 'occupied';
 
-                      <div className="flex flex-wrap gap-2">
-                        {blocks.map(block => (
-                          <div 
-                            key={block.id}
-                            className="flex items-center gap-1 bg-red-50 border border-red-200 rounded-md px-2 py-1 text-sm"
-                          >
-                            <Clock className="h-3 w-3 text-red-500" />
-                            <span className="text-red-700">
-                              {block.start_time.substring(0, 5)} - {block.end_time.substring(0, 5)}
-                            </span>
-                            <button
-                              onClick={() => handleDeleteBlock(block.id)}
-                              className="ml-1 text-red-400 hover:text-red-600"
-                            >
-                              <Trash2 className="h-3 w-3" />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
+                    return (
+                      <button
+                        key={slot.time}
+                        onClick={() => canToggle && toggleSlotBlock(slot)}
+                        disabled={!canToggle || isSaving}
+                        className={cn(
+                          getSlotClasses(slot),
+                          !canToggle && 'cursor-not-allowed opacity-70',
+                          canToggle && 'cursor-pointer active:scale-95'
+                        )}
+                      >
+                        <div className="flex items-center gap-2">
+                          <Clock className="h-4 w-4 flex-shrink-0" />
+                          <span className="font-semibold text-sm">{slot.time}</span>
+                        </div>
+                        
+                        {isSaving ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : status === 'occupied' ? (
+                          <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded font-medium">
+                            Agend.
+                          </span>
+                        ) : status === 'blocked' ? (
+                          <Lock className="h-4 w-4 text-red-600" />
+                        ) : (
+                          <Unlock className="h-4 w-4 text-green-600" />
+                        )}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
-            </div>
-          </>
-        )}
 
-        {!selectedBarberId && !loadingBarbers && (
-          <div className="text-center py-12 text-gray-500">
-            <Users className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p>Selecione um barbeiro para gerenciar seus bloqueios de horário.</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+              {/* Resumo */}
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
+                <h4 className="text-sm font-semibold text-gray-900 mb-3">Resumo do Dia</h4>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xl font-bold text-green-600">
+                      {slots.filter(s => getSlotStatus(s) === 'available').length}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Disponíveis</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xl font-bold text-blue-600">
+                      {slots.filter(s => getSlotStatus(s) === 'occupied').length}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Agendados</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xl font-bold text-red-600">
+                      {slots.filter(s => getSlotStatus(s) === 'blocked' && !s.hasAppointment).length}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Bloqueados</p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 };
 
