@@ -300,7 +300,6 @@ const SlotBlockManager: React.FC = () => {
             start_time: `${slot.time}:00`,
             end_time: `${endTime}:00`,
             is_available: false,
-            reason: 'Bloqueio manual',
           });
 
         if (error) throw error;
