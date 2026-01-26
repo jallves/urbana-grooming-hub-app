@@ -37,7 +37,7 @@ export const useBarberDashboardMetrics = () => {
       try {
         setLoading(true);
 
-        // Buscar ID do barbeiro na tabela painel_barbeiros (que é usada nos agendamentos)
+        // Buscar ID do barbeiro na tabela painel_barbeiros (que é usada nos agendamentos e comissões)
         const { data: barberData } = await supabase
           .from('painel_barbeiros')
           .select('id, staff_id')
@@ -50,8 +50,8 @@ export const useBarberDashboardMetrics = () => {
           return;
         }
 
+        // IMPORTANTE: barber_commissions.barber_id referencia painel_barbeiros.id (não staff_id)
         const barberId = barberData.id;
-        const staffId = barberData.staff_id;
 
         // Buscar todos os agendamentos do barbeiro do mês atual
         const now = new Date();
@@ -71,10 +71,11 @@ export const useBarberDashboardMetrics = () => {
           .lte('data', lastDayOfMonth);
 
         // Buscar comissões do barbeiro (serviços e produtos)
+        // barber_commissions.barber_id = painel_barbeiros.id
         const { data: commissions } = await supabase
           .from('barber_commissions')
           .select('*')
-          .eq('barber_id', staffId);
+          .eq('barber_id', barberId);
 
         if (appointments) {
           const totalAppointments = appointments.length;
