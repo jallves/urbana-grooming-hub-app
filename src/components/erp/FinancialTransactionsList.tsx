@@ -8,6 +8,38 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, ArrowDownCircle, DollarSign, Loader2 } from 'lucide-react';
 
+// Cores por categoria
+const getCategoryColors = (category: string | null): string => {
+  if (!category) return 'bg-gray-100 text-gray-700 border-gray-300';
+  const colors: Record<string, string> = {
+    'services': 'bg-blue-100 text-blue-700 border-blue-300',
+    'servico': 'bg-blue-100 text-blue-700 border-blue-300',
+    'products': 'bg-purple-100 text-purple-700 border-purple-300',
+    'produto': 'bg-purple-100 text-purple-700 border-purple-300',
+    'tips': 'bg-amber-100 text-amber-700 border-amber-300',
+    'gorjeta': 'bg-amber-100 text-amber-700 border-amber-300',
+    'staff_payments': 'bg-teal-100 text-teal-700 border-teal-300',
+    'comissao': 'bg-teal-100 text-teal-700 border-teal-300',
+  };
+  return colors[category.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
+};
+
+// Mapeamento de categorias para português
+const getCategoryLabel = (category: string | null): string => {
+  if (!category) return '-';
+  const map: Record<string, string> = {
+    'services': 'Serviço',
+    'servico': 'Serviço',
+    'products': 'Produto',
+    'produto': 'Produto',
+    'tips': 'Gorjeta',
+    'gorjeta': 'Gorjeta',
+    'staff_payments': 'Comissão',
+    'comissao': 'Comissão',
+  };
+  return map[category.toLowerCase()] || category;
+};
+
 export const FinancialTransactionsList: React.FC = () => {
   const { data: transactions, isLoading } = useQuery({
     queryKey: ['financial-transactions'],
@@ -24,28 +56,6 @@ export const FinancialTransactionsList: React.FC = () => {
     },
     refetchInterval: 10000
   });
-
-  const getTypeIcon = (type: string) => {
-    switch (type) {
-      case 'revenue':
-        return <ArrowUpCircle className="h-4 w-4 text-green-600" />;
-      case 'expense':
-        return <ArrowDownCircle className="h-4 w-4 text-red-600" />;
-      case 'commission':
-        return <DollarSign className="h-4 w-4 text-blue-600" />;
-      default:
-        return null;
-    }
-  };
-
-  const getTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      revenue: 'Receita',
-      expense: 'Despesa',
-      commission: 'Comissão'
-    };
-    return labels[type] || type;
-  };
 
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, { label: string; className: string }> = {
@@ -89,8 +99,16 @@ export const FinancialTransactionsList: React.FC = () => {
                 <div key={transaction.id} className="bg-gray-50 border border-gray-200 rounded-lg p-3">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
-                      {getTypeIcon(transaction.transaction_type)}
-                      <span className="text-sm font-medium">{getTypeLabel(transaction.transaction_type)}</span>
+                      {transaction.transaction_type === 'revenue' ? (
+                        <ArrowUpCircle className="h-4 w-4 text-green-600" />
+                      ) : transaction.transaction_type === 'expense' ? (
+                        <ArrowDownCircle className="h-4 w-4 text-red-600" />
+                      ) : (
+                        <DollarSign className="h-4 w-4 text-blue-600" />
+                      )}
+                      <Badge variant="outline" className={`text-xs py-0.5 px-2 ${getCategoryColors(transaction.category)}`}>
+                        {getCategoryLabel(transaction.category)}
+                      </Badge>
                     </div>
                     {getStatusBadge(transaction.status)}
                   </div>
@@ -115,7 +133,7 @@ export const FinancialTransactionsList: React.FC = () => {
                     </span>
                   </div>
                   <p className="text-xs text-gray-500 mt-1 font-mono">
-                    ID: {transaction.id.substring(0, 8)}
+                    ID: {transaction.id.substring(0, 12)}
                   </p>
                 </div>
               ))}
@@ -128,7 +146,7 @@ export const FinancialTransactionsList: React.FC = () => {
                   <TableRow>
                     <TableHead className="whitespace-nowrap">ID</TableHead>
                     <TableHead className="whitespace-nowrap">Data/Hora</TableHead>
-                    <TableHead className="whitespace-nowrap">Tipo</TableHead>
+                    <TableHead className="whitespace-nowrap">Categoria</TableHead>
                     <TableHead className="whitespace-nowrap">Descrição</TableHead>
                     <TableHead className="text-right whitespace-nowrap">Valor</TableHead>
                     <TableHead className="text-center whitespace-nowrap">Status</TableHead>
@@ -138,7 +156,7 @@ export const FinancialTransactionsList: React.FC = () => {
                   {transactions.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell className="font-mono text-xs text-gray-600">
-                        {transaction.id.substring(0, 8)}
+                        {transaction.id.substring(0, 12)}
                       </TableCell>
                       <TableCell className="text-sm">
                         <div className="flex flex-col">
@@ -151,10 +169,9 @@ export const FinancialTransactionsList: React.FC = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-2">
-                          {getTypeIcon(transaction.transaction_type)}
-                          <span className="text-sm">{getTypeLabel(transaction.transaction_type)}</span>
-                        </div>
+                        <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getCategoryColors(transaction.category)}`}>
+                          {getCategoryLabel(transaction.category)}
+                        </Badge>
                       </TableCell>
                       <TableCell className="max-w-xs truncate text-sm">
                         {transaction.description}

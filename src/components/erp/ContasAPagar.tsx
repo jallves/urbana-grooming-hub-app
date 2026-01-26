@@ -56,6 +56,22 @@ const getCategoryLabel = (category: string | null): string => {
   return map[category.toLowerCase()] || category;
 };
 
+// Cores por categoria
+const getCategoryColors = (category: string | null): string => {
+  if (!category) return 'bg-gray-100 text-gray-700 border-gray-300';
+  const colors: Record<string, string> = {
+    'services': 'bg-blue-100 text-blue-700 border-blue-300',
+    'servico': 'bg-blue-100 text-blue-700 border-blue-300',
+    'products': 'bg-purple-100 text-purple-700 border-purple-300',
+    'produto': 'bg-purple-100 text-purple-700 border-purple-300',
+    'tips': 'bg-amber-100 text-amber-700 border-amber-300',
+    'gorjeta': 'bg-amber-100 text-amber-700 border-amber-300',
+    'staff_payments': 'bg-teal-100 text-teal-700 border-teal-300',
+    'comissao': 'bg-teal-100 text-teal-700 border-teal-300',
+  };
+  return colors[category.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
+};
+
 // Função auxiliar para formatar horário da transação
 const formatTransactionTime = (dateString: string | null): string => {
   if (!dateString) return '-';
@@ -526,7 +542,7 @@ export const ContasAPagar: React.FC = () => {
                               onCheckedChange={(checked) => handleSelectRecord(conta.id, !!checked)}
                             />
                           )}
-                          <Badge variant="outline" className="text-xs py-0.5 px-2 bg-gray-100">
+                          <Badge variant="outline" className={`text-xs py-0.5 px-2 ${getCategoryColors(conta.categoria)}`}>
                             {getCategoryLabel(conta.categoria)}
                           </Badge>
                         </div>
@@ -643,8 +659,8 @@ export const ContasAPagar: React.FC = () => {
                               {conta.descricao || '-'}
                             </span>
                             {conta.transaction_id && (
-                              <span className="block text-[10px] font-mono text-gray-400 truncate" title={conta.transaction_id}>
-                                ID: {conta.transaction_id.substring(0, 10)}...
+                              <span className="block text-[10px] font-mono text-gray-500 truncate" title={conta.transaction_id}>
+                                ID: {conta.transaction_id.length > 20 ? `${conta.transaction_id.substring(0, 20)}...` : conta.transaction_id}
                               </span>
                             )}
                           </TableCell>
@@ -652,7 +668,7 @@ export const ContasAPagar: React.FC = () => {
                             {conta.fornecedor || '-'}
                           </TableCell>
                           <TableCell className="px-2 py-2">
-                            <Badge variant="outline" className="text-[10px] py-0 px-1.5 bg-gray-100">
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getCategoryColors(conta.categoria)}`}>
                               {getCategoryLabel(conta.categoria)}
                             </Badge>
                           </TableCell>
