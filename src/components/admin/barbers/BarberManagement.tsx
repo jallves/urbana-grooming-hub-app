@@ -1,14 +1,15 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import BarberList from './BarberList';
 import BarberForm from './BarberForm';
-import { Shield, Info, Users } from 'lucide-react';
+import AdminBarberBlockManager from './AdminBarberBlockManager';
+import { Shield, Info, Users, Lock } from 'lucide-react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { deleteBarber } from '@/services/barberService';
 
@@ -118,65 +119,90 @@ const BarberManagement: React.FC = () => {
             Barbeiros
           </h1>
           <p className="text-xs sm:text-sm text-gray-700 leading-relaxed font-raleway">
-            Gerencie permissões de acesso dos barbeiros
+            Gerencie permissões e horários dos barbeiros
           </p>
         </div>
       </div>
 
-      {/* Alerts responsivos */}
-      {mode === 'viewing' && (
-        <div className="space-y-3">
-          <Alert className="border-blue-300 bg-blue-50">
-            <Users className="h-4 w-4 text-blue-600" />
-            <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-900">
-              Os barbeiros são migrados automaticamente do módulo de Funcionários quando um funcionário tem o cargo de "Barbeiro".
-            </AlertDescription>
-          </Alert>
-          
-          <Card className="bg-white border-gray-200 shadow-sm">
-            <CardHeader className="p-3 sm:p-6">
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-gray-900 font-playfair">
-                <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
-                Controle de Acesso ao Painel do Barbeiro
-              </CardTitle>
-              <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
-                Clique em editar para configurar as permissões de acesso de cada barbeiro aos módulos do painel.
-              </CardDescription>
-            </CardHeader>
-          </Card>
-        </div>
-      )}
+      {/* Tabs para organizar funcionalidades */}
+      <Tabs defaultValue="permissions" className="w-full">
+        <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-lg p-1 h-auto gap-1">
+          <TabsTrigger 
+            value="permissions"
+            className="data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-gray-600 text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all"
+          >
+            <Shield className="h-4 w-4 mr-1.5" />
+            Permissões
+          </TabsTrigger>
+          <TabsTrigger 
+            value="blocks"
+            className="data-[state=active]:bg-red-600 data-[state=active]:text-white text-gray-600 text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all"
+          >
+            <Lock className="h-4 w-4 mr-1.5" />
+            Bloqueios de Horários
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Formulário responsivo */}
-      {isFormVisible && (
-        <Card className="bg-white border-gray-200 shadow-sm">
-          <CardHeader className="p-3 sm:p-6">
-            <CardTitle className="text-sm sm:text-lg text-gray-900 font-playfair">
-              Editar Permissões do Barbeiro
-            </CardTitle>
-            <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
-              Configure as permissões de acesso aos módulos do painel do barbeiro
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="p-3 sm:p-6">
-            <BarberForm
-              barberId={editingBarberId || undefined}
-              onCancel={handleCancelForm}
-              onSuccess={handleSuccess}
+        {/* Aba de Permissões */}
+        <TabsContent value="permissions" className="mt-4 space-y-4">
+          {mode === 'viewing' && (
+            <div className="space-y-3">
+              <Alert className="border-blue-300 bg-blue-50">
+                <Users className="h-4 w-4 text-blue-600" />
+                <AlertDescription className="text-xs sm:text-sm leading-relaxed text-blue-900">
+                  Os barbeiros são migrados automaticamente do módulo de Funcionários quando um funcionário tem o cargo de "Barbeiro".
+                </AlertDescription>
+              </Alert>
+              
+              <Card className="bg-white border-gray-200 shadow-sm">
+                <CardHeader className="p-3 sm:p-6">
+                  <CardTitle className="flex items-center gap-2 text-sm sm:text-lg text-gray-900 font-playfair">
+                    <Shield className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
+                    Controle de Acesso ao Painel do Barbeiro
+                  </CardTitle>
+                  <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
+                    Clique em editar para configurar as permissões de acesso de cada barbeiro aos módulos do painel.
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </div>
+          )}
+
+          {isFormVisible && (
+            <Card className="bg-white border-gray-200 shadow-sm">
+              <CardHeader className="p-3 sm:p-6">
+                <CardTitle className="text-sm sm:text-lg text-gray-900 font-playfair">
+                  Editar Permissões do Barbeiro
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm leading-relaxed text-gray-600">
+                  Configure as permissões de acesso aos módulos do painel do barbeiro
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-3 sm:p-6">
+                <BarberForm
+                  barberId={editingBarberId || undefined}
+                  onCancel={handleCancelForm}
+                  onSuccess={handleSuccess}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          <div className="w-full">
+            <BarberList
+              barbers={barbers || []}
+              isLoading={isLoading}
+              onEdit={handleEditBarber}
+              onDelete={handleDeleteBarber}
             />
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </TabsContent>
 
-      {/* Lista responsiva */}
-      <div className="w-full">
-        <BarberList
-          barbers={barbers || []}
-          isLoading={isLoading}
-          onEdit={handleEditBarber}
-          onDelete={handleDeleteBarber}
-        />
-      </div>
+        {/* Aba de Bloqueios de Horários */}
+        <TabsContent value="blocks" className="mt-4">
+          <AdminBarberBlockManager />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

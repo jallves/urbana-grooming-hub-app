@@ -75,18 +75,18 @@ export const useAvailabilityValidation = () => {
         return false;
       }
 
-      // 2. Verificar disponibilidade específica na tabela barber_availability (se existir)
+      // 2. Verificar disponibilidade específica na tabela barber_availability (bloqueios)
       const dateStr = selectedDate.toISOString().split('T')[0];
-      const { data: specificAvailability, error: availabilityError } = await supabase
+      
+      // Buscar TODOS os registros de disponibilidade para o dia (pode haver múltiplos slots bloqueados)
+      const { data: availabilityRecords, error: availabilityError } = await supabase
         .from('barber_availability')
         .select('*')
-        .eq('barber_id', barberId)  // Usar barberId diretamente
-        .eq('date', dateStr)
-        .maybeSingle();
+        .eq('barber_id', barberId)
+        .eq('date', dateStr);
 
-      console.log('📅 Disponibilidade específica:', specificAvailability);
+      console.log('📅 Disponibilidade específica:', availabilityRecords);
 
-      // Se há erro na consulta, retornar false
       if (availabilityError) {
         console.error('❌ Erro ao verificar disponibilidade específica:', availabilityError);
         toast({
@@ -97,28 +97,47 @@ export const useAvailabilityValidation = () => {
         return false;
       }
 
-      // Se há disponibilidade específica cadastrada para esta data
-      if (specificAvailability) {
-        if (!specificAvailability.is_available) {
-          toast({
-            title: "Barbeiro indisponível",
-            description: "O barbeiro não está disponível nesta data.",
-            variant: "destructive",
-          });
-          return false;
+      // Verificar se algum bloqueio afeta o horário solicitado
+      if (availabilityRecords && availabilityRecords.length > 0) {
+        const timeToMinutes = (time: string): number => {
+          const [h, m] = time.split(':').map(Number);
+          return h * 60 + m;
+        };
+
+        const [reqHours, reqMinutes] = selectedTime.split(':').map(Number);
+        const requestedStartMinutes = reqHours * 60 + reqMinutes;
+        const requestedEndMinutes = requestedStartMinutes + serviceDuration;
+
+        for (const availability of availabilityRecords) {
+          if (!availability.is_available) {
+            const blockStart = timeToMinutes(availability.start_time);
+            const blockEnd = timeToMinutes(availability.end_time);
+            
+            // Verifica sobreposição
+            if (requestedStartMinutes < blockEnd && requestedEndMinutes > blockStart) {
+              toast({
+                title: "Horário bloqueado",
+                description: `Este horário está bloqueado: ${availability.start_time.substring(0, 5)} - ${availability.end_time.substring(0, 5)}.`,
+                variant: "destructive",
+              });
+              return false;
+            }
+          }
         }
 
-        // Verificar se o horário está dentro da disponibilidade específica
-        if (requestedStart < specificAvailability.start_time || requestedEnd > specificAvailability.end_time) {
-          toast({
-            title: "Horário fora do expediente",
-            description: `Nesta data, o barbeiro trabalha das ${specificAvailability.start_time} às ${specificAvailability.end_time}.`,
-            variant: "destructive",
-          });
-          return false;
+        // Verificar disponibilidade específica (quando is_available = true com horário definido)
+        const specificAvailability = availabilityRecords.find(a => a.is_available);
+        if (specificAvailability && specificAvailability.start_time && specificAvailability.end_time) {
+          if (requestedStart < specificAvailability.start_time || requestedEnd > specificAvailability.end_time) {
+            toast({
+              title: "Horário fora do expediente",
+              description: `Nesta data, o barbeiro trabalha das ${specificAvailability.start_time.substring(0, 5)} às ${specificAvailability.end_time.substring(0, 5)}.`,
+              variant: "destructive",
+            });
+            return false;
+          }
         }
       }
-      // Se não há disponibilidade específica, usar apenas working_hours (que já foi verificado acima)
 
       // 3. Verificar conflitos com agendamentos existentes
       // IMPORTANTE: usar barberId como staff_id na tabela appointments

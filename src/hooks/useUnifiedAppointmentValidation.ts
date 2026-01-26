@@ -278,35 +278,49 @@ export const useUnifiedAppointmentValidation = () => {
     const startMinutes = timeToMinutes(time);
     const endMinutes = startMinutes + serviceDuration;
 
-    const { data: availability, error } = await supabase
+    // Buscar TODOS os registros de disponibilidade para o dia (pode haver múltiplos slots bloqueados)
+    const { data: availabilityRecords, error } = await supabase
       .from('barber_availability')
       .select('is_available, start_time, end_time')
       .eq('barber_id', barberId)
-      .eq('date', dateStr)
-      .maybeSingle();
+      .eq('date', dateStr);
 
     if (error) {
       console.error('Erro ao verificar disponibilidade específica:', error);
       return { valid: true }; // Em caso de erro, não bloqueia
     }
 
-    if (!availability) {
+    if (!availabilityRecords || availabilityRecords.length === 0) {
       return { valid: true }; // Sem registro = disponível
     }
 
-    if (!availability.is_available) {
-      return { valid: false, error: 'O barbeiro não está disponível neste horário' };
+    // Verificar se algum bloqueio afeta o horário solicitado
+    for (const availability of availabilityRecords) {
+      if (!availability.is_available) {
+        // Verificar se o bloqueio se sobrepõe ao horário solicitado
+        const blockStart = timeToMinutes(availability.start_time);
+        const blockEnd = timeToMinutes(availability.end_time);
+        
+        // Verifica sobreposição: novo agendamento começa antes do bloqueio terminar E termina depois do bloqueio começar
+        if (startMinutes < blockEnd && endMinutes > blockStart) {
+          return { 
+            valid: false, 
+            error: `Horário bloqueado: ${availability.start_time.substring(0, 5)} - ${availability.end_time.substring(0, 5)}` 
+          };
+        }
+      }
     }
 
-    // Se há horário específico, verificar
-    if (availability.start_time && availability.end_time) {
-      const availStart = timeToMinutes(availability.start_time);
-      const availEnd = timeToMinutes(availability.end_time);
+    // Verificar disponibilidade específica (quando is_available = true com horário definido)
+    const specificAvailability = availabilityRecords.find(a => a.is_available);
+    if (specificAvailability && specificAvailability.start_time && specificAvailability.end_time) {
+      const availStart = timeToMinutes(specificAvailability.start_time);
+      const availEnd = timeToMinutes(specificAvailability.end_time);
       
       if (startMinutes < availStart || endMinutes > availEnd) {
         return {
           valid: false,
-          error: `Barbeiro disponível apenas entre ${availability.start_time} e ${availability.end_time}`
+          error: `Barbeiro disponível apenas entre ${specificAvailability.start_time.substring(0, 5)} e ${specificAvailability.end_time.substring(0, 5)}`
         };
       }
     }
