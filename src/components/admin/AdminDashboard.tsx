@@ -1,5 +1,6 @@
 import React from 'react';
 import FinancialMetricsCards from './dashboard/FinancialMetricsCards';
+import OperationalMetricsCards from './dashboard/OperationalMetricsCards';
 import FinancialEvolutionChart from './dashboard/FinancialEvolutionChart';
 import PendingAccountsWidget from './dashboard/PendingAccountsWidget';
 import TopBarbersWidget from './dashboard/TopBarbersWidget';
@@ -25,17 +26,23 @@ export default function AdminDashboard() {
       {/* Financial Metrics Cards */}
       <FinancialMetricsCards />
 
+      {/* Operational Metrics - New! */}
+      <OperationalMetricsCards />
+
       {/* Quick Actions Grid */}
       <QuickActionsGrid />
 
-      {/* Financial Evolution Chart */}
-      <FinancialEvolutionChart />
+      {/* Top Barbers and Financial Evolution in Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {/* Top Barbers */}
+        <TopBarbersWidget />
+        
+        {/* Financial Evolution Chart */}
+        <FinancialEvolutionChart />
+      </div>
 
       {/* Pending Accounts */}
       <PendingAccountsWidget />
-
-      {/* Top Barbers */}
-      <TopBarbersWidget />
     </div>
   );
 }
