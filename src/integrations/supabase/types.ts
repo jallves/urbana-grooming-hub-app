@@ -704,6 +704,7 @@ export type Database = {
           data_pagamento: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento: string | null
           fornecedor: string | null
           id: string
           observacoes: string | null
@@ -718,6 +719,7 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento?: string | null
           fornecedor?: string | null
           id?: string
           observacoes?: string | null
@@ -732,6 +734,7 @@ export type Database = {
           data_pagamento?: string | null
           data_vencimento?: string
           descricao?: string
+          forma_pagamento?: string | null
           fornecedor?: string | null
           id?: string
           observacoes?: string | null
@@ -750,6 +753,7 @@ export type Database = {
           data_recebimento: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento: string | null
           id: string
           observacoes: string | null
           status: string | null
@@ -764,6 +768,7 @@ export type Database = {
           data_recebimento?: string | null
           data_vencimento: string
           descricao: string
+          forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
           status?: string | null
@@ -778,6 +783,7 @@ export type Database = {
           data_recebimento?: string | null
           data_vencimento?: string
           descricao?: string
+          forma_pagamento?: string | null
           id?: string
           observacoes?: string | null
           status?: string | null

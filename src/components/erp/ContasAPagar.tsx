@@ -36,6 +36,7 @@ interface ContaPagar {
   status: string | null;
   observacoes: string | null;
   transaction_id: string | null; // ID da transação eletrônica (NSU, PIX, etc.)
+  forma_pagamento: string | null; // PIX, Débito, Crédito
   created_at: string | null;
   updated_at: string | null;
 }
@@ -70,6 +71,36 @@ const getCategoryColors = (category: string | null): string => {
     'comissao': 'bg-teal-100 text-teal-700 border-teal-300',
   };
   return colors[category.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
+};
+
+// Mapeamento de formas de pagamento
+const getPaymentMethodLabel = (method: string | null): string => {
+  if (!method) return '-';
+  const map: Record<string, string> = {
+    'pix': 'PIX',
+    'debito': 'Débito',
+    'credito': 'Crédito',
+    'dinheiro': 'Dinheiro',
+    'debit': 'Débito',
+    'credit': 'Crédito',
+    'cash': 'Dinheiro',
+  };
+  return map[method.toLowerCase()] || method;
+};
+
+// Cores por forma de pagamento
+const getPaymentMethodColors = (method: string | null): string => {
+  if (!method) return 'bg-gray-100 text-gray-700 border-gray-300';
+  const colors: Record<string, string> = {
+    'pix': 'bg-emerald-100 text-emerald-700 border-emerald-300',
+    'debito': 'bg-sky-100 text-sky-700 border-sky-300',
+    'debit': 'bg-sky-100 text-sky-700 border-sky-300',
+    'credito': 'bg-violet-100 text-violet-700 border-violet-300',
+    'credit': 'bg-violet-100 text-violet-700 border-violet-300',
+    'dinheiro': 'bg-lime-100 text-lime-700 border-lime-300',
+    'cash': 'bg-lime-100 text-lime-700 border-lime-300',
+  };
+  return colors[method.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
 // Função auxiliar para formatar horário da transação
@@ -592,25 +623,35 @@ export const ContasAPagar: React.FC = () => {
                         </div>
                       )}
                       
-                      {/* Valor + Ação */}
+                      {/* Forma de Pagamento, Valor + Ação */}
                       <div className="flex items-center justify-between pt-3 border-t border-gray-200">
-                        <div>
-                          <span className="text-xs text-gray-500 block mb-0.5">Valor</span>
-                          <span className="text-lg font-bold text-red-600">
-                            R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
-                          </span>
+                        <div className="flex flex-col gap-2">
+                          <div>
+                            <span className="text-xs text-gray-500 block mb-0.5">Pagamento</span>
+                            <Badge variant="outline" className={`text-xs py-0.5 px-2 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
+                              {getPaymentMethodLabel(conta.forma_pagamento)}
+                            </Badge>
+                          </div>
                         </div>
-                        {conta.status === 'pendente' && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleMarkAsPaid(conta.id)}
-                            className="h-9 px-4 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                          >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            Pagar
-                          </Button>
-                        )}
+                        <div className="flex flex-col items-end gap-2">
+                          <div className="text-right">
+                            <span className="text-xs text-gray-500 block mb-0.5">Valor</span>
+                            <span className="text-lg font-bold text-red-600">
+                              R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                            </span>
+                          </div>
+                          {conta.status === 'pendente' && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleMarkAsPaid(conta.id)}
+                              className="h-9 px-4 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                            >
+                              <CheckCircle className="h-4 w-4 mr-1" />
+                              Pagar
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -632,6 +673,7 @@ export const ContasAPagar: React.FC = () => {
                         <TableHead className="px-2 text-xs">Descrição</TableHead>
                         <TableHead className="px-2 text-xs">Fornecedor</TableHead>
                         <TableHead className="px-2 text-xs">Categoria</TableHead>
+                        <TableHead className="px-2 text-xs">Pagamento</TableHead>
                         <TableHead className="px-2 text-xs text-right">Valor</TableHead>
                         <TableHead className="px-2 text-xs text-center">Status</TableHead>
                         <TableHead className="px-3 text-xs text-right">Ação</TableHead>
@@ -654,13 +696,13 @@ export const ContasAPagar: React.FC = () => {
                           <TableCell className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
                             {formatTransactionTime(conta.created_at)}
                           </TableCell>
-                          <TableCell className="px-2 py-2 text-xs max-w-[180px]">
+                          <TableCell className="px-2 py-2 text-xs max-w-[220px]">
                             <span className="block truncate" title={conta.descricao || '-'}>
                               {conta.descricao || '-'}
                             </span>
                             {conta.transaction_id && (
-                              <span className="block text-[10px] font-mono text-gray-500 truncate" title={conta.transaction_id}>
-                                ID: {conta.transaction_id.length > 20 ? `${conta.transaction_id.substring(0, 20)}...` : conta.transaction_id}
+                              <span className="block text-[10px] font-mono text-gray-500" title={conta.transaction_id}>
+                                ID: {conta.transaction_id}
                               </span>
                             )}
                           </TableCell>
@@ -670,6 +712,11 @@ export const ContasAPagar: React.FC = () => {
                           <TableCell className="px-2 py-2">
                             <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getCategoryColors(conta.categoria)}`}>
                               {getCategoryLabel(conta.categoria)}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="px-2 py-2">
+                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
+                              {getPaymentMethodLabel(conta.forma_pagamento)}
                             </Badge>
                           </TableCell>
                           <TableCell className="px-2 py-2 text-xs text-right font-semibold text-red-600 whitespace-nowrap">
