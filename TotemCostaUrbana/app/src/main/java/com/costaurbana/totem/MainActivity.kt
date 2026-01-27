@@ -191,26 +191,49 @@ class MainActivity : AppCompatActivity() {
         // ════════════════════════════════════════════════════════════════════
         val transacaoPendenteDados = intent.getStringExtra("TransacaoPendenteDados")
         if (!transacaoPendenteDados.isNullOrEmpty()) {
-            addLog("════════════════════════════════════════")
-            addLog("⚠️ TRANSAÇÃO PENDENTE DETECTADA!")
-            addLog("TransacaoPendenteDados: $transacaoPendenteDados")
-            addLog("════════════════════════════════════════")
+            addLog("════════════════════════════════════════════════════════════════")
+            addLog("⚠️ TRANSAÇÃO PENDENTE DETECTADA (TransacaoPendenteDados)")
+            addLog("════════════════════════════════════════════════════════════════")
+            addLog("URI recebida: $transacaoPendenteDados")
             
-            // Parsear os dados da transação pendente
-            // Formato esperado: URI app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&...
+            // ════════════════════════════════════════════════════════════════════
+            // CORREÇÃO PASSO 33/34: NÃO RESOLVER AUTOMATICAMENTE!
+            // ════════════════════════════════════════════════════════════════════
+            // 
+            // O problema era que o sistema confirmava IMEDIATAMENTE ao receber
+            // TransacaoPendenteDados, sem verificar se a transação ORIGINAL
+            // foi aprovada ou não.
+            //
+            // REGRA CORRETA:
+            // 1. TransacaoPendenteDados indica que EXISTE uma pendência
+            // 2. MAS a decisão de confirmar/desfazer depende do CONTEXTO:
+            //    - Se a nova venda foi APROVADA → confirmar a pendência
+            //    - Se a nova venda foi CANCELADA → desfazer a pendência
+            //    - Se não há contexto → deixar para o operador decidir
+            //
+            // Por agora, apenas SALVAMOS os dados e notificamos o WebView.
+            // A resolução será feita pelo FRONTEND ou manualmente.
+            // ════════════════════════════════════════════════════════════════════
+            
+            // Salvar dados da pendência para resolução posterior
             payGoService?.savePendingDataFromUri(transacaoPendenteDados)
+            addLog("✅ Dados da pendência salvos em SharedPreferences")
             
-            // ════════════════════════════════════════════════════════════════════
-            // CORREÇÃO PASSO 34: Validar dados da pendência antes de confirmar
-            // Se os dados forem inválidos/desconhecidos, enviar DESFEITO_MANUAL
-            // ════════════════════════════════════════════════════════════════════
+            // Validar os dados (apenas para logging, não para decisão automática)
             val isValidPending = payGoService?.validatePendingData(transacaoPendenteDados) ?: false
-            val confirmationStatus = if (isValidPending) "CONFIRMADO_AUTOMATICO" else "DESFEITO_MANUAL"
+            addLog("📋 Validação: dados ${if (isValidPending) "VÁLIDOS" else "INVÁLIDOS/INCOMPLETOS"}")
             
-            addLog("📤 Enviando resolução: $confirmationStatus (dados válidos=$isValidPending)")
-            payGoService?.sendPendingResolution(transacaoPendenteDados, confirmationStatus)
+            // ════════════════════════════════════════════════════════════════════
+            // NÃO ENVIAR RESOLUÇÃO AUTOMÁTICA!
+            // A decisão de CONFIRMAR ou DESFAZER deve ser feita:
+            // 1. Pelo PDV de Homologação (botões manuais)
+            // 2. Pelo contexto da transação (se soubermos o resultado)
+            // ════════════════════════════════════════════════════════════════════
+            addLog("⚠️ AGUARDANDO decisão manual - não enviando resolução automática")
+            addLog("⚠️ Use o PDV Homologação para CONFIRMAR ou DESFAZER manualmente")
+            addLog("════════════════════════════════════════════════════════════════")
             
-            // Notificar o WebView sobre a pendência detectada
+            // Notificar o WebView para mostrar interface de decisão
             notifyWebViewPendingTransaction(transacaoPendenteDados)
         }
         
