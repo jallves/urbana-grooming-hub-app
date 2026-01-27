@@ -502,10 +502,16 @@ class PayGoService(private val context: Context) {
         val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
         val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
         
-        if (requiresConfirmation && confirmationId != null && !pendingExists) {
-            // Transação normal aprovada que requer confirmação
-            // NÃO é pendência - é o fluxo padrão de confirmação automática
-            addLog("[RESP] ✅ Transação aprovada requer confirmação")
+        // ════════════════════════════════════════════════════════════════════
+        // CORREÇÃO: Verificar transactionResult ANTES de confirmar
+        // Só confirmar se transactionResult == 0 (sucesso)
+        // Ignorar confirmação se usuário cancelou ou ocorreu erro
+        // ════════════════════════════════════════════════════════════════════
+        val transactionResult = responseUri.getQueryParameter("transactionResult")?.toIntOrNull() ?: -1
+        
+        if (requiresConfirmation && confirmationId != null && !pendingExists && transactionResult == 0) {
+            // Transação APROVADA (result=0) que requer confirmação
+            addLog("[RESP] ✅ Transação APROVADA (result=0) requer confirmação")
             addLog("[RESP] confirmationTransactionId: $confirmationId")
             addLog("[RESP] 📤 Enviando confirmação AUTOMÁTICA...")
             
@@ -513,6 +519,9 @@ class PayGoService(private val context: Context) {
             sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
             
             addLog("[RESP] ✅ Confirmação automática enviada!")
+        } else if (requiresConfirmation && confirmationId != null && transactionResult != 0) {
+            // Transação NÃO aprovada (cancelada ou negada) - ignorar confirmação
+            addLog("[RESP] ⚠️ Transação NÃO aprovada (result=$transactionResult) - IGNORANDO confirmação")
         } else if (requiresConfirmation && confirmationId != null && pendingExists) {
             // É uma pendência - a resolução será tratada pelo TransacaoPendenteDados
             addLog("[RESP] ⚠️ Transação pendente - confirmação via tratamento de pendência")
@@ -1195,6 +1204,63 @@ class PayGoService(private val context: Context) {
         } catch (e: Exception) {
             Log.e(TAG, "Erro ao enviar resolução de pendência: ${e.message}", e)
             addLog("[PENDING-RESOLVE] ❌ ERRO: ${e.message}")
+        }
+    }
+
+    /**
+     * Valida os dados de uma transação pendente
+     * Conforme documentação PayGo seção 3.3.4, os campos obrigatórios são:
+     * - providerName: Provedor da transação pendente
+     * - merchantId: ID do estabelecimento
+     * - localNsu: NSU local da transação pendente
+     * - transactionNsu: NSU do servidor TEF
+     * - hostNsu: NSU do provedor
+     * 
+     * @param pendingUri URI TransacaoPendenteDados recebida do PayGo
+     * @return true se os dados são válidos e devem ser confirmados, false para desfazer
+     */
+    fun validatePendingData(pendingUri: String): Boolean {
+        addLog("[VALIDATE] ════════════════════════════════════════")
+        addLog("[VALIDATE] Validando dados da pendência...")
+        addLog("[VALIDATE] URI: $pendingUri")
+        
+        return try {
+            val uri = android.net.Uri.parse(pendingUri)
+            
+            // Campos obrigatórios conforme documentação PayGo 3.3.4
+            val merchantId = uri.getQueryParameter("merchantId")
+            val providerName = uri.getQueryParameter("providerName")
+            val localNsu = uri.getQueryParameter("localNsu")
+            val transactionNsu = uri.getQueryParameter("transactionNsu")
+            val hostNsu = uri.getQueryParameter("hostNsu")
+            
+            addLog("[VALIDATE] merchantId: $merchantId")
+            addLog("[VALIDATE] providerName: $providerName")
+            addLog("[VALIDATE] localNsu: $localNsu")
+            addLog("[VALIDATE] transactionNsu: $transactionNsu")
+            addLog("[VALIDATE] hostNsu: $hostNsu")
+            
+            // Pendência é válida se tiver os campos obrigatórios preenchidos
+            val isValid = !merchantId.isNullOrEmpty() && 
+                          !providerName.isNullOrEmpty() && 
+                          !localNsu.isNullOrEmpty() &&
+                          !transactionNsu.isNullOrEmpty() &&
+                          !hostNsu.isNullOrEmpty()
+            
+            if (isValid) {
+                addLog("[VALIDATE] ✅ Dados VÁLIDOS - será CONFIRMADO")
+            } else {
+                addLog("[VALIDATE] ⚠️ Dados INVÁLIDOS/INCOMPLETOS - será DESFEITO")
+            }
+            
+            addLog("[VALIDATE] ════════════════════════════════════════")
+            isValid
+            
+        } catch (e: Exception) {
+            addLog("[VALIDATE] ❌ ERRO ao validar: ${e.message}")
+            addLog("[VALIDATE] ⚠️ Retornando false (DESFEITO_MANUAL)")
+            addLog("[VALIDATE] ════════════════════════════════════════")
+            false
         }
     }
 

@@ -200,11 +200,15 @@ class MainActivity : AppCompatActivity() {
             // Formato esperado: URI app://resolve/pendingTransaction?merchantId=xxx&providerName=xxx&...
             payGoService?.savePendingDataFromUri(transacaoPendenteDados)
             
-            // CONFORME EXEMPLO PAYGO (MainActivity.java linha 101-105):
-            // Quando há TransacaoPendenteDados, enviar broadcast de resolução
-            // com Confirmacao = "app://resolve/confirmation?transactionStatus=CONFIRMADO_AUTOMATICO"
-            addLog("📤 Enviando confirmação automática para resolver pendência...")
-            payGoService?.sendPendingResolution(transacaoPendenteDados, "CONFIRMADO_AUTOMATICO")
+            // ════════════════════════════════════════════════════════════════════
+            // CORREÇÃO PASSO 34: Validar dados da pendência antes de confirmar
+            // Se os dados forem inválidos/desconhecidos, enviar DESFEITO_MANUAL
+            // ════════════════════════════════════════════════════════════════════
+            val isValidPending = payGoService?.validatePendingData(transacaoPendenteDados) ?: false
+            val confirmationStatus = if (isValidPending) "CONFIRMADO_AUTOMATICO" else "DESFEITO_MANUAL"
+            
+            addLog("📤 Enviando resolução: $confirmationStatus (dados válidos=$isValidPending)")
+            payGoService?.sendPendingResolution(transacaoPendenteDados, confirmationStatus)
             
             // Notificar o WebView sobre a pendência detectada
             notifyWebViewPendingTransaction(transacaoPendenteDados)
