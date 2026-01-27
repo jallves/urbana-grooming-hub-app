@@ -492,39 +492,50 @@ class PayGoService(private val context: Context) {
                 savePendingData(responseUri)
             }
             
-        // Verificar se requer confirmação
-        // IMPLEMENTAÇÃO CORRETA conforme documentação PayGo:
-        // Se requiresConfirmation=true E NÃO há pendência (TransacaoPendenteDados), 
-        // confirmar automaticamente AGORA.
+        // ════════════════════════════════════════════════════════════════════
+        // REGRA DE OURO: VERIFICAR transactionResult ANTES DE QUALQUER CONFIRMAÇÃO!
+        // ════════════════════════════════════════════════════════════════════
+        // Conforme logs de homologação, o sistema estava enviando confirmação
+        // mesmo quando transactionResult = -2494 (cancelado pelo usuário).
         // 
-        // Ref: https://github.com/adminti2/mobile-integracao-uri#342-confirmação
-        // Função verificaConfirmacao() do exemplo MainActivity.java da PayGo
+        // CORREÇÃO DEFINITIVA (Passo 52):
+        // - transactionResult == 0 → APROVADO → pode confirmar
+        // - transactionResult != 0 → CANCELADO/NEGADO → NÃO CONFIRMAR!
+        // ════════════════════════════════════════════════════════════════════
+        
         val requiresConfirmation = responseUri.getQueryParameter("requiresConfirmation")?.toBoolean() ?: false
         val confirmationId = responseUri.getQueryParameter("confirmationTransactionId")
+        val transactionResult = responseUri.getQueryParameter("transactionResult")?.toIntOrNull() ?: -99
         
-        // ════════════════════════════════════════════════════════════════════
-        // CORREÇÃO: Verificar transactionResult ANTES de confirmar
-        // Só confirmar se transactionResult == 0 (sucesso)
-        // Ignorar confirmação se usuário cancelou ou ocorreu erro
-        // ════════════════════════════════════════════════════════════════════
-        val transactionResult = responseUri.getQueryParameter("transactionResult")?.toIntOrNull() ?: -1
+        addLog("[RESP] ────────────────────────────────────────")
+        addLog("[RESP] 🚦 SEMÁFORO DE CONFIRMAÇÃO:")
+        addLog("[RESP]    transactionResult = $transactionResult")
+        addLog("[RESP]    requiresConfirmation = $requiresConfirmation")
+        addLog("[RESP]    confirmationId = $confirmationId")
+        addLog("[RESP]    pendingExists = $pendingExists")
+        addLog("[RESP] ────────────────────────────────────────")
         
-        if (requiresConfirmation && confirmationId != null && !pendingExists && transactionResult == 0) {
-            // Transação APROVADA (result=0) que requer confirmação
-            addLog("[RESP] ✅ Transação APROVADA (result=0) requer confirmação")
-            addLog("[RESP] confirmationTransactionId: $confirmationId")
-            addLog("[RESP] 📤 Enviando confirmação AUTOMÁTICA...")
-            
-            // Confirmar automaticamente conforme documentação PayGo
-            sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
-            
-            addLog("[RESP] ✅ Confirmação automática enviada!")
-        } else if (requiresConfirmation && confirmationId != null && transactionResult != 0) {
-            // Transação NÃO aprovada (cancelada ou negada) - ignorar confirmação
-            addLog("[RESP] ⚠️ Transação NÃO aprovada (result=$transactionResult) - IGNORANDO confirmação")
-        } else if (requiresConfirmation && confirmationId != null && pendingExists) {
-            // É uma pendência - a resolução será tratada pelo TransacaoPendenteDados
-            addLog("[RESP] ⚠️ Transação pendente - confirmação via tratamento de pendência")
+        // ══════════════════════════════════════════════════════════════════════
+        // VERIFICAÇÃO RIGOROSA: SÓ CONFIRMAR SE transactionResult == 0 (SUCESSO)
+        // Qualquer outro valor (negativo, positivo) = NÃO CONFIRMAR!
+        // ══════════════════════════════════════════════════════════════════════
+        if (transactionResult == 0) {
+            // 🟢 SINAL VERDE: Transação APROVADA
+            if (requiresConfirmation && confirmationId != null && !pendingExists) {
+                addLog("[RESP] 🟢 SINAL VERDE: Transação APROVADA (result=0)")
+                addLog("[RESP] ✅ Enviando confirmação AUTOMÁTICA...")
+                sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+                addLog("[RESP] ✅ Confirmação enviada com sucesso!")
+            } else if (pendingExists) {
+                addLog("[RESP] ⚠️ Transação aprovada MAS há pendência - será tratada separadamente")
+            }
+        } else {
+            // 🔴 SINAL VERMELHO: Transação NÃO aprovada
+            addLog("[RESP] 🔴 SINAL VERMELHO: Transação NÃO aprovada (result=$transactionResult)")
+            addLog("[RESP] ❌ CONFIRMAÇÃO BLOQUEADA - resultado indica cancelamento/negação/erro")
+            addLog("[RESP] ⚠️ Nenhum broadcast será enviado ao PayGo")
+            // NÃO fazer NADA - não enviar confirmação nem desfazimento
+            // O PayGo trata automaticamente transações canceladas/negadas
         }
             
             callback(result)
