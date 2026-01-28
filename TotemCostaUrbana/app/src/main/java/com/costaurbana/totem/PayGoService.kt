@@ -544,8 +544,53 @@ class PayGoService(private val context: Context) {
                 sendConfirmation(pendingConfirmId, "DESFEITO_MANUAL")
                 addLog("[RESP] ✅ DESFEITO_MANUAL enviado com sucesso!")
             } else {
-                addLog("[RESP] ⚠️ Sem confirmationId - tentando resolução via URI original")
-                resolvePendingWithFullData("DESFEITO_MANUAL")
+                addLog("[RESP] ⚠️ Sem confirmationId - Iniciando Resolução Completa (Passo 34)")
+                
+                // 1. Extração Segura dos Parâmetros da Pendência
+                // A PayGo retorna esses dados na URI de resposta quando há erro -2599
+                val pMerchantId = responseUri.getQueryParameter("merchantId") 
+                    ?: responseUri.getQueryParameter("pendingMerchantId") ?: ""
+                    
+                val pProviderName = responseUri.getQueryParameter("providerName") 
+                    ?: responseUri.getQueryParameter("pendingProviderName") ?: ""
+                    
+                val pLocalNsu = responseUri.getQueryParameter("localNsu") 
+                    ?: responseUri.getQueryParameter("terminalNsu") ?: ""
+                    
+                val pTransactionNsu = responseUri.getQueryParameter("transactionNsu") 
+                    ?: responseUri.getQueryParameter("pendingTransactionNsu") ?: ""
+                    
+                val pHostNsu = responseUri.getQueryParameter("hostNsu") 
+                    ?: responseUri.getQueryParameter("pendingHostNsu") ?: ""
+
+                // Verifica se temos o mínimo necessário para montar a resolução
+                if (pMerchantId.isNotEmpty() && pProviderName.isNotEmpty()) {
+                    
+                    // 2. Construção da URI de Resolução (app://resolve/pendingTransaction)
+                    // IMPORTANTE: Status deve ser DESFEITO_MANUAL para limpar a pendência inválida
+                    val resolveUri = Uri.parse("app://resolve/pendingTransaction").buildUpon()
+                        .appendQueryParameter("transactionStatus", "DESFEITO_MANUAL")
+                        .appendQueryParameter("merchantId", pMerchantId)
+                        .appendQueryParameter("providerName", pProviderName)
+                        .appendQueryParameter("localNsu", pLocalNsu)
+                        .appendQueryParameter("transactionNsu", pTransactionNsu)
+                        .appendQueryParameter("hostNsu", pHostNsu)
+                        .build()
+
+                    addLog("[RESP] 📡 Enviando Broadcast de Resolução (Passo 34): $resolveUri")
+
+                    // 3. Disparo do Intent de Confirmação/Resolução
+                    val resolveIntent = Intent(ACTION_CONFIRMATION)
+                    resolveIntent.putExtra("uri", resolveUri.toString())
+                    resolveIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                    context.sendBroadcast(resolveIntent)
+                    
+                    addLog("[RESP] ✅ Comando de Desfazimento enviado via Broadcast!")
+                    
+                } else {
+                    addLog("[RESP] ❌ FALHA: Dados insuficientes na URI para montar resolução de pendência.")
+                    addLog("[RESP] URI recebida: $responseUri")
+                }
             }
             
             // Limpar dados de pendência após desfazimento
@@ -577,7 +622,39 @@ class PayGoService(private val context: Context) {
                         sendConfirmation(confirmationId, "DESFEITO_MANUAL")
                         addLog("[RESP] ✅ Desfazimento IMEDIATO enviado!")
                     } else {
-                        resolvePendingWithFullData("DESFEITO_MANUAL")
+                        addLog("[RESP] ⚠️ Sem confirmationId para -2599 - Resolução Completa")
+                        
+                        // Extração dos parâmetros da pendência
+                        val pMerchantId2 = responseUri.getQueryParameter("merchantId") 
+                            ?: responseUri.getQueryParameter("pendingMerchantId") ?: ""
+                        val pProviderName2 = responseUri.getQueryParameter("providerName") 
+                            ?: responseUri.getQueryParameter("pendingProviderName") ?: ""
+                        val pLocalNsu2 = responseUri.getQueryParameter("localNsu") 
+                            ?: responseUri.getQueryParameter("terminalNsu") ?: ""
+                        val pTransactionNsu2 = responseUri.getQueryParameter("transactionNsu") 
+                            ?: responseUri.getQueryParameter("pendingTransactionNsu") ?: ""
+                        val pHostNsu2 = responseUri.getQueryParameter("hostNsu") 
+                            ?: responseUri.getQueryParameter("pendingHostNsu") ?: ""
+
+                        if (pMerchantId2.isNotEmpty() && pProviderName2.isNotEmpty()) {
+                            val resolveUri2 = Uri.parse("app://resolve/pendingTransaction").buildUpon()
+                                .appendQueryParameter("transactionStatus", "DESFEITO_MANUAL")
+                                .appendQueryParameter("merchantId", pMerchantId2)
+                                .appendQueryParameter("providerName", pProviderName2)
+                                .appendQueryParameter("localNsu", pLocalNsu2)
+                                .appendQueryParameter("transactionNsu", pTransactionNsu2)
+                                .appendQueryParameter("hostNsu", pHostNsu2)
+                                .build()
+
+                            addLog("[RESP] 📡 Broadcast Resolução (-2599): $resolveUri2")
+                            val resolveIntent2 = Intent(ACTION_CONFIRMATION)
+                            resolveIntent2.putExtra("uri", resolveUri2.toString())
+                            resolveIntent2.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
+                            context.sendBroadcast(resolveIntent2)
+                            addLog("[RESP] ✅ Desfazimento -2599 enviado!")
+                        } else {
+                            addLog("[RESP] ❌ Dados insuficientes para resolução -2599")
+                        }
                     }
                     clearPersistedPendingData()
                 }
