@@ -523,6 +523,39 @@ class PayGoService(private val context: Context) {
         // transactionResult != 0     → CANCELADO   → NÃO FAZER NADA (Passo 52 OK)
         // ══════════════════════════════════════════════════════════════════════
         
+        // ══════════════════════════════════════════════════════════════════════
+        // PASSO 33/34 - PRIORIDADE MÁXIMA: VERIFICAR PENDÊNCIA ANTES DE TUDO!
+        // Se pendingExists = true, a SEGUNDA venda detectou pendência da PRIMEIRA.
+        // Neste caso, DEVE enviar DESFEITO_MANUAL imediatamente!
+        // ══════════════════════════════════════════════════════════════════════
+        if (pendingExists) {
+            addLog("[RESP] ⚠️ ════════════════════════════════════════")
+            addLog("[RESP] ⚠️ PENDÊNCIA DETECTADA (pendingExists=true)")
+            addLog("[RESP] ⚠️ PASSO 34: Enviando DESFEITO_MANUAL!")
+            addLog("[RESP] ⚠️ ════════════════════════════════════════")
+            
+            // Usar confirmationId da pendência (não da transação atual!)
+            val pendingConfirmId = responseUri.getQueryParameter("pendingConfirmationTransactionId") 
+                ?: lastPendingData?.optString("confirmationTransactionId", "")
+                ?: confirmationId
+            
+            if (!pendingConfirmId.isNullOrEmpty()) {
+                addLog("[RESP] 🔧 Desfazendo pendência com ID: $pendingConfirmId")
+                sendConfirmation(pendingConfirmId, "DESFEITO_MANUAL")
+                addLog("[RESP] ✅ DESFEITO_MANUAL enviado com sucesso!")
+            } else {
+                addLog("[RESP] ⚠️ Sem confirmationId - tentando resolução via URI original")
+                resolvePendingWithFullData("DESFEITO_MANUAL")
+            }
+            
+            // Limpar dados de pendência após desfazimento
+            clearPersistedPendingData()
+            
+            // IMPORTANTE: Não confirmar a transação atual se havia pendência
+            // A transação atual deve ser tratada normalmente após resolver pendência
+        }
+        
+        // Agora processar o resultado da transação ATUAL (apenas se não havia pendência)
         when (transactionResult) {
             0 -> {
                 // 🟢 SINAL VERDE: Transação APROVADA
@@ -531,48 +564,30 @@ class PayGoService(private val context: Context) {
                     addLog("[RESP] ✅ Enviando confirmação AUTOMÁTICA...")
                     sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
                     addLog("[RESP] ✅ Confirmação enviada com sucesso!")
-                } else if (pendingExists) {
-                    addLog("[RESP] ⚠️ Transação aprovada MAS há pendência - será tratada separadamente")
                 }
             }
             
             -2599 -> {
-                // 🟡 PENDÊNCIA DETECTADA - DESFAZER IMEDIATAMENTE (Passo 34)
-                // Código -2599 = Transação Pendente não reconhecida localmente
-                addLog("[RESP] 🟡 PENDÊNCIA DETECTADA (result=-2599)")
-                addLog("[RESP] ⚡ AÇÃO IMEDIATA: Enviando DESFEITO_MANUAL (Passo 34)")
-                
-                // Usar confirmationId se disponível, ou tentar resolver via dados salvos
-                if (confirmationId != null) {
-                    addLog("[RESP] 🔧 Usando confirmationId: $confirmationId")
-                    sendConfirmation(confirmationId, "DESFEITO_MANUAL")
-                    addLog("[RESP] ✅ Desfazimento IMEDIATO enviado!")
-                } else if (lastPendingData != null) {
-                    // Fallback: usar dados de pendência salvos
-                    val savedConfirmId = lastPendingData?.optString("confirmationTransactionId", "")
-                    if (!savedConfirmId.isNullOrEmpty()) {
-                        addLog("[RESP] 🔧 Usando confirmationId salvo: $savedConfirmId")
-                        sendConfirmation(savedConfirmId, "DESFEITO_MANUAL")
-                        addLog("[RESP] ✅ Desfazimento IMEDIATO (via dados salvos) enviado!")
+                // 🟡 Código -2599 = Transação Pendente (fallback se pendingExists não veio)
+                if (!pendingExists) {
+                    addLog("[RESP] 🟡 PENDÊNCIA via código -2599")
+                    addLog("[RESP] ⚡ Enviando DESFEITO_MANUAL (Passo 34)")
+                    
+                    if (confirmationId != null) {
+                        sendConfirmation(confirmationId, "DESFEITO_MANUAL")
+                        addLog("[RESP] ✅ Desfazimento IMEDIATO enviado!")
                     } else {
-                        addLog("[RESP] ⚠️ Sem confirmationId - tentando resolução via URI original")
                         resolvePendingWithFullData("DESFEITO_MANUAL")
                     }
-                } else {
-                    addLog("[RESP] ❌ Sem dados para desfazer - aguardando próxima tentativa")
+                    clearPersistedPendingData()
                 }
-                
-                // Limpar dados de pendência após desfazimento
-                clearPersistedPendingData()
             }
             
             else -> {
                 // 🔴 SINAL VERMELHO: Transação NÃO aprovada (cancelada, negada, erro)
                 addLog("[RESP] 🔴 SINAL VERMELHO: Transação NÃO aprovada (result=$transactionResult)")
-                addLog("[RESP] ❌ CONFIRMAÇÃO BLOQUEADA - resultado indica cancelamento/negação/erro")
-                addLog("[RESP] ⚠️ Nenhum broadcast será enviado ao PayGo")
-                // NÃO fazer NADA - não enviar confirmação nem desfazimento
-                // O PayGo trata automaticamente transações canceladas/negadas
+                addLog("[RESP] ❌ CONFIRMAÇÃO BLOQUEADA - não enviar nada ao PayGo")
+                // NÃO fazer NADA - PayGo trata automaticamente
             }
         }
             
