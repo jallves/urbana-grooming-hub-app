@@ -516,26 +516,64 @@ class PayGoService(private val context: Context) {
         addLog("[RESP] ────────────────────────────────────────")
         
         // ══════════════════════════════════════════════════════════════════════
-        // VERIFICAÇÃO RIGOROSA: SÓ CONFIRMAR SE transactionResult == 0 (SUCESSO)
-        // Qualquer outro valor (negativo, positivo) = NÃO CONFIRMAR!
+        // REGRAS DE DECISÃO IMEDIATA (Passo 52, 33, 34):
+        // 
+        // transactionResult == 0     → APROVADO    → CONFIRMAR AUTOMÁTICO
+        // transactionResult == -2599 → PENDÊNCIA   → DESFAZER IMEDIATAMENTE (Passo 34)
+        // transactionResult != 0     → CANCELADO   → NÃO FAZER NADA (Passo 52 OK)
         // ══════════════════════════════════════════════════════════════════════
-        if (transactionResult == 0) {
-            // 🟢 SINAL VERDE: Transação APROVADA
-            if (requiresConfirmation && confirmationId != null && !pendingExists) {
+        
+        when (transactionResult) {
+            0 -> {
+                // 🟢 SINAL VERDE: Transação APROVADA
                 addLog("[RESP] 🟢 SINAL VERDE: Transação APROVADA (result=0)")
-                addLog("[RESP] ✅ Enviando confirmação AUTOMÁTICA...")
-                sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
-                addLog("[RESP] ✅ Confirmação enviada com sucesso!")
-            } else if (pendingExists) {
-                addLog("[RESP] ⚠️ Transação aprovada MAS há pendência - será tratada separadamente")
+                if (requiresConfirmation && confirmationId != null && !pendingExists) {
+                    addLog("[RESP] ✅ Enviando confirmação AUTOMÁTICA...")
+                    sendConfirmation(confirmationId, "CONFIRMADO_AUTOMATICO")
+                    addLog("[RESP] ✅ Confirmação enviada com sucesso!")
+                } else if (pendingExists) {
+                    addLog("[RESP] ⚠️ Transação aprovada MAS há pendência - será tratada separadamente")
+                }
             }
-        } else {
-            // 🔴 SINAL VERMELHO: Transação NÃO aprovada
-            addLog("[RESP] 🔴 SINAL VERMELHO: Transação NÃO aprovada (result=$transactionResult)")
-            addLog("[RESP] ❌ CONFIRMAÇÃO BLOQUEADA - resultado indica cancelamento/negação/erro")
-            addLog("[RESP] ⚠️ Nenhum broadcast será enviado ao PayGo")
-            // NÃO fazer NADA - não enviar confirmação nem desfazimento
-            // O PayGo trata automaticamente transações canceladas/negadas
+            
+            -2599 -> {
+                // 🟡 PENDÊNCIA DETECTADA - DESFAZER IMEDIATAMENTE (Passo 34)
+                // Código -2599 = Transação Pendente não reconhecida localmente
+                addLog("[RESP] 🟡 PENDÊNCIA DETECTADA (result=-2599)")
+                addLog("[RESP] ⚡ AÇÃO IMEDIATA: Enviando DESFEITO_MANUAL (Passo 34)")
+                
+                // Usar confirmationId se disponível, ou tentar resolver via dados salvos
+                if (confirmationId != null) {
+                    addLog("[RESP] 🔧 Usando confirmationId: $confirmationId")
+                    sendConfirmation(confirmationId, "DESFEITO_MANUAL")
+                    addLog("[RESP] ✅ Desfazimento IMEDIATO enviado!")
+                } else if (lastPendingData != null) {
+                    // Fallback: usar dados de pendência salvos
+                    val savedConfirmId = lastPendingData?.optString("confirmationTransactionId", "")
+                    if (!savedConfirmId.isNullOrEmpty()) {
+                        addLog("[RESP] 🔧 Usando confirmationId salvo: $savedConfirmId")
+                        sendConfirmation(savedConfirmId, "DESFEITO_MANUAL")
+                        addLog("[RESP] ✅ Desfazimento IMEDIATO (via dados salvos) enviado!")
+                    } else {
+                        addLog("[RESP] ⚠️ Sem confirmationId - tentando resolução via URI original")
+                        resolvePendingWithFullData("DESFEITO_MANUAL")
+                    }
+                } else {
+                    addLog("[RESP] ❌ Sem dados para desfazer - aguardando próxima tentativa")
+                }
+                
+                // Limpar dados de pendência após desfazimento
+                clearPersistedPendingData()
+            }
+            
+            else -> {
+                // 🔴 SINAL VERMELHO: Transação NÃO aprovada (cancelada, negada, erro)
+                addLog("[RESP] 🔴 SINAL VERMELHO: Transação NÃO aprovada (result=$transactionResult)")
+                addLog("[RESP] ❌ CONFIRMAÇÃO BLOQUEADA - resultado indica cancelamento/negação/erro")
+                addLog("[RESP] ⚠️ Nenhum broadcast será enviado ao PayGo")
+                // NÃO fazer NADA - não enviar confirmação nem desfazimento
+                // O PayGo trata automaticamente transações canceladas/negadas
+            }
         }
             
             callback(result)
