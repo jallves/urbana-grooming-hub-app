@@ -105,7 +105,8 @@ class PayGoService(private val context: Context) {
     // seu banco de dados local antes de aceitar nova transação
     // ════════════════════════════════════════════════════════════════════════════
     private var lastUndoTimestamp: Long = 0
-    private val UNDO_COOLDOWN_MS: Long = 4000 // 4 segundos de cooldown
+    // Requisito PayGo (Passo 34): dar tempo para o app PayGo limpar o DB interno
+    private val UNDO_COOLDOWN_MS: Long = 5000 // 5 segundos de cooldown
     
     // Debug
     private var debugMode = true
@@ -594,82 +595,57 @@ class PayGoService(private val context: Context) {
         // transactionResult != 0     → CANCELADO   → NÃO FAZER NADA (Passo 52 OK)
         // ══════════════════════════════════════════════════════════════════════
         
-        // ══════════════════════════════════════════════════════════════════════
-        // PASSO 33/34 - PRIORIDADE MÁXIMA: VERIFICAR PENDÊNCIA ANTES DE TUDO!
-        // Se pendingExists = true, a SEGUNDA venda detectou pendência da PRIMEIRA.
-        // Neste caso, DEVE enviar DESFEITO_MANUAL imediatamente!
-        // ══════════════════════════════════════════════════════════════════════
-        if (pendingExists) {
-            addLog("[RESP] ⚠️ ════════════════════════════════════════")
-            addLog("[RESP] ⚠️ PENDÊNCIA DETECTADA (pendingExists=true)")
-            addLog("[RESP] ⚠️ PASSO 34: Enviando DESFEITO_MANUAL!")
-            addLog("[RESP] ⚠️ ════════════════════════════════════════")
-            
-            // Usar confirmationId da pendência (não da transação atual!)
-            val pendingConfirmId = responseUri.getQueryParameter("pendingConfirmationTransactionId") 
-                ?: lastPendingData?.optString("confirmationTransactionId", "")
-                ?: confirmationId
-            
-            if (!pendingConfirmId.isNullOrEmpty()) {
-                addLog("[RESP] 🔧 Desfazendo pendência com ID: $pendingConfirmId")
-                sendConfirmation(pendingConfirmId, "DESFEITO_MANUAL")
-                addLog("[RESP] ✅ DESFEITO_MANUAL enviado com sucesso!")
-            } else {
-                addLog("[RESP] ⚠️ Sem confirmationId - Iniciando Resolução Completa (Passo 34)")
-                
-                // 1. Extração Segura dos Parâmetros da Pendência
-                // A PayGo retorna esses dados na URI de resposta quando há erro -2599
-                val pMerchantId = responseUri.getQueryParameter("merchantId") 
-                    ?: responseUri.getQueryParameter("pendingMerchantId") ?: ""
-                    
-                val pProviderName = responseUri.getQueryParameter("providerName") 
-                    ?: responseUri.getQueryParameter("pendingProviderName") ?: ""
-                    
-                val pLocalNsu = responseUri.getQueryParameter("localNsu") 
-                    ?: responseUri.getQueryParameter("terminalNsu") ?: ""
-                    
-                val pTransactionNsu = responseUri.getQueryParameter("transactionNsu") 
-                    ?: responseUri.getQueryParameter("pendingTransactionNsu") ?: ""
-                    
-                val pHostNsu = responseUri.getQueryParameter("hostNsu") 
-                    ?: responseUri.getQueryParameter("pendingHostNsu") ?: ""
+            // ═════════════════════════════════════════════════════════════════════=
+            // PASSO 34 (CRÍTICO): quando houver pendência, o broadcast TEM que seguir
+            // o padrão oficial (extras "uri" + "Confirmacao").
+            // Enviar apenas "uri" com resolveUri (como antes) pode ser ignorado pela PayGo.
+            // ═════════════════════════════════════════════════════════════════════=
+            if (pendingExists) {
+                addLog("[RESP] ⚠️ ════════════════════════════════════════")
+                addLog("[RESP] ⚠️ PENDÊNCIA DETECTADA (pendingExists=true)")
+                addLog("[RESP] ⚠️ PASSO 34: Resolvendo via resolvePendingTransaction(DESFEITO_MANUAL)")
+                addLog("[RESP] ⚠️ ════════════════════════════════════════")
 
-                // Verifica se temos o mínimo necessário para montar a resolução
-                if (pMerchantId.isNotEmpty() && pProviderName.isNotEmpty()) {
-                    
-                    // 2. Construção da URI de Resolução (app://resolve/pendingTransaction)
-                    // IMPORTANTE: Status deve ser DESFEITO_MANUAL para limpar a pendência inválida
-                    val resolveUri = Uri.parse("app://resolve/pendingTransaction").buildUpon()
-                        .appendQueryParameter("transactionStatus", "DESFEITO_MANUAL")
-                        .appendQueryParameter("merchantId", pMerchantId)
-                        .appendQueryParameter("providerName", pProviderName)
-                        .appendQueryParameter("localNsu", pLocalNsu)
-                        .appendQueryParameter("transactionNsu", pTransactionNsu)
-                        .appendQueryParameter("hostNsu", pHostNsu)
-                        .build()
+                // Garante fallbacks mínimos caso a pendência tenha vindo incompleta.
+                // (PayGo ignora campos vazios; aqui garantimos pelo menos "0".)
+                val pMerchantId = (responseUri.getQueryParameter("merchantId")
+                    ?: responseUri.getQueryParameter("pendingMerchantId")
+                    ?: lastPendingData?.optString("merchantId", "")
+                    ?: "").takeIf { it.isNotEmpty() } ?: "0"
+                val pProviderName = (responseUri.getQueryParameter("providerName")
+                    ?: responseUri.getQueryParameter("pendingProviderName")
+                    ?: lastPendingData?.optString("providerName", "")
+                    ?: "").takeIf { it.isNotEmpty() } ?: "UNKNOWN"
+                val pLocalNsu = (responseUri.getQueryParameter("localNsu")
+                    ?: responseUri.getQueryParameter("terminalNsu")
+                    ?: lastPendingData?.optString("localNsu", "")
+                    ?: "").takeIf { it.isNotEmpty() } ?: "0"
+                val pTransactionNsu = (responseUri.getQueryParameter("transactionNsu")
+                    ?: responseUri.getQueryParameter("pendingTransactionNsu")
+                    ?: lastPendingData?.optString("transactionNsu", "")
+                    ?: "").takeIf { it.isNotEmpty() } ?: pLocalNsu
+                val pHostNsu = (responseUri.getQueryParameter("hostNsu")
+                    ?: responseUri.getQueryParameter("pendingHostNsu")
+                    ?: lastPendingData?.optString("hostNsu", "")
+                    ?: "").takeIf { it.isNotEmpty() } ?: pTransactionNsu
 
-                    addLog("[RESP] 📡 Enviando Broadcast de Resolução (Passo 34): $resolveUri")
-
-                    // 3. Disparo do Intent de Confirmação/Resolução
-                    val resolveIntent = Intent(ACTION_CONFIRMATION)
-                    resolveIntent.putExtra("uri", resolveUri.toString())
-                    resolveIntent.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-                    context.sendBroadcast(resolveIntent)
-                    
-                    addLog("[RESP] ✅ Comando de Desfazimento enviado via Broadcast!")
-                    
-                } else {
-                    addLog("[RESP] ❌ FALHA: Dados insuficientes na URI para montar resolução de pendência.")
-                    addLog("[RESP] URI recebida: $responseUri")
+                // Atualiza lastPendingData para garantir que resolvePendingTransaction tenha dados mínimos,
+                // mesmo quando o TransacaoPendenteDados não veio/foi perdido.
+                lastPendingData = JSONObject().apply {
+                    put("merchantId", pMerchantId)
+                    put("providerName", pProviderName)
+                    put("localNsu", pLocalNsu)
+                    put("transactionNsu", pTransactionNsu)
+                    put("hostNsu", pHostNsu)
+                    put("timestamp", System.currentTimeMillis())
                 }
+
+                resolvePendingTransaction(
+                    callback = { r -> addLog("[RESP] resolvePendingTransaction result: $r") },
+                    status = "DESFEITO_MANUAL"
+                )
+                // Não continuar o fluxo de confirmação automática quando há pendência.
             }
-            
-            // Limpar dados de pendência após desfazimento
-            clearPersistedPendingData()
-            
-            // IMPORTANTE: Não confirmar a transação atual se havia pendência
-            // A transação atual deve ser tratada normalmente após resolver pendência
-        }
         
         // Agora processar o resultado da transação ATUAL (apenas se não havia pendência)
         when (transactionResult) {
@@ -687,47 +663,14 @@ class PayGoService(private val context: Context) {
                 // 🟡 Código -2599 = Transação Pendente (fallback se pendingExists não veio)
                 if (!pendingExists) {
                     addLog("[RESP] 🟡 PENDÊNCIA via código -2599")
-                    addLog("[RESP] ⚡ Enviando DESFEITO_MANUAL (Passo 34)")
-                    
-                    if (confirmationId != null) {
-                        sendConfirmation(confirmationId, "DESFEITO_MANUAL")
-                        addLog("[RESP] ✅ Desfazimento IMEDIATO enviado!")
-                    } else {
-                        addLog("[RESP] ⚠️ Sem confirmationId para -2599 - Resolução Completa")
-                        
-                        // Extração dos parâmetros da pendência
-                        val pMerchantId2 = responseUri.getQueryParameter("merchantId") 
-                            ?: responseUri.getQueryParameter("pendingMerchantId") ?: ""
-                        val pProviderName2 = responseUri.getQueryParameter("providerName") 
-                            ?: responseUri.getQueryParameter("pendingProviderName") ?: ""
-                        val pLocalNsu2 = responseUri.getQueryParameter("localNsu") 
-                            ?: responseUri.getQueryParameter("terminalNsu") ?: ""
-                        val pTransactionNsu2 = responseUri.getQueryParameter("transactionNsu") 
-                            ?: responseUri.getQueryParameter("pendingTransactionNsu") ?: ""
-                        val pHostNsu2 = responseUri.getQueryParameter("hostNsu") 
-                            ?: responseUri.getQueryParameter("pendingHostNsu") ?: ""
+                    addLog("[RESP] ⚡ PASSO 34: Resolvendo DESFEITO_MANUAL via resolvePendingTransaction()")
 
-                        if (pMerchantId2.isNotEmpty() && pProviderName2.isNotEmpty()) {
-                            val resolveUri2 = Uri.parse("app://resolve/pendingTransaction").buildUpon()
-                                .appendQueryParameter("transactionStatus", "DESFEITO_MANUAL")
-                                .appendQueryParameter("merchantId", pMerchantId2)
-                                .appendQueryParameter("providerName", pProviderName2)
-                                .appendQueryParameter("localNsu", pLocalNsu2)
-                                .appendQueryParameter("transactionNsu", pTransactionNsu2)
-                                .appendQueryParameter("hostNsu", pHostNsu2)
-                                .build()
-
-                            addLog("[RESP] 📡 Broadcast Resolução (-2599): $resolveUri2")
-                            val resolveIntent2 = Intent(ACTION_CONFIRMATION)
-                            resolveIntent2.putExtra("uri", resolveUri2.toString())
-                            resolveIntent2.addFlags(Intent.FLAG_INCLUDE_STOPPED_PACKAGES)
-                            context.sendBroadcast(resolveIntent2)
-                            addLog("[RESP] ✅ Desfazimento -2599 enviado!")
-                        } else {
-                            addLog("[RESP] ❌ Dados insuficientes para resolução -2599")
-                        }
-                    }
-                    clearPersistedPendingData()
+                    // Melhor caminho: reutilizar a implementação oficial (uri + Confirmacao),
+                    // que também aplica cooldown e fallbacks de campos vazios.
+                    resolvePendingTransaction(
+                        callback = { r -> addLog("[RESP] resolvePendingTransaction(-2599) result: $r") },
+                        status = "DESFEITO_MANUAL"
+                    )
                 }
             }
             
