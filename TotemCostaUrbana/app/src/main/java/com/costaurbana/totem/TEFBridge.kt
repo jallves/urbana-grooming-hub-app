@@ -184,6 +184,19 @@ class TEFBridge(
         }
         
         Log.i(TAG, "resolverPendencia: status=$validStatus")
+
+        // Feedback de UI (requisito Passo 34): avisar operador e evitar "tiro rápido"
+        activity.runOnUiThread {
+            try {
+                android.widget.Toast.makeText(
+                    activity,
+                    "A resolver pendência... aguarde.",
+                    android.widget.Toast.LENGTH_SHORT
+                ).show()
+            } catch (_: Exception) {
+                // ignore
+            }
+        }
         
         payGoService.resolvePendingTransaction({ result ->
             returnResult(result)
