@@ -99,6 +99,14 @@ class PayGoService(private val context: Context) {
     // SharedPreferences para persistir dados de pendência
     private val prefs: SharedPreferences = context.getSharedPreferences("paygo_pending", Context.MODE_PRIVATE)
     
+    // ════════════════════════════════════════════════════════════════════════════
+    // CRÍTICO: Timestamp do último desfazimento para bloqueio de timing
+    // O PayGo precisa de ~3-5 segundos para processar o broadcast e limpar
+    // seu banco de dados local antes de aceitar nova transação
+    // ════════════════════════════════════════════════════════════════════════════
+    private var lastUndoTimestamp: Long = 0
+    private val UNDO_COOLDOWN_MS: Long = 4000 // 4 segundos de cooldown
+    
     // Debug
     private var debugMode = true
     private val logs = mutableListOf<String>()
@@ -226,6 +234,11 @@ class PayGoService(private val context: Context) {
     fun getFullStatus(): JSONObject {
         if (!payGoInstalled) checkPayGoInstallation()
         
+        // Calcular status do cooldown
+        val timeSinceUndo = System.currentTimeMillis() - lastUndoTimestamp
+        val cooldownActive = lastUndoTimestamp > 0 && timeSinceUndo < UNDO_COOLDOWN_MS
+        val cooldownRemainingMs = if (cooldownActive) UNDO_COOLDOWN_MS - timeSinceUndo else 0L
+        
         return JSONObject().apply {
             put("pinpad", JSONObject().apply {
                 put("conectado", payGoInstalled)
@@ -233,11 +246,40 @@ class PayGoService(private val context: Context) {
                 put("info", "Pinpad gerenciado pelo PayGo")
             })
             put("paygo", getPayGoInfo())
-            put("ready", payGoInstalled)
+            put("ready", payGoInstalled && !cooldownActive) // Só está pronto se não estiver em cooldown
             put("pendingTransaction", pendingTransactionId)
             put("hasPendingData", lastPendingData != null)
             put("debugMode", debugMode)
             put("logsCount", logs.size)
+            // NOVO: Status do cooldown para o frontend
+            put("cooldown", JSONObject().apply {
+                put("active", cooldownActive)
+                put("remainingMs", cooldownRemainingMs)
+                put("totalMs", UNDO_COOLDOWN_MS)
+                put("mensagem", if (cooldownActive) "Aguarde ${(cooldownRemainingMs / 1000) + 1}s - Processando desfazimento..." else null)
+            })
+        }
+    }
+    
+    /**
+     * NOVO: Verifica se o sistema pode iniciar nova transação
+     * Retorna informações sobre cooldown após desfazimento
+     */
+    fun canStartTransaction(): JSONObject {
+        val timeSinceUndo = System.currentTimeMillis() - lastUndoTimestamp
+        val cooldownActive = lastUndoTimestamp > 0 && timeSinceUndo < UNDO_COOLDOWN_MS
+        val cooldownRemainingMs = if (cooldownActive) UNDO_COOLDOWN_MS - timeSinceUndo else 0L
+        
+        return JSONObject().apply {
+            put("canStart", !cooldownActive && payGoInstalled)
+            put("payGoInstalled", payGoInstalled)
+            put("cooldownActive", cooldownActive)
+            put("cooldownRemainingMs", cooldownRemainingMs)
+            put("cooldownTotalMs", UNDO_COOLDOWN_MS)
+            if (cooldownActive) {
+                put("mensagem", "Aguarde ${(cooldownRemainingMs / 1000) + 1} segundos antes de nova venda")
+                put("motivo", "Processando desfazimento anterior")
+            }
         }
     }
 
@@ -269,6 +311,35 @@ class PayGoService(private val context: Context) {
         addLog("[TXN] Método: $metodo")
         addLog("[TXN] Parcelas: $parcelas")
         addLog("════════════════════════════════════════")
+
+        // ════════════════════════════════════════════════════════════════
+        // CRÍTICO: Verificar cooldown após desfazimento (Passo 34)
+        // O PayGo precisa de tempo para processar o broadcast de DESFEITO_MANUAL
+        // antes de aceitar nova transação. Sem isso, cria "loop de pendência".
+        // ════════════════════════════════════════════════════════════════
+        val timeSinceUndo = System.currentTimeMillis() - lastUndoTimestamp
+        if (lastUndoTimestamp > 0 && timeSinceUndo < UNDO_COOLDOWN_MS) {
+            val remainingMs = UNDO_COOLDOWN_MS - timeSinceUndo
+            addLog("[TXN] ⏱️ COOLDOWN ATIVO! Aguarde ${remainingMs}ms")
+            addLog("[TXN] ⚠️ Pendência foi desfeita há ${timeSinceUndo}ms")
+            addLog("[TXN] ⚠️ Tempo mínimo: ${UNDO_COOLDOWN_MS}ms")
+            
+            callback(JSONObject().apply {
+                put("status", "cooldown")
+                put("codigoErro", "COOLDOWN_ACTIVE")
+                put("mensagem", "Aguarde ${(remainingMs / 1000) + 1} segundos. Processando desfazimento anterior...")
+                put("remainingMs", remainingMs)
+                put("cooldownMs", UNDO_COOLDOWN_MS)
+                put("aguardar", true)
+            })
+            return
+        }
+        
+        // Reset cooldown se já passou
+        if (timeSinceUndo >= UNDO_COOLDOWN_MS && lastUndoTimestamp > 0) {
+            addLog("[TXN] ✅ Cooldown expirado - OK para nova transação")
+            lastUndoTimestamp = 0 // Reset
+        }
 
         // Verificar PayGo
         if (!payGoInstalled) checkPayGoInstallation()
@@ -1027,20 +1098,47 @@ class PayGoService(private val context: Context) {
                 addLog("[RESOLVE] URI Original: $savedOriginalUri")
                 pendingUriToUse = savedOriginalUri
             } else {
-                // FALLBACK: Reconstruir URI (caso não tenha original - ex: dados de sessão)
+                // ════════════════════════════════════════════════════════════════
+                // FALLBACK: Reconstruir URI com app://resolve/pendingTransaction
+                // CRÍTICO: Campos vazios devem ser "0" (PayGo rejeita string vazia!)
+                // ════════════════════════════════════════════════════════════════
                 addLog("[RESOLVE] ⚠️ URI original não disponível, reconstruindo...")
-                val reconstructedUri = Uri.Builder()
+                
+                // Extrair com fallback para "0" quando vazio (NUNCA string vazia!)
+                val pMerchantId = pendingData.optString("merchantId", "").takeIf { it.isNotEmpty() } ?: "0"
+                val pProviderName = pendingData.optString("providerName", "").takeIf { it.isNotEmpty() } ?: "UNKNOWN"
+                val pLocalNsu = pendingData.optString("localNsu", "").takeIf { it.isNotEmpty() } ?: "0"
+                val pTransactionNsu = pendingData.optString("transactionNsu", "").takeIf { it.isNotEmpty() } ?: pLocalNsu
+                val pHostNsu = pendingData.optString("hostNsu", "").takeIf { it.isNotEmpty() } ?: pTransactionNsu
+                val pConfirmationId = pendingData.optString("confirmationTransactionId", "").takeIf { it.isNotEmpty() }
+                
+                addLog("[RESOLVE] Dados robustos (vazios→0):")
+                addLog("[RESOLVE]   merchantId: $pMerchantId")
+                addLog("[RESOLVE]   providerName: $pProviderName")
+                addLog("[RESOLVE]   localNsu: $pLocalNsu")
+                addLog("[RESOLVE]   transactionNsu: $pTransactionNsu")
+                addLog("[RESOLVE]   hostNsu: $pHostNsu")
+                addLog("[RESOLVE]   confirmationId: $pConfirmationId")
+                
+                val uriBuilder = Uri.Builder()
                     .scheme("app")
                     .authority("resolve")
                     .appendPath("pendingTransaction")
-                    .appendQueryParameter("merchantId", pendingData.optString("merchantId", ""))
-                    .appendQueryParameter("providerName", pendingData.optString("providerName", ""))
-                    .appendQueryParameter("hostNsu", pendingData.optString("hostNsu", ""))
-                    .appendQueryParameter("localNsu", pendingData.optString("localNsu", ""))
-                    .appendQueryParameter("transactionNsu", pendingData.optString("transactionNsu", ""))
-                    .build()
+                    .appendQueryParameter("transactionStatus", status)
+                    .appendQueryParameter("merchantId", pMerchantId)
+                    .appendQueryParameter("providerName", pProviderName)
+                    .appendQueryParameter("localNsu", pLocalNsu)
+                    .appendQueryParameter("transactionNsu", pTransactionNsu)
+                    .appendQueryParameter("hostNsu", pHostNsu)
+                
+                // Adicionar confirmationTransactionId se disponível
+                if (pConfirmationId != null) {
+                    uriBuilder.appendQueryParameter("confirmationTransactionId", pConfirmationId)
+                }
+                
+                val reconstructedUri = uriBuilder.build()
                 pendingUriToUse = reconstructedUri.toString()
-                addLog("[RESOLVE] URI Reconstruída: $pendingUriToUse")
+                addLog("[RESOLVE] URI Reconstruída (Passo 34 compliant): $pendingUriToUse")
             }
             
             // URI de confirmação (STATUS desejado)
@@ -1072,11 +1170,23 @@ class PayGoService(private val context: Context) {
             addLog("[RESOLVE] ✅ sendBroadcast() executado!")
             
             // ════════════════════════════════════════════════════════════════
+            // CRÍTICO: Registrar timestamp do desfazimento para cooldown
+            // O PayGo precisa de tempo para processar antes de aceitar nova venda
+            // ════════════════════════════════════════════════════════════════
+            if (status == "DESFEITO_MANUAL") {
+                lastUndoTimestamp = System.currentTimeMillis()
+                addLog("[RESOLVE] ⏱️ Cooldown iniciado - Aguarde ${UNDO_COOLDOWN_MS/1000}s antes de nova venda")
+            }
+            
+            // ════════════════════════════════════════════════════════════════
             // LIMPAR DADOS LOCAIS APÓS ENVIAR BROADCAST
             // ════════════════════════════════════════════════════════════════
             addLog("[RESOLVE] 🧹 Limpando dados locais após envio...")
             clearPersistedPendingData()
             addLog("[RESOLVE] ✅ Dados locais limpos")
+            
+            // Calcular tempo de espera recomendado
+            val cooldownRemainingMs = if (status == "DESFEITO_MANUAL") UNDO_COOLDOWN_MS else 0L
             
             callback(JSONObject().apply {
                 put("status", "resolvido")
@@ -1091,6 +1201,10 @@ class PayGoService(private val context: Context) {
                 put("uriEnviada", pendingUriToUse)
                 put("uriConfirmacao", confirmationUri)
                 put("pendingDataCleared", true)
+                // NOVO: Informações de timing para o frontend
+                put("cooldownMs", cooldownRemainingMs)
+                put("aguardarAntesDaProximaVenda", cooldownRemainingMs > 0)
+                put("mensagemCooldown", if (cooldownRemainingMs > 0) "Aguarde ${cooldownRemainingMs/1000} segundos antes de nova venda" else null)
             })
             
         } catch (e: Exception) {
