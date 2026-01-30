@@ -34,25 +34,33 @@ const BirthdayManagement: React.FC = () => {
 
       let filteredData = mappedData;
       const today = new Date();
+      const currentMonth = today.getMonth();
+      const currentDay = today.getDate();
 
       if (filter === 'today') {
+        // Filtra aniversariantes do dia atual
         filteredData = filteredData.filter(client => {
           if (!client.birth_date) return false;
-          const birthDate = new Date(client.birth_date);
+          const birthDate = new Date(client.birth_date + 'T00:00:00');
           return (
-            birthDate.getDate() === today.getDate() &&
-            birthDate.getMonth() === today.getMonth()
+            birthDate.getDate() === currentDay &&
+            birthDate.getMonth() === currentMonth
           );
         });
       } else if (filter === 'week') {
+        // Filtra aniversariantes da semana atual
         const startOfWeek = new Date(today);
         startOfWeek.setDate(today.getDate() - today.getDay());
+        startOfWeek.setHours(0, 0, 0, 0);
+        
         const endOfWeek = new Date(startOfWeek);
         endOfWeek.setDate(startOfWeek.getDate() + 6);
+        endOfWeek.setHours(23, 59, 59, 999);
 
         filteredData = filteredData.filter(client => {
           if (!client.birth_date) return false;
-          const birthDate = new Date(client.birth_date);
+          const birthDate = new Date(client.birth_date + 'T00:00:00');
+          // Cria data do aniversário no ano atual para comparação
           const currentYearBirthday = new Date(
             today.getFullYear(),
             birthDate.getMonth(),
@@ -62,6 +70,13 @@ const BirthdayManagement: React.FC = () => {
             currentYearBirthday >= startOfWeek &&
             currentYearBirthday <= endOfWeek
           );
+        });
+      } else if (filter === 'month') {
+        // Filtra aniversariantes do mês atual
+        filteredData = filteredData.filter(client => {
+          if (!client.birth_date) return false;
+          const birthDate = new Date(client.birth_date + 'T00:00:00');
+          return birthDate.getMonth() === currentMonth;
         });
       }
 
