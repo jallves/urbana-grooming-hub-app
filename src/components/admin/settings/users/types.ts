@@ -9,6 +9,8 @@ export interface UserWithRole {
   created_at: string;
   last_sign_in_at: string | null;
   role: string;
+  image_url?: string | null;
+  photo_url?: string | null;
 }
 
 export interface UserRole {

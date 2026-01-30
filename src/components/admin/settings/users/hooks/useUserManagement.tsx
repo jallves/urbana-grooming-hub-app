@@ -15,10 +15,10 @@ export const useUserManagement = () => {
       setLoading(true);
       setError(null);
       
-      // Fetch users from staff table (simpler approach without RPC)
+      // Fetch users from staff table with photo URLs
       const { data: staffData, error: staffError } = await supabase
         .from('staff')
-        .select('id, name, email, role, is_active, created_at, updated_at')
+        .select('id, name, email, role, is_active, created_at, updated_at, image_url, photo_url')
         .eq('is_active', true)
         .order('name');
 
@@ -28,14 +28,16 @@ export const useUserManagement = () => {
         throw staffError;
       }
       
-      // Map staff data to UserWithRole format
+      // Map staff data to UserWithRole format with photos
       const usersWithRoles: UserWithRole[] = (staffData || []).map((staff) => ({
         id: staff.id,
         email: staff.email || '',
         name: staff.name || 'Sem nome',
         created_at: staff.created_at || '',
         last_sign_in_at: staff.updated_at || null,
-        role: (staff.role as 'master' | 'admin' | 'manager' | 'barber' | 'user') || 'user'
+        role: (staff.role as 'master' | 'admin' | 'manager' | 'barber' | 'user') || 'user',
+        image_url: staff.image_url || null,
+        photo_url: staff.photo_url || null,
       }));
 
       setUsers(usersWithRoles);
