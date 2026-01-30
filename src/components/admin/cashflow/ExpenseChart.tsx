@@ -14,16 +14,24 @@ const COLORS: Record<string, string> = {
   'Marketing': '#ec4899', // Rosa vibrante
   'Despesas Gerais': '#6b7280', // Cinza neutro
   'Pagamento de Funcionários': '#8b5cf6', // Violeta vibrante
-  'Comissão': '#06b6d4', // Ciano vibrante
   'Comissões': '#3b82f6', // Azul vibrante
+  'Gorjetas': '#f59e0b', // Âmbar/Dourado
+  'Produtos': '#a855f7', // Púrpura vibrante
+  'Serviços': '#06b6d4', // Ciano vibrante
   'Outros': '#94a3b8', // Cinza claro
   'Fornecedores': '#14b8a6', // Verde-água
-  'Manutenção': '#a855f7', // Púrpura
+  'Manutenção': '#22c55e', // Verde vibrante
   'Impostos': '#dc2626', // Vermelho escuro
   'Energia': '#fbbf24', // Amarelo
   'Água': '#38bdf8', // Azul claro
   'Internet': '#22d3ee', // Ciano claro
 };
+
+// Fallback de cores para categorias não mapeadas
+const FALLBACK_COLORS = [
+  '#ef4444', '#f97316', '#eab308', '#22c55e', '#14b8a6',
+  '#3b82f6', '#8b5cf6', '#ec4899', '#f59e0b', '#06b6d4'
+];
 
 interface ExpenseChartProps {
   startDate: string;
@@ -91,16 +99,24 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
 
   const total = chartData.reduce((sum, item) => sum + item.value, 0);
 
+  // Função para obter cor de uma categoria
+  const getColor = (categoryName: string, index: number): string => {
+    return COLORS[categoryName] || FALLBACK_COLORS[index % FALLBACK_COLORS.length];
+  };
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
         <defs>
-          {chartData.map((entry, index) => (
-            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor={COLORS[entry.name] || '#9ca3af'} stopOpacity={1} />
-              <stop offset="100%" stopColor={COLORS[entry.name] || '#9ca3af'} stopOpacity={0.7} />
-            </linearGradient>
-          ))}
+          {chartData.map((entry, index) => {
+            const color = getColor(entry.name, index);
+            return (
+              <linearGradient key={`gradient-${index}`} id={`expGradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={1} />
+                <stop offset="100%" stopColor={color} stopOpacity={0.7} />
+              </linearGradient>
+            );
+          })}
         </defs>
         <Pie
           data={chartData}
@@ -119,7 +135,7 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
           {chartData.map((entry, index) => (
             <Cell 
               key={`cell-${index}`} 
-              fill={`url(#gradient-${index})`}
+              fill={`url(#expGradient-${index})`}
               style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
             />
           ))}
