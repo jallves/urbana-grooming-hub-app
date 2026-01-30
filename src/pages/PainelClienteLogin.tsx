@@ -9,6 +9,8 @@ import { useToast } from '@/hooks/use-toast';
 import AuthContainer from '@/components/ui/containers/AuthContainer';
 import PainelClienteLoginForm from '@/components/painel-cliente/auth/PainelClienteLoginForm';
 import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelClienteCadastroForm';
+import { logAdminActivity } from '@/hooks/useActivityLogger';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 export default function PainelClienteLogin() {
   const navigate = useNavigate();
@@ -51,6 +53,28 @@ export default function PainelClienteLogin() {
         setLoading(false);
         return;
       }
+
+      // INTEGRAÇÃO: Registrar log de login
+      await logAdminActivity({
+        action: 'login',
+        entityType: 'session',
+        entityId: data.user.id,
+        newData: { 
+          email: data.user.email, 
+          userType: 'client',
+          timestamp: new Date().toISOString(),
+          userAgent: navigator.userAgent
+        }
+      });
+      
+      // INTEGRAÇÃO: Criar sessão ativa
+      await sessionManager.createSession({
+        userId: data.user.id,
+        userType: 'painel_cliente',
+        userEmail: data.user.email || undefined,
+        userName: data.user.user_metadata?.full_name || data.user.email || undefined,
+        expiresInHours: 24
+      });
 
       toast({
         title: "✅ Login realizado com sucesso!",

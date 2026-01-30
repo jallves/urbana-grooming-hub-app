@@ -2,6 +2,8 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
+import { logAdminActivity } from '@/hooks/useActivityLogger';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface AuthContextType {
   user: User | null;
@@ -221,8 +223,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     };
   }, []);
 
-  const signOut = () => {
+  const signOut = async () => {
     console.log('[AuthContext] 🚪 Logout instantâneo - limpeza TOTAL');
+    
+    // Capturar dados do usuário antes de limpar para log
+    const currentUser = user;
+    const currentRole = userRole;
     
     // 1. LIMPAR ESTADO LOCAL IMEDIATAMENTE (síncrono)
     setIsAdmin(false);
@@ -258,7 +264,31 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.warn('[AuthContext] ⚠️ Erro ao limpar chaves do Supabase:', error);
     }
     
-    // 4. Fazer logout do Supabase em background (sem await - não bloqueia)
+    // 4. INTEGRAÇÃO: Registrar log de logout e invalidar sessão
+    if (currentUser) {
+      try {
+        // Registrar log de logout
+        await logAdminActivity({
+          action: 'logout',
+          entityType: 'session',
+          entityId: currentUser.id,
+          oldData: { 
+            email: currentUser.email, 
+            userType: currentRole,
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        // Invalidar sessões ativas
+        const userType = currentRole === 'barber' ? 'barber' : 
+                        currentRole === 'client' ? 'painel_cliente' : 'admin';
+        await sessionManager.invalidateSession(userType);
+      } catch (err) {
+        console.warn('[AuthContext] ⚠️ Erro ao registrar logout:', err);
+      }
+    }
+    
+    // 5. Fazer logout do Supabase em background (sem await - não bloqueia)
     supabase.auth.signOut().catch(err => {
       console.warn('[AuthContext] ⚠️ Erro ao fazer signOut do Supabase (background):', err);
     });

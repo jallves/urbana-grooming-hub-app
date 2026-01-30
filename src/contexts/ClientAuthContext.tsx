@@ -37,10 +37,13 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
   const { toast } = useToast();
 
   // ========================================
-  // SIGNOUT: Integrado com Supabase Auth
+  // SIGNOUT: Integrado com Supabase Auth + Logs + Sessions
   // ========================================
-  const signOut = (): void => {
+  const signOut = async (): Promise<void> => {
     console.log('[ClientAuthContext] 🚪 Iniciando logout IMEDIATO do cliente...');
+    
+    // Capturar dados do cliente antes de limpar para log
+    const currentClient = client;
     
     // 1. Limpar estado IMEDIATAMENTE
     setClient(null);
@@ -49,19 +52,40 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
     // 2. Limpar localStorage
     localStorage.removeItem('client_last_route');
     
-    // 3. Fazer logout do Supabase (não aguardar - não bloquear)
+    // 3. INTEGRAÇÃO: Registrar log de logout e invalidar sessão
+    if (currentClient) {
+      try {
+        const { logAdminActivity } = await import('@/hooks/useActivityLogger');
+        await logAdminActivity({
+          action: 'logout',
+          entityType: 'session',
+          entityId: currentClient.id,
+          oldData: { 
+            email: currentClient.email, 
+            userType: 'client',
+            timestamp: new Date().toISOString()
+          }
+        });
+        
+        await sessionManager.invalidateSession('painel_cliente');
+      } catch (err) {
+        console.warn('[ClientAuthContext] ⚠️ Erro ao registrar logout:', err);
+      }
+    }
+    
+    // 4. Fazer logout do Supabase (não aguardar - não bloquear)
     supabase.auth.signOut().catch(err => 
       console.warn('[ClientAuthContext] ⚠️ Erro ao fazer signOut (não crítico):', err)
     );
     
-    // 4. Toast rápido
+    // 5. Toast rápido
     toast({
       title: "Logout realizado",
       description: "Até a próxima!",
       duration: 2000,
     });
 
-    // 5. Redirecionar IMEDIATAMENTE
+    // 6. Redirecionar IMEDIATAMENTE
     console.log('[ClientAuthContext] ✅ Logout concluído - redirecionando...');
     window.location.href = '/painel-cliente/login';
   };

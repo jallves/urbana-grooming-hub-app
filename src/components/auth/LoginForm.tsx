@@ -7,6 +7,8 @@ import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { logAdminActivity } from '@/hooks/useActivityLogger';
+import { sessionManager } from '@/hooks/useSessionManager';
 
 interface LoginFormProps {
   loading: boolean;
@@ -102,6 +104,27 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         setLoginAttempts(0);
         const blockKey = `loginBlock_${email}`;
         localStorage.removeItem(blockKey);
+        
+        // INTEGRAÇÃO: Registrar log de login
+        await logAdminActivity({
+          action: 'login',
+          entityType: 'session',
+          entityId: data.user.id,
+          newData: { 
+            email: data.user.email, 
+            timestamp: new Date().toISOString(),
+            userAgent: navigator.userAgent
+          }
+        });
+        
+        // INTEGRAÇÃO: Criar sessão ativa
+        await sessionManager.createSession({
+          userId: data.user.id,
+          userType: 'admin',
+          userEmail: data.user.email || undefined,
+          userName: data.user.user_metadata?.full_name || data.user.email || undefined,
+          expiresInHours: 24
+        });
         
         toast({
           title: "Login realizado!",
