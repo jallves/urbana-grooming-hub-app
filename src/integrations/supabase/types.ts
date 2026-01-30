@@ -922,6 +922,7 @@ export type Database = {
           net_amount: number | null
           notes: string | null
           payment_date: string | null
+          payment_method: string | null
           reference_id: string | null
           reference_type: string | null
           service_id: string | null
@@ -945,6 +946,7 @@ export type Database = {
           net_amount?: number | null
           notes?: string | null
           payment_date?: string | null
+          payment_method?: string | null
           reference_id?: string | null
           reference_type?: string | null
           service_id?: string | null
@@ -968,6 +970,7 @@ export type Database = {
           net_amount?: number | null
           notes?: string | null
           payment_date?: string | null
+          payment_method?: string | null
           reference_id?: string | null
           reference_type?: string | null
           service_id?: string | null
