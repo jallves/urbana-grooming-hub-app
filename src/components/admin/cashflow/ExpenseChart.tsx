@@ -6,15 +6,23 @@ import { format } from 'date-fns';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 import { useRealtime } from '@/contexts/RealtimeContext';
 
-const COLORS = {
-  'Insumos': '#991b1b', // red-800 - muito profissional
-  'Aluguel': '#9a3412', // orange-800 - muito profissional
-  'Utilidades': '#92400e', // amber-800 - muito profissional
-  'Marketing': '#9f1239', // pink-800 - muito profissional
-  'Despesas Gerais': '#334155', // slate-700 - muito profissional
-  'Pagamento de Funcionários': '#5b21b6', // violet-800 - muito profissional
-  'Comissão': '#155e75', // cyan-800 - muito profissional
-  'Comissões': '#3730a3', // indigo-800 - muito profissional
+// Cores vibrantes e distintas para cada categoria de despesa
+const COLORS: Record<string, string> = {
+  'Insumos': '#ef4444', // Vermelho vibrante
+  'Aluguel': '#f97316', // Laranja vibrante
+  'Utilidades': '#eab308', // Amarelo dourado
+  'Marketing': '#ec4899', // Rosa vibrante
+  'Despesas Gerais': '#6b7280', // Cinza neutro
+  'Pagamento de Funcionários': '#8b5cf6', // Violeta vibrante
+  'Comissão': '#06b6d4', // Ciano vibrante
+  'Comissões': '#3b82f6', // Azul vibrante
+  'Outros': '#94a3b8', // Cinza claro
+  'Fornecedores': '#14b8a6', // Verde-água
+  'Manutenção': '#a855f7', // Púrpura
+  'Impostos': '#dc2626', // Vermelho escuro
+  'Energia': '#fbbf24', // Amarelo
+  'Água': '#38bdf8', // Azul claro
+  'Internet': '#22d3ee', // Ciano claro
 };
 
 interface ExpenseChartProps {
@@ -81,30 +89,49 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
     );
   }
 
+  const total = chartData.reduce((sum, item) => sum + item.value, 0);
+
   return (
     <ResponsiveContainer width="100%" height="100%">
       <PieChart>
+        <defs>
+          {chartData.map((entry, index) => (
+            <linearGradient key={`gradient-${index}`} id={`gradient-${index}`} x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0%" stopColor={COLORS[entry.name] || '#9ca3af'} stopOpacity={1} />
+              <stop offset="100%" stopColor={COLORS[entry.name] || '#9ca3af'} stopOpacity={0.7} />
+            </linearGradient>
+          ))}
+        </defs>
         <Pie
           data={chartData}
           cx="50%"
           cy="45%"
           labelLine={false}
-          label={false}
-          outerRadius="60%"
+          label={({ name, percent }) => percent > 0.05 ? `${(percent * 100).toFixed(0)}%` : ''}
+          outerRadius="65%"
+          innerRadius="30%"
           fill="#8884d8"
           dataKey="value"
-          paddingAngle={2}
+          paddingAngle={3}
+          stroke="#fff"
+          strokeWidth={2}
         >
           {chartData.map((entry, index) => (
-            <Cell key={`cell-${index}`} fill={COLORS[entry.name as keyof typeof COLORS] || '#9ca3af'} />
+            <Cell 
+              key={`cell-${index}`} 
+              fill={`url(#gradient-${index})`}
+              style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.1))' }}
+            />
           ))}
         </Pie>
         <Tooltip
           contentStyle={{
             backgroundColor: '#ffffff',
-            border: '1px solid #e5e7eb',
-            borderRadius: '8px',
-            fontSize: '12px'
+            border: 'none',
+            borderRadius: '12px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+            fontSize: '13px',
+            padding: '12px 16px'
           }}
           formatter={(value: number, name: string) => [
             `R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`,
@@ -113,11 +140,13 @@ const ExpenseChart: React.FC<ExpenseChartProps> = ({ startDate, endDate }) => {
         />
         <Legend 
           verticalAlign="bottom"
-          height={36}
-          wrapperStyle={{ fontSize: '11px', paddingTop: '10px' }}
+          height={50}
+          wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }}
+          iconType="circle"
+          iconSize={10}
           formatter={(value, entry: any) => {
-            const percent = ((entry.payload.value / chartData.reduce((sum, item) => sum + item.value, 0)) * 100).toFixed(0);
-            return `${value} (${percent}%)`;
+            const percent = ((entry.payload.value / total) * 100).toFixed(0);
+            return <span style={{ color: '#374151', fontWeight: 500 }}>{value} ({percent}%)</span>;
           }}
         />
       </PieChart>

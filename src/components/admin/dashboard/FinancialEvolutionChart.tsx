@@ -58,70 +58,92 @@ const FinancialEvolutionChart: React.FC = () => {
   }
 
   return (
-    <Card className="bg-white border-gray-200">
+    <Card className="bg-white border-gray-200 shadow-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900">
-          Evolução Financeira (Últimos 6 Meses)
+          📈 Evolução Financeira (Últimos 6 Meses)
         </CardTitle>
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
           <LineChart data={chartData}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <defs>
+              <linearGradient id="receitaGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+              </linearGradient>
+              <linearGradient id="lucroGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                <stop offset="95%" stopColor="#3b82f6" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
             <XAxis 
               dataKey="month" 
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
+              stroke="#9ca3af"
+              style={{ fontSize: '12px', fontWeight: 500 }}
+              axisLine={false}
+              tickLine={false}
             />
             <YAxis 
-              stroke="#6b7280"
-              style={{ fontSize: '12px' }}
+              stroke="#9ca3af"
+              style={{ fontSize: '11px' }}
               tickFormatter={(value) => `R$ ${(value / 1000).toFixed(0)}k`}
+              axisLine={false}
+              tickLine={false}
             />
             <Tooltip 
-              formatter={(value: number) => `R$ ${value.toFixed(2)}`}
+              formatter={(value: number, name: string) => [`R$ ${value.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, name]}
               contentStyle={{ 
                 backgroundColor: 'white', 
-                border: '1px solid #e5e7eb',
-                borderRadius: '8px',
-                fontSize: '12px'
+                border: 'none',
+                borderRadius: '12px',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                fontSize: '13px',
+                padding: '12px 16px'
               }}
+              labelStyle={{ fontWeight: 600, marginBottom: '8px' }}
             />
             <Legend 
-              wrapperStyle={{ fontSize: '12px' }}
+              wrapperStyle={{ fontSize: '12px', paddingTop: '15px' }}
               iconType="circle"
+              iconSize={10}
             />
             <Line 
               type="monotone" 
               dataKey="receita" 
-              stroke="#16a34a" 
-              strokeWidth={2}
+              stroke="#10b981" 
+              strokeWidth={3}
               name="Receita"
-              dot={{ fill: '#16a34a', r: 4 }}
+              dot={{ fill: '#10b981', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
             />
             <Line 
               type="monotone" 
               dataKey="despesas" 
-              stroke="#dc2626" 
-              strokeWidth={2}
+              stroke="#ef4444" 
+              strokeWidth={3}
               name="Despesas"
-              dot={{ fill: '#dc2626', r: 4 }}
+              dot={{ fill: '#ef4444', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
             />
             <Line 
               type="monotone" 
               dataKey="comissoes" 
-              stroke="#9333ea" 
-              strokeWidth={2}
+              stroke="#a855f7" 
+              strokeWidth={3}
               name="Comissões"
-              dot={{ fill: '#9333ea', r: 4 }}
+              dot={{ fill: '#a855f7', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 7, strokeWidth: 2, stroke: '#fff' }}
             />
             <Line 
               type="monotone" 
               dataKey="lucro" 
-              stroke="#2563eb" 
-              strokeWidth={3}
+              stroke="#3b82f6" 
+              strokeWidth={4}
               name="Lucro Líquido"
-              dot={{ fill: '#2563eb', r: 5 }}
+              dot={{ fill: '#3b82f6', r: 6, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 8, strokeWidth: 2, stroke: '#fff' }}
             />
           </LineChart>
         </ResponsiveContainer>
