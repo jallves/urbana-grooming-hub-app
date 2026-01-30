@@ -70,9 +70,10 @@ const getCategoryColors = (category: string | null): string => {
   return colors[category.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
-// Mapeamento de formas de pagamento
+// Mapeamento de formas de pagamento (incluindo valores do PayGo em MAIÚSCULO)
 const getPaymentMethodLabel = (method: string | null): string => {
   if (!method) return '-';
+  const normalized = method.toLowerCase();
   const map: Record<string, string> = {
     'pix': 'PIX',
     'debito': 'Débito',
@@ -81,23 +82,28 @@ const getPaymentMethodLabel = (method: string | null): string => {
     'debit': 'Débito',
     'credit': 'Crédito',
     'cash': 'Dinheiro',
+    'credit_card': 'Crédito',
+    'debit_card': 'Débito',
   };
-  return map[method.toLowerCase()] || method;
+  return map[normalized] || method;
 };
 
-// Cores por forma de pagamento
+// Cores por forma de pagamento (incluindo valores do PayGo em MAIÚSCULO)
 const getPaymentMethodColors = (method: string | null): string => {
   if (!method) return 'bg-gray-100 text-gray-700 border-gray-300';
+  const normalized = method.toLowerCase();
   const colors: Record<string, string> = {
     'pix': 'bg-emerald-100 text-emerald-700 border-emerald-300',
     'debito': 'bg-sky-100 text-sky-700 border-sky-300',
     'debit': 'bg-sky-100 text-sky-700 border-sky-300',
+    'debit_card': 'bg-sky-100 text-sky-700 border-sky-300',
     'credito': 'bg-violet-100 text-violet-700 border-violet-300',
     'credit': 'bg-violet-100 text-violet-700 border-violet-300',
+    'credit_card': 'bg-violet-100 text-violet-700 border-violet-300',
     'dinheiro': 'bg-lime-100 text-lime-700 border-lime-300',
     'cash': 'bg-lime-100 text-lime-700 border-lime-300',
   };
-  return colors[method.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
+  return colors[normalized] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
 // Função auxiliar para formatar horário da transação
