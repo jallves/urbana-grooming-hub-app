@@ -147,75 +147,75 @@ const handler = async (req: Request): Promise<Response> => {
       to: [clientEmail],
       subject: "✅ Agendamento Confirmado - Barbearia Costa Urbana",
       html: `
-        <div style="font-family: 'Segoe UI', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5;">
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5;">
           <!-- Header -->
           <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 40px 30px; border-radius: 12px 12px 0 0;">
             <img src="${logoUrl}" alt="Barbearia Costa Urbana" style="width: 90px; height: 90px; border-radius: 50%; margin-bottom: 20px; border: 3px solid #D4A574; object-fit: cover;" />
-            <h1 style="margin: 0; font-size: 26px; color: #D4A574; letter-spacing: 1px;">Agendamento Confirmado!</h1>
-            <p style="margin: 10px 0 0; font-size: 14px; color: #ccc;">Barbearia Costa Urbana</p>
+            <h1 style="margin: 0; font-size: 26px; color: #D4A574; letter-spacing: 1px; font-weight: 700;">Agendamento Confirmado!</h1>
+            <p style="margin: 10px 0 0; font-size: 15px; color: #ffffff; font-weight: 500;">Barbearia Costa Urbana</p>
           </div>
           
           <!-- Content -->
-          <div style="background: white; padding: 35px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
-            <p style="font-size: 18px; color: #333; margin: 0 0 25px 0; line-height: 1.6;">
-              Olá, <strong style="color: #D4A574;">${clientName}</strong>! 👋<br/>
-              <span style="color: #666;">Seu horário está garantido!</span>
+          <div style="background: #ffffff; padding: 35px; border-radius: 0 0 12px 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.08);">
+            <p style="font-size: 18px; color: #1a1a1a; margin: 0 0 25px 0; line-height: 1.6; font-weight: 500;">
+              Olá, <strong style="color: #C4956A;">${clientName}</strong>! 👋<br/>
+              <span style="color: #333333; font-weight: 400;">Seu horário está garantido!</span>
             </p>
             
             <!-- Appointment Details Box -->
-            <div style="background: linear-gradient(135deg, #fafafa, #f0f0f0); padding: 25px; border-radius: 10px; border-left: 5px solid #D4A574; margin: 25px 0;">
+            <div style="background: #f8f8f8; padding: 25px; border-radius: 10px; border-left: 5px solid #C4956A; margin: 25px 0;">
               <table style="width: 100%; border-collapse: collapse;" cellpadding="0" cellspacing="0">
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top; width: 130px;">📅 Data</td>
-                  <td style="padding: 12px 0; color: #222; font-size: 16px; font-weight: 600; vertical-align: top;">${formattedDate}</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top; width: 130px;">📅 Data</td>
+                  <td style="padding: 12px 0; color: #1a1a1a; font-size: 16px; font-weight: 700; vertical-align: top;">${formattedDate}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">🕒 Horário</td>
-                  <td style="padding: 12px 0; color: #D4A574; font-size: 22px; font-weight: 700; vertical-align: top;">${appointmentTime}</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top;">🕒 Horário</td>
+                  <td style="padding: 12px 0; color: #B8864A; font-size: 22px; font-weight: 800; vertical-align: top;">${appointmentTime}</td>
                 </tr>
                 <tr>
-                  <td colspan="2" style="padding: 8px 0;"><hr style="border: none; border-top: 1px solid #e0e0e0; margin: 0;"/></td>
+                  <td colspan="2" style="padding: 8px 0;"><hr style="border: none; border-top: 1px solid #d0d0d0; margin: 0;"/></td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">✂️ Serviço</td>
-                  <td style="padding: 12px 0; color: #222; font-size: 15px; font-weight: 500; vertical-align: top;">${serviceName}</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top;">✂️ Serviço</td>
+                  <td style="padding: 12px 0; color: #1a1a1a; font-size: 15px; font-weight: 600; vertical-align: top;">${serviceName}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">👨‍💼 Profissional</td>
-                  <td style="padding: 12px 0; color: #222; font-size: 15px; font-weight: 500; vertical-align: top;">${staffName}</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top;">👨‍💼 Profissional</td>
+                  <td style="padding: 12px 0; color: #1a1a1a; font-size: 15px; font-weight: 600; vertical-align: top;">${staffName}</td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">⏱️ Duração</td>
-                  <td style="padding: 12px 0; color: #222; font-size: 15px; vertical-align: top;">${serviceDuration} minutos</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top;">⏱️ Duração</td>
+                  <td style="padding: 12px 0; color: #1a1a1a; font-size: 15px; font-weight: 500; vertical-align: top;">${serviceDuration} minutos</td>
                 </tr>
                 <tr>
-                  <td style="padding: 12px 0; color: #666; font-size: 14px; vertical-align: top;">💰 Valor</td>
-                  <td style="padding: 12px 0; color: #222; font-size: 18px; font-weight: 700; vertical-align: top;">R$ ${formattedPrice}</td>
+                  <td style="padding: 12px 0; color: #444444; font-size: 14px; font-weight: 600; vertical-align: top;">💰 Valor</td>
+                  <td style="padding: 12px 0; color: #1a1a1a; font-size: 18px; font-weight: 800; vertical-align: top;">R$ ${formattedPrice}</td>
                 </tr>
               </table>
             </div>
             
             <!-- Reminder Notice -->
-            <div style="background: #e8f5e9; border: 1px solid #a5d6a7; padding: 18px 20px; border-radius: 10px; margin: 25px 0;">
-              <p style="margin: 0; color: #2e7d32; font-size: 14px; line-height: 1.5;">
+            <div style="background: #d4edda; border: 2px solid #28a745; padding: 18px 20px; border-radius: 10px; margin: 25px 0;">
+              <p style="margin: 0; color: #155724; font-size: 15px; line-height: 1.5; font-weight: 600;">
                 ${reminderText}
               </p>
             </div>
             
             <!-- Important Notice -->
-            <div style="background: #fff8e1; border: 1px solid #ffe082; padding: 18px 20px; border-radius: 10px; margin: 25px 0;">
-              <p style="margin: 0; color: #f57c00; font-size: 14px; line-height: 1.5;">
+            <div style="background: #fff3cd; border: 2px solid #e0a800; padding: 18px 20px; border-radius: 10px; margin: 25px 0;">
+              <p style="margin: 0; color: #856404; font-size: 15px; line-height: 1.5; font-weight: 600;">
                 ⚠️ <strong>Importante:</strong> Chegue com 10 minutos de antecedência. Pontualidade é estilo! 😎
               </p>
             </div>
             
             <!-- Footer -->
-            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 1px solid #eee;">
-              <p style="color: #888; margin: 0 0 8px 0; font-size: 13px;">📞 Dúvidas? Entre em contato conosco!</p>
-              <p style="color: #D4A574; font-weight: 600; font-size: 17px; margin: 15px 0;">
+            <div style="text-align: center; margin-top: 35px; padding-top: 25px; border-top: 2px solid #e0e0e0;">
+              <p style="color: #444444; margin: 0 0 8px 0; font-size: 14px; font-weight: 500;">📞 Dúvidas? Entre em contato conosco!</p>
+              <p style="color: #B8864A; font-weight: 700; font-size: 18px; margin: 15px 0;">
                 Nos vemos em breve! ✂️
               </p>
-              <p style="color: #aaa; font-size: 11px; margin: 20px 0 0 0;">
+              <p style="color: #666666; font-size: 12px; margin: 20px 0 0 0; font-weight: 500;">
                 © Barbearia Costa Urbana
               </p>
             </div>
