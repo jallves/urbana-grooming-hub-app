@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_sessions: {
+        Row: {
+          created_at: string
+          device_info: Json | null
+          expires_at: string
+          id: string
+          ip_address: string | null
+          is_active: boolean
+          last_activity_at: string
+          login_at: string
+          user_agent: string | null
+          user_email: string | null
+          user_id: string | null
+          user_name: string | null
+          user_type: string
+        }
+        Insert: {
+          created_at?: string
+          device_info?: Json | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          login_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_type?: string
+        }
+        Update: {
+          created_at?: string
+          device_info?: Json | null
+          expires_at?: string
+          id?: string
+          ip_address?: string | null
+          is_active?: boolean
+          last_activity_at?: string
+          login_at?: string
+          user_agent?: string | null
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string | null
+          user_type?: string
+        }
+        Relationships: []
+      }
       admin_activity_log: {
         Row: {
           action: string
@@ -2005,6 +2053,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      cleanup_expired_sessions: { Args: never; Returns: number }
       create_public_appointment: {
         Args: {
           p_client_id: string
@@ -2024,6 +2073,35 @@ export type Database = {
         }
         Returns: string
       }
+      create_user_session: {
+        Args: {
+          p_device_info?: Json
+          p_expires_in_hours?: number
+          p_ip_address?: string
+          p_user_agent?: string
+          p_user_email?: string
+          p_user_id: string
+          p_user_name?: string
+          p_user_type: string
+        }
+        Returns: string
+      }
+      force_logout_user: { Args: { p_user_id: string }; Returns: number }
+      get_active_sessions: {
+        Args: never
+        Returns: {
+          expires_at: string
+          id: string
+          ip_address: string
+          last_activity_at: string
+          login_at: string
+          user_agent: string
+          user_email: string
+          user_id: string
+          user_name: string
+          user_type: string
+        }[]
+      }
       get_birthday_clients: { Args: never; Returns: Json }
       get_staff_module_access: {
         Args: { staff_id_param: string }
@@ -2036,7 +2114,22 @@ export type Database = {
         }
         Returns: boolean
       }
+      invalidate_session: { Args: { p_session_id: string }; Returns: boolean }
       is_admin_or_higher: { Args: { _user_id: string }; Returns: boolean }
+      log_admin_activity: {
+        Args: {
+          p_action: string
+          p_entity_id?: string
+          p_entity_type?: string
+          p_new_data?: Json
+          p_old_data?: Json
+        }
+        Returns: string
+      }
+      update_session_activity: {
+        Args: { p_session_id: string }
+        Returns: boolean
+      }
       update_staff_module_access: {
         Args: { module_ids_param: string[]; staff_id_param: string }
         Returns: undefined

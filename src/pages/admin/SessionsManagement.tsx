@@ -102,16 +102,12 @@ const SessionsManagement: React.FC = () => {
 
   const handleForceLogout = async (session: ActiveSession) => {
     try {
-      // Usar edge function para forçar logout
-      const { data, error } = await supabase.functions.invoke('admin-auth-operations', {
-        body: {
-          operation: 'force_logout',
-          user_id: session.user_id,
-          reason: 'Logout forçado pelo administrador'
-        }
-      });
+      // Usar sessionManager para forçar logout
+      const success = await sessionManager.forceLogoutSession(session.id);
 
-      if (error) throw error;
+      if (!success) {
+        throw new Error('Falha ao encerrar sessão');
+      }
       
       toast({
         title: 'Sessão encerrada com sucesso',
