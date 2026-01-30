@@ -1,13 +1,22 @@
 import React, { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, Cell } from 'recharts';
 import { useRealtime } from '@/contexts/RealtimeContext';
 
 interface TopBarbersChartProps {
   startDate: string;
   endDate: string;
 }
+
+// Paleta de cores vibrantes para cada barbeiro
+const BARBER_COLORS = [
+  '#1e40af', // Azul escuro (1º lugar)
+  '#059669', // Verde esmeralda (2º lugar)
+  '#d97706', // Âmbar (3º lugar)
+  '#7c3aed', // Violeta (4º lugar)
+  '#dc2626', // Vermelho (5º lugar)
+];
 
 const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate }) => {
   const queryClient = useQueryClient();
@@ -70,9 +79,10 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
       const chartData = Object.values(barberTotals)
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5) // Top 5
-        .map(item => ({
+        .map((item, index) => ({
           name: item.name,
           Receita: item.revenue,
+          fill: BARBER_COLORS[index % BARBER_COLORS.length],
         }));
 
       return chartData;
@@ -129,7 +139,11 @@ const TopBarbersChart: React.FC<TopBarbersChartProps> = ({ startDate, endDate })
           wrapperStyle={{ fontSize: '11px' }}
           iconSize={10}
         />
-        <Bar dataKey="Receita" fill="#1e40af" radius={[4, 4, 0, 0]} />
+        <Bar dataKey="Receita" radius={[4, 4, 0, 0]}>
+          {chartData.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={entry.fill} />
+          ))}
+        </Bar>
       </BarChart>
     </ResponsiveContainer>
   );
