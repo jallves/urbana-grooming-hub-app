@@ -459,31 +459,32 @@ const CashFlowReports: React.FC = () => {
           </CardHeader>
           <CardContent className="p-3 pt-0">
             <div className="space-y-2">
-              {yearlyData?.topBarbers.map((barber, index) => {
-                const colors = ['bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700', 'bg-red-100 text-red-700'];
-                return (
-                  <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
-                    <div className="flex items-center gap-2">
-                      <span className={`text-xs font-bold px-2 py-1 rounded ${colors[index]}`}>
-                        {index + 1}º
-                      </span>
-                      <div>
-                        <p className="text-sm font-medium text-gray-900">{barber.name}</p>
-                        <p className="text-xs text-gray-500">{barber.services} serviços</p>
+              {yearlyData?.topBarbers && yearlyData.topBarbers.length > 0 ? (
+                yearlyData.topBarbers.map((barber, index) => {
+                  const colors = ['bg-blue-100 text-blue-700', 'bg-green-100 text-green-700', 'bg-amber-100 text-amber-700', 'bg-purple-100 text-purple-700', 'bg-red-100 text-red-700'];
+                  return (
+                    <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg border border-gray-200">
+                      <div className="flex items-center gap-2">
+                        <span className={`text-xs font-bold px-2 py-1 rounded ${colors[index]}`}>
+                          {index + 1}º
+                        </span>
+                        <div>
+                          <p className="text-sm font-medium text-gray-900">{barber.name}</p>
+                          <p className="text-xs text-gray-500">{barber.services} serviços</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-green-600">
+                          R$ {barber.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          Ticket: R$ {barber.services > 0 ? (barber.revenue / barber.services).toFixed(0) : 0}
+                        </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="text-sm font-bold text-green-600">
-                        R$ {barber.revenue.toLocaleString('pt-BR', { minimumFractionDigits: 0 })}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        Ticket: R$ {barber.services > 0 ? (barber.revenue / barber.services).toFixed(0) : 0}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-              {(!yearlyData?.topBarbers || yearlyData.topBarbers.length === 0) && (
+                  );
+                })
+              ) : (
                 <div className="text-center py-4 text-gray-400 text-sm">
                   Nenhum dado disponível
                 </div>
