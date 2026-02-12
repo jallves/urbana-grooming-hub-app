@@ -1,0 +1,1 @@
+UPDATE banner_images SET button_link = '/painel-cliente/login' WHERE button_link = '/cliente/login';
