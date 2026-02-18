@@ -66,18 +66,21 @@ const AddUserDialog: React.FC<AddUserDialogProps> = ({
     try {
       setIsSubmitting(true);
       
-      // Add user to admin_users table
+      // Insert into staff table (what the users list reads from)
       const { error } = await supabase
-        .from('admin_users')
+        .from('staff')
         .insert({
           email: data.email,
           name: data.name,
-          role: data.role
+          role: data.role,
+          is_active: true,
         });
 
       if (error) throw error;
       
-      toast.success('Usuário adicionado com sucesso!');
+      toast.success('Usuário adicionado com sucesso!', {
+        description: 'Para liberar acesso ao sistema, vá em "Admin/Gerente" e clique em "Dar Acesso".'
+      });
       onOpenChange(false);
       form.reset();
       onUserAdded();

@@ -147,6 +147,24 @@ serve(async (req) => {
           throw roleError;
         }
 
+        // Sincronizar com tabela staff (usada pelo front-end para listar usuários)
+        const { error: staffError } = await supabaseAdmin
+          .from('staff')
+          .upsert({
+            email: email,
+            name: employee.name,
+            role: employee.role,
+            is_active: true,
+            staff_id: authUserId,
+            updated_at: new Date().toISOString()
+          }, {
+            onConflict: 'email'
+          });
+
+        if (staffError) {
+          console.warn('[manage-admin-user] Aviso ao sincronizar staff:', staffError);
+        }
+
         console.log('[manage-admin-user] Acesso criado com sucesso');
 
         return new Response(
