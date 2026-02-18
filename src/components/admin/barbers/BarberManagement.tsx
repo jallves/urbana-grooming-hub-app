@@ -20,6 +20,7 @@ const fetchBarbers = async () => {
   const { data, error } = await supabase
     .from('staff')
     .select('*')
+    .not('role', 'in', '(admin,manager,master)')
     .order('name');
 
   if (error) {
