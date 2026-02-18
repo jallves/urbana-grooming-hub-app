@@ -74,10 +74,18 @@ serve(async (req) => {
         let authUserId: string;
 
         if (existingUser) {
-          // Atualizar senha do usuário existente
+          // Atualizar senha E metadata do usuário existente (corrige user_type para admin)
           const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
             existingUser.id,
-            { password }
+            { 
+              password,
+              user_metadata: {
+                ...existingUser.user_metadata,
+                user_type: employee.role,
+                role: employee.role,
+                name: employee.name
+              }
+            }
           );
 
           if (updateError) {
@@ -85,7 +93,7 @@ serve(async (req) => {
           }
 
           authUserId = existingUser.id;
-          console.log('[manage-admin-user] Senha atualizada para usuário existente:', authUserId);
+          console.log('[manage-admin-user] Senha e metadata atualizados para usuário existente:', authUserId);
         } else {
           // Criar novo usuário
           const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({

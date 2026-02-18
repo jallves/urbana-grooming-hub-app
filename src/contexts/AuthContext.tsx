@@ -79,37 +79,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', u.id, '- Email:', u.email);
 
     try {
-      // PASSO 1: Verificar user_metadata PRIMEIRO (mais rápido, não requer query)
-      // Isso garante que clientes recém-cadastrados tenham acesso imediato
-      const metadataRole = inferRoleFromMetadata(u);
-      console.log('[AuthContext] 📋 Role via metadata:', metadataRole);
-      
-      // Se é cliente (via metadata), retornar imediatamente para evitar delays
-      if (metadataRole === 'client') {
-        console.log('[AuthContext] ✅ Cliente identificado via metadata - acesso imediato');
-        return 'client';
-      }
-
-      // PASSO 2: Verificar tabela user_roles para roles admin/barber/etc
+      // PASSO 1: Verificar tabela user_roles PRIMEIRO (fonte de verdade - tem prioridade)
+      // Isso garante que usuários que receberam acesso admin não fiquem presos como cliente
       const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', u.id)
         .maybeSingle();
 
-      if (roleError) {
-        console.error('[AuthContext] ❌ Erro ao buscar role na tabela:', roleError.message);
-        // Se falhou a query mas temos metadata, usar metadata
-        if (metadataRole) {
-          console.log('[AuthContext] ⚠️ Usando fallback metadata após erro:', metadataRole);
-          return metadataRole;
-        }
-        return null;
+      if (!roleError && roleData?.role) {
+        console.log('[AuthContext] ✅ Role encontrada (user_roles - prioridade):', roleData.role);
+        return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
       }
 
-      if (roleData?.role) {
-        console.log('[AuthContext] ✅ Role encontrada (user_roles):', roleData.role);
-        return roleData.role as 'master' | 'admin' | 'manager' | 'barber' | 'client';
+      if (roleError) {
+        console.error('[AuthContext] ❌ Erro ao buscar role na tabela:', roleError.message);
+      }
+
+      // PASSO 2: Fallback para user_metadata (para clientes recém-cadastrados sem entrada em user_roles)
+      const metadataRole = inferRoleFromMetadata(u);
+      console.log('[AuthContext] 📋 Role via metadata (fallback):', metadataRole);
+      
+      if (metadataRole) {
+        console.log('[AuthContext] ✅ Usando role do metadata como fallback:', metadataRole);
+        return metadataRole;
       }
 
       // PASSO 3: Verificar se existe perfil em painel_clientes (para usuários antigos)
