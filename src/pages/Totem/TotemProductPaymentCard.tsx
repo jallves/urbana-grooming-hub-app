@@ -31,6 +31,7 @@ const TotemProductPaymentCard: React.FC = () => {
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
   const successNavigatedRef = useRef(false);
+  const paymentIdRef = useRef<string | null>(null); // Ref para evitar closure stale
   
   // Função de sucesso - IGUAL AO CHECKOUT DE SERVIÇO
   // Delega tudo para a edge function totem-direct-sale
@@ -46,7 +47,9 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
     
-    if (!paymentId) {
+    // Usar ref para evitar closure stale (paymentId state pode não estar atualizado ainda)
+    const currentPaymentId = paymentIdRef.current || paymentId;
+    if (!currentPaymentId) {
       console.error('[PRODUCT-CARD] ❌ paymentId não existe!');
       toast.error('Erro crítico: ID do pagamento não encontrado');
       return;
@@ -81,7 +84,7 @@ const TotemProductPaymentCard: React.FC = () => {
         body: {
           action: 'finish',
           venda_id: sale.id,
-          payment_id: paymentId,
+          payment_id: currentPaymentId,
           payment_method: paymentMethod,
           transaction_data: transactionData
         }
@@ -166,7 +169,7 @@ const TotemProductPaymentCard: React.FC = () => {
         finalizingRef.current = false;
       }
     }
-  }, [sale, client, cardType, cart, paymentId, navigate]);
+  }, [sale, client, cardType, cart, navigate]); // paymentId lido via paymentIdRef (evita closure stale)
 
   // Handler para resultado do TEF - IGUAL AO SERVIÇO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
@@ -264,6 +267,7 @@ const TotemProductPaymentCard: React.FC = () => {
     setError(null);
     finalizingRef.current = false;
     successNavigatedRef.current = false;
+    paymentIdRef.current = null;
     
     // Limpar storage de resultados anteriores
     try {
@@ -324,6 +328,7 @@ const TotemProductPaymentCard: React.FC = () => {
       }
 
       console.log('[PRODUCT-CARD] ✅ Payment ID criado:', startResult.payment_id);
+      paymentIdRef.current = startResult.payment_id; // Sincronizar ref ANTES do state
       setPaymentId(startResult.payment_id);
     } catch (e) {
       console.error('[PRODUCT-CARD] Exceção ao iniciar:', e);
