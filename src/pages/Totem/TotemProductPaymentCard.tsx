@@ -26,68 +26,36 @@ const TotemProductPaymentCard: React.FC = () => {
   const [error, setError] = useState<{ title: string; message: string } | null>(null);
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
-  const [paymentId, setPaymentId] = useState<string | null>(null);
   
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
   const successNavigatedRef = useRef(false);
-  const paymentIdRef = useRef<string | null>(null);
-  const mountCleanedRef = useRef(false);
-  
-  // CRÍTICO: Limpar storage residual IMEDIATAMENTE na montagem
-  // Isso DEVE acontecer antes do useTEFPaymentResult verificar o storage (100ms delay)
-  if (!mountCleanedRef.current) {
-    mountCleanedRef.current = true;
-    try {
-      sessionStorage.removeItem('lastTefResult');
-      sessionStorage.removeItem('lastTefResultTime');
-      localStorage.removeItem('lastTefResult');
-      localStorage.removeItem('lastTefResultTime');
-      console.log('[PRODUCT-CARD] 🧹 Storage limpo na montagem (antes do hook)');
-    } catch (e) {
-      console.warn('[PRODUCT-CARD] Erro ao limpar storage na montagem:', e);
-    }
-  }
-  
-  // Função de sucesso - IGUAL AO CHECKOUT DE SERVIÇO
-  // Delega tudo para a edge function totem-direct-sale
+
+  // ═══════════════════════════════════════════════════════════
+  // SUCESSO DO PAGAMENTO - IDÊNTICO AO CHECKOUT DE SERVIÇO
+  // Chama totem-direct-sale finish SEM precisar de payment_id
+  // ═══════════════════════════════════════════════════════════
   const handlePaymentSuccess = useCallback(async (transactionData?: {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
     confirmationId?: string;
   }) => {
-    // Validações críticas
     if (!sale?.id) {
       console.error('[PRODUCT-CARD] ❌ sale.id não existe!');
       toast.error('Erro crítico: ID da venda não encontrado');
       return;
     }
     
-    // Usar ref para evitar closure stale (paymentId state pode não estar atualizado ainda)
-    const currentPaymentId = paymentIdRef.current || paymentId;
-    if (!currentPaymentId) {
-      console.error('[PRODUCT-CARD] ❌ paymentId não existe!');
-      toast.error('Erro crítico: ID do pagamento não encontrado');
-      return;
-    }
-    
     // Prevenir múltiplas finalizações
-    if (finalizingRef.current) {
-      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento');
-      return;
-    }
-    
-    // Prevenir navegação duplicada
-    if (successNavigatedRef.current) {
-      console.log('[PRODUCT-CARD] ⚠️ Já navegou para tela de sucesso');
+    if (finalizingRef.current || successNavigatedRef.current) {
+      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento ou já navegou');
       return;
     }
     
     finalizingRef.current = true;
 
     // CRÍTICO: Confirmar transação TEF ANTES de finalizar (igual ao serviço)
-    // Sem isso, o PayGo mantém a transação como "pendente"
     if (transactionData?.confirmationId) {
       console.log('✅ [PRODUCT-CARD] Confirmando transação TEF:', transactionData.confirmationId);
       confirmarTransacaoTEF(transactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
@@ -96,19 +64,17 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
     console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO VIA EDGE FUNCTION');
     console.log('✅ [PRODUCT-CARD] Sale ID:', sale.id);
-    console.log('✅ [PRODUCT-CARD] Payment ID:', paymentId);
     console.log('✅ [PRODUCT-CARD] Transaction:', transactionData);
     console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
     
     try {
-      // Chamar edge function para finalizar - IGUAL AO SERVIÇO
       const paymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
       
+      // Chamar finish SEM payment_id - a edge function cria o registro automaticamente
       const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
         body: {
           action: 'finish',
           venda_id: sale.id,
-          payment_id: currentPaymentId,
           payment_method: paymentMethod,
           transaction_data: transactionData
         }
@@ -116,7 +82,7 @@ const TotemProductPaymentCard: React.FC = () => {
 
       if (finishError) {
         console.error('❌ [PRODUCT-CARD] Erro ao finalizar:', finishError);
-        // Não bloquear - pagamento já foi aprovado
+        // Não bloquear - pagamento já foi aprovado na maquininha
       } else {
         console.log('✅ [PRODUCT-CARD] Edge function executada com sucesso');
       }
@@ -133,7 +99,6 @@ const TotemProductPaymentCard: React.FC = () => {
         saleItems = fetchedItems || [];
       } catch (e) {
         console.warn('[PRODUCT-CARD] Erro ao buscar itens para comprovante:', e);
-        // Usar cart do state como fallback
         if (cart && cart.length > 0) {
           saleItems = cart.map((item: any) => ({
             item_id: item.product?.id || item.id,
@@ -193,9 +158,11 @@ const TotemProductPaymentCard: React.FC = () => {
         finalizingRef.current = false;
       }
     }
-  }, [sale, client, cardType, cart, navigate]); // paymentId lido via paymentIdRef (evita closure stale)
+  }, [sale, client, cardType, cart, navigate]);
 
-  // Handler para resultado do TEF - IGUAL AO SERVIÇO
+  // ═══════════════════════════════════════════════════════════
+  // HANDLER TEF RESULT - IDÊNTICO AO CHECKOUT DE SERVIÇO
+  // ═══════════════════════════════════════════════════════════
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PRODUCT-CARD] handleTEFResult:', resultado.status);
     
@@ -253,7 +220,7 @@ const TotemProductPaymentCard: React.FC = () => {
     verificarConexao
   } = useTEFAndroid({});
 
-  // Hook para receber resultado do PayGo - IGUAL AO SERVIÇO
+  // Hook para receber resultado do PayGo - IDÊNTICO AO SERVIÇO
   useTEFPaymentResult({
     enabled: paymentStarted && isProcessing,
     onResult: handleTEFResult,
@@ -274,7 +241,10 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('🔌 [PRODUCT-CARD] Status TEF:', { isAndroidAvailable, isPinpadConnected, isCheckingConnection });
   }, [isAndroidAvailable, isPinpadConnected, isCheckingConnection]);
 
-  // Iniciar pagamento - IGUAL AO SERVIÇO
+  // ═══════════════════════════════════════════════════════════
+  // INICIAR PAGAMENTO - IDÊNTICO AO handlePaymentType DO SERVIÇO
+  // SEM chamada start, SEM paymentId, direto pro PayGo
+  // ═══════════════════════════════════════════════════════════
   const handleStartPayment = async () => {
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
     console.log('💳 [PRODUCT-CARD] INICIANDO PAGAMENTO DE PRODUTO');
@@ -287,25 +257,14 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
+    // Evitar duplo clique / reentrada (IGUAL AO SERVIÇO)
     if (isProcessing || paymentStarted) return;
 
     setError(null);
     finalizingRef.current = false;
     successNavigatedRef.current = false;
-    paymentIdRef.current = null;
-    
-    // Limpar storage de resultados anteriores
-    try {
-      sessionStorage.removeItem('lastTefResult');
-      sessionStorage.removeItem('lastTefResultTime');
-      localStorage.removeItem('lastTefResult');
-      localStorage.removeItem('lastTefResultTime');
-      console.log('[PRODUCT-CARD] 🧹 Storage limpo');
-    } catch (e) {
-      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
-    }
 
-    // Checar bridge TEF
+    // Checar bridge TEF (IGUAL AO SERVIÇO)
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
 
     if (!hasNativeBridge) {
@@ -315,7 +274,7 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
-    // Revalidar pinpad
+    // Revalidar pinpad (IGUAL AO SERVIÇO)
     const status = verificarConexao();
     const connected = !!status?.conectado;
 
@@ -326,70 +285,36 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
-    // CRÍTICO: Resolver pendências ANTES de iniciar novo pagamento (igual ao serviço)
+    // ROBUSTEZ: SEMPRE resolver pendências INCONDICIONALMENTE antes de qualquer pagamento
+    // Não depender de hasPendingTransaction() que pode ser falso-negativo
+    console.log('[PRODUCT-CARD] 🔧 Resolvendo pendências incondicionalmente...');
     try {
-      const TEF = (window as any).TEF;
-      const hasPending = TEF?.hasPendingTransaction && TEF.hasPendingTransaction();
-      if (hasPending) {
-        console.log('[PRODUCT-CARD] 🔧 Resolvendo pendência antes de iniciar...');
-        toast.info('Preparando terminal...', { description: 'Aguarde um instante' });
-        
-        if (TEF?.autoResolvePending) {
-          TEF.autoResolvePending();
-        } else if (TEF?.resolverPendencia) {
-          TEF.resolverPendencia('DESFEITO_MANUAL');
-        } else {
-          resolverPendenciaAndroid('desfazer');
-        }
-        
-        // PayGo exige cooldown de 5 segundos após desfazer pendência
-        await new Promise(r => setTimeout(r, 5000));
-      }
+      resolverPendenciaAndroid('desfazer');
     } catch (e) {
-      console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
+      console.warn('[PRODUCT-CARD] resolverPendenciaAndroid erro (ignorado):', e);
     }
 
-    // PASSO 1: Chamar edge function para criar totem_payments (IGUAL AO SERVIÇO)
-    const paymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
-    
-    console.log('[PRODUCT-CARD] Chamando totem-direct-sale start...');
-    
+    // Aguardar 5 segundos - cooldown obrigatório do PayGo após resolução
+    toast.info('Preparando terminal...', { description: 'Aguarde um instante', duration: 4000 });
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Limpar storage de resultados anteriores
     try {
-      const { data: startResult, error: startError } = await supabase.functions.invoke('totem-direct-sale', {
-        body: {
-          action: 'start',
-          venda_id: sale.id,
-          payment_method: paymentMethod
-        }
-      });
-
-      if (startError) {
-        console.error('[PRODUCT-CARD] Erro ao iniciar pagamento:', startError);
-        toast.error('Erro ao preparar pagamento');
-        return;
-      }
-
-      if (!startResult?.payment_id) {
-        console.error('[PRODUCT-CARD] payment_id não retornado');
-        toast.error('Erro ao criar registro de pagamento');
-        return;
-      }
-
-      console.log('[PRODUCT-CARD] ✅ Payment ID criado:', startResult.payment_id);
-      paymentIdRef.current = startResult.payment_id; // Sincronizar ref ANTES do state
-      setPaymentId(startResult.payment_id);
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
     } catch (e) {
-      console.error('[PRODUCT-CARD] Exceção ao iniciar:', e);
-      toast.error('Erro ao preparar pagamento');
-      return;
+      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
     }
 
-    // PASSO 2: Iniciar pagamento no PayGo
+    // Ativar estados ANTES de chamar PayGo (IGUAL AO SERVIÇO)
     setIsProcessing(true);
     setPaymentStarted(true);
 
+    // Chamar PayGo DIRETAMENTE - sem edge function start (IGUAL AO SERVIÇO)
     try {
-      const ordemId = sale.id || `CARD_PRODUCT_${Date.now()}`;
+      const ordemId = (sale.id as string) || `CARD_PRODUCT_${Date.now()}`;
 
       const success = await iniciarPagamentoTEF({
         ordemId,
@@ -400,7 +325,7 @@ const TotemProductPaymentCard: React.FC = () => {
 
       if (!success) {
         toast.error('Erro ao iniciar pagamento', {
-          description: 'A bridge TEF retornou falha.'
+          description: 'A bridge TEF retornou falha ao iniciar a transação.'
         });
         setIsProcessing(false);
         setPaymentStarted(false);
@@ -436,38 +361,10 @@ const TotemProductPaymentCard: React.FC = () => {
         title={error.title}
         message={error.message}
         onRetry={async () => {
-          const last = lastFailureRef.current;
           setError(null);
           finalizingRef.current = false;
-
-          // Resolver pendências antes de retry
-          try {
-            const TEF = (window as any).TEF;
-            
-            const shouldResolvePending = 
-              last?.codigoResposta === '70' || 
-              last?.requiresConfirmation === true ||
-              (TEF?.hasPendingTransaction && TEF.hasPendingTransaction());
-            
-            if (shouldResolvePending || last?.codigoResposta) {
-              console.log('[PRODUCT-CARD] 🔧 Resolvendo pendência...');
-              toast.info('Preparando terminal...', { description: 'Aguarde um instante' });
-              
-              if (TEF?.autoResolvePending) {
-                TEF.autoResolvePending();
-              } else if (TEF?.resolverPendencia) {
-                TEF.resolverPendencia('DESFEITO_MANUAL');
-              } else {
-                resolverPendenciaAndroid('desfazer');
-              }
-              
-              // PayGo exige cooldown de 5 segundos após desfazer pendência
-              await new Promise(r => setTimeout(r, 5000));
-            }
-          } catch (e) {
-            console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
-          }
-
+          lastFailureRef.current = null;
+          // handleStartPayment já faz resolução incondicional
           handleStartPayment();
         }}
         onGoHome={() => navigate('/totem')}
@@ -484,12 +381,12 @@ const TotemProductPaymentCard: React.FC = () => {
           <div className="absolute inset-0 bg-urbana-black/80" />
         </div>
         <div className="flex-1 flex items-center justify-center z-10">
-          <Card className="max-w-lg p-8 bg-black/50 backdrop-blur-xl border-2 border-red-500/50 text-center">
-            <WifiOff className="w-20 h-20 text-red-500 mx-auto mb-6" />
-            <h2 className="text-2xl font-bold text-white mb-4">
+          <Card className="max-w-lg p-8 bg-background/50 backdrop-blur-xl border-2 border-destructive/50 text-center">
+            <WifiOff className="w-20 h-20 text-destructive mx-auto mb-6" />
+            <h2 className="text-2xl font-bold text-foreground mb-4">
               {!isAndroidAvailable ? 'TEF Não Disponível' : 'Pinpad Não Conectado'}
             </h2>
-            <p className="text-gray-300 mb-6">
+            <p className="text-muted-foreground mb-6">
               {!isAndroidAvailable 
                 ? 'O sistema TEF (PayGo) não está disponível neste dispositivo.'
                 : 'A maquininha de cartão não está conectada.'}
@@ -498,7 +395,7 @@ const TotemProductPaymentCard: React.FC = () => {
               <Button onClick={() => window.location.reload()} className="w-full bg-urbana-gold hover:bg-urbana-gold-dark">
                 Tentar Novamente
               </Button>
-              <Button onClick={handleCancel} variant="outline" className="w-full border-gray-500 text-gray-300">
+              <Button onClick={handleCancel} variant="outline" className="w-full border-muted text-muted-foreground">
                 Voltar
               </Button>
             </div>
@@ -557,7 +454,7 @@ const TotemProductPaymentCard: React.FC = () => {
               
               <div>
                 <h2 className="text-3xl font-bold text-urbana-gold mb-2">R$ {sale.total?.toFixed(2)}</h2>
-                <p className="text-gray-400">{cardTypeLabel}</p>
+                <p className="text-muted-foreground">{cardTypeLabel}</p>
               </div>
               
               <Button
@@ -569,7 +466,7 @@ const TotemProductPaymentCard: React.FC = () => {
                 Iniciar Pagamento
               </Button>
               
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Clique para iniciar o pagamento na maquininha
               </p>
             </>
@@ -594,7 +491,7 @@ const TotemProductPaymentCard: React.FC = () => {
               
               <div>
                 <h2 className="text-3xl font-bold text-urbana-gold mb-2">R$ {sale.total?.toFixed(2)}</h2>
-                <p className="text-gray-300 text-lg">{cardTypeLabel}</p>
+                <p className="text-urbana-light text-lg">{cardTypeLabel}</p>
               </div>
               
               <div className="flex items-center justify-center gap-3 text-urbana-gold">
@@ -606,7 +503,7 @@ const TotemProductPaymentCard: React.FC = () => {
                 onClick={handleCancel}
                 variant="outline"
                 size="lg"
-                className="w-full h-14 border-red-500/50 text-red-400 hover:bg-red-500/10"
+                className="w-full h-14 border-destructive/50 text-destructive hover:bg-destructive/10"
               >
                 Cancelar Pagamento
               </Button>
