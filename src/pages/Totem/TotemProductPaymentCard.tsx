@@ -342,8 +342,8 @@ const TotemProductPaymentCard: React.FC = () => {
           resolverPendenciaAndroid('desfazer');
         }
         
-        // Aguardar terminal processar (cooldown PayGo)
-        await new Promise(r => setTimeout(r, 2000));
+        // PayGo exige cooldown de 5 segundos após desfazer pendência
+        await new Promise(r => setTimeout(r, 5000));
       }
     } catch (e) {
       console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
@@ -456,12 +456,13 @@ const TotemProductPaymentCard: React.FC = () => {
               if (TEF?.autoResolvePending) {
                 TEF.autoResolvePending();
               } else if (TEF?.resolverPendencia) {
-                TEF.resolverPendencia('CONFIRMADO_MANUAL');
+                TEF.resolverPendencia('DESFEITO_MANUAL');
               } else {
                 resolverPendenciaAndroid('desfazer');
               }
               
-              await new Promise(r => setTimeout(r, 1000));
+              // PayGo exige cooldown de 5 segundos após desfazer pendência
+              await new Promise(r => setTimeout(r, 5000));
             }
           } catch (e) {
             console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
