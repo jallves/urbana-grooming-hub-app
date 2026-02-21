@@ -1421,6 +1421,7 @@ export type Database = {
           created_at: string | null
           descricao: string | null
           estoque: number | null
+          estoque_minimo: number
           id: string
           imagem_url: string | null
           nome: string
@@ -1435,6 +1436,7 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           estoque?: number | null
+          estoque_minimo?: number
           id?: string
           imagem_url?: string | null
           nome: string
@@ -1449,6 +1451,7 @@ export type Database = {
           created_at?: string | null
           descricao?: string | null
           estoque?: number | null
+          estoque_minimo?: number
           id?: string
           imagem_url?: string | null
           nome?: string
@@ -2085,6 +2088,10 @@ export type Database = {
           p_user_type: string
         }
         Returns: string
+      }
+      decrease_product_stock: {
+        Args: { p_product_id: string; p_quantity: number }
+        Returns: undefined
       }
       force_logout_user: { Args: { p_user_id: string }; Returns: number }
       get_active_sessions: {
