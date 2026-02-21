@@ -359,47 +359,39 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     // ========================================================================
     try {
       const TEF = (window as any).TEF;
-      let hadPending = false;
       
       // Método 1: Verificar via hasPendingTransaction (novo)
       if (TEF?.hasPendingTransaction && TEF.hasPendingTransaction()) {
         console.log('[useTEFAndroid] ⚠️ Pendência detectada via hasPendingTransaction - resolvendo...');
-        hadPending = true;
         if (TEF.autoResolvePending) {
           TEF.autoResolvePending();
+          // Aguardar um momento para a resolução
+          await new Promise(r => setTimeout(r, 500));
         } else if (TEF.resolverPendencia) {
           TEF.resolverPendencia('CONFIRMADO_MANUAL');
+          await new Promise(r => setTimeout(r, 500));
         }
       }
       
       // Método 2: Verificar via getPendingInfo (legado)
-      if (!hadPending && TEF?.getPendingInfo) {
+      if (TEF?.getPendingInfo) {
         try {
           const pendingInfo = TEF.getPendingInfo();
           if (pendingInfo && pendingInfo !== '{}' && pendingInfo !== 'null') {
             const parsed = JSON.parse(pendingInfo);
             if (parsed && Object.keys(parsed).length > 0) {
               console.log('[useTEFAndroid] ⚠️ Pendência detectada via getPendingInfo - resolvendo...');
-              hadPending = true;
               if (TEF.autoResolvePending) {
                 TEF.autoResolvePending();
               } else if (TEF.resolverPendencia) {
                 TEF.resolverPendencia('CONFIRMADO_MANUAL');
               }
+              await new Promise(r => setTimeout(r, 500));
             }
           }
         } catch (e) {
           // Ignorar erro de parsing
         }
-      }
-
-      // CRÍTICO: PayGo requer 5s de cooldown após resolver pendência
-      // para limpar seu banco interno antes de aceitar nova transação
-      if (hadPending) {
-        console.log('[useTEFAndroid] ⏳ Aguardando 5s para PayGo limpar pendência...');
-        toast.info('Resolvendo pendência anterior...', { duration: 4000 });
-        await new Promise(r => setTimeout(r, 5000));
-        console.log('[useTEFAndroid] ✅ Cooldown concluído, prosseguindo com pagamento');
       }
     } catch (pendingCheckError) {
       console.warn('[useTEFAndroid] Erro ao verificar pendências (não crítico):', pendingCheckError);

@@ -26,7 +26,7 @@ const TotemProductPaymentSuccess: React.FC = () => {
     stateRef.current = location.state;
   }
 
-  const { sale: saleFromState, client, transactionData, emailAlreadySent } = stateRef.current || {};
+  const { sale: saleFromState, client, transactionData } = stateRef.current || {};
 
   const sale = saleFromState ? {
     ...saleFromState,
@@ -52,12 +52,6 @@ const TotemProductPaymentSuccess: React.FC = () => {
     const sendEmailReceipt = async () => {
       if (emailSentRef.current) return;
       emailSentRef.current = true;
-
-      // Se e-mail já foi enviado pelo modal de comprovante, pular
-      if (emailAlreadySent) {
-        setEmailStatus(client?.email ? 'sent' : 'no-email');
-        return;
-      }
 
       const clientEmail = client?.email;
       if (!clientEmail) {

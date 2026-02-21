@@ -8,10 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
-import { sendReceiptEmail } from '@/services/receiptEmailService';
-import { format } from 'date-fns';
-import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
+import { TEFResultado, resolverPendenciaAndroid, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -30,94 +27,67 @@ const TotemProductPaymentCard: React.FC = () => {
   const [paymentStarted, setPaymentStarted] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(true);
   
-  // Estado para modal de opções de comprovante (IGUAL AO SERVIÇO)
-  const [showReceiptModal, setShowReceiptModal] = useState(false);
-  const [pendingTransactionData, setPendingTransactionData] = useState<{
-    nsu?: string;
-    autorizacao?: string;
-    bandeira?: string;
-    confirmationId?: string;
-  } | null>(null);
-  
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
   const successNavigatedRef = useRef(false);
 
   // ═══════════════════════════════════════════════════════════
-  // ENVIAR E-MAIL DE COMPROVANTE (IGUAL AO SERVIÇO)
+  // SUCESSO DO PAGAMENTO - IDÊNTICO AO CHECKOUT DE SERVIÇO
+  // Chama totem-direct-sale finish SEM precisar de payment_id
   // ═══════════════════════════════════════════════════════════
-  const handleSendReceiptEmail = useCallback(async (): Promise<boolean> => {
-    if (!client?.email) return false;
-    
-    try {
-      const items = (cart || []).map((item: any) => ({
-        name: item.product?.nome || item.nome,
-        quantity: item.quantity || item.quantidade || 1,
-        unitPrice: item.product?.preco || item.preco,
-        price: (item.product?.preco || item.preco) * (item.quantity || item.quantidade || 1),
-        type: 'product' as const
-      }));
-
-      if (items.length === 0) {
-        items.push({ name: 'Produto', quantity: 1, unitPrice: sale?.total || 0, price: sale?.total || 0, type: 'product' as const });
-      }
-
-      const result = await sendReceiptEmail({
-        clientName: client.nome,
-        clientEmail: client.email,
-        transactionType: 'product',
-        items,
-        total: sale?.total || 0,
-        paymentMethod: cardType === 'credit' ? 'Crédito' : 'Débito',
-        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
-        nsu: pendingTransactionData?.nsu,
-        barberName: barber?.nome,
-      });
-
-      return result.success;
-    } catch (error) {
-      console.error('[PRODUCT-CARD] Erro ao enviar e-mail:', error);
-      return false;
-    }
-  }, [client, cart, sale, cardType, pendingTransactionData, barber]);
-
-  // ═══════════════════════════════════════════════════════════
-  // COMPROVANTE PROCESSADO - AGORA SIM FINALIZA (IGUAL AO SERVIÇO)
-  // ═══════════════════════════════════════════════════════════
-  const handleReceiptComplete = useCallback(async () => {
-    if (!pendingTransactionData || !sale?.id) return;
-    
-    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-    console.log('✅ [PRODUCT-CARD] COMPROVANTE PROCESSADO - FINALIZANDO');
-    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-    
-    // 1. Confirmar transação TEF (se houver confirmationId)
-    if (pendingTransactionData.confirmationId) {
-      console.log('[PRODUCT-CARD] Confirmando transação TEF:', pendingTransactionData.confirmationId);
-      confirmarTransacaoTEF(pendingTransactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
+  const handlePaymentSuccess = useCallback(async (transactionData?: {
+    nsu?: string;
+    autorizacao?: string;
+    bandeira?: string;
+    confirmationId?: string;
+  }) => {
+    if (!sale?.id) {
+      console.error('[PRODUCT-CARD] ❌ sale.id não existe!');
+      toast.error('Erro crítico: ID da venda não encontrado');
+      return;
     }
     
-    // 2. Finalizar venda no backend
+    // Prevenir múltiplas finalizações
+    if (finalizingRef.current || successNavigatedRef.current) {
+      console.log('[PRODUCT-CARD] ⚠️ Finalização já em andamento ou já navegou');
+      return;
+    }
+    
+    finalizingRef.current = true;
+
+    // CRÍTICO: Confirmar transação TEF ANTES de finalizar (igual ao serviço)
+    if (transactionData?.confirmationId) {
+      console.log('✅ [PRODUCT-CARD] Confirmando transação TEF:', transactionData.confirmationId);
+      confirmarTransacaoTEF(transactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
+    }
+    
+    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+    console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO VIA EDGE FUNCTION');
+    console.log('✅ [PRODUCT-CARD] Sale ID:', sale.id);
+    console.log('✅ [PRODUCT-CARD] Transaction:', transactionData);
+    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+    
     try {
       const paymentMethod = cardType === 'debit' ? 'debit_card' : 'credit_card';
       
+      // Chamar finish SEM payment_id - a edge function cria o registro automaticamente
       const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
         body: {
           action: 'finish',
           venda_id: sale.id,
           payment_method: paymentMethod,
-          transaction_data: pendingTransactionData
+          transaction_data: transactionData
         }
       });
 
       if (finishError) {
         console.error('❌ [PRODUCT-CARD] Erro ao finalizar:', finishError);
-        // Não bloquear - pagamento já foi aprovado
+        // Não bloquear - pagamento já foi aprovado na maquininha
       } else {
         console.log('✅ [PRODUCT-CARD] Edge function executada com sucesso');
       }
       
-      // 3. Buscar itens da venda para exibir no comprovante
+      // Buscar itens da venda para exibir no comprovante
       let saleItems: any[] = [];
       try {
         const { data: fetchedItems } = await supabase
@@ -128,7 +98,7 @@ const TotemProductPaymentCard: React.FC = () => {
         
         saleItems = fetchedItems || [];
       } catch (e) {
-        console.warn('[PRODUCT-CARD] Erro ao buscar itens:', e);
+        console.warn('[PRODUCT-CARD] Erro ao buscar itens para comprovante:', e);
         if (cart && cart.length > 0) {
           saleItems = cart.map((item: any) => ({
             item_id: item.product?.id || item.id,
@@ -140,8 +110,9 @@ const TotemProductPaymentCard: React.FC = () => {
         }
       }
       
-      // 4. Navegar para tela de sucesso
+      // Navegar para tela de sucesso - GARANTIDO
       successNavigatedRef.current = true;
+      toast.success('Pagamento aprovado!');
       
       const saleWithItems = { 
         ...sale, 
@@ -156,18 +127,18 @@ const TotemProductPaymentCard: React.FC = () => {
           sale: saleWithItems, 
           client, 
           transactionData: { 
-            ...pendingTransactionData, 
+            ...transactionData, 
             paymentMethod: cardType 
-          },
-          emailAlreadySent: true // Evita duplicação
+          } 
         } 
       });
       
     } catch (err) {
       console.error('❌ [PRODUCT-CARD] Erro crítico:', err);
       
-      // Pagamento foi aprovado, navegar mesmo com erro
-      if (pendingTransactionData?.nsu || pendingTransactionData?.autorizacao) {
+      // Se pagamento foi aprovado na maquininha, ainda navegar para sucesso
+      if (transactionData?.nsu || transactionData?.autorizacao) {
+        console.log('⚠️ [PRODUCT-CARD] Pagamento aprovado - navegando para sucesso mesmo com erro');
         successNavigatedRef.current = true;
         toast.warning('Pagamento aprovado com observações');
         
@@ -175,37 +146,34 @@ const TotemProductPaymentCard: React.FC = () => {
           state: { 
             sale: { ...sale, items: [], total: sale.total || sale.valor_total }, 
             client, 
-            transactionData: { ...pendingTransactionData, paymentMethod: cardType },
-            emailAlreadySent: true
+            transactionData: { ...transactionData, paymentMethod: cardType } 
           } 
         });
       } else {
-        toast.error('Erro ao finalizar checkout', {
-          description: 'O pagamento foi aprovado. Procure a recepção.'
+        setError({
+          title: 'Erro inesperado',
+          message: 'Ocorreu um erro ao processar o pagamento. Por favor, procure um atendente.'
         });
-        navigate('/totem/home');
+        setIsProcessing(false);
+        finalizingRef.current = false;
       }
     }
-  }, [pendingTransactionData, sale, client, cardType, cart, navigate]);
+  }, [sale, client, cardType, cart, navigate]);
 
   // ═══════════════════════════════════════════════════════════
-  // HANDLER TEF RESULT - AGORA MOSTRA MODAL DE COMPROVANTE
-  // (IGUAL AO SERVIÇO - NÃO FINALIZA DIRETO)
+  // HANDLER TEF RESULT - IDÊNTICO AO CHECKOUT DE SERVIÇO
   // ═══════════════════════════════════════════════════════════
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PRODUCT-CARD] handleTEFResult:', resultado.status);
     
     switch (resultado.status) {
       case 'aprovado':
-        console.log('✅ [PRODUCT-CARD] Pagamento APROVADO - Mostrando opções de comprovante');
-        // Guardar dados da transação e mostrar modal de opções (IGUAL AO SERVIÇO)
-        setPendingTransactionData({
+        handlePaymentSuccess({
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
           bandeira: resultado.bandeira,
           confirmationId: resultado.confirmationTransactionId
         });
-        setShowReceiptModal(true);
         break;
         
       case 'negado': {
@@ -240,9 +208,9 @@ const TotemProductPaymentCard: React.FC = () => {
         break;
       }
     }
-  }, []);
+  }, [handlePaymentSuccess]);
 
-  // Hook TEF Android
+  // Hook TEF Android - NÃO passar callbacks (resultado via useTEFPaymentResult)
   const {
     isAndroidAvailable,
     isPinpadConnected,
@@ -252,7 +220,7 @@ const TotemProductPaymentCard: React.FC = () => {
     verificarConexao
   } = useTEFAndroid({});
 
-  // Hook para receber resultado do PayGo
+  // Hook para receber resultado do PayGo - IDÊNTICO AO SERVIÇO
   useTEFPaymentResult({
     enabled: paymentStarted && isProcessing,
     onResult: handleTEFResult,
@@ -274,7 +242,8 @@ const TotemProductPaymentCard: React.FC = () => {
   }, [isAndroidAvailable, isPinpadConnected, isCheckingConnection]);
 
   // ═══════════════════════════════════════════════════════════
-  // INICIAR PAGAMENTO - DIRETO PRO PAYGO (SEM FINALIZAR ANTES)
+  // INICIAR PAGAMENTO - IDÊNTICO AO handlePaymentType DO SERVIÇO
+  // SEM chamada start, SEM paymentId, direto pro PayGo
   // ═══════════════════════════════════════════════════════════
   const handleStartPayment = async () => {
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
@@ -288,23 +257,24 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
+    // Evitar duplo clique / reentrada (IGUAL AO SERVIÇO)
     if (isProcessing || paymentStarted) return;
 
     setError(null);
     finalizingRef.current = false;
     successNavigatedRef.current = false;
 
-    // IGUAL AO SERVIÇO: Checar bridge nativa diretamente
+    // Checar bridge TEF (IGUAL AO SERVIÇO)
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
 
     if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
-        description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
+        description: 'O WebView não detectou a bridge TEF (window.TEF).'
       });
       return;
     }
 
-    // IGUAL AO SERVIÇO: Revalidar pinpad antes de iniciar
+    // Revalidar pinpad (IGUAL AO SERVIÇO)
     const status = verificarConexao();
     const connected = !!status?.conectado;
 
@@ -315,10 +285,34 @@ const TotemProductPaymentCard: React.FC = () => {
       return;
     }
 
+    // ROBUSTEZ: SEMPRE resolver pendências INCONDICIONALMENTE antes de qualquer pagamento
+    // Não depender de hasPendingTransaction() que pode ser falso-negativo
+    console.log('[PRODUCT-CARD] 🔧 Resolvendo pendências incondicionalmente...');
+    try {
+      resolverPendenciaAndroid('desfazer');
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] resolverPendenciaAndroid erro (ignorado):', e);
+    }
+
+    // Aguardar 5 segundos - cooldown obrigatório do PayGo após resolução
+    toast.info('Preparando terminal...', { description: 'Aguarde um instante', duration: 4000 });
+    await new Promise(r => setTimeout(r, 5000));
+
+    // Limpar storage de resultados anteriores
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
+    }
+
+    // Ativar estados ANTES de chamar PayGo (IGUAL AO SERVIÇO)
     setIsProcessing(true);
     setPaymentStarted(true);
 
-    // Chamar PayGo DIRETAMENTE - SEM edge function start
+    // Chamar PayGo DIRETAMENTE - sem edge function start (IGUAL AO SERVIÇO)
     try {
       const ordemId = (sale.id as string) || `CARD_PRODUCT_${Date.now()}`;
 
@@ -370,6 +364,7 @@ const TotemProductPaymentCard: React.FC = () => {
           setError(null);
           finalizingRef.current = false;
           lastFailureRef.current = null;
+          // handleStartPayment já faz resolução incondicional
           handleStartPayment();
         }}
         onGoHome={() => navigate('/totem')}
@@ -449,6 +444,7 @@ const TotemProductPaymentCard: React.FC = () => {
         <Card className="relative w-full max-w-2xl p-8 space-y-6 bg-urbana-black/60 backdrop-blur-2xl border-2 border-urbana-gold/40 shadow-2xl text-center">
           
           {!isProcessing ? (
+            // TELA INICIAL
             <>
               <div className="flex justify-center">
                 <div className="relative w-32 h-32 rounded-full bg-gradient-to-br from-urbana-gold to-urbana-gold-dark flex items-center justify-center">
@@ -475,6 +471,7 @@ const TotemProductPaymentCard: React.FC = () => {
               </p>
             </>
           ) : (
+            // TELA DE PROCESSAMENTO
             <>
               <div className="bg-gradient-to-r from-green-500/15 to-green-600/10 border border-green-500/40 rounded-xl p-4">
                 <div className="flex items-center justify-center gap-2 text-green-400">
@@ -514,17 +511,6 @@ const TotemProductPaymentCard: React.FC = () => {
           )}
         </Card>
       </div>
-
-      {/* Modal de opções de comprovante - IGUAL AO SERVIÇO */}
-      <TotemReceiptOptionsModal
-        isOpen={showReceiptModal}
-        onClose={() => {}} // Não permitir fechar sem escolher
-        onComplete={handleReceiptComplete}
-        clientName={client?.nome || 'Cliente'}
-        clientEmail={client?.email}
-        total={sale?.total || 0}
-        onSendEmail={handleSendReceiptEmail}
-      />
     </div>
   );
 };
