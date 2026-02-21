@@ -156,7 +156,7 @@ const TotemProductCheckout: React.FC = () => {
           state: { sale, client, cart, barber }
         });
       } else {
-        navigate('/totem/product-card-type', {
+        navigate('/totem/product-payment-card', {
           state: { sale, client, cart, barber }
         });
       }
