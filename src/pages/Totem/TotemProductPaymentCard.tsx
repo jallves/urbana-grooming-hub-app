@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, resolverPendenciaAndroid, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
 import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
@@ -294,15 +294,17 @@ const TotemProductPaymentCard: React.FC = () => {
     finalizingRef.current = false;
     successNavigatedRef.current = false;
 
+    // IGUAL AO SERVIÇO: Checar bridge nativa diretamente
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
 
     if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
-        description: 'O WebView não detectou a bridge TEF (window.TEF).'
+        description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
       });
       return;
     }
 
+    // IGUAL AO SERVIÇO: Revalidar pinpad antes de iniciar
     const status = verificarConexao();
     const connected = !!status?.conectado;
 
@@ -311,27 +313,6 @@ const TotemProductPaymentCard: React.FC = () => {
         description: 'Verifique a conexão da maquininha e tente novamente.'
       });
       return;
-    }
-
-    // Resolver pendências antes de novo pagamento
-    console.log('[PRODUCT-CARD] 🔧 Resolvendo pendências incondicionalmente...');
-    try {
-      resolverPendenciaAndroid('desfazer');
-    } catch (e) {
-      console.warn('[PRODUCT-CARD] resolverPendenciaAndroid erro (ignorado):', e);
-    }
-
-    toast.info('Preparando terminal...', { description: 'Aguarde um instante', duration: 4000 });
-    await new Promise(r => setTimeout(r, 5000));
-
-    // Limpar storage de resultados anteriores
-    try {
-      sessionStorage.removeItem('lastTefResult');
-      sessionStorage.removeItem('lastTefResultTime');
-      localStorage.removeItem('lastTefResult');
-      localStorage.removeItem('lastTefResultTime');
-    } catch (e) {
-      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
     }
 
     setIsProcessing(true);
