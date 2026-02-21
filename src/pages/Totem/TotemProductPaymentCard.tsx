@@ -228,6 +228,20 @@ const TotemProductPaymentCard: React.FC = () => {
     maxWaitTime: 180000
   });
 
+  // CRÍTICO: Limpar storage de resultados TEF antigos ao montar o componente
+  // Isso evita que resultados de transações anteriores sejam processados
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+      console.log('[PRODUCT-CARD] 🧹 Storage TEF limpo ao montar componente');
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] Erro ao limpar storage:', e);
+    }
+  }, []);
+
   // Delay inicial para verificar conexão TEF
   useEffect(() => {
     const timer = setTimeout(() => {

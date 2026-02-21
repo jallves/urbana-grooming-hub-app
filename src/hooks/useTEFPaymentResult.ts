@@ -134,19 +134,17 @@ export function useTEFPaymentResult({
   }, [enabled]);
   
   // Função para processar resultado (com proteção contra duplicatas)
-  // CRÍTICO: NÃO depender de enabled - processar SEMPRE que receber resultado
+  // CRÍTICO: SÓ processar quando enabled=true (pagamento em andamento)
+  // Isso evita que resultados antigos/stale sejam processados ao montar o componente
   const processResult = useCallback((resultado: TEFResultado | Record<string, unknown>, source: string) => {
-    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
-    console.log('[useTEFPaymentResult] 📥 PROCESSANDO RESULTADO');
-    console.log('[useTEFPaymentResult] Fonte:', source);
-    console.log('[useTEFPaymentResult] enabledRef.current:', enabledRef.current);
-    console.log('[useTEFPaymentResult] processedRef.current:', processedRef.current);
-    console.log('[useTEFPaymentResult] Dados brutos:', JSON.stringify(resultado, null, 2));
-    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+    console.log('[useTEFPaymentResult] 📥 PROCESSANDO RESULTADO | Fonte:', source, '| enabled:', enabledRef.current);
     
-    // REMOVIDO: Verificação de enabled
-    // O resultado do PayGo SEMPRE deve ser processado quando chegar
-    // Não importa se o hook está "enabled" ou não
+    // CRÍTICO: Verificar se o hook está habilitado (pagamento ativo)
+    // Sem isso, resultados antigos no storage são processados antes do PayGo ser chamado
+    if (!enabledRef.current) {
+      console.log('[useTEFPaymentResult] ⚠️ Hook DESATIVADO - ignorando resultado de', source);
+      return;
+    }
     
     if (processedRef.current) {
       console.log('[useTEFPaymentResult] ⚠️ Resultado já processado, ignorando');
@@ -203,56 +201,19 @@ export function useTEFPaymentResult({
   // IMPORTANTE: SEMPRE registrar, independente de enabled
   // Isso garante que não perdemos o resultado do PayGo
   useEffect(() => {
-    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
-    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado (SEMPRE ATIVO)');
-    console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado');
     
-    // SEMPRE registrar o callback, não depender de enabled
+    // Registrar o callback global - mas ele respeita enabledRef
     (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
-      console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
-      console.log('[useTEFPaymentResult] 📞 window.onTefResultado CHAMADO');
-      console.log('[useTEFPaymentResult] enabled atual:', enabledRef.current);
-      console.log('[useTEFPaymentResult] Dados:', JSON.stringify(resultado, null, 2));
-      console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
+      console.log('[useTEFPaymentResult] 📞 window.onTefResultado CHAMADO | enabled:', enabledRef.current);
       processResult(resultado, 'window.onTefResultado');
     };
     
     console.log('[useTEFPaymentResult] Callback registrado com sucesso');
     
-    // Verificar se há resultado pendente no storage ao montar
-    // Isso captura resultados que chegaram antes do React estar pronto
-    // Verificar tanto sessionStorage quanto localStorage
-    setTimeout(() => {
-      try {
-        // Tentar sessionStorage primeiro
-        let storedResult = sessionStorage.getItem('lastTefResult');
-        let storedTime = sessionStorage.getItem('lastTefResultTime');
-        
-        // Se não encontrou, tentar localStorage (mais persistente)
-        if (!storedResult) {
-          storedResult = localStorage.getItem('lastTefResult');
-          storedTime = localStorage.getItem('lastTefResultTime');
-          if (storedResult) {
-            console.log('[useTEFPaymentResult] Resultado encontrado no localStorage!');
-          }
-        }
-        
-        if (storedResult && storedTime && !processedRef.current) {
-          const resultAge = Date.now() - parseInt(storedTime, 10);
-          
-          // Aceitar resultados dos últimos 60 segundos (aumentado para dar mais tempo)
-          if (resultAge < 60000) {
-            console.log('[useTEFPaymentResult] 📞 Resultado pendente encontrado no storage ao montar!');
-            console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
-            
-            const resultado = JSON.parse(storedResult);
-            processResult(resultado, 'Storage on Mount');
-          }
-        }
-      } catch (e) {
-        console.error('[useTEFPaymentResult] Erro ao verificar storage ao montar:', e);
-      }
-    }, 100);
+    // NÃO verificar storage ao montar - isso causava processamento de resultados antigos
+    // O polling (quando enabled=true) já cuida de verificar o storage
+    console.log('[useTEFPaymentResult] Storage on mount check DESATIVADO para evitar resultados stale');
     
     return () => {
       // Não remover o callback ao desmontar
