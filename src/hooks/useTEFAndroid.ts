@@ -355,8 +355,11 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
     // ========================================================================
     // IMPORTANTE: Verificar e resolver pendências ANTES de iniciar novo pagamento
-    // Isso evita erros "negado código 70" e similares
+    // Isso evita erros "negado código 70/90" e similares
+    // DOCUMENTAÇÃO PayGo: Cooldown de 5 SEGUNDOS após resolução é OBRIGATÓRIO
+    // para que o terminal limpe sua base interna
     // ========================================================================
+    let pendingResolved = false;
     try {
       const TEF = (window as any).TEF;
       
@@ -365,16 +368,15 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         console.log('[useTEFAndroid] ⚠️ Pendência detectada via hasPendingTransaction - resolvendo...');
         if (TEF.autoResolvePending) {
           TEF.autoResolvePending();
-          // Aguardar um momento para a resolução
-          await new Promise(r => setTimeout(r, 500));
+          pendingResolved = true;
         } else if (TEF.resolverPendencia) {
           TEF.resolverPendencia('CONFIRMADO_MANUAL');
-          await new Promise(r => setTimeout(r, 500));
+          pendingResolved = true;
         }
       }
       
       // Método 2: Verificar via getPendingInfo (legado)
-      if (TEF?.getPendingInfo) {
+      if (!pendingResolved && TEF?.getPendingInfo) {
         try {
           const pendingInfo = TEF.getPendingInfo();
           if (pendingInfo && pendingInfo !== '{}' && pendingInfo !== 'null') {
@@ -386,12 +388,21 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
               } else if (TEF.resolverPendencia) {
                 TEF.resolverPendencia('CONFIRMADO_MANUAL');
               }
-              await new Promise(r => setTimeout(r, 500));
+              pendingResolved = true;
             }
           }
         } catch (e) {
           // Ignorar erro de parsing
         }
+      }
+
+      // CRÍTICO: Se resolveu pendência, aguardar 5 segundos (cooldown obrigatório PayGo)
+      // Sem esse cooldown, o terminal nega a próxima transação (código 70/90)
+      if (pendingResolved) {
+        console.log('[useTEFAndroid] ⏳ Aguardando 5s cooldown obrigatório PayGo...');
+        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 4000 });
+        await new Promise(r => setTimeout(r, 5000));
+        console.log('[useTEFAndroid] ✅ Cooldown concluído');
       }
     } catch (pendingCheckError) {
       console.warn('[useTEFAndroid] Erro ao verificar pendências (não crítico):', pendingCheckError);
