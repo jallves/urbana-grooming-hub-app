@@ -31,7 +31,23 @@ const TotemProductPaymentCard: React.FC = () => {
   const finalizingRef = useRef(false);
   const lastFailureRef = useRef<TEFResultado | null>(null);
   const successNavigatedRef = useRef(false);
-  const paymentIdRef = useRef<string | null>(null); // Ref para evitar closure stale
+  const paymentIdRef = useRef<string | null>(null);
+  const mountCleanedRef = useRef(false);
+  
+  // CRÍTICO: Limpar storage residual IMEDIATAMENTE na montagem
+  // Isso DEVE acontecer antes do useTEFPaymentResult verificar o storage (100ms delay)
+  if (!mountCleanedRef.current) {
+    mountCleanedRef.current = true;
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+      console.log('[PRODUCT-CARD] 🧹 Storage limpo na montagem (antes do hook)');
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] Erro ao limpar storage na montagem:', e);
+    }
+  }
   
   // Função de sucesso - IGUAL AO CHECKOUT DE SERVIÇO
   // Delega tudo para a edge function totem-direct-sale
@@ -308,6 +324,29 @@ const TotemProductPaymentCard: React.FC = () => {
         description: 'Verifique a conexão da maquininha e tente novamente.'
       });
       return;
+    }
+
+    // CRÍTICO: Resolver pendências ANTES de iniciar novo pagamento (igual ao serviço)
+    try {
+      const TEF = (window as any).TEF;
+      const hasPending = TEF?.hasPendingTransaction && TEF.hasPendingTransaction();
+      if (hasPending) {
+        console.log('[PRODUCT-CARD] 🔧 Resolvendo pendência antes de iniciar...');
+        toast.info('Preparando terminal...', { description: 'Aguarde um instante' });
+        
+        if (TEF?.autoResolvePending) {
+          TEF.autoResolvePending();
+        } else if (TEF?.resolverPendencia) {
+          TEF.resolverPendencia('DESFEITO_MANUAL');
+        } else {
+          resolverPendenciaAndroid('desfazer');
+        }
+        
+        // Aguardar terminal processar (cooldown PayGo)
+        await new Promise(r => setTimeout(r, 2000));
+      }
+    } catch (e) {
+      console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
     }
 
     // PASSO 1: Chamar edge function para criar totem_payments (IGUAL AO SERVIÇO)
