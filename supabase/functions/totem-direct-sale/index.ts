@@ -99,27 +99,69 @@ serve(async (req) => {
       console.log('💳 [PRODUCT-SALE] Payment ID:', payment_id)
       console.log('📊 [PRODUCT-SALE] Transaction Data:', transaction_data)
 
-      // 1. Atualizar pagamento para completed
-      const updateData: any = { 
-        status: 'completed',
-        updated_at: toBrazilISOString()
-      }
-      
-      // Adicionar transaction_id se disponível (NSU do PayGo)
-      if (transaction_data?.nsu) {
-        updateData.transaction_id = transaction_data.nsu
+      // Se payment_id não foi fornecido, criar o registro de pagamento agora
+      // Isso permite que o frontend chame finish diretamente sem precisar de start
+      let resolvedPaymentId = payment_id
+
+      if (!resolvedPaymentId && venda_id) {
+        // Verificar se já existe um pagamento para esta venda
+        const { data: existingPayment } = await supabase
+          .from('totem_payments')
+          .select('id')
+          .eq('venda_id', venda_id)
+          .maybeSingle()
+
+        if (existingPayment) {
+          resolvedPaymentId = existingPayment.id
+          console.log('📋 [PRODUCT-SALE] Pagamento existente encontrado:', resolvedPaymentId)
+        } else {
+          // Buscar valor da venda para criar o registro
+          const { data: vendaForPayment } = await supabase
+            .from('vendas')
+            .select('valor_total')
+            .eq('id', venda_id)
+            .single()
+
+          if (vendaForPayment) {
+            const { data: newPayment } = await supabase
+              .from('totem_payments')
+              .insert({
+                venda_id: venda_id,
+                amount: vendaForPayment.valor_total,
+                payment_method: payment_method || 'credit_card',
+                status: 'completed',
+                transaction_id: transaction_data?.nsu || null
+              })
+              .select('id')
+              .single()
+
+            resolvedPaymentId = newPayment?.id
+            console.log('✅ [PRODUCT-SALE] Pagamento criado no finish:', resolvedPaymentId)
+          }
+        }
       }
 
-      const { error: paymentError } = await supabase
-        .from('totem_payments')
-        .update(updateData)
-        .eq('id', payment_id)
+      // 1. Atualizar pagamento para completed (se existir)
+      if (resolvedPaymentId) {
+        const updateData: any = { 
+          status: 'completed',
+          updated_at: toBrazilISOString()
+        }
+        
+        if (transaction_data?.nsu) {
+          updateData.transaction_id = transaction_data.nsu
+        }
 
-      if (paymentError) {
-        console.error('❌ Erro ao atualizar pagamento:', paymentError)
-        // Não falhar - continuar mesmo com erro (pagamento já foi aprovado)
-      } else {
-        console.log('✅ [PRODUCT-SALE] Pagamento atualizado para completed')
+        const { error: paymentError } = await supabase
+          .from('totem_payments')
+          .update(updateData)
+          .eq('id', resolvedPaymentId)
+
+        if (paymentError) {
+          console.error('❌ Erro ao atualizar pagamento:', paymentError)
+        } else {
+          console.log('✅ [PRODUCT-SALE] Pagamento atualizado para completed')
+        }
       }
 
       // 2. Atualizar venda para PAGA
