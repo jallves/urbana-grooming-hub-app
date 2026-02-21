@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, resolverPendenciaAndroid, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemProductPaymentCard: React.FC = () => {
@@ -39,6 +39,7 @@ const TotemProductPaymentCard: React.FC = () => {
     nsu?: string;
     autorizacao?: string;
     bandeira?: string;
+    confirmationId?: string;
   }) => {
     // Validações críticas
     if (!sale?.id) {
@@ -68,6 +69,13 @@ const TotemProductPaymentCard: React.FC = () => {
     }
     
     finalizingRef.current = true;
+
+    // CRÍTICO: Confirmar transação TEF ANTES de finalizar (igual ao serviço)
+    // Sem isso, o PayGo mantém a transação como "pendente"
+    if (transactionData?.confirmationId) {
+      console.log('✅ [PRODUCT-CARD] Confirmando transação TEF:', transactionData.confirmationId);
+      confirmarTransacaoTEF(transactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
+    }
     
     console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
     console.log('✅ [PRODUCT-CARD] FINALIZANDO PAGAMENTO VIA EDGE FUNCTION');
@@ -180,7 +188,8 @@ const TotemProductPaymentCard: React.FC = () => {
         handlePaymentSuccess({
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
-          bandeira: resultado.bandeira
+          bandeira: resultado.bandeira,
+          confirmationId: resultado.confirmationTransactionId
         });
         break;
         
