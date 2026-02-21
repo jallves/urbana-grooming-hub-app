@@ -155,6 +155,29 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       const opts = globalOptionsRef;
       console.log('[useTEFAndroid] Verificando callbacks: onSuccess=', !!opts.onSuccess, 'onError=', !!opts.onError);
 
+      // ═══════════════════════════════════════════════════════════════════
+      // CRÍTICO: Propagar resultado para useTEFPaymentResult via CustomEvent + storage
+      // Isso resolve o conflito de window.onTefResultado sendo sobrescrito
+      // ═══════════════════════════════════════════════════════════════════
+      try {
+        console.log('[useTEFAndroid] 📡 Propagando resultado via CustomEvent + storage');
+        
+        // 1. CustomEvent (mecanismo preferido - síncrono e confiável)
+        const customEvent = new CustomEvent('tefPaymentResult', { detail: resultado });
+        window.dispatchEvent(customEvent);
+        document.dispatchEvent(customEvent);
+        
+        // 2. SessionStorage + localStorage (fallback para polling)
+        const resultJson = JSON.stringify(resultado);
+        const now = Date.now().toString();
+        sessionStorage.setItem('lastTefResult', resultJson);
+        sessionStorage.setItem('lastTefResultTime', now);
+        localStorage.setItem('lastTefResult', resultJson);
+        localStorage.setItem('lastTefResultTime', now);
+      } catch (propagateError) {
+        console.warn('[useTEFAndroid] Erro ao propagar resultado:', propagateError);
+      }
+
       switch (normalizedResult.status) {
         case 'aprovado':
           console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
@@ -168,7 +191,6 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         case 'negado':
           console.log('[useTEFAndroid] ❌ Pagamento NEGADO - chamando onError');
           if (opts.onError) {
-            // Passar resultado completo para permitir acesso aos dados da pendência
             opts.onError(normalizedResult.mensagem || 'Pagamento negado', normalizedResult);
           }
           break;
@@ -183,7 +205,6 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         case 'erro':
           console.log('[useTEFAndroid] ❌ ERRO no pagamento - chamando onError');
           if (opts.onError) {
-            // Passar resultado completo para permitir acesso aos dados da pendência
             opts.onError(normalizedResult.mensagem || 'Erro desconhecido', normalizedResult);
           }
           break;
