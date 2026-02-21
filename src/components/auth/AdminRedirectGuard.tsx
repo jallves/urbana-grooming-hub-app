@@ -26,6 +26,9 @@ const AdminRedirectGuard: React.FC<AdminRedirectGuardProps> = ({ children }) => 
 
     const currentPath = location.pathname;
     
+    // NUNCA redirecionar se estiver em rotas do totem - o totem tem sua própria autenticação
+    if (currentPath.startsWith('/totem')) return;
+
     // Clientes devem ser redirecionados para o painel de clientes
     if (isClient && !currentPath.startsWith('/painel-cliente') && !currentPath.startsWith('/auth')) {
       console.log('[AdminRedirectGuard] 🔄 Redirecionando cliente para painel de clientes');
