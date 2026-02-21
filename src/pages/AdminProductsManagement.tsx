@@ -4,7 +4,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Edit, Trash2, Package } from 'lucide-react';
+import { Plus, Edit, Trash2, Package, AlertTriangle, PackageCheck, PackageX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { resolveProductImageUrl } from '@/utils/productImages';
@@ -25,17 +25,22 @@ import {
 import { Switch } from '@/components/ui/switch';
 import { BarbershopProduct } from '@/types/product';
 
+interface ProductWithMinStock extends BarbershopProduct {
+  estoque_minimo: number;
+}
+
 const AdminProductsManagement: React.FC = () => {
-  const [products, setProducts] = useState<BarbershopProduct[]>([]);
+  const [products, setProducts] = useState<ProductWithMinStock[]>([]);
   const [loading, setLoading] = useState(true);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<BarbershopProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ProductWithMinStock | null>(null);
   
   const [formData, setFormData] = useState({
     nome: '',
     descricao: '',
     preco: 0,
     estoque: 0,
+    estoque_minimo: 10,
     categoria: 'geral',
     imagem_url: '',
     ativo: true
@@ -57,8 +62,9 @@ const AdminProductsManagement: React.FC = () => {
       const productsData = (data || []).map(p => ({
         ...p,
         preco: Number(p.preco) || 0,
-        estoque: Number(p.estoque) || 0
-      })) as BarbershopProduct[];
+        estoque: Number(p.estoque) || 0,
+        estoque_minimo: Number((p as any).estoque_minimo) || 10
+      })) as ProductWithMinStock[];
       
       setProducts(productsData);
     } catch (error) {
@@ -79,7 +85,7 @@ const AdminProductsManagement: React.FC = () => {
       if (editingProduct) {
         const { error } = await supabase
           .from('painel_produtos')
-          .update(formData)
+          .update(formData as any)
           .eq('id', editingProduct.id);
 
         if (error) throw error;
@@ -87,7 +93,7 @@ const AdminProductsManagement: React.FC = () => {
       } else {
         const { error } = await supabase
           .from('painel_produtos')
-          .insert([formData]);
+          .insert([formData as any]);
 
         if (error) throw error;
         toast.success('Produto criado com sucesso');
@@ -120,13 +126,14 @@ const AdminProductsManagement: React.FC = () => {
     }
   };
 
-  const handleEdit = (product: BarbershopProduct) => {
+  const handleEdit = (product: ProductWithMinStock) => {
     setEditingProduct(product);
     setFormData({
       nome: product.nome,
       descricao: product.descricao || '',
       preco: product.preco,
       estoque: product.estoque,
+      estoque_minimo: product.estoque_minimo,
       categoria: product.categoria || 'geral',
       imagem_url: product.imagem_url || '',
       ativo: product.ativo
@@ -141,6 +148,7 @@ const AdminProductsManagement: React.FC = () => {
       descricao: '',
       preco: 0,
       estoque: 0,
+      estoque_minimo: 10,
       categoria: 'geral',
       imagem_url: '',
       ativo: true
@@ -150,6 +158,36 @@ const AdminProductsManagement: React.FC = () => {
   const handleNewProduct = () => {
     resetForm();
     setIsDialogOpen(true);
+  };
+
+  // Calcular métricas de estoque
+  const lowStockProducts = products.filter(p => p.ativo && p.estoque <= p.estoque_minimo && p.estoque > 0);
+  const outOfStockProducts = products.filter(p => p.ativo && p.estoque <= 0);
+  const healthyStockProducts = products.filter(p => p.ativo && p.estoque > p.estoque_minimo);
+
+  const getStockBadge = (product: ProductWithMinStock) => {
+    if (product.estoque <= 0) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-destructive/20 text-destructive">
+          <PackageX className="w-3 h-3" />
+          Sem estoque
+        </span>
+      );
+    }
+    if (product.estoque <= product.estoque_minimo) {
+      return (
+        <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-amber-500/20 text-amber-400">
+          <AlertTriangle className="w-3 h-3" />
+          Estoque baixo ({product.estoque})
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-emerald-500/20 text-emerald-400">
+        <PackageCheck className="w-3 h-3" />
+        {product.estoque} un.
+      </span>
+    );
   };
 
   if (loading) {
@@ -166,11 +204,60 @@ const AdminProductsManagement: React.FC = () => {
         </Button>
       </div>
 
+      {/* Painel de Resumo de Estoque */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <Card className="p-4 flex items-center gap-3 border-emerald-500/30 bg-emerald-500/5">
+          <PackageCheck className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+          <div>
+            <p className="text-2xl font-bold text-emerald-400">{healthyStockProducts.length}</p>
+            <p className="text-xs text-muted-foreground">Estoque OK</p>
+          </div>
+        </Card>
+        <Card className={`p-4 flex items-center gap-3 ${lowStockProducts.length > 0 ? 'border-amber-500/30 bg-amber-500/5' : 'border-border'}`}>
+          <AlertTriangle className={`w-8 h-8 flex-shrink-0 ${lowStockProducts.length > 0 ? 'text-amber-400' : 'text-muted-foreground'}`} />
+          <div>
+            <p className={`text-2xl font-bold ${lowStockProducts.length > 0 ? 'text-amber-400' : 'text-muted-foreground'}`}>{lowStockProducts.length}</p>
+            <p className="text-xs text-muted-foreground">Estoque Baixo</p>
+          </div>
+        </Card>
+        <Card className={`p-4 flex items-center gap-3 ${outOfStockProducts.length > 0 ? 'border-destructive/30 bg-destructive/5' : 'border-border'}`}>
+          <PackageX className={`w-8 h-8 flex-shrink-0 ${outOfStockProducts.length > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
+          <div>
+            <p className={`text-2xl font-bold ${outOfStockProducts.length > 0 ? 'text-destructive' : 'text-muted-foreground'}`}>{outOfStockProducts.length}</p>
+            <p className="text-xs text-muted-foreground">Sem Estoque</p>
+          </div>
+        </Card>
+      </div>
+
+      {/* Alertas de estoque baixo */}
+      {(lowStockProducts.length > 0 || outOfStockProducts.length > 0) && (
+        <Card className="p-4 border-amber-500/30 bg-amber-500/5 space-y-2">
+          <div className="flex items-center gap-2 text-amber-400 font-semibold">
+            <AlertTriangle className="w-5 h-5" />
+            Alertas de Estoque
+          </div>
+          <div className="space-y-1">
+            {outOfStockProducts.map(p => (
+              <div key={p.id} className="flex items-center justify-between text-sm">
+                <span className="text-destructive font-medium">🚫 {p.nome}</span>
+                <span className="text-destructive font-bold">SEM ESTOQUE</span>
+              </div>
+            ))}
+            {lowStockProducts.map(p => (
+              <div key={p.id} className="flex items-center justify-between text-sm">
+                <span className="text-amber-400">⚠️ {p.nome}</span>
+                <span className="text-amber-400 font-bold">{p.estoque} un. (mín: {p.estoque_minimo})</span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
         {products.map(product => (
-          <Card key={product.id} className="p-3 sm:p-4 space-y-3">
+          <Card key={product.id} className={`p-3 sm:p-4 space-y-3 ${product.estoque <= 0 ? 'border-destructive/40 opacity-75' : product.estoque <= product.estoque_minimo ? 'border-amber-500/40' : ''}`}>
             {/* Product Image */}
-            <div className="aspect-square bg-muted rounded-lg overflow-hidden">
+            <div className="aspect-square bg-muted rounded-lg overflow-hidden relative">
               {(() => {
                 const resolvedImageUrl = resolveProductImageUrl(product.imagem_url);
                 return resolvedImageUrl ? (
@@ -185,6 +272,10 @@ const AdminProductsManagement: React.FC = () => {
                   </div>
                 );
               })()}
+              {/* Badge de estoque sobre a imagem */}
+              <div className="absolute top-2 right-2">
+                {getStockBadge(product)}
+              </div>
             </div>
 
             {/* Product Info */}
@@ -203,8 +294,8 @@ const AdminProductsManagement: React.FC = () => {
                   <p className="text-xl sm:text-2xl font-bold text-primary">
                     R$ {product.preco.toFixed(2)}
                   </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Estoque: {product.estoque} un.
+                  <p className="text-xs text-muted-foreground">
+                    Mín: {product.estoque_minimo} un.
                   </p>
                 </div>
                 <div className="flex gap-1 sm:gap-2 flex-shrink-0">
@@ -228,7 +319,7 @@ const AdminProductsManagement: React.FC = () => {
               </div>
 
               <div className="flex gap-2 text-xs">
-                <span className={`px-2 py-1 rounded ${product.ativo ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'}`}>
+                <span className={`px-2 py-1 rounded ${product.ativo ? 'bg-emerald-500/20 text-emerald-400' : 'bg-destructive/20 text-destructive'}`}>
                   {product.ativo ? 'Ativo' : 'Inativo'}
                 </span>
                 <span className="px-2 py-1 rounded bg-muted">
@@ -305,7 +396,7 @@ const AdminProductsManagement: React.FC = () => {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="estoque" className="text-sm sm:text-base">Estoque</Label>
+                <Label htmlFor="estoque" className="text-sm sm:text-base">Estoque Atual</Label>
                 <Input
                   id="estoque"
                   type="number"
@@ -316,15 +407,27 @@ const AdminProductsManagement: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="imagem_url" className="text-sm sm:text-base">URL da Imagem</Label>
+                <Label htmlFor="estoque_minimo" className="text-sm sm:text-base">Estoque Mínimo</Label>
                 <Input
-                  id="imagem_url"
-                  value={formData.imagem_url}
-                  onChange={(e) => setFormData({ ...formData, imagem_url: e.target.value })}
-                  placeholder="https://..."
+                  id="estoque_minimo"
+                  type="number"
+                  value={formData.estoque_minimo}
+                  onChange={(e) => setFormData({ ...formData, estoque_minimo: parseInt(e.target.value) || 0 })}
                   className="text-sm sm:text-base"
                 />
+                <p className="text-xs text-muted-foreground mt-1">Alerta quando estoque atingir este valor</p>
               </div>
+            </div>
+
+            <div>
+              <Label htmlFor="imagem_url" className="text-sm sm:text-base">URL da Imagem</Label>
+              <Input
+                id="imagem_url"
+                value={formData.imagem_url}
+                onChange={(e) => setFormData({ ...formData, imagem_url: e.target.value })}
+                placeholder="https://..."
+                className="text-sm sm:text-base"
+              />
             </div>
 
             <div className="flex items-center gap-2">
