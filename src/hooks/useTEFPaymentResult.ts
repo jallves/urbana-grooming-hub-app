@@ -47,7 +47,10 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
       comprovanteCliente: (raw.comprovanteCliente || raw.cardholderReceipt || '') as string,
       comprovanteLojista: (raw.comprovanteLojista || raw.merchantReceipt || '') as string,
       ordemId: raw.ordemId as string,
-      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now()
+      timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now(),
+      // CRÍTICO: Preservar dados de confirmação TEF
+      confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
     };
   }
   
@@ -95,7 +98,10 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
     mensagem: (raw.resultMessage || raw.mensagem || '') as string,
     comprovanteCliente: (raw.cardholderReceipt || raw.comprovanteCliente || '') as string,
     comprovanteLojista: (raw.merchantReceipt || raw.comprovanteLojista || '') as string,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    // CRÍTICO: Preservar dados de confirmação TEF
+    confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
+    requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
   };
 }
 
