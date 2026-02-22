@@ -188,11 +188,44 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           // Se a confirmação for adiada (ex: esperar comprovante), o terminal
           // PayGo mantém a transação como "pendente" e a PRÓXIMA transação
           // recebe "negado 90". A confirmação DEVE ser síncrona com a aprovação.
+          // 
+          // IMPORTANTE: Tentar TODOS os métodos disponíveis, não apenas
+          // confirmarTransacaoTEF (que depende de confirmationTransactionId).
+          // Muitas vezes o PayGo não envia esse campo, causando falha silenciosa.
           // ═══════════════════════════════════════════════════════════════
-          if (normalizedResult.requiresConfirmation && normalizedResult.confirmationTransactionId) {
-            console.log('[useTEFAndroid] 🔐 Enviando confirmação IMEDIATA para:', normalizedResult.confirmationTransactionId);
-            const confirmed = confirmarTransacaoTEF(normalizedResult.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
-            console.log('[useTEFAndroid] 🔐 Confirmação enviada:', confirmed ? '✅ OK' : '❌ FALHOU');
+          {
+            let confirmed = false;
+            const TEF = (window as any).TEF;
+            
+            // Método 1: confirmarTransacao com confirmationTransactionId
+            if (normalizedResult.confirmationTransactionId) {
+              console.log('[useTEFAndroid] 🔐 Método 1: confirmarTransacao com ID:', normalizedResult.confirmationTransactionId);
+              confirmed = confirmarTransacaoTEF(normalizedResult.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
+            }
+            
+            // Método 2: confirmApprovedTransaction (APK >= v1.10)
+            if (!confirmed && TEF?.confirmApprovedTransaction) {
+              console.log('[useTEFAndroid] 🔐 Método 2: confirmApprovedTransaction()');
+              try {
+                TEF.confirmApprovedTransaction();
+                confirmed = true;
+              } catch (e) {
+                console.warn('[useTEFAndroid] Método 2 falhou:', e);
+              }
+            }
+            
+            // Método 3: resolverPendencia como último fallback
+            if (!confirmed && TEF?.resolverPendencia) {
+              console.log('[useTEFAndroid] 🔐 Método 3: resolverPendencia(CONFIRMADO_AUTOMATICO)');
+              try {
+                TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
+                confirmed = true;
+              } catch (e) {
+                console.warn('[useTEFAndroid] Método 3 falhou:', e);
+              }
+            }
+            
+            console.log('[useTEFAndroid] 🔐 Confirmação resultado:', confirmed ? '✅ OK' : '⚠️ Nenhum método disponível');
           }
           
           if (opts.onSuccess) {
