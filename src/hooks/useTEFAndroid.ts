@@ -193,88 +193,18 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
           
           // ═══════════════════════════════════════════════════════════════
-          // CRÍTICO: Confirmar transação IMEDIATAMENTE após aprovação!
-          // Se a confirmação for adiada (ex: esperar comprovante), o terminal
-          // PayGo mantém a transação como "pendente" e a PRÓXIMA transação
-          // recebe "negado 90". A confirmação DEVE ser síncrona com a aprovação.
-          // 
-          // IMPORTANTE: Tentar TODOS os métodos disponíveis, não apenas
-          // confirmarTransacaoTEF (que depende de confirmationTransactionId).
-          // Muitas vezes o PayGo não envia esse campo, causando falha silenciosa.
+          // IMPORTANTE: NÃO confirmar transação aqui no frontend!
+          // O APK Android faz a confirmação automática (auto-confirm) 
+          // conforme spec PayGo oficial (PayGoService.kt).
+          // A dupla confirmação (APK + frontend) corrompe o estado do 
+          // terminal e causa "Negada 90" na transação seguinte.
           // ═══════════════════════════════════════════════════════════════
-          {
-            let confirmed = false;
-            const TEF = (window as any).TEF;
-            
-            // Método 1: confirmarTransacao com confirmationTransactionId (campo específico do PayGo)
-            const confId = (normalizedResult.confirmationTransactionId || '').trim();
-            if (confId) {
-              console.log('[useTEFAndroid] 🔐 Método 1: confirmarTransacao com ID:', confId);
-              confirmed = confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
-            }
-            
-            // Método 2: confirmarTransacao usando ordemId como fallback
-            // Muitas vezes o PayGo não retorna confirmationTransactionId mas aceita o ordemId
-            if (!confirmed && normalizedResult.ordemId) {
-              console.log('[useTEFAndroid] 🔐 Método 2: confirmarTransacao com ordemId:', normalizedResult.ordemId);
-              confirmed = confirmarTransacaoTEF(normalizedResult.ordemId, 'CONFIRMADO_AUTOMATICO');
-            }
-            
-            // Método 3: confirmApprovedTransaction (APK >= v1.10)
-            if (!confirmed && TEF?.confirmApprovedTransaction) {
-              console.log('[useTEFAndroid] 🔐 Método 3: confirmApprovedTransaction()');
-              try {
-                TEF.confirmApprovedTransaction();
-                confirmed = true;
-              } catch (e) {
-                console.warn('[useTEFAndroid] Método 3 falhou:', e);
-              }
-            }
-            
-            // Método 4: confirmarTransacao direto SEM ID (alguns APKs aceitam vazio)
-            if (!confirmed && TEF?.confirmarTransacao) {
-              console.log('[useTEFAndroid] 🔐 Método 4: confirmarTransacao direto sem ID');
-              try {
-                TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
-                confirmed = true;
-              } catch (e) {
-                console.warn('[useTEFAndroid] Método 4 falhou:', e);
-              }
-            }
-            
-            // Método 5: resolverPendencia como último fallback
-            if (!confirmed && TEF?.resolverPendencia) {
-              console.log('[useTEFAndroid] 🔐 Método 5: resolverPendencia(CONFIRMADO_AUTOMATICO)');
-              try {
-                TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
-                confirmed = true;
-              } catch (e) {
-                console.warn('[useTEFAndroid] Método 5 falhou:', e);
-              }
-            }
-            
-            console.log('[useTEFAndroid] 🔐 Confirmação resultado:', confirmed ? '✅ OK' : '⚠️ Nenhum método confirmou');
-            
-            // CRÍTICO: Salvar timestamp da confirmação para cooldown obrigatório
-            // Independente de ter confirmado ou não, o terminal precisa de tempo
-            lastConfirmationTimestamp = Date.now();
-            console.log('[useTEFAndroid] ⏱️ Timestamp de confirmação salvo:', lastConfirmationTimestamp);
-            
-            if (!confirmed) {
-              console.error('[useTEFAndroid] ❌ ALERTA: Nenhum método de confirmação funcionou!');
-              console.error('[useTEFAndroid] Dados disponíveis:', JSON.stringify({
-                confirmationTransactionId: confId,
-                ordemId: normalizedResult.ordemId,
-                nsu: normalizedResult.nsu,
-                requiresConfirmation: normalizedResult.requiresConfirmation,
-                tefMethods: {
-                  confirmApprovedTransaction: !!TEF?.confirmApprovedTransaction,
-                  confirmarTransacao: !!TEF?.confirmarTransacao,
-                  resolverPendencia: !!TEF?.resolverPendencia,
-                }
-              }));
-            }
-          }
+          console.log('[useTEFAndroid] 📋 Confirmação delegada ao APK (auto-confirm nativo)');
+          console.log('[useTEFAndroid] requiresConfirmation:', normalizedResult.requiresConfirmation);
+          console.log('[useTEFAndroid] confirmationTransactionId:', normalizedResult.confirmationTransactionId);
+          
+          // Salvar timestamp para cooldown (dar tempo ao APK processar confirmação)
+          lastConfirmationTimestamp = Date.now();
           
           if (opts.onSuccess) {
             opts.onSuccess(normalizedResult);
