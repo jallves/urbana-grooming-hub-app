@@ -40,6 +40,15 @@ interface UseTEFAndroidReturn {
 let globalLastProcessedResult: string | null = null;
 let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 
+// ═══════════════════════════════════════════════════════════════
+// CRÍTICO: Timestamp da última confirmação enviada ao PayGo
+// Usado para impor cooldown obrigatório SEMPRE, não apenas quando
+// detecta pendência. Isso resolve "negada 90" causada pelo terminal
+// ainda processando a confirmação anterior.
+// ═══════════════════════════════════════════════════════════════
+let lastConfirmationTimestamp: number = 0;
+const CONFIRMATION_COOLDOWN_MS = 5000; // 5 segundos obrigatórios
+
 // Armazenar referência aos options de forma global para persistir entre renders
 let globalOptionsRef: UseTEFAndroidOptions = {};
 
@@ -246,6 +255,11 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
             
             console.log('[useTEFAndroid] 🔐 Confirmação resultado:', confirmed ? '✅ OK' : '⚠️ Nenhum método confirmou');
             
+            // CRÍTICO: Salvar timestamp da confirmação para cooldown obrigatório
+            // Independente de ter confirmado ou não, o terminal precisa de tempo
+            lastConfirmationTimestamp = Date.now();
+            console.log('[useTEFAndroid] ⏱️ Timestamp de confirmação salvo:', lastConfirmationTimestamp);
+            
             if (!confirmed) {
               console.error('[useTEFAndroid] ❌ ALERTA: Nenhum método de confirmação funcionou!');
               console.error('[useTEFAndroid] Dados disponíveis:', JSON.stringify({
@@ -428,6 +442,23 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     // DOCUMENTAÇÃO PayGo: Cooldown de 5 SEGUNDOS após resolução é OBRIGATÓRIO
     // para que o terminal limpe sua base interna
     // ========================================================================
+    
+    // ═══════════════════════════════════════════════════════════════
+    // NOVO: Cooldown obrigatório baseado na última confirmação enviada
+    // Mesmo que hasPendingTransaction() retorne false, o terminal pode
+    // ainda estar processando a confirmação anterior internamente.
+    // ═══════════════════════════════════════════════════════════════
+    if (lastConfirmationTimestamp > 0) {
+      const elapsed = Date.now() - lastConfirmationTimestamp;
+      if (elapsed < CONFIRMATION_COOLDOWN_MS) {
+        const waitTime = CONFIRMATION_COOLDOWN_MS - elapsed;
+        console.log(`[useTEFAndroid] ⏳ Cooldown pós-confirmação: aguardando ${waitTime}ms (elapsed: ${elapsed}ms)`);
+        toast.info('Preparando terminal...', { description: 'Aguardando confirmação anterior', duration: Math.min(waitTime, 4000) });
+        await new Promise(r => setTimeout(r, waitTime));
+        console.log('[useTEFAndroid] ✅ Cooldown pós-confirmação concluído');
+      }
+    }
+    
     let pendingResolved = false;
     try {
       const TEF = (window as any).TEF;
@@ -465,13 +496,12 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         }
       }
 
-      // CRÍTICO: Se resolveu pendência, aguardar 5 segundos (cooldown obrigatório PayGo)
-      // Sem esse cooldown, o terminal nega a próxima transação (código 70/90)
+      // CRÍTICO: Se resolveu pendência AGORA, aguardar cooldown adicional
       if (pendingResolved) {
-        console.log('[useTEFAndroid] ⏳ Aguardando 5s cooldown obrigatório PayGo...');
+        console.log('[useTEFAndroid] ⏳ Aguardando 5s cooldown por pendência resolvida...');
         toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 4000 });
         await new Promise(r => setTimeout(r, 5000));
-        console.log('[useTEFAndroid] ✅ Cooldown concluído');
+        console.log('[useTEFAndroid] ✅ Cooldown de pendência concluído');
       }
     } catch (pendingCheckError) {
       console.warn('[useTEFAndroid] Erro ao verificar pendências (não crítico):', pendingCheckError);
