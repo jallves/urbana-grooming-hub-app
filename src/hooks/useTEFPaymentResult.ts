@@ -197,29 +197,12 @@ export function useTEFPaymentResult({
     }
   }, []);
   
-  // Registrar callback global no window
-  // IMPORTANTE: SEMPRE registrar, independente de enabled
-  // Isso garante que não perdemos o resultado do PayGo
+  // NÃO registrar window.onTefResultado aqui!
+  // O useTEFAndroid é o ÚNICO dono de window.onTefResultado
+  // Este hook recebe resultados via CustomEvent + storage (propagados pelo useTEFAndroid)
   useEffect(() => {
-    console.log('[useTEFPaymentResult] ✅ REGISTRANDO window.onTefResultado');
-    
-    // Registrar o callback global - mas ele respeita enabledRef
-    (window as any).onTefResultado = (resultado: TEFResultado | Record<string, unknown>) => {
-      console.log('[useTEFPaymentResult] 📞 window.onTefResultado CHAMADO | enabled:', enabledRef.current);
-      processResult(resultado, 'window.onTefResultado');
-    };
-    
-    console.log('[useTEFPaymentResult] Callback registrado com sucesso');
-    
-    // NÃO verificar storage ao montar - isso causava processamento de resultados antigos
-    // O polling (quando enabled=true) já cuida de verificar o storage
-    console.log('[useTEFPaymentResult] Storage on mount check DESATIVADO para evitar resultados stale');
-    
-    return () => {
-      // Não remover o callback ao desmontar
-      console.log('[useTEFPaymentResult] Componente desmontando, mantendo callback');
-    };
-  }, [processResult]); // Depende apenas de processResult que é estável
+    console.log('[useTEFPaymentResult] ✅ Inicializado - recebe via CustomEvent/storage (NÃO registra window.onTefResultado)');
+  }, []);
   
   // Listener para CustomEvent - SEMPRE ativo
   useEffect(() => {
