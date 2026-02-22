@@ -193,17 +193,35 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
           
           // ═══════════════════════════════════════════════════════════════
-          // IMPORTANTE: NÃO confirmar transação aqui no frontend!
-          // O APK Android faz a confirmação automática (auto-confirm) 
-          // conforme spec PayGo oficial (PayGoService.kt).
-          // A dupla confirmação (APK + frontend) corrompe o estado do 
-          // terminal e causa "Negada 90" na transação seguinte.
+          // CONFIRMAÇÃO FRONTEND (SAFETY NET)
+          // O APK DEVERIA confirmar automaticamente, mas na prática o
+          // "Negada 90" persiste, indicando que a confirmação do APK
+          // pode não estar chegando ao acquirer. O frontend agora
+          // TAMBÉM confirma como garantia. Broadcasts de confirmação
+          // PayGo são idempotentes — confirmar 2x não causa problema,
+          // mas NÃO confirmar causa "Negada 90" na próxima transação.
           // ═══════════════════════════════════════════════════════════════
-          console.log('[useTEFAndroid] 📋 Confirmação delegada ao APK (auto-confirm nativo)');
-          console.log('[useTEFAndroid] requiresConfirmation:', normalizedResult.requiresConfirmation);
-          console.log('[useTEFAndroid] confirmationTransactionId:', normalizedResult.confirmationTransactionId);
+          const confId = normalizedResult.confirmationTransactionId;
+          const needsConfirm = !!(confId && confId.length > 0);
           
-          // Salvar timestamp para cooldown (dar tempo ao APK processar confirmação)
+          console.log('[useTEFAndroid] 📋 Dados de confirmação:');
+          console.log('[useTEFAndroid]   confirmationTransactionId:', confId);
+          console.log('[useTEFAndroid]   requiresConfirmation:', normalizedResult.requiresConfirmation);
+          console.log('[useTEFAndroid]   needsConfirm (tem ID):', needsConfirm);
+          
+          if (needsConfirm) {
+            try {
+              console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
+              confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
+              console.log('[useTEFAndroid] ✅ Confirmação enviada com sucesso');
+            } catch (confError) {
+              console.error('[useTEFAndroid] ❌ Erro ao confirmar:', confError);
+            }
+          } else {
+            console.log('[useTEFAndroid] ℹ️ Sem confirmationTransactionId — nada a confirmar');
+          }
+          
+          // Salvar timestamp para cooldown
           lastConfirmationTimestamp = Date.now();
           
           if (opts.onSuccess) {
@@ -540,8 +558,8 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
       ordemId: raw.ordemId as string,
       timestamp: typeof raw.timestamp === 'number' ? raw.timestamp : Date.now(),
       // Dados de confirmação - IMPORTANTES para resolver pendências
-      confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
-      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
+      confirmationTransactionId: (raw.confirmationTransactionId || raw.confirmationId || '') as string,
+      requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true' || !!(raw.confirmationTransactionId || raw.confirmationId)
     };
   }
   
@@ -601,7 +619,7 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
     comprovanteLojista: (raw.merchantReceipt || raw.comprovanteLojista || '') as string,
     timestamp: Date.now(),
     // Dados de confirmação
-    confirmationTransactionId: (raw.confirmationTransactionId || '') as string,
-    requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true'
+    confirmationTransactionId: (raw.confirmationTransactionId || raw.confirmationId || '') as string,
+    requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true' || !!(raw.confirmationTransactionId || raw.confirmationId)
   };
 }
