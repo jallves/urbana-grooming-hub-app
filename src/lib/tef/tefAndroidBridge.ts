@@ -347,8 +347,9 @@ export function confirmarTransacaoTEF(
     return true; // Em modo simulação, sempre sucesso
   }
   
-  if (!confirmationId) {
-    console.warn('[TEFBridge] confirmationId não fornecido');
+  // Permitir string vazia - alguns APKs aceitam confirmarTransacao('', status)
+  if (confirmationId === undefined || confirmationId === null) {
+    console.warn('[TEFBridge] confirmationId é null/undefined');
     return false;
   }
   

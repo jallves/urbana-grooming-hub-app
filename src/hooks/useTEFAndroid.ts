@@ -197,35 +197,69 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
             let confirmed = false;
             const TEF = (window as any).TEF;
             
-            // Método 1: confirmarTransacao com confirmationTransactionId
-            if (normalizedResult.confirmationTransactionId) {
-              console.log('[useTEFAndroid] 🔐 Método 1: confirmarTransacao com ID:', normalizedResult.confirmationTransactionId);
-              confirmed = confirmarTransacaoTEF(normalizedResult.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
+            // Método 1: confirmarTransacao com confirmationTransactionId (campo específico do PayGo)
+            const confId = (normalizedResult.confirmationTransactionId || '').trim();
+            if (confId) {
+              console.log('[useTEFAndroid] 🔐 Método 1: confirmarTransacao com ID:', confId);
+              confirmed = confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
             }
             
-            // Método 2: confirmApprovedTransaction (APK >= v1.10)
+            // Método 2: confirmarTransacao usando ordemId como fallback
+            // Muitas vezes o PayGo não retorna confirmationTransactionId mas aceita o ordemId
+            if (!confirmed && normalizedResult.ordemId) {
+              console.log('[useTEFAndroid] 🔐 Método 2: confirmarTransacao com ordemId:', normalizedResult.ordemId);
+              confirmed = confirmarTransacaoTEF(normalizedResult.ordemId, 'CONFIRMADO_AUTOMATICO');
+            }
+            
+            // Método 3: confirmApprovedTransaction (APK >= v1.10)
             if (!confirmed && TEF?.confirmApprovedTransaction) {
-              console.log('[useTEFAndroid] 🔐 Método 2: confirmApprovedTransaction()');
+              console.log('[useTEFAndroid] 🔐 Método 3: confirmApprovedTransaction()');
               try {
                 TEF.confirmApprovedTransaction();
-                confirmed = true;
-              } catch (e) {
-                console.warn('[useTEFAndroid] Método 2 falhou:', e);
-              }
-            }
-            
-            // Método 3: resolverPendencia como último fallback
-            if (!confirmed && TEF?.resolverPendencia) {
-              console.log('[useTEFAndroid] 🔐 Método 3: resolverPendencia(CONFIRMADO_AUTOMATICO)');
-              try {
-                TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
                 confirmed = true;
               } catch (e) {
                 console.warn('[useTEFAndroid] Método 3 falhou:', e);
               }
             }
             
-            console.log('[useTEFAndroid] 🔐 Confirmação resultado:', confirmed ? '✅ OK' : '⚠️ Nenhum método disponível');
+            // Método 4: confirmarTransacao direto SEM ID (alguns APKs aceitam vazio)
+            if (!confirmed && TEF?.confirmarTransacao) {
+              console.log('[useTEFAndroid] 🔐 Método 4: confirmarTransacao direto sem ID');
+              try {
+                TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
+                confirmed = true;
+              } catch (e) {
+                console.warn('[useTEFAndroid] Método 4 falhou:', e);
+              }
+            }
+            
+            // Método 5: resolverPendencia como último fallback
+            if (!confirmed && TEF?.resolverPendencia) {
+              console.log('[useTEFAndroid] 🔐 Método 5: resolverPendencia(CONFIRMADO_AUTOMATICO)');
+              try {
+                TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
+                confirmed = true;
+              } catch (e) {
+                console.warn('[useTEFAndroid] Método 5 falhou:', e);
+              }
+            }
+            
+            console.log('[useTEFAndroid] 🔐 Confirmação resultado:', confirmed ? '✅ OK' : '⚠️ Nenhum método confirmou');
+            
+            if (!confirmed) {
+              console.error('[useTEFAndroid] ❌ ALERTA: Nenhum método de confirmação funcionou!');
+              console.error('[useTEFAndroid] Dados disponíveis:', JSON.stringify({
+                confirmationTransactionId: confId,
+                ordemId: normalizedResult.ordemId,
+                nsu: normalizedResult.nsu,
+                requiresConfirmation: normalizedResult.requiresConfirmation,
+                tefMethods: {
+                  confirmApprovedTransaction: !!TEF?.confirmApprovedTransaction,
+                  confirmarTransacao: !!TEF?.confirmarTransacao,
+                  resolverPendencia: !!TEF?.resolverPendencia,
+                }
+              }));
+            }
           }
           
           if (opts.onSuccess) {
