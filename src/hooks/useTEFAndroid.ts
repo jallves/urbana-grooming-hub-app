@@ -220,45 +220,12 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       console.log('[useTEFAndroid] window.TEF existe, registrando handler adicional');
     }
     
-    // Também ouvir evento customizado como backup
-    const handleCustomEvent = (event: CustomEvent) => {
-      console.log('[useTEFAndroid] CustomEvent tefPaymentResult recebido:', event.detail);
-      if (event.detail) {
-        handleTefResultado(event.detail);
-      }
-    };
-    
-    window.addEventListener('tefPaymentResult', handleCustomEvent as EventListener);
-    document.addEventListener('tefPaymentResult', handleCustomEvent as EventListener);
-    
-    // Verificar se há resultado pendente no sessionStorage (caso PayGo tenha retornado antes do hook montar)
-    const checkPendingResult = () => {
-      try {
-        const lastResult = sessionStorage.getItem('lastTefResult');
-        const lastTime = sessionStorage.getItem('lastTefResultTime');
-        if (lastResult && lastTime) {
-          const timeDiff = Date.now() - parseInt(lastTime, 10);
-          // Se o resultado foi salvo nos últimos 5 segundos, processar
-          if (timeDiff < 5000) {
-            console.log('[useTEFAndroid] Encontrado resultado pendente no sessionStorage');
-            const pendingResult = JSON.parse(lastResult);
-            sessionStorage.removeItem('lastTefResult');
-            sessionStorage.removeItem('lastTefResultTime');
-            handleTefResultado(pendingResult);
-          }
-        }
-      } catch (e) {
-        console.error('[useTEFAndroid] Erro ao verificar resultado pendente:', e);
-      }
-    };
-    
-    // Verificar após um pequeno delay
-    setTimeout(checkPendingResult, 100);
+    // NÃO escutar CustomEvent aqui - isso criava loop circular
+    // (useTEFAndroid dispara CustomEvent E escutava ele mesmo)
+    // O useTEFPaymentResult é o único consumer de CustomEvent/storage
     
     return () => {
-      console.log('[useTEFAndroid] Cleanup - removendo event listeners (mas mantendo window.onTefResultado)');
-      window.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
-      document.removeEventListener('tefPaymentResult', handleCustomEvent as EventListener);
+      console.log('[useTEFAndroid] Cleanup - mantendo window.onTefResultado');
       // NÃO remover window.onTefResultado para manter compatibilidade com retornos tardios
     };
   }, []);
