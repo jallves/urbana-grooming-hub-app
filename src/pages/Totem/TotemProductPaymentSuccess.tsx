@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import { sendReceiptEmail } from '@/services/receiptEmailService';
+
 
 const AUTO_REDIRECT_SECONDS = 12;
 
@@ -48,46 +48,12 @@ const TotemProductPaymentSuccess: React.FC = () => {
     // Animação: mostrar recibo após 800ms
     const receiptTimer = setTimeout(() => setShowReceipt(true), 800);
 
-    // Enviar comprovante por e-mail
-    const sendEmailReceipt = async () => {
-      if (emailSentRef.current) return;
-      emailSentRef.current = true;
-
-      const clientEmail = client?.email;
-      if (!clientEmail) {
-        setEmailStatus('no-email');
-        return;
-      }
-
-      const items: Array<{ name: string; quantity: number; unitPrice: number; price: number; type: 'service' | 'product' }> = [];
-
-      if (sale.items && sale.items.length > 0) {
-        sale.items.forEach((item: any) => {
-          const productName = item.nome || item.name || 'Produto';
-          const quantity = Number(item.quantidade) || Number(item.quantity) || 1;
-          const unitPrice = Number(item.preco_unitario) || Number(item.unitPrice) || 0;
-          const itemSubtotal = Number(item.subtotal) || Number(item.price) || (unitPrice * quantity);
-          items.push({ name: productName, quantity, unitPrice, price: itemSubtotal, type: 'product' as const });
-        });
-      } else {
-        items.push({ name: 'Compra de Produtos', quantity: 1, unitPrice: sale.total, price: sale.total, type: 'product' as const });
-      }
-
-      const result = await sendReceiptEmail({
-        clientName: client.nome,
-        clientEmail,
-        transactionType: 'product',
-        items,
-        total: sale.total,
-        paymentMethod: transactionData?.paymentMethod || 'card',
-        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
-        nsu: transactionData?.nsu
-      });
-
-      setEmailStatus(result.success ? 'sent' : 'error');
-    };
-
-    sendEmailReceipt();
+    // NÃO enviar e-mail automaticamente aqui
+    // O e-mail é enviado manualmente pelo usuário via TotemReceiptOptionsModal
+    // (evita e-mail duplicado)
+    if (!client?.email) {
+      setEmailStatus('no-email');
+    }
 
     // Countdown para voltar ao início
     countdownRef.current = setInterval(() => {
