@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado, confirmarTransacaoTEF, desfazerTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
 import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
@@ -217,10 +218,27 @@ const TotemPaymentCard: React.FC = () => {
     console.log('📞 [CARD] confirmationId:', resultado.confirmationTransactionId);
     console.log('📞 [CARD] ═══════════════════════════════════════');
     
+    // Log centralizado para análise no PDV
+    logTEFTransaction('checkout_servico', 
+      resultado.status === 'aprovado' ? 'success' : resultado.status === 'negado' ? 'error' : 'warning',
+      `[SERVIÇO] Resultado: ${resultado.status.toUpperCase()}`,
+      {
+        status: resultado.status,
+        nsu: resultado.nsu,
+        autorizacao: resultado.autorizacao,
+        bandeira: resultado.bandeira,
+        mensagem: resultado.mensagem,
+        codigoResposta: resultado.codigoResposta,
+        confirmationTransactionId: resultado.confirmationTransactionId,
+        valor: total,
+        venda_id,
+        tipo: paymentTypeRef.current
+      }
+    );
+
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [CARD] Pagamento APROVADO - Mostrando opções de comprovante');
-        // Guardar dados da transação e mostrar modal de opções
         setPendingTransactionData({
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao,
@@ -256,7 +274,7 @@ const TotemPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, [venda_id, session_id]);
+  }, [venda_id, session_id, total]);
 
   // Hook dedicado para receber resultado do PayGo - ÚNICO receptor de resultados
   // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
@@ -310,6 +328,10 @@ const TotemPaymentCard: React.FC = () => {
     console.log('💳 [CARD] Total:', total);
     console.log('💳 [CARD] TEF (state):', { isAndroidAvailable, isPinpadConnected });
     console.log('💳 [CARD] ═══════════════════════════════════════');
+
+    logTEFTransaction('checkout_servico', 'info', `[SERVIÇO] Iniciando pagamento ${type.toUpperCase()}`, {
+      tipo: type, venda_id, total, isAndroidAvailable, isPinpadConnected
+    });
 
     // Evitar duplo clique / reentrada
     if (processing || paymentStarted) return;

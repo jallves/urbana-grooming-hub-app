@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
 import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
@@ -207,6 +208,24 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('📞 [PRODUCT-CARD] Status:', resultado.status);
     console.log('📞 [PRODUCT-CARD] ═══════════════════════════════════════');
 
+    // Log centralizado para análise no PDV
+    logTEFTransaction('checkout_produto',
+      resultado.status === 'aprovado' ? 'success' : resultado.status === 'negado' ? 'error' : 'warning',
+      `[PRODUTO] Resultado: ${resultado.status.toUpperCase()}`,
+      {
+        status: resultado.status,
+        nsu: resultado.nsu,
+        autorizacao: resultado.autorizacao,
+        bandeira: resultado.bandeira,
+        mensagem: resultado.mensagem,
+        codigoResposta: resultado.codigoResposta,
+        confirmationTransactionId: resultado.confirmationTransactionId,
+        valor: sale?.total,
+        venda_id: sale?.id,
+        tipo: paymentTypeRef.current
+      }
+    );
+
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [PRODUCT-CARD] Pagamento APROVADO - Mostrando opções de comprovante');
@@ -245,7 +264,7 @@ const TotemProductPaymentCard: React.FC = () => {
         setPaymentStarted(false);
         break;
     }
-  }, []);
+  }, [sale]);
 
   // Hook TEF Result - IDÊNTICO AO SERVIÇO
   useTEFPaymentResult({
@@ -294,6 +313,10 @@ const TotemProductPaymentCard: React.FC = () => {
     console.log('💳 [PRODUCT-CARD] Venda ID:', sale?.id);
     console.log('💳 [PRODUCT-CARD] Total:', sale?.total);
     console.log('💳 [PRODUCT-CARD] ═══════════════════════════════════════');
+
+    logTEFTransaction('checkout_produto', 'info', `[PRODUTO] Iniciando pagamento ${type.toUpperCase()}`, {
+      tipo: type, venda_id: sale?.id, total: sale?.total, isAndroidAvailable, isPinpadConnected
+    });
 
     // Evitar duplo clique / reentrada
     if (processing || paymentStarted) return;

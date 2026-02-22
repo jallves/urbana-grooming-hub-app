@@ -47,7 +47,7 @@ let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 // ainda processando a confirmação anterior.
 // ═══════════════════════════════════════════════════════════════
 let lastConfirmationTimestamp: number = 0;
-const CONFIRMATION_COOLDOWN_MS = 5000; // 5 segundos obrigatórios
+const CONFIRMATION_COOLDOWN_MS = 10000; // 10 segundos obrigatórios
 
 // Armazenar referência aos options de forma global para persistir entre renders
 let globalOptionsRef: UseTEFAndroidOptions = {};
@@ -446,9 +446,9 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
       // CRÍTICO: Se resolveu pendência AGORA, aguardar cooldown adicional
       if (pendingResolved) {
-        console.log('[useTEFAndroid] ⏳ Aguardando 5s cooldown por pendência resolvida...');
-        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 4000 });
-        await new Promise(r => setTimeout(r, 5000));
+        console.log('[useTEFAndroid] ⏳ Aguardando 10s cooldown por pendência resolvida...');
+        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 9000 });
+        await new Promise(r => setTimeout(r, 10000));
         console.log('[useTEFAndroid] ✅ Cooldown de pendência concluído');
       }
     } catch (pendingCheckError) {

@@ -14,6 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { isAndroidTEFAvailable } from '@/lib/tef/tefAndroidBridge';
+import { getTEFTransactionLogs, clearTEFTransactionLogs, type TEFTransactionLog } from '@/lib/tef/tefTransactionLogger';
 import TEFTransactionSuccessModal from '@/components/admin/tef/TEFTransactionSuccessModal';
 
 // ============================================================================
@@ -58,7 +59,8 @@ interface LogEntry {
 
 type PDVStatus = 'idle' | 'processing' | 'awaiting_confirmation' | 'pending_detected' | 'success' | 'error';
 type PaymentMethod = 'credit' | 'debit' | 'pix';
-type ViewMode = 'pdv' | 'logs';
+type ViewMode = 'pdv' | 'logs' | 'checkout_logs';
+type CheckoutLogFilter = 'all' | 'checkout_servico' | 'checkout_produto';
 
 // ============================================================================
 // CONSTANTES
@@ -104,6 +106,8 @@ export default function TotemTEFHomologacaoV3() {
   
   // View mode - PDV ou Logs
   const [viewMode, setViewMode] = useState<ViewMode>('pdv');
+  const [checkoutLogFilter, setCheckoutLogFilter] = useState<CheckoutLogFilter>('all');
+  const [checkoutLogs, setCheckoutLogs] = useState<TEFTransactionLog[]>([]);
   
   // Método de pagamento e parcelas
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('credit');
@@ -140,7 +144,15 @@ export default function TotemTEFHomologacaoV3() {
     if (viewMode === 'logs') {
       logsEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  }, [logs, viewMode]);
+    if (viewMode === 'checkout_logs') {
+      const allLogs = getTEFTransactionLogs();
+      if (checkoutLogFilter === 'all') {
+        setCheckoutLogs(allLogs);
+      } else {
+        setCheckoutLogs(allLogs.filter(l => l.source === checkoutLogFilter));
+      }
+    }
+  }, [logs, viewMode, checkoutLogFilter]);
   
   // ============================================================================
   // INICIALIZAÇÃO
@@ -703,17 +715,22 @@ export default function TotemTEFHomologacaoV3() {
           {/* Toggle PDV / Logs */}
           <div className="flex border border-gray-600 rounded overflow-hidden">
             <Button 
-              className={`${btnBase} px-3 py-1 text-xs rounded-none ${viewMode === 'pdv' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              className={`${btnBase} px-2 py-1 text-xs rounded-none ${viewMode === 'pdv' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
               onPointerDown={() => setViewMode('pdv')}
             >
               PDV
             </Button>
             <Button 
-              className={`${btnBase} px-3 py-1 text-xs rounded-none ${viewMode === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              className={`${btnBase} px-2 py-1 text-xs rounded-none ${viewMode === 'logs' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
               onPointerDown={() => setViewMode('logs')}
             >
-              <FileText className="w-3 h-3 mr-1" />
               Logs
+            </Button>
+            <Button 
+              className={`${btnBase} px-2 py-1 text-xs rounded-none ${viewMode === 'checkout_logs' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+              onPointerDown={() => setViewMode('checkout_logs')}
+            >
+              Checkout
             </Button>
           </div>
 
@@ -1090,6 +1107,102 @@ export default function TotemTEFHomologacaoV3() {
                 ))
               )}
               <div ref={logsEndRef} />
+            </div>
+          </div>
+        )}
+
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {/* VIEW: CHECKOUT LOGS (Serviço + Produto) */}
+        {/* ═══════════════════════════════════════════════════════════════════ */}
+        {viewMode === 'checkout_logs' && (
+          <div className="h-full flex flex-col">
+            <div className="bg-gray-800 p-3 border-b border-gray-700 flex items-center justify-between flex-shrink-0 gap-2">
+              <h3 className="text-sm font-bold whitespace-nowrap">🛒 Logs Checkout TEF</h3>
+              <div className="flex items-center gap-1 flex-1 justify-center">
+                <div className="flex border border-gray-600 rounded overflow-hidden">
+                  <Button
+                    className={`${btnBase} px-2 py-0.5 text-[10px] rounded-none ${checkoutLogFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    onPointerDown={() => setCheckoutLogFilter('all')}
+                  >
+                    Todos
+                  </Button>
+                  <Button
+                    className={`${btnBase} px-2 py-0.5 text-[10px] rounded-none ${checkoutLogFilter === 'checkout_servico' ? 'bg-green-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    onPointerDown={() => setCheckoutLogFilter('checkout_servico')}
+                  >
+                    Serviço
+                  </Button>
+                  <Button
+                    className={`${btnBase} px-2 py-0.5 text-[10px] rounded-none ${checkoutLogFilter === 'checkout_produto' ? 'bg-amber-600 text-white' : 'bg-gray-700 text-gray-300'}`}
+                    onPointerDown={() => setCheckoutLogFilter('checkout_produto')}
+                  >
+                    Produto
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Button
+                  className={`${btnOutline} h-7 text-xs px-2`}
+                  onPointerDown={() => {
+                    const allLogs = getTEFTransactionLogs();
+                    if (checkoutLogFilter === 'all') {
+                      setCheckoutLogs(allLogs);
+                    } else {
+                      setCheckoutLogs(allLogs.filter(l => l.source === checkoutLogFilter));
+                    }
+                  }}
+                >
+                  <RefreshCw className="w-3 h-3" />
+                </Button>
+                <Button
+                  className={`${btnOutline} h-7 text-xs px-2`}
+                  onPointerDown={() => {
+                    clearTEFTransactionLogs();
+                    setCheckoutLogs([]);
+                  }}
+                >
+                  <Trash2 className="w-3 h-3" />
+                </Button>
+              </div>
+            </div>
+            <div className="flex-1 overflow-y-auto p-3 font-mono text-xs bg-black/50">
+              {checkoutLogs.length === 0 ? (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nenhum log de checkout registrado</p>
+                  <p className="text-gray-600 text-[10px] mt-2">Faça uma transação de serviço ou produto para ver os logs aqui</p>
+                </div>
+              ) : (
+                checkoutLogs.map((log) => (
+                  <div
+                    key={log.id}
+                    className={`py-1.5 border-b border-gray-800 ${
+                      log.type === 'error' ? 'text-red-400' :
+                      log.type === 'success' ? 'text-green-400' :
+                      log.type === 'warning' ? 'text-yellow-400' :
+                      'text-gray-300'
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-500 text-[10px]">
+                        [{new Date(log.timestamp).toLocaleTimeString()}]
+                      </span>
+                      <Badge className={`text-[9px] px-1 py-0 ${
+                        log.source === 'checkout_servico' ? 'bg-green-800 text-green-200' :
+                        log.source === 'checkout_produto' ? 'bg-amber-800 text-amber-200' :
+                        'bg-blue-800 text-blue-200'
+                      }`}>
+                        {log.source === 'checkout_servico' ? 'SRV' : log.source === 'checkout_produto' ? 'PRD' : 'PDV'}
+                      </Badge>
+                      <span>{log.message}</span>
+                    </div>
+                    {log.data && (
+                      <pre className="text-[10px] text-gray-500 ml-4 mt-1 overflow-x-auto">
+                        {JSON.stringify(log.data, null, 2)}
+                      </pre>
+                    )}
+                  </div>
+                ))
+              )}
             </div>
           </div>
         )}
