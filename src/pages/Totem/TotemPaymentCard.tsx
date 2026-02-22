@@ -128,11 +128,9 @@ const TotemPaymentCard: React.FC = () => {
     console.log('✅ [CARD] COMPROVANTE PROCESSADO - FINALIZANDO');
     console.log('✅ [CARD] ═══════════════════════════════════════');
     
-    // 1. Confirmar transação TEF (se houver confirmationId)
-    if (pendingTransactionData.confirmationId) {
-      console.log('[CARD] Confirmando transação TEF:', pendingTransactionData.confirmationId);
-      confirmarTransacaoTEF(pendingTransactionData.confirmationId, 'CONFIRMADO_AUTOMATICO');
-    }
+    // NOTA: Confirmação TEF já foi enviada IMEDIATAMENTE pelo useTEFAndroid
+    // ao receber aprovação. NÃO confirmar novamente aqui para evitar duplicata.
+    console.log('[CARD] Confirmação TEF já enviada pelo useTEFAndroid (imediata)');
     
     // 2. Finalizar venda no backend
     try {
