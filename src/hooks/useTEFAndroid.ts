@@ -9,6 +9,7 @@ import {
   mapPaymentMethod,
   reaisToCentavos,
   savePendingDataToLocalStorage,
+  confirmarTransacaoTEF,
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
@@ -181,6 +182,19 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       switch (normalizedResult.status) {
         case 'aprovado':
           console.log('[useTEFAndroid] ✅ Pagamento APROVADO - chamando onSuccess');
+          
+          // ═══════════════════════════════════════════════════════════════
+          // CRÍTICO: Confirmar transação IMEDIATAMENTE após aprovação!
+          // Se a confirmação for adiada (ex: esperar comprovante), o terminal
+          // PayGo mantém a transação como "pendente" e a PRÓXIMA transação
+          // recebe "negado 90". A confirmação DEVE ser síncrona com a aprovação.
+          // ═══════════════════════════════════════════════════════════════
+          if (normalizedResult.requiresConfirmation && normalizedResult.confirmationTransactionId) {
+            console.log('[useTEFAndroid] 🔐 Enviando confirmação IMEDIATA para:', normalizedResult.confirmationTransactionId);
+            const confirmed = confirmarTransacaoTEF(normalizedResult.confirmationTransactionId, 'CONFIRMADO_AUTOMATICO');
+            console.log('[useTEFAndroid] 🔐 Confirmação enviada:', confirmed ? '✅ OK' : '❌ FALHOU');
+          }
+          
           if (opts.onSuccess) {
             opts.onSuccess(normalizedResult);
           } else {
