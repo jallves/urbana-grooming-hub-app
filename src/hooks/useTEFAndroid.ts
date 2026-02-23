@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
+import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import {
   isAndroidTEFAvailable,
   iniciarPagamentoAndroid,
@@ -42,12 +43,25 @@ let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 
 // ═══════════════════════════════════════════════════════════════
 // CRÍTICO: Timestamp da última confirmação enviada ao PayGo
-// Usado para impor cooldown obrigatório SEMPRE, não apenas quando
-// detecta pendência. Isso resolve "negada 90" causada pelo terminal
-// ainda processando a confirmação anterior.
+// Persistido em localStorage para sobreviver a navegações de página.
 // ═══════════════════════════════════════════════════════════════
-let lastConfirmationTimestamp: number = 0;
+const COOLDOWN_LS_KEY = 'tef_last_confirmation_ts';
 const CONFIRMATION_COOLDOWN_MS = 10000; // 10 segundos obrigatórios
+
+function getLastConfirmationTimestamp(): number {
+  try {
+    const stored = localStorage.getItem(COOLDOWN_LS_KEY);
+    return stored ? parseInt(stored, 10) : 0;
+  } catch { return 0; }
+}
+
+function setLastConfirmationTimestamp(ts: number): void {
+  try {
+    localStorage.setItem(COOLDOWN_LS_KEY, ts.toString());
+  } catch { /* ignore */ }
+}
+
+let lastConfirmationTimestamp: number = getLastConfirmationTimestamp();
 
 // Armazenar referência aos options de forma global para persistir entre renders
 let globalOptionsRef: UseTEFAndroidOptions = {};
@@ -214,15 +228,33 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
               console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
               confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
               console.log('[useTEFAndroid] ✅ Confirmação enviada com sucesso');
+              logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação enviada ao terminal', {
+                confirmationTransactionId: confId,
+                nsu: normalizedResult.nsu,
+                autorizacao: normalizedResult.autorizacao
+              });
             } catch (confError) {
               console.error('[useTEFAndroid] ❌ Erro ao confirmar:', confError);
+              logTEFTransaction('checkout_servico', 'error', '[TEF] ERRO ao enviar confirmação', {
+                confirmationTransactionId: confId,
+                error: String(confError)
+              });
             }
           } else {
             console.log('[useTEFAndroid] ℹ️ Sem confirmationTransactionId — nada a confirmar');
+            logTEFTransaction('checkout_servico', 'warning', '[TEF] Aprovado SEM confirmationTransactionId', {
+              nsu: normalizedResult.nsu,
+              autorizacao: normalizedResult.autorizacao,
+              rawKeys: Object.keys(normalizedResult)
+            });
           }
           
-          // Salvar timestamp para cooldown
+          // Salvar timestamp para cooldown (memória + localStorage)
           lastConfirmationTimestamp = Date.now();
+          setLastConfirmationTimestamp(lastConfirmationTimestamp);
+          logTEFTransaction('checkout_servico', 'info', `[TEF] Cooldown ativado: ${CONFIRMATION_COOLDOWN_MS}ms`, {
+            timestamp: lastConfirmationTimestamp
+          });
           
           if (opts.onSuccess) {
             opts.onSuccess(normalizedResult);
@@ -396,15 +428,29 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     // Mesmo que hasPendingTransaction() retorne false, o terminal pode
     // ainda estar processando a confirmação anterior internamente.
     // ═══════════════════════════════════════════════════════════════
+    // Re-ler do localStorage para capturar confirmações de outras páginas
+    lastConfirmationTimestamp = getLastConfirmationTimestamp();
+    
     if (lastConfirmationTimestamp > 0) {
       const elapsed = Date.now() - lastConfirmationTimestamp;
+      logTEFTransaction('checkout_produto', 'info', `[TEF] Verificando cooldown: elapsed=${elapsed}ms, required=${CONFIRMATION_COOLDOWN_MS}ms`, {
+        lastConfirmationTimestamp,
+        elapsed,
+        cooldownMs: CONFIRMATION_COOLDOWN_MS,
+        willWait: elapsed < CONFIRMATION_COOLDOWN_MS
+      });
       if (elapsed < CONFIRMATION_COOLDOWN_MS) {
         const waitTime = CONFIRMATION_COOLDOWN_MS - elapsed;
         console.log(`[useTEFAndroid] ⏳ Cooldown pós-confirmação: aguardando ${waitTime}ms (elapsed: ${elapsed}ms)`);
-        toast.info('Preparando terminal...', { description: 'Aguardando confirmação anterior', duration: Math.min(waitTime, 4000) });
+        toast.info('Preparando terminal...', { description: `Aguardando ${Math.ceil(waitTime/1000)}s`, duration: Math.min(waitTime, 8000) });
         await new Promise(r => setTimeout(r, waitTime));
         console.log('[useTEFAndroid] ✅ Cooldown pós-confirmação concluído');
+        logTEFTransaction('checkout_produto', 'info', '[TEF] Cooldown concluído - prosseguindo');
+      } else {
+        logTEFTransaction('checkout_produto', 'info', `[TEF] Cooldown já expirado (${elapsed}ms elapsed)`);
       }
+    } else {
+      logTEFTransaction('checkout_produto', 'info', '[TEF] Sem confirmação anterior registrada - sem cooldown');
     }
     
     let pendingResolved = false;
