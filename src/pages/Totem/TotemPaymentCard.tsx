@@ -48,6 +48,20 @@ const TotemPaymentCard: React.FC = () => {
     paymentTypeRef.current = paymentType;
   }, [paymentType]);
 
+  // CRÍTICO: Limpar storage de resultados TEF antigos ao montar
+  // (Parity com TotemProductPaymentCard - evita resultados stale)
+  useEffect(() => {
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+      console.log('[CARD] 🧹 Storage TEF limpo ao montar componente');
+    } catch (e) {
+      console.warn('[CARD] Erro ao limpar storage:', e);
+    }
+  }, []);
+
   // Função para enviar e-mail de comprovante
   const handleSendReceiptEmail = useCallback(async (): Promise<boolean> => {
     if (!client?.email) return false;

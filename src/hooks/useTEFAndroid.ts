@@ -404,7 +404,6 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     }
 
     // CRÍTICO: PIX pode funcionar sem Pinpad físico (usa QR Code no terminal)
-    // Apenas cartão (credit/debit) requer Pinpad conectado
     if (!isPinpadConnected && params.tipo !== 'pix') {
       console.warn('[useTEFAndroid] Pinpad não conectado (obrigatório para cartão)');
       toast.error('Pinpad não conectado');
@@ -416,71 +415,77 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       return false;
     }
 
-    // ========================================================================
-    // IMPORTANTE: Verificar e resolver pendências ANTES de iniciar novo pagamento
-    // Isso evita erros "negado código 70/90" e similares
-    // DOCUMENTAÇÃO PayGo: Cooldown de 5 SEGUNDOS após resolução é OBRIGATÓRIO
-    // para que o terminal limpe sua base interna
-    // ========================================================================
-    
+    const TEF = (window as any).TEF;
+
     // ═══════════════════════════════════════════════════════════════
-    // NOVO: Cooldown obrigatório baseado na última confirmação enviada
-    // Mesmo que hasPendingTransaction() retorne false, o terminal pode
-    // ainda estar processando a confirmação anterior internamente.
+    // FASE 1: COOLDOWN PÓS-CONFIRMAÇÃO (persistido em localStorage)
     // ═══════════════════════════════════════════════════════════════
-    // Re-ler do localStorage para capturar confirmações de outras páginas
     lastConfirmationTimestamp = getLastConfirmationTimestamp();
     
     if (lastConfirmationTimestamp > 0) {
       const elapsed = Date.now() - lastConfirmationTimestamp;
-      logTEFTransaction('checkout_produto', 'info', `[TEF] Verificando cooldown: elapsed=${elapsed}ms, required=${CONFIRMATION_COOLDOWN_MS}ms`, {
-        lastConfirmationTimestamp,
-        elapsed,
-        cooldownMs: CONFIRMATION_COOLDOWN_MS,
-        willWait: elapsed < CONFIRMATION_COOLDOWN_MS
+      logTEFTransaction('tef_init', 'info', `[TEF] Verificando cooldown: elapsed=${elapsed}ms, required=${CONFIRMATION_COOLDOWN_MS}ms`, {
+        lastConfirmationTimestamp, elapsed, cooldownMs: CONFIRMATION_COOLDOWN_MS, willWait: elapsed < CONFIRMATION_COOLDOWN_MS
       });
       if (elapsed < CONFIRMATION_COOLDOWN_MS) {
         const waitTime = CONFIRMATION_COOLDOWN_MS - elapsed;
-        console.log(`[useTEFAndroid] ⏳ Cooldown pós-confirmação: aguardando ${waitTime}ms (elapsed: ${elapsed}ms)`);
+        console.log(`[useTEFAndroid] ⏳ Cooldown pós-confirmação: aguardando ${waitTime}ms`);
         toast.info('Preparando terminal...', { description: `Aguardando ${Math.ceil(waitTime/1000)}s`, duration: Math.min(waitTime, 8000) });
         await new Promise(r => setTimeout(r, waitTime));
         console.log('[useTEFAndroid] ✅ Cooldown pós-confirmação concluído');
-        logTEFTransaction('checkout_produto', 'info', '[TEF] Cooldown concluído - prosseguindo');
-      } else {
-        logTEFTransaction('checkout_produto', 'info', `[TEF] Cooldown já expirado (${elapsed}ms elapsed)`);
       }
-    } else {
-      logTEFTransaction('checkout_produto', 'info', '[TEF] Sem confirmação anterior registrada - sem cooldown');
     }
     
+    // ═══════════════════════════════════════════════════════════════
+    // FASE 2: RESOLUÇÃO AGRESSIVA DE PENDÊNCIAS
+    // Limpa QUALQUER estado residual no terminal antes de iniciar
+    // ═══════════════════════════════════════════════════════════════
     let pendingResolved = false;
     try {
-      const TEF = (window as any).TEF;
-      
-      // Método 1: Verificar via hasPendingTransaction (novo)
-      if (TEF?.hasPendingTransaction && TEF.hasPendingTransaction()) {
-        console.log('[useTEFAndroid] ⚠️ Pendência detectada via hasPendingTransaction - resolvendo...');
-        if (TEF.autoResolvePending) {
-          TEF.autoResolvePending();
-          pendingResolved = true;
-        } else if (TEF.resolverPendencia) {
-          TEF.resolverPendencia('CONFIRMADO_MANUAL');
-          pendingResolved = true;
+      // Método 1: canStartTransaction gate
+      if (TEF?.canStartTransaction) {
+        const canStart = TEF.canStartTransaction();
+        console.log('[useTEFAndroid] canStartTransaction():', canStart);
+        if (!canStart) {
+          console.log('[useTEFAndroid] ⚠️ Terminal não pronto (canStartTransaction=false). Forçando resolução...');
+          
+          // Tentar auto-resolve
+          if (TEF.autoResolvePending) {
+            TEF.autoResolvePending();
+            pendingResolved = true;
+          } else if (TEF.clearPendingTransaction) {
+            TEF.clearPendingTransaction();
+            pendingResolved = true;
+          } else if (TEF.resolverPendencia) {
+            TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
+            pendingResolved = true;
+          }
         }
       }
       
-      // Método 2: Verificar via getPendingInfo (legado)
+      // Método 2: hasPendingTransaction (mesmo se canStartTransaction retornou true)
+      if (!pendingResolved && TEF?.hasPendingTransaction && TEF.hasPendingTransaction()) {
+        console.log('[useTEFAndroid] ⚠️ Pendência detectada via hasPendingTransaction');
+        if (TEF.autoResolvePending) {
+          TEF.autoResolvePending();
+        } else if (TEF.resolverPendencia) {
+          TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
+        }
+        pendingResolved = true;
+      }
+      
+      // Método 3: getPendingInfo (legado)
       if (!pendingResolved && TEF?.getPendingInfo) {
         try {
           const pendingInfo = TEF.getPendingInfo();
           if (pendingInfo && pendingInfo !== '{}' && pendingInfo !== 'null') {
             const parsed = JSON.parse(pendingInfo);
             if (parsed && Object.keys(parsed).length > 0) {
-              console.log('[useTEFAndroid] ⚠️ Pendência detectada via getPendingInfo - resolvendo...');
+              console.log('[useTEFAndroid] ⚠️ Pendência detectada via getPendingInfo');
               if (TEF.autoResolvePending) {
                 TEF.autoResolvePending();
               } else if (TEF.resolverPendencia) {
-                TEF.resolverPendencia('CONFIRMADO_MANUAL');
+                TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
               }
               pendingResolved = true;
             }
@@ -490,28 +495,83 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         }
       }
 
-      // CRÍTICO: Se resolveu pendência AGORA, aguardar cooldown adicional
+      // Método 4 (NOVO): Fallback - enviar confirmação vazia para limpar
+      // Isso resolve o caso onde o terminal tem uma pendência que os métodos
+      // acima não detectam (ex: pendência órfã de sessão anterior)
+      if (!pendingResolved && TEF?.confirmarTransacao) {
+        try {
+          console.log('[useTEFAndroid] 🔄 Enviando confirmação preventiva (limpeza de estado)');
+          TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
+        } catch (e) {
+          // Ignorar - pode falhar se não houver nada para confirmar
+          console.log('[useTEFAndroid] Confirmação preventiva ignorada (sem pendência)');
+        }
+      }
+
+      // Se resolveu pendência, aguardar cooldown
       if (pendingResolved) {
-        console.log('[useTEFAndroid] ⏳ Aguardando 10s cooldown por pendência resolvida...');
-        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 9000 });
-        await new Promise(r => setTimeout(r, 10000));
+        console.log('[useTEFAndroid] ⏳ Aguardando 8s cooldown por pendência resolvida...');
+        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 7000 });
+        await new Promise(r => setTimeout(r, 8000));
         console.log('[useTEFAndroid] ✅ Cooldown de pendência concluído');
+        
+        logTEFTransaction('tef_init', 'warning', '[TEF] Pendência resolvida antes de iniciar pagamento', {
+          ordemId: params.ordemId
+        });
       }
     } catch (pendingCheckError) {
       console.warn('[useTEFAndroid] Erro ao verificar pendências (não crítico):', pendingCheckError);
     }
 
-    // Limpar resultado anterior
+    // ═══════════════════════════════════════════════════════════════
+    // FASE 3: WARM-UP OBRIGATÓRIO
+    // Pequena pausa para garantir que o terminal processou qualquer
+    // limpeza/confirmação anterior. Sem isso, o terminal pode
+    // rejeitar mesmo que a pendência já tenha sido resolvida.
+    // ═══════════════════════════════════════════════════════════════
+    if (!pendingResolved) {
+      console.log('[useTEFAndroid] ⏳ Warm-up de 1.5s antes de iniciar...');
+      await new Promise(r => setTimeout(r, 1500));
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FASE 4: GATE FINAL - Verificar se terminal aceita nova transação
+    // ═══════════════════════════════════════════════════════════════
+    if (TEF?.canStartTransaction) {
+      const canStart = TEF.canStartTransaction();
+      if (!canStart) {
+        console.error('[useTEFAndroid] ❌ Terminal AINDA não pode iniciar transação após limpeza');
+        logTEFTransaction('tef_init', 'error', '[TEF] Terminal recusou nova transação após resolução de pendência', {
+          ordemId: params.ordemId
+        });
+        toast.error('Terminal ocupado', { 
+          description: 'O terminal ainda está processando uma operação anterior. Aguarde mais alguns segundos.' 
+        });
+        return false;
+      }
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // FASE 5: LIMPAR ESTADO E INICIAR PAGAMENTO
+    // ═══════════════════════════════════════════════════════════════
     globalLastProcessedResult = null;
     try {
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
     } catch {
       // ignore
     }
     
     setIsProcessing(true);
-    console.log('[useTEFAndroid] Iniciando pagamento TEF:', params);
+    console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
+    logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
+      ordemId: params.ordemId,
+      valor: params.valor,
+      tipo: params.tipo,
+      pendingResolved
+    });
 
     return new Promise((resolve) => {
       // Registrar callback interno para resolver a promise
@@ -529,8 +589,6 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           parcelas: params.parcelas
         },
         (resultado) => {
-          // Este callback é chamado pela bridge - pode não ser necessário
-          // pois o callback global vai receber o resultado
           console.log('[useTEFAndroid] Callback da bridge recebido:', resultado);
         }
       );
