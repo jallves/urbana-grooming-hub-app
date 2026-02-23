@@ -150,7 +150,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     if (!selectedBarbeiroId || !selectedDate || !selectedServicoId) return;
     
     setLoadingSlots(true);
-    console.log('🕐 [Admin Edit] Buscando horários disponíveis:', {
+    console.log('🕐 [Admin Edit] Buscando horários disponíveis (otimizado):', {
       barbeiro: selectedBarbeiroId,
       data: format(selectedDate, 'yyyy-MM-dd'),
       servico: selectedServicoId
@@ -160,75 +160,125 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       const selectedServico = servicos.find(s => s.id === selectedServicoId);
       const serviceDuration = selectedServico?.duracao || 30;
+      const dayOfWeek = selectedDate.getDay();
       
       const now = new Date();
       const currentHour = now.getHours();
       const currentMinute = now.getMinutes();
       const isCurrentDay = isToday(selectedDate);
+
+      // Resolver staff_id do barbeiro para buscar working_hours
+      const selectedBarber = barbeiros.find(b => b.id === selectedBarbeiroId);
+      const authStaffId = selectedBarber?.staff_id || selectedBarbeiroId;
+
+      // OTIMIZAÇÃO: 3 queries em paralelo em vez de N queries individuais
+      const [staffResult, workingHoursResult, appointmentsResult] = await Promise.all([
+        // Resolver ID na tabela staff
+        supabase
+          .from('staff')
+          .select('id')
+          .eq('staff_id', authStaffId)
+          .maybeSingle(),
+        // Placeholder - será resolvido após staff_id
+        Promise.resolve(null),
+        // Buscar agendamentos existentes do dia
+        supabase
+          .from('painel_agendamentos')
+          .select('id, hora, servico:painel_servicos(duracao)')
+          .eq('barbeiro_id', selectedBarbeiroId)
+          .eq('data', formattedDate)
+          .neq('status', 'cancelado')
+      ]);
+
+      const staffTableId = staffResult.data?.id || authStaffId;
+
+      // Buscar working_hours com o ID correto
+      const { data: workingHours } = await supabase
+        .from('working_hours')
+        .select('start_time, end_time')
+        .eq('staff_id', staffTableId)
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true)
+        .maybeSingle();
+
+      const appointments = appointmentsResult.data;
+
+      // Determinar horários de início/fim
+      const startTime = workingHours?.start_time || '08:30';
+      const endTime = workingHours?.end_time || '20:00';
+      const startHour = parseInt(startTime.split(':')[0]);
+      const startMinute = parseInt(startTime.split(':')[1]) || 0;
+      const endHour = parseInt(endTime.split(':')[0]);
+      const endMinute = parseInt(endTime.split(':')[1]) || 0;
+
+      if (!workingHours) {
+        console.log('⚠️ [Admin Edit] Sem working_hours, usando horário padrão');
+      }
+
+      // Marcar slots ocupados (com buffer de 10min)
+      const BUFFER_MINUTES = 10;
+      const occupiedSlots = new Set<string>();
       
-      // Configurar slots de 08:30 às 20:00
+      appointments?.forEach((apt) => {
+        if (apt.id === appointmentId) return; // Ignorar o agendamento sendo editado
+        const aptDuration = (apt.servico as any)?.duracao || 60;
+        const [aH, aM] = apt.hora.split(':').map(Number);
+        const aptStartMin = aH * 60 + aM;
+        const totalBlock = aptDuration + BUFFER_MINUTES;
+        
+        for (let i = 0; i < totalBlock; i += 30) {
+          const slotMin = aptStartMin + i;
+          const h = Math.floor(slotMin / 60);
+          const m = slotMin % 60;
+          occupiedSlots.add(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+        }
+      });
+
+      // Gerar slots
       const allSlots: TimeSlot[] = [];
-      const FIRST_SLOT_HOUR = 8;
-      const FIRST_SLOT_MINUTE = 30;
-      const CLOSING_HOUR = 20;
-      const CLOSING_MINUTE = 0;
       
-      const closingTotalMinutes = CLOSING_HOUR * 60 + CLOSING_MINUTE;
-      const lastSlotTotalMinutes = closingTotalMinutes - serviceDuration;
-      
-      for (let hour = FIRST_SLOT_HOUR; hour < CLOSING_HOUR; hour++) {
-        for (let minute of [0, 30]) {
-          if (hour === FIRST_SLOT_HOUR && minute < FIRST_SLOT_MINUTE) {
-            continue;
-          }
+      for (let hour = startHour; hour <= endHour; hour++) {
+        for (const minute of [0, 30]) {
+          if (hour === startHour && minute < startMinute) continue;
           
           const slotTotalMinutes = hour * 60 + minute;
+          const endTotalMinutes = endHour * 60 + endMinute;
           
-          if (slotTotalMinutes > lastSlotTotalMinutes) {
-            continue;
-          }
+          // Verificar se o serviço cabe antes do fim do expediente
+          if (slotTotalMinutes + serviceDuration > endTotalMinutes) continue;
           
-          // Se for hoje, só incluir horários futuros
+          // Se for hoje, pular horários passados
           if (isCurrentDay) {
             const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
-              continue;
-            }
+            if (slotTotalMinutes <= currentTotalMinutes + 30) continue;
           }
           
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          allSlots.push({ time: timeString, available: false });
+          
+          // Verificar conflito: todos os slots que o serviço ocuparia devem estar livres
+          let isAvailable = true;
+          for (let i = 0; i < serviceDuration; i += 30) {
+            const checkMin = slotTotalMinutes + i;
+            const checkH = Math.floor(checkMin / 60);
+            const checkM = checkMin % 60;
+            const checkStr = `${checkH.toString().padStart(2, '0')}:${checkM.toString().padStart(2, '0')}`;
+            if (occupiedSlots.has(checkStr)) {
+              isAvailable = false;
+              break;
+            }
+          }
+          
+          allSlots.push({ time: timeString, available: isAvailable });
         }
       }
 
-      // Verificar disponibilidade de cada horário
-      const slotsWithAvailability = await Promise.all(
-        allSlots.map(async (slot) => {
-          const { data, error } = await supabase
-            .rpc('check_barber_slot_availability', {
-              p_barber_id: selectedBarbeiroId,
-              p_date: formattedDate,
-              p_time: slot.time,
-              p_duration: serviceDuration
-            });
+      const availableCount = allSlots.filter(s => s.available).length;
+      console.log('✅ [Admin Edit] Slots disponíveis:', availableCount, 'de', allSlots.length, '(otimizado - 2 queries)');
 
-          if (error) {
-            console.error('❌ Erro ao verificar slot:', error);
-            return { ...slot, available: false };
-          }
-
-          return { ...slot, available: data === true };
-        })
-      );
-
-      const availableCount = slotsWithAvailability.filter(s => s.available).length;
-      console.log('✅ [Admin Edit] Slots disponíveis:', availableCount);
-
-      setAvailableSlots(slotsWithAvailability);
+      setAvailableSlots(allSlots);
       
       // Se o horário atual não está disponível, limpar seleção
-      if (selectedTime && !slotsWithAvailability.find(s => s.time === selectedTime && s.available)) {
-        // Manter o horário selecionado se for o mesmo do agendamento original
+      if (selectedTime && !allSlots.find(s => s.time === selectedTime && s.available)) {
         const originalTime = appointment?.hora?.substring(0, 5);
         if (selectedTime !== originalTime) {
           setSelectedTime('');
@@ -240,7 +290,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedBarbeiroId, selectedDate, selectedServicoId, servicos, appointmentId, appointment]);
+  }, [selectedBarbeiroId, selectedDate, selectedServicoId, servicos, appointmentId, appointment, barbeiros]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
