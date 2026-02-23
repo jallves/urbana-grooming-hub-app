@@ -8,7 +8,7 @@
 export interface TEFTransactionLog {
   id: string;
   timestamp: string;
-  source: 'checkout_servico' | 'checkout_produto' | 'pdv_homologacao';
+  source: 'checkout_servico' | 'checkout_produto' | 'pdv_homologacao' | 'tef_init';
   type: 'info' | 'success' | 'error' | 'warning';
   message: string;
   data?: Record<string, unknown>;
