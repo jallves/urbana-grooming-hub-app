@@ -46,7 +46,7 @@ let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 // Persistido em localStorage para sobreviver a navegações de página.
 // ═══════════════════════════════════════════════════════════════
 const COOLDOWN_LS_KEY = 'tef_last_confirmation_ts';
-const CONFIRMATION_COOLDOWN_MS = 10000; // 10 segundos obrigatórios
+const CONFIRMATION_COOLDOWN_MS = 7000; // 7 segundos obrigatórios
 
 function getLastConfirmationTimestamp(): number {
   try {
