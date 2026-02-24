@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF, hasPendingTransactionAndroid, getPendingInfoAndroid } from '@/lib/tef/tefAndroidBridge';
 import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
@@ -225,6 +225,50 @@ const TotemProductPaymentCard: React.FC = () => {
         tipo: paymentTypeRef.current
       }
     );
+
+    // ═══════════════════════════════════════════════════════════════
+    // DETECÇÃO DE PENDÊNCIA -2599 (PARITY COM PDV HOMOLOGAÇÃO)
+    // ═══════════════════════════════════════════════════════════════
+    const isPendingError = 
+      resultado.codigoErro === '-2599' || 
+      resultado.codigoResposta === '-2599' ||
+      resultado.mensagem?.toLowerCase().includes('pendente') ||
+      resultado.mensagem?.toLowerCase().includes('pendência');
+
+    if (isPendingError) {
+      console.log('⚠️ [PRODUCT-CARD] ERRO -2599: TRANSAÇÃO PENDENTE DETECTADA');
+      logTEFTransaction('checkout_produto', 'warning', '[PRODUTO] Pendência -2599 detectada - resolvendo automaticamente', {
+        codigoErro: resultado.codigoErro,
+        codigoResposta: resultado.codigoResposta,
+        mensagem: resultado.mensagem
+      });
+
+      // Tentar resolver pendência automaticamente (igual PDV)
+      try {
+        const TEF = (window as any).TEF;
+        if (TEF?.autoResolvePending) {
+          TEF.autoResolvePending();
+        } else if (TEF?.resolverPendencia) {
+          TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
+        } else if (TEF?.confirmarTransacao) {
+          TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
+        }
+        console.log('[PRODUCT-CARD] Pendência resolvida automaticamente');
+        logTEFTransaction('checkout_produto', 'info', '[PRODUTO] Pendência resolvida automaticamente');
+      } catch (e) {
+        console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
+      }
+
+      toast.warning('Pendência no terminal detectada', {
+        description: 'A pendência foi resolvida. Tente novamente em alguns segundos.',
+        duration: 5000
+      });
+      setError('Pendência resolvida. Tente novamente.');
+      setProcessing(false);
+      setPaymentType(null);
+      setPaymentStarted(false);
+      return;
+    }
 
     switch (resultado.status) {
       case 'aprovado':
