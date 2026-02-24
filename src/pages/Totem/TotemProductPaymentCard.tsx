@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, confirmarTransacaoTEF, hasPendingTransactionAndroid, getPendingInfoAndroid } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF, resolverPendenciaAndroid, limparPendingDataCompleto, hasPendingTransactionAndroid } from '@/lib/tef/tefAndroidBridge';
 import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
@@ -243,20 +243,51 @@ const TotemProductPaymentCard: React.FC = () => {
         mensagem: resultado.mensagem
       });
 
-      // Tentar resolver pendência automaticamente (igual PDV)
+      // Resolver pendência usando mesma função do PDV de homologação
+      // resolverPendenciaAndroid usa os dados salvos no localStorage (merchantId, NSU, etc.)
       try {
-        const TEF = (window as any).TEF;
-        if (TEF?.autoResolvePending) {
-          TEF.autoResolvePending();
-        } else if (TEF?.resolverPendencia) {
-          TEF.resolverPendencia('CONFIRMADO_AUTOMATICO');
-        } else if (TEF?.confirmarTransacao) {
-          TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
+        const savedPendingData = localStorage.getItem('tef_pending_data');
+        let pendingData: Record<string, unknown> | undefined;
+        
+        if (savedPendingData) {
+          try {
+            pendingData = JSON.parse(savedPendingData);
+          } catch (e) { /* ignore parse error */ }
         }
-        console.log('[PRODUCT-CARD] Pendência resolvida automaticamente');
-        logTEFTransaction('checkout_produto', 'info', '[PRODUTO] Pendência resolvida automaticamente');
+
+        const resolved = resolverPendenciaAndroid(
+          'confirmar',
+          resultado.confirmationTransactionId || undefined,
+          pendingData
+        );
+
+        if (resolved) {
+          console.log('[PRODUCT-CARD] ✅ Pendência resolvida via resolverPendenciaAndroid');
+          limparPendingDataCompleto();
+          logTEFTransaction('checkout_produto', 'success', '[PRODUTO] Pendência resolvida com sucesso');
+        } else {
+          console.warn('[PRODUCT-CARD] ⚠️ resolverPendenciaAndroid retornou false - tentando fallback');
+          const TEF = (window as any).TEF;
+          if (TEF?.confirmarTransacao) {
+            TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
+          }
+          limparPendingDataCompleto();
+          logTEFTransaction('checkout_produto', 'warning', '[PRODUTO] Pendência resolvida via fallback');
+        }
+
+        // Verificar se realmente resolveu após 2s
+        setTimeout(() => {
+          const stillPending = hasPendingTransactionAndroid();
+          if (stillPending) {
+            console.warn('[PRODUCT-CARD] ⚠️ Ainda há pendência após resolução');
+            logTEFTransaction('checkout_produto', 'warning', '[PRODUTO] Pendência pode não ter sido totalmente resolvida');
+          } else {
+            console.log('[PRODUCT-CARD] ✅ Confirmado: sem pendências restantes');
+          }
+        }, 2000);
       } catch (e) {
         console.warn('[PRODUCT-CARD] Erro ao resolver pendência:', e);
+        logTEFTransaction('checkout_produto', 'error', '[PRODUTO] Erro ao resolver pendência', { error: String(e) });
       }
 
       toast.warning('Pendência no terminal detectada', {
