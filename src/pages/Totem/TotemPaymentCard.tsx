@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, confirmarTransacaoTEF, desfazerTransacaoTEF, resolverPendenciaAndroid, limparPendingDataCompleto, hasPendingTransactionAndroid } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF, desfazerTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
 import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
@@ -249,82 +249,6 @@ const TotemPaymentCard: React.FC = () => {
         tipo: paymentTypeRef.current
       }
     );
-
-    // ═══════════════════════════════════════════════════════════════
-    // DETECÇÃO DE PENDÊNCIA -2599 (PARITY COM PDV HOMOLOGAÇÃO)
-    // ═══════════════════════════════════════════════════════════════
-    const isPendingError = 
-      resultado.codigoErro === '-2599' || 
-      resultado.codigoResposta === '-2599' ||
-      resultado.mensagem?.toLowerCase().includes('pendente') ||
-      resultado.mensagem?.toLowerCase().includes('pendência');
-
-    if (isPendingError) {
-      console.log('⚠️ [CARD] ERRO -2599: TRANSAÇÃO PENDENTE DETECTADA');
-      logTEFTransaction('checkout_servico', 'warning', '[SERVIÇO] Pendência -2599 detectada - resolvendo automaticamente', {
-        codigoErro: resultado.codigoErro,
-        codigoResposta: resultado.codigoResposta,
-        mensagem: resultado.mensagem
-      });
-
-      // Resolver pendência usando mesma função do PDV de homologação
-      // resolverPendenciaAndroid usa os dados salvos no localStorage (merchantId, NSU, etc.)
-      try {
-        const savedPendingData = localStorage.getItem('tef_pending_data');
-        let pendingData: Record<string, unknown> | undefined;
-        
-        if (savedPendingData) {
-          try {
-            pendingData = JSON.parse(savedPendingData);
-          } catch (e) { /* ignore parse error */ }
-        }
-
-        const resolved = resolverPendenciaAndroid(
-          'confirmar',
-          resultado.confirmationTransactionId || undefined,
-          pendingData
-        );
-
-        if (resolved) {
-          console.log('[CARD] ✅ Pendência resolvida via resolverPendenciaAndroid');
-          limparPendingDataCompleto();
-          logTEFTransaction('checkout_servico', 'success', '[SERVIÇO] Pendência resolvida com sucesso');
-        } else {
-          console.warn('[CARD] ⚠️ resolverPendenciaAndroid retornou false - tentando fallback');
-          // Fallback: confirmação vazia
-          const TEF = (window as any).TEF;
-          if (TEF?.confirmarTransacao) {
-            TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
-          }
-          limparPendingDataCompleto();
-          logTEFTransaction('checkout_servico', 'warning', '[SERVIÇO] Pendência resolvida via fallback');
-        }
-
-        // Verificar se realmente resolveu após 2s
-        setTimeout(() => {
-          const stillPending = hasPendingTransactionAndroid();
-          if (stillPending) {
-            console.warn('[CARD] ⚠️ Ainda há pendência após resolução');
-            logTEFTransaction('checkout_servico', 'warning', '[SERVIÇO] Pendência pode não ter sido totalmente resolvida');
-          } else {
-            console.log('[CARD] ✅ Confirmado: sem pendências restantes');
-          }
-        }, 2000);
-      } catch (e) {
-        console.warn('[CARD] Erro ao resolver pendência:', e);
-        logTEFTransaction('checkout_servico', 'error', '[SERVIÇO] Erro ao resolver pendência', { error: String(e) });
-      }
-
-      toast.warning('Pendência no terminal detectada', {
-        description: 'A pendência foi resolvida. Tente novamente em alguns segundos.',
-        duration: 5000
-      });
-      setError('Pendência resolvida. Tente novamente.');
-      setProcessing(false);
-      setPaymentType(null);
-      setPaymentStarted(false);
-      return;
-    }
 
     switch (resultado.status) {
       case 'aprovado':
