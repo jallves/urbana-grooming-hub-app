@@ -174,8 +174,79 @@ Deno.serve(async (req) => {
       );
     }
 
-    console.log('✅ Usuário criado com ID:', authData.user.id);
-    console.log('📧 E-mail de confirmação ENVIADO automaticamente pelo Supabase!');
+    // ===================================================================
+    // DETECÇÃO DE USER_REPEATED_SIGNUP
+    // Quando o Supabase retorna um user sem identities, significa que o
+    // email já existe no auth. Nesse caso, buscamos o user real e
+    // re-vinculamos o perfil em painel_clientes.
+    // ===================================================================
+    const isRepeatedSignup = !authData.user.identities || authData.user.identities.length === 0;
+    let realUserId = authData.user.id;
+
+    if (isRepeatedSignup) {
+      console.log('⚠️ Detected user_repeated_signup - email já existe no auth');
+      
+      // Buscar o user real pelo email via admin
+      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
+      
+      if (listError) {
+        console.error('❌ Erro ao buscar usuário existente:', listError);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
+                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
+                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
+      const existingUser = existingUsers?.users?.find(
+        u => u.email?.toLowerCase() === email.trim().toLowerCase()
+      );
+
+      if (!existingUser) {
+        console.error('❌ Usuário não encontrado no auth apesar de repeated_signup');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: '❌ Erro inesperado ao processar cadastro. Tente novamente.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      realUserId = existingUser.id;
+      console.log('✅ Usuário real encontrado:', realUserId);
+
+      // Verificar se já existe perfil para este user
+      const { data: existingProfile } = await supabaseAdmin
+        .from('painel_clientes')
+        .select('id')
+        .eq('user_id', realUserId)
+        .maybeSingle();
+
+      if (existingProfile) {
+        console.log('✅ Perfil já existe, redirecionando para login');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `📧 Este e-mail (${email}) já possui cadastro completo!\n\n` +
+                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
+                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
+      // Perfil não existe mas user sim - recriar perfil vinculado
+      console.log('🔄 Recriando perfil para usuário existente:', realUserId);
+    } else {
+      console.log('✅ Novo usuário criado com ID:', authData.user.id);
+      console.log('📧 E-mail de confirmação ENVIADO automaticamente pelo Supabase!');
+    }
+
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
 
     // ===================================================================
@@ -186,7 +257,7 @@ Deno.serve(async (req) => {
     const { error: clientError } = await supabaseAdmin
       .from('painel_clientes')
       .insert({
-        user_id: authData.user.id,
+        user_id: realUserId,
         nome: nome.trim(),
         email: email.trim().toLowerCase(),
         whatsapp: whatsapp.trim(),
@@ -196,9 +267,13 @@ Deno.serve(async (req) => {
     if (clientError) {
       console.error('❌ Erro ao criar perfil:', clientError);
       
-      // IMPORTANTE: Perfil falhou, DELETAR usuário criado
-      console.log('🗑️ Deletando usuário criado (rollback)...');
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
+      // IMPORTANTE: Perfil falhou, DELETAR usuário criado (somente se for novo)
+      if (!isRepeatedSignup) {
+        console.log('🗑️ Deletando usuário criado (rollback)...');
+        await supabaseAdmin.auth.admin.deleteUser(realUserId);
+      } else {
+        console.log('⚠️ Usuário pré-existente, não deletando (repeated signup)');
+      }
       
       // Verificar se é erro de duplicado
       if (clientError.code === '23505') {
