@@ -24,15 +24,17 @@ export const useClientDelete = (onDelete: () => void) => {
 
     try {
       setIsDeleting(true);
-      const { error } = await supabase
-        .from('painel_clientes')
-        .delete()
-        .eq('id', clientToDelete.id);
 
-      if (error) throw error;
+      // Usar edge function para deletar completamente (perfil + auth.users)
+      const { data, error } = await supabase.functions.invoke('delete-client', {
+        body: { clientId: clientToDelete.id },
+      });
+
+      if (error) throw new Error(error.message);
+      if (!data?.success) throw new Error(data?.error || 'Erro ao excluir cliente');
 
       const clientName = clientToDelete.nome || clientToDelete.name || 'Cliente';
-      toast.success(`${clientName} foi excluído com sucesso`);
+      toast.success(`${clientName} foi excluído completamente do sistema`);
       setDeleteDialogOpen(false);
       setClientToDelete(null);
       onDelete();
