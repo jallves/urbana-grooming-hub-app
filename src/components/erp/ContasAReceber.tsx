@@ -7,8 +7,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
 import RevenueRecordForm from './RevenueRecordForm';
 import {
   AlertDialog,
@@ -232,6 +233,79 @@ export const ContasAReceber: React.FC = () => {
     );
   };
 
+  const fmtDateExport = (d: string | null) => {
+    if (!d) return '-';
+    try { return format(parseISO(d), 'dd/MM/yyyy'); } catch { return d; }
+  };
+
+  const exportContasReceberExcel = () => {
+    if (!contasReceber || contasReceber.length === 0) {
+      toast.error('Nenhum dado para exportar');
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+
+    // Resumo
+    const vencidas = contasReceber.filter(c => c.status === 'pendente' && new Date(c.data_vencimento) < new Date());
+    const summaryData = [
+      ['RELATÓRIO DE CONTAS A RECEBER'],
+      ['Gerado em:', format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })],
+      [''],
+      ['RESUMO'],
+      ['Total Geral:', totals.total],
+      ['Total Recebido:', totals.completed],
+      ['Total Pendente:', totals.pending],
+      ['Contas Vencidas:', vencidas.length],
+      ['Valor Vencido:', vencidas.reduce((s, c) => s + Number(c.valor), 0)],
+      ['Taxa de Recebimento:', totals.total > 0 ? `${((totals.completed / totals.total) * 100).toFixed(1)}%` : '0%'],
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+    // Detalhado
+    const detailData = [
+      ['Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
+      ...contasReceber.map(c => [
+        c.descricao,
+        getCategoryLabel(c.categoria),
+        Number(c.valor),
+        fmtDateExport(c.data_vencimento),
+        fmtDateExport(c.data_recebimento),
+        c.status === 'recebido' ? 'Recebido' : 'Pendente',
+        c.forma_pagamento || '-',
+        c.observacoes || '',
+      ]),
+    ];
+    const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+    wsDetail['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Detalhado');
+
+    // Por categoria
+    const byCat: Record<string, { total: number; count: number; recebido: number; pendente: number }> = {};
+    contasReceber.forEach(c => {
+      const cat = getCategoryLabel(c.categoria);
+      if (!byCat[cat]) byCat[cat] = { total: 0, count: 0, recebido: 0, pendente: 0 };
+      byCat[cat].total += Number(c.valor);
+      byCat[cat].count++;
+      if (c.status === 'recebido') byCat[cat].recebido += Number(c.valor);
+      else byCat[cat].pendente += Number(c.valor);
+    });
+    const catData = [
+      ['Categoria', 'Total (R$)', 'Recebido (R$)', 'Pendente (R$)', 'Qtd', '% do Total'],
+      ...Object.entries(byCat).map(([cat, d]) => [
+        cat, d.total, d.recebido, d.pendente, d.count,
+        totals.total > 0 ? `${((d.total / totals.total) * 100).toFixed(1)}%` : '0%',
+      ]),
+    ];
+    const wsCat = XLSX.utils.aoa_to_sheet(catData);
+    wsCat['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoria');
+
+    XLSX.writeFile(wb, `contas_receber_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('Relatório exportado com sucesso!');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -245,11 +319,18 @@ export const ContasAReceber: React.FC = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h2 className="text-xl sm:text-2xl font-bold">Contas a Receber</h2>
-          <Button onClick={() => setFormOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Nova Receita</span>
-            <span className="sm:hidden">Novo</span>
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => exportContasReceberExcel()} size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Exportar Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </Button>
+            <Button onClick={() => setFormOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Nova Receita</span>
+              <span className="sm:hidden">Novo</span>
+            </Button>
+          </div>
         </div>
 
         {/* Cards de Resumo */}

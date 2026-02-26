@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter, Clock } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter, Clock, Download } from 'lucide-react';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import FinancialRecordForm from './FinancialRecordForm';
 import {
@@ -384,6 +385,103 @@ export const ContasAPagar: React.FC = () => {
     );
   };
 
+  const fmtDateExport = (d: string | null) => {
+    if (!d) return '-';
+    try { return format(parseISO(d), 'dd/MM/yyyy'); } catch { return d; }
+  };
+
+  const exportContasPagarExcel = () => {
+    if (!contasPagar || contasPagar.length === 0) {
+      toast.error('Nenhum dado para exportar');
+      return;
+    }
+    const wb = XLSX.utils.book_new();
+
+    const allTotal = contasPagar.reduce((s, c) => s + Number(c.valor), 0);
+    const allPagas = contasPagar.filter(c => c.status === 'pago');
+    const allPendentes = contasPagar.filter(c => c.status === 'pendente');
+    const vencidas = allPendentes.filter(c => new Date(c.data_vencimento) < new Date());
+
+    // Resumo
+    const summaryData = [
+      ['RELATÓRIO DE CONTAS A PAGAR'],
+      ['Gerado em:', format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })],
+      [''],
+      ['RESUMO'],
+      ['Total Geral:', allTotal],
+      ['Total Pago:', allPagas.reduce((s, c) => s + Number(c.valor), 0)],
+      ['Total Pendente:', allPendentes.reduce((s, c) => s + Number(c.valor), 0)],
+      ['Contas Vencidas:', vencidas.length],
+      ['Valor Vencido:', vencidas.reduce((s, c) => s + Number(c.valor), 0)],
+      ['Taxa de Pagamento:', allTotal > 0 ? `${((allPagas.reduce((s, c) => s + Number(c.valor), 0) / allTotal) * 100).toFixed(1)}%` : '0%'],
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+    // Detalhado
+    const detailData = [
+      ['Descrição', 'Fornecedor', 'Categoria', 'Valor (R$)', 'Vencimento', 'Pagamento', 'Status', 'Forma Pgto', 'Observações'],
+      ...contasPagar.map(c => [
+        c.descricao,
+        c.fornecedor || '-',
+        getCategoryLabel(c.categoria),
+        Number(c.valor),
+        fmtDateExport(c.data_vencimento),
+        fmtDateExport(c.data_pagamento),
+        c.status === 'pago' ? 'Pago' : 'Pendente',
+        getPaymentMethodLabel(c.forma_pagamento),
+        c.observacoes || '',
+      ]),
+    ];
+    const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
+    wsDetail['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, wsDetail, 'Detalhado');
+
+    // Por fornecedor
+    const byForn: Record<string, { total: number; count: number; pago: number; pendente: number }> = {};
+    contasPagar.forEach(c => {
+      const forn = c.fornecedor || 'Sem fornecedor';
+      if (!byForn[forn]) byForn[forn] = { total: 0, count: 0, pago: 0, pendente: 0 };
+      byForn[forn].total += Number(c.valor);
+      byForn[forn].count++;
+      if (c.status === 'pago') byForn[forn].pago += Number(c.valor);
+      else byForn[forn].pendente += Number(c.valor);
+    });
+    const fornData = [
+      ['Fornecedor', 'Total (R$)', 'Pago (R$)', 'Pendente (R$)', 'Qtd', '% do Total'],
+      ...Object.entries(byForn).sort((a, b) => b[1].total - a[1].total).map(([forn, d]) => [
+        forn, d.total, d.pago, d.pendente, d.count,
+        allTotal > 0 ? `${((d.total / allTotal) * 100).toFixed(1)}%` : '0%',
+      ]),
+    ];
+    const wsForn = XLSX.utils.aoa_to_sheet(fornData);
+    wsForn['!cols'] = [{ wch: 25 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 8 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsForn, 'Por Fornecedor');
+
+    // Por categoria
+    const byCat: Record<string, { total: number; count: number }> = {};
+    contasPagar.forEach(c => {
+      const cat = getCategoryLabel(c.categoria);
+      if (!byCat[cat]) byCat[cat] = { total: 0, count: 0 };
+      byCat[cat].total += Number(c.valor);
+      byCat[cat].count++;
+    });
+    const catData = [
+      ['Categoria', 'Total (R$)', 'Qtd', '% do Total'],
+      ...Object.entries(byCat).sort((a, b) => b[1].total - a[1].total).map(([cat, d]) => [
+        cat, d.total, d.count,
+        allTotal > 0 ? `${((d.total / allTotal) * 100).toFixed(1)}%` : '0%',
+      ]),
+    ];
+    const wsCat = XLSX.utils.aoa_to_sheet(catData);
+    wsCat['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 8 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoria');
+
+    XLSX.writeFile(wb, `contas_pagar_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
+    toast.success('Relatório exportado com sucesso!');
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -397,7 +495,12 @@ export const ContasAPagar: React.FC = () => {
       <div className="space-y-4">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
           <h2 className="text-xl sm:text-2xl font-bold">Contas a Pagar</h2>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button variant="outline" onClick={() => exportContasPagarExcel()} size="sm">
+              <Download className="h-4 w-4 mr-2" />
+              <span className="hidden sm:inline">Exportar Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </Button>
             {selectedRecords.size > 0 && (
               <Button
                 variant="outline"

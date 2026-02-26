@@ -230,18 +230,107 @@ const RelatoriosTab: React.FC<RelatoriosTabProps> = ({ filters }) => {
   const exportToExcel = () => {
     if (!exportData) return;
 
-    const ws = XLSX.utils.json_to_sheet(exportData);
     const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'Relatório Financeiro');
 
-    // Adicionar formatação
-    const range = XLSX.utils.decode_range(ws['!ref'] || 'A1');
-    for (let row = range.s.r + 1; row <= range.e.r; row++) {
-      const cell = ws[XLSX.utils.encode_cell({ r: row, c: 4 })]; // Coluna Valor
-      if (cell && cell.t === 'n') {
-        cell.z = 'R$ #,##0.00';
+    // Aba 1: Resumo do Período
+    const totals = exportData.reduce((acc, row) => {
+      if (row.Tipo === 'Receita') acc.receita += row.Valor;
+      else acc.despesa += row.Valor;
+      return acc;
+    }, { receita: 0, despesa: 0 });
+
+    const summarySheet = [
+      ['RELATÓRIO FINANCEIRO MENSAL'],
+      ['Mês/Ano:', `${filters.mes}/${filters.ano}`],
+      ['Gerado em:', format(new Date(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })],
+      [''],
+      ['RESUMO DO PERÍODO'],
+      ['Receita Total:', totals.receita],
+      ['Despesa Total:', totals.despesa],
+      ['Lucro Líquido:', totals.receita - totals.despesa],
+      ['Margem:', totals.receita > 0 ? `${(((totals.receita - totals.despesa) / totals.receita) * 100).toFixed(1)}%` : '0%'],
+      ['Total de Transações:', exportData.length],
+    ];
+    const wsSummary = XLSX.utils.aoa_to_sheet(summarySheet);
+    wsSummary['!cols'] = [{ wch: 25 }, { wch: 20 }];
+    XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo');
+
+    // Aba 2: Todas as Transações
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    ws['!cols'] = [{ wch: 12 }, { wch: 10 }, { wch: 15 }, { wch: 30 }, { wch: 15 }, { wch: 20 }, { wch: 15 }, { wch: 25 }];
+    XLSX.utils.book_append_sheet(wb, ws, 'Transações');
+
+    // Aba 3: Por Barbeiro
+    const byBarber: Record<string, { receita: number; comissao: number; servicos: number }> = {};
+    exportData.forEach(row => {
+      const barber = row.Barbeiro || 'Sem barbeiro';
+      if (!byBarber[barber]) byBarber[barber] = { receita: 0, comissao: 0, servicos: 0 };
+      if (row.Tipo === 'Receita' && row.Categoria === 'Serviços') {
+        byBarber[barber].receita += row.Valor;
+        byBarber[barber].servicos++;
       }
-    }
+      if (row.Categoria === 'Comissões') {
+        byBarber[barber].comissao += row.Valor;
+      }
+    });
+    const barberSheet = [
+      ['RELATÓRIO POR BARBEIRO'],
+      [''],
+      ['Barbeiro', 'Receita Gerada (R$)', 'Comissão (R$)', 'Serviços', 'Ticket Médio (R$)', '% Comissão'],
+      ...Object.entries(byBarber)
+        .filter(([name]) => name !== 'Sem barbeiro')
+        .sort((a, b) => b[1].receita - a[1].receita)
+        .map(([name, d]) => [
+          name, d.receita, d.comissao, d.servicos,
+          d.servicos > 0 ? d.receita / d.servicos : 0,
+          d.receita > 0 ? `${((d.comissao / d.receita) * 100).toFixed(1)}%` : '0%',
+        ]),
+    ];
+    const wsBarber = XLSX.utils.aoa_to_sheet(barberSheet);
+    wsBarber['!cols'] = [{ wch: 25 }, { wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 18 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsBarber, 'Por Barbeiro');
+
+    // Aba 4: Por Categoria
+    const byCat: Record<string, { receita: number; despesa: number; count: number }> = {};
+    exportData.forEach(row => {
+      const cat = row.Categoria || 'Outros';
+      if (!byCat[cat]) byCat[cat] = { receita: 0, despesa: 0, count: 0 };
+      if (row.Tipo === 'Receita') byCat[cat].receita += row.Valor;
+      else byCat[cat].despesa += row.Valor;
+      byCat[cat].count++;
+    });
+    const catSheet = [
+      ['ANÁLISE POR CATEGORIA'],
+      [''],
+      ['Categoria', 'Receita (R$)', 'Despesa (R$)', 'Saldo (R$)', 'Transações'],
+      ...Object.entries(byCat).sort((a, b) => (b[1].receita + b[1].despesa) - (a[1].receita + a[1].despesa)).map(([cat, d]) => [
+        cat, d.receita, d.despesa, d.receita - d.despesa, d.count,
+      ]),
+    ];
+    const wsCat = XLSX.utils.aoa_to_sheet(catSheet);
+    wsCat['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsCat, 'Por Categoria');
+
+    // Aba 5: Por Forma de Pagamento
+    const byPayment: Record<string, { total: number; count: number }> = {};
+    exportData.forEach(row => {
+      const method = row['Forma de Pagamento'] || 'Não informado';
+      if (!byPayment[method]) byPayment[method] = { total: 0, count: 0 };
+      byPayment[method].total += row.Valor;
+      byPayment[method].count++;
+    });
+    const paySheet = [
+      ['ANÁLISE POR FORMA DE PAGAMENTO'],
+      [''],
+      ['Forma de Pagamento', 'Valor Total (R$)', 'Transações', '% do Total'],
+      ...Object.entries(byPayment).sort((a, b) => b[1].total - a[1].total).map(([method, d]) => {
+        const totalVal = Object.values(byPayment).reduce((s, x) => s + x.total, 0);
+        return [method, d.total, d.count, totalVal > 0 ? `${((d.total / totalVal) * 100).toFixed(1)}%` : '0%'];
+      }),
+    ];
+    const wsPay = XLSX.utils.aoa_to_sheet(paySheet);
+    wsPay['!cols'] = [{ wch: 25 }, { wch: 18 }, { wch: 12 }, { wch: 12 }];
+    XLSX.utils.book_append_sheet(wb, wsPay, 'Formas de Pagamento');
 
     const fileName = `relatorio_financeiro_${filters.mes}_${filters.ano}.xlsx`;
     XLSX.writeFile(wb, fileName);
