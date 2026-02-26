@@ -49,33 +49,33 @@ const TotemDataHora: React.FC = () => {
       console.log('📅 [TotemDataHora] Iniciando carregamento de datas para:', barber.nome);
       
       try {
-        const dates: Date[] = [];
         const today = startOfToday();
+        const daysToCheck = 14;
+        const allDays = Array.from({ length: daysToCheck }, (_, i) => addDays(today, i));
         
-        // Verificar próximos 14 dias para garantir pelo menos 7 dias com horários
-        // OTIMIZADO: Usar getAvailableTimeSlots que já faz queries em paralelo
-        for (let i = 0; i < 14 && dates.length < 7; i++) {
-          const date = addDays(today, i);
-          
-          // IMPORTANTE: Usar barber.id (painel_barbeiros.id) consistentemente
-          const slots = await getAvailableTimeSlots(
-            barber.id, // SEMPRE usar painel_barbeiros.id
-            date,
-            service.duracao || 60
-          );
-          
-          const availableCount = slots.filter(s => s.available).length;
-          console.log(`📅 [TotemDataHora] ${format(date, 'dd/MM')}: ${availableCount} slots disponíveis`);
-          
-          if (availableCount > 0) {
-            dates.push(date);
-          }
-        }
+        // OTIMIZADO: Verificar TODOS os 14 dias em paralelo ao invés de sequencialmente
+        const results = await Promise.all(
+          allDays.map(async (date) => {
+            const slots = await getAvailableTimeSlots(
+              barber.id,
+              date,
+              service.duracao || 60
+            );
+            const availableCount = slots.filter(s => s.available).length;
+            console.log(`📅 [TotemDataHora] ${format(date, 'dd/MM')}: ${availableCount} slots disponíveis`);
+            return { date, availableCount };
+          })
+        );
+        
+        // Filtrar dias com horários e limitar a 7
+        const dates = results
+          .filter(r => r.availableCount > 0)
+          .slice(0, 7)
+          .map(r => r.date);
         
         console.log(`✅ [TotemDataHora] Total de datas disponíveis: ${dates.length}`);
         setAvailableDates(dates);
         
-        // Selecionar a primeira data disponível automaticamente
         if (dates.length > 0) {
           setSelectedDate(dates[0]);
         } else {
