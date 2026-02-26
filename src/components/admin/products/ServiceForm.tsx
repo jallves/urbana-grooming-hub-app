@@ -238,92 +238,92 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
-      <DialogContent className="max-w-md !bg-card bg-opacity-100 border border-border shadow-2xl backdrop-blur-none" style={{ backgroundColor: 'hsl(var(--card))', opacity: 1 }}>
+      <DialogContent className="max-w-md bg-white border border-slate-200 shadow-xl" onPointerDownOutside={(e) => e.preventDefault()}>
         <DialogHeader>
-          <DialogTitle className="text-foreground">
-            {serviceId ? 'Editar Serviço' : 'Novo Serviço'}
+          <DialogTitle className="text-slate-800 font-semibold text-lg">
+            {serviceId ? '✏️ Editar Serviço' : '✨ Novo Serviço'}
           </DialogTitle>
         </DialogHeader>
 
         {loadingData ? (
-          <div className="flex items-center justify-center py-8 bg-background">
+          <div className="flex items-center justify-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
           </div>
         ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nome" className="text-foreground">Nome do Serviço *</Label>
-              <Input
-                id="nome"
-                value={formData.nome}
-                onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
-                placeholder="Ex: Corte + Barba"
-                required
-                className="bg-background border-input"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="descricao" className="text-foreground">Descrição</Label>
-              <Textarea
-                id="descricao"
-                value={formData.descricao}
-                onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                placeholder="Descreva o serviço..."
-                rows={3}
-                className="bg-background border-input"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+          <ScrollArea className="max-h-[70vh]">
+            <form onSubmit={handleSubmit} className="space-y-4 px-1">
               <div className="space-y-2">
-                <Label htmlFor="preco" className="text-foreground">Preço (R$) *</Label>
+                <Label htmlFor="nome" className="text-slate-700 font-semibold">Nome do Serviço *</Label>
                 <Input
-                  id="preco"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.preco}
-                  onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) })}
-                  placeholder="0.00"
+                  id="nome"
+                  value={formData.nome}
+                  onChange={(e) => setFormData({ ...formData, nome: e.target.value })}
+                  placeholder="Ex: Corte + Barba"
                   required
-                  className="bg-background border-input"
+                  className="bg-white border-slate-300 text-slate-800"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="duracao" className="text-foreground">Duração (min) *</Label>
-                <Input
-                  id="duracao"
-                  type="number"
-                  min="1"
-                  value={formData.duracao}
-                  onChange={(e) => setFormData({ ...formData, duracao: parseInt(e.target.value) })}
-                  placeholder="30"
-                  required
-                  className="bg-background border-input"
+                <Label htmlFor="descricao" className="text-slate-700 font-semibold">Descrição</Label>
+                <Textarea
+                  id="descricao"
+                  value={formData.descricao}
+                  onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+                  placeholder="Descreva o serviço..."
+                  rows={3}
+                  className="bg-white border-slate-300 text-slate-800"
                 />
               </div>
-            </div>
 
-            {/* Seleção de Barbeiros */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-primary" />
-                <Label className="text-foreground">Barbeiros que realizam este serviço</Label>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="preco" className="text-slate-700 font-semibold">Preço (R$) *</Label>
+                  <Input
+                    id="preco"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.preco}
+                    onChange={(e) => setFormData({ ...formData, preco: parseFloat(e.target.value) })}
+                    placeholder="0.00"
+                    required
+                    className="bg-white border-slate-300 text-slate-800"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="duracao" className="text-slate-700 font-semibold">Duração (min) *</Label>
+                  <Input
+                    id="duracao"
+                    type="number"
+                    min="1"
+                    value={formData.duracao}
+                    onChange={(e) => setFormData({ ...formData, duracao: parseInt(e.target.value) })}
+                    placeholder="30"
+                    required
+                    className="bg-white border-slate-300 text-slate-800"
+                  />
+                </div>
               </div>
-              <p className="text-sm text-muted-foreground">
-                Selecione os barbeiros que podem realizar este serviço
-              </p>
-              <ScrollArea className="h-48 rounded-md border border-input bg-background p-4">
-                <div className="space-y-3">
+
+              {/* Seleção de Barbeiros */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <Label className="text-slate-700 font-semibold">Barbeiros que realizam este serviço</Label>
+                </div>
+                <p className="text-sm text-slate-500">
+                  Selecione os barbeiros que podem realizar este serviço
+                </p>
+                <div className="max-h-40 overflow-y-auto rounded-md border border-slate-200 bg-slate-50 p-3 space-y-2">
                   {allStaff.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
+                    <p className="text-sm text-slate-400 text-center py-4">
                       Nenhum barbeiro ativo cadastrado
                     </p>
                   ) : (
                     allStaff.map((staff) => (
-                      <div key={staff.id} className="flex items-center space-x-2 p-2 rounded hover:bg-muted/50">
+                      <div key={staff.id} className="flex items-center space-x-2 p-2 rounded-md hover:bg-white transition-colors">
                         <Checkbox
                           id={`staff-${staff.id}`}
                           checked={selectedStaffIds.includes(staff.id)}
@@ -337,82 +337,83 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                         />
                         <Label
                           htmlFor={`staff-${staff.id}`}
-                          className="text-sm font-normal cursor-pointer flex-1 text-foreground"
+                          className="text-sm font-normal cursor-pointer flex-1 text-slate-700"
                         >
                           {staff.nome}
                         </Label>
                         {selectedStaffIds.includes(staff.id) && (
-                          <CheckCircle className="h-4 w-4 text-green-500" />
+                          <CheckCircle className="h-4 w-4 text-emerald-500" />
                         )}
                       </div>
                     ))
                   )}
                 </div>
-              </ScrollArea>
-              <p className="text-xs text-muted-foreground">
-                {selectedStaffIds.length === 0 
-                  ? 'Nenhum selecionado = Todos os barbeiros podem fazer este serviço.'
-                  : `${selectedStaffIds.length} barbeiro(s) selecionado(s). Apenas estes poderão fazer o serviço.`
-                }
-              </p>
-            </div>
-
-            {/* Switches de Status */}
-            <div className="space-y-4 p-4 rounded-lg border border-input bg-muted/30">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-4 w-4 text-primary" />
-                  <Label htmlFor="is_active" className="text-foreground">Serviço Ativo</Label>
-                </div>
-                <Switch
-                  id="is_active"
-                  checked={formData.is_active}
-                  onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
-                />
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Serviços inativos não aparecem para agendamento
-              </p>
-
-              <div className="border-t border-input pt-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <Home className="h-4 w-4 text-primary" />
-                    <Label htmlFor="exibir_home" className="text-foreground">Exibir na Homepage</Label>
-                  </div>
-                  <Switch
-                    id="exibir_home"
-                    checked={formData.exibir_home}
-                    onCheckedChange={(checked) => setFormData({ ...formData, exibir_home: checked })}
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground mt-1">
-                  Exibir este serviço na página inicial do site
+                <p className="text-xs text-slate-500">
+                  {selectedStaffIds.length === 0 
+                    ? 'Nenhum selecionado = Todos os barbeiros podem fazer este serviço.'
+                    : `${selectedStaffIds.length} barbeiro(s) selecionado(s). Apenas estes poderão fazer o serviço.`
+                  }
                 </p>
               </div>
-            </div>
 
-            <DialogFooter className="gap-2 pt-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleCancel}
-                disabled={loading}
-              >
-                Cancelar
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  serviceId ? 'Atualizar' : 'Criar'
-                )}
-              </Button>
-            </DialogFooter>
-          </form>
+              {/* Switches de Status */}
+              <div className="space-y-4 p-4 rounded-lg border border-slate-200 bg-slate-50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-4 w-4 text-emerald-500" />
+                    <Label htmlFor="is_active" className="text-slate-700 font-semibold">Serviço Ativo</Label>
+                  </div>
+                  <Switch
+                    id="is_active"
+                    checked={formData.is_active}
+                    onCheckedChange={(checked) => setFormData({ ...formData, is_active: checked })}
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Serviços inativos não aparecem para agendamento
+                </p>
+
+                <div className="border-t border-slate-200 pt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Home className="h-4 w-4 text-blue-500" />
+                      <Label htmlFor="exibir_home" className="text-slate-700 font-semibold">Exibir na Homepage</Label>
+                    </div>
+                    <Switch
+                      id="exibir_home"
+                      checked={formData.exibir_home}
+                      onCheckedChange={(checked) => setFormData({ ...formData, exibir_home: checked })}
+                    />
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">
+                    Exibir este serviço na página inicial do site
+                  </p>
+                </div>
+              </div>
+
+              <DialogFooter className="gap-2 pt-4">
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="border-slate-300 text-slate-600 hover:bg-slate-50"
+                >
+                  Cancelar
+                </Button>
+                <Button type="submit" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    serviceId ? 'Atualizar' : 'Criar'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </ScrollArea>
         )}
       </DialogContent>
     </Dialog>
