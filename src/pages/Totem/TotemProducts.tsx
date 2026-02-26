@@ -30,8 +30,22 @@ const TotemProducts: React.FC = () => {
 
     loadProducts();
 
+    // Realtime: atualizar produtos quando admin adicionar/editar/excluir
+    const channel = supabase
+      .channel('totem-products-sync')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'painel_produtos'
+      }, () => {
+        console.log('🔄 [Totem] Produto alterado no admin, recarregando...');
+        loadProducts();
+      })
+      .subscribe();
+
     return () => {
       document.documentElement.classList.remove('totem-mode');
+      supabase.removeChannel(channel);
     };
   }, []);
 
