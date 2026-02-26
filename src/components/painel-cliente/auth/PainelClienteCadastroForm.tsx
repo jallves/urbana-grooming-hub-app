@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Eye, EyeOff, Check, X } from 'lucide-react';
+import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+import { format } from 'date-fns';
 
 interface PainelClienteCadastroFormProps {
   onSubmit: (data: {
@@ -111,14 +113,13 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="data_nascimento" className="text-gray-700 font-medium">Data de Nascimento</Label>
-        <Input
-          id="data_nascimento"
-          type="date"
-          value={formData.data_nascimento}
-          onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
-          className="h-12 border-gray-300 focus:border-urbana-gold focus:ring-urbana-gold rounded-xl"
-          required
+        <Label className="text-gray-700 font-medium">Data de Nascimento</Label>
+        <DateOfBirthPicker
+          value={formData.data_nascimento ? new Date(formData.data_nascimento + 'T12:00:00') : undefined}
+          onChange={(date) => setFormData(prev => ({ 
+            ...prev, 
+            data_nascimento: date ? format(date, 'yyyy-MM-dd') : '' 
+          }))}
         />
       </div>
 
