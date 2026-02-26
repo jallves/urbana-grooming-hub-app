@@ -73,7 +73,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       )}
 
       <div className="space-y-2">
-        <Label htmlFor="nome" className="text-gray-700 font-medium">Nome Completo</Label>
+        <Label htmlFor="nome" className="text-urbana-gold-dark font-bold">Nome Completo</Label>
         <Input
           id="nome"
           type="text"
@@ -86,7 +86,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="emailCadastro" className="text-gray-700 font-medium">E-mail</Label>
+        <Label htmlFor="emailCadastro" className="text-urbana-gold-dark font-bold">E-mail</Label>
         <Input
           id="emailCadastro"
           type="email"
@@ -99,7 +99,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="whatsapp" className="text-gray-700 font-medium">WhatsApp</Label>
+        <Label htmlFor="whatsapp" className="text-urbana-gold-dark font-bold">WhatsApp</Label>
         <Input
           id="whatsapp"
           type="tel"
@@ -113,7 +113,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label className="text-gray-700 font-medium">Data de Nascimento</Label>
+        <Label className="text-urbana-gold-dark font-bold">Data de Nascimento</Label>
         <DateOfBirthPicker
           value={formData.data_nascimento ? new Date(formData.data_nascimento + 'T12:00:00') : undefined}
           onChange={(date) => setFormData(prev => ({ 
@@ -124,7 +124,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="senhaCadastro" className="text-gray-700 font-medium">Senha</Label>
+        <Label htmlFor="senhaCadastro" className="text-urbana-gold-dark font-bold">Senha</Label>
         <div className="relative">
           <Input
             id="senhaCadastro"
@@ -169,7 +169,7 @@ const PainelClienteCadastroForm: React.FC<PainelClienteCadastroFormProps> = ({ o
       </div>
 
       <div className="space-y-2">
-        <Label htmlFor="confirmarSenha" className="text-gray-700 font-medium">Confirmar Senha</Label>
+        <Label htmlFor="confirmarSenha" className="text-urbana-gold-dark font-bold">Confirmar Senha</Label>
         <div className="relative">
           <Input
             id="confirmarSenha"
