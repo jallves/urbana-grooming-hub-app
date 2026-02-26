@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, TrendingDown, DollarSign, Calendar, BarChart3, PieChart, Download, Users, Scissors, ShoppingBag, Percent, Target, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import { format, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
+import { format, parseISO, startOfMonth, endOfMonth, subMonths, startOfYear, endOfYear } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { getCategoryLabel } from '@/utils/categoryMappings';
 import * as XLSX from 'xlsx';
@@ -162,82 +162,299 @@ const CashFlowReports: React.FC = () => {
     refetchInterval: 10000,
   });
 
-  // Exportar para Excel
+  // Dados detalhados de comissões por barbeiro
+  const { data: barberCommissionDetails } = useQuery({
+    queryKey: ['barber-commission-details-report'],
+    queryFn: async () => {
+      const start = startOfYear(currentDate);
+      const end = endOfYear(currentDate);
+
+      const { data, error } = await supabase
+        .from('barber_commissions')
+        .select('*, painel_barbeiros:barber_id(nome)')
+        .gte('created_at', format(start, 'yyyy-MM-dd') + 'T00:00:00')
+        .lte('created_at', format(end, 'yyyy-MM-dd') + 'T23:59:59')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Dados detalhados de contas a pagar
+  const { data: contasPagarData } = useQuery({
+    queryKey: ['contas-pagar-report-export'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select('*')
+        .order('data_vencimento', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  // Dados detalhados de contas a receber
+  const { data: contasReceberData } = useQuery({
+    queryKey: ['contas-receber-report-export'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('contas_receber')
+        .select('*')
+        .order('data_vencimento', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    },
+  });
+
+  const fmtDate = (d: string | null) => {
+    if (!d) return '-';
+    try { return format(parseISO(d), 'dd/MM/yyyy'); } catch { return d; }
+  };
+
+  const fmtMoney = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  // Exportar para Excel - COMPLETO
   const exportToExcel = () => {
     if (!monthlyData || !yearlyData) return;
 
     const wb = XLSX.utils.book_new();
 
-    // Aba 1: Resumo Executivo
+    // === ABA 1: RESUMO EXECUTIVO ===
     const summaryData = [
-      ['RELATÓRIO FINANCEIRO - RESUMO EXECUTIVO'],
+      ['RELATÓRIO GERENCIAL - BARBEARIA COSTA URBANA'],
+      ['Gerado em:', format(currentDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })],
       ['Período:', `${format(startOfYear(currentDate), 'dd/MM/yyyy')} a ${format(currentDate, 'dd/MM/yyyy')}`],
       [''],
-      ['INDICADORES PRINCIPAIS'],
+      ['═══════════════════════════════════════'],
+      ['INDICADORES FINANCEIROS PRINCIPAIS'],
+      ['═══════════════════════════════════════'],
       ['Receita Total', yearlyData.totalIncome],
       ['Despesa Total', yearlyData.totalExpense],
+      ['Comissões Pagas', yearlyData.totalCommissions],
       ['Lucro Líquido', yearlyData.totalNet],
       ['Margem de Lucro', `${yearlyData.profitMargin.toFixed(1)}%`],
+      ['Ratio Despesa/Receita', yearlyData.totalIncome > 0 ? `${((yearlyData.totalExpense / yearlyData.totalIncome) * 100).toFixed(1)}%` : '0%'],
       [''],
+      ['═══════════════════════════════════════'],
       ['MÉTRICAS OPERACIONAIS'],
-      ['Total de Serviços', yearlyData.serviceCount],
+      ['═══════════════════════════════════════'],
+      ['Total de Serviços Realizados', yearlyData.serviceCount],
       ['Total de Produtos Vendidos', yearlyData.productCount],
-      ['Ticket Médio', yearlyData.avgTicket],
+      ['Ticket Médio (Serviços)', yearlyData.avgTicket],
       ['Total de Gorjetas', yearlyData.totalTips],
-      ['Total de Comissões', yearlyData.totalCommissions],
       [''],
+      ['═══════════════════════════════════════'],
       ['DISTRIBUIÇÃO DE RECEITA'],
-      ['Serviços', yearlyData.serviceRevenue],
-      ['Produtos', yearlyData.productRevenue],
+      ['═══════════════════════════════════════'],
+      ['Receita de Serviços', yearlyData.serviceRevenue],
+      ['Receita de Produtos', yearlyData.productRevenue],
       ['Gorjetas', yearlyData.totalTips],
+      [''],
+      ['═══════════════════════════════════════'],
+      ['SAÚDE FINANCEIRA'],
+      ['═══════════════════════════════════════'],
+      ['Status da Margem', yearlyData.profitMargin >= 20 ? '✅ Excelente (>20%)' : yearlyData.profitMargin >= 10 ? '⚠️ Atenção (10-20%)' : '🔴 Crítico (<10%)'],
+      ['Crescimento Mensal', `${monthlyGrowth >= 0 ? '+' : ''}${monthlyGrowth.toFixed(1)}%`],
+      ['Crescimento Receita', `${revenueGrowth >= 0 ? '+' : ''}${revenueGrowth.toFixed(1)}%`],
     ];
     const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
+    wsSummary['!cols'] = [{ wch: 35 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Resumo Executivo');
 
-    // Aba 2: Performance Mensal
+    // === ABA 2: PERFORMANCE MENSAL ===
     const monthlySheetData = [
-      ['Mês', 'Receita', 'Despesa', 'Lucro', 'Serviços', 'Ticket Médio'],
+      ['PERFORMANCE MENSAL - ÚLTIMOS 12 MESES'],
+      [''],
+      ['Mês', 'Receita (R$)', 'Despesa (R$)', 'Lucro (R$)', 'Margem %', 'Serviços', 'Ticket Médio (R$)'],
       ...monthlyData.map(m => [
         m.monthFull,
         m.income,
         m.expense,
         m.net,
+        m.income > 0 ? `${((m.net / m.income) * 100).toFixed(1)}%` : '0%',
         m.serviceCount,
-        m.avgTicket
-      ])
+        m.avgTicket,
+      ]),
+      [''],
+      ['TOTAIS', 
+        monthlyData.reduce((s, m) => s + m.income, 0),
+        monthlyData.reduce((s, m) => s + m.expense, 0),
+        monthlyData.reduce((s, m) => s + m.net, 0),
+        '',
+        monthlyData.reduce((s, m) => s + m.serviceCount, 0),
+        '',
+      ],
     ];
     const wsMonthly = XLSX.utils.aoa_to_sheet(monthlySheetData);
+    wsMonthly['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 15 }];
     XLSX.utils.book_append_sheet(wb, wsMonthly, 'Performance Mensal');
 
-    // Aba 3: Análise por Categoria
-    const categoryData = [
-      ['Categoria', 'Receita', 'Despesa', 'Transações'],
-      ...Object.entries(yearlyData.categories).map(([cat, data]) => [
+    // === ABA 3: ANÁLISE POR CATEGORIA ===
+    const catEntries = Object.entries(yearlyData.categories);
+    const totalCatIncome = catEntries.reduce((s, [, d]) => s + d.income, 0);
+    const totalCatExpense = catEntries.reduce((s, [, d]) => s + d.expense, 0);
+    const categorySheetData = [
+      ['ANÁLISE POR CATEGORIA'],
+      [''],
+      ['Categoria', 'Receita (R$)', '% da Receita', 'Despesa (R$)', '% da Despesa', 'Saldo (R$)', 'Transações'],
+      ...catEntries.map(([cat, data]) => [
         getCategoryLabel(cat),
         data.income,
+        totalCatIncome > 0 ? `${((data.income / totalCatIncome) * 100).toFixed(1)}%` : '0%',
         data.expense,
-        data.count
-      ])
+        totalCatExpense > 0 ? `${((data.expense / totalCatExpense) * 100).toFixed(1)}%` : '0%',
+        data.income - data.expense,
+        data.count,
+      ]),
+      [''],
+      ['TOTAIS', totalCatIncome, '100%', totalCatExpense, '100%', totalCatIncome - totalCatExpense, catEntries.reduce((s, [, d]) => s + d.count, 0)],
     ];
-    const wsCategory = XLSX.utils.aoa_to_sheet(categoryData);
+    const wsCategory = XLSX.utils.aoa_to_sheet(categorySheetData);
+    wsCategory['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }];
     XLSX.utils.book_append_sheet(wb, wsCategory, 'Análise por Categoria');
 
-    // Aba 4: Top Barbeiros
-    const barberData = [
-      ['Posição', 'Barbeiro', 'Receita Gerada', 'Serviços Realizados', 'Ticket Médio'],
+    // === ABA 4: RANKING DE BARBEIROS ===
+    const barberSheetData = [
+      ['RANKING DE BARBEIROS - RECEITA GERADA'],
+      [''],
+      ['Posição', 'Barbeiro', 'Receita Gerada (R$)', 'Serviços', 'Ticket Médio (R$)', '% da Receita Total'],
       ...yearlyData.topBarbers.map((b, idx) => [
         `${idx + 1}º`,
         b.name,
         b.revenue,
         b.services,
-        b.services > 0 ? b.revenue / b.services : 0
-      ])
+        b.services > 0 ? b.revenue / b.services : 0,
+        yearlyData.serviceRevenue > 0 ? `${((b.revenue / yearlyData.serviceRevenue) * 100).toFixed(1)}%` : '0%',
+      ]),
     ];
-    const wsBarbers = XLSX.utils.aoa_to_sheet(barberData);
-    XLSX.utils.book_append_sheet(wb, wsBarbers, 'Top Barbeiros');
+    const wsBarbers = XLSX.utils.aoa_to_sheet(barberSheetData);
+    wsBarbers['!cols'] = [{ wch: 10 }, { wch: 25 }, { wch: 20 }, { wch: 12 }, { wch: 18 }, { wch: 18 }];
+    XLSX.utils.book_append_sheet(wb, wsBarbers, 'Ranking Barbeiros');
+
+    // === ABA 5: COMISSÕES DETALHADAS ===
+    if (barberCommissionDetails && barberCommissionDetails.length > 0) {
+      // Agrupar por barbeiro
+      const byBarber: Record<string, { nome: string; items: typeof barberCommissionDetails; total: number; totalPago: number; totalPendente: number }> = {};
+      barberCommissionDetails.forEach(c => {
+        const nome = (c as any).painel_barbeiros?.nome || c.barber_name || 'Desconhecido';
+        if (!byBarber[nome]) byBarber[nome] = { nome, items: [], total: 0, totalPago: 0, totalPendente: 0 };
+        byBarber[nome].items.push(c);
+        const val = Number(c.valor || c.amount || 0);
+        byBarber[nome].total += val;
+        if (c.status === 'pago' || c.status === 'paid') byBarber[nome].totalPago += val;
+        else byBarber[nome].totalPendente += val;
+      });
+
+      const commSheetData: any[][] = [
+        ['RELATÓRIO DE COMISSÕES POR BARBEIRO'],
+        [''],
+      ];
+
+      Object.values(byBarber).sort((a, b) => b.total - a.total).forEach(barber => {
+        commSheetData.push(['']);
+        commSheetData.push([`═══ ${barber.nome.toUpperCase()} ═══`]);
+        commSheetData.push(['Total Comissões:', barber.total]);
+        commSheetData.push(['Pagas:', barber.totalPago]);
+        commSheetData.push(['Pendentes:', barber.totalPendente]);
+        commSheetData.push(['']);
+        commSheetData.push(['Data', 'Valor (R$)', 'Status', 'Tipo', 'Fonte']);
+        barber.items.forEach(c => {
+          commSheetData.push([
+            fmtDate(c.created_at),
+            Number(c.valor || c.amount || 0),
+            c.status === 'pago' || c.status === 'paid' ? 'Pago' : 'Pendente',
+            c.tipo || '-',
+            c.appointment_source || '-',
+          ]);
+        });
+      });
+
+      // Resumo geral no final
+      commSheetData.push(['']);
+      commSheetData.push(['═══════════════════════════════════════']);
+      commSheetData.push(['RESUMO GERAL DE COMISSÕES']);
+      commSheetData.push(['Barbeiro', 'Total (R$)', 'Pagas (R$)', 'Pendentes (R$)', '% do Total']);
+      const grandTotal = Object.values(byBarber).reduce((s, b) => s + b.total, 0);
+      Object.values(byBarber).sort((a, b) => b.total - a.total).forEach(b => {
+        commSheetData.push([b.nome, b.total, b.totalPago, b.totalPendente, grandTotal > 0 ? `${((b.total / grandTotal) * 100).toFixed(1)}%` : '0%']);
+      });
+      commSheetData.push(['TOTAL', grandTotal, Object.values(byBarber).reduce((s, b) => s + b.totalPago, 0), Object.values(byBarber).reduce((s, b) => s + b.totalPendente, 0), '100%']);
+
+      const wsComm = XLSX.utils.aoa_to_sheet(commSheetData);
+      wsComm['!cols'] = [{ wch: 25 }, { wch: 18 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(wb, wsComm, 'Comissões Barbeiros');
+    }
+
+    // === ABA 6: CONTAS A PAGAR ===
+    if (contasPagarData && contasPagarData.length > 0) {
+      const totalPagar = contasPagarData.reduce((s, c) => s + Number(c.valor), 0);
+      const pagas = contasPagarData.filter(c => c.status === 'pago');
+      const pendentes = contasPagarData.filter(c => c.status === 'pendente');
+      const vencidas = pendentes.filter(c => new Date(c.data_vencimento) < currentDate);
+
+      const cpData: any[][] = [
+        ['RELATÓRIO DE CONTAS A PAGAR'],
+        [''],
+        ['Total Geral:', totalPagar],
+        ['Total Pagas:', pagas.reduce((s, c) => s + Number(c.valor), 0)],
+        ['Total Pendentes:', pendentes.reduce((s, c) => s + Number(c.valor), 0)],
+        ['Contas Vencidas:', vencidas.length],
+        ['Valor Vencido:', vencidas.reduce((s, c) => s + Number(c.valor), 0)],
+        [''],
+        ['Descrição', 'Fornecedor', 'Categoria', 'Valor (R$)', 'Vencimento', 'Pagamento', 'Status', 'Forma Pgto', 'Observações'],
+        ...contasPagarData.map(c => [
+          c.descricao,
+          c.fornecedor || '-',
+          c.categoria || '-',
+          Number(c.valor),
+          fmtDate(c.data_vencimento),
+          fmtDate(c.data_pagamento),
+          c.status === 'pago' ? 'Pago' : 'Pendente',
+          c.forma_pagamento || '-',
+          c.observacoes || '',
+        ]),
+      ];
+      const wsCp = XLSX.utils.aoa_to_sheet(cpData);
+      wsCp['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsCp, 'Contas a Pagar');
+    }
+
+    // === ABA 7: CONTAS A RECEBER ===
+    if (contasReceberData && contasReceberData.length > 0) {
+      const totalReceber = contasReceberData.reduce((s, c) => s + Number(c.valor), 0);
+      const recebidas = contasReceberData.filter(c => c.status === 'recebido');
+      const pendentesR = contasReceberData.filter(c => c.status === 'pendente');
+      const vencidasR = pendentesR.filter(c => new Date(c.data_vencimento) < currentDate);
+
+      const crData: any[][] = [
+        ['RELATÓRIO DE CONTAS A RECEBER'],
+        [''],
+        ['Total Geral:', totalReceber],
+        ['Total Recebidas:', recebidas.reduce((s, c) => s + Number(c.valor), 0)],
+        ['Total Pendentes:', pendentesR.reduce((s, c) => s + Number(c.valor), 0)],
+        ['Contas Vencidas:', vencidasR.length],
+        ['Valor Vencido:', vencidasR.reduce((s, c) => s + Number(c.valor), 0)],
+        [''],
+        ['Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
+        ...contasReceberData.map(c => [
+          c.descricao,
+          c.categoria || '-',
+          Number(c.valor),
+          fmtDate(c.data_vencimento),
+          fmtDate(c.data_recebimento),
+          c.status === 'recebido' ? 'Recebido' : 'Pendente',
+          c.forma_pagamento || '-',
+          c.observacoes || '',
+        ]),
+      ];
+      const wsCr = XLSX.utils.aoa_to_sheet(crData);
+      wsCr['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(wb, wsCr, 'Contas a Receber');
+    }
 
     // Download
-    const fileName = `relatorio_financeiro_${format(currentDate, 'yyyy-MM-dd')}.xlsx`;
+    const fileName = `relatorio_gerencial_costa_urbana_${format(currentDate, 'yyyy-MM-dd')}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
 
