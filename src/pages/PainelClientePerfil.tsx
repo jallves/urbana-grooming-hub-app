@@ -5,6 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { User, Save, Mail, Phone, Edit3, Shield, Calendar } from 'lucide-react';
+import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+import { format } from 'date-fns';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { 
@@ -157,17 +159,17 @@ export default function PainelClientePerfil() {
 
               {/* Data de Nascimento */}
               <div className="space-y-1.5 sm:space-y-2">
-                <Label htmlFor="data_nascimento" className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
+                <Label className="text-urbana-light text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2">
                   <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-urbana-gold flex-shrink-0" />
                   Data de Nascimento
                 </Label>
-                <Input
-                  id="data_nascimento"
-                  type="date"
-                  value={formData.data_nascimento}
-                  onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                <DateOfBirthPicker
+                  value={formData.data_nascimento ? new Date(formData.data_nascimento + 'T12:00:00') : undefined}
+                  onChange={(date) => setFormData(prev => ({ 
+                    ...prev, 
+                    data_nascimento: date ? format(date, 'yyyy-MM-dd') : '' 
+                  }))}
                   className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
-                  required
                 />
               </div>
 

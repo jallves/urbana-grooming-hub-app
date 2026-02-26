@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Eye, EyeOff, Scissors, Check, X } from 'lucide-react';
+import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+import { format } from 'date-fns';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 
 export default function PainelClienteCadastro() {
@@ -172,14 +174,14 @@ export default function PainelClienteCadastro() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="data_nascimento" className="text-white">Data de Nascimento *</Label>
-              <Input
-                id="data_nascimento"
-                type="date"
-                value={formData.data_nascimento}
-                onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+              <Label className="text-white">Data de Nascimento *</Label>
+              <DateOfBirthPicker
+                value={formData.data_nascimento ? new Date(formData.data_nascimento + 'T12:00:00') : undefined}
+                onChange={(date) => setFormData(prev => ({ 
+                  ...prev, 
+                  data_nascimento: date ? format(date, 'yyyy-MM-dd') : '' 
+                }))}
                 className="bg-gray-800 border-gray-600 text-white"
-                required
               />
             </div>
 

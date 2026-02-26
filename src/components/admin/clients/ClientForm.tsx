@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+import { format } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -236,8 +238,11 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="data_nascimento">Data de Nascimento *</Label>
-            <Input id="data_nascimento" type="date" {...form.register('data_nascimento')} />
+            <Label>Data de Nascimento *</Label>
+            <DateOfBirthPicker
+              value={form.watch('data_nascimento') ? new Date(form.watch('data_nascimento') + 'T12:00:00') : undefined}
+              onChange={(date) => form.setValue('data_nascimento', date ? format(date, 'yyyy-MM-dd') : '', { shouldValidate: true })}
+            />
             {form.formState.errors.data_nascimento && (
               <p className="text-sm text-red-500">{form.formState.errors.data_nascimento.message}</p>
             )}
