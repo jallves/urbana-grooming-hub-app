@@ -4,8 +4,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Plus, Scissors, Edit, Trash2, MoreVertical, Clock } from 'lucide-react';
+import { Search, Plus, Scissors, Edit, Trash2, MoreVertical, Clock, Download } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import ServiceForm from './ServiceForm';
 import {
@@ -137,6 +138,32 @@ const ServiceList: React.FC = () => {
             />
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                try {
+                  const exportData = filteredServices.map(s => ({
+                    'Nome': s.name,
+                    'Descrição': s.description || '',
+                    'Preço (R$)': Number(s.price).toFixed(2),
+                    'Duração (min)': s.duration,
+                    'Status': s.is_active ? 'Ativo' : 'Inativo',
+                    'Cadastrado em': new Date(s.created_at).toLocaleDateString('pt-BR'),
+                  }));
+                  const ws = XLSX.utils.json_to_sheet(exportData);
+                  const wb = XLSX.utils.book_new();
+                  XLSX.utils.book_append_sheet(wb, ws, 'Serviços');
+                  XLSX.writeFile(wb, `servicos_${new Date().toISOString().split('T')[0]}.xlsx`);
+                  toast.success('Relatório exportado!');
+                } catch { toast.error('Erro ao exportar'); }
+              }}
+              className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
+              disabled={filteredServices.length === 0}
+            >
+              <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+              <span className="hidden sm:inline">Exportar Excel</span>
+              <span className="sm:hidden">Excel</span>
+            </Button>
             <Button 
               onClick={handleCreateService}
               className="h-8 sm:h-10 text-xs sm:text-sm px-3 sm:px-4"
