@@ -42,6 +42,9 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
     queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
     
+    // Lista de transações financeiras (financial_records)
+    queryClient.invalidateQueries({ queryKey: ['financial-transactions'] });
+    
     // Contas a Receber
     queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
     
