@@ -29,7 +29,27 @@ const TotemConfirmation: React.FC = () => {
     return null;
   }
 
+  const getMinutesUntilAppointment = () => {
+    const [year, month, day] = appointment.data.split('-').map(Number);
+    const [hour, minute] = appointment.hora.split(':').map(Number);
+    const appointmentTime = new Date(year, month - 1, day, hour, minute);
+    const now = new Date();
+    return (appointmentTime.getTime() - now.getTime()) / (1000 * 60);
+  };
+
   const handleConfirmCheckIn = async () => {
+    // Validação frontend: check-in só permitido até 1h30 antes
+    const diffMinutes = getMinutesUntilAppointment();
+    
+    if (diffMinutes > 90) {
+      const horaFormatada = appointment.hora.substring(0, 5);
+      toast.error('Check-in ainda não disponível', {
+        description: `O check-in só pode ser feito a partir de 1h30 antes do horário agendado (${horaFormatada}). Por favor, volte mais tarde.`,
+        duration: 8000,
+      });
+      return;
+    }
+
     try {
       setIsProcessing(true);
       
@@ -51,26 +71,43 @@ const TotemConfirmation: React.FC = () => {
         console.error('❌ [TOTEM] Erro no check-in:', error);
         setIsProcessing(false);
         
-        // Tratamento específico de erros
-        if (error.message?.includes('já foi realizado')) {
+        // Tentar extrair mensagem do corpo da resposta (FunctionsHttpError)
+        let errorMsg = '';
+        try {
+          if (error.context?.body) {
+            const body = await error.context.json();
+            errorMsg = body?.error || '';
+          }
+        } catch { /* ignore */ }
+        errorMsg = errorMsg || error.message || '';
+        
+        if (errorMsg.includes('já foi realizado')) {
           toast.error('Check-in já realizado', {
-            description: 'Este agendamento já teve check-in feito anteriormente.'
+            description: 'Este agendamento já teve check-in feito anteriormente.',
+            duration: 6000,
           });
-        } else if (error.message?.includes('não encontrado')) {
+        } else if (errorMsg.includes('não encontrado')) {
           toast.error('Agendamento não encontrado', {
-            description: 'Não foi possível localizar este agendamento. Procure a recepção.'
+            description: 'Não foi possível localizar este agendamento. Procure a recepção.',
+            duration: 6000,
           });
-        } else if (error.message?.includes('cancelado')) {
+        } else if (errorMsg.includes('cancelado')) {
           toast.error('Agendamento cancelado', {
-            description: 'Este agendamento foi cancelado. Procure a recepção para reagendar.'
+            description: 'Este agendamento foi cancelado. Procure a recepção para reagendar.',
+            duration: 6000,
+          });
+        } else if (errorMsg.includes('1h30') || errorMsg.includes('Check-in disponível')) {
+          toast.error('Check-in ainda não disponível', {
+            description: errorMsg,
+            duration: 8000,
           });
         } else {
           toast.error('Erro no check-in', {
-            description: error.message || 'Não foi possível fazer o check-in. Procure a recepção.'
+            description: errorMsg || 'Não foi possível fazer o check-in. Procure a recepção.',
+            duration: 6000,
           });
         }
         
-        // Permanecer na página para permitir nova tentativa
         return;
       }
 
