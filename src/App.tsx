@@ -94,6 +94,7 @@ import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import AdminClientAppointments from './pages/AdminClientAppointments';
 import { SidebarProvider } from './components/ui/sidebar';
 import { Toaster } from './components/ui/toaster';
+import { Toaster as SonnerToaster } from './components/ui/sonner';
 import ChangePassword from './pages/ChangePassword';
 import ForceSignOutUser from './pages/admin/ForceSignOutUser';
 import ResetPassword from './pages/ResetPassword';
@@ -545,6 +546,7 @@ function App() {
                 <PWAInstallPromptContext />
                 <PWAUpdateManager />
                 <Toaster />
+                <SonnerToaster position="top-center" richColors />
                       </div>
                     </RealtimeProvider>
                   </TotemAuthProvider>
