@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Check, X, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import { DateOfBirthPicker } from '@/components/ui/date-of-birth-picker';
+import { format } from 'date-fns';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 
 const TotemCadastro: React.FC = () => {
@@ -240,16 +242,16 @@ const TotemCadastro: React.FC = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="data_nascimento" className="text-white text-lg font-semibold">
+                  <Label className="text-white text-lg font-semibold">
                     Data de Nascimento *
                   </Label>
-                  <Input
-                    id="data_nascimento"
-                    type="date"
-                    value={formData.data_nascimento}
-                    onChange={(e) => setFormData(prev => ({ ...prev, data_nascimento: e.target.value }))}
+                  <DateOfBirthPicker
+                    value={formData.data_nascimento ? new Date(formData.data_nascimento + 'T12:00:00') : undefined}
+                    onChange={(date) => setFormData(prev => ({ 
+                      ...prev, 
+                      data_nascimento: date ? format(date, 'yyyy-MM-dd') : '' 
+                    }))}
                     className="bg-white/10 backdrop-blur-sm border-2 border-white/20 text-white placeholder:text-white/50 text-lg h-14 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/50 rounded-xl transition-all"
-                    required
                   />
                 </div>
 
