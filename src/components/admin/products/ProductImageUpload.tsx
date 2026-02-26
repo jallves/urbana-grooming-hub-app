@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { X, Upload, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Upload, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
@@ -15,57 +15,62 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
   onImagesChange 
 }) => {
   const [uploading, setUploading] = useState(false);
-
-  console.log('🖼️ ProductImageUpload - imagens atuais:', images);
+  const [localPreviews, setLocalPreviews] = useState<{ file: File; previewUrl: string }[]>([]);
 
   const uploadImage = async (file: File) => {
     try {
       setUploading(true);
 
-      // Validar tipo de arquivo
       const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
         toast.error('Tipo de arquivo não suportado. Use: JPG, PNG ou WebP');
         return;
       }
 
-      // Validar tamanho (5MB)
       const maxSize = 5 * 1024 * 1024;
       if (file.size > maxSize) {
         toast.error('Arquivo muito grande. Tamanho máximo: 5MB');
         return;
       }
 
-      // Gerar nome único
+      // Show local preview immediately
+      const previewUrl = URL.createObjectURL(file);
+      setLocalPreviews(prev => [...prev, { file, previewUrl }]);
+
+      // Generate unique filename - upload directly to root of bucket
       const fileExt = file.name.split('.').pop();
       const fileName = `${Math.random().toString(36).substring(2)}_${Date.now()}.${fileExt}`;
-      const filePath = `products/${fileName}`;
 
-      console.log('📤 Fazendo upload da imagem:', filePath);
+      console.log('📤 Fazendo upload da imagem:', fileName);
 
-      // Upload para o storage
       const { error: uploadError, data: uploadData } = await supabase.storage
         .from('products')
-        .upload(filePath, file, {
+        .upload(fileName, file, {
           cacheControl: '3600',
-          upsert: false
+          upsert: false,
+          contentType: file.type,
         });
 
       if (uploadError) {
         console.error('❌ Erro no upload:', uploadError);
+        // Remove local preview on error
+        setLocalPreviews(prev => prev.filter(p => p.previewUrl !== previewUrl));
+        URL.revokeObjectURL(previewUrl);
         throw uploadError;
       }
 
       console.log('✅ Upload realizado:', uploadData);
 
-      // Obter URL pública
       const { data: { publicUrl } } = supabase.storage
         .from('products')
-        .getPublicUrl(filePath);
+        .getPublicUrl(fileName);
 
       console.log('🔗 URL pública gerada:', publicUrl);
 
-      // Adicionar à lista de imagens
+      // Remove local preview and add real URL
+      setLocalPreviews(prev => prev.filter(p => p.previewUrl !== previewUrl));
+      URL.revokeObjectURL(previewUrl);
+
       const newImages = [...images, publicUrl];
       console.log('📸 Atualizando lista de imagens:', newImages);
       onImagesChange(newImages);
@@ -80,9 +85,11 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      await uploadImage(file);
+    const files = e.target.files;
+    if (files) {
+      for (let i = 0; i < files.length; i++) {
+        await uploadImage(files[i]);
+      }
       e.target.value = '';
     }
   };
@@ -90,16 +97,15 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
   const removeImage = async (index: number) => {
     const imageUrl = images[index];
     
-    // Tentar extrair o caminho do arquivo da URL
     try {
       const url = new URL(imageUrl);
+      // Extract file path after /object/public/products/
       const pathMatch = url.pathname.match(/\/storage\/v1\/object\/public\/products\/(.+)$/);
       
       if (pathMatch) {
-        const filePath = `products/${pathMatch[1]}`;
+        const filePath = pathMatch[1];
         console.log('🗑️ Removendo imagem do storage:', filePath);
         
-        // Deletar do storage
         const { error } = await supabase.storage
           .from('products')
           .remove([filePath]);
@@ -114,42 +120,51 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
       console.error('Erro ao processar URL da imagem:', error);
     }
     
-    // Remover da lista de imagens
     const newImages = images.filter((_, i) => i !== index);
-    console.log('📸 Nova lista de imagens:', newImages);
     onImagesChange(newImages);
     toast.success('Imagem removida');
   };
+
+  // All images to display: saved images + local previews being uploaded
+  const allImages = [
+    ...images.map((url, i) => ({ url, key: `saved-${i}`, isLocal: false, index: i })),
+    ...localPreviews.map((p, i) => ({ url: p.previewUrl, key: `local-${i}`, isLocal: true, index: -1 })),
+  ];
 
   return (
     <div className="space-y-4">
       <Label>Imagens do Produto</Label>
       
-      {/* Grid de imagens */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-        {images.map((url, index) => (
+        {allImages.map((img) => (
           <div 
-            key={index} 
+            key={img.key} 
             className="relative aspect-square bg-muted rounded-lg overflow-hidden border-2 border-border group"
           >
             <img 
-              src={url} 
-              alt={`Produto ${index + 1}`}
+              src={img.url} 
+              alt="Produto"
               className="w-full h-full object-cover"
             />
-            <Button
-              type="button"
-              size="icon"
-              variant="destructive"
-              className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
-              onClick={() => removeImage(index)}
-            >
-              <X className="h-4 w-4" />
-            </Button>
+            {img.isLocal ? (
+              <div className="absolute inset-0 bg-background/50 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <Button
+                type="button"
+                size="icon"
+                variant="destructive"
+                className="absolute top-1 right-1 h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity"
+                onClick={() => removeImage(img.index)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
           </div>
         ))}
 
-        {/* Botão de upload */}
+        {/* Upload button */}
         <label 
           className={`
             relative aspect-square bg-muted rounded-lg border-2 border-dashed border-border
@@ -164,26 +179,17 @@ export const ProductImageUpload: React.FC<ProductImageUploadProps> = ({
             onChange={handleFileChange}
             disabled={uploading}
             className="hidden"
+            multiple
           />
-          {uploading ? (
-            <>
-              <Loader2 className="h-6 w-6 sm:h-8 sm:w-8 animate-spin" />
-              <span className="text-xs sm:text-sm">Enviando...</span>
-            </>
-          ) : (
-            <>
-              <Upload className="h-6 w-6 sm:h-8 sm:w-8" />
-              <span className="text-xs sm:text-sm text-center px-2">
-                Adicionar Foto
-              </span>
-            </>
-          )}
+          <Upload className="h-6 w-6 sm:h-8 sm:w-8" />
+          <span className="text-xs sm:text-sm text-center px-2">
+            Adicionar Foto
+          </span>
         </label>
       </div>
 
-      {/* Dica */}
       <p className="text-xs sm:text-sm text-muted-foreground">
-        Formatos aceitos: JPG, PNG, WebP • Tamanho máximo: 5MB
+        Formatos aceitos: JPG, PNG, WebP • Tamanho máximo: 5MB • Múltiplas fotos permitidas
       </p>
     </div>
   );

@@ -48,6 +48,14 @@ const imageMap: Record<string, string> = {
 export function resolveProductImageUrl(imagemUrl: string | null | undefined): string | null {
   if (!imagemUrl) return null;
   
+  // Try parsing as JSON array (new multi-image format)
+  try {
+    const parsed = JSON.parse(imagemUrl);
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      return parsed[0]; // Return first image as primary
+    }
+  } catch {}
+  
   // Se já é uma URL completa (Supabase Storage ou externa), retorna como está
   if (imagemUrl.startsWith('http://') || imagemUrl.startsWith('https://')) {
     return imagemUrl;
@@ -69,7 +77,21 @@ export function resolveProductImageUrl(imagemUrl: string | null | undefined): st
     }
   }
   
-  // Não encontrou, retorna null
   console.warn(`Imagem de produto não encontrada: ${imagemUrl}`);
   return null;
+}
+
+/**
+ * Resolve todas as URLs de imagem de um produto (multi-imagem)
+ */
+export function resolveAllProductImageUrls(imagemUrl: string | null | undefined): string[] {
+  if (!imagemUrl) return [];
+  
+  try {
+    const parsed = JSON.parse(imagemUrl);
+    if (Array.isArray(parsed)) return parsed;
+  } catch {}
+  
+  const resolved = resolveProductImageUrl(imagemUrl);
+  return resolved ? [resolved] : [];
 }
