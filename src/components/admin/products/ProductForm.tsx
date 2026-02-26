@@ -83,7 +83,15 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
       cost_price: 0,
       stock_quantity: productData.estoque || 0,
       is_active: productData.ativo ?? true,
-      images: productData.imagem_url ? [productData.imagem_url] : [],
+      images: (() => {
+        if (!productData.imagem_url) return [];
+        try {
+          const parsed = JSON.parse(productData.imagem_url);
+          if (Array.isArray(parsed)) return parsed;
+        } catch {}
+        // Legacy: single URL string
+        return [productData.imagem_url];
+      })(),
       commission_value: productData.commission_value || 0,
       commission_percentage: productData.commission_percentage || 0,
     } : undefined,
@@ -122,7 +130,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           preco: values.price,
           estoque: values.stock_quantity || 0,
           ativo: values.is_active,
-          imagem_url: values.images[0] || null,
+          imagem_url: values.images.length > 0 ? JSON.stringify(values.images) : null,
           commission_value: values.commission_value || 0,
           commission_percentage: values.commission_percentage || 0,
         };
@@ -149,7 +157,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ productId, onCancel, onSucces
           preco: values.price,
           estoque: values.stock_quantity || 0,
           categoria: 'Geral',
-          imagem_url: values.images[0] || null,
+          imagem_url: values.images.length > 0 ? JSON.stringify(values.images) : null,
           ativo: values.is_active,
           commission_value: values.commission_value || 0,
           commission_percentage: values.commission_percentage || 0,
