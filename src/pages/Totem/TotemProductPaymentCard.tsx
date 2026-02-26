@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
-import { TEFResultado, confirmarTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
+import { TEFResultado, confirmarTransacaoTEF, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
 import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { format } from 'date-fns';
@@ -43,6 +43,7 @@ const TotemProductPaymentCard: React.FC = () => {
   // Refs para evitar duplicatas
   const finalizingRef = useRef(false);
   const paymentTypeRef = useRef<'credit' | 'debit' | null>(null);
+  const resolvingPendingRef = useRef(false);
 
   // Atualizar ref quando paymentType mudar
   useEffect(() => {
@@ -201,6 +202,61 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [pendingTransactionData, sale, client, cart, navigate]);
 
+  const isPendingTransactionError = (resultado: TEFResultado) => {
+    const responseCode = String(resultado.codigoResposta || resultado.codigoErro || '').trim();
+    const message = (resultado.mensagem || '').toLowerCase();
+
+    return (
+      responseCode === '-2573' ||
+      responseCode === '-2599' ||
+      message.includes('negada 90') ||
+      message.includes('transação pendente') ||
+      message.includes('transacao pendente') ||
+      message.includes('pendência') ||
+      message.includes('pendencia')
+    );
+  };
+
+  const resolvePendingAndReset = async (resultado: TEFResultado) => {
+    if (resolvingPendingRef.current) return;
+
+    resolvingPendingRef.current = true;
+    try {
+      console.warn('⚠️ [PRODUCT-CARD] Pendência TEF detectada, resolvendo antes de nova tentativa...', {
+        codigoResposta: resultado.codigoResposta,
+        mensagem: resultado.mensagem,
+        confirmationTransactionId: resultado.confirmationTransactionId,
+      });
+
+      toast.info('Preparando terminal...', {
+        description: 'Resolvendo pendência da transação anterior',
+      });
+
+      const resolved = resolverPendenciaAndroid(
+        'desfazer',
+        resultado.confirmationTransactionId || undefined
+      );
+
+      if (!resolved) {
+        toast.warning('Pendência detectada no terminal', {
+          description: 'Aguarde alguns segundos e tente novamente',
+        });
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 2500));
+    } catch (pendingError) {
+      console.error('[PRODUCT-CARD] Erro ao resolver pendência TEF:', pendingError);
+      toast.warning('Terminal em sincronização', {
+        description: 'Tente novamente em instantes',
+      });
+    } finally {
+      setProcessing(false);
+      setPaymentType(null);
+      setPaymentStarted(false);
+      resolvingPendingRef.current = false;
+    }
+  };
+
   // Handler TEF Result - IDÊNTICO AO SERVIÇO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PRODUCT-CARD] ═══════════════════════════════════════');
@@ -239,6 +295,11 @@ const TotemProductPaymentCard: React.FC = () => {
         break;
 
       case 'negado':
+        if (isPendingTransactionError(resultado)) {
+          void resolvePendingAndReset(resultado);
+          break;
+        }
+
         console.log('❌ [PRODUCT-CARD] Pagamento NEGADO');
         toast.error('Pagamento negado', { description: resultado.mensagem || 'Tente novamente' });
         setError(resultado.mensagem || 'Pagamento negado');
@@ -256,6 +317,11 @@ const TotemProductPaymentCard: React.FC = () => {
         break;
 
       case 'erro':
+        if (isPendingTransactionError(resultado)) {
+          void resolvePendingAndReset(resultado);
+          break;
+        }
+
         console.log('❌ [PRODUCT-CARD] ERRO no pagamento');
         toast.error('Erro no pagamento', { description: resultado.mensagem });
         setError(resultado.mensagem || 'Erro desconhecido');
