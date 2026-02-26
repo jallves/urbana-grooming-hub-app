@@ -11,6 +11,7 @@ import {
   reaisToCentavos,
   savePendingDataToLocalStorage,
   confirmarTransacaoTEF,
+  resolverPendenciaAndroid,
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
@@ -62,6 +63,24 @@ function setLastConfirmationTimestamp(ts: number): void {
 }
 
 let lastConfirmationTimestamp: number = getLastConfirmationTimestamp();
+
+function isPendingTransactionError(result: TEFResultado): boolean {
+  const codes = [result.codigoResposta, result.codigoErro]
+    .map((code) => String(code || '').trim())
+    .filter(Boolean);
+  const message = String(result.mensagem || '').toLowerCase();
+
+  return (
+    codes.includes('-2573') ||
+    codes.includes('-2599') ||
+    codes.includes('90') ||
+    message.includes('negada 90') ||
+    message.includes('transação pendente') ||
+    message.includes('transacao pendente') ||
+    message.includes('pendência') ||
+    message.includes('pendencia')
+  );
+}
 
 // Armazenar referência aos options de forma global para persistir entre renders
 let globalOptionsRef: UseTEFAndroidOptions = {};
@@ -263,12 +282,40 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           }
           break;
 
-        case 'negado':
+        case 'negado': {
           console.log('[useTEFAndroid] ❌ Pagamento NEGADO - chamando onError');
+
+          if (isPendingTransactionError(normalizedResult)) {
+            console.warn('[useTEFAndroid] ⚠️ Negada 90 / pendência detectada - disparando desfazer automático');
+            try {
+              const resolved = resolverPendenciaAndroid(
+                'desfazer',
+                normalizedResult.confirmationTransactionId || undefined
+              );
+
+              if (resolved) {
+                lastConfirmationTimestamp = Date.now();
+                setLastConfirmationTimestamp(lastConfirmationTimestamp);
+                logTEFTransaction('tef_init', 'warning', '[TEF] Pendência resolvida automaticamente após Negada 90', {
+                  codigoResposta: normalizedResult.codigoResposta,
+                  codigoErro: normalizedResult.codigoErro,
+                  mensagem: normalizedResult.mensagem,
+                  confirmationTransactionId: normalizedResult.confirmationTransactionId,
+                });
+                toast.info('Terminal sincronizando', {
+                  description: 'Pendência anterior resolvida, tente novamente em alguns segundos.'
+                });
+              }
+            } catch (pendingError) {
+              console.error('[useTEFAndroid] Erro ao resolver pendência automaticamente:', pendingError);
+            }
+          }
+
           if (opts.onError) {
             opts.onError(normalizedResult.mensagem || 'Pagamento negado', normalizedResult);
           }
           break;
+        }
 
         case 'cancelado':
           console.log('[useTEFAndroid] ⚠️ Pagamento CANCELADO - chamando onCancelled');
@@ -277,12 +324,40 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           }
           break;
 
-        case 'erro':
+        case 'erro': {
           console.log('[useTEFAndroid] ❌ ERRO no pagamento - chamando onError');
+
+          if (isPendingTransactionError(normalizedResult)) {
+            console.warn('[useTEFAndroid] ⚠️ Erro com pendência detectada - disparando desfazer automático');
+            try {
+              const resolved = resolverPendenciaAndroid(
+                'desfazer',
+                normalizedResult.confirmationTransactionId || undefined
+              );
+
+              if (resolved) {
+                lastConfirmationTimestamp = Date.now();
+                setLastConfirmationTimestamp(lastConfirmationTimestamp);
+                logTEFTransaction('tef_init', 'warning', '[TEF] Pendência resolvida automaticamente após erro de pagamento', {
+                  codigoResposta: normalizedResult.codigoResposta,
+                  codigoErro: normalizedResult.codigoErro,
+                  mensagem: normalizedResult.mensagem,
+                  confirmationTransactionId: normalizedResult.confirmationTransactionId,
+                });
+                toast.info('Terminal sincronizando', {
+                  description: 'Pendência anterior resolvida, tente novamente em alguns segundos.'
+                });
+              }
+            } catch (pendingError) {
+              console.error('[useTEFAndroid] Erro ao resolver pendência automaticamente:', pendingError);
+            }
+          }
+
           if (opts.onError) {
             opts.onError(normalizedResult.mensagem || 'Erro desconhecido', normalizedResult);
           }
           break;
+        }
       }
     };
     
