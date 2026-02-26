@@ -99,24 +99,27 @@ export default function PainelClienteMeusAgendamentos() {
     return <span className={`px-3 py-1.5 rounded-full text-xs font-medium border ${config.color} backdrop-blur-sm`}>{config.label}</span>;
   };
 
-  // Verificar se o agendamento pode ser editado/cancelado (até 2 horas antes)
-  const canEditOrCancel = (agendamento: Agendamento): { allowed: boolean; reason?: string } => {
+  // Regras de cancelamento/edição pelo cliente
+  const canEditOrCancel = (agendamento: Agendamento): { allowed: boolean; reason?: string; canCancel?: boolean; canEdit?: boolean } => {
     if (!['agendado', 'confirmado'].includes(agendamento.status)) {
-      return { allowed: false, reason: 'Apenas agendamentos agendados ou confirmados podem ser alterados.' };
+      return { allowed: false, canCancel: false, canEdit: false, reason: 'Apenas agendamentos agendados ou confirmados podem ser alterados.' };
     }
 
     const now = new Date();
     const appointmentDateTime = new Date(`${agendamento.data}T${agendamento.hora}`);
     const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-    if (hoursUntilAppointment < 2) {
+    // Menos de 3h: não pode cancelar NEM editar — deve contatar o barbeiro
+    if (hoursUntilAppointment < 3) {
       return { 
         allowed: false, 
-        reason: 'Alterações só podem ser feitas com pelo menos 2 horas de antecedência.' 
+        canCancel: false,
+        canEdit: false,
+        reason: 'Cancelamentos e alterações só podem ser feitos com pelo menos 3 horas de antecedência. Entre em contato diretamente com o barbeiro para solicitar alterações.' 
       };
     }
 
-    return { allowed: true };
+    return { allowed: true, canCancel: true, canEdit: true };
   };
 
   const handleEditAgendamento = (agendamento: Agendamento) => {
