@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.register-barber]
 verify_jwt = false
+
+[functions.auto-mark-absent]
+verify_jwt = false
