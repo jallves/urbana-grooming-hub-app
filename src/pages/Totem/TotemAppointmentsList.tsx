@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Calendar, Clock, Scissors, User, CheckCircle, XCircle, CheckCircle2, AlertCircle } from 'lucide-react';
-import { format, parseISO, isPast, isToday, addHours, subHours } from 'date-fns';
+import { format, parseISO, isPast, isToday, addHours } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -145,15 +145,16 @@ const TotemAppointmentsList: React.FC = () => {
       nowTimestamp: currentTime.getTime()
     });
     
-    // Verificar se é muito cedo (mais de 2 horas antes)
-    const twoHoursBefore = subHours(appointmentDateTime, 2);
-    if (currentTime < twoHoursBefore) {
-      const hoursUntil = Math.floor((twoHoursBefore.getTime() - currentTime.getTime()) / (1000 * 60 * 60));
-      const minutesUntil = Math.floor(((twoHoursBefore.getTime() - currentTime.getTime()) % (1000 * 60 * 60)) / (1000 * 60));
+    // Verificar se é muito cedo (mais de 1h30 antes)
+    const ninetyMinutesBefore = new Date(appointmentDateTime.getTime() - 90 * 60 * 1000);
+    if (currentTime < ninetyMinutesBefore) {
+      const totalMinutesUntil = Math.floor((ninetyMinutesBefore.getTime() - currentTime.getTime()) / (1000 * 60));
+      const hoursUntil = Math.floor(totalMinutesUntil / 60);
+      const minutesUntil = totalMinutesUntil % 60;
       console.log('⏰ Muito cedo - faltam', hoursUntil, 'h', minutesUntil, 'min');
       return { 
         allowed: false, 
-        reason: `Check-in disponível a partir de ${format(twoHoursBefore, 'HH:mm', { locale: ptBR })} (faltam ${hoursUntil}h ${minutesUntil}min)` 
+        reason: `Check-in disponível a partir de ${format(ninetyMinutesBefore, 'HH:mm', { locale: ptBR })} (faltam ${hoursUntil}h ${minutesUntil}min)` 
       };
     }
 
