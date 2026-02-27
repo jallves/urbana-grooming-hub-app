@@ -1,6 +1,5 @@
 import React from 'react';
 import { ChevronLeft, ChevronRight, Calendar, RefreshCw } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { useBanners } from '@/hooks/useBanners';
 import BannerSlide from './hero/BannerSlide';
@@ -9,7 +8,6 @@ import { Button } from '@/components/ui/button';
 
 const Hero: React.FC = () => {
   const { banners: bannerImages, loading, error, refetch } = useBanners();
-  const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = React.useState(0);
   const { scrollY } = useScroll();
   const y = useTransform(scrollY, [0, 500], [0, 150]);
@@ -117,7 +115,7 @@ const Hero: React.FC = () => {
           >
             <RippleButton 
               className="relative overflow-hidden bg-gradient-to-r from-urbana-gold via-yellow-400 to-urbana-gold hover:from-yellow-400 hover:via-urbana-gold hover:to-yellow-400 text-urbana-black px-6 sm:px-8 md:px-10 py-4 sm:py-5 md:py-7 text-base sm:text-lg font-bold shadow-[0_0_40px_rgba(255,215,0,0.5),inset_0_2px_8px_rgba(255,255,255,0.2)] hover:shadow-[0_0_60px_rgba(255,215,0,0.7),0_0_100px_rgba(255,215,0,0.4),inset_0_2px_12px_rgba(255,255,255,0.3)] transition-all duration-500 group border-2 border-yellow-300/30 hover:border-yellow-300/50 backdrop-blur-sm hover:scale-105 rounded-lg"
-              onClick={() => navigate(currentBanner.button_link || '/painel-cliente/login')}
+              onClick={() => window.location.href = currentBanner.button_link || '/painel-cliente/login'}
             >
               <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
               <Calendar className="inline mr-2 h-5 w-5 sm:h-6 sm:w-6 relative z-10 group-hover:scale-110 group-hover:rotate-12 transition-all duration-300 drop-shadow-lg" />

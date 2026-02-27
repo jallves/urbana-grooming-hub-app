@@ -115,21 +115,6 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         }
 
         if (!finalProfile) {
-          // Para login Google: se tem user mas não tem perfil, redirecionar para completar cadastro
-          // Verificamos se o provider é google pelo user_metadata
-          const isGoogleUser = user.app_metadata?.provider === 'google' || 
-                               user.app_metadata?.providers?.includes('google');
-          
-          if (isGoogleUser) {
-            console.log('[PainelClienteAuthContext] 🔄 Usuário Google sem perfil, redirecionando para completar cadastro...');
-            // Não mostrar toast de erro para usuários Google - eles serão redirecionados
-            if (mounted) {
-              setCliente(null);
-              setLoading(false);
-            }
-            return;
-          }
-
           console.warn('[PainelClienteAuthContext] ⚠️ Perfil do cliente não encontrado');
           toast({
             variant: 'destructive',
