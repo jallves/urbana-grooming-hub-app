@@ -36,6 +36,7 @@ import AdminSettings from './pages/AdminSettings';
 import SessionsManagement from './pages/admin/SessionsManagement';
 import PainelClienteLogin from './pages/PainelClienteLogin';
 import PainelClienteRegister from './pages/PainelClienteRegister';
+import PainelClienteCadastro from './pages/PainelClienteCadastro';
 import PainelClienteEmailConfirmation from './pages/PainelClienteEmailConfirmation';
 import PainelClienteEmailConfirmed from './pages/PainelClienteEmailConfirmed';
 import PainelClienteDashboard from './pages/PainelClienteDashboard';
@@ -301,6 +302,11 @@ function App() {
                   <Route path="/painel-cliente/register" element={
                     <AdminRedirectGuard>
                       <PainelClienteRegister />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/painel-cliente/cadastro" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteCadastro />
                     </AdminRedirectGuard>
                   } />
                   <Route path="/painel-cliente/confirmar-email" element={
