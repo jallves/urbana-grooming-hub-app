@@ -34,7 +34,7 @@ export function DateOfBirthPicker({
   value,
   onChange,
   className,
-  placeholder = "Selecione sua data de nascimento",
+  placeholder = "Selecione a data",
 }: DateOfBirthPickerProps) {
   const currentYear = new Date().getFullYear();
   const years = Array.from({ length: 100 }, (_, i) => currentYear - i);
@@ -74,12 +74,12 @@ export function DateOfBirthPicker({
             value={displayMonth.getMonth().toString()}
             onValueChange={handleMonthChange}
           >
-            <SelectTrigger className="flex-1 h-9 text-sm">
+            <SelectTrigger className="flex-1 h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {MONTHS.map((month, i) => (
-                <SelectItem key={i} value={i.toString()}>
+                <SelectItem key={i} value={i.toString()} className="min-h-[44px] flex items-center">
                   {month}
                 </SelectItem>
               ))}
@@ -90,12 +90,12 @@ export function DateOfBirthPicker({
             value={displayMonth.getFullYear().toString()}
             onValueChange={handleYearChange}
           >
-            <SelectTrigger className="w-24 h-9 text-sm">
+            <SelectTrigger className="w-24 h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="max-h-60">
               {years.map((year) => (
-                <SelectItem key={year} value={year.toString()}>
+                <SelectItem key={year} value={year.toString()} className="min-h-[44px] flex items-center">
                   {year}
                 </SelectItem>
               ))}
