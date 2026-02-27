@@ -11,9 +11,9 @@ export interface HomeStatistics {
 // Valores base definidos pelo cliente
 const BASE_STATS = {
   yearsOfExcellence: 2,
-  satisfiedClients: 400,
+  satisfiedClients: 401,
   servicesCompleted: 700,
-  positiveRating: 99.0
+  positiveRating: 0
 };
 
 export const useHomeStatistics = () => {
@@ -41,10 +41,11 @@ export const useHomeStatistics = () => {
       let positiveRating = BASE_STATS.positiveRating;
 
       if (!ratingsError && ratings && ratings.length > 0) {
-        // Calcular % de avaliações positivas (4 ou 5 estrelas)
-        const positiveCount = ratings.filter(r => r.rating >= 4).length;
-        positiveRating = Math.round((positiveCount / ratings.length) * 100 * 10) / 10;
-        console.log('[Statistics] Avaliações positivas:', positiveCount, 'de', ratings.length, '=', positiveRating, '%');
+        // Cada estrela = 20%, então média × 20 = percentual
+        // Ex: média 5 estrelas = 100%, média 4 = 80%, média 3 = 60%
+        const averageRating = ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length;
+        positiveRating = Math.round(averageRating * 20 * 10) / 10;
+        console.log('[Statistics] Média:', averageRating.toFixed(2), '=', positiveRating, '%');
       }
 
       setStats({
