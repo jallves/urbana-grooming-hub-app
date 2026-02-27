@@ -13,6 +13,16 @@ import EditAgendamentoModal from '@/components/painel-cliente/EditAgendamentoMod
 import { useToast } from '@/hooks/use-toast';
 import { PainelClienteContentContainer } from "@/components/painel-cliente/PainelClienteContentContainer";
 import { sendAppointmentCancellationEmail } from '@/hooks/useSendAppointmentCancellationEmail';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Agendamento {
   id: string;
@@ -38,6 +48,9 @@ export default function PainelClienteMeusAgendamentos() {
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedAgendamento, setSelectedAgendamento] = useState<Agendamento | null>(null);
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [cancellingAgendamento, setCancellingAgendamento] = useState<Agendamento | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
   const { toast } = useToast();
 
   const fetchAgendamentos = useCallback(async () => {
@@ -105,20 +118,6 @@ export default function PainelClienteMeusAgendamentos() {
       return { allowed: false, canCancel: false, canEdit: false, reason: 'Apenas agendamentos agendados ou confirmados podem ser alterados.' };
     }
 
-    const now = new Date();
-    const appointmentDateTime = new Date(`${agendamento.data}T${agendamento.hora}`);
-    const hoursUntilAppointment = (appointmentDateTime.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-    // Menos de 3h: não pode cancelar NEM editar — deve contatar o barbeiro
-    if (hoursUntilAppointment < 3) {
-      return { 
-        allowed: false, 
-        canCancel: false,
-        canEdit: false,
-        reason: 'Cancelamentos e alterações só podem ser feitos com pelo menos 3 horas de antecedência. Entre em contato diretamente com o barbeiro para solicitar alterações.' 
-      };
-    }
-
     return { allowed: true, canCancel: true, canEdit: true };
   };
 
@@ -138,7 +137,7 @@ export default function PainelClienteMeusAgendamentos() {
     setEditModalOpen(true);
   };
 
-  const handleDeleteAgendamento = async (agendamento: Agendamento) => {
+  const handleDeleteAgendamento = (agendamento: Agendamento) => {
     const { allowed, reason } = canEditOrCancel(agendamento);
     
     if (!allowed) {
@@ -150,24 +149,37 @@ export default function PainelClienteMeusAgendamentos() {
       return;
     }
 
-    if (!confirm('Tem certeza que deseja cancelar este agendamento?')) {
-      return;
-    }
+    setCancellingAgendamento(agendamento);
+    setCancelDialogOpen(true);
+  };
+
+  const handleConfirmCancel = async () => {
+    if (!cancellingAgendamento || !cliente) return;
+    setIsCancelling(true);
 
     try {
-      const { error } = await supabase
-        .from('painel_agendamentos')
-        .update({ status: 'cancelado' })
-        .eq('id', agendamento.id)
-        .eq('cliente_id', cliente?.id);
+      const { data, error } = await supabase.rpc('cancel_painel_appointment_by_client', {
+        p_appointment_id: cancellingAgendamento.id,
+        p_client_id: cliente.id,
+      });
 
       if (error) throw error;
 
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        toast({
+          variant: "destructive",
+          title: "Erro ao cancelar",
+          description: result.error || "Não foi possível cancelar o agendamento.",
+        });
+        return;
+      }
+
       // Enviar e-mail de cancelamento
-      console.log('📧 [Cliente] Enviando e-mail de cancelamento...');
       try {
         await sendAppointmentCancellationEmail({
-          appointmentId: agendamento.id,
+          appointmentId: cancellingAgendamento.id,
           cancelledBy: 'client'
         });
       } catch (emailError) {
@@ -175,7 +187,7 @@ export default function PainelClienteMeusAgendamentos() {
       }
 
       toast({
-        title: "Agendamento cancelado!",
+        title: "✅ Agendamento cancelado!",
         description: "Seu agendamento foi cancelado com sucesso.",
       });
 
@@ -187,6 +199,10 @@ export default function PainelClienteMeusAgendamentos() {
         title: "Erro",
         description: "Não foi possível cancelar o agendamento.",
       });
+    } finally {
+      setIsCancelling(false);
+      setCancelDialogOpen(false);
+      setCancellingAgendamento(null);
     }
   };
 
@@ -476,6 +492,58 @@ export default function PainelClienteMeusAgendamentos() {
         agendamento={selectedAgendamento}
         onUpdate={fetchAgendamentos}
       />
+
+      {/* Cancel Confirmation Dialog */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent className="bg-slate-900 border border-slate-700/50 text-white max-w-md">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-urbana-gold text-xl">
+              Cancelar Agendamento
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-300 space-y-3">
+              <p>Tem certeza que deseja cancelar este agendamento?</p>
+              {cancellingAgendamento && (
+                <div className="bg-slate-800/80 rounded-xl p-4 space-y-2 border border-slate-700/50">
+                  <div className="flex items-center gap-2">
+                    <Scissors className="h-4 w-4 text-urbana-gold" />
+                    <span className="font-medium text-white">{cancellingAgendamento.painel_servicos.nome}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-urbana-gold" />
+                    <span>{format(parseISO(cancellingAgendamento.data), "dd 'de' MMMM", { locale: ptBR })}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-urbana-gold" />
+                    <span>{cancellingAgendamento.hora}</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <User className="h-4 w-4 text-urbana-gold" />
+                    <span>{cancellingAgendamento.painel_barbeiros.nome}</span>
+                  </div>
+                </div>
+              )}
+              <p className="text-amber-400/80 text-xs">
+                Esta ação não pode ser desfeita. O agendamento ficará com status cancelado.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel 
+              className="bg-transparent border border-slate-600 text-gray-300 hover:bg-slate-800 hover:text-white"
+              disabled={isCancelling}
+            >
+              Não, manter
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancel}
+              disabled={isCancelling}
+              className="bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700"
+            >
+              {isCancelling ? 'Cancelando...' : 'Sim, cancelar'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PainelClienteContentContainer>
   );
 }

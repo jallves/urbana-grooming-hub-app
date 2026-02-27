@@ -2051,6 +2051,10 @@ export type Database = {
         Args: { p_appointment_id: string; p_client_id: string }
         Returns: Json
       }
+      cancel_painel_appointment_by_client: {
+        Args: { p_appointment_id: string; p_client_id: string }
+        Returns: Json
+      }
       check_barber_slot_availability: {
         Args: {
           p_barber_id: string
