@@ -44,6 +44,7 @@ import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
 import PainelClienteMeusAgendamentos from './pages/PainelClienteMeusAgendamentos';
 import PainelClientePerfil from './pages/PainelClientePerfil';
 import ForgotPassword from './pages/ForgotPassword';
+import PainelClienteCompletarCadastro from './pages/PainelClienteCompletarCadastro';
 import BarberAuth from './pages/BarberAuth';
 import BarberDashboard from './pages/BarberDashboard';
 import BarberAppointments from './pages/BarberAppointments';
@@ -316,6 +317,11 @@ function App() {
                   <Route path="/painel-cliente/forgot-password" element={
                     <AdminRedirectGuard>
                       <ForgotPassword />
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/painel-cliente/completar-cadastro" element={
+                    <AdminRedirectGuard>
+                      <PainelClienteCompletarCadastro />
                     </AdminRedirectGuard>
                   } />
                   
