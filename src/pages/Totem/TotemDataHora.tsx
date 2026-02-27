@@ -33,6 +33,9 @@ const TotemDataHora: React.FC = () => {
   const [loadingDates, setLoadingDates] = useState(true);
   const [creating, setCreating] = useState(false);
 
+  // Cache dos dados bulk para reutilizar ao carregar slots
+  const [bulkData, setBulkData] = useState<any>(null);
+
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
   useEffect(() => {
@@ -43,35 +46,154 @@ const TotemDataHora: React.FC = () => {
       return;
     }
     
-    // Carregar datas disponíveis usando o hook otimizado
+    // OTIMIZADO: Bulk fetch de todos os dados de uma vez
     const loadAvailableDates = async () => {
       setLoadingDates(true);
-      console.log('📅 [TotemDataHora] Iniciando carregamento de datas para:', barber.nome);
+      console.log('📅 [TotemDataHora] Iniciando carregamento OTIMIZADO de datas para:', barber.nome);
       
       try {
         const today = startOfToday();
-        const daysToCheck = 14;
-        const allDays = Array.from({ length: daysToCheck }, (_, i) => addDays(today, i));
+        const barberId = barber.id;
+        const serviceDuration = service.duracao || 60;
         
-        // OTIMIZADO: Verificar TODOS os 14 dias em paralelo ao invés de sequencialmente
-        const results = await Promise.all(
-          allDays.map(async (date) => {
-            const slots = await getAvailableTimeSlots(
-              barber.id,
-              date,
-              service.duracao || 60
-            );
-            const availableCount = slots.filter(s => s.available).length;
-            console.log(`📅 [TotemDataHora] ${format(date, 'dd/MM')}: ${availableCount} slots disponíveis`);
-            return { date, availableCount };
-          })
-        );
+        const datesToCheck: Date[] = [];
+        for (let i = 0; i < 14; i++) {
+          datesToCheck.push(addDays(today, i));
+        }
+
+        const startDateStr = format(today, 'yyyy-MM-dd');
+        const endDateStr = format(addDays(today, 13), 'yyyy-MM-dd');
+
+        // 1. Resolver staffId UMA ÚNICA VEZ
+        const { data: barberData } = await supabase
+          .from('painel_barbeiros')
+          .select('staff_id')
+          .eq('id', barberId)
+          .maybeSingle();
         
-        // Filtrar dias com horários e limitar a 7
-        const dates = results
-          .filter(r => r.availableCount > 0)
-          .slice(0, 7)
-          .map(r => r.date);
+        const authStaffId = barberData?.staff_id || barberId;
+        const { data: staffRecord } = await supabase
+          .from('staff')
+          .select('id')
+          .eq('staff_id', authStaffId)
+          .maybeSingle();
+        const staffTableId = staffRecord?.id || authStaffId;
+
+        // 2. BULK FETCH: Todas as queries em paralelo
+        const [workingHoursResult, timeOffResult, availabilityResult, appointmentsResult] = await Promise.all([
+          supabase
+            .from('working_hours')
+            .select('day_of_week, start_time, end_time')
+            .eq('staff_id', staffTableId)
+            .eq('is_active', true),
+          supabase
+            .from('time_off')
+            .select('start_date, end_date, type')
+            .eq('barber_id', barberId)
+            .eq('status', 'ativo')
+            .lte('start_date', endDateStr)
+            .gte('end_date', startDateStr),
+          supabase
+            .from('barber_availability')
+            .select('date, is_available, start_time, end_time')
+            .eq('barber_id', barberId)
+            .gte('date', startDateStr)
+            .lte('date', endDateStr),
+          supabase
+            .from('painel_agendamentos')
+            .select('data, hora, servico:painel_servicos(duracao)')
+            .eq('barbeiro_id', barberId)
+            .gte('data', startDateStr)
+            .lte('data', endDateStr)
+            .not('status', 'in', '("cancelado","ausente")')
+        ]);
+
+        // Indexar dados para acesso rápido
+        const workingHoursMap = new Map<number, { start: string; end: string }>();
+        workingHoursResult.data?.forEach(wh => {
+          workingHoursMap.set(wh.day_of_week, { start: wh.start_time, end: wh.end_time });
+        });
+
+        const timeOffDates = new Set<string>();
+        timeOffResult.data?.forEach(to => {
+          const start = new Date(to.start_date + 'T12:00:00');
+          const end = new Date(to.end_date + 'T12:00:00');
+          for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+            timeOffDates.add(format(d, 'yyyy-MM-dd'));
+          }
+        });
+
+        const availabilityMap = new Map<string, { is_available: boolean; start_time?: string; end_time?: string }>();
+        availabilityResult.data?.forEach(a => {
+          availabilityMap.set(a.date, a);
+        });
+
+        const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
+        appointmentsResult.data?.forEach(apt => {
+          const list = appointmentsByDate.get(apt.data) || [];
+          list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+          appointmentsByDate.set(apt.data, list);
+        });
+
+        // Salvar dados bulk para reutilizar nos slots
+        setBulkData({ workingHoursMap, timeOffDates, availabilityMap, appointmentsByDate });
+
+        // 3. Processar LOCALMENTE
+        const BUFFER = 10;
+        const timeToMin = (t: string) => {
+          const [h, m] = t.split(':').map(Number);
+          return h * 60 + m;
+        };
+
+        const dates: Date[] = [];
+        const now = new Date();
+
+        for (const date of datesToCheck) {
+          if (dates.length >= 7) break;
+          const dateStr = format(date, 'yyyy-MM-dd');
+          const dayOfWeek = date.getDay();
+
+          if (timeOffDates.has(dateStr)) continue;
+          const wh = workingHoursMap.get(dayOfWeek);
+          if (!wh) continue;
+          const avail = availabilityMap.get(dateStr);
+          if (avail && avail.is_available === false) continue;
+
+          const effectiveStart = avail?.start_time || wh.start;
+          const effectiveEnd = avail?.end_time || wh.end;
+          const startMin = timeToMin(effectiveStart);
+          const endMin = timeToMin(effectiveEnd);
+
+          const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
+            start: timeToMin(apt.hora),
+            end: timeToMin(apt.hora) + apt.duracao + BUFFER
+          }));
+
+          const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+          let hasAvailable = false;
+
+          for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
+            if (isToday) {
+              const slotDate = new Date(date);
+              slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+              if (slotDate <= now) continue;
+            }
+            const slotEnd = mins + serviceDuration;
+            let conflict = false;
+            for (const period of occupied) {
+              if (mins < period.end && slotEnd + BUFFER > period.start) {
+                conflict = true;
+                break;
+              }
+            }
+            if (!conflict) {
+              hasAvailable = true;
+              break;
+            }
+          }
+
+          if (hasAvailable) dates.push(date);
+        }
         
         console.log(`✅ [TotemDataHora] Total de datas disponíveis: ${dates.length}`);
         setAvailableDates(dates);
@@ -94,76 +216,82 @@ const TotemDataHora: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, service, barber, navigate, getAvailableTimeSlots]);
+  }, [client, service, barber, navigate]);
 
   useEffect(() => {
-    if (selectedDate) {
-      loadTimeSlots();
+    if (selectedDate && bulkData) {
+      loadTimeSlotsFromCache();
     }
-  }, [selectedDate]);
+  }, [selectedDate, bulkData]);
 
-  const loadTimeSlots = async () => {
-    if (!selectedDate || !service) return;
+  const loadTimeSlotsFromCache = () => {
+    if (!selectedDate || !service || !bulkData) return;
     
     const now = new Date();
-    
-    // Comparar datas sem conversão de timezone
     const isToday = selectedDate.getDate() === now.getDate() &&
                     selectedDate.getMonth() === now.getMonth() &&
                     selectedDate.getFullYear() === now.getFullYear();
     
-    const year = selectedDate.getFullYear();
-    const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
-    const day = String(selectedDate.getDate()).padStart(2, '0');
-    const selectedDateStr = `${year}-${month}-${day}`;
-    
-    console.log('🕐 Carregando slots:', {
-      selectedDate: selectedDateStr,
-      isToday,
-      currentTime: format(now, 'HH:mm:ss'),
-      minTimeRequired: format(addMinutes(now, 30), 'HH:mm:ss')
-    });
-    
-    setLoading(true);
-    try {
-      const slots = await getAvailableTimeSlots(
-        barber.id, // CRÍTICO: Sempre usar painel_barbeiros.id (não staff_id)
-        selectedDate,
-        service.duracao || 60
-      );
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    const dayOfWeek = selectedDate.getDay();
+    const serviceDuration = service.duracao || 60;
+    const BUFFER = 10;
 
-      console.log('📊 Slots recebidos:', {
-        total: slots.length,
-        available: slots.filter(s => s.available).length,
-        unavailable: slots.filter(s => !s.available).length,
-        reasons: slots.filter(s => !s.available).map(s => ({ time: s.time, reason: s.reason }))
-      });
+    const timeToMin = (t: string) => {
+      const [h, m] = t.split(':').map(Number);
+      return h * 60 + m;
+    };
 
-      // Filtrar apenas horários disponíveis
-      const availableSlots: TimeSlot[] = slots
-        .filter(slot => slot.available)
-        .map(slot => ({
-          hora: slot.time,
-          disponivel: true
-        }));
-      
-      console.log('✅ Horários finais disponíveis:', availableSlots.map(s => s.hora));
-      
-      if (availableSlots.length === 0) {
-        toast.info('Não há horários disponíveis para esta data', {
-          description: isToday 
-            ? 'Não há mais horários disponíveis hoje. Selecione outra data.' 
-            : 'Selecione outra data ou tente mais tarde.'
-        });
-      }
-      
-      setTimeSlots(availableSlots);
-    } catch (error) {
-      console.error('Erro ao carregar horários:', error);
-      toast.error('Erro ao carregar horários disponíveis');
-    } finally {
-      setLoading(false);
+    const wh = bulkData.workingHoursMap.get(dayOfWeek);
+    if (!wh) {
+      setTimeSlots([]);
+      return;
     }
+
+    const avail = bulkData.availabilityMap.get(dateStr);
+    const effectiveStart = avail?.start_time || wh.start;
+    const effectiveEnd = avail?.end_time || wh.end;
+    const startMin = timeToMin(effectiveStart);
+    const endMin = timeToMin(effectiveEnd);
+
+    const occupied = (bulkData.appointmentsByDate.get(dateStr) || []).map((apt: any) => ({
+      start: timeToMin(apt.hora),
+      end: timeToMin(apt.hora) + apt.duracao + BUFFER
+    }));
+
+    const availableSlots: TimeSlot[] = [];
+    for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
+      if (isToday) {
+        const slotDate = new Date(selectedDate);
+        slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+        if (slotDate <= now) continue;
+      }
+      const slotEnd = mins + serviceDuration;
+      let conflict = false;
+      for (const period of occupied) {
+        if (mins < period.end && slotEnd + BUFFER > period.start) {
+          conflict = true;
+          break;
+        }
+      }
+      if (!conflict) {
+        const h = String(Math.floor(mins / 60)).padStart(2, '0');
+        const m = String(mins % 60).padStart(2, '0');
+        availableSlots.push({ hora: `${h}:${m}`, disponivel: true });
+      }
+    }
+
+    console.log('✅ [TotemDataHora] Slots disponíveis:', availableSlots.length);
+
+    if (availableSlots.length === 0) {
+      toast.info('Não há horários disponíveis para esta data', {
+        description: isToday 
+          ? 'Não há mais horários disponíveis hoje. Selecione outra data.' 
+          : 'Selecione outra data ou tente mais tarde.'
+      });
+    }
+
+    setTimeSlots(availableSlots);
   };
 
   const handleConfirm = async () => {
@@ -190,7 +318,7 @@ const TotemDataHora: React.FC = () => {
       if (!validation.valid) {
         console.log('❌ [TotemDataHora] Validação falhou:', validation.error);
         // Recarregar horários para refletir estado atual
-        await loadTimeSlots();
+        loadTimeSlotsFromCache();
         setCreating(false);
         return;
       }
@@ -233,7 +361,7 @@ const TotemDataHora: React.FC = () => {
         // Recarregar horários se for erro de conflito
         if (response.error.message?.includes('Conflito') || 
             response.error.message?.includes('duplicate')) {
-          loadTimeSlots();
+          loadTimeSlotsFromCache();
         }
         
         setCreating(false);
