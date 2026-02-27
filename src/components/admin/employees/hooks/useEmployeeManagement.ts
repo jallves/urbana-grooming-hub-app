@@ -19,10 +19,9 @@ export const useEmployeeManagement = () => {
       let query = supabase
         .from('employees')
         .select('*')
-        .neq('role', 'master') // Excluir usuários master
+        .neq('role', 'master')
         .order('name');
 
-      // Aplicar filtros no banco
       if (roleFilter !== 'all') {
         query = query.eq('role', roleFilter);
       }
@@ -32,18 +31,36 @@ export const useEmployeeManagement = () => {
       }
 
       const { data, error } = await query;
+      if (error) throw error;
 
-      if (error) {
-        throw error;
+      // Fetch last login from active_sessions for each employee email
+      const emails = (data || []).map(e => e.email).filter(Boolean) as string[];
+      let lastLoginMap = new Map<string, string>();
+      
+      if (emails.length > 0) {
+        const { data: sessions } = await supabase
+          .from('active_sessions')
+          .select('user_email, login_at')
+          .in('user_email', emails)
+          .order('login_at', { ascending: false });
+
+        if (sessions) {
+          for (const session of sessions) {
+            if (session.user_email && !lastLoginMap.has(session.user_email)) {
+              lastLoginMap.set(session.user_email, session.login_at);
+            }
+          }
+        }
       }
 
       return (data || []).map(employee => ({
         ...employee,
         role: employee.role as 'admin' | 'manager' | 'barber',
-        status: employee.status as 'active' | 'inactive'
+        status: employee.status as 'active' | 'inactive',
+        last_login: lastLoginMap.get(employee.email || '') || undefined,
       })) as Employee[];
     },
-    staleTime: 30000, // Cache por 30 segundos
+    staleTime: 30000,
     refetchOnWindowFocus: false,
   });
 
