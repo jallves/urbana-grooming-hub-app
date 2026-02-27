@@ -57,17 +57,27 @@ const ClientAppointmentList = () => {
     setIsModalOpen(true);
   };
 
-  const handleDeleteAppointment = async (appointmentId: string) => {
+  const handleCancelAppointment = async (appointmentId: string) => {
     if (!confirm('Tem certeza que deseja cancelar este agendamento?')) return;
 
     try {
-      const { error } = await supabase
-        .from('appointments')
-        .delete()
-        .eq('id', appointmentId)
-        .eq('client_id', client?.id);
+      const { data, error } = await supabase.rpc('cancel_appointment_by_client', {
+        p_appointment_id: appointmentId,
+        p_client_id: client?.id,
+      });
 
       if (error) throw error;
+
+      const result = data as { success: boolean; error?: string };
+
+      if (!result.success) {
+        toast({
+          variant: "destructive",
+          title: "Não foi possível cancelar",
+          description: result.error || "Erro desconhecido.",
+        });
+        return;
+      }
 
       toast({
         title: "Agendamento cancelado",
@@ -190,8 +200,8 @@ const ClientAppointmentList = () => {
                       <Button
                         variant="outline"
                         size="icon"
-                        onClick={() => handleDeleteAppointment(appointment.id)}
-                        className="h-8 w-8 text-red-600 hover:text-red-700"
+                        onClick={() => handleCancelAppointment(appointment.id)}
+                        className="h-8 w-8 text-destructive hover:text-destructive"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>

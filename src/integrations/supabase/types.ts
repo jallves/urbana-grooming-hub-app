@@ -2047,6 +2047,10 @@ export type Database = {
         Returns: Json
       }
       array_to_comma_string: { Args: { arr: string[] }; Returns: string }
+      cancel_appointment_by_client: {
+        Args: { p_appointment_id: string; p_client_id: string }
+        Returns: Json
+      }
       check_barber_slot_availability: {
         Args: {
           p_barber_id: string
