@@ -14,6 +14,7 @@ interface PainelClient {
   data_nascimento: string | null;
   created_at: string;
   updated_at: string;
+  ultimo_agendamento: { data: string; hora: string; status: string | null } | null;
 }
 
 interface ClientCardProps {
@@ -106,6 +107,16 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
               </span>
             </div>
           )}
+
+          {/* Último Agendamento */}
+          <div className="flex items-center gap-3 p-2 bg-muted rounded-lg">
+            <Clock className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+            <span className="text-sm">
+              Último agendamento: {client.ultimo_agendamento 
+                ? formatDate(client.ultimo_agendamento.data, true) 
+                : 'Nunca'}
+            </span>
+          </div>
         </div>
       </CardContent>
     </Card>

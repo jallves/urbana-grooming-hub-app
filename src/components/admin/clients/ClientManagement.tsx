@@ -14,15 +14,40 @@ const ClientManagement: React.FC = () => {
   const [editingClient, setEditingClient] = useState<string | null>(null);
 
   const { data: clients, isLoading, error, refetch } = useQuery({
-    queryKey: ['painel-clients'],
+    queryKey: ['painel-clients-with-last-appointment'],
     queryFn: async () => {
-      const { data, error } = await supabase
+      // Fetch clients
+      const { data: clientsData, error: clientsError } = await supabase
         .from('painel_clientes')
         .select('*')
         .order('nome');
       
-      if (error) throw new Error(error.message);
-      return data;
+      if (clientsError) throw new Error(clientsError.message);
+      if (!clientsData || clientsData.length === 0) return [];
+
+      // Fetch last appointment for each client
+      const clientIds = clientsData.map(c => c.id);
+      const { data: appointments } = await supabase
+        .from('painel_agendamentos')
+        .select('cliente_id, data, hora, status')
+        .in('cliente_id', clientIds)
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
+
+      // Map last appointment per client
+      const lastAppointmentMap = new Map<string, { data: string; hora: string; status: string | null }>();
+      if (appointments) {
+        for (const apt of appointments) {
+          if (apt.cliente_id && !lastAppointmentMap.has(apt.cliente_id)) {
+            lastAppointmentMap.set(apt.cliente_id, { data: apt.data, hora: apt.hora, status: apt.status });
+          }
+        }
+      }
+
+      return clientsData.map(client => ({
+        ...client,
+        ultimo_agendamento: lastAppointmentMap.get(client.id) || null,
+      }));
     },
     staleTime: 30000,
     refetchOnWindowFocus: false,

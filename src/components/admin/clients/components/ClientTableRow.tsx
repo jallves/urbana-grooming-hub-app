@@ -14,6 +14,7 @@ interface PainelClient {
   data_nascimento: string | null;
   created_at: string;
   updated_at: string;
+  ultimo_agendamento: { data: string; hora: string; status: string | null } | null;
 }
 
 interface ClientTableRowProps {
