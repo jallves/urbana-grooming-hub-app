@@ -132,11 +132,11 @@ export default function PainelClientePerfil() {
                   id="email"
                   type="email"
                   value={formData.email}
-                  onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
-                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light h-11 sm:h-12 rounded-lg focus:border-urbana-gold focus:ring-1 focus:ring-urbana-gold/20 transition-all text-sm sm:text-base"
+                  disabled
+                  className="bg-urbana-black/30 border-urbana-gold/30 text-urbana-light/50 h-11 sm:h-12 rounded-lg cursor-not-allowed opacity-60 text-sm sm:text-base"
                   placeholder="seu.email@exemplo.com"
-                  required
                 />
+                <p className="text-[10px] sm:text-xs text-urbana-light/50">Para alterar o e-mail, entre em contato com o administrador.</p>
               </div>
 
               {/* WhatsApp */}
