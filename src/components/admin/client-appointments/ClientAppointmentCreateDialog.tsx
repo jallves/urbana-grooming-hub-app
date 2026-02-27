@@ -253,28 +253,98 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
   const loadAvailableDates = async () => {
     setLoading(true);
     try {
-      const dates: Date[] = [];
       const today = startOfToday();
-      
-      for (let i = 0; dates.length < 10 && i < 30; i++) {
-        const date = addDays(today, i);
-        
-        // Usar o id do painel_barbeiros para consistência
-        const slots = await getAvailableTimeSlots(
-          selectedBarber!.id,
-          date,
-          selectedService!.duracao
-        );
+      const barberId = selectedBarber!.id;
+      const serviceDuration = selectedService!.duracao;
 
-        const availableCount = slots.filter(s => s.available).length;
+      const startDateStr = format(today, 'yyyy-MM-dd');
+      const endDateStr = format(addDays(today, 29), 'yyyy-MM-dd');
 
-        if (availableCount > 0) {
-          dates.push(date);
+      // 1. Resolver staffId UMA VEZ
+      const { data: barberData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
+      const authStaffId = barberData?.staff_id || barberId;
+      const { data: staffRecord } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('staff_id', authStaffId)
+        .maybeSingle();
+      const staffTableId = staffRecord?.id || authStaffId;
+
+      // 2. BULK FETCH em paralelo
+      const [workingHoursResult, timeOffResult, availabilityResult, appointmentsResult] = await Promise.all([
+        supabase.from('working_hours').select('day_of_week, start_time, end_time').eq('staff_id', staffTableId).eq('is_active', true),
+        supabase.from('time_off').select('start_date, end_date, type').eq('barber_id', barberId).eq('status', 'ativo').lte('start_date', endDateStr).gte('end_date', startDateStr),
+        supabase.from('barber_availability').select('date, is_available, start_time, end_time').eq('barber_id', barberId).gte('date', startDateStr).lte('date', endDateStr),
+        supabase.from('painel_agendamentos').select('data, hora, servico:painel_servicos(duracao)').eq('barbeiro_id', barberId).gte('data', startDateStr).lte('data', endDateStr).not('status', 'in', '("cancelado","ausente")')
+      ]);
+
+      // Indexar dados
+      const workingHoursMap = new Map<number, { start: string; end: string }>();
+      workingHoursResult.data?.forEach(wh => workingHoursMap.set(wh.day_of_week, { start: wh.start_time, end: wh.end_time }));
+
+      const timeOffDates = new Set<string>();
+      timeOffResult.data?.forEach(to => {
+        const start = new Date(to.start_date + 'T12:00:00');
+        const end = new Date(to.end_date + 'T12:00:00');
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          timeOffDates.add(format(d, 'yyyy-MM-dd'));
         }
+      });
+
+      const availabilityMap = new Map<string, { is_available: boolean; start_time?: string; end_time?: string }>();
+      availabilityResult.data?.forEach(a => availabilityMap.set(a.date, a));
+
+      const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
+      appointmentsResult.data?.forEach(apt => {
+        const list = appointmentsByDate.get(apt.data) || [];
+        list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+        appointmentsByDate.set(apt.data, list);
+      });
+
+      // 3. Processar localmente
+      const BUFFER = 10;
+      const timeToMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
+      const now = new Date();
+      const dates: Date[] = [];
+
+      for (let i = 0; i < 30 && dates.length < 14; i++) {
+        const date = addDays(today, i);
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayOfWeek = date.getDay();
+
+        if (timeOffDates.has(dateStr)) continue;
+        const wh = workingHoursMap.get(dayOfWeek);
+        if (!wh) continue;
+        const avail = availabilityMap.get(dateStr);
+        if (avail && avail.is_available === false) continue;
+
+        const startMin = timeToMin(avail?.start_time || wh.start);
+        const endMin = timeToMin(avail?.end_time || wh.end);
+        const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
+          start: timeToMin(apt.hora), end: timeToMin(apt.hora) + apt.duracao + BUFFER
+        }));
+
+        const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+        let hasAvailable = false;
+        for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
+          if (isToday) {
+            const slotDate = new Date(date);
+            slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+            if (slotDate <= now) continue;
+          }
+          const slotEnd = mins + serviceDuration;
+          let conflict = false;
+          for (const p of occupied) { if (mins < p.end && slotEnd + BUFFER > p.start) { conflict = true; break; } }
+          if (!conflict) { hasAvailable = true; break; }
+        }
+        if (hasAvailable) dates.push(date);
       }
       
       setAvailableDates(dates);
-      
       if (dates.length === 0) {
         toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
       }
