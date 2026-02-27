@@ -42,8 +42,7 @@ const Footer: React.FC = () => {
     {
       title: "Horário de Funcionamento",
       items: [
-        { icon: Clock, label: "Segunda - Sábado", value: "8:00 - 20:00" },
-        { icon: Clock, label: "Domingo", value: "9:00 - 13:00" }
+        { icon: Clock, label: "Segunda - Sábado", value: "8:00 - 20:00" }
       ]
     },
     {
@@ -138,10 +137,6 @@ const Footer: React.FC = () => {
                 <span>Segunda - Sábado</span>
                 <span className="text-urbana-gold">8:00 - 20:00</span>
               </div>
-              <div className="flex justify-between text-urbana-light/80">
-                <span>Domingo</span>
-                <span className="text-urbana-gold">9:00 - 13:00</span>
-              </div>
             </div>
           </motion.div>
 
@@ -164,8 +159,8 @@ const Footer: React.FC = () => {
                 <span className="leading-relaxed">{address}</span>
               </div>
               <div className="flex items-center gap-2 text-urbana-light/80">
-                <Phone className="h-4 w-4 text-urbana-gold flex-shrink-0" />
-                <span>{phone}</span>
+              <Phone className="h-4 w-4 text-urbana-gold flex-shrink-0" />
+                <span>(27) 99778-0137</span>
               </div>
               <div className="flex items-center gap-2 text-urbana-light/80">
                 <Mail className="h-4 w-4 text-urbana-gold flex-shrink-0" />
