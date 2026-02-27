@@ -219,8 +219,10 @@ export default function PainelClienteLogin({ initialMode }: { initialMode?: stri
             type="button"
             variant="ghost"
             onClick={() => {
-              setMostrarCadastro(!mostrarCadastro);
+              const next = !mostrarCadastro;
+              setMostrarCadastro(next);
               setErro('');
+              navigate(next ? '/painel-cliente/cadastro' : '/painel-cliente/login', { replace: true });
             }}
             className="text-urbana-gold hover:text-yellow-600 font-medium hover:bg-urbana-gold/10 rounded-xl transition-all"
           >
