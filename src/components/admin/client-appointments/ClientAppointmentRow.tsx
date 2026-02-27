@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { MoreHorizontal, Edit, Check, X, Trash2, CheckCircle, Clock, AlertCircle } from 'lucide-react';
 import { Button } from "@/components/ui/button";
@@ -12,6 +11,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface PainelAgendamento {
   id: string;
@@ -60,6 +69,8 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
   onStatusChange, 
   onDelete 
 }) => {
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
+
   const getStatusBadge = (status: string) => {
     const statusConfig = {
       'confirmado': { variant: 'default' as const, label: 'Confirmado' },
@@ -79,7 +90,6 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
           <span className="truncate">
             {appointment.painel_clientes?.nome || 'Nome não encontrado'}
           </span>
-          {/* Info adicional visível só no mobile */}
           <div className="sm:hidden text-[10px] text-muted-foreground space-y-0.5 truncate">
             <div>{appointment.painel_clientes?.whatsapp || 'N/A'}</div>
             <div className="md:hidden truncate">{appointment.painel_servicos?.nome || 'Serviço N/A'}</div>
@@ -88,14 +98,12 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
         </div>
       </TableCell>
 
-      {/* WhatsApp: visível a partir do sm */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell max-w-[120px] truncate">
         <span className="truncate">
           {appointment.painel_clientes?.whatsapp || 'Não informado'}
         </span>
       </TableCell>
 
-      {/* Data */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[70px] truncate">
         <div className="text-[10px] sm:text-xs truncate">
           {format(parseISO(appointment.data), 'dd/MM')}
@@ -105,33 +113,28 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
         </div>
       </TableCell>
 
-      {/* Hora */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[50px] truncate">
         <div className="text-[10px] sm:text-xs truncate">
           {appointment.hora}
         </div>
       </TableCell>
 
-      {/* Serviço: visível a partir do md */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden md:table-cell max-w-[150px] truncate">
         <span className="truncate block">
           {appointment.painel_servicos?.nome || 'Serviço não encontrado'}
         </span>
       </TableCell>
 
-      {/* Barbeiro: visível a partir do lg */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell max-w-[120px] truncate">
         <span className="truncate block">
           {appointment.painel_barbeiros?.nome || 'Barbeiro não encontrado'}
         </span>
       </TableCell>
 
-      {/* Status */}
       <TableCell className="px-2 sm:px-4 py-2 sm:py-3 max-w-[90px] whitespace-nowrap">
         {getStatusBadge(appointment.status)}
       </TableCell>
 
-      {/* Ações */}
       <TableCell className="text-right px-2 sm:px-4 py-2 sm:py-3 max-w-[60px] whitespace-nowrap">
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -170,7 +173,7 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
             )}
             
             {appointment.status !== 'cancelado' && (
-              <DropdownMenuItem onClick={() => onStatusChange(appointment.id, 'cancelado')}>
+              <DropdownMenuItem onClick={() => setIsCancelDialogOpen(true)}>
                 <X className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="text-xs sm:text-sm">Cancelar</span>
               </DropdownMenuItem>
@@ -187,6 +190,54 @@ const ClientAppointmentRow: React.FC<ClientAppointmentRowProps> = ({
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+
+        {/* Dialog de Cancelamento */}
+        <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+          <AlertDialogContent className="bg-white border-2 border-gray-200 shadow-xl">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="text-orange-600 font-bold text-xl flex items-center gap-2">
+                ⚠️ Confirmar Cancelamento
+              </AlertDialogTitle>
+              <AlertDialogDescription className="space-y-4 pt-2">
+                <p className="text-base text-gray-900">
+                  Você está prestes a cancelar o agendamento de{' '}
+                  <strong className="text-orange-600">{appointment.painel_clientes?.nome}</strong>
+                </p>
+                
+                <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r">
+                  <p className="text-sm text-orange-800 font-medium mb-2">
+                    📋 Detalhes do Agendamento:
+                  </p>
+                  <ul className="text-sm text-orange-700 space-y-1">
+                    <li><strong>Serviço:</strong> {appointment.painel_servicos?.nome}</li>
+                    <li><strong>Data:</strong> {format(parseISO(appointment.data), 'dd/MM/yyyy')} às {appointment.hora}</li>
+                    <li><strong>Barbeiro:</strong> {appointment.painel_barbeiros?.nome}</li>
+                  </ul>
+                </div>
+
+                <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+                  <p className="text-sm text-blue-800">
+                    ℹ️ <strong>Importante:</strong> O agendamento será marcado como cancelado e mantido no histórico do sistema para fins de auditoria.
+                  </p>
+                </div>
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200">
+                Voltar
+              </AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  onStatusChange(appointment.id, 'cancelado');
+                  setIsCancelDialogOpen(false);
+                }}
+                className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+              >
+                Confirmar Cancelamento
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </TableCell>
     </TableRow>
   );
