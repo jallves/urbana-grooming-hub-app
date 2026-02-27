@@ -14,6 +14,7 @@ interface PainelClient {
   data_nascimento: string | null;
   created_at: string;
   updated_at: string;
+  ultimo_agendamento: { data: string; hora: string; status: string | null } | null;
 }
 
 interface ClientTableProps {
@@ -74,6 +75,12 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Cadastro
+            </TableHead>
+            <TableHead className={cn(
+              "font-semibold text-foreground hidden lg:table-cell w-[150px]",
+              compact ? "px-3 py-2" : "px-4 py-3"
+            )}>
+              Último Agendamento
             </TableHead>
             <TableHead className={cn(
               "font-semibold text-foreground text-right w-[100px]",
@@ -166,6 +173,21 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                   <Clock className="h-3 w-3 flex-shrink-0" />
                   <span className={compact ? "text-xs" : "text-sm"}>{formatDate(client.created_at)}</span>
                 </div>
+              </TableCell>
+              <TableCell className={cn(
+                "hidden lg:table-cell",
+                compact ? "px-3 py-2" : "px-4 py-3"
+              )}>
+                {client.ultimo_agendamento ? (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Calendar className="h-4 w-4 flex-shrink-0" />
+                    <span className={compact ? "text-xs" : "text-sm"}>
+                      {formatDate(client.ultimo_agendamento.data, true)}
+                    </span>
+                  </div>
+                ) : (
+                  <span className="text-muted-foreground italic text-sm">Nunca</span>
+                )}
               </TableCell>
               <TableCell className={cn(
                 "text-right",

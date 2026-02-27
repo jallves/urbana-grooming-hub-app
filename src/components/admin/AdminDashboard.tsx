@@ -4,6 +4,7 @@ import OperationalMetricsCards from './dashboard/OperationalMetricsCards';
 import FinancialEvolutionChart from './dashboard/FinancialEvolutionChart';
 import PendingAccountsWidget from './dashboard/PendingAccountsWidget';
 import TopBarbersWidget from './dashboard/TopBarbersWidget';
+import InactiveClientsWidget from './dashboard/InactiveClientsWidget';
 import QuickActionsGrid from './dashboard/QuickActionsGrid';
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
 
@@ -41,8 +42,11 @@ export default function AdminDashboard() {
         <FinancialEvolutionChart />
       </div>
 
-      {/* Pending Accounts */}
-      <PendingAccountsWidget />
+      {/* Pending Accounts + Inactive Clients */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <PendingAccountsWidget />
+        <InactiveClientsWidget />
+      </div>
     </div>
   );
 }
