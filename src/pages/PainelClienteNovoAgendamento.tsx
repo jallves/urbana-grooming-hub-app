@@ -113,20 +113,6 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       let query = supabase
         .from('painel_barbeiros')
-        .select('id, nome, image_url, staff_id')
-        .eq('ativo', true)
-        .order('nome');
-
-      // Se há barbeiros vinculados, filtrar apenas eles
-      if (!staffError && serviceStaff && serviceStaff.length > 0) {
-        const staffIds = serviceStaff.map(s => s.staff_id);
-        query = query.in('id', staffIds);
-      }
-      // Se não há vínculo, mostrar todos os barbeiros
-
-      // Adicionar foto_url à query
-      query = supabase
-        .from('painel_barbeiros')
         .select('id, nome, image_url, foto_url, staff_id')
         .eq('ativo', true)
         .order('nome');
@@ -138,15 +124,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       }
 
       const { data, error } = await query;
-
       if (error) throw error;
       
-      // Mapear dados - usar staff_id real e foto_url como fallback
       const mappedBarbers = (data || []).map(b => ({
         id: b.id,
         staff_id: (b as any).staff_id || b.id,
         nome: b.nome,
-        image_url: b.image_url || (b as any).foto_url // Usar foto_url como fallback
+        image_url: b.image_url || (b as any).foto_url
       }));
       
       setBarbers(mappedBarbers);
@@ -172,53 +156,178 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadAvailableDates = async () => {
     setLoading(true);
     try {
-      console.log('🔍 [PainelCliente] Iniciando loadAvailableDates', {
+      console.log('🔍 [PainelCliente] Iniciando loadAvailableDates (OTIMIZADO)', {
         selectedBarber: selectedBarber?.nome,
         selectedService: selectedService?.nome,
         serviceDuration: selectedService?.duracao
       });
 
       const today = startOfToday();
-      const datesToCheck: Date[] = [];
+      const barberId = selectedBarber!.id;
+      const serviceDuration = selectedService!.duracao;
       
-      // Preparar lista de datas para verificar (próximos 30 dias)
+      // Preparar range de datas (próximos 30 dias)
+      const datesToCheck: Date[] = [];
       for (let i = 0; i < 30; i++) {
         datesToCheck.push(addDays(today, i));
       }
+
+      const startDateStr = format(today, 'yyyy-MM-dd');
+      const endDateStr = format(addDays(today, 29), 'yyyy-MM-dd');
+
+      // 1. Resolver staffId UMA ÚNICA VEZ
+      const { data: barberData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
       
-      // OTIMIZAÇÃO: Verificar múltiplas datas em paralelo (em lotes de 5)
+      const authStaffId = barberData?.staff_id || barberId;
+      const { data: staffRecord } = await supabase
+        .from('staff')
+        .select('id')
+        .eq('staff_id', authStaffId)
+        .maybeSingle();
+      const staffTableId = staffRecord?.id || authStaffId;
+
+      // 2. BULK FETCH: Todas as queries em paralelo (UMA VEZ para todo o range)
+      const [workingHoursResult, timeOffResult, availabilityResult, appointmentsResult] = await Promise.all([
+        // Horários de trabalho para TODOS os dias da semana
+        supabase
+          .from('working_hours')
+          .select('day_of_week, start_time, end_time')
+          .eq('staff_id', staffTableId)
+          .eq('is_active', true),
+        
+        // Folgas no range de 30 dias
+        supabase
+          .from('time_off')
+          .select('start_date, end_date, type')
+          .eq('barber_id', barberId)
+          .eq('status', 'ativo')
+          .lte('start_date', endDateStr)
+          .gte('end_date', startDateStr),
+        
+        // Bloqueios de disponibilidade no range
+        supabase
+          .from('barber_availability')
+          .select('date, is_available, start_time, end_time')
+          .eq('barber_id', barberId)
+          .gte('date', startDateStr)
+          .lte('date', endDateStr),
+        
+        // Todos os agendamentos no range
+        supabase
+          .from('painel_agendamentos')
+          .select('data, hora, servico:painel_servicos(duracao)')
+          .eq('barbeiro_id', barberId)
+          .gte('data', startDateStr)
+          .lte('data', endDateStr)
+          .not('status', 'in', '("cancelado","ausente")')
+      ]);
+
+      // Indexar dados para acesso rápido
+      const workingHoursMap = new Map<number, { start: string; end: string }>();
+      workingHoursResult.data?.forEach(wh => {
+        workingHoursMap.set(wh.day_of_week, { start: wh.start_time, end: wh.end_time });
+      });
+
+      const timeOffDates = new Set<string>();
+      timeOffResult.data?.forEach(to => {
+        const start = new Date(to.start_date + 'T12:00:00');
+        const end = new Date(to.end_date + 'T12:00:00');
+        for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+          timeOffDates.add(format(d, 'yyyy-MM-dd'));
+        }
+      });
+
+      const availabilityMap = new Map<string, { is_available: boolean; start_time?: string; end_time?: string }>();
+      availabilityResult.data?.forEach(a => {
+        availabilityMap.set(a.date, a);
+      });
+
+      const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
+      appointmentsResult.data?.forEach(apt => {
+        const list = appointmentsByDate.get(apt.data) || [];
+        list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+        appointmentsByDate.set(apt.data, list);
+      });
+
+      // 3. Processar LOCALMENTE - sem queries adicionais
+      const BUFFER = 10; // minutos
+      const timeToMin = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+
       const dates: Date[] = [];
-      const batchSize = 5;
-      
-      for (let batchStart = 0; batchStart < datesToCheck.length && dates.length < 10; batchStart += batchSize) {
-        const batch = datesToCheck.slice(batchStart, batchStart + batchSize);
-        
-        // Executar verificações em paralelo para o lote
-        const results = await Promise.all(
-          batch.map(async (date) => {
-            const slots = await getAvailableTimeSlots(
-              selectedBarber!.id, // SEMPRE usar painel_barbeiros.id
-              date,
-              selectedService!.duracao
-            );
-            const availableCount = slots.filter(s => s.available).length;
-            return { date, availableCount };
-          })
-        );
-        
-        // Adicionar datas com slots disponíveis
-        for (const result of results) {
-          if (result.availableCount > 0 && dates.length < 10) {
-            dates.push(result.date);
-            console.log(`📅 [PainelCliente] ${format(result.date, 'dd/MM')}: ${result.availableCount} slots disponíveis`);
+      const now = new Date();
+
+      for (const date of datesToCheck) {
+        if (dates.length >= 14) break;
+
+        const dateStr = format(date, 'yyyy-MM-dd');
+        const dayOfWeek = date.getDay();
+
+        // Folga?
+        if (timeOffDates.has(dateStr)) continue;
+
+        // Tem horário de trabalho?
+        const wh = workingHoursMap.get(dayOfWeek);
+        if (!wh) continue;
+
+        // Bloqueio específico?
+        const avail = availabilityMap.get(dateStr);
+        if (avail && avail.is_available === false) continue;
+
+        // Determinar horário efetivo
+        const effectiveStart = avail?.start_time || wh.start;
+        const effectiveEnd = avail?.end_time || wh.end;
+        const startMin = timeToMin(effectiveStart);
+        const endMin = timeToMin(effectiveEnd);
+
+        // Períodos ocupados
+        const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
+          start: timeToMin(apt.hora),
+          end: timeToMin(apt.hora) + apt.duracao + BUFFER
+        }));
+
+        // Contar slots disponíveis
+        const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+        let hasAvailable = false;
+
+        for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
+          // Horário passado?
+          if (isToday) {
+            const slotDate = new Date(date);
+            slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
+            if (slotDate <= now) continue;
           }
+
+          // Conflito?
+          const slotEnd = mins + serviceDuration;
+          let conflict = false;
+          for (const period of occupied) {
+            if (mins < period.end && slotEnd + BUFFER > period.start) {
+              conflict = true;
+              break;
+            }
+          }
+
+          if (!conflict) {
+            hasAvailable = true;
+            break; // Basta 1 slot disponível
+          }
+        }
+
+        if (hasAvailable) {
+          dates.push(date);
         }
       }
       
-      console.log(`✅ [PainelCliente] Total de datas disponíveis: ${dates.length}`);
+      console.log(`✅ [PainelCliente] Total de datas disponíveis: ${dates.length} (bulk fetch otimizado)`);
       setAvailableDates(dates);
       
-      // Se não há datas disponíveis
       if (dates.length === 0) {
         toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
       }
