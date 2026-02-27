@@ -164,7 +164,7 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-urbana-light/80">
                 <Mail className="h-4 w-4 text-urbana-gold flex-shrink-0" />
-                <span className="break-all">barbearia.costaurbana@gmail.com</span>
+                <span className="break-all">costaurbanabarbershop@gmail.com</span>
               </div>
             </div>
           </motion.div>
