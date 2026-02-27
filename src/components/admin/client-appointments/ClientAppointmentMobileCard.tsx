@@ -85,6 +85,7 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
 }) => {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isAbsentDialogOpen, setIsAbsentDialogOpen] = useState(false);
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false);
 
   // LEI PÉTREA: Determinar status didático do agendamento (ALINHADO com ClientAppointmentCompactRow)
   const getActualStatus = () => {
@@ -342,11 +343,7 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
               {canCancel() && (
                 <DropdownMenuItem
                   className="cursor-pointer text-orange-600 py-2.5"
-                  onClick={() => {
-                    if (window.confirm('Tem certeza que deseja cancelar este agendamento?')) {
-                      onStatusChange(appointment.id, 'cancelado');
-                    }
-                  }}
+                  onClick={() => setIsCancelDialogOpen(true)}
                 >
                   <X className="mr-3 h-4 w-4" />
                   <span className="text-sm font-medium">Cancelar</span>
@@ -375,6 +372,54 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Dialog de Cancelamento */}
+      <AlertDialog open={isCancelDialogOpen} onOpenChange={setIsCancelDialogOpen}>
+        <AlertDialogContent className="bg-white border-2 border-gray-200 shadow-xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-orange-600 font-bold text-xl flex items-center gap-2">
+              ⚠️ Confirmar Cancelamento
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-4 pt-2">
+              <p className="text-base text-gray-900">
+                Você está prestes a cancelar o agendamento de{' '}
+                <strong className="text-orange-600">{appointment.painel_clientes?.nome}</strong>
+              </p>
+              
+              <div className="bg-orange-50 border-l-4 border-orange-400 p-4 rounded-r">
+                <p className="text-sm text-orange-800 font-medium mb-2">
+                  📋 Detalhes do Agendamento:
+                </p>
+                <ul className="text-sm text-orange-700 space-y-1">
+                  <li><strong>Serviço:</strong> {appointment.painel_servicos?.nome}</li>
+                  <li><strong>Data:</strong> {format(parseISO(appointment.data + 'T00:00:00'), 'dd/MM/yyyy')} às {appointment.hora}</li>
+                  <li><strong>Barbeiro:</strong> {appointment.painel_barbeiros?.nome}</li>
+                </ul>
+              </div>
+
+              <div className="bg-blue-50 border-l-4 border-blue-400 p-4 rounded-r">
+                <p className="text-sm text-blue-800">
+                  ℹ️ <strong>Importante:</strong> O agendamento será marcado como cancelado e mantido no histórico do sistema para fins de auditoria.
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200">
+              Voltar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                onStatusChange(appointment.id, 'cancelado');
+                setIsCancelDialogOpen(false);
+              }}
+              className="bg-orange-600 hover:bg-orange-700 text-white font-semibold"
+            >
+              Confirmar Cancelamento
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
