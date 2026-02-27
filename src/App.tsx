@@ -306,7 +306,7 @@ function App() {
                   } />
                   <Route path="/painel-cliente/cadastro" element={
                     <AdminRedirectGuard>
-                      <PainelClienteCadastro />
+                      <PainelClienteLogin initialMode="cadastro" />
                     </AdminRedirectGuard>
                   } />
                   <Route path="/painel-cliente/confirmar-email" element={

@@ -12,13 +12,13 @@ import PainelClienteCadastroForm from '@/components/painel-cliente/auth/PainelCl
 import { logAdminActivity } from '@/hooks/useActivityLogger';
 import { sessionManager } from '@/hooks/useSessionManager';
 
-export default function PainelClienteLogin() {
+export default function PainelClienteLogin({ initialMode }: { initialMode?: string }) {
   const navigate = useNavigate();
   const { cadastrar } = usePainelClienteAuth();
   const { user, signOut, isClient, rolesChecked, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  const [mostrarCadastro, setMostrarCadastro] = useState(false);
+  const [mostrarCadastro, setMostrarCadastro] = useState(initialMode === 'cadastro');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState('');
 
