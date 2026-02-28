@@ -138,6 +138,23 @@ Deno.serve(async (req) => {
     if (signUpError) {
       console.error('❌ Erro ao criar usuário:', signUpError);
       
+      // Rate limit de email
+      if (signUpError.message.includes('rate limit') || 
+          signUpError.status === 429 ||
+          signUpError.code === 'over_email_send_rate_limit') {
+        console.warn('⚠️ Rate limit de email atingido para:', email);
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: `⏳ Muitas tentativas de cadastro em pouco tempo!\n\n` +
+                   `O sistema de e-mail atingiu o limite temporário.\n` +
+                   `⏰ Aguarde alguns minutos e tente novamente.\n\n` +
+                   `Se já recebeu um e-mail de confirmação anteriormente, verifique sua caixa de entrada e spam.`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+        );
+      }
+
       // Email duplicado (fallback, já verificamos antes)
       if (signUpError.message.includes('already registered') || 
           signUpError.message.includes('User already registered') ||
