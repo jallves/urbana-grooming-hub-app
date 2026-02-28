@@ -113,129 +113,24 @@ Deno.serve(async (req) => {
     console.log('✅ WhatsApp disponível');
 
     // ===================================================================
-    // ETAPA 2: CRIAR USUÁRIO COM CLIENTE ANÔNIMO (ENVIA EMAIL AUTOMATICAMENTE)
+    // ETAPA 2: CRIAR USUÁRIO VIA ADMIN API (AUTO-CONFIRMADO, SEM EMAIL)
     // ===================================================================
     console.log('🔍 [2/4] ✅ WhatsApp validado! Criando usuário...');
     
-    // URL de redirecionamento após confirmação do e-mail
-    // Usar o domínio próprio da barbearia
-    const redirectUrl = 'https://barbeariacostaurbana.com.br/painel-cliente/email-confirmado';
+    // Primeiro verificar se o email já existe no auth
+    const { data: existingAuthUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
     
-    const { data: authData, error: signUpError } = await supabaseAnon.auth.signUp({
-      email: email.trim().toLowerCase(),
-      password: senha,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          user_type: 'client',
-          nome: nome.trim(),
-          whatsapp: whatsapp.trim(),
-          data_nascimento: data_nascimento
-        }
-      }
-    });
+    const existingAuthUser = existingAuthUsers?.users?.find(
+      u => u.email?.toLowerCase() === email.trim().toLowerCase()
+    );
 
-    if (signUpError) {
-      console.error('❌ Erro ao criar usuário:', signUpError);
-      
-      // Rate limit de email
-      if (signUpError.message.includes('rate limit') || 
-          signUpError.status === 429 ||
-          signUpError.code === 'over_email_send_rate_limit') {
-        console.warn('⚠️ Rate limit de email atingido para:', email);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `⏳ Muitas tentativas de cadastro em pouco tempo!\n\n` +
-                   `O sistema de e-mail atingiu o limite temporário.\n` +
-                   `⏰ Aguarde alguns minutos e tente novamente.\n\n` +
-                   `Se já recebeu um e-mail de confirmação anteriormente, verifique sua caixa de entrada e spam.`
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
+    let realUserId: string;
+    let isRepeatedSignup = false;
 
-      // Email duplicado (fallback, já verificamos antes)
-      if (signUpError.message.includes('already registered') || 
-          signUpError.message.includes('User already registered') ||
-          signUpError.message.includes('duplicate') ||
-          signUpError.status === 422) {
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
-                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
-                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-      
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: '❌ Erro ao criar conta. Tente novamente.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    if (!authData.user) {
-      console.error('❌ Usuário não foi criado');
-      return new Response(
-        JSON.stringify({ 
-          success: false, 
-          error: '❌ Erro ao criar conta. Tente novamente.'
-        }),
-        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-      );
-    }
-
-    // ===================================================================
-    // DETECÇÃO DE USER_REPEATED_SIGNUP
-    // Quando o Supabase retorna um user sem identities, significa que o
-    // email já existe no auth. Nesse caso, buscamos o user real e
-    // re-vinculamos o perfil em painel_clientes.
-    // ===================================================================
-    const isRepeatedSignup = !authData.user.identities || authData.user.identities.length === 0;
-    let realUserId = authData.user.id;
-
-    if (isRepeatedSignup) {
-      console.log('⚠️ Detected user_repeated_signup - email já existe no auth');
-      
-      // Buscar o user real pelo email via admin
-      const { data: existingUsers, error: listError } = await supabaseAdmin.auth.admin.listUsers();
-      
-      if (listError) {
-        console.error('❌ Erro ao buscar usuário existente:', listError);
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
-                   `✅ Clique em "Já tenho conta" para fazer login.\n` +
-                   `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
-        );
-      }
-
-      const existingUser = existingUsers?.users?.find(
-        u => u.email?.toLowerCase() === email.trim().toLowerCase()
-      );
-
-      if (!existingUser) {
-        console.error('❌ Usuário não encontrado no auth apesar de repeated_signup');
-        return new Response(
-          JSON.stringify({ 
-            success: false, 
-            error: '❌ Erro inesperado ao processar cadastro. Tente novamente.'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
-        );
-      }
-
-      realUserId = existingUser.id;
-      console.log('✅ Usuário real encontrado:', realUserId);
+    if (existingAuthUser) {
+      console.log('⚠️ Email já existe no auth, verificando perfil...');
+      isRepeatedSignup = true;
+      realUserId = existingAuthUser.id;
 
       // Verificar se já existe perfil para este user
       const { data: existingProfile } = await supabaseAdmin
@@ -260,8 +155,56 @@ Deno.serve(async (req) => {
       // Perfil não existe mas user sim - recriar perfil vinculado
       console.log('🔄 Recriando perfil para usuário existente:', realUserId);
     } else {
-      console.log('✅ Novo usuário criado com ID:', authData.user.id);
-      console.log('📧 E-mail de confirmação ENVIADO automaticamente pelo Supabase!');
+      // Criar novo usuário via Admin API (auto-confirmado, sem enviar email)
+      const { data: newUser, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email: email.trim().toLowerCase(),
+        password: senha,
+        email_confirm: true,
+        user_metadata: {
+          user_type: 'client',
+          nome: nome.trim(),
+          whatsapp: whatsapp.trim(),
+          data_nascimento: data_nascimento
+        }
+      });
+
+      if (createError) {
+        console.error('❌ Erro ao criar usuário:', createError);
+        
+        if (createError.message?.includes('already') || createError.status === 422) {
+          return new Response(
+            JSON.stringify({ 
+              success: false, 
+              error: `📧 Este e-mail (${email}) já possui cadastro em nosso sistema!\n\n` +
+                     `✅ Clique em "Já tenho conta" para fazer login.\n` +
+                     `🔐 Caso tenha esquecido sua senha, você pode recuperá-la na tela de login.`
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+          );
+        }
+        
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: '❌ Erro ao criar conta. Tente novamente.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      if (!newUser?.user) {
+        console.error('❌ Usuário não foi criado');
+        return new Response(
+          JSON.stringify({ 
+            success: false, 
+            error: '❌ Erro ao criar conta. Tente novamente.'
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 500 }
+        );
+      }
+
+      realUserId = newUser.user.id;
+      console.log('✅ Novo usuário criado (auto-confirmado) com ID:', realUserId);
     }
 
     console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
@@ -326,30 +269,15 @@ Deno.serve(async (req) => {
     console.log('✅ Perfil criado com sucesso em painel_clientes');
 
     // ===================================================================
-    // ETAPA 4: VERIFICAR STATUS DO EMAIL
+    // ETAPA 4: SUCESSO COMPLETO! (auto-confirmado, sem necessidade de email)
     // ===================================================================
-    console.log('🔍 [4/4] Verificando status do e-mail de confirmação...');
-    
-    if (authData.user.email_confirmed_at) {
-      console.log('⚠️ E-mail foi confirmado automaticamente (modo dev ou configuração)');
-    } else {
-      console.log('✅ E-mail pendente de confirmação - link enviado para:', email);
-      console.log('📬 Template usado: Authentication > Email Templates > Confirm signup');
-      console.log('⏰ E-mail pode levar alguns segundos/minutos para chegar');
-      console.log('📋 Instruir cliente a verificar: Caixa de entrada, Spam, Promoções');
-    }
+    console.log('🔍 [4/4] ✅ Cadastro completo! Usuário auto-confirmado.');
 
-    // ===================================================================
-    // SUCESSO COMPLETO!
-    // ===================================================================
     return new Response(
       JSON.stringify({ 
         success: true,
-        needsEmailConfirmation: true,
-        message: '✅ Cadastro realizado com sucesso!\n\n' +
-                 '📧 Enviamos um link de confirmação para o seu e-mail.\n\n' +
-                 '📬 Verifique sua caixa de entrada e também a pasta de SPAM/Promoções.\n\n' +
-                 '⏰ O e-mail pode levar alguns minutos para chegar.'
+        needsEmailConfirmation: false,
+        message: '✅ Cadastro realizado com sucesso!\n\nVocê já pode fazer login com seu e-mail e senha.'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }, 
