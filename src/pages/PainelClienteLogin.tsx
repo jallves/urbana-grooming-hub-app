@@ -143,50 +143,14 @@ export default function PainelClienteLogin({ initialMode }: { initialMode?: stri
     setLoading(false);
   };
 
-  // Se já estiver logado como cliente, mostrar tela de acesso
+  // Se já estiver logado como cliente, redirecionar direto para o painel
   if (user && isClient && rolesChecked && !authLoading) {
-    return (
-      <AuthContainer
-        title="Costa Urbana"
-        subtitle="Você já está logado"
-      >
-        <div className="w-full space-y-4">
-          <div className="p-6 bg-urbana-gold/10 border border-urbana-gold/20 rounded-xl text-center space-y-2">
-            <p className="text-urbana-gold font-semibold text-lg">✅ Sessão Ativa</p>
-            <p className="text-urbana-light/80 text-sm">
-              Você já está logado como cliente.
-            </p>
-          </div>
-
-          <Button
-            onClick={handleGoDashboard}
-            variant="default"
-            disabled={loading}
-            className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black h-12 rounded-xl"
-          >
-            Ir para o Painel
-          </Button>
-
-          <Button
-            onClick={handleLogout}
-            variant="outline"
-            disabled={loading}
-            className="w-full border-urbana-gold/30 bg-urbana-black/30 text-urbana-light hover:bg-red-500/20 hover:text-red-400 hover:border-red-500/50 h-12 rounded-xl"
-          >
-            Sair da Conta
-          </Button>
-
-          <Button
-            onClick={handleGoHome}
-            variant="ghost"
-            className="w-full text-urbana-light/60 hover:text-urbana-gold hover:bg-urbana-gold/10 h-12 rounded-xl"
-          >
-            <Home className="h-4 w-4 mr-2" />
-            Voltar ao site
-          </Button>
-        </div>
-      </AuthContainer>
-    );
+    const savedRoute = localStorage.getItem('client_last_route');
+    const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+      ? savedRoute 
+      : '/painel-cliente/dashboard';
+    navigate(targetRoute, { replace: true });
+    return null;
   }
 
   return (
