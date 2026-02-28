@@ -113,19 +113,14 @@ export default function PainelClienteLogin({ initialMode }: { initialMode?: stri
       setErro(error);
       setLoading(false);
     } else {
-      if (needsEmailConfirmation) {
-        // Redirecionar para página de confirmação de email
-        navigate('/painel-cliente/confirmar-email');
-      } else {
-        // CRÍTICO: Login automático - verificar se há uma rota salva para restaurar
-        const savedRoute = localStorage.getItem('client_last_route');
-        const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
-          ? savedRoute 
-          : '/painel-cliente/dashboard';
-        
-        console.log('[PainelClienteLogin] 🎯 Após cadastro, redirecionando para:', targetRoute);
-        navigate(targetRoute);
-      }
+      // Cadastro com auto-confirmação + login automático
+      const savedRoute = localStorage.getItem('client_last_route');
+      const targetRoute = savedRoute && savedRoute.startsWith('/painel-cliente/') 
+        ? savedRoute 
+        : '/painel-cliente/dashboard';
+      
+      console.log('[PainelClienteLogin] 🎯 Após cadastro, redirecionando para:', targetRoute);
+      navigate(targetRoute);
     }
   };
 

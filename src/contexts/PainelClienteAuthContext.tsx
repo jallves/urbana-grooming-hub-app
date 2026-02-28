@@ -210,15 +210,31 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
 
       console.log('[PainelClienteAuthContext] ✅ Cadastro realizado com sucesso');
       
+      // Auto-confirmado: fazer login automático
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: dados.email.trim().toLowerCase(),
+        password: dados.senha
+      });
+
+      if (signInError) {
+        console.warn('[PainelClienteAuthContext] ⚠️ Login automático falhou, redirecionar para login:', signInError.message);
+        toast({
+          title: "✅ Cadastro realizado com sucesso!",
+          description: "Agora faça login com seu e-mail e senha.",
+          duration: 6000,
+        });
+        return { error: null, needsEmailConfirmation: false };
+      }
+
       toast({
-        title: "✅ Cadastro realizado com sucesso!",
-        description: "📧 Enviamos um link de confirmação para o seu e-mail. Por favor, verifique sua caixa de entrada e também a pasta de spam para ativar sua conta.",
-        duration: 12000,
+        title: "✅ Bem-vindo(a)!",
+        description: "Sua conta foi criada com sucesso.",
+        duration: 4000,
       });
 
       return { 
         error: null, 
-        needsEmailConfirmation: result.needsEmailConfirmation || true 
+        needsEmailConfirmation: false 
       };
 
     } catch (error) {
