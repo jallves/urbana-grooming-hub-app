@@ -83,6 +83,7 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     console.log('🔄 [Realtime] Atualizando clientes...');
     queryClient.invalidateQueries({ queryKey: ['clients'] });
     queryClient.invalidateQueries({ queryKey: ['painel-clientes'] });
+    queryClient.invalidateQueries({ queryKey: ['painel-clients-with-last-appointment'] });
     clientCallbacks.forEach(cb => cb());
   }, [queryClient, clientCallbacks]);
 
