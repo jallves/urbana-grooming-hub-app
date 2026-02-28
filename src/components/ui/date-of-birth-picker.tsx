@@ -54,7 +54,7 @@ export function DateOfBirthPicker({
   };
 
   return (
-    <Popover>
+    <Popover modal={true}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -77,7 +77,7 @@ export function DateOfBirthPicker({
             <SelectTrigger className="flex-1 h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="max-h-60">
+            <SelectContent className="max-h-60 z-[9999]" position="popper" sideOffset={4}>
               {MONTHS.map((month, i) => (
                 <SelectItem key={i} value={i.toString()} className="min-h-[44px] flex items-center">
                   {month}
@@ -93,7 +93,7 @@ export function DateOfBirthPicker({
             <SelectTrigger className="w-24 h-10 text-sm">
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="max-h-60">
+            <SelectContent className="max-h-60 z-[9999]" position="popper" sideOffset={4}>
               {years.map((year) => (
                 <SelectItem key={year} value={year.toString()} className="min-h-[44px] flex items-center">
                   {year}
