@@ -207,8 +207,6 @@ Deno.serve(async (req) => {
       console.log('✅ Novo usuário criado (auto-confirmado) com ID:', realUserId);
     }
 
-    console.log(`🔗 Redirect configurado para: ${redirectUrl}`);
-
     // ===================================================================
     // ETAPA 3: CRIAR PERFIL DO CLIENTE EM painel_clientes
     // ===================================================================
