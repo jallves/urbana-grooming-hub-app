@@ -56,7 +56,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
           <TabsList className={`grid w-full ${isEditing && barberId ? 'grid-cols-5' : 'grid-cols-4'} mb-6 bg-gray-100 h-auto p-1`}>
             <TabsTrigger 
               value="personal" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-sky-50 data-[state=active]:text-sky-700 data-[state=active]:border-b-2 data-[state=active]:border-sky-400 data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 py-3 px-4 bg-sky-50 text-sky-700 border-b-2 border-sky-200 data-[state=active]:border-sky-500 data-[state=active]:shadow-sm data-[state=active]:font-semibold"
             >
               <User className="h-4 w-4" />
               <span className="hidden sm:inline">Informações Pessoais</span>
@@ -65,7 +65,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
             
             <TabsTrigger 
               value="professional" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-emerald-50 data-[state=active]:text-emerald-700 data-[state=active]:border-b-2 data-[state=active]:border-emerald-400 data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 py-3 px-4 bg-emerald-50 text-emerald-700 border-b-2 border-emerald-200 data-[state=active]:border-emerald-500 data-[state=active]:shadow-sm data-[state=active]:font-semibold"
             >
               <Briefcase className="h-4 w-4" />
               <span className="hidden sm:inline">Informações Profissionais</span>
@@ -74,7 +74,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
             
             <TabsTrigger 
               value="roles" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-violet-50 data-[state=active]:text-violet-700 data-[state=active]:border-b-2 data-[state=active]:border-violet-400 data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 py-3 px-4 bg-violet-50 text-violet-700 border-b-2 border-violet-200 data-[state=active]:border-violet-500 data-[state=active]:shadow-sm data-[state=active]:font-semibold"
             >
               <KeyRound className="h-4 w-4" />
               <span className="hidden sm:inline">Cargos e Permissões</span>
@@ -83,7 +83,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
             
             <TabsTrigger 
               value="access" 
-              className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-amber-50 data-[state=active]:text-amber-700 data-[state=active]:border-b-2 data-[state=active]:border-amber-400 data-[state=active]:shadow-sm"
+              className="flex items-center gap-2 py-3 px-4 bg-amber-50 text-amber-700 border-b-2 border-amber-200 data-[state=active]:border-amber-500 data-[state=active]:shadow-sm data-[state=active]:font-semibold"
             >
               <ShieldCheck className="h-4 w-4" />
               <span className="hidden sm:inline">Acesso ao Sistema</span>
@@ -93,7 +93,7 @@ export const BarberFormTabs: React.FC<BarberFormTabsProps> = ({
             {isEditing && barberId && (
               <TabsTrigger 
                 value="schedule" 
-                className="flex items-center gap-2 py-3 px-4 data-[state=active]:bg-rose-50 data-[state=active]:text-rose-700 data-[state=active]:border-b-2 data-[state=active]:border-rose-400 data-[state=active]:shadow-sm"
+                className="flex items-center gap-2 py-3 px-4 bg-rose-50 text-rose-700 border-b-2 border-rose-200 data-[state=active]:border-rose-500 data-[state=active]:shadow-sm data-[state=active]:font-semibold"
               >
                 <Clock className="h-4 w-4" />
                 <span className="hidden sm:inline">Horários de Trabalho</span>
