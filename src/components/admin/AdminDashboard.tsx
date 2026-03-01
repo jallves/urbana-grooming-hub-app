@@ -5,6 +5,7 @@ import FinancialEvolutionChart from './dashboard/FinancialEvolutionChart';
 import PendingAccountsWidget from './dashboard/PendingAccountsWidget';
 import TopBarbersWidget from './dashboard/TopBarbersWidget';
 import InactiveClientsWidget from './dashboard/InactiveClientsWidget';
+import BirthdayWidget from './dashboard/BirthdayWidget';
 import QuickActionsGrid from './dashboard/QuickActionsGrid';
 import DashboardMonthFilter from './dashboard/DashboardMonthFilter';
 import { useDashboardRealtime } from '@/hooks/useDashboardRealtime';
@@ -56,8 +57,11 @@ export default function AdminDashboard() {
       {/* Pending Accounts + Inactive Clients */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <PendingAccountsWidget />
-        <InactiveClientsWidget />
+        <BirthdayWidget month={selectedMonth} year={selectedYear} />
       </div>
+
+      {/* Inactive Clients */}
+      <InactiveClientsWidget />
     </div>
   );
 }
