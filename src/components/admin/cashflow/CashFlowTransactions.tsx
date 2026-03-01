@@ -118,14 +118,26 @@ const CashFlowTransactions: React.FC = () => {
 
   const isLoading = loadingFR || loadingComm || loadingCP || loadingCR;
 
-  // Unify all data sources
+  // Unify all data sources — financial_records is the SINGLE SOURCE OF TRUTH.
+  // barber_commissions and contas_pagar/receber only appear if they DON'T already
+  // have a corresponding entry in financial_records (matched via reference_id/venda_id).
   const unifiedTransactions = useMemo(() => {
     const transactions: UnifiedTransaction[] = [];
-    const seenIds = new Set<string>();
 
-    // Financial records
+    // Build a set of reference_ids from financial_records so we can skip duplicates
+    // from barber_commissions and contas_pagar that were already recorded there.
+    const frReferenceIds = new Set<string>();
+    // Also track descriptions+amounts+dates to catch contas_pagar/receber duplicates
+    // that share the same description, amount and date as a financial_record.
+    const frFingerprints = new Set<string>();
+
+    // 1) Financial records — always included (canonical source)
     (financialRecords || []).forEach(r => {
-      seenIds.add(r.id);
+      if (r.reference_id) frReferenceIds.add(r.reference_id);
+      // Build fingerprint: normalized description + amount + date
+      const fp = `${(r.description || '').toLowerCase().trim()}|${Number(r.amount)}|${r.transaction_date}`;
+      frFingerprints.add(fp);
+
       const isRevenue = r.transaction_type === 'revenue';
       const isCommission = r.transaction_type === 'commission';
       transactions.push({
@@ -148,13 +160,20 @@ const CashFlowTransactions: React.FC = () => {
       });
     });
 
-    // Barber commissions (only if not already in financial_records via reference)
+    // 2) Barber commissions — only if venda_id is NOT already a reference_id in financial_records
     (commissions || []).forEach(c => {
-      if (seenIds.has(c.id)) return;
+      // Skip if financial_records already has an entry referencing this sale
+      if (c.venda_id && frReferenceIds.has(c.venda_id)) return;
+      // Also skip by fingerprint match
+      const desc = `Comissão - ${c.barber_name || 'Barbeiro'}${c.tipo ? ` (${c.tipo})` : ''}`;
+      const dt = c.data_pagamento || c.created_at?.split('T')[0] || '';
+      const fp = `${desc.toLowerCase().trim()}|${Number(c.valor || c.amount || 0)}|${dt}`;
+      if (frFingerprints.has(fp)) return;
+
       transactions.push({
         id: `comm-${c.id}`,
-        date: c.data_pagamento || c.created_at?.split('T')[0] || '',
-        description: `Comissão - ${c.barber_name || 'Barbeiro'}${c.tipo ? ` (${c.tipo})` : ''}`,
+        date: dt,
+        description: desc,
         type: 'commission',
         typeLabel: 'Comissão',
         category: 'commissions',
@@ -171,9 +190,14 @@ const CashFlowTransactions: React.FC = () => {
       });
     });
 
-    // Contas a pagar (if not already present)
+    // 3) Contas a pagar — only if NOT already represented in financial_records
     (contasPagar || []).forEach(cp => {
-      if (seenIds.has(cp.id)) return;
+      const fp = `${(cp.descricao || '').toLowerCase().trim()}|${Number(cp.valor)}|${cp.data_vencimento}`;
+      if (frFingerprints.has(fp)) return;
+      // Also check if it's a commission that already exists
+      const fpAlt = `${(cp.descricao || '').toLowerCase().trim()}|${Number(cp.valor)}|${cp.data_pagamento || cp.data_vencimento}`;
+      if (frFingerprints.has(fpAlt)) return;
+
       transactions.push({
         id: `cp-${cp.id}`,
         date: cp.data_pagamento || cp.data_vencimento || '',
@@ -194,9 +218,13 @@ const CashFlowTransactions: React.FC = () => {
       });
     });
 
-    // Contas a receber
+    // 4) Contas a receber — only if NOT already represented in financial_records
     (contasReceber || []).forEach(cr => {
-      if (seenIds.has(cr.id)) return;
+      const fp = `${(cr.descricao || '').toLowerCase().trim()}|${Number(cr.valor)}|${cr.data_vencimento}`;
+      if (frFingerprints.has(fp)) return;
+      const fpAlt = `${(cr.descricao || '').toLowerCase().trim()}|${Number(cr.valor)}|${cr.data_recebimento || cr.data_vencimento}`;
+      if (frFingerprints.has(fpAlt)) return;
+
       transactions.push({
         id: `cr-${cr.id}`,
         date: cr.data_recebimento || cr.data_vencimento || '',
