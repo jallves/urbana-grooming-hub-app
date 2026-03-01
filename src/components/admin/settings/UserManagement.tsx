@@ -17,33 +17,33 @@ const UserManagement: React.FC = () => {
   return (
     <div className="space-y-4">
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 rounded-xl p-1.5 h-12 shadow-sm">
+        <TabsList className="grid w-full grid-cols-3 bg-amber-900/10 border border-amber-200 rounded-xl p-1.5 h-12 shadow-sm gap-1">
           <TabsTrigger 
             value="users" 
-            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium transition-all duration-200
-              bg-white/60 text-gray-700 border border-gray-200/50
-              data-[state=active]:bg-white data-[state=active]:text-[#C5A15B] 
-              data-[state=active]:shadow-md data-[state=active]:border-[#C5A15B]/30"
+            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium
+              bg-sky-50 text-sky-700 border border-sky-200
+              data-[state=active]:bg-sky-100 data-[state=active]:text-sky-800 
+              data-[state=active]:shadow-md data-[state=active]:ring-2 data-[state=active]:ring-sky-300"
           >
             <Users className="h-4 w-4" />
             <span className="hidden sm:inline">Usuários</span>
           </TabsTrigger>
           <TabsTrigger 
             value="admin-manager" 
-            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium transition-all duration-200
-              bg-white/60 text-gray-700 border border-gray-200/50
-              data-[state=active]:bg-white data-[state=active]:text-[#C5A15B] 
-              data-[state=active]:shadow-md data-[state=active]:border-[#C5A15B]/30"
+            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium
+              bg-emerald-50 text-emerald-700 border border-emerald-200
+              data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 
+              data-[state=active]:shadow-md data-[state=active]:ring-2 data-[state=active]:ring-emerald-300"
           >
             <UserCog className="h-4 w-4" />
             <span className="hidden sm:inline">Admin/Gerente</span>
           </TabsTrigger>
           <TabsTrigger 
             value="roles" 
-            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium transition-all duration-200
-              bg-white/60 text-gray-700 border border-gray-200/50
-              data-[state=active]:bg-white data-[state=active]:text-[#C5A15B] 
-              data-[state=active]:shadow-md data-[state=active]:border-[#C5A15B]/30"
+            className="flex items-center justify-center gap-2 h-full rounded-lg text-sm font-medium
+              bg-violet-50 text-violet-700 border border-violet-200
+              data-[state=active]:bg-violet-100 data-[state=active]:text-violet-800 
+              data-[state=active]:shadow-md data-[state=active]:ring-2 data-[state=active]:ring-violet-300"
           >
             <Shield className="h-4 w-4" />
             <span className="hidden sm:inline">Permissões</span>
