@@ -1,5 +1,5 @@
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
@@ -63,6 +63,31 @@ export const useEmployeeManagement = () => {
     staleTime: 30000,
     refetchOnWindowFocus: false,
   });
+
+  // Realtime: escuta INSERT, UPDATE e DELETE na tabela employees e staff
+  useEffect(() => {
+    const channel = supabase
+      .channel('employees-realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'employees' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['employees'] });
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'staff' },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['employees'] });
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Filtro de busca no cliente (memoizado)
   const filteredEmployees = useMemo(() => {
