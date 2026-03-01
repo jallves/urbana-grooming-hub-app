@@ -1,0 +1,1 @@
+DELETE FROM painel_agendamentos WHERE status = 'cancelado';
