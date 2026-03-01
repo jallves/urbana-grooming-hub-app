@@ -10,7 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter, Clock, Download } from 'lucide-react';
+import { ArrowDownCircle, Loader2, DollarSign, CheckCircle, Plus, CheckCircle2, CheckSquare, Filter, Clock, Download, MoreHorizontal, Pencil, Trash2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import * as XLSX from 'xlsx';
 import { toast } from 'sonner';
 import FinancialRecordForm from './FinancialRecordForm';
@@ -122,6 +131,16 @@ export const ContasAPagar: React.FC = () => {
   const [recordToPay, setRecordToPay] = useState<string | null>(null);
   const [selectedRecords, setSelectedRecords] = useState<Set<string>>(new Set());
   const [batchPaymentDialogOpen, setBatchPaymentDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingConta, setEditingConta] = useState<ContaPagar | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [deletingContaId, setDeletingContaId] = useState<string | null>(null);
+  // Edit form state
+  const [editDescricao, setEditDescricao] = useState('');
+  const [editValor, setEditValor] = useState('');
+  const [editFormaPagamento, setEditFormaPagamento] = useState('');
+  const [editStatus, setEditStatus] = useState('');
+  const [editObservacoes, setEditObservacoes] = useState('');
   
   // Filtros
   const [filterFornecedor, setFilterFornecedor] = useState<string>('all');
@@ -349,9 +368,54 @@ export const ContasAPagar: React.FC = () => {
     await createMutation.mutateAsync(values);
   };
 
-  const handleCloseForm = () => {
-    setFormOpen(false);
-    setEditingRecord(null);
+  const handleOpenEdit = (conta: ContaPagar) => {
+    setEditingConta(conta);
+    setEditDescricao(conta.descricao || '');
+    setEditValor(String(conta.valor));
+    setEditFormaPagamento(conta.forma_pagamento || '');
+    setEditStatus(conta.status || 'pendente');
+    setEditObservacoes(conta.observacoes || '');
+    setEditDialogOpen(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editingConta) return;
+    const { error } = await supabase
+      .from('contas_pagar')
+      .update({
+        descricao: editDescricao,
+        valor: parseFloat(editValor) || 0,
+        forma_pagamento: editFormaPagamento || null,
+        status: editStatus,
+        observacoes: editObservacoes || null,
+        data_pagamento: editStatus === 'pago' && !editingConta.data_pagamento 
+          ? format(new Date(), 'yyyy-MM-dd') 
+          : editingConta.data_pagamento,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', editingConta.id);
+
+    if (error) {
+      toast.error('Erro ao editar', { description: error.message });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+      toast.success('Registro atualizado!');
+      setEditDialogOpen(false);
+      setEditingConta(null);
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deletingContaId) return;
+    const { error } = await supabase.from('contas_pagar').delete().eq('id', deletingContaId);
+    if (error) {
+      toast.error('Erro ao excluir', { description: error.message });
+    } else {
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+      toast.success('Registro excluído!');
+    }
+    setDeleteDialogOpen(false);
+    setDeletingContaId(null);
   };
 
   // Calcular totais
@@ -743,17 +807,34 @@ export const ContasAPagar: React.FC = () => {
                               R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                             </span>
                           </div>
-                          {conta.status === 'pendente' && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => handleMarkAsPaid(conta.id)}
-                              className="h-9 px-4 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                            >
-                              <CheckCircle className="h-4 w-4 mr-1" />
-                              Pagar
-                            </Button>
-                          )}
+                          <div className="flex items-center gap-2">
+                            {conta.status === 'pendente' && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleMarkAsPaid(conta.id)}
+                                className="h-9 px-4 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Pagar
+                              </Button>
+                            )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="h-9 w-9 p-0">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => handleOpenEdit(conta)}>
+                                  <Pencil className="h-4 w-4 mr-2" /> Editar
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-600" onClick={() => { setDeletingContaId(conta.id); setDeleteDialogOpen(true); }}>
+                                  <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -829,16 +910,33 @@ export const ContasAPagar: React.FC = () => {
                             {getStatusBadge(conta.status)}
                           </TableCell>
                           <TableCell className="px-3 py-2 text-right">
-                            {conta.status === 'pendente' && (
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => handleMarkAsPaid(conta.id)}
-                                className="h-7 w-7 p-0 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
-                              >
-                                <CheckCircle className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
+                            <div className="flex items-center justify-end gap-1">
+                              {conta.status === 'pendente' && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => handleMarkAsPaid(conta.id)}
+                                  className="h-7 w-7 p-0 bg-green-50 text-green-700 border-green-300 hover:bg-green-100"
+                                >
+                                  <CheckCircle className="h-3.5 w-3.5" />
+                                </Button>
+                              )}
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-7 w-7 p-0">
+                                    <MoreHorizontal className="h-3.5 w-3.5" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenEdit(conta)}>
+                                    <Pencil className="h-4 w-4 mr-2" /> Editar
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem className="text-red-600" onClick={() => { setDeletingContaId(conta.id); setDeleteDialogOpen(true); }}>
+                                    <Trash2 className="h-4 w-4 mr-2" /> Excluir
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -896,10 +994,77 @@ export const ContasAPagar: React.FC = () => {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Form para nova despesa */}
+      {/* Dialog de edição */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-[95vw] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar Conta</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Descrição</Label>
+              <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
+            </div>
+            <div>
+              <Label>Valor (R$)</Label>
+              <Input type="number" step="0.01" value={editValor} onChange={(e) => setEditValor(e.target.value)} />
+            </div>
+            <div>
+              <Label>Forma de Pagamento</Label>
+              <Select value={editFormaPagamento} onValueChange={setEditFormaPagamento}>
+                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pix">PIX</SelectItem>
+                  <SelectItem value="debito">Débito</SelectItem>
+                  <SelectItem value="credito">Crédito</SelectItem>
+                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Status</Label>
+              <Select value={editStatus} onValueChange={setEditStatus}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pendente">Pendente</SelectItem>
+                  <SelectItem value="pago">Pago</SelectItem>
+                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Observações</Label>
+              <Textarea value={editObservacoes} onChange={(e) => setEditObservacoes(e.target.value)} />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
+              <Button onClick={handleSaveEdit}>Salvar</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog de exclusão */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Confirmar Exclusão</AlertDialogTitle>
+            <AlertDialogDescription>
+              Deseja realmente excluir este registro? Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDeleteConfirm} className="bg-red-600 hover:bg-red-700">
+              Excluir
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <FinancialRecordForm
         open={formOpen}
-        onClose={handleCloseForm}
+        onClose={() => { setFormOpen(false); setEditingRecord(null); }}
         onSubmit={handleFormSubmit}
         initialData={editingRecord}
         isLoading={createMutation.isPending}
