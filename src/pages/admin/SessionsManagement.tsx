@@ -15,7 +15,11 @@ import {
   Filter,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Radio,
+  Clock,
+  Globe,
+  Smartphone
 } from 'lucide-react';
 import {
   Select,
@@ -34,6 +38,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const SessionsManagement: React.FC = () => {
   const [sessions, setSessions] = useState<ActiveSession[]>([]);
@@ -44,6 +50,7 @@ const SessionsManagement: React.FC = () => {
   const [sessionToDelete, setSessionToDelete] = useState<ActiveSession | null>(null);
   const [cleaningAll, setCleaningAll] = useState(false);
   const [cleaningMy, setCleaningMy] = useState(false);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const { toast } = useToast();
 
   const loadSessions = async () => {
@@ -67,11 +74,27 @@ const SessionsManagement: React.FC = () => {
   useEffect(() => {
     loadSessions();
     
-    // Atualizar a cada 30 segundos
-    const interval = setInterval(loadSessions, 30000);
-    
+    // Real-time subscription for active_sessions changes
+    const channel = supabase
+      .channel('sessions-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'active_sessions'
+        },
+        () => {
+          // Reload sessions on any change
+          loadSessions();
+        }
+      )
+      .subscribe((status) => {
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
+
     return () => {
-      clearInterval(interval);
+      supabase.removeChannel(channel);
     };
   }, []);
 
@@ -82,12 +105,10 @@ const SessionsManagement: React.FC = () => {
   const applyFilters = (sessionsList: ActiveSession[], search: string, type: string) => {
     let filtered = sessionsList;
 
-    // Filtrar por tipo
     if (type !== 'all') {
       filtered = filtered.filter(s => s.user_type === type);
     }
 
-    // Filtrar por busca
     if (search) {
       const searchLower = search.toLowerCase();
       filtered = filtered.filter(s => 
@@ -102,7 +123,6 @@ const SessionsManagement: React.FC = () => {
 
   const handleForceLogout = async (session: ActiveSession) => {
     try {
-      // Usar sessionManager para forçar logout
       const success = await sessionManager.forceLogoutSession(session.id);
 
       if (!success) {
@@ -129,14 +149,11 @@ const SessionsManagement: React.FC = () => {
   const handleCleanupAllSessions = async () => {
     setCleaningAll(true);
     try {
-      // Clear localStorage sessions
       localStorage.removeItem('sessions');
-      
       toast({
         title: 'Todas as sessões limpas',
         description: 'Todas as sessões locais foram removidas',
       });
-      
       await loadSessions();
     } catch (error) {
       console.error('Erro ao limpar sessões:', error);
@@ -153,17 +170,13 @@ const SessionsManagement: React.FC = () => {
   const handleCleanupMySessions = async () => {
     setCleaningMy(true);
     try {
-      // Clear local session data
       localStorage.removeItem('sessions');
       await supabase.auth.signOut();
-      
       toast({
         title: 'Suas sessões foram limpas',
         description: 'Recarregue a página e faça login novamente',
         duration: 5000,
       });
-      
-      // Aguardar 2 segundos e redirecionar para login
       setTimeout(() => {
         window.location.href = '/auth';
       }, 2000);
@@ -181,44 +194,44 @@ const SessionsManagement: React.FC = () => {
   const getUserTypeBadge = (userType: string) => {
     const types: Record<string, { 
       label: string; 
-      variant: 'default' | 'secondary' | 'destructive' | 'outline';
+      className: string;
       icon: React.ReactNode;
     }> = {
       admin: { 
         label: 'Administrador', 
-        variant: 'destructive',
+        className: 'bg-red-100 text-red-800 border-red-200',
         icon: <Monitor className="h-3 w-3" />
       },
       barber: { 
         label: 'Barbeiro', 
-        variant: 'default',
+        className: 'bg-blue-100 text-blue-800 border-blue-200',
         icon: <Users className="h-3 w-3" />
       },
       client: { 
         label: 'Cliente', 
-        variant: 'secondary',
+        className: 'bg-green-100 text-green-800 border-green-200',
         icon: <Users className="h-3 w-3" />
       },
       painel_cliente: { 
         label: 'Painel Cliente', 
-        variant: 'secondary',
+        className: 'bg-emerald-100 text-emerald-800 border-emerald-200',
         icon: <Users className="h-3 w-3" />
       },
       totem: { 
         label: 'Totem', 
-        variant: 'outline',
-        icon: <Monitor className="h-3 w-3" />
+        className: 'bg-purple-100 text-purple-800 border-purple-200',
+        icon: <Smartphone className="h-3 w-3" />
       },
     };
     
     const type = types[userType] || { 
       label: userType, 
-      variant: 'outline' as const,
+      className: 'bg-gray-100 text-gray-800 border-gray-200',
       icon: <Users className="h-3 w-3" />
     };
     
     return (
-      <Badge variant={type.variant} className="flex items-center gap-1">
+      <Badge className={`${type.className} border flex items-center gap-1 text-[11px]`}>
         {type.icon}
         {type.label}
       </Badge>
@@ -246,48 +259,68 @@ const SessionsManagement: React.FC = () => {
     
     if (diffMins < 2) {
       return { 
-        icon: <CheckCircle className="h-4 w-4 text-green-500" />, 
-        label: 'Ativo Agora', 
-        color: 'text-green-500' 
+        icon: <span className="relative flex h-3 w-3"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>,
+        label: 'Online agora', 
+        color: 'text-green-600',
+        bg: 'bg-green-50 border-green-200'
       };
     } else if (diffMins < 10) {
       return { 
         icon: <CheckCircle className="h-4 w-4 text-blue-500" />, 
-        label: 'Ativo', 
-        color: 'text-blue-500' 
+        label: 'Ativo recentemente', 
+        color: 'text-blue-600',
+        bg: 'bg-blue-50 border-blue-200'
       };
     } else if (diffMins < 30) {
       return { 
         icon: <AlertCircle className="h-4 w-4 text-yellow-500" />, 
-        label: 'Inativo Recente', 
-        color: 'text-yellow-500' 
+        label: 'Inativo', 
+        color: 'text-yellow-600',
+        bg: 'bg-yellow-50 border-yellow-200'
       };
     } else {
       return { 
         icon: <XCircle className="h-4 w-4 text-red-500" />, 
-        label: 'Muito Inativo', 
-        color: 'text-red-500' 
+        label: 'Muito inativo', 
+        color: 'text-red-600',
+        bg: 'bg-red-50 border-red-200'
       };
     }
   };
 
   const stats = {
     total: sessions.length,
+    online: sessions.filter(s => {
+      const diffMins = Math.floor((new Date().getTime() - new Date(s.last_activity_at).getTime()) / 60000);
+      return diffMins < 2;
+    }).length,
     admin: sessions.filter(s => s.user_type === 'admin').length,
     barber: sessions.filter(s => s.user_type === 'barber').length,
     client: sessions.filter(s => ['client', 'painel_cliente'].includes(s.user_type)).length,
-    totem: sessions.filter(s => s.user_type === 'totem').length,
   };
 
   return (
     <div className="space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Gerenciamento de Sessões</h2>
-          <p className="text-sm md:text-base text-muted-foreground mt-1">
-            Monitore e gerencie todas as sessões ativas dos usuários
-          </p>
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-blue-100 rounded-lg">
+            <Users className="h-6 w-6 text-blue-600" />
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Sessões Ativas</h2>
+              {isRealtimeConnected && (
+                <Badge variant="outline" className="bg-green-100 text-green-700 border-green-300 animate-pulse text-[11px]">
+                  <Radio className="h-3 w-3 mr-1" />
+                  Tempo Real
+                </Badge>
+              )}
+            </div>
+            <p className="text-sm text-muted-foreground mt-0.5">
+              Monitore quem está logado e gerencie sessões em tempo real
+            </p>
+          </div>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button 
@@ -297,7 +330,7 @@ const SessionsManagement: React.FC = () => {
             size="sm"
           >
             <AlertCircle className={`mr-2 h-4 w-4 ${cleaningMy ? 'animate-spin' : ''}`} />
-            Limpar Minhas Sessões
+            Limpar Minhas
           </Button>
           <Button 
             onClick={handleCleanupAllSessions} 
@@ -316,100 +349,32 @@ const SessionsManagement: React.FC = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid gap-4 grid-cols-2 md:grid-cols-5">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Total</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.total}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Admins</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.admin}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Barbeiros</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.barber}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Clientes</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.client}</div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-xs md:text-sm font-medium">Totens</CardTitle>
-            <Monitor className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-xl md:text-2xl font-bold">{stats.totem}</div>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-5">
+        {[
+          { label: 'Total Ativas', value: stats.total, icon: Users, bg: 'bg-slate-50 border-slate-200', text: 'text-slate-700' },
+          { label: 'Online Agora', value: stats.online, icon: Radio, bg: 'bg-green-50 border-green-200', text: 'text-green-700' },
+          { label: 'Admins', value: stats.admin, icon: Monitor, bg: 'bg-red-50 border-red-200', text: 'text-red-700' },
+          { label: 'Barbeiros', value: stats.barber, icon: Users, bg: 'bg-blue-50 border-blue-200', text: 'text-blue-700' },
+          { label: 'Clientes', value: stats.client, icon: Users, bg: 'bg-emerald-50 border-emerald-200', text: 'text-emerald-700' },
+        ].map(stat => {
+          const Icon = stat.icon;
+          return (
+            <Card key={stat.label} className={`${stat.bg} border`}>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 pt-3 px-4">
+                <CardTitle className={`text-xs font-medium ${stat.text}`}>{stat.label}</CardTitle>
+                <Icon className={`h-4 w-4 ${stat.text}`} />
+              </CardHeader>
+              <CardContent className="px-4 pb-3">
+                <div className={`text-2xl font-bold ${stat.text}`}>{stat.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
-
-      {/* Help Card */}
-      <Card className="border-yellow-500/50 bg-yellow-50/50 dark:bg-yellow-950/20">
-        <CardHeader>
-          <div className="flex items-start gap-3">
-            <AlertCircle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-            <div className="flex-1">
-              <CardTitle className="text-base text-yellow-900 dark:text-yellow-100">
-                Como resolver sessões presas ou problemas de cache
-              </CardTitle>
-              <CardDescription className="mt-2 text-yellow-800 dark:text-yellow-200">
-                Se você está com problemas de sessão presa (banner ou galeria não carregam), use uma das opções:
-              </CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-3 text-sm text-yellow-900 dark:text-yellow-100">
-          <div className="flex items-start gap-2">
-            <span className="font-semibold min-w-[120px]">Opção 1:</span>
-            <span>Clique em <strong>"Limpar Minhas Sessões"</strong> (recomendado) - Limpa suas sessões e te redireciona para login</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-semibold min-w-[120px]">Opção 2:</span>
-            <span>Clique em <strong>"Limpar Todas"</strong> - Remove todas as sessões ativas (use com cuidado)</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="font-semibold min-w-[120px]">Opção 3:</span>
-            <span>Abra o console do navegador (F12) e digite: <code className="bg-yellow-100 dark:bg-yellow-900 px-2 py-1 rounded">window.clearAuthCache()</code></span>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Filters */}
       <Card>
-        <CardHeader>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div>
-              <CardTitle>Filtros</CardTitle>
-              <CardDescription>Filtre as sessões por tipo ou busque por usuário</CardDescription>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-4">
           <div className="flex flex-col gap-4 md:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -440,10 +405,12 @@ const SessionsManagement: React.FC = () => {
 
       {/* Sessions List */}
       <Card>
-        <CardHeader>
-          <CardTitle>Sessões Ativas ({filteredSessions.length})</CardTitle>
+        <CardHeader className="pb-2">
+          <CardTitle className="flex items-center gap-2">
+            Sessões ({filteredSessions.length})
+          </CardTitle>
           <CardDescription>
-            Lista de todas as sessões ativas no momento
+            Usuários conectados ao sistema — atualização em tempo real
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -462,42 +429,70 @@ const SessionsManagement: React.FC = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {filteredSessions.map((session) => {
                 const status = getActivityStatus(session.last_activity_at);
+                const loginDate = new Date(session.login_at);
                 
                 return (
                   <div 
                     key={session.id}
-                    className="flex flex-col md:flex-row md:items-center justify-between p-4 border rounded-lg gap-4"
+                    className={`rounded-lg border ${status.bg} p-4`}
                   >
-                    <div className="flex items-start gap-4">
-                      {status.icon}
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-medium truncate">
-                            {session.user_name || session.user_email || 'Usuário desconhecido'}
-                          </span>
-                          {getUserTypeBadge(session.user_type)}
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {/* Status indicator */}
+                        <div className="mt-1 flex-shrink-0">
+                          {status.icon}
                         </div>
-                        <p className="text-sm text-muted-foreground truncate">
-                          {session.user_email}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Última atividade: {getTimeSince(session.last_activity_at)}
-                        </p>
+                        
+                        <div className="flex-1 min-w-0">
+                          {/* Name + type */}
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-gray-900 truncate">
+                              {session.user_name || 'Usuário desconhecido'}
+                            </span>
+                            {getUserTypeBadge(session.user_type)}
+                            <span className={`text-xs font-medium ${status.color}`}>
+                              {status.label}
+                            </span>
+                          </div>
+                          
+                          {/* Email */}
+                          <p className="text-sm text-gray-600 truncate mt-0.5">
+                            {session.user_email || '—'}
+                          </p>
+                          
+                          {/* Details row */}
+                          <div className="flex items-center gap-4 mt-1.5 flex-wrap text-xs text-gray-500">
+                            <span className="flex items-center gap-1">
+                              <Clock className="h-3 w-3" />
+                              Login: {format(loginDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <RefreshCw className="h-3 w-3" />
+                              Última atividade: {getTimeSince(session.last_activity_at)}
+                            </span>
+                            {session.ip_address && (
+                              <span className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                {session.ip_address}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
+                      
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setSessionToDelete(session)}
+                        className="text-red-600 border-red-200 flex-shrink-0"
+                      >
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Encerrar
+                      </Button>
                     </div>
-                    
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => setSessionToDelete(session)}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      <LogOut className="h-4 w-4 mr-2" />
-                      Encerrar
-                    </Button>
                   </div>
                 );
               })}
