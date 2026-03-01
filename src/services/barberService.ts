@@ -1,5 +1,14 @@
 import { supabase } from "@/integrations/supabase/client";
 
+function parseSpecialties(value: any): string[] | null {
+  if (!value || value === '') return null;
+  if (Array.isArray(value)) return value.filter(Boolean);
+  if (typeof value === 'string') {
+    return value.split(',').map((s: string) => s.trim()).filter(Boolean);
+  }
+  return null;
+}
+
 export async function deleteBarber(barberId: string): Promise<void> {
   // Deletar o barbeiro da tabela staff
   const { error: barberError } = await supabase
@@ -19,7 +28,7 @@ export async function createBarber(barberData: any): Promise<string> {
       email: barberData.email,
       phone: barberData.phone,
       image_url: barberData.image_url,
-      specialties: barberData.specialties,
+      specialties: parseSpecialties(barberData.specialties),
       experience: barberData.experience,
       commission_rate: barberData.commission_rate,
       role: 'barber',
@@ -45,7 +54,7 @@ export async function updateBarber(barberId: string, barberData: any): Promise<v
       email: barberData.email,
       phone: barberData.phone,
       image_url: barberData.image_url,
-      specialties: barberData.specialties,
+      specialties: parseSpecialties(barberData.specialties),
       experience: barberData.experience,
       commission_rate: barberData.commission_rate
     })
