@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -27,6 +28,7 @@ const AdminBarberScheduleManager: React.FC<AdminBarberScheduleManagerProps> = ({
   barberName 
 }) => {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   
@@ -61,64 +63,83 @@ const AdminBarberScheduleManager: React.FC<AdminBarberScheduleManagerProps> = ({
     saturday: 6
   };
 
-  useEffect(() => {
-    const loadSchedule = async () => {
-      setLoading(true);
-      try {
-        const { data: workingHours, error } = await supabase
-          .from('working_hours')
-          .select('*')
-          .eq('staff_id', barberId);
+  const loadSchedule = async () => {
+    setLoading(true);
+    try {
+      const { data: workingHours, error } = await supabase
+        .from('working_hours')
+        .select('*')
+        .eq('staff_id', barberId);
 
-        if (error) {
-          console.error('Erro ao carregar horários:', error);
-          return;
-        }
-
-        if (workingHours && workingHours.length > 0) {
-          const newSchedule: WeekSchedule = { ...schedule };
-          
-          workingHours.forEach((hour) => {
-            const dayKey = Object.keys(dayToNumber).find(
-              key => dayToNumber[key as keyof typeof dayToNumber] === hour.day_of_week
-            ) as keyof WeekSchedule;
-            
-            if (dayKey) {
-              newSchedule[dayKey] = {
-                start: hour.start_time,
-                end: hour.end_time,
-                active: hour.is_active
-              };
-            }
-          });
-          
-          setSchedule(newSchedule);
-        } else {
-          // Se não há horários, usar o padrão e salvar automaticamente
-          await saveDefaultSchedule();
-        }
-      } catch (error) {
+      if (error) {
         console.error('Erro ao carregar horários:', error);
-        toast({
-          title: "Erro",
-          description: "Não foi possível carregar os horários.",
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
+        return;
       }
-    };
 
+      if (workingHours && workingHours.length > 0) {
+        const newSchedule: WeekSchedule = { ...schedule };
+        
+        workingHours.forEach((hour) => {
+          const dayKey = Object.keys(dayToNumber).find(
+            key => dayToNumber[key as keyof typeof dayToNumber] === hour.day_of_week
+          ) as keyof WeekSchedule;
+          
+          if (dayKey) {
+            newSchedule[dayKey] = {
+              start: hour.start_time,
+              end: hour.end_time,
+              active: hour.is_active
+            };
+          }
+        });
+        
+        setSchedule(newSchedule);
+      } else {
+        await saveDefaultSchedule();
+      }
+    } catch (error) {
+      console.error('Erro ao carregar horários:', error);
+      toast({
+        title: "Erro",
+        description: "Não foi possível carregar os horários.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     if (barberId) {
       loadSchedule();
     }
   }, [barberId]);
 
+  // Realtime: escutar mudanças na tabela working_hours para este barbeiro
+  useEffect(() => {
+    if (!barberId) return;
+
+    const channel = supabase
+      .channel(`working-hours-admin-${barberId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'working_hours', filter: `staff_id=eq.${barberId}` },
+        () => {
+          queryClient.invalidateQueries({ queryKey: ['working-hours', barberId] });
+          loadSchedule();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [barberId, queryClient]);
+
   const saveDefaultSchedule = async () => {
     try {
-      // Converter para formato do banco de dados
+      // Converter para formato do banco de dados - salvar TODOS os dias
       const workingHours = Object.entries(schedule)
-        .filter(([, config]) => config.active)
         .map(([day, config]) => ({
           staff_id: barberId,
           day_of_week: dayToNumber[day as keyof typeof dayToNumber],
@@ -127,13 +148,11 @@ const AdminBarberScheduleManager: React.FC<AdminBarberScheduleManagerProps> = ({
           is_active: config.active
         }));
 
-      if (workingHours.length > 0) {
-        const { error } = await supabase
-          .from('working_hours')
-          .insert(workingHours);
+      const { error } = await supabase
+        .from('working_hours')
+        .insert(workingHours);
 
-        if (error) throw error;
-      }
+      if (error) throw error;
     } catch (error) {
       console.error('Erro ao salvar horário padrão:', error);
     }
@@ -148,9 +167,8 @@ const AdminBarberScheduleManager: React.FC<AdminBarberScheduleManagerProps> = ({
         .delete()
         .eq('staff_id', barberId);
 
-      // Converter para formato do banco de dados
+      // Converter para formato do banco de dados - salvar TODOS os dias (ativos e inativos)
       const workingHours = Object.entries(schedule)
-        .filter(([, config]) => config.active)
         .map(([day, config]) => ({
           staff_id: barberId,
           day_of_week: dayToNumber[day as keyof typeof dayToNumber],
@@ -159,13 +177,14 @@ const AdminBarberScheduleManager: React.FC<AdminBarberScheduleManagerProps> = ({
           is_active: config.active
         }));
 
-      if (workingHours.length > 0) {
-        const { error } = await supabase
-          .from('working_hours')
-          .insert(workingHours);
+      const { error } = await supabase
+        .from('working_hours')
+        .insert(workingHours);
 
-        if (error) throw error;
-      }
+      if (error) throw error;
+
+      // Invalidar queries para sincronizar com outros painéis
+      queryClient.invalidateQueries({ queryKey: ['working-hours'] });
       
       toast({
         title: "Sucesso",

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useBarberData } from '@/hooks/barber/useBarberData';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -33,6 +34,7 @@ const DAYS_OF_WEEK = [
 
 const WorkingHoursManager: React.FC = () => {
   const { barberData } = useBarberData();
+  const queryClient = useQueryClient();
   const [staffTableId, setStaffTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -143,28 +145,23 @@ const WorkingHoursManager: React.FC = () => {
         .delete()
         .eq('staff_id', staffTableId);
 
-      const activeHours = workingHours.filter(h => h.is_active);
-      
-      if (activeHours.length === 0) {
-        toast.warning('Atenção', {
-          description: 'Você não tem nenhum dia de trabalho ativo.',
-        });
-        return;
-      }
-
+      // Salvar TODOS os dias (ativos e inativos) para persistir o estado
       const { error } = await supabase
         .from('working_hours')
         .insert(
-          activeHours.map(hour => ({
+          workingHours.map(hour => ({
             staff_id: staffTableId,
             day_of_week: hour.day_of_week,
             start_time: hour.start_time,
             end_time: hour.end_time,
-            is_active: true,
+            is_active: hour.is_active,
           }))
         );
 
       if (error) throw error;
+
+      // Invalidar queries para sincronizar com painel admin
+      queryClient.invalidateQueries({ queryKey: ['working-hours'] });
 
       toast.success('Horários salvos!', {
         description: 'Seus horários foram atualizados com sucesso',
