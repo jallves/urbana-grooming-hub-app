@@ -998,47 +998,94 @@ export const ContasAPagar: React.FC = () => {
       <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
         <DialogContent className="max-w-[95vw] sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Editar Conta</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-blue-600" />
+              Editar Conta
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className="space-y-5">
             <div>
-              <Label>Descrição</Label>
-              <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} />
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Descrição</Label>
+              <Input value={editDescricao} onChange={(e) => setEditDescricao(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <Label>Valor (R$)</Label>
-              <Input type="number" step="0.01" value={editValor} onChange={(e) => setEditValor(e.target.value)} />
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Valor (R$)</Label>
+              <Input type="number" step="0.01" value={editValor} onChange={(e) => setEditValor(e.target.value)} className="mt-1 text-lg font-bold" />
             </div>
             <div>
-              <Label>Forma de Pagamento</Label>
-              <Select value={editFormaPagamento} onValueChange={setEditFormaPagamento}>
-                <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pix">PIX</SelectItem>
-                  <SelectItem value="debito">Débito</SelectItem>
-                  <SelectItem value="credito">Crédito</SelectItem>
-                  <SelectItem value="dinheiro">Dinheiro</SelectItem>
-                </SelectContent>
-              </Select>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 block">Forma de Pagamento</Label>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { value: 'pix', label: 'PIX', icon: '⚡', bg: 'bg-emerald-50', border: 'border-emerald-400', text: 'text-emerald-700', ring: 'ring-emerald-400' },
+                  { value: 'debito', label: 'Débito', icon: '💳', bg: 'bg-sky-50', border: 'border-sky-400', text: 'text-sky-700', ring: 'ring-sky-400' },
+                  { value: 'credito', label: 'Crédito', icon: '🏦', bg: 'bg-violet-50', border: 'border-violet-400', text: 'text-violet-700', ring: 'ring-violet-400' },
+                  { value: 'dinheiro', label: 'Dinheiro', icon: '💵', bg: 'bg-lime-50', border: 'border-lime-400', text: 'text-lime-700', ring: 'ring-lime-400' },
+                ].map((method) => {
+                  const isSelected = editFormaPagamento === method.value;
+                  const wasOriginal = editingConta?.forma_pagamento === method.value;
+                  const isChanged = isSelected && !wasOriginal;
+                  return (
+                    <button
+                      key={method.value}
+                      type="button"
+                      onClick={() => setEditFormaPagamento(method.value)}
+                      className={`
+                        relative flex items-center gap-2.5 p-3 rounded-lg border-2 transition-all duration-200 text-left
+                        ${isSelected
+                          ? `${method.bg} ${method.border} ${method.text} ring-2 ${method.ring} ring-offset-1 shadow-md scale-[1.02]`
+                          : 'bg-white border-gray-200 text-gray-500 hover:border-gray-300 hover:bg-gray-50'
+                        }
+                      `}
+                    >
+                      <span className="text-xl">{method.icon}</span>
+                      <span className={`font-semibold text-sm ${isSelected ? method.text : 'text-gray-600'}`}>{method.label}</span>
+                      {isSelected && (
+                        <CheckCircle2 className={`h-4 w-4 ml-auto ${method.text}`} />
+                      )}
+                      {isChanged && (
+                        <span className="absolute -top-1.5 -right-1.5 flex h-4 w-4">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 items-center justify-center text-[8px] text-white font-bold">!</span>
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              {editFormaPagamento !== (editingConta?.forma_pagamento || '') && editFormaPagamento && (
+                <div className="mt-2 flex items-center gap-2 p-2 rounded-md bg-amber-50 border border-amber-200 text-amber-700 text-xs">
+                  <span className="font-medium">Alterado:</span>
+                  <Badge variant="outline" className={`text-[10px] ${getPaymentMethodColors(editingConta?.forma_pagamento || null)}`}>
+                    {getPaymentMethodLabel(editingConta?.forma_pagamento || null)}
+                  </Badge>
+                  <span>→</span>
+                  <Badge variant="outline" className={`text-[10px] ${getPaymentMethodColors(editFormaPagamento)}`}>
+                    {getPaymentMethodLabel(editFormaPagamento)}
+                  </Badge>
+                </div>
+              )}
             </div>
             <div>
-              <Label>Status</Label>
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Status</Label>
               <Select value={editStatus} onValueChange={setEditStatus}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pendente">Pendente</SelectItem>
-                  <SelectItem value="pago">Pago</SelectItem>
-                  <SelectItem value="cancelado">Cancelado</SelectItem>
+                  <SelectItem value="pendente">🕐 Pendente</SelectItem>
+                  <SelectItem value="pago">✅ Pago</SelectItem>
+                  <SelectItem value="cancelado">❌ Cancelado</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div>
-              <Label>Observações</Label>
-              <Textarea value={editObservacoes} onChange={(e) => setEditObservacoes(e.target.value)} />
+              <Label className="text-xs font-semibold text-gray-600 uppercase tracking-wide">Observações</Label>
+              <Textarea value={editObservacoes} onChange={(e) => setEditObservacoes(e.target.value)} className="mt-1" />
             </div>
-            <div className="flex justify-end gap-2">
+            <div className="flex justify-end gap-2 pt-2 border-t">
               <Button variant="outline" onClick={() => setEditDialogOpen(false)}>Cancelar</Button>
-              <Button onClick={handleSaveEdit}>Salvar</Button>
+              <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700 text-white">
+                <CheckCircle2 className="h-4 w-4 mr-1" />
+                Salvar Alterações
+              </Button>
             </div>
           </div>
         </DialogContent>
