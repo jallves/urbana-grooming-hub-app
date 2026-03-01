@@ -24,6 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
 import { cn } from "@/lib/utils";
+import { EmailVerificationPopup } from "@/components/painel-cliente/EmailVerificationPopup";
 
 interface AgendamentoStats {
   total: number;
@@ -55,6 +56,26 @@ export default function PainelClienteDashboard() {
   });
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [showEmailVerification, setShowEmailVerification] = useState(false);
+
+  // Verificar se precisa confirmar e-mail (primeiro login)
+  useEffect(() => {
+    if (!cliente?.id) return;
+    
+    const checkEmailVerified = async () => {
+      const { data } = await supabase
+        .from('painel_clientes')
+        .select('email_verified')
+        .eq('id', cliente.id)
+        .maybeSingle();
+      
+      if (data && !(data as any).email_verified) {
+        setShowEmailVerification(true);
+      }
+    };
+    
+    checkEmailVerified();
+  }, [cliente?.id]);
 
   // Log para debug
   React.useEffect(() => {
@@ -327,6 +348,16 @@ export default function PainelClienteDashboard() {
           </PainelClienteCard>
         ))}
       </div>
+
+      {/* Popup de Verificação de E-mail (primeiro login) */}
+      {cliente && (
+        <EmailVerificationPopup
+          open={showEmailVerification}
+          email={cliente.email}
+          clienteId={cliente.id}
+          onConfirmed={() => setShowEmailVerification(false)}
+        />
+      )}
     </ClientPageContainer>
   );
 }

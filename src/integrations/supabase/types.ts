@@ -1375,6 +1375,7 @@ export type Database = {
           created_at: string | null
           data_nascimento: string | null
           email: string | null
+          email_verified: boolean
           id: string
           nome: string
           notas: string | null
@@ -1388,6 +1389,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento?: string | null
           email?: string | null
+          email_verified?: boolean
           id?: string
           nome: string
           notas?: string | null
@@ -1401,6 +1403,7 @@ export type Database = {
           created_at?: string | null
           data_nascimento?: string | null
           email?: string | null
+          email_verified?: boolean
           id?: string
           nome?: string
           notas?: string | null
