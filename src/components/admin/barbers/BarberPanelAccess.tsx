@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { AlertCircle, CheckCircle2, Key, ShieldCheck, User } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Eye, EyeOff, Key, ShieldCheck, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -32,6 +32,7 @@ export const BarberPanelAccess: React.FC<BarberPanelAccessProps> = ({
   const [password, setPassword] = useState('');
   const [isCreatingAccess, setIsCreatingAccess] = useState(false);
   const [isResettingPassword, setIsResettingPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   useEffect(() => {
     checkBarberAccess();
@@ -302,13 +303,24 @@ export const BarberPanelAccess: React.FC<BarberPanelAccessProps> = ({
           </div>
           
           <div className="space-y-2">
-            <Input
-              type="password"
-              placeholder="Digite a nova senha (mínimo 6 caracteres)"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="bg-white"
-            />
+            <div className="relative">
+              <Input
+                type={showPassword ? 'text' : 'password'}
+                placeholder="Digite a nova senha (mínimo 6 caracteres)"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="bg-white pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 text-muted-foreground hover:text-foreground touch-manipulation"
+                onClick={() => setShowPassword(!showPassword)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </Button>
+            </div>
             <p className="text-xs text-gray-500">
               {hasAccess 
                 ? 'Digite uma nova senha para redefinir o acesso do barbeiro ao painel'
