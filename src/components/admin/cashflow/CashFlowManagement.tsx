@@ -2,10 +2,10 @@
 import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Plus, BarChart3, List, TrendingUp } from 'lucide-react';
+import { Plus, BarChart3, List, Wallet } from 'lucide-react';
 import CashFlowDashboard from './CashFlowDashboard';
 import CashFlowTransactions from './CashFlowTransactions';
-import CashFlowReports from './CashFlowReports';
+import CashRegister from './CashRegister';
 import CashFlowForm from './CashFlowForm';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
@@ -55,11 +55,11 @@ const CashFlowManagement: React.FC = () => {
               <span>Transações</span>
             </TabsTrigger>
             <TabsTrigger 
-              value="reports" 
-              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm bg-teal-500 text-white data-[state=active]:bg-teal-600 data-[state=active]:shadow-md"
+              value="register" 
+              className="flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-3 text-[10px] sm:text-sm bg-amber-500 text-white data-[state=active]:bg-amber-600 data-[state=active]:shadow-md"
             >
-              <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-              <span>Relatórios</span>
+              <Wallet className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+              <span>Caixa</span>
             </TabsTrigger>
           </TabsList>
           
@@ -76,9 +76,9 @@ const CashFlowManagement: React.FC = () => {
               </div>
             </TabsContent>
             
-            <TabsContent value="reports" className="h-full m-0">
+            <TabsContent value="register" className="h-full m-0">
               <div className="h-full overflow-auto">
-                <CashFlowReports />
+                <CashRegister />
               </div>
             </TabsContent>
           </div>
