@@ -1,0 +1,2 @@
+INSERT INTO public.staff (name, email, phone, role, is_active, image_url, commission_rate)
+VALUES ('Raissa Vieira', 'raissarosiepv@icloud.com', '1111111111', 'barber', true, 'https://apizqnknnmjqpqovlkux.supabase.co/storage/v1/object/public/staff-photos/employees/1772380897067.jpeg', 40);

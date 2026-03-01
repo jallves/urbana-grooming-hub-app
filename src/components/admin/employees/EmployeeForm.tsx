@@ -178,11 +178,11 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           name: data.name.trim(),
           email: data.email.trim().toLowerCase(),
           phone: data.phone.trim(),
-          role: 'barber',
+          role: 'barber' as const,
           is_active: data.status === 'active',
           image_url: photoUrl || null,
           commission_rate: data.commission_rate || 40,
-          user_id: existingUserId || null,
+          staff_id: existingUserId || undefined,
         };
 
         const { error: staffError } = await supabase
