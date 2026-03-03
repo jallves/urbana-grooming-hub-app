@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Scissors } from 'lucide-react';
 
 interface NavbarLogoProps {
   shopName: string;
@@ -19,14 +18,6 @@ const NavbarLogo: React.FC<NavbarLogoProps> = ({ shopName }) => {
         />
       </Link>
 
-      {/* Ícone do barbeiro */}
-      <Link
-        to="/barbeiro/login"
-        className="text-urbana-gold hover:text-yellow-300 transition-all duration-300 hover:scale-110"
-        title="Acesso para Barbeiros"
-      >
-        <Scissors className="h-5 w-5 sm:h-6 sm:w-6 drop-shadow-sm" />
-      </Link>
 
       {/* Nome da barbearia em dourado */}
       <Link
