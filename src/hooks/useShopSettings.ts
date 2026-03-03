@@ -47,7 +47,7 @@ export const useShopSettings = () => {
         } else {
           // Configurações padrão
           setShopSettings({
-            shop_name: 'Barbearia',
+            shop_name: 'Barbearia Costa Urbana',
             address: '',
             phone: '',
             email: '',
@@ -61,7 +61,7 @@ export const useShopSettings = () => {
         
         // Usar configurações padrão em caso de erro
         setShopSettings({
-          shop_name: 'Barbearia',
+          shop_name: 'Barbearia Costa Urbana',
           opening_hours: 'Seg-Sáb: 08:00-20:00'
         });
       } finally {
