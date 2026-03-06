@@ -100,10 +100,88 @@ export const useEmployeeManagement = () => {
     );
   }, [employees, searchQuery]);
 
-  // Mutation para deletar funcionário
+  // Mutation para desativar funcionário
+  const deactivateMutation = useMutation({
+    mutationFn: async (employeeId: string) => {
+      const { error } = await supabase
+        .from('employees')
+        .update({ status: 'inactive', is_active: false, updated_at: new Date().toISOString() })
+        .eq('id', employeeId);
+      if (error) throw error;
+
+      // Buscar email para propagar inativação
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('email, role')
+        .eq('id', employeeId)
+        .single();
+
+      if (employee?.email) {
+        // Propagar para staff
+        await supabase
+          .from('staff')
+          .update({ is_active: false, updated_at: new Date().toISOString() })
+          .eq('email', employee.email);
+        // Propagar para painel_barbeiros
+        await supabase
+          .from('painel_barbeiros')
+          .update({ is_active: false, ativo: false, updated_at: new Date().toISOString() })
+          .eq('email', employee.email);
+      }
+    },
+    onSuccess: () => {
+      toast({ title: 'Sucesso', description: 'Funcionário desativado com sucesso!' });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['barbers'] });
+      queryClient.invalidateQueries({ queryKey: ['team-staff'] });
+    },
+    onError: (error: any) => {
+      console.error('Error deactivating employee:', error);
+      toast({ title: 'Erro', description: 'Erro ao desativar funcionário', variant: 'destructive' });
+    }
+  });
+
+  // Mutation para reativar funcionário
+  const reactivateMutation = useMutation({
+    mutationFn: async (employeeId: string) => {
+      const { error } = await supabase
+        .from('employees')
+        .update({ status: 'active', is_active: true, updated_at: new Date().toISOString() })
+        .eq('id', employeeId);
+      if (error) throw error;
+
+      const { data: employee } = await supabase
+        .from('employees')
+        .select('email')
+        .eq('id', employeeId)
+        .single();
+
+      if (employee?.email) {
+        await supabase
+          .from('staff')
+          .update({ is_active: true, updated_at: new Date().toISOString() })
+          .eq('email', employee.email);
+        await supabase
+          .from('painel_barbeiros')
+          .update({ is_active: true, ativo: true, updated_at: new Date().toISOString() })
+          .eq('email', employee.email);
+      }
+    },
+    onSuccess: () => {
+      toast({ title: 'Sucesso', description: 'Funcionário reativado com sucesso!' });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['barbers'] });
+      queryClient.invalidateQueries({ queryKey: ['team-staff'] });
+    },
+    onError: (error: any) => {
+      console.error('Error reactivating employee:', error);
+      toast({ title: 'Erro', description: 'Erro ao reativar funcionário', variant: 'destructive' });
+    }
+  });
+
+  // Mutation para deletar funcionário (apenas sem agendamentos)
   const deleteMutation = useMutation({
     mutationFn: async (employeeId: string) => {
-      // Buscar o funcionário
       const { data: employee, error: fetchError } = await supabase
         .from('employees')
         .select('role, email')
@@ -112,48 +190,74 @@ export const useEmployeeManagement = () => {
 
       if (fetchError) throw fetchError;
 
-      // Se for barbeiro, deletar da tabela staff
       if (employee.role === 'barber') {
         const { error: staffError } = await supabase
           .from('staff')
           .delete()
           .eq('email', employee.email);
-
         if (staffError) throw staffError;
       } else {
-        // Para outros roles, deletar diretamente
         const { error } = await supabase
           .from('employees')
           .delete()
           .eq('id', employeeId);
-
         if (error) throw error;
       }
     },
     onSuccess: () => {
-      toast({
-        title: 'Sucesso',
-        description: 'Funcionário excluído com sucesso!',
-      });
-      // Invalidar cache para recarregar
+      toast({ title: 'Sucesso', description: 'Funcionário excluído com sucesso!' });
       queryClient.invalidateQueries({ queryKey: ['employees'] });
     },
     onError: (error: any) => {
       console.error('Error deleting employee:', error);
-      toast({
-        title: 'Erro',
-        description: 'Erro ao excluir funcionário',
-        variant: 'destructive',
-      });
+      toast({ title: 'Erro', description: 'Erro ao excluir funcionário', variant: 'destructive' });
     }
   });
 
-  const handleDeleteEmployee = useCallback(async (employeeId: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este funcionário?')) {
-      return;
+  const handleDeactivateEmployee = useCallback(async (employeeId: string) => {
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
+
+    if (employee.status === 'inactive') {
+      if (!window.confirm('Deseja reativar este funcionário?')) return;
+      reactivateMutation.mutate(employeeId);
+    } else {
+      if (!window.confirm('Deseja desativar este funcionário? Ele ficará INATIVO e não aparecerá nos agendamentos.')) return;
+      deactivateMutation.mutate(employeeId);
     }
+  }, [employees, deactivateMutation, reactivateMutation]);
+
+  const handleDeleteEmployee = useCallback(async (employeeId: string) => {
+    // Check for existing appointments before allowing delete
+    const employee = employees.find(e => e.id === employeeId);
+    if (!employee) return;
+
+    // Check painel_barbeiros for linked appointments
+    const { data: barber } = await supabase
+      .from('painel_barbeiros')
+      .select('id')
+      .eq('email', employee.email)
+      .maybeSingle();
+
+    if (barber) {
+      const { count } = await supabase
+        .from('painel_agendamentos')
+        .select('id', { count: 'exact', head: true })
+        .eq('barbeiro_id', barber.id);
+
+      if (count && count > 0) {
+        toast({
+          title: 'Não é possível excluir',
+          description: `Este funcionário possui ${count} agendamento(s). Use a opção "Inativar" ao invés de excluir.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
+
+    if (!window.confirm('Tem certeza que deseja excluir este funcionário permanentemente?')) return;
     deleteMutation.mutate(employeeId);
-  }, [deleteMutation]);
+  }, [employees, deleteMutation, toast]);
 
   const fetchEmployees = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['employees'] });

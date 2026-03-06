@@ -26,6 +26,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   loading,
   onEdit,
   onDelete,
+  onDeactivate,
 }) => {
   const getRoleBadge = (role: string) => {
     switch (role) {
