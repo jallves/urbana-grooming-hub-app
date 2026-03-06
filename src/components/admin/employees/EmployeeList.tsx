@@ -9,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Loader2, UserPlus, UserX, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { Employee } from './types';
 
@@ -18,6 +18,7 @@ interface EmployeeListProps {
   loading: boolean;
   onEdit: (employee: Employee) => void;
   onDelete: (employeeId: string) => void;
+  onDeactivate?: (employeeId: string) => void;
 }
 
 const EmployeeList: React.FC<EmployeeListProps> = ({
