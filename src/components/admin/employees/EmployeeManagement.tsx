@@ -34,6 +34,7 @@ const EmployeeManagement: React.FC = () => {
     setStatusFilter,
     fetchEmployees,
     handleDeleteEmployee,
+    handleDeactivateEmployee,
   } = useEmployeeManagement();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -124,6 +125,7 @@ const EmployeeManagement: React.FC = () => {
               loading={loading}
               onEdit={handleEditEmployee}
               onDelete={handleDeleteEmployee}
+              onDeactivate={handleDeactivateEmployee}
             />
           </div>
         </CardContent>

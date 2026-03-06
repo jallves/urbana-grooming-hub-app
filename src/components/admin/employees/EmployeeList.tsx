@@ -9,7 +9,7 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, Loader2, UserPlus } from 'lucide-react';
+import { MoreHorizontal, Pencil, Trash2, Loader2, UserPlus, UserX, UserCheck } from 'lucide-react';
 import { format } from 'date-fns';
 import { Employee } from './types';
 
@@ -18,6 +18,7 @@ interface EmployeeListProps {
   loading: boolean;
   onEdit: (employee: Employee) => void;
   onDelete: (employeeId: string) => void;
+  onDeactivate?: (employeeId: string) => void;
 }
 
 const EmployeeList: React.FC<EmployeeListProps> = ({
@@ -25,6 +26,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   loading,
   onEdit,
   onDelete,
+  onDeactivate,
 }) => {
   const getRoleBadge = (role: string) => {
     switch (role) {
@@ -43,7 +45,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     return status === 'active' ? (
       <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-raleway text-xs">Ativo</Badge>
     ) : (
-      <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 font-raleway text-xs">Inativo</Badge>
+      <Badge className="bg-red-500/20 text-red-500 border-red-500/30 font-raleway text-xs font-bold">⛔ INATIVO</Badge>
     );
   };
 
@@ -83,7 +85,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
         
         {employees.length > 0 ? (
           employees.map((employee) => (
-            <div key={employee.id} className="grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center">
+            <div key={employee.id} className={`grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center ${employee.status === 'inactive' ? 'opacity-60 bg-red-50/30' : ''}`}>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 border-2 border-urbana-gold/30">
                   <AvatarImage src={employee.photo_url} />
@@ -119,6 +121,21 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
+                    {onDeactivate && (
+                      <DropdownMenuItem
+                        onClick={() => onDeactivate(employee.id)}
+                        className={employee.status === 'inactive' 
+                          ? "text-green-600 hover:bg-green-50 font-raleway cursor-pointer"
+                          : "text-orange-600 hover:bg-orange-50 font-raleway cursor-pointer"
+                        }
+                      >
+                        {employee.status === 'inactive' ? (
+                          <><UserCheck className="mr-2 h-4 w-4" /> Reativar</>
+                        ) : (
+                          <><UserX className="mr-2 h-4 w-4" /> Inativar</>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => onDelete(employee.id)}
                       className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
@@ -179,6 +196,21 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
+                    {onDeactivate && (
+                      <DropdownMenuItem
+                        onClick={() => onDeactivate(employee.id)}
+                        className={employee.status === 'inactive' 
+                          ? "text-green-600 hover:bg-green-50 font-raleway cursor-pointer"
+                          : "text-orange-600 hover:bg-orange-50 font-raleway cursor-pointer"
+                        }
+                      >
+                        {employee.status === 'inactive' ? (
+                          <><UserCheck className="mr-2 h-4 w-4" /> Reativar</>
+                        ) : (
+                          <><UserX className="mr-2 h-4 w-4" /> Inativar</>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => onDelete(employee.id)}
                       className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
