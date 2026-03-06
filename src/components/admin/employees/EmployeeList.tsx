@@ -85,7 +85,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
         
         {employees.length > 0 ? (
           employees.map((employee) => (
-            <div key={employee.id} className="grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center">
+            <div key={employee.id} className={`grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center ${employee.status === 'inactive' ? 'opacity-60 bg-red-50/30' : ''}`}>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 border-2 border-urbana-gold/30">
                   <AvatarImage src={employee.photo_url} />
