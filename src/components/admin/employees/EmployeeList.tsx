@@ -196,6 +196,21 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                       <Pencil className="mr-2 h-4 w-4" />
                       Editar
                     </DropdownMenuItem>
+                    {onDeactivate && (
+                      <DropdownMenuItem
+                        onClick={() => onDeactivate(employee.id)}
+                        className={employee.status === 'inactive' 
+                          ? "text-green-600 hover:bg-green-50 font-raleway cursor-pointer"
+                          : "text-orange-600 hover:bg-orange-50 font-raleway cursor-pointer"
+                        }
+                      >
+                        {employee.status === 'inactive' ? (
+                          <><UserCheck className="mr-2 h-4 w-4" /> Reativar</>
+                        ) : (
+                          <><UserX className="mr-2 h-4 w-4" /> Inativar</>
+                        )}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={() => onDelete(employee.id)}
                       className="text-red-600 hover:bg-red-50 font-raleway cursor-pointer"
