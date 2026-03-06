@@ -45,7 +45,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     return status === 'active' ? (
       <Badge className="bg-green-500/20 text-green-400 border-green-500/30 font-raleway text-xs">Ativo</Badge>
     ) : (
-      <Badge className="bg-gray-500/20 text-gray-400 border-gray-500/30 font-raleway text-xs">Inativo</Badge>
+      <Badge className="bg-red-500/20 text-red-500 border-red-500/30 font-raleway text-xs font-bold">⛔ INATIVO</Badge>
     );
   };
 
