@@ -34,6 +34,7 @@ const EmployeeManagement: React.FC = () => {
     setStatusFilter,
     fetchEmployees,
     handleDeleteEmployee,
+    handleDeactivateEmployee,
   } = useEmployeeManagement();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
