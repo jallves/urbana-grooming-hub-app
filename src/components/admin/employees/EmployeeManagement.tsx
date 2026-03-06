@@ -125,6 +125,7 @@ const EmployeeManagement: React.FC = () => {
               loading={loading}
               onEdit={handleEditEmployee}
               onDelete={handleDeleteEmployee}
+              onDeactivate={handleDeactivateEmployee}
             />
           </div>
         </CardContent>

@@ -274,5 +274,6 @@ export const useEmployeeManagement = () => {
     setStatusFilter,
     fetchEmployees,
     handleDeleteEmployee,
+    handleDeactivateEmployee,
   };
 };
