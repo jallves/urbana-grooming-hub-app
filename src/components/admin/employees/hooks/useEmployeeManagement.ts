@@ -4,6 +4,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Employee } from '../types';
+import { ConfirmActionType } from '../../shared/ConfirmActionDialog';
+
+interface ConfirmDialogState {
+  open: boolean;
+  type: ConfirmActionType;
+  title: string;
+  description: string;
+  entityName: string;
+  linkedDataMessage?: string;
+  onConfirm: () => void;
+}
+
+const defaultDialogState: ConfirmDialogState = {
+  open: false,
+  type: 'delete',
+  title: '',
+  description: '',
+  entityName: '',
+  onConfirm: () => {},
+};
 
 export const useEmployeeManagement = () => {
   const { toast } = useToast();
@@ -11,6 +31,11 @@ export const useEmployeeManagement = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(defaultDialogState);
+
+  const closeDialog = useCallback(() => {
+    setConfirmDialog(defaultDialogState);
+  }, []);
 
   // Use React Query para buscar funcionários com cache
   const { data: employees = [], isLoading: loading } = useQuery({
@@ -64,35 +89,24 @@ export const useEmployeeManagement = () => {
     refetchOnWindowFocus: false,
   });
 
-  // Realtime: escuta INSERT, UPDATE e DELETE na tabela employees e staff
+  // Realtime
   useEffect(() => {
     const channel = supabase
       .channel('employees-realtime')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'employees' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['employees'] });
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'staff' },
-        () => {
-          queryClient.invalidateQueries({ queryKey: ['employees'] });
-        }
-      )
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'employees' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['employees'] });
+      })
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
+    return () => { supabase.removeChannel(channel); };
   }, [queryClient]);
 
   // Filtro de busca no cliente (memoizado)
   const filteredEmployees = useMemo(() => {
     if (!searchQuery) return employees;
-    
     const query = searchQuery.toLowerCase();
     return employees.filter(employee =>
       employee.name.toLowerCase().includes(query) ||
@@ -109,7 +123,6 @@ export const useEmployeeManagement = () => {
         .eq('id', employeeId);
       if (error) throw error;
 
-      // Buscar email para propagar inativação
       const { data: employee } = await supabase
         .from('employees')
         .select('email, role')
@@ -117,16 +130,8 @@ export const useEmployeeManagement = () => {
         .single();
 
       if (employee?.email) {
-        // Propagar para staff
-        await supabase
-          .from('staff')
-          .update({ is_active: false, updated_at: new Date().toISOString() })
-          .eq('email', employee.email);
-        // Propagar para painel_barbeiros
-        await supabase
-          .from('painel_barbeiros')
-          .update({ is_active: false, ativo: false, updated_at: new Date().toISOString() })
-          .eq('email', employee.email);
+        await supabase.from('staff').update({ is_active: false, updated_at: new Date().toISOString() }).eq('email', employee.email);
+        await supabase.from('painel_barbeiros').update({ is_active: false, ativo: false, updated_at: new Date().toISOString() }).eq('email', employee.email);
       }
     },
     onSuccess: () => {
@@ -157,14 +162,8 @@ export const useEmployeeManagement = () => {
         .single();
 
       if (employee?.email) {
-        await supabase
-          .from('staff')
-          .update({ is_active: true, updated_at: new Date().toISOString() })
-          .eq('email', employee.email);
-        await supabase
-          .from('painel_barbeiros')
-          .update({ is_active: true, ativo: true, updated_at: new Date().toISOString() })
-          .eq('email', employee.email);
+        await supabase.from('staff').update({ is_active: true, updated_at: new Date().toISOString() }).eq('email', employee.email);
+        await supabase.from('painel_barbeiros').update({ is_active: true, ativo: true, updated_at: new Date().toISOString() }).eq('email', employee.email);
       }
     },
     onSuccess: () => {
@@ -179,7 +178,7 @@ export const useEmployeeManagement = () => {
     }
   });
 
-  // Mutation para deletar funcionário (apenas sem agendamentos)
+  // Mutation para deletar funcionário
   const deleteMutation = useMutation({
     mutationFn: async (employeeId: string) => {
       const { data: employee, error: fetchError } = await supabase
@@ -191,22 +190,18 @@ export const useEmployeeManagement = () => {
       if (fetchError) throw fetchError;
 
       if (employee.role === 'barber') {
-        const { error: staffError } = await supabase
-          .from('staff')
-          .delete()
-          .eq('email', employee.email);
+        const { error: staffError } = await supabase.from('staff').delete().eq('email', employee.email);
         if (staffError) throw staffError;
       } else {
-        const { error } = await supabase
-          .from('employees')
-          .delete()
-          .eq('id', employeeId);
+        const { error } = await supabase.from('employees').delete().eq('id', employeeId);
         if (error) throw error;
       }
     },
     onSuccess: () => {
       toast({ title: 'Sucesso', description: 'Funcionário excluído com sucesso!' });
       queryClient.invalidateQueries({ queryKey: ['employees'] });
+      queryClient.invalidateQueries({ queryKey: ['barbers'] });
+      queryClient.invalidateQueries({ queryKey: ['team-staff'] });
     },
     onError: (error: any) => {
       console.error('Error deleting employee:', error);
@@ -219,20 +214,38 @@ export const useEmployeeManagement = () => {
     if (!employee) return;
 
     if (employee.status === 'inactive') {
-      if (!window.confirm('Deseja reativar este funcionário?')) return;
-      reactivateMutation.mutate(employeeId);
+      setConfirmDialog({
+        open: true,
+        type: 'reactivate',
+        title: 'Reativar Funcionário',
+        description: 'Este funcionário voltará a aparecer nos agendamentos e listagens ativas do sistema.',
+        entityName: employee.name,
+        onConfirm: () => {
+          reactivateMutation.mutate(employeeId);
+          closeDialog();
+        },
+      });
     } else {
-      if (!window.confirm('Deseja desativar este funcionário? Ele ficará INATIVO e não aparecerá nos agendamentos.')) return;
-      deactivateMutation.mutate(employeeId);
+      setConfirmDialog({
+        open: true,
+        type: 'deactivate',
+        title: 'Inativar Funcionário',
+        description: 'O funcionário ficará INATIVO e não aparecerá nos agendamentos nem nas listagens ativas.',
+        entityName: employee.name,
+        linkedDataMessage: 'Os dados históricos (agendamentos, comissões, relatórios) serão preservados para auditoria.',
+        onConfirm: () => {
+          deactivateMutation.mutate(employeeId);
+          closeDialog();
+        },
+      });
     }
-  }, [employees, deactivateMutation, reactivateMutation]);
+  }, [employees, deactivateMutation, reactivateMutation, closeDialog]);
 
   const handleDeleteEmployee = useCallback(async (employeeId: string) => {
-    // Check for existing appointments before allowing delete
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return;
 
-    // Check painel_barbeiros for linked appointments
+    // Check for linked data
     const { data: barber } = await supabase
       .from('painel_barbeiros')
       .select('id')
@@ -246,18 +259,32 @@ export const useEmployeeManagement = () => {
         .eq('barbeiro_id', barber.id);
 
       if (count && count > 0) {
-        toast({
-          title: 'Não é possível excluir',
-          description: `Este funcionário possui ${count} agendamento(s). Use a opção "Inativar" ao invés de excluir.`,
-          variant: 'destructive',
+        setConfirmDialog({
+          open: true,
+          type: 'blocked',
+          title: 'Exclusão Bloqueada',
+          description: `Este funcionário possui ${count} agendamento(s) vinculado(s) e não pode ser excluído permanentemente.`,
+          entityName: employee.name,
+          linkedDataMessage: 'Para remover este funcionário das listagens ativas, utilize a opção "Inativar" no menu de ações.',
+          onConfirm: closeDialog,
         });
         return;
       }
     }
 
-    if (!window.confirm('Tem certeza que deseja excluir este funcionário permanentemente?')) return;
-    deleteMutation.mutate(employeeId);
-  }, [employees, deleteMutation, toast]);
+    // No linked data — allow delete
+    setConfirmDialog({
+      open: true,
+      type: 'delete',
+      title: 'Excluir Funcionário',
+      description: 'Esta ação é irreversível. Todos os dados deste funcionário serão removidos permanentemente do sistema.',
+      entityName: employee.name,
+      onConfirm: () => {
+        deleteMutation.mutate(employeeId);
+        closeDialog();
+      },
+    });
+  }, [employees, deleteMutation, closeDialog]);
 
   const fetchEmployees = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['employees'] });
@@ -275,5 +302,7 @@ export const useEmployeeManagement = () => {
     fetchEmployees,
     handleDeleteEmployee,
     handleDeactivateEmployee,
+    confirmDialog,
+    closeDialog,
   };
 };

@@ -8,6 +8,7 @@ import EmployeeList from './EmployeeList';
 import EmployeeForm from './EmployeeForm';
 import { useEmployeeManagement } from './hooks/useEmployeeManagement';
 import { Employee } from './types';
+import ConfirmActionDialog from '../shared/ConfirmActionDialog';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,8 @@ const EmployeeManagement: React.FC = () => {
     fetchEmployees,
     handleDeleteEmployee,
     handleDeactivateEmployee,
+    confirmDialog,
+    closeDialog,
   } = useEmployeeManagement();
 
   const [isFormOpen, setIsFormOpen] = useState(false);
@@ -51,11 +54,8 @@ const EmployeeManagement: React.FC = () => {
   };
 
   const handleFormClose = () => {
-    console.log('🚪 handleFormClose chamado');
     setIsFormOpen(false);
     setEditingEmployee(null);
-    // REMOVIDO: fetchEmployees() - não é necessário pois o form já recarrega a página
-    console.log('✅ Dialog fechado');
   };
 
   return (
@@ -82,7 +82,6 @@ const EmployeeManagement: React.FC = () => {
         </CardHeader>
         
         <CardContent className="space-y-4 p-3 sm:p-6">
-          {/* Filtros responsivos */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="relative">
               <Search className="absolute left-3 top-3 h-4 w-4 text-primary" />
@@ -118,7 +117,6 @@ const EmployeeManagement: React.FC = () => {
             </Select>
           </div>
 
-          {/* Lista responsiva */}
           <div className="w-full">
             <EmployeeList
               employees={employees}
@@ -131,7 +129,7 @@ const EmployeeManagement: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Dialog responsivo */}
+      {/* Dialog de formulário */}
       <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
         <DialogContent className="w-[95vw] max-w-2xl max-h-[95vh] overflow-y-auto">
           <DialogHeader>
@@ -145,6 +143,18 @@ const EmployeeManagement: React.FC = () => {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Dialog de confirmação temático */}
+      <ConfirmActionDialog
+        open={confirmDialog.open}
+        onOpenChange={(open) => { if (!open) closeDialog(); }}
+        onConfirm={confirmDialog.onConfirm}
+        type={confirmDialog.type}
+        title={confirmDialog.title}
+        description={confirmDialog.description}
+        entityName={confirmDialog.entityName}
+        linkedDataMessage={confirmDialog.linkedDataMessage}
+      />
     </div>
   );
 };
