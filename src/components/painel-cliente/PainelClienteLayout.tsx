@@ -1,9 +1,11 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
+import { LogOut, User, Calendar, Home, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
+import ClientNotificationBell from '@/components/painel-cliente/ClientNotificationBell';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
