@@ -189,13 +189,16 @@ export const useEmployeeManagement = () => {
 
       if (fetchError) throw fetchError;
 
-      if (employee.role === 'barber') {
-        const { error: staffError } = await supabase.from('staff').delete().eq('email', employee.email);
-        if (staffError) throw staffError;
-      } else {
-        const { error } = await supabase.from('employees').delete().eq('id', employeeId);
-        if (error) throw error;
+      if (employee.role === 'barber' && employee.email) {
+        // Delete from painel_barbeiros first (FK target)
+        await supabase.from('painel_barbeiros').delete().eq('email', employee.email);
+        // Delete from staff
+        await supabase.from('staff').delete().eq('email', employee.email);
       }
+      
+      // Always delete from employees
+      const { error } = await supabase.from('employees').delete().eq('id', employeeId);
+      if (error) throw error;
     },
     onSuccess: () => {
       toast({ title: 'Sucesso', description: 'Funcionário excluído com sucesso!' });
