@@ -192,7 +192,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
               <Label className="text-xs sm:text-sm">Cliente</Label>
               <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent className="max-h-60 z-[70]">
                   {clientsQuery.data?.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>{c.nome} {c.whatsapp ? `(${c.whatsapp})` : ''}</SelectItem>
                   ))}
@@ -203,7 +203,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
               <Label className="text-xs sm:text-sm">Plano</Label>
               <Select value={form.plan_id} onValueChange={v => setForm(f => ({ ...f, plan_id: v }))}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[70]">
                   {plans.filter(p => p.is_active).map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name} — R$ {p.price.toFixed(2)}/mês</SelectItem>
                   ))}
@@ -219,7 +219,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
                 <Label className="text-xs sm:text-sm">Pagamento</Label>
                 <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v }))}>
                   <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[70]">
                     <SelectItem value="credit_card">Cartão Crédito</SelectItem>
                     <SelectItem value="pix">PIX</SelectItem>
                     <SelectItem value="cash">Dinheiro</SelectItem>
