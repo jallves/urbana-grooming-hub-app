@@ -158,7 +158,7 @@ const SubscriptionPaymentsTab: React.FC = () => {
 
       {/* Register Payment Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md w-[95vw] sm:w-auto">
+        <DialogContent className="max-w-md w-[95vw] sm:w-auto bg-background border shadow-2xl z-[60]">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">Registrar Pagamento</DialogTitle>
           </DialogHeader>

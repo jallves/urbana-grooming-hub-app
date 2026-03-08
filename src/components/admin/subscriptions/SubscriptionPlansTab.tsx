@@ -259,7 +259,7 @@ const SubscriptionPlansTab: React.FC = () => {
 
       {/* Delete Confirm */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
-        <AlertDialogContent className="w-[95vw] sm:w-auto">
+        <AlertDialogContent className="w-[95vw] sm:w-auto bg-background border shadow-2xl z-[60]">
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir plano?</AlertDialogTitle>
             <AlertDialogDescription>
