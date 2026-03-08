@@ -133,7 +133,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                   <span className="text-muted-foreground italic">Não informado</span>
                 )}
               </TableCell>
-              <TableCell className={compact ? "px-3 py-2" : "px-4 py-3"}>
+              <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
                 <div className="flex items-center gap-2">
                   <MessageCircle className={cn(
                     "text-green-600 flex-shrink-0",
