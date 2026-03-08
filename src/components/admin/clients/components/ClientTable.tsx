@@ -117,13 +117,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                   </span>
                 </div>
               </TableCell>
-              <TableCell className={compact ? "px-3 py-2" : "px-4 py-3"}>
+              <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
                 {client.email ? (
-                  <div className="flex items-center gap-2 text-muted-foreground">
+                  <div className="flex items-center gap-2">
                     <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
                     <a 
                       href={`mailto:${client.email}`}
-                      className="text-foreground hover:text-primary hover:underline transition-colors break-all"
+                      className="text-foreground hover:text-primary hover:underline transition-colors truncate max-w-[180px]"
                       title={client.email}
                     >
                       {client.email}
