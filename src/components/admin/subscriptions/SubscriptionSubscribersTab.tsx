@@ -203,7 +203,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
               <Label className="text-xs sm:text-sm">Plano</Label>
               <Select value={form.plan_id} onValueChange={v => setForm(f => ({ ...f, plan_id: v }))}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Selecione o plano" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[70]">
                   {plans.filter(p => p.is_active).map(p => (
                     <SelectItem key={p.id} value={p.id}>{p.name} — R$ {p.price.toFixed(2)}/mês</SelectItem>
                   ))}
