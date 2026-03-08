@@ -423,14 +423,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
-                className="w-full sm:flex-1 h-10 border-gray-600 text-gray-300 hover:bg-gray-700 text-sm touch-manipulation"
+                className="w-full sm:flex-1 h-10 border-urbana-gold/20 text-urbana-light/70 hover:bg-urbana-gold/10 hover:text-urbana-light text-sm touch-manipulation bg-transparent"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSaveClick}
                 disabled={saving || !selectedDate || !selectedTime || !selectedService}
-                className="w-full sm:flex-1 h-10 bg-urbana-gold text-black hover:bg-urbana-gold/90 text-sm touch-manipulation"
+                className="w-full sm:flex-1 h-10 bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 text-sm touch-manipulation font-semibold"
               >
                 Salvar Alterações
               </Button>
