@@ -199,7 +199,22 @@ export const useClientSubscriptions = () => {
         .eq('id', data.subscription_id);
 
       // 3. Get subscription details for ERP integration
-      const sub = subscriptions.find(s => s.id === data.subscription_id);
+      const { data: subData } = await supabase
+        .from('client_subscriptions')
+        .select('client_id, plan_id')
+        .eq('id', data.subscription_id)
+        .single();
+
+      let clientName = 'Cliente';
+      let planName = 'Plano';
+      if (subData) {
+        const [cRes, pRes] = await Promise.all([
+          supabase.from('painel_clientes').select('nome').eq('id', subData.client_id).single(),
+          supabase.from('subscription_plans').select('name').eq('id', subData.plan_id).single(),
+        ]);
+        clientName = cRes.data?.nome || clientName;
+        planName = pRes.data?.name || planName;
+      }
 
       // Map payment method to ERP format
       const payMethodMap: Record<string, string> = {
