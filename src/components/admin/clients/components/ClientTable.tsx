@@ -42,48 +42,48 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
   };
 
   return (
-    <div className="rounded-lg border border-border overflow-hidden">
-      <Table className={cn(compact && 'text-sm')}>
+    <div className="rounded-lg border border-border overflow-x-auto">
+      <Table className={cn("table-fixed w-full", compact && 'text-sm')}>
         <TableHeader>
           <TableRow className="bg-muted/50">
             <TableHead className={cn(
-              "font-semibold text-foreground w-[180px] lg:w-[220px]",
+              "font-semibold text-foreground w-[18%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nome
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground min-w-[200px]",
+              "font-semibold text-foreground w-[22%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Email
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground w-[150px]",
+              "font-semibold text-foreground w-[14%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               WhatsApp
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden lg:table-cell w-[120px]",
+              "font-semibold text-foreground hidden lg:table-cell w-[11%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nascimento
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden xl:table-cell w-[120px]",
+              "font-semibold text-foreground hidden xl:table-cell w-[11%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Cadastro
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden lg:table-cell w-[150px]",
+              "font-semibold text-foreground hidden lg:table-cell w-[14%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Último Agendamento
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground text-right w-[100px]",
+              "font-semibold text-foreground text-right w-[10%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Ações
@@ -100,7 +100,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 "font-medium align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 min-w-0">
                   <div className={cn(
                     "rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0",
                     compact ? "w-7 h-7" : "w-8 h-8"
@@ -112,29 +112,29 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                       {client.nome.charAt(0).toUpperCase()}
                     </span>
                   </div>
-                  <span className="truncate max-w-[140px] lg:max-w-[180px]" title={client.nome}>
+                  <span className="truncate" title={client.nome}>
                     {client.nome}
                   </span>
                 </div>
               </TableCell>
-              <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
+              <TableCell className={cn("align-middle", compact ? "px-3 py-2" : "px-4 py-3")}>
                 {client.email ? (
-                  <span className="inline-flex items-center gap-2 flex-nowrap">
+                  <div className="flex items-center gap-2 min-w-0">
                     <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
                     <a 
                       href={`mailto:${client.email}`}
-                      className="text-foreground hover:text-primary hover:underline transition-colors truncate max-w-[180px] inline-block align-middle"
+                      className="text-foreground hover:text-primary hover:underline transition-colors truncate"
                       title={client.email}
                     >
                       {client.email}
                     </a>
-                  </span>
+                  </div>
                 ) : (
                   <span className="text-muted-foreground italic">Não informado</span>
                 )}
               </TableCell>
-              <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
-                <span className="inline-flex items-center gap-2 flex-nowrap">
+              <TableCell className={cn("align-middle", compact ? "px-3 py-2" : "px-4 py-3")}>
+                <div className="flex items-center gap-2 min-w-0">
                   <MessageCircle className={cn(
                     "text-green-600 flex-shrink-0",
                     compact ? "h-3.5 w-3.5" : "h-4 w-4"
@@ -144,16 +144,16 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "font-mono hover:text-green-600 hover:underline transition-colors inline-block align-middle",
+                      "font-mono hover:text-green-600 hover:underline transition-colors truncate",
                       compact ? "text-xs" : "text-sm"
                     )}
                   >
                     {formatPhone(client.whatsapp)}
                   </a>
-                </span>
+                </div>
               </TableCell>
               <TableCell className={cn(
-                "hidden lg:table-cell",
+                "hidden lg:table-cell align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
                 {client.data_nascimento ? (
@@ -166,7 +166,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 )}
               </TableCell>
               <TableCell className={cn(
-                "hidden xl:table-cell",
+                "hidden xl:table-cell align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
                 <div className="flex items-center gap-2 text-muted-foreground">
@@ -175,7 +175,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 </div>
               </TableCell>
               <TableCell className={cn(
-                "hidden lg:table-cell",
+                "hidden lg:table-cell align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
                 {client.ultimo_agendamento ? (
@@ -190,7 +190,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 )}
               </TableCell>
               <TableCell className={cn(
-                "text-right",
+                "text-right align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
                 <div className="flex justify-end gap-1">
