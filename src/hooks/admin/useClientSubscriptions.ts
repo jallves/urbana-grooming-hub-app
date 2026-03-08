@@ -226,14 +226,14 @@ export const useClientSubscriptions = () => {
 
       // 4. Create contas_receber entry for ERP
       await supabase.from('contas_receber').insert({
-        descricao: `Assinatura ${sub?.plan_name || 'Plano'} — ${sub?.client_name || 'Cliente'}`,
+        descricao: `Assinatura ${planName} — ${clientName}`,
         valor: data.amount,
         data_vencimento: data.period_end,
         data_recebimento: today,
         status: 'pago',
         categoria: 'Assinatura',
         forma_pagamento: payMethodMap[data.payment_method] || data.payment_method,
-        cliente_id: sub?.client_id || null,
+        cliente_id: subData?.client_id || null,
         observacoes: data.notes || `Pagamento assinatura período ${data.period_start} a ${data.period_end}`,
       });
     },
