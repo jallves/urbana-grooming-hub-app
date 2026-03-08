@@ -97,7 +97,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
               className="hover:bg-muted/50 transition-colors"
             >
               <TableCell className={cn(
-                "font-medium",
+                "font-medium align-middle",
                 compact ? "px-3 py-2" : "px-4 py-3"
               )}>
                 <div className="flex items-center gap-2">
