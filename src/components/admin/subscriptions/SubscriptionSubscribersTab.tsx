@@ -192,7 +192,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
               <Label className="text-xs sm:text-sm">Cliente</Label>
               <Select value={form.client_id} onValueChange={v => setForm(f => ({ ...f, client_id: v }))}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Selecione o cliente" /></SelectTrigger>
-                <SelectContent className="max-h-60">
+                <SelectContent className="max-h-60 z-[70]">
                   {clientsQuery.data?.map((c: any) => (
                     <SelectItem key={c.id} value={c.id}>{c.nome} {c.whatsapp ? `(${c.whatsapp})` : ''}</SelectItem>
                   ))}
