@@ -1,9 +1,11 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Calendar, Home, Bell, Clock } from 'lucide-react';
+import { LogOut, User, Calendar, Home, Clock } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
+import ClientNotificationBell from '@/components/painel-cliente/ClientNotificationBell';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
@@ -13,6 +15,7 @@ const PainelClienteLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  useClientAppointmentNotifier();
 
   // PERSISTÊNCIA DE ROTA: Salvar rota atual toda vez que mudar
   React.useEffect(() => {
@@ -95,14 +98,7 @@ const PainelClienteLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-1.5 sm:gap-2 md:gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-1.5 sm:p-2 rounded-lg sm:rounded-xl transition-all duration-300"
-              >
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute -top-0.5 -right-0.5 w-1.5 h-1.5 sm:w-2 sm:h-2 bg-urbana-gold rounded-full animate-pulse" />
-              </Button>
+              <ClientNotificationBell />
               
               <div className="hidden md:flex items-center gap-2 px-3 py-1.5 bg-urbana-black/30 rounded-xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
