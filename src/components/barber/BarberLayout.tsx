@@ -1,7 +1,8 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, Clock, DollarSign, Home, Bell } from 'lucide-react';
+import { LogOut, Calendar, Clock, DollarSign, Home } from 'lucide-react';
+import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
@@ -85,14 +86,7 @@ const BarberLayout: React.FC = () => {
             </div>
             
             <div className="flex items-center gap-2 sm:gap-3">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="relative text-urbana-light hover:text-urbana-gold hover:bg-urbana-gold/10 p-2 sm:p-3 rounded-xl sm:rounded-2xl transition-all duration-300"
-              >
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <span className="absolute -top-0.5 -right-0.5 sm:-top-1 sm:-right-1 w-2 h-2 sm:w-2.5 sm:h-2.5 bg-urbana-gold rounded-full animate-pulse" />
-              </Button>
+              <BarberNotificationBell />
               
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
