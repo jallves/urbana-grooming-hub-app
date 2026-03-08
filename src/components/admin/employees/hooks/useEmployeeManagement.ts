@@ -248,7 +248,10 @@ export const useEmployeeManagement = () => {
     const employee = employees.find(e => e.id === employeeId);
     if (!employee) return;
 
-    // Check for linked data
+    // Check for linked data across ALL FK tables
+    let totalLinked = 0;
+    const linkedDetails: string[] = [];
+
     const { data: barber } = await supabase
       .from('painel_barbeiros')
       .select('id')
@@ -256,23 +259,36 @@ export const useEmployeeManagement = () => {
       .maybeSingle();
 
     if (barber) {
-      const { count } = await supabase
-        .from('painel_agendamentos')
-        .select('id', { count: 'exact', head: true })
-        .eq('barbeiro_id', barber.id);
+      const checks = await Promise.all([
+        supabase.from('painel_agendamentos').select('id', { count: 'exact', head: true }).eq('barbeiro_id', barber.id),
+        supabase.from('vendas').select('id', { count: 'exact', head: true }).eq('barbeiro_id', barber.id),
+        supabase.from('barber_commissions').select('id', { count: 'exact', head: true }).eq('barber_id', barber.id),
+        supabase.from('comissoes').select('id', { count: 'exact', head: true }).eq('barbeiro_id', barber.id),
+        supabase.from('financial_records').select('id', { count: 'exact', head: true }).eq('barber_id', barber.id),
+        supabase.from('vendas_itens').select('id', { count: 'exact', head: true }).eq('barbeiro_id', barber.id),
+      ]);
 
-      if (count && count > 0) {
-        setConfirmDialog({
-          open: true,
-          type: 'blocked',
-          title: 'Exclusão Bloqueada',
-          description: `Este funcionário possui ${count} agendamento(s) vinculado(s) e não pode ser excluído permanentemente.`,
-          entityName: employee.name,
-          linkedDataMessage: 'Para remover este funcionário das listagens ativas, utilize a opção "Inativar" no menu de ações.',
-          onConfirm: closeDialog,
-        });
-        return;
-      }
+      const labels = ['agendamento(s)', 'venda(s)', 'comissão(ões)', 'comissão(ões) legado', 'registro(s) financeiro(s)', 'item(ns) de venda'];
+      checks.forEach((r, i) => {
+        const c = r.count || 0;
+        if (c > 0) {
+          totalLinked += c;
+          linkedDetails.push(`${c} ${labels[i]}`);
+        }
+      });
+    }
+
+    if (totalLinked > 0) {
+      setConfirmDialog({
+        open: true,
+        type: 'blocked',
+        title: 'Exclusão Bloqueada',
+        description: `Este funcionário possui dados vinculados: ${linkedDetails.join(', ')}. Não é possível excluí-lo permanentemente.`,
+        entityName: employee.name,
+        linkedDataMessage: 'Para remover este funcionário das listagens ativas, utilize a opção "Inativar" no menu de ações.',
+        onConfirm: closeDialog,
+      });
+      return;
     }
 
     // No linked data — allow delete
