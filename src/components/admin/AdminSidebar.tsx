@@ -13,6 +13,7 @@ import {
   Star,
   Globe,
   AlertCircle,
+  Crown,
 } from 'lucide-react';
 import beltecLogo from '@/assets/beltec-logo.png';
 import { useAuth } from '@/contexts/AuthContext';
