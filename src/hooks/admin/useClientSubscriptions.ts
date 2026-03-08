@@ -180,20 +180,62 @@ export const useClientSubscriptions = () => {
       period_end: string;
       notes?: string;
     }) => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Insert subscription payment
       const { error } = await supabase.from('subscription_payments').insert({
         ...data,
         status: 'paid',
-        payment_date: new Date().toISOString().split('T')[0],
+        payment_date: today,
       } as any);
       if (error) throw error;
 
-      // Update next billing date
+      // 2. Update next billing date
       const endDate = new Date(data.period_end);
       endDate.setMonth(endDate.getMonth() + 1);
       await supabase
         .from('client_subscriptions')
         .update({ next_billing_date: endDate.toISOString().split('T')[0] } as any)
         .eq('id', data.subscription_id);
+
+      // 3. Get subscription details for ERP integration
+      const { data: subData } = await supabase
+        .from('client_subscriptions')
+        .select('client_id, plan_id')
+        .eq('id', data.subscription_id)
+        .single();
+
+      let clientName = 'Cliente';
+      let planName = 'Plano';
+      if (subData) {
+        const [cRes, pRes] = await Promise.all([
+          supabase.from('painel_clientes').select('nome').eq('id', subData.client_id).single(),
+          supabase.from('subscription_plans').select('name').eq('id', subData.plan_id).single(),
+        ]);
+        clientName = cRes.data?.nome || clientName;
+        planName = pRes.data?.name || planName;
+      }
+
+      // Map payment method to ERP format
+      const payMethodMap: Record<string, string> = {
+        credit_card: 'credito',
+        pix: 'pix',
+        cash: 'dinheiro',
+        debit: 'debito',
+      };
+
+      // 4. Create contas_receber entry for ERP
+      await supabase.from('contas_receber').insert({
+        descricao: `Assinatura ${planName} — ${clientName}`,
+        valor: data.amount,
+        data_vencimento: data.period_end,
+        data_recebimento: today,
+        status: 'pago',
+        categoria: 'Assinatura',
+        forma_pagamento: payMethodMap[data.payment_method] || data.payment_method,
+        cliente_id: subData?.client_id || null,
+        observacoes: data.notes || `Pagamento assinatura período ${data.period_start} a ${data.period_end}`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-payments'] });
