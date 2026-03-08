@@ -1,0 +1,1 @@
+DELETE FROM cash_register_sessions;
