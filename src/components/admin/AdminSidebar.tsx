@@ -13,6 +13,7 @@ import {
   Star,
   Globe,
   AlertCircle,
+  Crown,
 } from 'lucide-react';
 import beltecLogo from '@/assets/beltec-logo.png';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +39,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
     { title: 'Produtos/Serviços', icon: ShoppingCart, href: '/admin/produtos', color: 'from-teal-500 to-cyan-500' },
     { title: 'ERP Financeiro', icon: Star, href: '/admin/erp-financeiro', color: 'from-urbana-gold to-yellow-600', requiredModule: 'financeiro' },
     { title: 'Gestão do Site', icon: Globe, href: '/admin/site', color: 'from-blue-500 to-indigo-500' },
+    { title: 'Assinaturas', icon: Crown, href: '/admin/assinaturas', color: 'from-amber-500 to-yellow-600' },
     { title: 'Aniversários', icon: Cake, href: '/admin/aniversarios', color: 'from-purple-500 to-indigo-500' },
     { title: 'Configurações', icon: Settings, href: '/admin/configuracoes', color: 'from-gray-500 to-gray-600', requiredModule: 'configuracoes' },
   ];

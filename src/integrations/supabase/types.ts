@@ -664,6 +664,69 @@ export type Database = {
           },
         ]
       }
+      client_subscriptions: {
+        Row: {
+          cancellation_reason: string | null
+          cancelled_at: string | null
+          client_id: string
+          created_at: string
+          end_date: string | null
+          id: string
+          next_billing_date: string | null
+          notes: string | null
+          payment_method: string | null
+          plan_id: string
+          start_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          client_id: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          next_billing_date?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          cancellation_reason?: string | null
+          cancelled_at?: string | null
+          client_id?: string
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          next_billing_date?: string | null
+          notes?: string | null
+          payment_method?: string | null
+          plan_id?: string
+          start_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_subscriptions_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_subscriptions_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           birth_date: string | null
@@ -1722,6 +1785,134 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_payments: {
+        Row: {
+          amount: number
+          created_at: string
+          id: string
+          notes: string | null
+          payment_date: string
+          payment_method: string | null
+          period_end: string
+          period_start: string
+          status: string
+          subscription_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          period_end: string
+          period_start: string
+          status?: string
+          subscription_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          id?: string
+          notes?: string | null
+          payment_date?: string
+          payment_method?: string | null
+          period_end?: string
+          period_start?: string
+          status?: string
+          subscription_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_payments_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plan_services: {
+        Row: {
+          created_at: string
+          id: string
+          plan_id: string
+          service_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          plan_id: string
+          service_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          plan_id?: string
+          service_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_plan_services_plan_id_fkey"
+            columns: ["plan_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_plans"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_plan_services_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_plans: {
+        Row: {
+          billing_period: string
+          color: string | null
+          created_at: string
+          description: string | null
+          display_order: number
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          billing_period?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          price?: number
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          billing_period?: string
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       time_off: {
         Row: {

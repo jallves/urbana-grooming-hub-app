@@ -87,6 +87,7 @@ import TotemError from './pages/Totem/TotemError';
 import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import TotemUpsell from './pages/Totem/TotemUpsell';
 import AdminProductsManagement from './pages/AdminProductsManagement';
+import AdminSubscriptions from './pages/AdminSubscriptions';
 import Install from './pages/Install';
 import InstallContext from './pages/InstallContext';
 import PWAInstallPromptContext from './components/PWAInstallPromptContext';
@@ -261,6 +262,11 @@ function App() {
                   <Route path="/admin/checkouts-pendentes" element={
                     <AdminRoute>
                       <PendingCheckouts />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/assinaturas" element={
+                    <AdminRoute>
+                      <AdminSubscriptions />
                     </AdminRoute>
                   } />
                   <Route path="/admin/produtos-totem" element={
