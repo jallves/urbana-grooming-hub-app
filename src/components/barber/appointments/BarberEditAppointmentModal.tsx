@@ -299,12 +299,12 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             </div>
 
             {/* Info do Agendamento Original */}
-            <div className="p-3 sm:p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+            <div className="p-3 sm:p-4 bg-sky-500/10 backdrop-blur-sm rounded-lg border border-sky-500/20">
               <div className="flex items-center gap-2 mb-1">
-                <Clock className="h-4 w-4 text-blue-400" />
-                <p className="text-xs sm:text-sm text-blue-400 font-medium">Horário Original</p>
+                <Clock className="h-4 w-4 text-sky-400" />
+                <p className="text-xs sm:text-sm text-sky-400 font-medium">Horário Original</p>
               </div>
-              <p className="text-white text-sm sm:text-base">
+              <p className="text-urbana-light text-sm sm:text-base">
                 {originalDate && format(originalDate, "dd/MM/yyyy", { locale: ptBR })} às {normalizedOriginalTime}
               </p>
             </div>
