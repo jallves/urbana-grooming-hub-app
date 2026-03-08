@@ -167,7 +167,7 @@ const SubscriptionPaymentsTab: React.FC = () => {
               <Label className="text-xs sm:text-sm">Assinante</Label>
               <Select value={form.subscription_id} onValueChange={handleSubChange}>
                 <SelectTrigger className="text-sm"><SelectValue placeholder="Selecione" /></SelectTrigger>
-                <SelectContent>
+                <SelectContent className="z-[70]">
                   {activeSubs.map(s => (
                     <SelectItem key={s.id} value={s.id}>{s.client_name} — {s.plan_name}</SelectItem>
                   ))}
@@ -183,7 +183,7 @@ const SubscriptionPaymentsTab: React.FC = () => {
                 <Label className="text-xs sm:text-sm">Forma</Label>
                 <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v }))}>
                   <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[70]">
                     <SelectItem value="credit_card">Cartão Crédito</SelectItem>
                     <SelectItem value="pix">PIX</SelectItem>
                     <SelectItem value="cash">Dinheiro</SelectItem>
