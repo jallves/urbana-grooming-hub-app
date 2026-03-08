@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { LogOut, Calendar, Clock, DollarSign, Home, Bell } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
+import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
