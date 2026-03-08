@@ -362,14 +362,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             {/* Horários Disponíveis - Mobile First */}
             {selectedDate && selectedService && (
               <div className="space-y-2 overflow-x-hidden">
-                <Label className="text-gray-300 text-sm">Horário Disponível</Label>
+                <Label className="text-urbana-light/70 text-sm">Horário Disponível</Label>
                 
-                {/* Legenda quando é o mesmo dia */}
                 {isOriginalDate && (
-                  <div className="flex items-center gap-2 p-2 bg-gray-700/30 rounded-lg border border-gray-600">
-                    <div className="w-4 h-4 rounded border-2 border-blue-400 bg-blue-400/20 flex-shrink-0" />
-                    <span className="text-xs text-gray-300">
-                      Horário original do agendamento: <strong className="text-blue-400">{normalizedOriginalTime}</strong>
+                  <div className="flex items-center gap-2 p-2 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+                    <div className="w-4 h-4 rounded border-2 border-sky-400 bg-sky-400/20 flex-shrink-0" />
+                    <span className="text-xs text-urbana-light/70">
+                      Horário original: <strong className="text-sky-400">{normalizedOriginalTime}</strong>
                     </span>
                   </div>
                 )}
@@ -379,7 +378,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                     <Loader2 className="h-6 w-6 animate-spin text-urbana-gold" />
                   </div>
                 ) : availableSlots.length === 0 ? (
-                  <div className="p-3 sm:p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                  <div className="p-3 sm:p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
                     <p className="text-red-400 text-xs sm:text-sm">
                       Nenhum horário disponível para esta data
                     </p>
@@ -398,17 +397,17 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                           className={`
                             h-9 px-2 text-xs sm:text-sm rounded-md font-medium transition-colors touch-manipulation relative
                             ${isSelected 
-                              ? "bg-urbana-gold text-black" 
+                              ? "bg-urbana-gold text-urbana-black" 
                               : isOriginalSlot
-                                ? "bg-blue-400/20 text-blue-300 border-2 border-blue-400"
-                                : "bg-gray-700 text-gray-200 border border-gray-600"
+                                ? "bg-sky-400/20 text-sky-300 border-2 border-sky-400"
+                                : "bg-urbana-black/40 text-urbana-light/80 border border-urbana-gold/15 hover:border-urbana-gold/30"
                             }
                           `}
                           onClick={() => setSelectedTime(slot.time)}
                         >
                           {slot.time}
                           {isOriginalSlot && !isSelected && (
-                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-400 rounded-full" />
+                            <span className="absolute -top-1 -right-1 w-2 h-2 bg-sky-400 rounded-full" />
                           )}
                         </button>
                       );
