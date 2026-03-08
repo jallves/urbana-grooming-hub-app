@@ -180,20 +180,47 @@ export const useClientSubscriptions = () => {
       period_end: string;
       notes?: string;
     }) => {
+      const today = new Date().toISOString().split('T')[0];
+
+      // 1. Insert subscription payment
       const { error } = await supabase.from('subscription_payments').insert({
         ...data,
         status: 'paid',
-        payment_date: new Date().toISOString().split('T')[0],
+        payment_date: today,
       } as any);
       if (error) throw error;
 
-      // Update next billing date
+      // 2. Update next billing date
       const endDate = new Date(data.period_end);
       endDate.setMonth(endDate.getMonth() + 1);
       await supabase
         .from('client_subscriptions')
         .update({ next_billing_date: endDate.toISOString().split('T')[0] } as any)
         .eq('id', data.subscription_id);
+
+      // 3. Get subscription details for ERP integration
+      const sub = subscriptions.find(s => s.id === data.subscription_id);
+
+      // Map payment method to ERP format
+      const payMethodMap: Record<string, string> = {
+        credit_card: 'credito',
+        pix: 'pix',
+        cash: 'dinheiro',
+        debit: 'debito',
+      };
+
+      // 4. Create contas_receber entry for ERP
+      await supabase.from('contas_receber').insert({
+        descricao: `Assinatura ${sub?.plan_name || 'Plano'} — ${sub?.client_name || 'Cliente'}`,
+        valor: data.amount,
+        data_vencimento: data.period_end,
+        data_recebimento: today,
+        status: 'pago',
+        categoria: 'Assinatura',
+        forma_pagamento: payMethodMap[data.payment_method] || data.payment_method,
+        cliente_id: sub?.client_id || null,
+        observacoes: data.notes || `Pagamento assinatura período ${data.period_start} a ${data.period_end}`,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['subscription-payments'] });
