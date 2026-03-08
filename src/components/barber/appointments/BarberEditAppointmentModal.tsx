@@ -311,17 +311,17 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
             {/* Seleção de Serviço - Responsivo */}
             <div className="space-y-2">
-              <Label className="text-gray-300 text-sm">Serviço</Label>
+              <Label className="text-urbana-light/70 text-sm">Serviço</Label>
               <Select
                 value={selectedService?.id}
                 onValueChange={handleServiceChange}
               >
-                <SelectTrigger className="bg-gray-700/50 border-gray-600 text-white h-10 text-sm sm:text-base w-full">
+                <SelectTrigger className="bg-urbana-black/40 backdrop-blur-sm border-urbana-gold/20 text-urbana-light h-10 text-sm sm:text-base w-full">
                   <SelectValue placeholder="Selecione um serviço" />
                 </SelectTrigger>
-                <SelectContent className="bg-gray-800 border-gray-700 max-w-[90vw]">
+                <SelectContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 max-w-[90vw]">
                   {services.map(service => (
-                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base">
+                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base text-urbana-light">
                       {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
                     </SelectItem>
                   ))}
