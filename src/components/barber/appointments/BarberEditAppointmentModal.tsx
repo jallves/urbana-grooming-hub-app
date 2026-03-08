@@ -280,20 +280,20 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-gray-800 border-gray-700 text-white w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="bg-urbana-black/95 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
-          <DialogTitle className="text-white text-lg sm:text-xl">Editar Agendamento</DialogTitle>
+          <DialogTitle className="text-urbana-light text-lg sm:text-xl">Editar Agendamento</DialogTitle>
         </DialogHeader>
 
         {appointment && (
           <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
-            {/* Info do Cliente - Responsivo */}
-            <div className="p-3 sm:p-4 bg-gray-700/50 rounded-lg border border-gray-600">
-              <p className="text-xs sm:text-sm text-gray-400 mb-1">Cliente</p>
-              <p className="font-medium text-white text-base sm:text-lg truncate">
+            {/* Info do Cliente */}
+            <div className="p-3 sm:p-4 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+              <p className="text-xs sm:text-sm text-urbana-light/50 mb-1">Cliente</p>
+              <p className="font-medium text-urbana-light text-base sm:text-lg truncate">
                 {appointment.painel_clientes.nome}
               </p>
-              <p className="text-xs sm:text-sm text-gray-400 mt-1 truncate">
+              <p className="text-xs sm:text-sm text-urbana-light/50 mt-1 truncate">
                 {appointment.painel_clientes.whatsapp}
               </p>
             </div>
