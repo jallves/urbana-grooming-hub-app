@@ -269,7 +269,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-gray-800 border-gray-700">
+        <DialogContent className="bg-urbana-black/95 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5">
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
           </div>
