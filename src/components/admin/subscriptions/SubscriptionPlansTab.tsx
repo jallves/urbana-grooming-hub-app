@@ -181,7 +181,7 @@ const SubscriptionPlansTab: React.FC = () => {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto w-[95vw] sm:w-auto bg-background border shadow-2xl z-[60]">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">{editingId ? 'Editar Plano' : 'Novo Plano de Assinatura'}</DialogTitle>
           </DialogHeader>
