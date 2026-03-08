@@ -183,7 +183,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
 
       {/* New Subscription Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-md w-[95vw] sm:w-auto">
+        <DialogContent className="max-w-md w-[95vw] sm:w-auto bg-background border shadow-2xl z-[60]">
           <DialogHeader>
             <DialogTitle className="text-base sm:text-lg">Nova Assinatura</DialogTitle>
           </DialogHeader>
@@ -242,7 +242,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
 
       {/* Cancel Dialog */}
       <AlertDialog open={!!cancelDialog} onOpenChange={() => setCancelDialog(null)}>
-        <AlertDialogContent className="w-[95vw] sm:w-auto">
+        <AlertDialogContent className="w-[95vw] sm:w-auto bg-background border shadow-2xl z-[60]">
           <AlertDialogHeader>
             <AlertDialogTitle>Cancelar Assinatura?</AlertDialogTitle>
             <AlertDialogDescription>
