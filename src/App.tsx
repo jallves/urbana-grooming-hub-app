@@ -264,6 +264,10 @@ function App() {
                       <PendingCheckouts />
                     </AdminRoute>
                   } />
+                  <Route path="/admin/assinaturas" element={
+                    <AdminRoute>
+                      <AdminSubscriptions />
+                    </AdminRoute>
                   <Route path="/admin/produtos-totem" element={
                     <AdminRoute>
                       <AdminProductsManagement />
