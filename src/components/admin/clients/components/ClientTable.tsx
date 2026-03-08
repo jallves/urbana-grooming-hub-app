@@ -134,7 +134,7 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                 )}
               </TableCell>
               <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
-                <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 flex-nowrap">
                   <MessageCircle className={cn(
                     "text-green-600 flex-shrink-0",
                     compact ? "h-3.5 w-3.5" : "h-4 w-4"
@@ -144,13 +144,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "font-mono hover:text-green-600 hover:underline transition-colors",
+                      "font-mono hover:text-green-600 hover:underline transition-colors inline-block align-middle",
                       compact ? "text-xs" : "text-sm"
                     )}
                   >
                     {formatPhone(client.whatsapp)}
                   </a>
-                </div>
+                </span>
               </TableCell>
               <TableCell className={cn(
                 "hidden lg:table-cell",
