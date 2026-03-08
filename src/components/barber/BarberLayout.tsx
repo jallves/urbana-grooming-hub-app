@@ -1,7 +1,8 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, Clock, DollarSign, Home, Bell } from 'lucide-react';
+import { LogOut, Calendar, Clock, DollarSign, Home } from 'lucide-react';
+import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
