@@ -119,22 +119,22 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
               </TableCell>
               <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
                 {client.email ? (
-                  <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 flex-nowrap">
                     <Mail className="h-4 w-4 flex-shrink-0 text-primary/60" />
                     <a 
                       href={`mailto:${client.email}`}
-                      className="text-foreground hover:text-primary hover:underline transition-colors truncate max-w-[180px]"
+                      className="text-foreground hover:text-primary hover:underline transition-colors truncate max-w-[180px] inline-block align-middle"
                       title={client.email}
                     >
                       {client.email}
                     </a>
-                  </div>
+                  </span>
                 ) : (
                   <span className="text-muted-foreground italic">Não informado</span>
                 )}
               </TableCell>
               <TableCell className={cn(compact ? "px-3 py-2" : "px-4 py-3", "align-middle")}>
-                <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-2 flex-nowrap">
                   <MessageCircle className={cn(
                     "text-green-600 flex-shrink-0",
                     compact ? "h-3.5 w-3.5" : "h-4 w-4"
@@ -144,13 +144,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                     target="_blank"
                     rel="noopener noreferrer"
                     className={cn(
-                      "font-mono hover:text-green-600 hover:underline transition-colors",
+                      "font-mono hover:text-green-600 hover:underline transition-colors inline-block align-middle",
                       compact ? "text-xs" : "text-sm"
                     )}
                   >
                     {formatPhone(client.whatsapp)}
                   </a>
-                </div>
+                </span>
               </TableCell>
               <TableCell className={cn(
                 "hidden lg:table-cell",
