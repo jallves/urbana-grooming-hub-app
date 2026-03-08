@@ -14,6 +14,7 @@ const BarberLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  useBarberAppointmentNotifier();
 
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
