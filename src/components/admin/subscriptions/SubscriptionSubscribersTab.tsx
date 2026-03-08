@@ -219,7 +219,7 @@ const SubscriptionSubscribersTab: React.FC = () => {
                 <Label className="text-xs sm:text-sm">Pagamento</Label>
                 <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v }))}>
                   <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="z-[70]">
                     <SelectItem value="credit_card">Cartão Crédito</SelectItem>
                     <SelectItem value="pix">PIX</SelectItem>
                     <SelectItem value="cash">Dinheiro</SelectItem>
