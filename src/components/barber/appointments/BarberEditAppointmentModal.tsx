@@ -441,32 +441,32 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       {/* Dialog de confirmação para salvar - Responsivo */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="bg-gray-800 border-gray-700 w-[90vw] max-w-md overflow-x-hidden">
+        <AlertDialogContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-white text-base sm:text-lg">
+            <AlertDialogTitle className="text-urbana-light text-base sm:text-lg">
               Confirmar alterações?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-gray-400 text-sm">
+            <AlertDialogDescription className="text-urbana-light/60 text-sm">
               Você está prestes a alterar este agendamento para:
-              <div className="mt-3 p-3 bg-gray-700/50 rounded-lg border border-gray-600">
-                <p className="text-white font-medium text-sm">
+              <div className="mt-3 p-3 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+                <p className="text-urbana-light font-medium text-sm">
                   📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
-                <p className="text-white font-medium text-sm">
+                <p className="text-urbana-light font-medium text-sm">
                   🕐 {selectedTime}
                 </p>
-                <p className="text-white font-medium text-sm truncate">
+                <p className="text-urbana-light font-medium text-sm truncate">
                   ✂️ {selectedService?.nome}
                 </p>
               </div>
-              <strong className="text-blue-400 block mt-3 text-sm">
+              <strong className="text-urbana-gold block mt-3 text-sm">
                 Tem certeza que deseja salvar estas alterações?
               </strong>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel 
-              className="bg-gray-700 text-white hover:bg-gray-600 w-full sm:w-auto h-10 text-sm touch-manipulation"
+              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10 w-full sm:w-auto h-10 text-sm touch-manipulation"
               disabled={saving}
             >
               Não, voltar
@@ -474,7 +474,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             <AlertDialogAction
               onClick={handleSave}
               disabled={saving}
-              className="bg-urbana-gold text-black hover:bg-urbana-gold/90 w-full sm:w-auto h-10 text-sm touch-manipulation"
+              className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 w-full sm:w-auto h-10 text-sm touch-manipulation font-semibold"
             >
               {saving ? (
                 <>
