@@ -73,12 +73,52 @@ export const useClientAppointmentNotifier = () => {
           const appt = payload.new as any;
           const old = payload.old as any;
 
-          // Only notify on status changes
-          if (old.status === appt.status) return;
-          if (processedIds.current.has(`update-${appt.id}-${appt.status}`)) return;
-          processedIds.current.add(`update-${appt.id}-${appt.status}`);
+          const statusChanged = old.status !== appt.status;
+          const dateChanged = old.data !== appt.data;
+          const timeChanged = old.hora !== appt.hora;
+          const serviceChanged = old.servico_id !== appt.servico_id;
+          const hasChanges = statusChanged || dateChanged || timeChanged || serviceChanged;
+
+          if (!hasChanges) return;
+
+          const updateKey = `update-${appt.id}-${appt.updated_at}`;
+          if (processedIds.current.has(updateKey)) return;
+          processedIds.current.add(updateKey);
 
           const details = await fetchAppointmentDetails(appt);
+
+          // If it's a reschedule/edit (not just status change)
+          if (dateChanged || timeChanged || serviceChanged) {
+            const changes: string[] = [];
+            if (dateChanged) {
+              changes.push(`📅 Data: ${formatDate(old.data)} → ${details.formattedDate}`);
+            }
+            if (timeChanged) {
+              changes.push(`🕐 Horário: ${(old.hora as string)?.substring(0, 5)} → ${details.formattedTime}`);
+            }
+            if (serviceChanged) {
+              changes.push(`✂️ Serviço alterado para: ${details.serviceName}`);
+            }
+
+            const changesSummary = changes.join('\n');
+
+            addClientNotification({
+              title: '📝 Agendamento Alterado',
+              description: `${details.serviceName} com ${details.barberName}\n${changesSummary}`,
+              type: 'update',
+              data: { appointmentId: appt.id },
+            });
+
+            toast('📝 Agendamento Alterado', {
+              description: changes.join(' • '),
+              duration: 8000,
+              position: 'top-center',
+              style: toastStyle,
+            });
+            return;
+          }
+
+          // Status-only change
           const statusLabels: Record<string, { label: string; icon: string; type: 'update' | 'cancel' }> = {
             confirmado: { label: 'Confirmado', icon: '✅', type: 'update' },
             cancelado: { label: 'Cancelado', icon: '❌', type: 'cancel' },
