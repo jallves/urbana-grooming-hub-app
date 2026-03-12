@@ -63,13 +63,15 @@ export const useClientAppointments = () => {
   const [appointments, setAppointments] = useState<PainelAgendamento[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { completing, completeAppointment } = useAppointmentCompletion();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isFetchingRef = useRef(false);
 
-  // Função para buscar agendamentos COM appointment_totem_sessions (crítico para status automático)
   const fetchAppointments = useCallback(async () => {
+    // Prevent concurrent fetches
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     setIsLoading(true);
     try {
-      console.log('🔄 [ADMIN] Buscando agendamentos com totem_sessions...');
-      
       const { data, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -91,31 +93,14 @@ export const useClientAppointments = () => {
 
       if (error) throw error;
 
-      console.log(`✅ [ADMIN] ${data?.length || 0} agendamentos carregados`);
-      
-      // Normalizar relacionamentos que podem vir como objeto (1:1) ou array (1:N)
-      const normalized = (data || []).map((a: any) => {
-        const vendas = Array.isArray(a.vendas) ? a.vendas : a.vendas ? [a.vendas] : [];
-        const appointment_totem_sessions = Array.isArray(a.appointment_totem_sessions)
+      // Normalizar relacionamentos
+      const normalized = (data || []).map((a: any) => ({
+        ...a,
+        vendas: Array.isArray(a.vendas) ? a.vendas : a.vendas ? [a.vendas] : [],
+        appointment_totem_sessions: Array.isArray(a.appointment_totem_sessions)
           ? a.appointment_totem_sessions
-          : a.appointment_totem_sessions
-            ? [a.appointment_totem_sessions]
-            : [];
-
-        return {
-          ...a,
-          vendas,
-          appointment_totem_sessions,
-        };
-      });
-      
-      // Log para debug de status
-      normalized.slice(0, 3).forEach((a: any) => {
-        const sessions = a.appointment_totem_sessions;
-        console.log(
-          `📋 [DEBUG] ${a.id}: status=${a.status}, sessions=${sessions?.length || 0}, venda_paga=${a.vendas?.some((v: any) => v.status === 'pago')}`
-        );
-      });
+          : a.appointment_totem_sessions ? [a.appointment_totem_sessions] : [],
+      }));
 
       setAppointments(normalized as unknown as PainelAgendamento[]);
     } catch (error) {
@@ -123,230 +108,80 @@ export const useClientAppointments = () => {
       toast.error('Erro ao carregar agendamentos');
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, []);
 
+  // Debounced refetch to avoid multiple rapid fetches from realtime
+  const debouncedFetch = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      fetchAppointments();
+    }, 300);
+  }, [fetchAppointments]);
 
-  // Busca inicial dos agendamentos
   useEffect(() => {
     fetchAppointments();
 
-    // ADICIONAR REALTIME LISTENERS ADMIN - DUPLO CANAL (agendamentos + vendas)
-    console.log('🔴 [Admin Realtime] Configurando listeners globais para agendamentos E vendas');
+    // Single unified realtime channel
+    const channel = supabase
+      .channel('admin-appointments-unified')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'painel_agendamentos' }, (payload) => {
+        toast.info('Novo agendamento criado!', { description: 'Lista atualizada automaticamente' });
+        debouncedFetch();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'painel_agendamentos' }, (payload) => {
+        const newRecord = payload.new as any;
+        const oldRecord = payload.old as any;
+        
+        // Optimistic local update
+        setAppointments(prev => prev.map(a => 
+          a.id === newRecord.id 
+            ? { ...a, status: newRecord.status, status_totem: newRecord.status_totem, updated_at: newRecord.updated_at }
+            : a
+        ));
 
-    // Canal principal: escutar painel_agendamentos
-    const appointmentsChannel = supabase
-      .channel('admin-appointments')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'painel_agendamentos'
-        },
-        (payload) => {
-          console.log('🔔 [Admin Realtime] Novo agendamento:', payload);
-          toast.info('Novo agendamento criado!', {
-            description: 'Lista atualizada automaticamente'
-          });
-          fetchAppointments();
+        // Show relevant toast
+        if (oldRecord.status_totem !== newRecord.status_totem && newRecord.status_totem === 'CHEGOU') {
+          toast.info('✅ Check-in realizado!', { description: 'Cliente chegou na barbearia' });
+        } else if (oldRecord.status !== newRecord.status) {
+          toast.info('Agendamento atualizado!', { description: `Status: ${newRecord.status}` });
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'painel_agendamentos'
-        },
-        (payload) => {
-          console.log('🔔 [ADMIN REALTIME] Agendamento atualizado:', payload);
-          console.log('📝 [ADMIN REALTIME] ID:', (payload.new as any).id);
-          console.log('📝 [ADMIN REALTIME] Novo status:', (payload.new as any)?.status);
-          console.log('📝 [ADMIN REALTIME] Status anterior:', (payload.old as any)?.status);
-          console.log('📝 [ADMIN REALTIME] Novo status_totem:', (payload.new as any)?.status_totem);
-          console.log('📝 [ADMIN REALTIME] status_totem anterior:', (payload.old as any)?.status_totem);
-          
-          const oldStatus = (payload.old as any)?.status;
-          const newStatus = (payload.new as any)?.status;
-          const oldStatusTotem = (payload.old as any)?.status_totem;
-          const newStatusTotem = (payload.new as any)?.status_totem;
-          const appointmentId = (payload.new as any)?.id;
-          
-          // Detectar mudanças em status OU status_totem
-          const statusChanged = oldStatus !== newStatus;
-          const statusTotemChanged = oldStatusTotem !== newStatusTotem;
-          
-          if (statusChanged || statusTotemChanged) {
-            console.log(`🔄 [ADMIN REALTIME] Mudança detectada - status: "${oldStatus}" -> "${newStatus}", status_totem: "${oldStatusTotem}" -> "${newStatusTotem}"`);
-            
-            // Atualizar estado local imediatamente (se o appointment estiver na lista)
-            setAppointments(prev => {
-              const updated = prev.map(a => 
-                a.id === appointmentId 
-                  ? { ...a, status: newStatus, status_totem: newStatusTotem, updated_at: (payload.new as any).updated_at }
-                  : a
-              );
-              
-              // Log se encontrou ou não o appointment
-              const found = prev.some(a => a.id === appointmentId);
-              console.log(`📋 [ADMIN REALTIME] Appointment ${found ? 'ENCONTRADO' : 'NÃO ENCONTRADO'} na lista atual`);
-              
-              return updated;
-            });
-            
-            // Mostrar toast apropriado
-            if (statusTotemChanged && newStatusTotem === 'CHEGOU') {
-              toast.info('✅ Check-in realizado!', {
-                description: 'Cliente chegou na barbearia'
-              });
-            } else if (statusChanged) {
-              toast.info('Agendamento atualizado!', {
-                description: `Status alterado para: ${newStatus}`
-              });
-            }
-          }
-          
-          // Fazer refetch completo para garantir sincronização total
-          console.log('🔄 [ADMIN REALTIME] Fazendo refetch completo...');
-          fetchAppointments();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'DELETE',
-          schema: 'public',
-          table: 'painel_agendamentos'
-        },
-        (payload) => {
-          console.log('🔔 [Admin Realtime] Agendamento deletado:', payload);
-          fetchAppointments();
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 [Admin Realtime] appointmentsChannel status:', status);
-        if (status === 'SUBSCRIBED') {
-          console.log('✅ [Admin Realtime] Conectado e escutando painel_agendamentos');
-        }
-      });
 
-    // Canal secundário: escutar vendas (status 'pago' indica checkout concluído)
-    const salesChannel = supabase
-      .channel('admin-sales-status')
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'vendas'
-        },
-        (payload) => {
-          const oldStatus = (payload.old as any)?.status;
-          const newStatus = (payload.new as any)?.status;
-          const vendaId = (payload.new as any)?.id;
-          
-          console.log('💰 [ADMIN REALTIME] Venda atualizada:', { vendaId, oldStatus, newStatus });
-          
-          // Se o status da venda mudou para 'pago', significa que um checkout foi concluído
-          if (newStatus === 'pago' && oldStatus !== 'pago') {
-            console.log('✅ [ADMIN REALTIME] Venda PAGA - Atualizando lista de agendamentos');
-            
-            // Atualizar localmente os agendamentos vinculados a esta venda
-            setAppointments(prev => {
-              const updated = prev.map(a => {
-                // Se a venda deste agendamento foi paga, atualizar status
-                const hasThisVenda = a.vendas?.some(v => v.id === vendaId);
-                if (hasThisVenda) {
-                  console.log(`📋 [ADMIN REALTIME] Agendamento ${a.id} tem venda ${vendaId} - marcando como concluído`);
-                  return { 
-                    ...a, 
-                    vendas: a.vendas?.map(v => v.id === vendaId ? { ...v, status: 'pago' } : v)
-                  };
-                }
-                return a;
-              });
-              return updated;
-            });
-            
-            toast.success('Checkout concluído!', {
-              description: 'Pagamento confirmado no totem'
-            });
-            
-            // Refetch completo para garantir sincronização
-            fetchAppointments();
-          }
+        debouncedFetch();
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'painel_agendamentos' }, () => {
+        debouncedFetch();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'vendas' }, (payload) => {
+        const newRecord = payload.new as any;
+        if (newRecord.status === 'pago') {
+          setAppointments(prev => prev.map(a => ({
+            ...a,
+            vendas: a.vendas?.map(v => v.id === newRecord.id ? { ...v, status: 'pago' } : v)
+          })));
+          toast.success('Checkout concluído!', { description: 'Pagamento confirmado' });
+          debouncedFetch();
         }
-      )
-      .subscribe((status) => {
-        console.log('📡 [Admin Realtime] salesChannel status:', status);
-      });
-
-    // Canal terciário: escutar appointment_totem_sessions (check-in/checkout em tempo real)
-    const totemSessionsChannel = supabase
-      .channel('admin-totem-sessions')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'appointment_totem_sessions'
-        },
-        (payload) => {
-          const appointmentId = (payload.new as any)?.appointment_id;
-          const sessionStatus = (payload.new as any)?.status;
-          
-          console.log('✅ [ADMIN REALTIME] Check-in detectado:', { appointmentId, sessionStatus });
-          
-          toast.info('Check-in realizado!', {
-            description: 'Cliente chegou na barbearia'
-          });
-          
-          // Refetch para atualizar status visual
-          fetchAppointments();
+      })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'appointment_totem_sessions' }, () => {
+        toast.info('Check-in realizado!', { description: 'Cliente chegou na barbearia' });
+        debouncedFetch();
+      })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'appointment_totem_sessions' }, (payload) => {
+        const newStatus = (payload.new as any)?.status;
+        if (newStatus === 'completed' || newStatus === 'checkout_completed') {
+          toast.success('Checkout finalizado!', { description: 'Atendimento concluído' });
         }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'appointment_totem_sessions'
-        },
-        (payload) => {
-          const appointmentId = (payload.new as any)?.appointment_id;
-          const oldSessionStatus = (payload.old as any)?.status;
-          const newSessionStatus = (payload.new as any)?.status;
-          
-          console.log('🔄 [ADMIN REALTIME] Sessão totem atualizada:', { 
-            appointmentId, 
-            oldSessionStatus, 
-            newSessionStatus 
-          });
-          
-          // Detectar checkout
-          if (newSessionStatus === 'completed' || newSessionStatus === 'checkout_completed') {
-            console.log('🎉 [ADMIN REALTIME] Checkout detectado via totem_sessions');
-            toast.success('Checkout finalizado!', {
-              description: 'Atendimento concluído com sucesso'
-            });
-          }
-          
-          // Refetch para atualizar status visual
-          fetchAppointments();
-        }
-      )
-      .subscribe((status) => {
-        console.log('📡 [Admin Realtime] totemSessionsChannel status:', status);
-      });
+        debouncedFetch();
+      })
+      .subscribe();
 
     return () => {
-      console.log('🔴 [Admin Realtime] Removendo listeners');
-      supabase.removeChannel(appointmentsChannel);
-      supabase.removeChannel(salesChannel);
-      supabase.removeChannel(totemSessionsChannel);
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      supabase.removeChannel(channel);
     };
-  }, [fetchAppointments]);
+  }, [fetchAppointments, debouncedFetch]);
 
   // Atualiza status do agendamento (cancelar ou marcar como ausente)
   const handleStatusChange = useCallback(async (appointmentId: string, newStatus: string) => {
