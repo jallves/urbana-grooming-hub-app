@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -35,12 +35,9 @@ interface PendingCheckout {
     nome: string;
     preco: number;
   };
-  totem_sessions: {
-    id: string;
-    check_in_time: string;
-    check_out_time: string | null;
-    status: string;
-  }[];
+  session_id: string;
+  session_status: string;
+  check_in_time: string;
 }
 
 const PendingCheckouts: React.FC = () => {
@@ -48,71 +45,116 @@ const PendingCheckouts: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSession, setSelectedSession] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    loadPendingCheckouts();
-  }, []);
-
-  const loadPendingCheckouts = async () => {
+  // Query direta sem edge function para máxima velocidade
+  const loadPendingCheckouts = useCallback(async () => {
     setIsLoading(true);
     try {
-      console.log('🔍 Buscando agendamentos com check-in pendente...');
-      
-      const { data, error } = await supabase.functions.invoke('pending-checkouts', {
-        body: { action: 'list' }
-      });
+      // Buscar sessões com check-in pendente diretamente
+      const { data: sessions, error: sessionsError } = await supabase
+        .from('appointment_totem_sessions')
+        .select(`
+          id,
+          appointment_id,
+          status,
+          totem_session_id,
+          created_at
+        `)
+        .eq('status', 'checked_in')
+        .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (sessionsError) throw sessionsError;
 
-      console.log('✅ Agendamentos pendentes carregados:', data.count);
-      setPendingAppointments(data.appointments || []);
-      
-      if (data.count === 0) {
-        toast.success('Sem pendências', {
-          description: 'Todos os check-ins possuem checkout!'
-        });
-      } else {
-        toast.info(`${data.count} checkout(s) pendente(s)`, {
-          description: 'Estes agendamentos precisam de checkout'
-        });
+      if (!sessions || sessions.length === 0) {
+        setPendingAppointments([]);
+        setIsLoading(false);
+        return;
       }
+
+      // Buscar agendamentos vinculados
+      const appointmentIds = sessions.map(s => s.appointment_id).filter(Boolean);
+      
+      const { data: agendamentos, error: agendError } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          id, data, hora, status,
+          painel_clientes(nome, whatsapp),
+          painel_barbeiros(nome),
+          painel_servicos(nome, preco)
+        `)
+        .in('id', appointmentIds);
+
+      if (agendError) throw agendError;
+
+      // Combinar dados
+      const combined = sessions
+        .map(sessao => {
+          const agendamento = agendamentos?.find(a => a.id === sessao.appointment_id);
+          if (!agendamento) return null;
+          return {
+            ...agendamento,
+            painel_clientes: agendamento.painel_clientes || { nome: 'N/A', whatsapp: '' },
+            painel_barbeiros: agendamento.painel_barbeiros || { nome: 'N/A' },
+            painel_servicos: agendamento.painel_servicos || { nome: 'N/A', preco: 0 },
+            session_id: sessao.totem_session_id,
+            session_status: sessao.status,
+            check_in_time: sessao.created_at || '',
+          } as PendingCheckout;
+        })
+        .filter(Boolean) as PendingCheckout[];
+
+      setPendingAppointments(combined);
     } catch (error: any) {
-      console.error('❌ Erro ao carregar checkouts pendentes:', error);
-      toast.error('Erro ao carregar dados', {
-        description: error.message
-      });
+      console.error('Erro ao carregar checkouts pendentes:', error);
+      toast.error('Erro ao carregar dados', { description: error.message });
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
+
+  // Debounced reload para realtime
+  const debouncedReload = useCallback(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      loadPendingCheckouts();
+    }, 300);
+  }, [loadPendingCheckouts]);
+
+  useEffect(() => {
+    loadPendingCheckouts();
+
+    // Realtime para atualização automática
+    const channel = supabase
+      .channel('pending-checkouts-rt')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'appointment_totem_sessions' }, debouncedReload)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'painel_agendamentos' }, debouncedReload)
+      .subscribe();
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+      supabase.removeChannel(channel);
+    };
+  }, [loadPendingCheckouts, debouncedReload]);
 
   const handleForceCheckout = async (sessionId: string) => {
     setIsProcessing(true);
     try {
-      console.log('🔧 Forçando checkout para sessão:', sessionId);
-      
       const { data, error } = await supabase.functions.invoke('pending-checkouts', {
-        body: {
-          action: 'force_checkout',
-          session_id: sessionId
-        }
+        body: { action: 'force_checkout', session_id: sessionId }
       });
 
       if (error) throw error;
 
-      console.log('✅ Checkout forçado com sucesso:', data);
       toast.success('Checkout realizado!', {
         description: 'O atendimento foi finalizado com sucesso'
       });
 
-      // Recarregar lista
       await loadPendingCheckouts();
       setSelectedSession(null);
     } catch (error: any) {
-      console.error('❌ Erro ao forçar checkout:', error);
-      toast.error('Erro ao realizar checkout', {
-        description: error.message
-      });
+      console.error('Erro ao forçar checkout:', error);
+      toast.error('Erro ao realizar checkout', { description: error.message });
     } finally {
       setIsProcessing(false);
     }
@@ -122,9 +164,7 @@ const PendingCheckouts: React.FC = () => {
     try {
       const appointmentDate = parseISO(`${dateStr}T${timeStr}`);
       const now = new Date();
-      const diffInMs = now.getTime() - appointmentDate.getTime();
-      const diffInDays = Math.floor(diffInMs / (1000 * 60 * 60 * 24));
-      
+      const diffInDays = Math.floor((now.getTime() - appointmentDate.getTime()) / (1000 * 60 * 60 * 24));
       if (diffInDays === 0) return 'Hoje';
       if (diffInDays === 1) return 'Ontem';
       return `${diffInDays} dias atrás`;
@@ -146,18 +186,11 @@ const PendingCheckouts: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
                 <AlertCircle className="h-8 w-8 text-orange-600" />
-                <div>
-                  <p className="text-sm text-gray-600">
-                    Agendamentos com check-in realizado aguardando checkout
-                  </p>
-                </div>
+                <p className="text-sm text-gray-600">
+                  Agendamentos com check-in realizado aguardando checkout
+                </p>
               </div>
-              <Button
-                onClick={loadPendingCheckouts}
-                variant="outline"
-                size="sm"
-                className="gap-2"
-              >
+              <Button onClick={loadPendingCheckouts} variant="outline" size="sm" className="gap-2">
                 <RefreshCw className="h-4 w-4" />
                 Atualizar
               </Button>
@@ -186,7 +219,7 @@ const PendingCheckouts: React.FC = () => {
                 <div>
                   <p className="text-sm text-blue-700 font-medium">Clientes Aguardando</p>
                   <p className="text-2xl font-bold text-blue-900">
-                    {new Set(pendingAppointments.map(a => a.painel_clientes.nome)).size}
+                    {new Set(pendingAppointments.map(a => a.painel_clientes?.nome)).size}
                   </p>
                 </div>
               </div>
@@ -210,37 +243,31 @@ const PendingCheckouts: React.FC = () => {
             </Card>
           </div>
 
-          {/* Lista de agendamentos pendentes */}
+          {/* Lista */}
           {pendingAppointments.length === 0 ? (
             <Card className="p-12 text-center">
               <CheckCircle className="h-16 w-16 text-green-600 mx-auto mb-4" />
-              <h3 className="text-xl font-bold text-gray-900 mb-2">
-                Tudo em ordem! 🎉
-              </h3>
-              <p className="text-gray-600">
-                Não há checkouts pendentes no momento
-              </p>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Tudo em ordem! 🎉</h3>
+              <p className="text-gray-600">Não há checkouts pendentes no momento</p>
             </Card>
           ) : (
             <div className="space-y-4">
               {pendingAppointments.map((appointment) => {
-                const session = appointment.totem_sessions[0];
-                const checkInDate = parseISO(session.check_in_time);
+                const checkInDate = appointment.check_in_time ? parseISO(appointment.check_in_time) : new Date();
                 
                 return (
                   <Card key={appointment.id} className="p-6 hover:shadow-lg transition-shadow">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                      {/* Info do agendamento */}
                       <div className="flex-1 space-y-3">
                         <div className="flex items-center gap-3">
                           <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold">
-                            {appointment.painel_clientes.nome.charAt(0)}
+                            {appointment.painel_clientes?.nome?.charAt(0) || '?'}
                           </div>
                           <div>
                             <h3 className="font-bold text-lg text-gray-900">
-                              {appointment.painel_clientes.nome}
+                              {appointment.painel_clientes?.nome || 'N/A'}
                             </h3>
-                            <p className="text-sm text-gray-500">{appointment.painel_clientes.whatsapp}</p>
+                            <p className="text-sm text-gray-500">{appointment.painel_clientes?.whatsapp || ''}</p>
                           </div>
                         </div>
 
@@ -252,7 +279,6 @@ const PendingCheckouts: React.FC = () => {
                             </p>
                             <p className="text-xs text-gray-600">{appointment.hora}</p>
                           </div>
-
                           <div>
                             <p className="text-gray-500 font-medium">Check-in</p>
                             <p className="font-bold text-blue-600">
@@ -262,17 +288,15 @@ const PendingCheckouts: React.FC = () => {
                               {format(checkInDate, 'HH:mm', { locale: ptBR })}
                             </p>
                           </div>
-
                           <div>
                             <p className="text-gray-500 font-medium">Barbeiro</p>
-                            <p className="font-bold text-gray-900">{appointment.painel_barbeiros.nome}</p>
+                            <p className="font-bold text-gray-900">{appointment.painel_barbeiros?.nome || 'N/A'}</p>
                           </div>
-
                           <div>
                             <p className="text-gray-500 font-medium">Serviço</p>
-                            <p className="font-bold text-gray-900">{appointment.painel_servicos.nome}</p>
+                            <p className="font-bold text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</p>
                             <p className="text-xs text-green-600 font-semibold">
-                              R$ {appointment.painel_servicos.preco.toFixed(2)}
+                              R$ {(appointment.painel_servicos?.preco || 0).toFixed(2)}
                             </p>
                           </div>
                         </div>
@@ -287,17 +311,16 @@ const PendingCheckouts: React.FC = () => {
                         </div>
                       </div>
 
-                      {/* Ação */}
                       <div className="flex flex-col gap-2">
                         <Button
-                          onClick={() => setSelectedSession(session.id)}
+                          onClick={() => setSelectedSession(appointment.session_id)}
                           className="bg-green-600 hover:bg-green-700 text-white font-bold"
                         >
                           <CheckCircle className="h-4 w-4 mr-2" />
                           Realizar Checkout
                         </Button>
                         <p className="text-xs text-center text-gray-500">
-                          Sessão: {session.id.substring(0, 8)}...
+                          Sessão: {appointment.session_id?.substring(0, 8)}...
                         </p>
                       </div>
                     </div>
@@ -316,20 +339,14 @@ const PendingCheckouts: React.FC = () => {
                   Confirmar Checkout
                 </AlertDialogTitle>
                 <AlertDialogDescription className="space-y-3">
-                  <p>
-                    Você está prestes a <strong>finalizar este atendimento</strong> realizando o checkout.
-                  </p>
-                  
+                  <p>Você está prestes a <strong>finalizar este atendimento</strong> realizando o checkout.</p>
                   <div className="bg-blue-50 border-l-4 border-blue-400 p-3 rounded">
                     <p className="text-sm text-blue-800 font-medium">
                       ✅ O checkout será realizado <strong>independente da data/hora</strong>
                     </p>
                   </div>
-
                   <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded">
-                    <p className="text-sm text-yellow-800">
-                      Esta ação irá:
-                    </p>
+                    <p className="text-sm text-yellow-800">Esta ação irá:</p>
                     <ul className="text-xs text-yellow-700 mt-2 ml-4 space-y-1 list-disc">
                       <li>Marcar o agendamento como <strong>CONCLUÍDO</strong></li>
                       <li>Registrar o horário de checkout atual</li>
@@ -340,9 +357,7 @@ const PendingCheckouts: React.FC = () => {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={isProcessing}>
-                  Cancelar
-                </AlertDialogCancel>
+                <AlertDialogCancel disabled={isProcessing}>Cancelar</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={() => selectedSession && handleForceCheckout(selectedSession)}
                   disabled={isProcessing}
