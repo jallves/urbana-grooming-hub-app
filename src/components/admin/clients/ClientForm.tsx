@@ -125,8 +125,42 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         
         toast.success('Cliente atualizado com sucesso!');
       } else {
-        // Para criar novo cliente, usar signUp público
+        // Verificar se email pertence a barbeiro/funcionário
         const tempEmail = data.email || `cliente_${Date.now()}@temp.barbearia.com`;
+        
+        if (data.email) {
+          const emailNorm = data.email.trim().toLowerCase();
+          
+          const { data: barberCheck } = await supabase
+            .from('painel_barbeiros')
+            .select('nome')
+            .eq('email', emailNorm)
+            .maybeSingle();
+
+          if (barberCheck) {
+            throw new Error(`Este e-mail já está cadastrado como barbeiro (${barberCheck.nome}). Utilize um e-mail diferente.`);
+          }
+
+          const { data: staffCheck } = await supabase
+            .from('staff')
+            .select('name')
+            .eq('email', emailNorm)
+            .maybeSingle();
+
+          if (staffCheck) {
+            throw new Error(`Este e-mail já está cadastrado como funcionário (${staffCheck.name}). Utilize um e-mail diferente.`);
+          }
+
+          const { data: employeeCheck } = await supabase
+            .from('employees')
+            .select('name')
+            .eq('email', emailNorm)
+            .maybeSingle();
+
+          if (employeeCheck) {
+            throw new Error(`Este e-mail já está cadastrado como funcionário (${employeeCheck.name}). Utilize um e-mail diferente.`);
+          }
+        }
         const tempPassword = Math.random().toString(36).slice(-12) + 'Aa1!';
         
         const { data: authData, error: authError } = await supabase.auth.signUp({

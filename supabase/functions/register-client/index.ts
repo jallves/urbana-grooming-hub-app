@@ -113,6 +113,69 @@ Deno.serve(async (req) => {
     console.log('✅ WhatsApp disponível');
 
     // ===================================================================
+    // ETAPA 1.5: VERIFICAR SE EMAIL PERTENCE A UM BARBEIRO/FUNCIONÁRIO
+    // ===================================================================
+    console.log('🔍 [1.5/4] Verificando se email pertence a barbeiro/funcionário...');
+    
+    const emailNormalizado = email.trim().toLowerCase();
+    
+    const { data: barberWithEmail } = await supabaseAdmin
+      .from('painel_barbeiros')
+      .select('nome')
+      .eq('email', emailNormalizado)
+      .maybeSingle();
+
+    if (barberWithEmail) {
+      console.warn('⚠️ Email pertence a um barbeiro:', barberWithEmail.nome);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `🚫 Este e-mail (${email}) já está cadastrado como barbeiro/funcionário.\n\n` +
+                 `Por favor, utilize um e-mail pessoal diferente para criar sua conta de cliente.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    const { data: staffWithEmail } = await supabaseAdmin
+      .from('staff')
+      .select('name')
+      .eq('email', emailNormalizado)
+      .maybeSingle();
+
+    if (staffWithEmail) {
+      console.warn('⚠️ Email pertence a um staff:', staffWithEmail.name);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `🚫 Este e-mail (${email}) já está cadastrado como funcionário.\n\n` +
+                 `Por favor, utilize um e-mail pessoal diferente para criar sua conta de cliente.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    const { data: employeeWithEmail } = await supabaseAdmin
+      .from('employees')
+      .select('name')
+      .eq('email', emailNormalizado)
+      .maybeSingle();
+
+    if (employeeWithEmail) {
+      console.warn('⚠️ Email pertence a um employee:', employeeWithEmail.name);
+      return new Response(
+        JSON.stringify({ 
+          success: false, 
+          error: `🚫 Este e-mail (${email}) já está cadastrado como funcionário.\n\n` +
+                 `Por favor, utilize um e-mail pessoal diferente para criar sua conta de cliente.`
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 200 }
+      );
+    }
+
+    console.log('✅ Email não pertence a barbeiro/funcionário');
+
+    // ===================================================================
     // ETAPA 2: CRIAR USUÁRIO VIA ADMIN API (AUTO-CONFIRMADO, SEM EMAIL)
     // ===================================================================
     console.log('🔍 [2/4] ✅ WhatsApp validado! Criando usuário...');
