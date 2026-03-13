@@ -123,6 +123,17 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     };
 
     try {
+      // 0. Verificar se email pertence a um cliente
+      const { data: clientWithEmail } = await supabase
+        .from('painel_clientes')
+        .select('nome')
+        .eq('email', employeeData.email)
+        .maybeSingle();
+
+      if (clientWithEmail) {
+        throw new Error(`Este e-mail já está cadastrado como cliente (${clientWithEmail.nome}). Utilize um e-mail diferente.`);
+      }
+
       // 1. Verificar se já existe um user_id para este email
       const { data: authUsers } = await supabase
         .from('employees')
