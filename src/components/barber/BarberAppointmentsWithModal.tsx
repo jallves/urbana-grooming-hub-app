@@ -198,13 +198,23 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
       {/* Modal de Edição */}
       {barberData && (
-        <BarberEditAppointmentModal
-          isOpen={modalHandlers.isEditModalOpen}
-          onClose={modalHandlers.closeEditModal}
-          appointmentId={modalHandlers.selectedAppointmentId}
-          barberId={barberData.id}
-          onSuccess={() => refetch()}
-        />
+        <>
+          <BarberEditAppointmentModal
+            isOpen={modalHandlers.isEditModalOpen}
+            onClose={modalHandlers.closeEditModal}
+            appointmentId={modalHandlers.selectedAppointmentId}
+            barberId={barberData.id}
+            onSuccess={() => refetch()}
+          />
+          <BarberEncaixeModal
+            isOpen={isEncaixeModalOpen}
+            onClose={handleCloseEncaixe}
+            barberId={barberData.id}
+            slotDate={encaixeSlotDate}
+            slotTime={encaixeSlotTime}
+            onSuccess={() => refetch()}
+          />
+        </>
       )}
     </>
   );
