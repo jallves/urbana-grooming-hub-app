@@ -133,12 +133,12 @@ export const useBarberAvailableSlots = () => {
             continue;
           }
 
-          // Se for hoje, verificar se já passou (com 30 min de antecedência)
+          // Se for hoje, verificar se já passou (com antecedência mínima)
           let isPast = false;
           if (isCurrentDay) {
             const slotTotalMinutes = hour * 60 + minute;
             const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
+            if (slotTotalMinutes <= currentTotalMinutes + MINIMUM_ADVANCE_MINUTES) {
               isPast = true;
             }
           }

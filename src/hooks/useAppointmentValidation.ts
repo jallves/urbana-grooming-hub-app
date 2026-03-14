@@ -37,7 +37,7 @@ export const useAppointmentValidation = () => {
       return 'Este horário já está ocupado. Escolha outro horário.';
     }
     
-    if (message.includes('mais de 10 minutos') || message.includes('30 minutos de antecedência')) {
+    if (message.includes('mais de 10 minutos') || message.includes('30 minutos de antecedência') || message.includes('15 minutos de antecedência')) {
       return 'Este horário não está mais disponível.';
     }
     

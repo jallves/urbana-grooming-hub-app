@@ -25,6 +25,7 @@ export const HOMOLOGATION_MODE = true;
 
 export const BUFFER_MINUTES = 10;
 export const SLOT_INTERVAL_MINUTES = 30;
+export const MINIMUM_ADVANCE_MINUTES = 15; // Antecedência mínima para agendamento no dia atual
 export const BUSINESS_START_HOUR = 9; // Barbearia abre às 09:00
 export const BUSINESS_START_MINUTE = 0; // Primeiro atendimento às 09:00
 export const BUSINESS_END_HOUR = 20; // Barbearia fecha às 20:00

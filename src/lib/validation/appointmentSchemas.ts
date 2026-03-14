@@ -48,7 +48,7 @@ export const createAppointmentSchema = z.object({
   
   return true;
 }, {
-  message: 'Para agendamentos hoje, escolha um horário com pelo menos 30 minutos de antecedência',
+  message: 'Para agendamentos hoje, escolha um horário com pelo menos 15 minutos de antecedência',
   path: ['time']
 });
 
