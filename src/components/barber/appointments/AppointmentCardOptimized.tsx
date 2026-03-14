@@ -23,7 +23,7 @@ interface AppointmentCardProps {
   onEncaixe?: (date: string, time: string) => void;
 }
 
-const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit }) => {
+const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit, onEncaixe }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
