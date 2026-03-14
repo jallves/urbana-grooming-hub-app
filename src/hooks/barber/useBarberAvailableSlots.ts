@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, addMinutes, parse } from 'date-fns';
-import { BUFFER_MINUTES } from '@/lib/utils/timeCalculations';
+import { BUFFER_MINUTES, MINIMUM_ADVANCE_MINUTES } from '@/lib/utils/timeCalculations';
 
 interface TimeSlot {
   time: string;
