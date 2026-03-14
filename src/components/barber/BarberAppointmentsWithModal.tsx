@@ -21,6 +21,23 @@ const BarberAppointmentsWithModal: React.FC = () => {
   const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(barberData?.id || null);
   const modalHandlers = useBarberAppointmentModal();
 
+  // Encaixe modal state
+  const [isEncaixeModalOpen, setIsEncaixeModalOpen] = useState(false);
+  const [encaixeSlotDate, setEncaixeSlotDate] = useState<string | undefined>();
+  const [encaixeSlotTime, setEncaixeSlotTime] = useState<string | undefined>();
+
+  const handleOpenEncaixe = useCallback((date?: string, time?: string) => {
+    setEncaixeSlotDate(date);
+    setEncaixeSlotTime(time);
+    setIsEncaixeModalOpen(true);
+  }, []);
+
+  const handleCloseEncaixe = useCallback(() => {
+    setIsEncaixeModalOpen(false);
+    setEncaixeSlotDate(undefined);
+    setEncaixeSlotTime(undefined);
+  }, []);
+
   // Calcular stats localmente com useMemo
   const stats = useMemo(() => {
     const total = appointments.length;
