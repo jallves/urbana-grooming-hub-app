@@ -47,7 +47,8 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
   // - Pode marcar como AUSENTE após 1h do horário
   const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
   const canMarkAbsent = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isAfter1Hour;
-  const canCancel = false; // Barbeiro NÃO pode cancelar
+  const canCancel = false;
+  const canEncaixe = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming && !appointment.is_encaixe;
 
   const getStatusBadge = () => {
     const badges = {
