@@ -1,7 +1,9 @@
-import React, { useMemo } from 'react';
-import { Calendar, Clock, DollarSign, TrendingUp } from 'lucide-react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Calendar, Clock, DollarSign, TrendingUp, Zap } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
+import BarberEncaixeModal from './appointments/BarberEncaixeModal';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
@@ -18,6 +20,23 @@ const BarberAppointmentsWithModal: React.FC = () => {
   const { data: barberData } = useBarberDataQuery();
   const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(barberData?.id || null);
   const modalHandlers = useBarberAppointmentModal();
+
+  // Encaixe modal state
+  const [isEncaixeModalOpen, setIsEncaixeModalOpen] = useState(false);
+  const [encaixeSlotDate, setEncaixeSlotDate] = useState<string | undefined>();
+  const [encaixeSlotTime, setEncaixeSlotTime] = useState<string | undefined>();
+
+  const handleOpenEncaixe = useCallback((date?: string, time?: string) => {
+    setEncaixeSlotDate(date);
+    setEncaixeSlotTime(time);
+    setIsEncaixeModalOpen(true);
+  }, []);
+
+  const handleCloseEncaixe = useCallback(() => {
+    setIsEncaixeModalOpen(false);
+    setEncaixeSlotDate(undefined);
+    setEncaixeSlotTime(undefined);
+  }, []);
 
   // Calcular stats localmente com useMemo
   const stats = useMemo(() => {
@@ -130,12 +149,24 @@ const BarberAppointmentsWithModal: React.FC = () => {
         {/* Appointments List */}
         <PainelBarbeiroCard variant="default">
           <PainelBarbeiroCardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-            <PainelBarbeiroCardTitle className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
-              Meus Agendamentos
-            </PainelBarbeiroCardTitle>
-            <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
-              Gerencie seus atendimentos - Toque para editar
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <PainelBarbeiroCardTitle className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
+                  Meus Agendamentos
+                </PainelBarbeiroCardTitle>
+                <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
+                  Gerencie seus atendimentos - Toque para editar
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handleOpenEncaixe()}
+                className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
+              >
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+                Encaixe
+              </Button>
+            </div>
           </PainelBarbeiroCardHeader>
           
           <PainelBarbeiroCardContent className="px-4 sm:px-6">
@@ -156,6 +187,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                     key={appointment.id}
                     appointment={appointment}
                     onEdit={modalHandlers.handleEditAppointment}
+                    onEncaixe={handleOpenEncaixe}
                   />
                 ))}
               </div>
@@ -166,13 +198,23 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
       {/* Modal de Edição */}
       {barberData && (
-        <BarberEditAppointmentModal
-          isOpen={modalHandlers.isEditModalOpen}
-          onClose={modalHandlers.closeEditModal}
-          appointmentId={modalHandlers.selectedAppointmentId}
-          barberId={barberData.id}
-          onSuccess={() => refetch()}
-        />
+        <>
+          <BarberEditAppointmentModal
+            isOpen={modalHandlers.isEditModalOpen}
+            onClose={modalHandlers.closeEditModal}
+            appointmentId={modalHandlers.selectedAppointmentId}
+            barberId={barberData.id}
+            onSuccess={() => refetch()}
+          />
+          <BarberEncaixeModal
+            isOpen={isEncaixeModalOpen}
+            onClose={handleCloseEncaixe}
+            barberId={barberData.id}
+            slotDate={encaixeSlotDate}
+            slotTime={encaixeSlotTime}
+            onSuccess={() => refetch()}
+          />
+        </>
       )}
     </>
   );

@@ -1301,6 +1301,7 @@ export type Database = {
           data: string
           hora: string
           id: string
+          is_encaixe: boolean
           notas: string | null
           painel_barbeiros: Json | null
           painel_clientes: Json | null
@@ -1318,6 +1319,7 @@ export type Database = {
           data: string
           hora: string
           id?: string
+          is_encaixe?: boolean
           notas?: string | null
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null
@@ -1335,6 +1337,7 @@ export type Database = {
           data?: string
           hora?: string
           id?: string
+          is_encaixe?: boolean
           notas?: string | null
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null

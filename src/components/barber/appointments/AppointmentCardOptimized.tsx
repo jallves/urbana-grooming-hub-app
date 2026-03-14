@@ -3,7 +3,7 @@ import { format, parseISO, isFuture, isPast, addMinutes, isAfter } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Edit, UserX } from 'lucide-react';
+import { X, Edit, UserX, Zap } from 'lucide-react';
 import { useBarberAppointmentActionsOptimized } from '@/hooks/barber/useBarberAppointmentActionsOptimized';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import {
@@ -20,9 +20,10 @@ import {
 interface AppointmentCardProps {
   appointment: any;
   onEdit?: (appointmentId: string, startTime: string) => void;
+  onEncaixe?: (date: string, time: string) => void;
 }
 
-const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit }) => {
+const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit, onEncaixe }) => {
   const [showAbsentDialog, setShowAbsentDialog] = useState(false);
   const [showCancelDialog, setShowCancelDialog] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -46,7 +47,8 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
   // - Pode marcar como AUSENTE após 1h do horário
   const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
   const canMarkAbsent = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isAfter1Hour;
-  const canCancel = false; // Barbeiro NÃO pode cancelar
+  const canCancel = false;
+  const canEncaixe = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming && !appointment.is_encaixe;
 
   const getStatusBadge = () => {
     const badges = {
@@ -83,7 +85,12 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 {format(appointmentDateTime, "HH:mm", { locale: ptBR })}
               </p>
             </div>
-            <div className="flex-shrink-0 self-start">
+            <div className="flex items-center gap-1.5 flex-shrink-0 self-start">
+              {appointment.is_encaixe && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                  ⚡ Encaixe
+                </span>
+              )}
               {getStatusBadge()}
             </div>
           </div>
@@ -99,7 +106,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
           </div>
 
           {/* Actions - Mobile First */}
-          {(canEdit || canMarkAbsent) && (
+          {(canEdit || canMarkAbsent || canEncaixe) && (
             <div className="flex flex-col sm:flex-row gap-2 pt-1 sm:pt-2">
               {/* Editar */}
               {canEdit && onEdit && (
@@ -112,6 +119,24 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 >
                   <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Editar
+                </Button>
+              )}
+
+              {/* Encaixe */}
+              {canEncaixe && onEncaixe && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const date = appointment.start_time.split('T')[0];
+                    const time = format(appointmentDateTime, 'HH:mm');
+                    onEncaixe(date, time);
+                  }}
+                  disabled={isUpdating}
+                  className="w-full sm:flex-1 h-9 sm:h-8 border-purple-600 text-purple-400 hover:bg-purple-600/10 text-xs sm:text-sm touch-manipulation"
+                >
+                  <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                  Encaixe
                 </Button>
               )}
 

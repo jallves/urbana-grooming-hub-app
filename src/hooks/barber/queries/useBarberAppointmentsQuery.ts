@@ -9,6 +9,7 @@ interface AppointmentWithDetails {
   end_time: string;
   client_name: string;
   service_name: string;
+  is_encaixe?: boolean;
   service?: {
     price?: number;
   };
@@ -32,6 +33,7 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
           data,
           hora,
           status,
+          is_encaixe,
           painel_clientes!inner(nome),
           painel_servicos!inner(nome, preco, duracao)
         `)
@@ -54,11 +56,12 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
 
       return data.map((apt: any) => ({
         id: apt.id,
-        status: statusMap[apt.status] || apt.status, // Mapear status
+        status: statusMap[apt.status] || apt.status,
         start_time: `${apt.data}T${apt.hora}`,
         end_time: `${apt.data}T${apt.hora}`,
         client_name: apt.painel_clientes?.nome || 'Cliente',
         service_name: apt.painel_servicos?.nome || 'Serviço',
+        is_encaixe: apt.is_encaixe || false,
         service: {
           price: apt.painel_servicos?.preco || 0
         }
