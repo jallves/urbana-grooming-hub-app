@@ -9,6 +9,7 @@ interface AppointmentWithDetails {
   end_time: string;
   client_name: string;
   service_name: string;
+  is_encaixe?: boolean;
   service?: {
     price?: number;
   };
