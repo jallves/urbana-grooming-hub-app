@@ -191,19 +191,8 @@ export const isPastTime = (date: Date, time: string): boolean => {
   
   return isPast;
 };
-  
-  if (isPast) {
-    console.log('🕐 isPastTime:', {
-      time,
-      selectedDateTime: selectedDateTime.toISOString(),
-      minTime: minTime.toISOString(),
-      now: now.toISOString(),
-      isPast
-    });
-  }
-  
-  return isPast;
-};
+
+
 
 /**
  * Calcula todos os slots ocupados por um agendamento (incluindo buffer)
