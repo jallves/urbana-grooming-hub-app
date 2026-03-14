@@ -149,12 +149,24 @@ const BarberAppointmentsWithModal: React.FC = () => {
         {/* Appointments List */}
         <PainelBarbeiroCard variant="default">
           <PainelBarbeiroCardHeader className="px-4 sm:px-6 py-4 sm:py-6">
-            <PainelBarbeiroCardTitle className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
-              Meus Agendamentos
-            </PainelBarbeiroCardTitle>
-            <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
-              Gerencie seus atendimentos - Toque para editar
-            </p>
+            <div className="flex items-center justify-between">
+              <div>
+                <PainelBarbeiroCardTitle className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
+                  Meus Agendamentos
+                </PainelBarbeiroCardTitle>
+                <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
+                  Gerencie seus atendimentos - Toque para editar
+                </p>
+              </div>
+              <Button
+                size="sm"
+                onClick={() => handleOpenEncaixe()}
+                className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
+              >
+                <Zap className="h-3.5 w-3.5 mr-1.5" />
+                Encaixe
+              </Button>
+            </div>
           </PainelBarbeiroCardHeader>
           
           <PainelBarbeiroCardContent className="px-4 sm:px-6">
@@ -175,6 +187,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                     key={appointment.id}
                     appointment={appointment}
                     onEdit={modalHandlers.handleEditAppointment}
+                    onEncaixe={handleOpenEncaixe}
                   />
                 ))}
               </div>
