@@ -85,7 +85,12 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 {format(appointmentDateTime, "HH:mm", { locale: ptBR })}
               </p>
             </div>
-            <div className="flex-shrink-0 self-start">
+            <div className="flex items-center gap-1.5 flex-shrink-0 self-start">
+              {appointment.is_encaixe && (
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-400 border border-purple-500/30">
+                  ⚡ Encaixe
+                </span>
+              )}
               {getStatusBadge()}
             </div>
           </div>
