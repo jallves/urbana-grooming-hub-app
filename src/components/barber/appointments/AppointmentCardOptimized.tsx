@@ -20,6 +20,7 @@ import {
 interface AppointmentCardProps {
   appointment: any;
   onEdit?: (appointmentId: string, startTime: string) => void;
+  onEncaixe?: (date: string, time: string) => void;
 }
 
 const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment, onEdit }) => {
