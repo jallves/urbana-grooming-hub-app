@@ -106,7 +106,7 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
           </div>
 
           {/* Actions - Mobile First */}
-          {(canEdit || canMarkAbsent) && (
+          {(canEdit || canMarkAbsent || canEncaixe) && (
             <div className="flex flex-col sm:flex-row gap-2 pt-1 sm:pt-2">
               {/* Editar */}
               {canEdit && onEdit && (
@@ -119,6 +119,24 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
                 >
                   <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
                   Editar
+                </Button>
+              )}
+
+              {/* Encaixe */}
+              {canEncaixe && onEncaixe && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    const date = appointment.start_time.split('T')[0];
+                    const time = format(appointmentDateTime, 'HH:mm');
+                    onEncaixe(date, time);
+                  }}
+                  disabled={isUpdating}
+                  className="w-full sm:flex-1 h-9 sm:h-8 border-purple-600 text-purple-400 hover:bg-purple-600/10 text-xs sm:text-sm touch-manipulation"
+                >
+                  <Zap className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5 sm:mr-2" />
+                  Encaixe
                 </Button>
               )}
 
