@@ -3,7 +3,7 @@ import { format, parseISO, isFuture, isPast, addMinutes, isAfter } from 'date-fn
 import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { X, Edit, UserX } from 'lucide-react';
+import { X, Edit, UserX, Zap } from 'lucide-react';
 import { useBarberAppointmentActionsOptimized } from '@/hooks/barber/useBarberAppointmentActionsOptimized';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import {
