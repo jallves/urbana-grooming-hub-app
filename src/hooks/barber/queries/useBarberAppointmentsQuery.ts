@@ -56,11 +56,12 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
 
       return data.map((apt: any) => ({
         id: apt.id,
-        status: statusMap[apt.status] || apt.status, // Mapear status
+        status: statusMap[apt.status] || apt.status,
         start_time: `${apt.data}T${apt.hora}`,
         end_time: `${apt.data}T${apt.hora}`,
         client_name: apt.painel_clientes?.nome || 'Cliente',
         service_name: apt.painel_servicos?.nome || 'Serviço',
+        is_encaixe: apt.is_encaixe || false,
         service: {
           price: apt.painel_servicos?.preco || 0
         }
