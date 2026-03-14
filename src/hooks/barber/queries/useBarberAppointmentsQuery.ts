@@ -33,6 +33,7 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
           data,
           hora,
           status,
+          is_encaixe,
           painel_clientes!inner(nome),
           painel_servicos!inner(nome, preco, duracao)
         `)
