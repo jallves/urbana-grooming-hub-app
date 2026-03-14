@@ -25,6 +25,7 @@ export const HOMOLOGATION_MODE = true;
 
 export const BUFFER_MINUTES = 10;
 export const SLOT_INTERVAL_MINUTES = 30;
+export const MINIMUM_ADVANCE_MINUTES = 15; // Antecedência mínima para agendamento no dia atual
 export const BUSINESS_START_HOUR = 9; // Barbearia abre às 09:00
 export const BUSINESS_START_MINUTE = 0; // Primeiro atendimento às 09:00
 export const BUSINESS_END_HOUR = 20; // Barbearia fecha às 20:00
@@ -155,8 +156,9 @@ export const getNextAvailableTime = (startTime: string, serviceDuration: number)
 };
 
 /**
- * Verifica se um horário já passou há mais de 10 minutos (apenas para o dia atual)
- * Permite agendamento até 10 minutos APÓS o horário (ex: horário 19:00 disponível até 19:10)
+ * Verifica se um horário já passou considerando a antecedência mínima (apenas para o dia atual)
+ * Requer MINIMUM_ADVANCE_MINUTES de antecedência para agendar
+ * Ex: com 15min de antecedência, horário 11:00 disponível até 10:45, indisponível a partir de 10:46
  * 
  * IMPORTANTE: Compara usando ano/mês/dia diretamente para evitar problemas de timezone
  */
@@ -179,30 +181,18 @@ export const isPastTime = (date: Date, time: string): boolean => {
     return false;
   }
   
-  // É hoje - verificar hora
+  // É hoje - verificar hora com antecedência mínima de 15 minutos
   const [hours, minutes] = time.split(':').map(Number);
+  const slotTotalMinutes = hours * 60 + minutes;
+  const currentTotalMinutes = now.getHours() * 60 + now.getMinutes();
   
-  // Criar data/hora do slot usando componentes locais
-  const selectedDateTime = new Date(selectedYear, selectedMonth, selectedDay, hours, minutes, 0, 0);
-  
-  // Permitir agendamento até 10 minutos DEPOIS do horário passar
-  // Ex: horário 19:00 disponível de 19:00 até 19:10
-  const minTime = new Date(now.getTime() - 10 * 60 * 1000);
-  
-  const isPast = selectedDateTime < minTime;
-  
-  if (isPast) {
-    console.log('🕐 isPastTime:', {
-      time,
-      selectedDateTime: selectedDateTime.toISOString(),
-      minTime: minTime.toISOString(),
-      now: now.toISOString(),
-      isPast
-    });
-  }
+  // Slot precisa ter pelo menos MINIMUM_ADVANCE_MINUTES de antecedência
+  const isPast = slotTotalMinutes <= currentTotalMinutes + MINIMUM_ADVANCE_MINUTES;
   
   return isPast;
 };
+
+
 
 /**
  * Calcula todos os slots ocupados por um agendamento (incluindo buffer)

@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, addMinutes, parse } from 'date-fns';
-import { BUFFER_MINUTES } from '@/lib/utils/timeCalculations';
+import { BUFFER_MINUTES, MINIMUM_ADVANCE_MINUTES } from '@/lib/utils/timeCalculations';
 
 interface TimeSlot {
   time: string;
@@ -133,12 +133,12 @@ export const useBarberAvailableSlots = () => {
             continue;
           }
 
-          // Se for hoje, verificar se já passou (com 30 min de antecedência)
+          // Se for hoje, verificar se já passou (com antecedência mínima)
           let isPast = false;
           if (isCurrentDay) {
             const slotTotalMinutes = hour * 60 + minute;
             const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
+            if (slotTotalMinutes <= currentTotalMinutes + MINIMUM_ADVANCE_MINUTES) {
               isPast = true;
             }
           }

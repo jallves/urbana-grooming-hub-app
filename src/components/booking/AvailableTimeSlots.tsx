@@ -76,9 +76,9 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
         const slotStr = format(currentSlot, 'HH:mm');
         const slotEnd = addMinutes(currentSlot, serviceDuration);
         
-        // Check if slot is in the past (for today)
+        // Check if slot is in the past (15 min advance required)
         let isAvailable = true;
-        if (isToday && isBefore(currentSlot, now)) {
+        if (isToday && isBefore(currentSlot, addMinutes(now, 15))) {
           isAvailable = false;
         }
 

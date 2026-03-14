@@ -247,10 +247,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           // Verificar se o serviço cabe antes do fim do expediente
           if (slotTotalMinutes + serviceDuration > endTotalMinutes) continue;
           
-          // Se for hoje, pular horários passados
+          // Se for hoje, pular horários passados (15 min de antecedência)
           if (isCurrentDay) {
             const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) continue;
+            if (slotTotalMinutes <= currentTotalMinutes + 15) continue;
           }
           
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;

@@ -177,10 +177,10 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             continue;
           }
 
-          // Se for hoje, só incluir horários futuros (30 min à frente)
+          // Se for hoje, só incluir horários futuros (15 min de antecedência)
           if (isCurrentDay) {
             const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 30) {
+            if (slotTotalMinutes <= currentTotalMinutes + 15) {
               continue;
             }
           }
