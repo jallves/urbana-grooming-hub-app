@@ -2389,6 +2389,7 @@ export type Database = {
         }
         Returns: string
       }
+      totem_checkin: { Args: { p_agendamento_id: string }; Returns: Json }
       update_session_activity: {
         Args: { p_session_id: string }
         Returns: boolean
