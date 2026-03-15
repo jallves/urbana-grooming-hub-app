@@ -17,6 +17,7 @@ const PainelClienteLayout: React.FC = () => {
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   useClientAppointmentNotifier();
+  useClientSubscriptionNotifier();
 
   // PERSISTÊNCIA DE ROTA: Salvar rota atual toda vez que mudar
   React.useEffect(() => {
