@@ -5,9 +5,10 @@ import ClientAppointmentCompactTable from './ClientAppointmentCompactTable';
 import ClientAppointmentFilters from './ClientAppointmentFilters';
 import ClientAppointmentEditDialog from './ClientAppointmentEditDialog';
 import ClientAppointmentCreateDialog from './ClientAppointmentCreateDialog';
+import AdminEncaixeModal from './AdminEncaixeModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Zap } from 'lucide-react';
 
 const ClientAppointmentDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -15,10 +16,12 @@ const ClientAppointmentDashboard: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEncaixeDialogOpen, setIsEncaixeDialogOpen] = useState(false);
 
   const {
     appointments,
     isLoading,
+    fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
     handleUpdateAppointment,
@@ -124,14 +127,24 @@ const ClientAppointmentDashboard: React.FC = () => {
                 </p>
               </div>
             </div>
-            {/* Botão - Adaptável */}
-            <Button
-              onClick={handleCreateAppointment}
-              className="w-full sm:w-auto bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white shadow-lg text-sm sm:text-base h-10 sm:h-auto"
-            >
-              <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-              <span className="hidden xs:inline">Novo </span>Agendamento
-            </Button>
+            {/* Botões - Adaptáveis */}
+            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+              <Button
+                onClick={() => setIsEncaixeDialogOpen(true)}
+                variant="outline"
+                className="w-full sm:w-auto border-purple-300 text-purple-700 hover:bg-purple-50 text-sm h-10 sm:h-auto font-semibold"
+              >
+                <Zap className="w-4 h-4 mr-1 sm:mr-2" />
+                Encaixe
+              </Button>
+              <Button
+                onClick={handleCreateAppointment}
+                className="w-full sm:w-auto bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white shadow-lg text-sm sm:text-base h-10 sm:h-auto"
+              >
+                <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                <span className="hidden xs:inline">Novo </span>Agendamento
+              </Button>
+            </div>
           </div>
         </div>
       </div>
@@ -180,6 +193,16 @@ const ClientAppointmentDashboard: React.FC = () => {
         isOpen={isCreateDialogOpen}
         onClose={handleCloseCreateDialog}
         onCreate={handleCloseCreateDialog}
+      />
+
+      {/* Dialog de encaixe */}
+      <AdminEncaixeModal
+        isOpen={isEncaixeDialogOpen}
+        onClose={() => setIsEncaixeDialogOpen(false)}
+        onSuccess={() => {
+          setIsEncaixeDialogOpen(false);
+          fetchAppointments();
+        }}
       />
 
       {/* Dialog de edição */}

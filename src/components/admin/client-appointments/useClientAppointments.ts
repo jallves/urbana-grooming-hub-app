@@ -14,6 +14,7 @@ export interface PainelAgendamento {
   hora: string;
   status: string;
   status_totem: string | null;
+  is_encaixe?: boolean;
   created_at: string;
   updated_at: string;
   notas?: string | null;
