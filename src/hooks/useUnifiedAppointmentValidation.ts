@@ -341,7 +341,7 @@ export const useUnifiedAppointmentValidation = () => {
   ): Promise<ValidationResult> => {
     const dateStr = formatDateLocal(date);
     const newStart = timeToMinutes(time);
-    const newEnd = newStart + serviceDuration + BUFFER_MINUTES; // INCLUI BUFFER
+    const newEnd = newStart + serviceDuration; // Sem buffer duplo — buffer já incluído no aptEnd
 
     let query = supabase
       .from('painel_agendamentos')
@@ -598,10 +598,13 @@ export const useUnifiedAppointmentValidation = () => {
         }
 
         // Verificar conflitos com buffer
+        // O buffer já está incluído em period.end (linha 578: aptEnd = aptStart + aptDuration + BUFFER)
+        // Então basta verificar se o novo slot (sem buffer adicional) conflita com o período ocupado
         if (available) {
           for (const period of occupiedPeriods) {
-            // Verifica se novo slot + buffer conflita com período ocupado
-            if (mins < period.end && slotEnd + BUFFER_MINUTES > period.start) {
+            // Novo slot conflita se: começa antes do período ocupado+buffer terminar
+            // E termina depois do período ocupado começar (com buffer para o slot anterior)
+            if (mins < period.end && slotEnd > period.start) {
               available = false;
               reason = 'Horário ocupado';
               break;
