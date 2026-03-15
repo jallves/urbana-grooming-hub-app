@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Crown, Users, CreditCard, LayoutDashboard } from 'lucide-react';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import SubscriptionDashboardTab from './SubscriptionDashboardTab';
 import SubscriptionPlansTab from './SubscriptionPlansTab';
 import SubscriptionSubscribersTab from './SubscriptionSubscribersTab';
@@ -17,10 +16,10 @@ const SubscriptionModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   return (
-    <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6">
-      {/* Scrollable Tab Navigation for mobile */}
-      <ScrollArea className="w-full">
-        <div className="flex gap-2 sm:gap-3 pb-1 min-w-max">
+    <div className="flex flex-col h-full">
+      {/* Sticky Tab Navigation */}
+      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b px-2 sm:px-4 lg:px-6 pt-2 sm:pt-4 pb-2">
+        <div className="flex gap-1.5 sm:gap-3 overflow-x-auto pb-1 scrollbar-none">
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
             return (
@@ -29,7 +28,7 @@ const SubscriptionModule: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`
                   flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm
-                  transition-all duration-200 border whitespace-nowrap
+                  transition-all duration-200 border whitespace-nowrap flex-shrink-0
                   ${isActive
                     ? `${tab.activeColor} border-transparent shadow-lg`
                     : `${tab.inactiveColor} border-transparent`
@@ -42,14 +41,15 @@ const SubscriptionModule: React.FC = () => {
             );
           })}
         </div>
-        <ScrollBar orientation="horizontal" className="h-1" />
-      </ScrollArea>
+      </div>
 
-      {/* Tab Content */}
-      {activeTab === 'dashboard' && <SubscriptionDashboardTab />}
-      {activeTab === 'plans' && <SubscriptionPlansTab />}
-      {activeTab === 'subscribers' && <SubscriptionSubscribersTab />}
-      {activeTab === 'payments' && <SubscriptionPaymentsTab />}
+      {/* Scrollable Tab Content */}
+      <div className="flex-1 overflow-y-auto px-2 sm:px-4 lg:px-6 pb-4">
+        {activeTab === 'dashboard' && <SubscriptionDashboardTab />}
+        {activeTab === 'plans' && <SubscriptionPlansTab />}
+        {activeTab === 'subscribers' && <SubscriptionSubscribersTab />}
+        {activeTab === 'payments' && <SubscriptionPaymentsTab />}
+      </div>
     </div>
   );
 };
