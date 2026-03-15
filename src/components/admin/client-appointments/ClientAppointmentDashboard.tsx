@@ -195,6 +195,16 @@ const ClientAppointmentDashboard: React.FC = () => {
         onCreate={handleCloseCreateDialog}
       />
 
+      {/* Dialog de encaixe */}
+      <AdminEncaixeModal
+        isOpen={isEncaixeDialogOpen}
+        onClose={() => setIsEncaixeDialogOpen(false)}
+        onSuccess={() => {
+          setIsEncaixeDialogOpen(false);
+          fetchAppointments();
+        }}
+      />
+
       {/* Dialog de edição */}
       {isEditDialogOpen && selectedAppointment && (
         <ClientAppointmentEditDialog
