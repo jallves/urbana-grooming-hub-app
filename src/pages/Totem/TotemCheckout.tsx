@@ -521,6 +521,33 @@ const TotemCheckout: React.FC = () => {
         <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
           <h3 className="text-base font-bold text-urbana-light mb-4 text-center">Forma de Pagamento</h3>
 
+          {/* Subscription Credit Button */}
+          {activeSubscription && activeSubscription.credits_remaining > 0 && (
+            <div className="mb-4">
+              <Button
+                onClick={handleUseCredit}
+                disabled={processing}
+                className="w-full h-20 bg-gradient-to-br from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-1 shadow-lg shadow-purple-500/30 border-2 border-purple-400/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Crown className="w-6 h-6" />
+                  <span>Usar 1 Crédito</span>
+                </div>
+                <span className="text-xs text-purple-200/80">
+                  {activeSubscription.plan_name} • {activeSubscription.credits_remaining} crédito{activeSubscription.credits_remaining > 1 ? 's' : ''} restante{activeSubscription.credits_remaining > 1 ? 's' : ''}
+                </span>
+              </Button>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-purple-300/60">R$ 0,00 — sem cobrança</p>
+              </div>
+              <div className="my-3 flex items-center gap-2">
+                <div className="flex-1 h-px bg-urbana-gold/20" />
+                <span className="text-xs text-urbana-light/40">ou pague normalmente</span>
+                <div className="flex-1 h-px bg-urbana-gold/20" />
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Button
               onClick={() => handlePayment('pix')}
