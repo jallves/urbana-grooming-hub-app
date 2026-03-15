@@ -85,6 +85,9 @@ const TotemCheckout: React.FC = () => {
   // Receipt modal state (for subscription credit checkout)
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
+  // Subscription credits hook
+  const { activeSubscription, checkCredits, useCredit } = useClientSubscriptionCredits();
+
   // ============================================================
   // CÁLCULO AUTOMÁTICO EM TEMPO REAL (sem depender de rede)
   // ============================================================
