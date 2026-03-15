@@ -195,12 +195,15 @@ export const useClientSubscriptions = () => {
       } as any);
       if (error) throw error;
 
-      // 2. Update next billing date
+      // 2. Update next billing date and reset credits
       const endDate = new Date(data.period_end);
       endDate.setMonth(endDate.getMonth() + 1);
       await supabase
         .from('client_subscriptions')
-        .update({ next_billing_date: endDate.toISOString().split('T')[0] } as any)
+        .update({ 
+          next_billing_date: endDate.toISOString().split('T')[0],
+          credits_used: 0,
+        } as any)
         .eq('id', data.subscription_id);
 
       // 3. Get subscription details for ERP integration

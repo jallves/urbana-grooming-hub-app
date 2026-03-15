@@ -27,6 +27,7 @@ export interface PlanFormData {
   color: string;
   display_order: number;
   service_ids: string[];
+  credits_total: number;
 }
 
 export const useSubscriptionPlans = () => {
