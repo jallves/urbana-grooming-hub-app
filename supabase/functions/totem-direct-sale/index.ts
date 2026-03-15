@@ -393,7 +393,7 @@ serve(async (req) => {
                   reference_id: venda_id,
                   reference_type: 'totem_subscription',
                   items: [{
-                    type: 'service',
+                    type: 'product', // Usar 'product' para evitar FK constraint em financial_records.service_id
                     id: planId,
                     name: `Assinatura: ${planName}`,
                     quantity: 1,
