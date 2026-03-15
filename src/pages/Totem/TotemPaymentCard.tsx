@@ -293,7 +293,7 @@ const TotemPaymentCard: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCheckingConnection(false);
-    }, 1500); // Aguarda 1.5s para TEF inicializar
+    }, 500); // 500ms para TEF inicializar (otimizado de 1.5s)
     
     return () => clearTimeout(timer);
   }, []);
