@@ -235,6 +235,58 @@ const TotemCheckout: React.FC = () => {
     }
   };
 
+  // Handler para usar crédito da assinatura (bypass PayGo)
+  const handleUseCredit = async () => {
+    if (!activeSubscription || activeSubscription.credits_remaining <= 0) return;
+    setProcessing(true);
+    try {
+      // 1. Sincronizar checkout no backend
+      if (vendaId) {
+        await supabase.from('vendas').update({
+          valor_total: 0,
+          forma_pagamento: 'ASSINATURA',
+          status: 'pago',
+          observacoes: `Crédito assinatura ${activeSubscription.plan_name}`
+        }).eq('id', vendaId);
+      }
+
+      // 2. Usar crédito
+      const success = await useCredit(
+        activeSubscription.id,
+        appointment.id,
+        resumo.original_service.nome
+      );
+
+      if (!success) {
+        toast.error('Erro ao usar crédito. Tente novamente.');
+        setProcessing(false);
+        return;
+      }
+
+      // 3. Finalizar checkout via edge function (sem pagamento)
+      await supabase.functions.invoke('totem-checkout', {
+        body: {
+          action: 'finish',
+          venda_id: vendaId,
+          session_id: session.id,
+          agendamento_id: appointment.id,
+          payment_method: 'subscription_credit',
+          tipAmount: 0,
+          extras: extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
+          products: productCart.map(p => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
+        }
+      });
+
+      toast.success('Crédito utilizado com sucesso! ✨');
+      navigate('/totem/home');
+    } catch (error) {
+      console.error('Erro ao usar crédito:', error);
+      toast.error('Erro ao processar crédito');
+    } finally {
+      setProcessing(false);
+    }
+  };
+
   const handlePayment = async (method: 'pix' | 'card') => {
     if (!resumo) return;
     setProcessing(true);
