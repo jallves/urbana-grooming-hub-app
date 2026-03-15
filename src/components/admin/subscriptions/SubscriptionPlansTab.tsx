@@ -228,7 +228,7 @@ const SubscriptionPlansTab: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+              <div className="space-y-2.5 sm:space-y-4">
                 <div>
                   <Label className="text-[11px] sm:text-sm">Créditos/Mês</Label>
                   <Input type="number" min="1" max="99" value={form.credits_total} onChange={e => setForm(f => ({ ...f, credits_total: parseInt(e.target.value) || 4 }))} className="text-sm h-9" />
@@ -236,13 +236,13 @@ const SubscriptionPlansTab: React.FC = () => {
                 </div>
                 <div>
                   <Label className="text-[11px] sm:text-sm">Cor do Plano</Label>
-                  <div className="flex gap-1.5 sm:gap-2 mt-1.5">
+                  <div className="flex flex-wrap gap-2 mt-1.5">
                     {Object.entries(planColors).map(([key, gradient]) => (
                       <button
                         key={key}
                         type="button"
                         onClick={() => setForm(f => ({ ...f, color: key }))}
-                        className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-gradient-to-br ${gradient} border-2 transition-all ${form.color === key ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} border-2 transition-all flex-shrink-0 ${form.color === key ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-transparent opacity-60 hover:opacity-100'}`}
                       />
                     ))}
                   </div>
