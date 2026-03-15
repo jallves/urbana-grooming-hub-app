@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2 } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
