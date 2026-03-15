@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,8 +6,11 @@ import { Input } from '@/components/ui/input';
 import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { useClientSubscriptionCredits } from '@/hooks/totem/useClientSubscriptionCredits';
+import { sendReceiptEmail } from '@/services/receiptEmailService';
+import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
 import TotemCheckoutExtrasModal, {
   CheckoutExtraService,
   CheckoutProductCartItem
