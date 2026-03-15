@@ -409,15 +409,16 @@ const TotemProductCheckout: React.FC = () => {
                 ))}
               </div>
 
-              {/* Footer - Total */}
               <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-2 sm:p-3">
                 <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30">
                   <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL A PAGAR:</p>
                   <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
                     R$ {displayTotal.toFixed(2)}
-              </p>
-            </div>
-          </div>
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
         </Card>
 
         {/* Right Column - Payment Methods */}
