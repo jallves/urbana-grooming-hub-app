@@ -6,7 +6,7 @@ export interface ClientNotification {
   description: string;
   timestamp: Date;
   read: boolean;
-  type: 'appointment' | 'reminder' | 'update' | 'cancel';
+  type: 'appointment' | 'reminder' | 'update' | 'cancel' | 'subscription';
   data?: Record<string, any>;
 }
 
