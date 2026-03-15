@@ -195,17 +195,17 @@ const TotemProductCheckout: React.FC = () => {
     }
   };
 
-  // Verificar se carrinho está vazio após remoções
+  // Verificar se carrinho está vazio após remoções (somente para produtos, não assinatura)
   useEffect(() => {
-    if (cart.length === 0 && initialCart && initialCart.length > 0) {
+    if (!isSubscriptionPurchase && cart.length === 0 && initialCart && initialCart.length > 0) {
       toast.info('Carrinho esvaziado. Redirecionando...');
       setTimeout(() => {
         navigate('/totem/products', { state: { client } });
       }, 1500);
     }
-  }, [cart.length, initialCart, client, navigate]);
+  }, [cart.length, initialCart, client, navigate, isSubscriptionPurchase]);
 
-  if (!initialCart) return null;
+  if (!initialCart && !isSubscriptionPurchase) return null;
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col p-2 sm:p-3 md:p-4 font-poppins overflow-hidden">
