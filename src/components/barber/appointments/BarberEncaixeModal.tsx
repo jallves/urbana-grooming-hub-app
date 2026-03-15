@@ -174,6 +174,16 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
     }
   };
 
+  // Verificar se o horário é retroativo (passado)
+  const isSlotInPast = (): boolean => {
+    if (!selectedDate || !selectedTime) return false;
+    const now = new Date();
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const [hours, minutes] = selectedTime.split(':').map(Number);
+    const slotDate = new Date(year, month - 1, day, hours, minutes, 0, 0);
+    return slotDate <= now;
+  };
+
   const handleSaveClick = () => {
     if (!selectedDate || !selectedTime || !selectedServiceId) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -189,6 +199,12 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
     }
     if (hasEncaixe) {
       toast.error('Este horário já possui um encaixe (limite: 1 por slot)');
+      return;
+    }
+    if (isSlotInPast()) {
+      toast.error('Não é possível criar encaixe em horário retroativo', {
+        description: 'Selecione um horário futuro para o encaixe.'
+      });
       return;
     }
     setShowConfirmDialog(true);
