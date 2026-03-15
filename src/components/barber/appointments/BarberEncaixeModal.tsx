@@ -456,7 +456,7 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
             </Button>
             <Button
               onClick={handleSaveClick}
-              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId}
+              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || isSlotInPast()}
               className="w-full sm:flex-1 h-10 bg-purple-600 text-white hover:bg-purple-700 text-sm touch-manipulation font-semibold"
             >
               ⚡ Criar Encaixe
