@@ -431,7 +431,7 @@ const TotemProductCheckout: React.FC = () => {
             {/* PIX Button */}
             <button
               onClick={() => handlePayment('pix')}
-              disabled={isProcessing || cart.length === 0}
+              disabled={isProcessing || (!isSubscriptionPurchase && cart.length === 0)}
               className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-urbana-gold/20 to-urbana-gold-dark/10 backdrop-blur-md active:from-urbana-gold/30 active:to-urbana-gold-dark/20 border-2 border-urbana-gold/50 active:border-urbana-gold rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
             >
               <div className="absolute inset-0 bg-gradient-to-br from-urbana-gold/0 to-urbana-gold/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
