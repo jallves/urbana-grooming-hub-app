@@ -17,7 +17,16 @@ interface SubscriptionPlan {
   billing_period: string;
   color: string | null;
   icon: string | null;
+  credits_total: number;
 }
+
+const planColorMap: Record<string, { from: string; to: string; accent: string; bg: string; border: string; text: string; shadow: string }> = {
+  amber: { from: 'from-amber-500', to: 'to-amber-700', accent: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/40', text: 'text-amber-200', shadow: 'shadow-amber-500/30' },
+  emerald: { from: 'from-emerald-500', to: 'to-emerald-700', accent: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/40', text: 'text-emerald-200', shadow: 'shadow-emerald-500/30' },
+  violet: { from: 'from-violet-500', to: 'to-violet-700', accent: 'text-violet-300', bg: 'bg-violet-500/10', border: 'border-violet-500/40', text: 'text-violet-200', shadow: 'shadow-violet-500/30' },
+  blue: { from: 'from-blue-500', to: 'to-blue-700', accent: 'text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/40', text: 'text-blue-200', shadow: 'shadow-blue-500/30' },
+  rose: { from: 'from-rose-500', to: 'to-rose-700', accent: 'text-rose-300', bg: 'bg-rose-500/10', border: 'border-rose-500/40', text: 'text-rose-200', shadow: 'shadow-rose-500/30' },
+};
 
 const TotemProducts: React.FC = () => {
   const navigate = useNavigate();
@@ -352,51 +361,53 @@ const TotemProducts: React.FC = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 pb-4">
-              {plans.map(plan => (
+              {plans.map(plan => {
+                const c = planColorMap[plan.color || 'violet'] || planColorMap.violet;
+                return (
                 <div
                   key={plan.id}
-                  className="group relative overflow-hidden bg-gradient-to-br from-purple-900/40 to-violet-900/30 backdrop-blur-xl border-2 border-purple-500/40 hover:border-purple-400 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-purple-500/20"
+                  className={`group relative overflow-hidden bg-gradient-to-br ${c.from}/20 ${c.to}/10 backdrop-blur-xl border-2 ${c.border} hover:border-opacity-100 rounded-2xl transition-all duration-300 hover:shadow-2xl hover:${c.shadow}`}
                 >
                   {/* Plan Badge */}
                   <div className="absolute top-3 right-3 z-10">
-                    <div className="flex items-center gap-1 px-3 py-1 bg-purple-500/30 backdrop-blur-sm rounded-full border border-purple-400/50">
-                      <Sparkles className="w-3 h-3 text-purple-300" />
-                      <span className="text-xs font-bold text-purple-200">{billingLabel[plan.billing_period] || plan.billing_period}</span>
+                    <div className={`flex items-center gap-1 px-3 py-1 ${c.bg} backdrop-blur-sm rounded-full border ${c.border}`}>
+                      <Sparkles className={`w-3 h-3 ${c.accent}`} />
+                      <span className={`text-xs font-bold ${c.text}`}>{billingLabel[plan.billing_period] || plan.billing_period}</span>
                     </div>
                   </div>
 
                   <div className="p-5 sm:p-6 space-y-4">
                     {/* Icon & Name */}
                     <div className="flex items-center gap-3">
-                      <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg shadow-purple-500/30">
+                      <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${c.from} ${c.to} flex items-center justify-center shadow-lg ${c.shadow}`}>
                         <Crown className="w-7 h-7 text-white" />
                       </div>
                       <div>
                         <h3 className="text-xl font-black text-white">{plan.name}</h3>
-                        <p className="text-sm text-purple-300/80">4 serviços inclusos</p>
+                        <p className={`text-sm ${c.accent}/80`}>{plan.credits_total} serviços inclusos</p>
                       </div>
                     </div>
 
                     {/* Description */}
                     {plan.description && (
-                      <p className="text-sm text-purple-200/70 leading-relaxed">{plan.description}</p>
+                      <p className={`text-sm ${c.text}/70 leading-relaxed`}>{plan.description}</p>
                     )}
 
                     {/* Benefits */}
-                    <div className="space-y-2 py-2 border-t border-purple-500/20">
-                      <div className="flex items-center gap-2 text-sm text-purple-200">
+                    <div className="space-y-2 py-2 border-t border-white/10">
+                      <div className={`flex items-center gap-2 text-sm ${c.text}`}>
                         <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
                           <span className="text-green-400 text-xs">✓</span>
                         </div>
-                        4 créditos de serviço por mês
+                        {plan.credits_total} créditos de serviço por mês
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-purple-200">
+                      <div className={`flex items-center gap-2 text-sm ${c.text}`}>
                         <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
                           <span className="text-green-400 text-xs">✓</span>
                         </div>
                         Pagamento sem fila no checkout
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-purple-200">
+                      <div className={`flex items-center gap-2 text-sm ${c.text}`}>
                         <div className="w-5 h-5 rounded-full bg-green-500/20 flex items-center justify-center">
                           <span className="text-green-400 text-xs">✓</span>
                         </div>
@@ -405,9 +416,9 @@ const TotemProducts: React.FC = () => {
                     </div>
 
                     {/* Price */}
-                    <div className="text-center py-3 bg-purple-500/10 rounded-xl border border-purple-500/20">
-                      <p className="text-sm text-purple-300/60">Valor do combo</p>
-                      <p className="text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-violet-300 to-purple-200">
+                    <div className={`text-center py-3 ${c.bg} rounded-xl border ${c.border}`}>
+                      <p className={`text-sm ${c.accent}/60`}>Valor do combo</p>
+                      <p className={`text-3xl sm:text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r ${c.from} ${c.to}`}>
                         R$ {plan.price.toFixed(2)}
                       </p>
                     </div>
@@ -416,14 +427,15 @@ const TotemProducts: React.FC = () => {
                     <Button
                       onClick={() => handleBuyPlan(plan)}
                       size="lg"
-                      className="w-full h-14 text-lg font-bold bg-gradient-to-r from-purple-600 to-violet-600 hover:from-purple-500 hover:to-violet-500 text-white shadow-xl shadow-purple-500/30 rounded-xl"
+                      className={`w-full h-14 text-lg font-bold bg-gradient-to-r ${c.from} ${c.to} hover:opacity-90 text-white shadow-xl ${c.shadow} rounded-xl`}
                     >
                       <Crown className="w-5 h-5 mr-2" />
                       Adquirir Combo
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
