@@ -54,72 +54,23 @@ const TotemConfirmation: React.FC = () => {
     try {
       setIsProcessing(true);
       
-      console.log('🔄 [TOTEM] Check-in direto (sem Edge Function) para:', appointment?.id);
+      console.log('🔄 [TOTEM] Check-in via RPC para:', appointment?.id);
 
-      // ⚡ OTIMIZADO: Queries diretas ao Supabase (sem cold-start de Edge Function)
-      // 1. Atualizar status do agendamento para CHEGOU
-      const { error: updateError } = await supabase
-        .from('painel_agendamentos')
-        .update({ status_totem: 'CHEGOU', status: 'confirmado' })
-        .eq('id', appointment.id);
+      // ⚡ RPC SECURITY DEFINER - bypassa RLS com segurança
+      const { data: result, error: rpcError } = await supabase
+        .rpc('totem_checkin', { p_agendamento_id: appointment.id });
 
-      if (updateError) {
-        console.error('❌ Erro ao atualizar status:', updateError);
-        throw new Error('Erro ao atualizar status do agendamento');
+      if (rpcError) {
+        console.error('❌ Erro RPC check-in:', rpcError);
+        throw new Error('Erro ao realizar check-in');
       }
 
-      // 2. Verificar se já existe sessão para este agendamento
-      const { data: existingLink } = await supabase
-        .from('appointment_totem_sessions')
-        .select('*, totem_session:totem_sessions(*)')
-        .eq('appointment_id', appointment.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      let session = existingLink?.totem_session;
-
-      // 3. Se não existe, criar sessão + link
-      if (!session) {
-        const token = crypto.randomUUID();
-        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
-        const { data: newSession, error: sessionError } = await supabase
-          .from('totem_sessions')
-          .insert({ token, expires_at: expiresAt, is_valid: true })
-          .select()
-          .single();
-
-        if (sessionError) {
-          console.error('❌ Erro ao criar sessão:', sessionError);
-          throw new Error('Erro ao criar sessão do totem');
-        }
-
-        const { error: linkError } = await supabase
-          .from('appointment_totem_sessions')
-          .insert({
-            appointment_id: appointment.id,
-            totem_session_id: newSession.id,
-            status: 'check_in'
-          });
-
-        if (linkError) {
-          // Limpar sessão órfã
-          await supabase.from('totem_sessions').delete().eq('id', newSession.id);
-          throw new Error('Erro ao vincular sessão ao agendamento');
-        }
-
-        session = newSession;
-        console.log('✅ Nova sessão criada:', session.id);
-      } else {
-        console.log('✅ Sessão existente:', session.id);
-        // Atualizar status do link
-        await supabase
-          .from('appointment_totem_sessions')
-          .update({ status: 'check_in' })
-          .eq('appointment_id', appointment.id)
-          .eq('totem_session_id', session.id);
+      const checkinResult = result as any;
+      if (!checkinResult?.success) {
+        throw new Error(checkinResult?.error || 'Erro ao realizar check-in');
       }
+
+      const session = { id: checkinResult.session_id };
 
       console.log('✅ [TOTEM] Check-in realizado com sucesso!');
 
