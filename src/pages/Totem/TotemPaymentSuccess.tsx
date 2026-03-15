@@ -57,7 +57,7 @@ const TotemPaymentSuccess: React.FC = () => {
   const ratingRedirect = !isDirect && appointment;
   const { countdown } = useAutoRedirectHome({
     seconds: 10,
-    enabled: !!(total && client),
+    enabled: !!(total != null && client),
     redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
     redirectState: ratingRedirect ? { appointment, client } : undefined,
   });
