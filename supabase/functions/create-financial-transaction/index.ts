@@ -358,9 +358,6 @@ Deno.serve(async (req) => {
     }
 
     // ===================== COMISSÕES (SERVIÇOS + PRODUTOS) =====================
-    // Serviço: usar comissão do barbeiro (campo staff.commission_rate não serve aqui; painel_barbeiros.taxa_comissao existe)
-    // Produto: usar painel_produtos.commission_percentage / commission_value
-
     if (body.barber_id) {
       // Comissão de serviços: default 40% se não configurado
       const { data: barberCfg } = await supabase
@@ -378,25 +375,29 @@ Deno.serve(async (req) => {
         const gross = qty * unit
         const net = Math.max(0, gross - discount)
 
-        const commissionAmount = Number((net * (serviceCommissionRate / 100)).toFixed(2))
-        // Categorias em PORTUGUÊS para o ERP
-        const subcategory = item.isExtra ? 'servico_extra_comissao' : 'servico_comissao'
-        const description = `Comissão ${serviceCommissionRate}% - ${item.name || 'Serviço'}`
+        // Se for uso de crédito de assinatura: comissão zerada
+        const commissionAmount = isSubscriptionUsage ? 0 : Number((net * (serviceCommissionRate / 100)).toFixed(2))
+        const subcategory = isSubscriptionUsage ? 'assinatura_comissao' : (item.isExtra ? 'servico_extra_comissao' : 'servico_comissao')
+        
+        const description = isSubscriptionUsage
+          ? `Comissão R$ 0,00 - ${item.name || 'Serviço'} (uso crédito assinatura - comissão paga na venda do combo)`
+          : `Comissão ${serviceCommissionRate}% - ${item.name || 'Serviço'}`
+        
         const subRef = `commission:service:${item.id}:${subcategory}`
 
         const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
           supabase,
           {
             transaction_type: 'commission',
-            category: 'comissao', // Categoria em PORTUGUÊS
+            category: isSubscriptionUsage ? 'assinatura' : 'comissao',
             subcategory,
             amount: commissionAmount,
             net_amount: commissionAmount,
-            status: 'pending',
+            status: isSubscriptionUsage ? 'completed' : 'pending',
             description,
             transaction_date,
             due_date: transaction_date,
-            payment_method, // 👈 ADICIONADO: Forma de pagamento
+            payment_method,
             barber_id: body.barber_id,
             barber_name: barberName,
             client_id: body.client_id,
@@ -406,8 +407,33 @@ Deno.serve(async (req) => {
           { reference_id, reference_type, sub_ref: subRef }
         )
 
-         if (commissionAmount > 0) {
-           // Sempre garantir replica no painel do barbeiro + contas a pagar (idempotentes)
+         // Para assinatura: registrar comissão zerada com nota explicativa
+         // Para pagamento normal: registrar comissão real
+         if (isSubscriptionUsage) {
+           await ensureBarberCommission(supabase, {
+             barber_id: body.barber_id,
+             barber_name: barberName,
+             appointment_id: body.appointment_id || null,
+             venda_id: reference_id,
+             valor: 0,
+             commission_rate: 0,
+             status: 'paid', // Já considerado pago (zerado)
+             tipo: 'uso_credito_assinatura',
+           })
+
+           await ensureContasPagar(supabase, {
+             descricao: description,
+             valor: 0,
+             data_vencimento: transaction_date,
+             data_pagamento: transaction_date,
+             status: 'pago', // Já quitado (zerado)
+             categoria: 'assinatura',
+             fornecedor: barberName,
+             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+             transaction_id: transaction_id,
+             forma_pagamento: 'subscription_credit',
+           })
+         } else if (commissionAmount > 0) {
            await ensureBarberCommission(supabase, {
              barber_id: body.barber_id,
              barber_name: barberName,
@@ -425,7 +451,7 @@ Deno.serve(async (req) => {
              data_vencimento: transaction_date,
              data_pagamento: null,
              status: 'pendente',
-             categoria: 'comissao', // Categoria em PORTUGUÊS
+             categoria: 'comissao',
              fornecedor: barberName,
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id, // Mesmo ID da transação para conciliação
