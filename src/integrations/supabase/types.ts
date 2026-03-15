@@ -1883,6 +1883,7 @@ export type Database = {
           billing_period: string
           color: string | null
           created_at: string
+          credits_total: number
           description: string | null
           display_order: number
           icon: string | null
@@ -1897,6 +1898,7 @@ export type Database = {
           billing_period?: string
           color?: string | null
           created_at?: string
+          credits_total?: number
           description?: string | null
           display_order?: number
           icon?: string | null
@@ -1911,6 +1913,7 @@ export type Database = {
           billing_period?: string
           color?: string | null
           created_at?: string
+          credits_total?: number
           description?: string | null
           display_order?: number
           icon?: string | null

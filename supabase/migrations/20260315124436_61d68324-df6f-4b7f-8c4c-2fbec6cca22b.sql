@@ -1,0 +1,1 @@
+ALTER TABLE public.subscription_plans ADD COLUMN credits_total integer NOT NULL DEFAULT 4;
