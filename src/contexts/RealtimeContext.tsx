@@ -67,6 +67,12 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     
     // Vendas
     queryClient.invalidateQueries({ queryKey: ['vendas'] });
+
+    // Assinaturas
+    queryClient.invalidateQueries({ queryKey: ['client-subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-payments'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-renewal-alerts'] });
     
     // Executa callbacks adicionais registrados
     financialCallbacks.forEach(cb => cb());
