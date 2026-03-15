@@ -311,7 +311,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             {subscriptions.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma movimentação registrada</p>
             ) : (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="space-y-1">
                 {subscriptions.slice(0, 6).map(sub => (
                   <div key={sub.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-accent/50">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.status === 'active' ? 'bg-emerald-500' : sub.status === 'cancelled' ? 'bg-red-500' : 'bg-muted-foreground/40'}`} />
