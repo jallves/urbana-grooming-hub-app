@@ -145,7 +145,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             Alertas de Vencimento
             <Badge className="bg-amber-100 text-amber-800 text-[10px]">{alerts.length}</Badge>
           </h3>
-          <div className="space-y-2 max-h-56 overflow-y-auto">
+          <div className="space-y-2">
             {overdueAlerts.map(alert => (
               <Card key={`o-${alert.id}`} className="border border-red-200 bg-red-50/50">
                 <CardContent className="p-2.5 sm:p-3">
