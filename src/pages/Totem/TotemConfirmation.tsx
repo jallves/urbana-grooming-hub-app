@@ -8,6 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { OfflineIndicator } from '@/components/totem/OfflineIndicator';
+import { HOMOLOGATION_MODE } from '@/lib/utils/timeCalculations';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 const TotemConfirmation: React.FC = () => {
