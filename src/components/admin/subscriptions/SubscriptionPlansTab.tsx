@@ -214,7 +214,27 @@ const SubscriptionPlansTab: React.FC = () => {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label className="text-xs sm:text-sm font-medium">Preço (R$)</Label>
-                  <Input type="number" step="0.01" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} className="text-sm h-10 mt-1" />
+                  <div className="relative mt-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground font-medium">R$</span>
+                    <Input
+                      type="text"
+                      inputMode="decimal"
+                      value={form.price > 0 ? form.price.toFixed(2).replace('.', ',') : ''}
+                      placeholder="0,00"
+                      onFocus={e => e.target.select()}
+                      onChange={e => {
+                        const raw = e.target.value.replace(/[^\d,]/g, '').replace(',', '.');
+                        const val = parseFloat(raw);
+                        setForm(f => ({ ...f, price: isNaN(val) ? 0 : val }));
+                      }}
+                      className="text-sm h-10 pl-10 font-semibold"
+                    />
+                  </div>
+                  {form.service_ids.length > 0 && (
+                    <p className="text-[10px] text-emerald-600 mt-0.5 font-medium">
+                      ✓ Calculado com base nos serviços
+                    </p>
+                  )}
                 </div>
                 <div>
                   <Label className="text-xs sm:text-sm font-medium">Período</Label>
