@@ -179,22 +179,9 @@ const TotemPaymentSuccess: React.FC = () => {
 
     sendEmailReceipt();
 
-    // Para checkout de serviço: ir direto para avaliação após 3 segundos
-    // Para venda direta de produtos: voltar para home após 5 segundos
-    const timer = setTimeout(() => {
-      if (isDirect) {
-        navigate('/totem/home');
-      } else if (appointment) {
-        navigate('/totem/rating', {
-          state: { appointment, client }
-        });
-      } else {
-        navigate('/totem/home');
-      }
-    }, isDirect ? 5000 : 3000);
+    // Auto-redirect agora é gerenciado pelo useAutoRedirectHome hook
 
     return () => {
-      clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
