@@ -54,15 +54,12 @@ const TotemPaymentSuccess: React.FC = () => {
     tipAmount = 0
   } = location.state || {};
 
+  const ratingRedirect = !isDirect && appointment;
   const { countdown } = useAutoRedirectHome({
     seconds: 10,
     enabled: !!(total && client),
-    redirectTo: isDirect ? '/totem/home' : (appointment ? '/totem/rating' : '/totem/home'),
-    onBeforeRedirect: () => {
-      if (!isDirect && appointment) {
-        // Navigation handled by redirectTo, but we need state for rating
-      }
-    },
+    redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
+    redirectState: ratingRedirect ? { appointment, client } : undefined,
   });
 
   useEffect(() => {
