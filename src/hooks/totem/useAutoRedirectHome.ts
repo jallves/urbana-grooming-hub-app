@@ -5,6 +5,7 @@ interface UseAutoRedirectHomeOptions {
   seconds?: number;
   enabled?: boolean;
   redirectTo?: string;
+  redirectState?: any;
   onBeforeRedirect?: () => void;
 }
 
@@ -16,6 +17,7 @@ export const useAutoRedirectHome = ({
   seconds = 10,
   enabled = true,
   redirectTo = '/totem/home',
+  redirectState,
   onBeforeRedirect,
 }: UseAutoRedirectHomeOptions = {}) => {
   const navigate = useNavigate();
@@ -38,13 +40,11 @@ export const useAutoRedirectHome = ({
   useEffect(() => {
     if (!enabled) return;
 
-    // Reset on user interaction
     const events = ['mousedown', 'touchstart', 'keydown', 'scroll'];
     const handleActivity = () => resetCountdown();
 
     events.forEach(e => document.addEventListener(e, handleActivity));
 
-    // Countdown interval
     startTimeRef.current = Date.now();
     intervalRef.current = setInterval(() => {
       const elapsed = Math.floor((Date.now() - startTimeRef.current) / 1000);
@@ -54,7 +54,7 @@ export const useAutoRedirectHome = ({
       if (remaining <= 0) {
         stopCountdown();
         onBeforeRedirect?.();
-        navigate(redirectTo);
+        navigate(redirectTo, { state: redirectState });
       }
     }, 500);
 
@@ -62,7 +62,7 @@ export const useAutoRedirectHome = ({
       stopCountdown();
       events.forEach(e => document.removeEventListener(e, handleActivity));
     };
-  }, [enabled, seconds, redirectTo, navigate, resetCountdown, stopCountdown, onBeforeRedirect]);
+  }, [enabled, seconds, redirectTo, redirectState, navigate, resetCountdown, stopCountdown, onBeforeRedirect]);
 
   return { countdown, resetCountdown, stopCountdown };
 };
