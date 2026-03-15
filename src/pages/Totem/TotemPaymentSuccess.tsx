@@ -238,8 +238,14 @@ const TotemPaymentSuccess: React.FC = () => {
           </h1>
           
           <p className="text-xl sm:text-2xl md:text-3xl text-urbana-light/90 font-semibold">
-            Pagamento Confirmado!
+            {paymentMethod === 'subscription_credit' ? 'Crédito Utilizado!' : 'Pagamento Confirmado!'}
           </p>
+          
+          {paymentMethod === 'subscription_credit' && (
+            <p className="text-sm text-purple-300/80">
+              ✨ Serviço realizado via assinatura
+            </p>
+          )}
           
           {transactionData?.nsu && (
             <p className="text-sm text-urbana-light/60">
