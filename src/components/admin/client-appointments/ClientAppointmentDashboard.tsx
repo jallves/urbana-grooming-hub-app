@@ -16,6 +16,7 @@ const ClientAppointmentDashboard: React.FC = () => {
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEncaixeDialogOpen, setIsEncaixeDialogOpen] = useState(false);
 
   const {
     appointments,
