@@ -280,7 +280,7 @@ serve(async (req) => {
         }
       }
 
-      // 8. Se for venda de assinatura, criar/ativar a subscription
+      // 8. Se for venda de assinatura, criar/ativar a subscription + ERP completo
       if (venda) {
         const { data: vendaItensCheck } = await supabase
           .from('vendas_itens')
@@ -293,6 +293,16 @@ serve(async (req) => {
           const planId = vendaItensCheck.item_id
           console.log('👑 [PRODUCT-SALE] Ativando assinatura para plano:', planId)
 
+          // Buscar dados do plano
+          const { data: planData } = await supabase
+            .from('subscription_plans')
+            .select('name, price, credits_total, billing_period')
+            .eq('id', planId)
+            .single()
+
+          const planPrice = vendaItensCheck.subtotal || planData?.price || 0
+          const planName = planData?.name || vendaItensCheck.nome || 'Assinatura'
+
           // Verificar se já existe assinatura ativa
           const { data: existingSub } = await supabase
             .from('client_subscriptions')
@@ -302,7 +312,10 @@ serve(async (req) => {
             .eq('status', 'active')
             .maybeSingle()
 
+          let subscriptionId: string | null = null
+
           if (existingSub) {
+            subscriptionId = existingSub.id
             // Renovar: resetar créditos
             await supabase
               .from('client_subscriptions')
@@ -316,61 +329,97 @@ serve(async (req) => {
           } else {
             // Criar nova assinatura
             const nextBilling = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            await supabase
+            const { data: newSub } = await supabase
               .from('client_subscriptions')
               .insert({
                 client_id: venda.cliente_id,
                 plan_id: planId,
                 status: 'active',
-                credits_total: 4,
+                credits_total: planData?.credits_total || 4,
                 credits_used: 0,
                 start_date: new Date().toISOString().split('T')[0],
                 next_billing_date: nextBilling,
                 payment_method: payment_method || 'credit_card',
                 notes: `Ativado via Totem - Venda ${venda_id}`
               })
-            console.log('✅ [PRODUCT-SALE] Nova assinatura criada')
+              .select('id')
+              .single()
+            
+            subscriptionId = newSub?.id || null
+            console.log('✅ [PRODUCT-SALE] Nova assinatura criada:', subscriptionId)
           }
 
-          // Gerar comissão do barbeiro sobre o valor do plano
-          if (venda.barbeiro_id) {
-            const { data: barberData } = await supabase
-              .from('painel_barbeiros')
-              .select('nome, commission_rate, taxa_comissao')
-              .eq('id', venda.barbeiro_id)
-              .single()
+          // ========== REGISTRAR PAGAMENTO NA ABA PAGAMENTOS DO MÓDULO ASSINATURA ==========
+          if (subscriptionId) {
+            const today = new Date().toISOString().split('T')[0]
+            const periodEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
 
-            if (barberData) {
-              const commRate = (barberData.commission_rate || barberData.taxa_comissao || 50) / 100
-              const commValue = vendaItensCheck.subtotal * commRate
-              console.log('💰 [PRODUCT-SALE] Comissão assinatura:', commValue, 'Taxa:', commRate * 100, '%')
+            // Verificar se já existe pagamento para evitar duplicata
+            const { data: existingPayment } = await supabase
+              .from('subscription_payments')
+              .select('id')
+              .eq('subscription_id', subscriptionId)
+              .eq('period_start', today)
+              .eq('amount', planPrice)
+              .maybeSingle()
 
-              await supabase.from('barber_commissions').insert({
-                barber_id: venda.barbeiro_id,
-                barber_name: barberData.nome,
-                valor: commValue,
-                amount: commValue,
-                commission_rate: commRate * 100,
-                tipo: 'assinatura',
-                status: 'pending',
-                venda_id: venda_id,
-                appointment_source: 'totem_subscription'
+            if (!existingPayment) {
+              await supabase.from('subscription_payments').insert({
+                subscription_id: subscriptionId,
+                amount: planPrice,
+                payment_date: today,
+                payment_method: payment_method || 'credit_card',
+                status: 'paid',
+                period_start: today,
+                period_end: periodEnd,
+                notes: `Pagamento ${planName} - Venda ${venda_id} - NSU: ${transaction_data?.nsu || 'N/A'}`
               })
-
-              // Contas a pagar para o barbeiro
-              await supabase.from('contas_pagar').insert({
-                descricao: `Comissão Assinatura - ${barberData.nome}`,
-                valor: commValue,
-                data_vencimento: new Date().toISOString().split('T')[0],
-                status: 'pendente',
-                categoria: 'Comissão',
-                fornecedor: barberData.nome,
-                observacoes: `Comissão de assinatura - Venda ${venda_id}`
-              })
-
-              console.log('✅ [PRODUCT-SALE] Comissão e contas_pagar criados')
+              console.log('✅ [PRODUCT-SALE] Pagamento de assinatura registrado')
+            } else {
+              console.log('⚠️ [PRODUCT-SALE] Pagamento de assinatura já existia')
             }
           }
+
+          // ========== INTEGRAÇÃO ERP - RECEITA DA ASSINATURA ==========
+          // Chamar create-financial-transaction para criar contas_receber + financial_records
+          const brazilTime = getBrazilDateTime()
+          try {
+            const { data: erpResult, error: erpError } = await supabase.functions.invoke(
+              'create-financial-transaction',
+              {
+                body: {
+                  client_id: venda.cliente_id,
+                  barber_id: venda.barbeiro_id,
+                  reference_id: venda_id,
+                  reference_type: 'totem_subscription',
+                  items: [{
+                    type: 'service',
+                    id: planId,
+                    name: `Assinatura: ${planName}`,
+                    quantity: 1,
+                    price: planPrice,
+                    discount: 0,
+                  }],
+                  payment_method: payment_method || 'credit_card',
+                  discount_amount: 0,
+                  notes: `Assinatura ${planName} - Totem - Venda ${venda_id}`,
+                  transaction_id: transaction_data?.nsu || null,
+                  transaction_date: brazilTime.date,
+                  transaction_datetime: brazilTime.datetime,
+                }
+              }
+            )
+
+            if (erpError) {
+              console.error('❌ [PRODUCT-SALE] Erro ERP assinatura:', erpError)
+            } else {
+              console.log('✅ [PRODUCT-SALE] ERP assinatura integrado:', erpResult)
+            }
+          } catch (erpException) {
+            console.error('❌ [PRODUCT-SALE] Exceção ERP assinatura:', erpException)
+          }
+
+          console.log('✅ [PRODUCT-SALE] Assinatura + ERP + Pagamentos registrados')
         }
       }
 
