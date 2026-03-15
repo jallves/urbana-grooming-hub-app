@@ -16,9 +16,9 @@ const SubscriptionModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   return (
-    <div className="flex flex-col h-full">
+    <div>
       {/* Sticky Tab Navigation */}
-      <div className="sticky top-0 z-20 bg-background/95 backdrop-blur-sm border-b px-2 sm:px-4 lg:px-6 pt-2 sm:pt-4 pb-2">
+      <div className="sticky top-[52px] sm:top-[56px] z-20 bg-background/95 backdrop-blur-sm border-b px-2 sm:px-4 lg:px-6 pt-2 sm:pt-3 pb-2">
         <div className="flex gap-1.5 sm:gap-3 overflow-x-auto pb-1 scrollbar-none">
           {tabs.map(tab => {
             const isActive = activeTab === tab.id;
@@ -43,8 +43,8 @@ const SubscriptionModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Scrollable Tab Content */}
-      <div className="flex-1 overflow-y-auto px-2 sm:px-4 lg:px-6 pb-4">
+      {/* Content - no inner scroll, flows naturally */}
+      <div className="px-2 sm:px-4 lg:px-6 pb-4">
         {activeTab === 'dashboard' && <SubscriptionDashboardTab />}
         {activeTab === 'plans' && <SubscriptionPlansTab />}
         {activeTab === 'subscribers' && <SubscriptionSubscribersTab />}

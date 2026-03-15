@@ -145,7 +145,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             Alertas de Vencimento
             <Badge className="bg-amber-100 text-amber-800 text-[10px]">{alerts.length}</Badge>
           </h3>
-          <div className="space-y-2 max-h-56 overflow-y-auto">
+          <div className="space-y-2">
             {overdueAlerts.map(alert => (
               <Card key={`o-${alert.id}`} className="border border-red-200 bg-red-50/50">
                 <CardContent className="p-2.5 sm:p-3">
@@ -232,7 +232,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             {recentPayments.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">Nenhum pagamento registrado ainda</p>
             ) : (
-              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+              <div className="space-y-0.5">
                 {recentPayments.map((pay, idx) => (
                   <div key={pay.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="flex flex-col items-center flex-shrink-0">
@@ -311,7 +311,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             {subscriptions.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">Nenhuma movimentação registrada</p>
             ) : (
-              <div className="space-y-1 max-h-48 overflow-y-auto">
+              <div className="space-y-1">
                 {subscriptions.slice(0, 6).map(sub => (
                   <div key={sub.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-accent/50">
                     <div className={`w-2 h-2 rounded-full flex-shrink-0 ${sub.status === 'active' ? 'bg-emerald-500' : sub.status === 'cancelled' ? 'bg-red-500' : 'bg-muted-foreground/40'}`} />
