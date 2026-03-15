@@ -41,6 +41,7 @@ const TotemProducts: React.FC = () => {
     }
 
     loadProducts();
+    loadPlans();
 
     // Realtime: atualizar produtos quando admin adicionar/editar/excluir
     const channel = supabase
@@ -52,6 +53,14 @@ const TotemProducts: React.FC = () => {
       }, () => {
         console.log('🔄 [Totem] Produto alterado no admin, recarregando...');
         loadProducts();
+      })
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'subscription_plans'
+      }, () => {
+        console.log('🔄 [Totem] Plano alterado no admin, recarregando...');
+        loadPlans();
       })
       .subscribe();
 
