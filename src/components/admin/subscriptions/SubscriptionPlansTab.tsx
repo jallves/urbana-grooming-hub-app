@@ -34,7 +34,7 @@ const planIcons: Record<string, React.ReactNode> = {
 const emptyForm: PlanFormData = {
   name: '', slug: '', description: '', price: 0,
   billing_period: 'monthly', is_active: true, color: 'amber',
-  display_order: 0, service_ids: [],
+  display_order: 0, service_ids: [], credits_total: 4,
 };
 
 const SubscriptionPlansTab: React.FC = () => {
@@ -66,6 +66,7 @@ const SubscriptionPlansTab: React.FC = () => {
       price: plan.price, billing_period: plan.billing_period, is_active: plan.is_active,
       color: plan.color || 'amber', display_order: plan.display_order,
       service_ids: plan.services?.map((s: any) => s.id) || [],
+      credits_total: (plan as any).credits_total || 4,
     });
     setDialogOpen(true);
   };
@@ -163,7 +164,7 @@ const SubscriptionPlansTab: React.FC = () => {
                       <p className="text-[10px] sm:text-xs text-muted-foreground italic">Nenhum serviço vinculado</p>
                     )}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">✓ Uso ilimitado dos serviços inclusos</p>
+                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">✓ {(plan as any).credits_total || 4} créditos/mês para serviços inclusos</p>
                   <div className="flex gap-2 pt-1 sm:pt-2">
                     <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs sm:text-sm" onClick={() => openEdit(plan)}>
                       <Pencil className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Editar
@@ -219,6 +220,11 @@ const SubscriptionPlansTab: React.FC = () => {
             </div>
             <div className="grid grid-cols-2 gap-3 sm:gap-4">
               <div>
+                <Label className="text-xs sm:text-sm">Créditos/Mês</Label>
+                <Input type="number" min="1" max="99" value={form.credits_total} onChange={e => setForm(f => ({ ...f, credits_total: parseInt(e.target.value) || 4 }))} className="text-sm" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">Limite de usos por período</p>
+              </div>
+              <div>
                 <Label className="text-xs sm:text-sm">Cor</Label>
                 <Select value={form.color} onValueChange={v => setForm(f => ({ ...f, color: v }))}>
                   <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
@@ -231,10 +237,10 @@ const SubscriptionPlansTab: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="flex items-end gap-3 pb-1">
-                <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
-                <Label className="text-xs sm:text-sm">Ativo</Label>
-              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+              <Label className="text-xs sm:text-sm">Ativo</Label>
             </div>
             <div>
               <Label className="mb-2 block text-xs sm:text-sm">Serviços Inclusos</Label>

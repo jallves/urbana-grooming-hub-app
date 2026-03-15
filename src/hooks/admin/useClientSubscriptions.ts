@@ -83,10 +83,10 @@ export const useClientSubscriptions = () => {
       payment_method: string;
       notes?: string;
     }) => {
-      // Get plan price for next billing
+      // Get plan info including credits
       const { data: plan } = await supabase
         .from('subscription_plans')
-        .select('price, billing_period')
+        .select('price, billing_period, credits_total')
         .eq('id', data.plan_id)
         .single();
 
@@ -96,10 +96,15 @@ export const useClientSubscriptions = () => {
       else if (plan?.billing_period === 'quarterly') nextBilling.setMonth(nextBilling.getMonth() + 3);
       else nextBilling.setFullYear(nextBilling.getFullYear() + 1);
 
+      // Get credits_total from plan
+      const creditsTotal = (plan as any)?.credits_total || 4;
+
       const { error } = await supabase.from('client_subscriptions').insert({
         ...data,
         next_billing_date: nextBilling.toISOString().split('T')[0],
         status: 'active',
+        credits_total: creditsTotal,
+        credits_used: 0,
       } as any);
       if (error) throw error;
     },
@@ -190,12 +195,15 @@ export const useClientSubscriptions = () => {
       } as any);
       if (error) throw error;
 
-      // 2. Update next billing date
+      // 2. Update next billing date and reset credits
       const endDate = new Date(data.period_end);
       endDate.setMonth(endDate.getMonth() + 1);
       await supabase
         .from('client_subscriptions')
-        .update({ next_billing_date: endDate.toISOString().split('T')[0] } as any)
+        .update({ 
+          next_billing_date: endDate.toISOString().split('T')[0],
+          credits_used: 0,
+        } as any)
         .eq('id', data.subscription_id);
 
       // 3. Get subscription details for ERP integration

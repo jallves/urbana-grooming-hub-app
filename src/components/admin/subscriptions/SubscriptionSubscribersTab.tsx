@@ -150,6 +150,17 @@ const SubscriptionSubscribersTab: React.FC = () => {
                       <p className="text-xs sm:text-sm text-muted-foreground">
                         Plano: <span className="font-medium text-foreground">{sub.plan_name}</span> • R$ {sub.plan_price?.toFixed(2)}/mês
                       </p>
+                      <div className="flex items-center gap-1.5 mt-0.5">
+                        <div className="flex-1 max-w-[100px] bg-gray-100 rounded-full h-1.5">
+                          <div 
+                            className={`h-1.5 rounded-full transition-all ${((sub as any).credits_used || 0) >= ((sub as any).credits_total || 4) ? 'bg-red-500' : 'bg-emerald-500'}`}
+                            style={{ width: `${Math.min(100, (((sub as any).credits_used || 0) / ((sub as any).credits_total || 4)) * 100)}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">
+                          {(sub as any).credits_used || 0}/{(sub as any).credits_total || 4} créditos
+                        </span>
+                      </div>
                       <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] sm:text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" /> Início: {formatDate(sub.start_date)}
