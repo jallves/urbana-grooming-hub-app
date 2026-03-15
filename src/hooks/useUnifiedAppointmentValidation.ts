@@ -368,14 +368,14 @@ export const useUnifiedAppointmentValidation = () => {
     for (const apt of appointments) {
       const aptStart = timeToMinutes(apt.hora);
       const aptDuration = (apt.servico as any)?.duracao || 60;
-      const aptEnd = aptStart + aptDuration + BUFFER_MINUTES; // INCLUI BUFFER
+      const aptEnd = aptStart + aptDuration; // Sem buffer — permite slots consecutivos
 
-      // Verificar sobreposição com buffer
-      // Sobreposição: (novo_inicio < existente_fim) AND (novo_fim > existente_inicio)
+      // Sobreposição: novo começa antes do existente terminar E novo termina depois do existente começar
       if (newStart < aptEnd && newEnd > aptStart) {
+        const nextAvailable = minutesToTime(aptEnd);
         return {
           valid: false,
-          error: `Conflito com agendamento às ${apt.hora}. Próximo horário disponível: ${minutesToTime(aptEnd)}`
+          error: `Conflito com agendamento às ${apt.hora}. Próximo horário disponível: ${nextAvailable}`
         };
       }
     }
