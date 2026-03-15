@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { action, venda_id, payment_id, payment_method, transaction_data } = await req.json()
+    const { action, venda_id, payment_id, payment_method, transaction_data, subscription_plan_id, client_id, barber_id } = await req.json()
 
     // ========================================================================
     // ACTION: START - Criar registro de pagamento pendente
