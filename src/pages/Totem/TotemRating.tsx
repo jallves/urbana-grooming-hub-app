@@ -8,6 +8,9 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
+import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
+
 const TotemRating: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();

@@ -319,13 +319,11 @@ const TotemPaymentSuccess: React.FC = () => {
           </div>
         </div>
 
-        {/* Indicador de próxima etapa */}
-        <div className="flex items-center justify-center gap-2 text-urbana-gold/80 pt-2">
-          <Star className="w-5 h-5 animate-pulse" />
-          <span className="text-base sm:text-lg">
-            {isDirect ? 'Voltando ao início...' : 'Preparando avaliação...'}
-          </span>
-        </div>
+        {/* Countdown de auto-redirect */}
+        <AutoRedirectCountdown 
+          countdown={countdown} 
+          label={isDirect ? 'segundos para voltar ao início' : 'segundos para avaliação'}
+        />
 
         {/* Footer */}
         <p className="text-base sm:text-lg text-urbana-gold font-bold pt-2">
