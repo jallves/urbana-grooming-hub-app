@@ -9,10 +9,25 @@ import { CartItem } from '@/types/product';
 import { resolveProductImageUrl } from '@/utils/productImages';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
+interface SubscriptionPlanState {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+  billing_period: string;
+}
+
 const TotemProductCheckout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart: initialCart, barber } = location.state || {};
+  const { client, cart: initialCart, barber, subscriptionPlan } = location.state || {} as {
+    client: any;
+    cart: CartItem[];
+    barber: any;
+    subscriptionPlan?: SubscriptionPlanState;
+  };
+  
+  const isSubscriptionPurchase = !!subscriptionPlan;
   
   // Estado local do carrinho para permitir edição
   const [cart, setCart] = useState<CartItem[]>(initialCart || []);
