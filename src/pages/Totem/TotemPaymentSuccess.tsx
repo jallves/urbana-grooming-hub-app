@@ -57,7 +57,7 @@ const TotemPaymentSuccess: React.FC = () => {
   const ratingRedirect = !isDirect && appointment;
   const { countdown } = useAutoRedirectHome({
     seconds: 10,
-    enabled: !!(total && client),
+    enabled: !!(total != null && client),
     redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
     redirectState: ratingRedirect ? { appointment, client } : undefined,
   });
@@ -186,7 +186,7 @@ const TotemPaymentSuccess: React.FC = () => {
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
 
-  if (!total || !client) {
+  if (total == null || !client) {
     return null;
   }
 
