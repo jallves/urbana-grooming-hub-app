@@ -54,8 +54,18 @@ const TotemPaymentSuccess: React.FC = () => {
     tipAmount = 0
   } = location.state || {};
 
+  const { countdown } = useAutoRedirectHome({
+    seconds: 10,
+    enabled: !!(total && client),
+    redirectTo: isDirect ? '/totem/home' : (appointment ? '/totem/rating' : '/totem/home'),
+    onBeforeRedirect: () => {
+      if (!isDirect && appointment) {
+        // Navigation handled by redirectTo, but we need state for rating
+      }
+    },
+  });
+
   useEffect(() => {
-    // Add totem-mode class for touch optimization
     document.documentElement.classList.add('totem-mode');
     
     console.log('[PaymentSuccess] Dados recebidos:', { 
