@@ -341,7 +341,7 @@ export const useUnifiedAppointmentValidation = () => {
   ): Promise<ValidationResult> => {
     const dateStr = formatDateLocal(date);
     const newStart = timeToMinutes(time);
-    const newEnd = newStart + serviceDuration + BUFFER_MINUTES; // INCLUI BUFFER
+    const newEnd = newStart + serviceDuration; // Sem buffer duplo — buffer já incluído no aptEnd
 
     let query = supabase
       .from('painel_agendamentos')
