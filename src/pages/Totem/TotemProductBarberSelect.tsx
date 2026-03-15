@@ -20,7 +20,7 @@ interface Barber {
 const TotemProductBarberSelect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart } = location.state || {};
+  const { client, cart, subscriptionPlan } = location.state || {};
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
