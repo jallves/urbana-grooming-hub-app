@@ -378,6 +378,9 @@ const TotemRating: React.FC = () => {
               <span className="hidden sm:inline">Voltar ao Início</span>
             </Button>
           </div>
+
+          {/* Auto-redirect countdown */}
+          <AutoRedirectCountdown countdown={countdown} />
         </Card>
       </div>
     </div>
