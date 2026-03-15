@@ -113,7 +113,8 @@ const TotemProductBarberSelect: React.FC = () => {
       state: { 
         client, 
         cart,
-        barber: selectedBarber
+        barber: selectedBarber,
+        subscriptionPlan
       }
     });
   };
