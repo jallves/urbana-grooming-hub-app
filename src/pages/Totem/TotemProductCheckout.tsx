@@ -284,120 +284,137 @@ const TotemProductCheckout: React.FC = () => {
           </Card>
         )}
 
-        {/* Center Column - Order Summary (Nota Fiscal Style) */}
+        {/* Center Column - Order Summary */}
         <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
-          <div className="flex items-center justify-between mb-2">
-            <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light flex items-center gap-2">
-              <Package className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
-              Resumo do Pedido
-            </h2>
-            <span className="text-xs sm:text-sm text-urbana-light/60">
-              {cartItemsCount} {cartItemsCount === 1 ? 'item' : 'itens'}
-            </span>
-          </div>
+          {isSubscriptionPurchase ? (
+            /* === SUBSCRIPTION PURCHASE SUMMARY === */
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light flex items-center gap-2">
+                  <Crown className="w-4 h-4 sm:w-5 sm:h-5 text-purple-400" />
+                  Resumo do Combo
+                </h2>
+              </div>
 
-          {/* Botão Adicionar Mais Produtos */}
-          <Button
-            onClick={handleAddMoreProducts}
-            className="mb-3 h-10 sm:h-11 bg-urbana-gold/15 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20 active:bg-urbana-gold/30"
-          >
-            <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-            Adicionar mais produtos
-          </Button>
-
-          {/* Receipt Style Header */}
-          <div className="bg-urbana-black/40 rounded-t-xl border-2 border-b-0 border-urbana-gold/30 p-2 sm:p-3">
-            <div className="text-center border-b border-dashed border-urbana-gold/30 pb-2 mb-2">
-              <p className="text-urbana-gold font-bold text-xs sm:text-sm tracking-wider">COSTA URBANA BARBEARIA</p>
-              <p className="text-urbana-light/50 text-[10px] sm:text-xs">CUPOM DE VENDA - PRODUTOS</p>
-            </div>
-            
-            {/* Table Header */}
-            <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-xs text-urbana-light/60 font-medium border-b border-urbana-gold/20 pb-2">
-              <div className="col-span-5">PRODUTO</div>
-              <div className="col-span-3 text-center">QTD</div>
-              <div className="col-span-2 text-right">UNIT</div>
-              <div className="col-span-2 text-right">TOTAL</div>
-            </div>
-          </div>
-
-          {/* Items List */}
-          <div className="bg-urbana-black/30 border-2 border-t-0 border-b-0 border-urbana-gold/30 flex-1 overflow-y-auto max-h-[calc(100vh-400px)]">
-            {cart.map((item) => (
-              <div 
-                key={item.product.id} 
-                className="grid grid-cols-12 gap-1 p-2 sm:p-3 items-center border-b border-urbana-gold/10 last:border-b-0"
-              >
-                {/* Produto */}
-                <div className="col-span-5 flex items-center gap-2">
-                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border border-urbana-gold/30 flex-shrink-0 bg-urbana-black/50">
-                    {(() => {
-                      const resolvedImageUrl = resolveProductImageUrl(item.product.imagem_url);
-                      return resolvedImageUrl ? (
-                        <img 
-                          src={resolvedImageUrl} 
-                          alt={item.product.nome}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package className="w-4 h-4 text-urbana-gold/50" />
-                        </div>
-                      );
-                    })()}
+              <div className="flex-1 overflow-y-auto">
+                <div className="bg-gradient-to-br from-purple-900/40 to-violet-900/30 rounded-xl border-2 border-purple-500/30 p-4 space-y-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-purple-500 to-violet-600 flex items-center justify-center shadow-lg">
+                      <Crown className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-white">{subscriptionPlan!.name}</h3>
+                      <p className="text-sm text-purple-300/80">Combo de Serviços</p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-urbana-light text-xs sm:text-sm font-medium leading-tight truncate">
-                      {item.product.nome}
-                    </p>
-                    <button 
-                      onClick={() => removeItem(item.product.id)}
-                      className="text-red-400/70 text-[10px] flex items-center gap-0.5 hover:text-red-400 mt-0.5"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                      Remover
-                    </button>
+
+                  {subscriptionPlan!.description && (
+                    <p className="text-sm text-purple-200/70">{subscriptionPlan!.description}</p>
+                  )}
+
+                  <div className="space-y-2 py-2 border-t border-purple-500/20">
+                    <div className="flex items-center gap-2 text-sm text-purple-200">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      4 créditos de serviço por mês
+                    </div>
+                    <div className="flex items-center gap-2 text-sm text-purple-200">
+                      <Sparkles className="w-4 h-4 text-purple-400" />
+                      Checkout sem fila com crédito
+                    </div>
                   </div>
-                </div>
-                
-                {/* Quantidade com controles */}
-                <div className="col-span-3 flex items-center justify-center gap-1">
-                  <button
-                    onClick={() => decreaseQuantity(item.product.id)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 flex items-center justify-center active:bg-red-500/30 transition-colors"
-                  >
-                    <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                  <span className="text-urbana-gold font-bold text-sm sm:text-base min-w-[24px] text-center">
-                    {item.quantity}
-                  </span>
-                  <button
-                    onClick={() => increaseQuantity(item.product.id)}
-                    className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-green-500/20 text-green-300 border border-green-500/40 flex items-center justify-center active:bg-green-500/30 transition-colors"
-                  >
-                    <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  </button>
-                </div>
-                
-                {/* Preço Unitário */}
-                <div className="col-span-2 text-right text-urbana-light/80 text-[10px] sm:text-xs">
-                  R$ {item.product.preco.toFixed(2)}
-                </div>
-                
-                {/* Total do Item */}
-                <div className="col-span-2 text-right text-urbana-gold font-bold text-xs sm:text-sm">
-                  R$ {(item.product.preco * item.quantity).toFixed(2)}
                 </div>
               </div>
-            ))}
-          </div>
 
-          {/* Footer - Total */}
-          <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-2 sm:p-3">
-            <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30">
-              <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL A PAGAR:</p>
-              <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-                R$ {cartTotal.toFixed(2)}
+              {/* Total */}
+              <div className="mt-3 bg-urbana-black/40 border-2 border-purple-500/30 rounded-xl p-2 sm:p-3">
+                <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-purple-500/20 via-violet-500/20 to-purple-500/20 rounded-xl border-2 border-purple-400 shadow-xl shadow-purple-500/30">
+                  <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL DO COMBO:</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-300 via-violet-300 to-purple-200">
+                    R$ {displayTotal.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+            </>
+          ) : (
+            /* === PRODUCT CART SUMMARY === */
+            <>
+              <div className="flex items-center justify-between mb-2">
+                <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light flex items-center gap-2">
+                  <Package className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
+                  Resumo do Pedido
+                </h2>
+                <span className="text-xs sm:text-sm text-urbana-light/60">
+                  {cartItemsCount} {cartItemsCount === 1 ? 'item' : 'itens'}
+                </span>
+              </div>
+
+              <Button
+                onClick={handleAddMoreProducts}
+                className="mb-3 h-10 sm:h-11 bg-urbana-gold/15 border-2 border-urbana-gold/40 text-urbana-gold hover:bg-urbana-gold/20"
+              >
+                <ShoppingBag className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
+                Adicionar mais produtos
+              </Button>
+
+              {/* Receipt Style Header */}
+              <div className="bg-urbana-black/40 rounded-t-xl border-2 border-b-0 border-urbana-gold/30 p-2 sm:p-3">
+                <div className="text-center border-b border-dashed border-urbana-gold/30 pb-2 mb-2">
+                  <p className="text-urbana-gold font-bold text-xs sm:text-sm tracking-wider">COSTA URBANA BARBEARIA</p>
+                  <p className="text-urbana-light/50 text-[10px] sm:text-xs">CUPOM DE VENDA - PRODUTOS</p>
+                </div>
+                <div className="grid grid-cols-12 gap-1 text-[10px] sm:text-xs text-urbana-light/60 font-medium border-b border-urbana-gold/20 pb-2">
+                  <div className="col-span-5">PRODUTO</div>
+                  <div className="col-span-3 text-center">QTD</div>
+                  <div className="col-span-2 text-right">UNIT</div>
+                  <div className="col-span-2 text-right">TOTAL</div>
+                </div>
+              </div>
+
+              {/* Items List */}
+              <div className="bg-urbana-black/30 border-2 border-t-0 border-b-0 border-urbana-gold/30 flex-1 overflow-y-auto max-h-[calc(100vh-400px)]">
+                {cart.map((item) => (
+                  <div key={item.product.id} className="grid grid-cols-12 gap-1 p-2 sm:p-3 items-center border-b border-urbana-gold/10 last:border-b-0">
+                    <div className="col-span-5 flex items-center gap-2">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg overflow-hidden border border-urbana-gold/30 flex-shrink-0 bg-urbana-black/50">
+                        {(() => {
+                          const resolvedImageUrl = resolveProductImageUrl(item.product.imagem_url);
+                          return resolvedImageUrl ? (
+                            <img src={resolvedImageUrl} alt={item.product.nome} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package className="w-4 h-4 text-urbana-gold/50" />
+                            </div>
+                          );
+                        })()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-urbana-light text-xs sm:text-sm font-medium leading-tight truncate">{item.product.nome}</p>
+                        <button onClick={() => removeItem(item.product.id)} className="text-red-400/70 text-[10px] flex items-center gap-0.5 mt-0.5">
+                          <Trash2 className="w-3 h-3" />Remover
+                        </button>
+                      </div>
+                    </div>
+                    <div className="col-span-3 flex items-center justify-center gap-1">
+                      <button onClick={() => decreaseQuantity(item.product.id)} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-red-500/20 text-red-300 border border-red-500/40 flex items-center justify-center">
+                        <Minus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                      <span className="text-urbana-gold font-bold text-sm sm:text-base min-w-[24px] text-center">{item.quantity}</span>
+                      <button onClick={() => increaseQuantity(item.product.id)} className="w-6 h-6 sm:w-7 sm:h-7 rounded-lg bg-green-500/20 text-green-300 border border-green-500/40 flex items-center justify-center">
+                        <Plus className="w-3 h-3 sm:w-4 sm:h-4" />
+                      </button>
+                    </div>
+                    <div className="col-span-2 text-right text-urbana-light/80 text-[10px] sm:text-xs">R$ {item.product.preco.toFixed(2)}</div>
+                    <div className="col-span-2 text-right text-urbana-gold font-bold text-xs sm:text-sm">R$ {(item.product.preco * item.quantity).toFixed(2)}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Footer - Total */}
+              <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-2 sm:p-3">
+                <div className="flex items-center justify-between p-2 sm:p-3 bg-gradient-to-r from-urbana-gold/20 via-urbana-gold-vibrant/20 to-urbana-gold/20 rounded-xl border-2 border-urbana-gold shadow-xl shadow-urbana-gold/30">
+                  <p className="text-sm sm:text-base font-black text-urbana-light">TOTAL A PAGAR:</p>
+                  <p className="text-lg sm:text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
+                    R$ {displayTotal.toFixed(2)}
               </p>
             </div>
           </div>
