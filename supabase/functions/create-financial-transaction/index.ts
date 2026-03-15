@@ -290,6 +290,8 @@ Deno.serve(async (req) => {
 
     const created: any[] = []
 
+    const isSubscriptionUsage = body.is_subscription_usage === true
+
     // ===================== RECEITAS =====================
     for (const item of body.items) {
       const qty = Number(item.quantity || 1)
@@ -300,9 +302,15 @@ Deno.serve(async (req) => {
 
       const isService = item.type === 'service'
       // Categorias em PORTUGUÊS para o ERP
-      const category = isService ? 'servico' : 'produto'
-      const subcategory = isService ? (item.isExtra ? 'servico_extra' : 'servico') : 'produto'
-      const description = isService ? `Serviço: ${item.name || 'Serviço'}` : `Produto: ${item.name || 'Produto'}`
+      const category = isSubscriptionUsage ? 'assinatura' : (isService ? 'servico' : 'produto')
+      const subcategory = isSubscriptionUsage 
+        ? 'uso_credito_assinatura' 
+        : (isService ? (item.isExtra ? 'servico_extra' : 'servico') : 'produto')
+      
+      // Descrição especial para uso de crédito
+      const description = isSubscriptionUsage
+        ? `Uso crédito assinatura: ${item.name || 'Serviço'} (R$ 0,00 - já pago no combo)`
+        : (isService ? `Serviço: ${item.name || 'Serviço'}` : `Produto: ${item.name || 'Produto'}`)
 
       const subRef = `revenue:${item.type}:${item.id}:${subcategory}`
 
@@ -318,7 +326,7 @@ Deno.serve(async (req) => {
           description,
           transaction_date,
           payment_date: transaction_datetime,
-          payment_method, // 👈 ADICIONADO: Forma de pagamento
+          payment_method,
           barber_id: body.barber_id,
           barber_name: barberName,
           client_id: body.client_id,
@@ -330,20 +338,19 @@ Deno.serve(async (req) => {
         { reference_id, reference_type, sub_ref: subRef }
       )
 
-       // Sempre garantir contas_receber (idempotente por observacoes),
-       // mesmo quando o financial_record já existia (caso de migração parcial).
+       // Sempre garantir contas_receber (idempotente por observacoes)
        if (reference_id) {
          await ensureContasReceber(supabase, {
            descricao: description,
-           valor: net,
+           valor: net, // R$ 0,00 para assinatura
            data_vencimento: transaction_date,
            data_recebimento: transaction_date,
            cliente_id: body.client_id || null,
            status: 'recebido',
            categoria: category,
            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-           transaction_id: transaction_id, // ID da transação eletrônica (NSU, PIX, etc.)
-           forma_pagamento: payment_method, // 👈 ADICIONADO: Forma de pagamento
+           transaction_id: transaction_id,
+           forma_pagamento: payment_method,
          })
        }
 
