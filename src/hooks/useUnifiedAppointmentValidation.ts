@@ -570,12 +570,12 @@ export const useUnifiedAppointmentValidation = () => {
         effectiveEnd = specificAvailability.end_time;
       }
 
-      // Mapear períodos ocupados com buffer
+      // Mapear períodos ocupados SEM buffer — permite slots consecutivos
       const occupiedPeriods: { start: number; end: number }[] = [];
       existingAppointments?.forEach((apt) => {
         const aptStart = timeToMinutes(apt.hora);
         const aptDuration = (apt.servico as any)?.duracao || 60;
-        const aptEnd = aptStart + aptDuration + BUFFER_MINUTES;
+        const aptEnd = aptStart + aptDuration; // Sem buffer
         occupiedPeriods.push({ start: aptStart, end: aptEnd });
       });
 
