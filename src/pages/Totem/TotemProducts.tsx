@@ -67,7 +67,22 @@ const TotemProducts: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
       supabase.removeChannel(channel);
-    };
+  };
+
+  const loadPlans = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('subscription_plans')
+        .select('*')
+        .eq('is_active', true)
+        .order('display_order', { ascending: true });
+
+      if (error) throw error;
+      setPlans((data || []) as SubscriptionPlan[]);
+    } catch (error) {
+      console.error('Erro ao carregar planos:', error);
+    }
+  };
   }, []);
 
   const loadProducts = async () => {
