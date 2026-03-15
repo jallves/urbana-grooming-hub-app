@@ -70,7 +70,7 @@ const TotemPaymentSuccess: React.FC = () => {
       selectedProducts, extraServices, resumo
     });
     
-    if (!total || !client) {
+    if (total == null || !client) {
       console.warn('[PaymentSuccess] Dados incompletos, redirecionando...');
       navigate('/totem/home');
       return;
