@@ -134,7 +134,7 @@ const TotemSearch: React.FC = () => {
       }
 
       // CHECK-IN: verificar agendamentos
-      let agendamentos = agendamentosResponse.data || [];
+      let agendamentos: any[] = agendamentosResponse.data || [];
 
       // Se cliente veio de clients, buscar também em appointments (em paralelo já seria ideal, mas é raro)
       if (clientSource === 'clients') {
