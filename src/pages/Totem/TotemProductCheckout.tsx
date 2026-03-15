@@ -240,7 +240,7 @@ const TotemProductCheckout: React.FC = () => {
         </Button>
         
         <h1 className="text-lg sm:text-xl md:text-2xl lg:text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light">
-          Checkout de Produtos
+          {isSubscriptionPurchase ? 'Checkout do Combo' : 'Checkout de Produtos'}
         </h1>
         
         <div className="w-10 sm:w-16 md:w-24"></div>
