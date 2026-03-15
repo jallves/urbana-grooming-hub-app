@@ -13,6 +13,7 @@ export interface SubscriptionPlan {
   display_order: number;
   color: string | null;
   icon: string | null;
+  credits_total: number;
   created_at: string;
   services?: { id: string; nome: string; preco: number }[];
 }

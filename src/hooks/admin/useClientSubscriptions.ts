@@ -83,10 +83,10 @@ export const useClientSubscriptions = () => {
       payment_method: string;
       notes?: string;
     }) => {
-      // Get plan price for next billing
+      // Get plan info including credits
       const { data: plan } = await supabase
         .from('subscription_plans')
-        .select('price, billing_period')
+        .select('price, billing_period, credits_total')
         .eq('id', data.plan_id)
         .single();
 
