@@ -46,8 +46,7 @@ const TotemSearch: React.FC = () => {
         .or(`whatsapp.ilike.%${cleanPhone}%,telefone.ilike.%${cleanPhone}%`)
         .limit(1);
 
-      let cliente = painelClientes?.[0] || null;
-      let clientSource = 'painel';
+      let cliente: any = painelClientes?.[0] || null;
 
       // Fallback: buscar em clients (appointments) se não encontrou
       if (!cliente) {
