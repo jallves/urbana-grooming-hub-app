@@ -232,7 +232,7 @@ const SubscriptionDashboardTab: React.FC = () => {
             {recentPayments.length === 0 ? (
               <p className="text-xs text-muted-foreground py-4 text-center">Nenhum pagamento registrado ainda</p>
             ) : (
-              <div className="space-y-0.5 max-h-64 overflow-y-auto">
+              <div className="space-y-0.5">
                 {recentPayments.map((pay, idx) => (
                   <div key={pay.id} className="flex items-center gap-2.5 p-2 rounded-lg hover:bg-accent/50 transition-colors">
                     <div className="flex flex-col items-center flex-shrink-0">
