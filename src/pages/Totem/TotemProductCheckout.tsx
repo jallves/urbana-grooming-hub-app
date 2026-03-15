@@ -57,12 +57,11 @@ const TotemProductCheckout: React.FC = () => {
   }, [client, barber, navigate, isSubscriptionPurchase]);
 
   // Cálculo do total em tempo real
-  const displayTotal = isSubscriptionPurchase ? subscriptionPlan!.price : cartTotal;
-
-  // Cálculo do total em tempo real
   const cartTotal = useMemo(() => {
     return cart.reduce((sum, item) => sum + (item.product.preco * item.quantity), 0);
   }, [cart]);
+
+  const displayTotal = isSubscriptionPurchase ? subscriptionPlan!.price : cartTotal;
 
   const cartItemsCount = useMemo(() => {
     return cart.reduce((sum, item) => sum + item.quantity, 0);
