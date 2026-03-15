@@ -96,10 +96,15 @@ export const useClientSubscriptions = () => {
       else if (plan?.billing_period === 'quarterly') nextBilling.setMonth(nextBilling.getMonth() + 3);
       else nextBilling.setFullYear(nextBilling.getFullYear() + 1);
 
+      // Get credits_total from plan
+      const creditsTotal = (plan as any)?.credits_total || 4;
+
       const { error } = await supabase.from('client_subscriptions').insert({
         ...data,
         next_billing_date: nextBilling.toISOString().split('T')[0],
         status: 'active',
+        credits_total: creditsTotal,
+        credits_used: 0,
       } as any);
       if (error) throw error;
     },
