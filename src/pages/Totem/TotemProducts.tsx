@@ -2,12 +2,22 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, ShoppingCart, Plus, Minus, Package } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Plus, Minus, Package, Crown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { BarbershopProduct, CartItem } from '@/types/product';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { resolveProductImageUrl } from '@/utils/productImages';
+
+interface SubscriptionPlan {
+  id: string;
+  name: string;
+  price: number;
+  description: string | null;
+  billing_period: string;
+  color: string | null;
+  icon: string | null;
+}
 
 const TotemProducts: React.FC = () => {
   const navigate = useNavigate();
@@ -15,10 +25,12 @@ const TotemProducts: React.FC = () => {
   const { client, cart: existingCart, barber } = location.state || {};
   
   const [products, setProducts] = useState<BarbershopProduct[]>([]);
+  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [loading, setLoading] = useState(true);
   // Inicializar carrinho com itens existentes (quando volta do checkout)
   const [cart, setCart] = useState<CartItem[]>(existingCart || []);
   const [selectedCategory, setSelectedCategory] = useState<string>('todos');
+  const [activeTab, setActiveTab] = useState<'produtos' | 'combos'>('produtos');
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
