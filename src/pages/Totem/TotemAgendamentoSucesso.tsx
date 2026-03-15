@@ -4,6 +4,8 @@ import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from '
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TotemButton } from '@/components/totem/TotemButton';
+import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
+import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
