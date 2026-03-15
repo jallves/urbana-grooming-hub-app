@@ -36,67 +36,38 @@ const TotemSearch: React.FC = () => {
     setIsSearching(true);
 
     try {
-      // Remover formatação para buscar apenas números
       const cleanPhone = phone.replace(/\D/g, '');
-      
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
-      // 🔒 SUPORTE UNIFICADO: Buscar em ambas as tabelas de clientes
-      
-      // Buscar em painel_clientes primeiro
-      const painelClientesResponse = await supabase
+      // ⚡ OTIMIZADO: Busca server-side com .ilike() ao invés de full-table scan
+      const { data: painelClientes } = await supabase
         .from('painel_clientes')
-        .select('*');
+        .select('*')
+        .or(`whatsapp.ilike.%${cleanPhone}%,telefone.ilike.%${cleanPhone}%`)
+        .limit(1);
 
-      let cliente = null;
+      let cliente = painelClientes?.[0] || null;
       let clientSource = 'painel';
 
-      if (painelClientesResponse.data) {
-        const clientesPainel = painelClientesResponse.data.filter((c: any) => {
-          const clientPhoneClean = (c.whatsapp || '').replace(/\D/g, '');
-          return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
-        });
-
-        if (clientesPainel && clientesPainel.length > 0) {
-          cliente = clientesPainel[0];
-          console.log('✅ Cliente encontrado em painel_clientes:', cliente.nome);
-        }
-      }
-
-      // Se não encontrou em painel_clientes, buscar em clients (appointments)
+      // Fallback: buscar em clients (appointments) se não encontrou
       if (!cliente) {
-        console.log('⚠️ Cliente não encontrado em painel_clientes, buscando em clients...');
-        const clientsResponse = await supabase
+        console.log('⚠️ Não encontrado em painel_clientes, buscando em clients...');
+        const { data: clientsData } = await supabase
           .from('clients')
-          .select('*');
+          .select('*')
+          .or(`phone.ilike.%${cleanPhone}%`)
+          .limit(1);
 
-        if (clientsResponse.data) {
-          const clientsData = clientsResponse.data.filter((c: any) => {
-            const clientPhoneClean = (c.phone || '').replace(/\D/g, '');
-            return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
-          });
-
-          if (clientsData && clientsData.length > 0) {
-            const clientData = clientsData[0];
-            console.log('✅ Cliente encontrado em clients (painel):', clientData.name);
-            
-            // Normalizar estrutura
-            cliente = {
-              id: clientData.id,
-              nome: clientData.name,
-              whatsapp: clientData.phone,
-              email: clientData.email
-            };
-            clientSource = 'clients';
-          }
+        if (clientsData?.[0]) {
+          const c = clientsData[0];
+          cliente = { id: c.id, nome: c.name, whatsapp: c.phone, email: c.email };
+          clientSource = 'clients';
         }
       }
 
       if (!cliente) {
-        console.log('❌ Nenhum cliente encontrado em nenhuma tabela com telefone:', cleanPhone);
+        console.log('❌ Nenhum cliente encontrado');
         setIsSearching(false);
-        
-        // Redirecionar para tela de erro com opção de cadastro
         navigate('/totem/error', {
           state: {
             title: 'Cliente não encontrado',
@@ -112,147 +83,90 @@ const TotemSearch: React.FC = () => {
 
       console.log('✅ Cliente encontrado (origem:', clientSource, '):', cliente.nome);
 
-      // 🔔 VERIFICAR CHECKOUTS PENDENTES (prioridade máxima)
-      // Regra: Cliente com check-in finalizado (status_totem = 'CHEGOU') deve finalizar checkout antes de qualquer outra ação
-      console.log('🔍 Verificando checkouts pendentes para:', cliente.nome);
-      const { data: checkoutsPendentes, error: checkoutsError } = await supabase
-        .from('painel_agendamentos')
-        .select('id, data, hora, status, status_totem')
-        .eq('cliente_id', cliente.id)
-        .eq('status_totem', 'CHEGOU')
-        .in('status', ['confirmado', 'em_atendimento']);
+      // ⚡ OTIMIZADO: Data de hoje calculada uma vez
+      const now = new Date();
+      const hoje = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
-      if (!checkoutsError && checkoutsPendentes && checkoutsPendentes.length > 0) {
-        console.log(`🔔 ALERTA: ${checkoutsPendentes.length} checkout(s) pendente(s) detectado(s)!`);
+      // ⚡ OTIMIZADO: Queries em PARALELO (checkout pendente + agendamentos)
+      const [checkoutsResponse, agendamentosResponse] = await Promise.all([
+        // 1. Verificar checkouts pendentes
+        supabase
+          .from('painel_agendamentos')
+          .select('id, data, hora, status, status_totem')
+          .eq('cliente_id', cliente.id)
+          .eq('status_totem', 'CHEGOU')
+          .in('status', ['confirmado', 'em_atendimento']),
+        // 2. Buscar agendamentos futuros
+        supabase
+          .from('painel_agendamentos')
+          .select(`*, servico:painel_servicos(*), barbeiro:painel_barbeiros(*)`)
+          .eq('cliente_id', cliente.id)
+          .gte('data', hoje)
+          .order('data', { ascending: true })
+          .order('hora', { ascending: true })
+      ]);
+
+      // Processar checkouts pendentes
+      const checkoutsPendentes = checkoutsResponse.data;
+      if (checkoutsPendentes && checkoutsPendentes.length > 0) {
+        console.log(`🔔 ${checkoutsPendentes.length} checkout(s) pendente(s)`);
         toast.info('Checkouts Pendentes', {
           description: `Você possui ${checkoutsPendentes.length} atendimento(s) aguardando pagamento!`,
           duration: 5000
         });
-        
-        // REGRA: Cliente com checkout pendente NÃO pode:
-        // - Fazer novo agendamento
-        // - Fazer novo check-in
-        // Deve finalizar o checkout primeiro
         navigate('/totem/pending-checkouts', {
-          state: {
-            whatsapp: cliente.whatsapp,
-            cliente: cliente
-          }
+          state: { whatsapp: cliente.whatsapp, cliente }
         });
         setIsSearching(false);
         return;
       }
 
-      console.log('✅ Nenhum checkout pendente encontrado');
-
-      // Buscar agendamentos do cliente - garantir data local sem conversão de timezone
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const hoje = `${year}-${month}-${day}`;
-      
-      console.log('📅 Buscando agendamentos a partir de:', hoje);
-      
-      // 🔒 SUPORTE UNIFICADO: Buscar agendamentos em ambas as tabelas
-      let agendamentos: any[] = [];
-      
-      // Buscar em painel_agendamentos
-      const painelAgendamentosResponse = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          *,
-          servico:painel_servicos(*),
-          barbeiro:painel_barbeiros(*)
-        `)
-        .eq('cliente_id', cliente.id)
-        .gte('data', hoje)
-        .order('data', { ascending: true })
-        .order('hora', { ascending: true });
-
-      if (painelAgendamentosResponse.data && painelAgendamentosResponse.data.length > 0) {
-        console.log('📦 Agendamentos em painel_agendamentos:', painelAgendamentosResponse.data.length);
-        agendamentos = [...agendamentos, ...painelAgendamentosResponse.data];
+      // Roteamento por ação
+      if (action === 'novo-agendamento') {
+        navigate('/totem/servico', { state: { client: cliente } });
+        setIsSearching(false);
+        return;
       }
-      
-      // Se cliente veio de clients, buscar também em appointments
+
+      if (action === 'produtos') {
+        navigate('/totem/products', { state: { client: cliente } });
+        setIsSearching(false);
+        return;
+      }
+
+      // CHECK-IN: verificar agendamentos
+      let agendamentos = agendamentosResponse.data || [];
+
+      // Se cliente veio de clients, buscar também em appointments (em paralelo já seria ideal, mas é raro)
       if (clientSource === 'clients') {
-        console.log('🔍 Buscando também em appointments (painel cliente)...');
-        const appointmentsResponse = await supabase
+        const { data: appointmentsData } = await supabase
           .from('appointments')
-          .select(`
-            *,
-            service:services(*),
-            staff:staff(*)
-          `)
+          .select(`*, service:services(*), staff:staff(*)`)
           .eq('client_id', cliente.id)
           .gte('start_time', `${hoje}T00:00:00`)
           .order('start_time', { ascending: true });
 
-        if (appointmentsResponse.data && appointmentsResponse.data.length > 0) {
-          console.log('📦 Agendamentos em appointments:', appointmentsResponse.data.length);
-          
-          // Normalizar estrutura para appointments
-          const normalizedAppointments = appointmentsResponse.data.map((apt: any) => ({
+        if (appointmentsData?.length) {
+          const normalized = appointmentsData.map((apt: any) => ({
             id: apt.id,
             cliente_id: apt.client_id,
             barbeiro_id: apt.staff_id,
             servico_id: apt.service_id,
             data: apt.start_time?.split('T')[0],
             hora: apt.start_time?.split('T')[1]?.substring(0, 5),
-            status: apt.status === 'scheduled' ? 'CONFIRMADO' : 
-                    apt.status === 'confirmed' ? 'CONFIRMADO' :
+            status: apt.status === 'scheduled' || apt.status === 'confirmed' ? 'CONFIRMADO' : 
                     apt.status === 'completed' ? 'FINALIZADO' : 'CONFIRMADO',
             status_totem: apt.status === 'confirmed' ? 'CHEGOU' : 'AGUARDANDO',
-            servico: apt.service ? {
-              id: apt.service.id,
-              nome: apt.service.name,
-              preco: apt.service.price,
-              duracao: apt.service.duration
-            } : null,
-            barbeiro: apt.staff ? {
-              id: apt.staff.id,
-              nome: apt.staff.name
-            } : null,
-            _source: 'appointments' // Flag para identificar origem
+            servico: apt.service ? { id: apt.service.id, nome: apt.service.name, preco: apt.service.price, duracao: apt.service.duration } : null,
+            barbeiro: apt.staff ? { id: apt.staff.id, nome: apt.staff.name } : null,
+            _source: 'appointments'
           }));
-          
-          agendamentos = [...agendamentos, ...normalizedAppointments];
+          agendamentos = [...agendamentos, ...normalized];
         }
       }
 
-      console.log('📅 Total de agendamentos encontrados:', agendamentos.length);
-
-      // Verificar qual ação foi solicitada
-      if (action === 'novo-agendamento') {
-        // Para novo agendamento, apenas precisamos do cliente
-        console.log('✅ Navegando para novo agendamento');
-        navigate('/totem/servico', {
-          state: {
-            client: cliente
-          }
-        });
+      if (!agendamentos.length) {
         setIsSearching(false);
-        return;
-      }
-
-      // Para PRODUTOS, usar o novo fluxo com seleção de barbeiro
-      if (action === 'produtos') {
-        console.log('✅ Navegando para loja de produtos (com seleção de barbeiro)');
-        navigate('/totem/products', {
-          state: {
-            client: cliente
-          }
-        });
-        setIsSearching(false);
-        return;
-      }
-
-      // Para CHECK-IN, verificar se há agendamentos
-      if (!agendamentos || agendamentos.length === 0) {
-        setIsSearching(false);
-        
-        // Redirecionar para tela de erro
         navigate('/totem/error', {
           state: {
             title: 'Check-in não disponível',
@@ -264,16 +178,10 @@ const TotemSearch: React.FC = () => {
         });
         return;
       }
-      
-      // Navegar para tela de seleção de agendamento (check-in)
-      console.log('✅ Navegando para lista de agendamentos');
+
       navigate('/totem/appointments-list', {
-        state: {
-          appointments: agendamentos,
-          client: cliente 
-        } 
+        state: { appointments: agendamentos, client: cliente }
       });
-      
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
       toast.error('Erro inesperado', {
