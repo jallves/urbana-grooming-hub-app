@@ -47,6 +47,7 @@ const TotemSearch: React.FC = () => {
         .limit(1);
 
       let cliente: any = painelClientes?.[0] || null;
+      let clientSource = 'painel';
 
       // Fallback: buscar em clients (appointments) se não encontrou
       if (!cliente) {
