@@ -65,23 +65,28 @@ Deno.serve(async (req) => {
       cliente_id = agendamento.cliente_id
 
       // 🔒 REGRA: Check-in só permitido até 1h30 antes do horário agendado
-      const [year, month, day] = agendamento.data.split('-').map(Number)
-      const [hour, minute] = agendamento.hora.split(':').map(Number)
-      // Usar horário de Brasília (UTC-3)
-      const appointmentTime = new Date(Date.UTC(year, month - 1, day, hour + 3, minute))
-      const now = new Date()
-      const diffMs = appointmentTime.getTime() - now.getTime()
-      const diffMinutes = diffMs / (1000 * 60)
+      // ⚠️ HOMOLOGAÇÃO: Regra temporariamente desabilitada para testes
+      const HOMOLOGATION_MODE = true // Para produção: alterar para false
+      if (!HOMOLOGATION_MODE) {
+        const [year, month, day] = agendamento.data.split('-').map(Number)
+        const [hour, minute] = agendamento.hora.split(':').map(Number)
+        const appointmentTime = new Date(Date.UTC(year, month - 1, day, hour + 3, minute))
+        const now = new Date()
+        const diffMs = appointmentTime.getTime() - now.getTime()
+        const diffMinutes = diffMs / (1000 * 60)
 
-      if (diffMinutes > 90) {
-        const horaFormatada = agendamento.hora.substring(0, 5)
-        return new Response(
-          JSON.stringify({ 
-            success: false,
-            error: `Check-in disponível a partir de 1h30 antes do horário agendado (${horaFormatada}). Tente novamente mais tarde.` 
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
-        )
+        if (diffMinutes > 90) {
+          const horaFormatada = agendamento.hora.substring(0, 5)
+          return new Response(
+            JSON.stringify({ 
+              success: false,
+              error: `Check-in disponível a partir de 1h30 antes do horário agendado (${horaFormatada}). Tente novamente mais tarde.` 
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
+          )
+        }
+      } else {
+        console.log('⚠️ HOMOLOGAÇÃO: Regra de 90 minutos ignorada para check-in')
       }
       
       // Atualizar status para CHEGOU usando RPC para bypass RLS
