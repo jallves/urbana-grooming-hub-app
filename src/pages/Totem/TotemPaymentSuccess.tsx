@@ -195,6 +195,7 @@ const TotemPaymentSuccess: React.FC = () => {
   }
 
   const getPaymentMethodText = () => {
+    if (paymentMethod === 'subscription_credit') return 'Assinatura (Crédito)';
     if (paymentMethod === 'credit') return 'Cartão de Crédito';
     if (paymentMethod === 'debit') return 'Cartão de Débito';
     return 'PIX';
