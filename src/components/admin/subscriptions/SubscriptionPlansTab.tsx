@@ -81,13 +81,21 @@ const SubscriptionPlansTab: React.FC = () => {
     setDialogOpen(false);
   };
 
+  const recalcPrice = (ids: string[]) => {
+    const services = servicesQuery.data || [];
+    return ids.reduce((sum, id) => {
+      const svc = services.find((s: any) => s.id === id);
+      return sum + (svc?.preco || 0);
+    }, 0);
+  };
+
   const toggleService = (serviceId: string) => {
-    setForm(prev => ({
-      ...prev,
-      service_ids: prev.service_ids.includes(serviceId)
+    setForm(prev => {
+      const newIds = prev.service_ids.includes(serviceId)
         ? prev.service_ids.filter(id => id !== serviceId)
-        : [...prev.service_ids, serviceId],
-    }));
+        : [...prev.service_ids, serviceId];
+      return { ...prev, service_ids: newIds, price: recalcPrice(newIds) };
+    });
   };
 
   const getActiveSubsCount = (planId: string) => 
@@ -226,16 +234,16 @@ const SubscriptionPlansTab: React.FC = () => {
               </div>
               <div>
                 <Label className="text-xs sm:text-sm">Cor</Label>
-                <Select value={form.color} onValueChange={v => setForm(f => ({ ...f, color: v }))}>
-                  <SelectTrigger className="text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="amber">🟡 Dourado</SelectItem>
-                    <SelectItem value="emerald">🟢 Esmeralda</SelectItem>
-                    <SelectItem value="violet">🟣 Violeta</SelectItem>
-                    <SelectItem value="blue">🔵 Azul</SelectItem>
-                    <SelectItem value="rose">🔴 Rosé</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div className="flex gap-2 mt-1">
+                  {Object.entries(planColors).map(([key, gradient]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, color: key }))}
+                      className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} border-2 transition-all ${form.color === key ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
             <div className="flex items-center gap-3">
