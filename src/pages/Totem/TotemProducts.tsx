@@ -17,7 +17,16 @@ interface SubscriptionPlan {
   billing_period: string;
   color: string | null;
   icon: string | null;
+  credits_total: number;
 }
+
+const planColorMap: Record<string, { from: string; to: string; accent: string; bg: string; border: string; text: string; shadow: string }> = {
+  amber: { from: 'from-amber-500', to: 'to-amber-700', accent: 'text-amber-300', bg: 'bg-amber-500/10', border: 'border-amber-500/40', text: 'text-amber-200', shadow: 'shadow-amber-500/30' },
+  emerald: { from: 'from-emerald-500', to: 'to-emerald-700', accent: 'text-emerald-300', bg: 'bg-emerald-500/10', border: 'border-emerald-500/40', text: 'text-emerald-200', shadow: 'shadow-emerald-500/30' },
+  violet: { from: 'from-violet-500', to: 'to-violet-700', accent: 'text-violet-300', bg: 'bg-violet-500/10', border: 'border-violet-500/40', text: 'text-violet-200', shadow: 'shadow-violet-500/30' },
+  blue: { from: 'from-blue-500', to: 'to-blue-700', accent: 'text-blue-300', bg: 'bg-blue-500/10', border: 'border-blue-500/40', text: 'text-blue-200', shadow: 'shadow-blue-500/30' },
+  rose: { from: 'from-rose-500', to: 'to-rose-700', accent: 'text-rose-300', bg: 'bg-rose-500/10', border: 'border-rose-500/40', text: 'text-rose-200', shadow: 'shadow-rose-500/30' },
+};
 
 const TotemProducts: React.FC = () => {
   const navigate = useNavigate();
