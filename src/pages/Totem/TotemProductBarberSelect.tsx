@@ -20,7 +20,7 @@ interface Barber {
 const TotemProductBarberSelect: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { client, cart } = location.state || {};
+  const { client, cart, subscriptionPlan } = location.state || {};
   
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [loading, setLoading] = useState(true);
@@ -29,7 +29,7 @@ const TotemProductBarberSelect: React.FC = () => {
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
-    if (!client || !cart || cart.length === 0) {
+    if (!client || ((!cart || cart.length === 0) && !subscriptionPlan)) {
       toast.error('Dados incompletos');
       navigate('/totem/products', { state: { client } });
       return;
@@ -113,7 +113,8 @@ const TotemProductBarberSelect: React.FC = () => {
       state: { 
         client, 
         cart,
-        barber: selectedBarber
+        barber: selectedBarber,
+        subscriptionPlan
       }
     });
   };

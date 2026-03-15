@@ -3,10 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { useClientSubscriptionCredits } from '@/hooks/totem/useClientSubscriptionCredits';
 import TotemCheckoutExtrasModal, {
   CheckoutExtraService,
   CheckoutProductCartItem
@@ -76,6 +77,10 @@ const TotemCheckout: React.FC = () => {
   const [tipAmount, setTipAmount] = useState<number>(0);
   const [tipInput, setTipInput] = useState<string>('0,00');
   const [vendaId, setVendaId] = useState<string | null>(null);
+  const [usingCredit, setUsingCredit] = useState(false);
+
+  // Subscription credits hook
+  const { activeSubscription, checkCredits, useCredit } = useClientSubscriptionCredits();
 
   // ============================================================
   // CÁLCULO AUTOMÁTICO EM TEMPO REAL (sem depender de rede)
@@ -132,6 +137,11 @@ const TotemCheckout: React.FC = () => {
   const loadCheckout = async () => {
     setLoading(true);
     try {
+      // Verificar créditos de assinatura do cliente
+      if (client?.id) {
+        await checkCredits(client.id);
+      }
+
       // Barbeiro via agendamento
       if (appointment?.barbeiro_id) {
         const { data: barberData } = await supabase
@@ -222,6 +232,58 @@ const TotemCheckout: React.FC = () => {
     } catch (e) {
       console.error('[TotemCheckout] Erro ao sincronizar itens:', e);
       // Não bloqueia UI - cálculo local já está correto
+    }
+  };
+
+  // Handler para usar crédito da assinatura (bypass PayGo)
+  const handleUseCredit = async () => {
+    if (!activeSubscription || activeSubscription.credits_remaining <= 0) return;
+    setProcessing(true);
+    try {
+      // 1. Sincronizar checkout no backend
+      if (vendaId) {
+        await supabase.from('vendas').update({
+          valor_total: 0,
+          forma_pagamento: 'ASSINATURA',
+          status: 'pago',
+          observacoes: `Crédito assinatura ${activeSubscription.plan_name}`
+        }).eq('id', vendaId);
+      }
+
+      // 2. Usar crédito
+      const success = await useCredit(
+        activeSubscription.id,
+        appointment.id,
+        resumo.original_service.nome
+      );
+
+      if (!success) {
+        toast.error('Erro ao usar crédito. Tente novamente.');
+        setProcessing(false);
+        return;
+      }
+
+      // 3. Finalizar checkout via edge function (sem pagamento)
+      await supabase.functions.invoke('totem-checkout', {
+        body: {
+          action: 'finish',
+          venda_id: vendaId,
+          session_id: session.id,
+          agendamento_id: appointment.id,
+          payment_method: 'subscription_credit',
+          tipAmount: 0,
+          extras: extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
+          products: productCart.map(p => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
+        }
+      });
+
+      toast.success('Crédito utilizado com sucesso! ✨');
+      navigate('/totem/home');
+    } catch (error) {
+      console.error('Erro ao usar crédito:', error);
+      toast.error('Erro ao processar crédito');
+    } finally {
+      setProcessing(false);
     }
   };
 
@@ -458,6 +520,33 @@ const TotemCheckout: React.FC = () => {
         {/* Payment Methods */}
         <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
           <h3 className="text-base font-bold text-urbana-light mb-4 text-center">Forma de Pagamento</h3>
+
+          {/* Subscription Credit Button */}
+          {activeSubscription && activeSubscription.credits_remaining > 0 && (
+            <div className="mb-4">
+              <Button
+                onClick={handleUseCredit}
+                disabled={processing}
+                className="w-full h-20 bg-gradient-to-br from-purple-600 to-violet-700 hover:from-purple-500 hover:to-violet-600 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-1 shadow-lg shadow-purple-500/30 border-2 border-purple-400/50"
+              >
+                <div className="flex items-center gap-2">
+                  <Crown className="w-6 h-6" />
+                  <span>Usar 1 Crédito</span>
+                </div>
+                <span className="text-xs text-purple-200/80">
+                  {activeSubscription.plan_name} • {activeSubscription.credits_remaining} crédito{activeSubscription.credits_remaining > 1 ? 's' : ''} restante{activeSubscription.credits_remaining > 1 ? 's' : ''}
+                </span>
+              </Button>
+              <div className="mt-2 text-center">
+                <p className="text-xs text-purple-300/60">R$ 0,00 — sem cobrança</p>
+              </div>
+              <div className="my-3 flex items-center gap-2">
+                <div className="flex-1 h-px bg-urbana-gold/20" />
+                <span className="text-xs text-urbana-light/40">ou pague normalmente</span>
+                <div className="flex-1 h-px bg-urbana-gold/20" />
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-2 gap-3">
             <Button

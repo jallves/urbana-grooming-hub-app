@@ -670,6 +670,8 @@ export type Database = {
           cancelled_at: string | null
           client_id: string
           created_at: string
+          credits_total: number
+          credits_used: number
           end_date: string | null
           id: string
           next_billing_date: string | null
@@ -685,6 +687,8 @@ export type Database = {
           cancelled_at?: string | null
           client_id: string
           created_at?: string
+          credits_total?: number
+          credits_used?: number
           end_date?: string | null
           id?: string
           next_billing_date?: string | null
@@ -700,6 +704,8 @@ export type Database = {
           cancelled_at?: string | null
           client_id?: string
           created_at?: string
+          credits_total?: number
+          credits_used?: number
           end_date?: string | null
           id?: string
           next_billing_date?: string | null
@@ -1916,6 +1922,48 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      subscription_usage: {
+        Row: {
+          appointment_id: string | null
+          id: string
+          notes: string | null
+          service_name: string | null
+          subscription_id: string
+          used_at: string
+        }
+        Insert: {
+          appointment_id?: string | null
+          id?: string
+          notes?: string | null
+          service_name?: string | null
+          subscription_id: string
+          used_at?: string
+        }
+        Update: {
+          appointment_id?: string | null
+          id?: string
+          notes?: string | null
+          service_name?: string | null
+          subscription_id?: string
+          used_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscription_usage_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscription_usage_subscription_id_fkey"
+            columns: ["subscription_id"]
+            isOneToOne: false
+            referencedRelation: "client_subscriptions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       time_off: {
         Row: {

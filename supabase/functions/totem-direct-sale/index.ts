@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { action, venda_id, payment_id, payment_method, transaction_data } = await req.json()
+    const { action, venda_id, payment_id, payment_method, transaction_data, subscription_plan_id, client_id, barber_id } = await req.json()
 
     // ========================================================================
     // ACTION: START - Criar registro de pagamento pendente
@@ -276,6 +276,100 @@ serve(async (req) => {
             }
           } catch (stockException) {
             console.error('❌ Exceção ao atualizar estoque:', productId, stockException)
+          }
+        }
+      }
+
+      // 8. Se for venda de assinatura, criar/ativar a subscription
+      if (venda) {
+        const { data: vendaItensCheck } = await supabase
+          .from('vendas_itens')
+          .select('*')
+          .eq('venda_id', venda_id)
+          .eq('tipo', 'ASSINATURA')
+          .maybeSingle()
+
+        if (vendaItensCheck) {
+          const planId = vendaItensCheck.item_id
+          console.log('👑 [PRODUCT-SALE] Ativando assinatura para plano:', planId)
+
+          // Verificar se já existe assinatura ativa
+          const { data: existingSub } = await supabase
+            .from('client_subscriptions')
+            .select('id')
+            .eq('client_id', venda.cliente_id)
+            .eq('plan_id', planId)
+            .eq('status', 'active')
+            .maybeSingle()
+
+          if (existingSub) {
+            // Renovar: resetar créditos
+            await supabase
+              .from('client_subscriptions')
+              .update({
+                credits_used: 0,
+                next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                updated_at: toBrazilISOString()
+              })
+              .eq('id', existingSub.id)
+            console.log('✅ [PRODUCT-SALE] Assinatura renovada:', existingSub.id)
+          } else {
+            // Criar nova assinatura
+            const nextBilling = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+            await supabase
+              .from('client_subscriptions')
+              .insert({
+                client_id: venda.cliente_id,
+                plan_id: planId,
+                status: 'active',
+                credits_total: 4,
+                credits_used: 0,
+                start_date: new Date().toISOString().split('T')[0],
+                next_billing_date: nextBilling,
+                payment_method: payment_method || 'credit_card',
+                notes: `Ativado via Totem - Venda ${venda_id}`
+              })
+            console.log('✅ [PRODUCT-SALE] Nova assinatura criada')
+          }
+
+          // Gerar comissão do barbeiro sobre o valor do plano
+          if (venda.barbeiro_id) {
+            const { data: barberData } = await supabase
+              .from('painel_barbeiros')
+              .select('nome, commission_rate, taxa_comissao')
+              .eq('id', venda.barbeiro_id)
+              .single()
+
+            if (barberData) {
+              const commRate = (barberData.commission_rate || barberData.taxa_comissao || 50) / 100
+              const commValue = vendaItensCheck.subtotal * commRate
+              console.log('💰 [PRODUCT-SALE] Comissão assinatura:', commValue, 'Taxa:', commRate * 100, '%')
+
+              await supabase.from('barber_commissions').insert({
+                barber_id: venda.barbeiro_id,
+                barber_name: barberData.nome,
+                valor: commValue,
+                amount: commValue,
+                commission_rate: commRate * 100,
+                tipo: 'assinatura',
+                status: 'pending',
+                venda_id: venda_id,
+                appointment_source: 'totem_subscription'
+              })
+
+              // Contas a pagar para o barbeiro
+              await supabase.from('contas_pagar').insert({
+                descricao: `Comissão Assinatura - ${barberData.nome}`,
+                valor: commValue,
+                data_vencimento: new Date().toISOString().split('T')[0],
+                status: 'pendente',
+                categoria: 'Comissão',
+                fornecedor: barberData.nome,
+                observacoes: `Comissão de assinatura - Venda ${venda_id}`
+              })
+
+              console.log('✅ [PRODUCT-SALE] Comissão e contas_pagar criados')
+            }
           }
         }
       }
