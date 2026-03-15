@@ -235,17 +235,7 @@ const TotemCheckout: React.FC = () => {
     if (!activeSubscription || activeSubscription.credits_remaining <= 0) return;
     setProcessing(true);
     try {
-      // 1. Sincronizar checkout no backend
-      if (vendaId) {
-        await supabase.from('vendas').update({
-          valor_total: 0,
-          forma_pagamento: 'ASSINATURA',
-          status: 'pago',
-          observacoes: `Crédito assinatura ${activeSubscription.plan_name}`
-        }).eq('id', vendaId);
-      }
-
-      // 2. Usar crédito
+      // 1. Usar crédito da assinatura PRIMEIRO
       const success = await useCredit(
         activeSubscription.id,
         appointment.id,
@@ -258,7 +248,18 @@ const TotemCheckout: React.FC = () => {
         return;
       }
 
-      // 3. Finalizar checkout via edge function (sem pagamento)
+      // 2. Atualizar venda para refletir pagamento via assinatura
+      if (vendaId) {
+        await supabase.from('vendas').update({
+          valor_total: 0,
+          forma_pagamento: 'ASSINATURA',
+          status: 'pago',
+          gorjeta: 0,
+          observacoes: `Crédito assinatura ${activeSubscription.plan_name} - Crédito ${activeSubscription.credits_used + 1}/${activeSubscription.credits_total}`
+        }).eq('id', vendaId);
+      }
+
+      // 3. Finalizar checkout via edge function (sem PayGo, com ERP completo)
       await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'finish',
@@ -272,7 +273,7 @@ const TotemCheckout: React.FC = () => {
         }
       });
 
-      toast.success('Crédito utilizado com sucesso! ✨');
+      toast.success(`Crédito utilizado! (${activeSubscription.credits_remaining - 1} restantes) ✨`);
       navigate('/totem/home');
     } catch (error) {
       console.error('Erro ao usar crédito:', error);

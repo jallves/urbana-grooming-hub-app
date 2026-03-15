@@ -449,15 +449,17 @@ Deno.serve(async (req) => {
 
       // ==================== INTEGRAÇÃO ERP ====================
       // Sempre invocar (idempotente) para garantir migração completa
-      console.log('💰 Garantindo registros financeiros (idempotente)...')
+      const isSubscriptionCredit = payment_method === 'subscription_credit'
+      console.log('💰 Garantindo registros financeiros (idempotente)...', { isSubscriptionCredit })
 
       // Preparar itens para ERP
+      // Se for crédito de assinatura: preço zerado (já foi pago na aquisição do combo)
       const erpItems = (vendaItens || []).map((item: any) => ({
         type: item.tipo === 'PRODUTO' ? 'product' : 'service',
         id: item.item_id,
         name: item.nome,
         quantity: Number(item.quantidade || 1),
-        price: Number(item.preco_unitario || 0),
+        price: isSubscriptionCredit ? 0 : Number(item.preco_unitario || 0),
         discount: 0,
         isExtra: item.tipo === 'SERVICO_EXTRA',
       }))
@@ -475,22 +477,27 @@ Deno.serve(async (req) => {
         console.log('💳 Transaction ID gerado internamente:', transactionId)
       }
 
+      // Notas para o ERP
+      const erpNotes = isSubscriptionCredit 
+        ? `Uso de crédito assinatura - Checkout Totem - Venda ${venda_id}`
+        : `Checkout Totem - Venda ${venda_id}`
+
       const { data: erpResult, error: erpError } = await supabase.functions.invoke(
         'create-financial-transaction',
         {
           body: {
             appointment_id: agendamento.id,
             client_id: venda.cliente_id,
-            // IMPORTANT: financial_records.barber_id referencia painel_barbeiros.id
             barber_id: agendamento.barbeiro_id,
             reference_id: venda_id,
-            reference_type: 'totem_venda',
+            reference_type: isSubscriptionCredit ? 'totem_subscription_usage' : 'totem_venda',
             items: erpItems,
-            payment_method: payment_method || 'credit_card',
+            payment_method: isSubscriptionCredit ? 'subscription_credit' : (payment_method || 'credit_card'),
             discount_amount: Number(venda.desconto) || 0,
-            notes: `Checkout Totem - Venda ${venda_id}`,
-            tip_amount: gorjeta,
-            transaction_id: transactionId, // ID da transação eletrônica para rastreio
+            notes: erpNotes,
+            tip_amount: isSubscriptionCredit ? 0 : gorjeta,
+            transaction_id: transactionId,
+            is_subscription_usage: isSubscriptionCredit,
           },
         }
       )
@@ -499,6 +506,21 @@ Deno.serve(async (req) => {
         console.error('❌ Erro ao integrar com ERP:', erpError)
       } else {
         console.log('✅ ERP integrado com sucesso:', erpResult)
+      }
+
+      // ==================== REGISTRO DE USO DA ASSINATURA (admin) ====================
+      if (isSubscriptionCredit && agendamento_id) {
+        console.log('📋 Registrando uso de crédito da assinatura no admin...')
+        // O frontend já registrou subscription_usage e incrementou credits_used
+        // Aqui garantimos que o subscription_usage tem o appointment_id correto
+        const { error: usageUpdateError } = await supabase
+          .from('subscription_usage')
+          .update({ appointment_id: agendamento.id })
+          .eq('appointment_id', agendamento.id)
+        
+        if (usageUpdateError) {
+          console.warn('⚠️ Erro ao atualizar subscription_usage:', usageUpdateError)
+        }
       }
 
 
