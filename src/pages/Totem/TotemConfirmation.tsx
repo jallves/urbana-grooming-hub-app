@@ -39,10 +39,10 @@ const TotemConfirmation: React.FC = () => {
   };
 
   const handleConfirmCheckIn = async () => {
-    // Validação frontend: check-in só permitido até 1h30 antes
+    // Validação frontend: check-in só permitido até 1h30 antes (exceto homologação)
     const diffMinutes = getMinutesUntilAppointment();
-    
-    if (diffMinutes > 90) {
+
+    if (!HOMOLOGATION_MODE && diffMinutes > 90) {
       const horaFormatada = appointment.hora.substring(0, 5);
       toast.error('Check-in ainda não disponível', {
         description: `O check-in só pode ser feito a partir de 1h30 antes do horário agendado (${horaFormatada}). Por favor, volte mais tarde.`,
