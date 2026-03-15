@@ -21,6 +21,7 @@ const ClientAppointmentDashboard: React.FC = () => {
   const {
     appointments,
     isLoading,
+    fetchAppointments,
     handleStatusChange,
     handleDeleteAppointment,
     handleUpdateAppointment,
