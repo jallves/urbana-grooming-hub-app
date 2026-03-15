@@ -137,6 +137,11 @@ const TotemCheckout: React.FC = () => {
   const loadCheckout = async () => {
     setLoading(true);
     try {
+      // Verificar créditos de assinatura do cliente
+      if (client?.id) {
+        await checkCredits(client.id);
+      }
+
       // Barbeiro via agendamento
       if (appointment?.barbeiro_id) {
         const { data: barberData } = await supabase
