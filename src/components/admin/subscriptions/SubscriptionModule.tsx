@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Crown, Users, CreditCard, LayoutDashboard } from 'lucide-react';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
 import SubscriptionDashboardTab from './SubscriptionDashboardTab';
 import SubscriptionPlansTab from './SubscriptionPlansTab';
 import SubscriptionSubscribersTab from './SubscriptionSubscribersTab';
@@ -16,30 +17,33 @@ const SubscriptionModule: React.FC = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
 
   return (
-    <div className="p-3 sm:p-4 lg:p-6 space-y-4 sm:space-y-6">
-      {/* Custom Tab Navigation */}
-      <div className="flex flex-wrap gap-2 sm:gap-3">
-        {tabs.map(tab => {
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`
-                flex items-center gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm
-                transition-all duration-200 border
-                ${isActive
-                  ? `${tab.activeColor} border-transparent shadow-lg`
-                  : `${tab.inactiveColor} border-transparent`
-                }
-              `}
-            >
-              <tab.icon className={`h-4 w-4 ${isActive ? tab.iconActive : tab.iconInactive}`} />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
+    <div className="p-2 sm:p-4 lg:p-6 space-y-3 sm:space-y-6">
+      {/* Scrollable Tab Navigation for mobile */}
+      <ScrollArea className="w-full">
+        <div className="flex gap-2 sm:gap-3 pb-1 min-w-max">
+          {tabs.map(tab => {
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`
+                  flex items-center gap-1.5 sm:gap-2 px-3 sm:px-5 py-2 sm:py-2.5 rounded-xl font-medium text-xs sm:text-sm
+                  transition-all duration-200 border whitespace-nowrap
+                  ${isActive
+                    ? `${tab.activeColor} border-transparent shadow-lg`
+                    : `${tab.inactiveColor} border-transparent`
+                  }
+                `}
+              >
+                <tab.icon className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${isActive ? tab.iconActive : tab.iconInactive}`} />
+                <span>{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
+        <ScrollBar orientation="horizontal" className="h-1" />
+      </ScrollArea>
 
       {/* Tab Content */}
       {activeTab === 'dashboard' && <SubscriptionDashboardTab />}
@@ -51,4 +55,3 @@ const SubscriptionModule: React.FC = () => {
 };
 
 export default SubscriptionModule;
-
