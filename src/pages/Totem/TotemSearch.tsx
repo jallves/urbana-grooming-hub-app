@@ -39,16 +39,41 @@ const TotemSearch: React.FC = () => {
       const cleanPhone = phone.replace(/\D/g, '');
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
-      // Extrair últimos 8-9 dígitos para busca flexível (ignora formatação salva no banco)
-      const shortPhone = cleanPhone.length > 9 ? cleanPhone.slice(-9) : cleanPhone;
-      const midPhone = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+      // Construir padrões de busca que cobrem formatações com hífen/espaço
+      // Ex: 21982485684 → também busca "98248-5684", "98248 5684"
+      const searchPatterns: string[] = [];
+      
+      // Padrão 1: número limpo completo
+      searchPatterns.push(cleanPhone);
+      
+      // Padrão 2: últimos 9 dígitos formatados como XXXXX-XXXX (padrão brasileiro)
+      if (cleanPhone.length >= 9) {
+        const last9 = cleanPhone.slice(-9);
+        const formatted9 = `${last9.slice(0, 5)}-${last9.slice(5)}`;
+        searchPatterns.push(last9);
+        searchPatterns.push(formatted9);
+      }
+      
+      // Padrão 3: últimos 8 dígitos formatados como XXXX-XXXX
+      if (cleanPhone.length >= 8) {
+        const last8 = cleanPhone.slice(-8);
+        const formatted8 = `${last8.slice(0, 4)}-${last8.slice(4)}`;
+        searchPatterns.push(last8);
+        searchPatterns.push(formatted8);
+      }
 
-      // ⚡ OTIMIZADO: Busca server-side com múltiplos padrões para cobrir formatações variadas
+      // Montar query OR com todos os padrões (whatsapp + telefone)
+      const orClauses = searchPatterns
+        .flatMap(p => [`whatsapp.ilike.%${p}%`, `telefone.ilike.%${p}%`])
+        .join(',');
+
+      console.log('🔍 Padrões de busca:', searchPatterns);
+
       const { data: painelClientes } = await supabase
         .from('painel_clientes')
         .select('*')
-        .or(`whatsapp.ilike.%${cleanPhone}%,telefone.ilike.%${cleanPhone}%,whatsapp.ilike.%${shortPhone}%,telefone.ilike.%${shortPhone}%,whatsapp.ilike.%${midPhone}%,telefone.ilike.%${midPhone}%`)
-        .limit(1);
+        .or(orClauses)
+        .limit(5);
 
       let cliente: any = painelClientes?.[0] || null;
       let clientSource = 'painel';
