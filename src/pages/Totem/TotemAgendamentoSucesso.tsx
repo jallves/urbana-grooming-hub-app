@@ -14,6 +14,8 @@ const TotemAgendamentoSucesso: React.FC = () => {
   const location = useLocation();
   const { appointment, service, barber, client } = location.state || {};
 
+  const { countdown } = useAutoRedirectHome({ seconds: 10, enabled: !!appointment });
+
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
