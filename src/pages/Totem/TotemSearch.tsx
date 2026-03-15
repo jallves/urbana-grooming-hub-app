@@ -39,11 +39,15 @@ const TotemSearch: React.FC = () => {
       const cleanPhone = phone.replace(/\D/g, '');
       console.log('🔍 Buscando cliente com telefone:', cleanPhone);
 
-      // ⚡ OTIMIZADO: Busca server-side com .ilike() ao invés de full-table scan
+      // Extrair últimos 8-9 dígitos para busca flexível (ignora formatação salva no banco)
+      const shortPhone = cleanPhone.length > 9 ? cleanPhone.slice(-9) : cleanPhone;
+      const midPhone = cleanPhone.length > 8 ? cleanPhone.slice(-8) : cleanPhone;
+
+      // ⚡ OTIMIZADO: Busca server-side com múltiplos padrões para cobrir formatações variadas
       const { data: painelClientes } = await supabase
         .from('painel_clientes')
         .select('*')
-        .or(`whatsapp.ilike.%${cleanPhone}%,telefone.ilike.%${cleanPhone}%`)
+        .or(`whatsapp.ilike.%${cleanPhone}%,telefone.ilike.%${cleanPhone}%,whatsapp.ilike.%${shortPhone}%,telefone.ilike.%${shortPhone}%,whatsapp.ilike.%${midPhone}%,telefone.ilike.%${midPhone}%`)
         .limit(1);
 
       let cliente: any = painelClientes?.[0] || null;
