@@ -4,6 +4,8 @@ import { CheckCircle, Calendar, Clock, User, Scissors, Home, ArrowRight } from '
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { TotemButton } from '@/components/totem/TotemButton';
+import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
+import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
@@ -11,6 +13,8 @@ const TotemAgendamentoSucesso: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { appointment, service, barber, client } = location.state || {};
+
+  const { countdown } = useAutoRedirectHome({ seconds: 10, enabled: !!appointment });
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -185,6 +189,9 @@ const TotemAgendamentoSucesso: React.FC = () => {
             Voltar ao Início
           </TotemButton>
         </div>
+
+        {/* Auto-redirect countdown */}
+        <AutoRedirectCountdown countdown={countdown} />
       </div>
     </div>
   );

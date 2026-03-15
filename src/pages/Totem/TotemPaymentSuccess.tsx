@@ -5,6 +5,8 @@ import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
+import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
+import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
 
 interface ExtraService {
   service_id?: string;
@@ -52,8 +54,15 @@ const TotemPaymentSuccess: React.FC = () => {
     tipAmount = 0
   } = location.state || {};
 
+  const ratingRedirect = !isDirect && appointment;
+  const { countdown } = useAutoRedirectHome({
+    seconds: 10,
+    enabled: !!(total && client),
+    redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
+    redirectState: ratingRedirect ? { appointment, client } : undefined,
+  });
+
   useEffect(() => {
-    // Add totem-mode class for touch optimization
     document.documentElement.classList.add('totem-mode');
     
     console.log('[PaymentSuccess] Dados recebidos:', { 
@@ -170,22 +179,9 @@ const TotemPaymentSuccess: React.FC = () => {
 
     sendEmailReceipt();
 
-    // Para checkout de serviço: ir direto para avaliação após 3 segundos
-    // Para venda direta de produtos: voltar para home após 5 segundos
-    const timer = setTimeout(() => {
-      if (isDirect) {
-        navigate('/totem/home');
-      } else if (appointment) {
-        navigate('/totem/rating', {
-          state: { appointment, client }
-        });
-      } else {
-        navigate('/totem/home');
-      }
-    }, isDirect ? 5000 : 3000);
+    // Auto-redirect agora é gerenciado pelo useAutoRedirectHome hook
 
     return () => {
-      clearTimeout(timer);
       document.documentElement.classList.remove('totem-mode');
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
@@ -323,13 +319,11 @@ const TotemPaymentSuccess: React.FC = () => {
           </div>
         </div>
 
-        {/* Indicador de próxima etapa */}
-        <div className="flex items-center justify-center gap-2 text-urbana-gold/80 pt-2">
-          <Star className="w-5 h-5 animate-pulse" />
-          <span className="text-base sm:text-lg">
-            {isDirect ? 'Voltando ao início...' : 'Preparando avaliação...'}
-          </span>
-        </div>
+        {/* Countdown de auto-redirect */}
+        <AutoRedirectCountdown 
+          countdown={countdown} 
+          label={isDirect ? 'segundos para voltar ao início' : 'segundos para avaliação'}
+        />
 
         {/* Footer */}
         <p className="text-base sm:text-lg text-urbana-gold font-bold pt-2">
