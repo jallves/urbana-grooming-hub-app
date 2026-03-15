@@ -22,7 +22,12 @@ const TotemRating: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showScheduleQuestion, setShowScheduleQuestion] = useState(false);
-  const [countdown, setCountdown] = useState(10);
+
+  // Auto-redirect: 10s na tela de rating e na pergunta de agendamento
+  const { countdown } = useAutoRedirectHome({
+    seconds: 10,
+    enabled: !!(appointment && client),
+  });
 
   React.useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -35,16 +40,6 @@ const TotemRating: React.FC = () => {
       document.documentElement.classList.remove('totem-mode');
     };
   }, [appointment, client, navigate]);
-
-  // Countdown timer para voltar ao início
-  React.useEffect(() => {
-    if (showScheduleQuestion && countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    } else if (showScheduleQuestion && countdown === 0) {
-      navigate('/totem/home');
-    }
-  }, [showScheduleQuestion, countdown, navigate]);
 
   const handleScheduleYes = () => {
     navigate('/totem/search', { 
