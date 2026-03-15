@@ -9,6 +9,7 @@ const iconMap: Record<string, React.ReactNode> = {
   reminder: <Clock className="h-4 w-4 text-sky-400" />,
   update: <AlertCircle className="h-4 w-4 text-amber-400" />,
   cancel: <X className="h-4 w-4 text-red-400" />,
+  subscription: <Calendar className="h-4 w-4 text-emerald-400" />,
 };
 
 const bgMap: Record<string, string> = {
@@ -16,6 +17,7 @@ const bgMap: Record<string, string> = {
   reminder: 'from-sky-500/20 to-cyan-500/10 border-sky-500/20',
   update: 'from-amber-500/20 to-orange-500/10 border-amber-500/20',
   cancel: 'from-red-500/20 to-rose-500/10 border-red-500/20',
+  subscription: 'from-emerald-500/20 to-green-500/10 border-emerald-500/20',
 };
 
 const ClientNotificationBell: React.FC = () => {
