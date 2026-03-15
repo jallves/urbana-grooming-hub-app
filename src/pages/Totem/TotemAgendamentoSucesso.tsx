@@ -189,6 +189,9 @@ const TotemAgendamentoSucesso: React.FC = () => {
             Voltar ao Início
           </TotemButton>
         </div>
+
+        {/* Auto-redirect countdown */}
+        <AutoRedirectCountdown countdown={countdown} />
       </div>
     </div>
   );
