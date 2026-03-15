@@ -36,9 +36,9 @@ const TotemProductCheckout: React.FC = () => {
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
-    console.log('🛒 Checkout de Produto - State recebido:', { client, cart, barber });
+    console.log('🛒 Checkout de Produto - State recebido:', { client, cart, barber, subscriptionPlan });
     
-    if (!client || !cart || cart.length === 0) {
+    if (!client || ((!cart || cart.length === 0) && !isSubscriptionPurchase)) {
       toast.error('Carrinho vazio ou cliente não identificado');
       navigate('/totem/home');
       return;
@@ -47,14 +47,17 @@ const TotemProductCheckout: React.FC = () => {
     if (!barber) {
       console.warn('⚠️ Barbeiro não selecionado, redirecionando...');
       toast.error('Selecione um barbeiro');
-      navigate('/totem/product-barber-select', { state: { client, cart } });
+      navigate('/totem/product-barber-select', { state: { client, cart, subscriptionPlan } });
       return;
     }
 
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, barber, navigate]);
+  }, [client, barber, navigate, isSubscriptionPurchase]);
+
+  // Cálculo do total em tempo real
+  const displayTotal = isSubscriptionPurchase ? subscriptionPlan!.price : cartTotal;
 
   // Cálculo do total em tempo real
   const cartTotal = useMemo(() => {
