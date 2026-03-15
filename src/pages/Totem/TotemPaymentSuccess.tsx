@@ -186,7 +186,7 @@ const TotemPaymentSuccess: React.FC = () => {
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
 
-  if (!total || !client) {
+  if (total == null || !client) {
     return null;
   }
 
