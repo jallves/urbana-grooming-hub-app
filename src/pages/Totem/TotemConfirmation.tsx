@@ -54,88 +54,81 @@ const TotemConfirmation: React.FC = () => {
     try {
       setIsProcessing(true);
       
-      console.log('🔄 [TOTEM] Iniciando check-in para agendamento:', {
-        id: appointment?.id,
-        cliente: client?.nome,
-        data: appointment?.data,
-        hora: appointment?.hora
-      });
+      console.log('🔄 [TOTEM] Check-in direto (sem Edge Function) para:', appointment?.id);
 
-      const { data, error } = await supabase.functions.invoke('totem-checkin', {
-        body: {
-          agendamento_id: appointment.id,
-          modo: 'MANUAL'
-        }
-      });
+      // ⚡ OTIMIZADO: Queries diretas ao Supabase (sem cold-start de Edge Function)
+      // 1. Atualizar status do agendamento para CHEGOU
+      const { error: updateError } = await supabase
+        .from('painel_agendamentos')
+        .update({ status_totem: 'CHEGOU', status: 'confirmado' })
+        .eq('id', appointment.id);
 
-      if (error) {
-        console.error('❌ [TOTEM] Erro no check-in:', error);
-        setIsProcessing(false);
-        
-        // Tentar extrair mensagem do corpo da resposta (FunctionsHttpError)
-        let errorMsg = '';
-        try {
-          if (error.context?.body) {
-            const body = await error.context.json();
-            errorMsg = body?.error || '';
-          }
-        } catch { /* ignore */ }
-        errorMsg = errorMsg || error.message || '';
-        
-        if (errorMsg.includes('já foi realizado')) {
-          toast.error('Check-in já realizado', {
-            description: 'Este agendamento já teve check-in feito anteriormente.',
-            duration: 6000,
-          });
-        } else if (errorMsg.includes('não encontrado')) {
-          toast.error('Agendamento não encontrado', {
-            description: 'Não foi possível localizar este agendamento. Procure a recepção.',
-            duration: 6000,
-          });
-        } else if (errorMsg.includes('cancelado')) {
-          toast.error('Agendamento cancelado', {
-            description: 'Este agendamento foi cancelado. Procure a recepção para reagendar.',
-            duration: 6000,
-          });
-        } else if (errorMsg.includes('1h30') || errorMsg.includes('Check-in disponível')) {
-          toast.error('Check-in ainda não disponível', {
-            description: errorMsg,
-            duration: 8000,
-          });
-        } else {
-          toast.error('Erro no check-in', {
-            description: errorMsg || 'Não foi possível fazer o check-in. Procure a recepção.',
-            duration: 6000,
-          });
-        }
-        
-        return;
+      if (updateError) {
+        console.error('❌ Erro ao atualizar status:', updateError);
+        throw new Error('Erro ao atualizar status do agendamento');
       }
 
-      if (!data?.success) {
-        console.error('❌ [TOTEM] Falha no check-in:', data?.error);
-        setIsProcessing(false);
-        
-        toast.error('Erro no check-in', {
-          description: data?.error || 'Não foi possível fazer o check-in.'
-        });
-        
-        // Permanecer na página para permitir nova tentativa
-        return;
+      // 2. Verificar se já existe sessão para este agendamento
+      const { data: existingLink } = await supabase
+        .from('appointment_totem_sessions')
+        .select('*, totem_session:totem_sessions(*)')
+        .eq('appointment_id', appointment.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      let session = existingLink?.totem_session;
+
+      // 3. Se não existe, criar sessão + link
+      if (!session) {
+        const token = crypto.randomUUID();
+        const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+
+        const { data: newSession, error: sessionError } = await supabase
+          .from('totem_sessions')
+          .insert({ token, expires_at: expiresAt, is_valid: true })
+          .select()
+          .single();
+
+        if (sessionError) {
+          console.error('❌ Erro ao criar sessão:', sessionError);
+          throw new Error('Erro ao criar sessão do totem');
+        }
+
+        const { error: linkError } = await supabase
+          .from('appointment_totem_sessions')
+          .insert({
+            appointment_id: appointment.id,
+            totem_session_id: newSession.id,
+            status: 'check_in'
+          });
+
+        if (linkError) {
+          // Limpar sessão órfã
+          await supabase.from('totem_sessions').delete().eq('id', newSession.id);
+          throw new Error('Erro ao vincular sessão ao agendamento');
+        }
+
+        session = newSession;
+        console.log('✅ Nova sessão criada:', session.id);
+      } else {
+        console.log('✅ Sessão existente:', session.id);
+        // Atualizar status do link
+        await supabase
+          .from('appointment_totem_sessions')
+          .update({ status: 'check_in' })
+          .eq('appointment_id', appointment.id)
+          .eq('totem_session_id', session.id);
       }
 
       console.log('✅ [TOTEM] Check-in realizado com sucesso!');
-      console.log('📦 [TOTEM] Session ID retornada:', data.session_id);
-      console.log('📊 [TOTEM] Dados completos:', data);
 
-      // Após o check-in, ir para a tela de sucesso.
-      // O cliente faz o serviço e só depois vai ao checkout.
       navigate('/totem/check-in-success', {
         state: {
           client,
           appointment,
           session: {
-            id: data.session_id,
+            id: session.id,
             appointment_id: appointment.id,
             status: 'check_in',
           },
@@ -143,11 +136,10 @@ const TotemConfirmation: React.FC = () => {
         replace: true,
       });
     } catch (error: any) {
-      console.error('❌ Erro inesperado no check-in:', error);
+      console.error('❌ Erro no check-in:', error);
       setIsProcessing(false);
-      
-      toast.error('Erro no sistema', {
-        description: 'Ocorreu um erro inesperado. Por favor, tente novamente.'
+      toast.error('Erro no check-in', {
+        description: error.message || 'Não foi possível fazer o check-in. Procure a recepção.'
       });
     }
   };
