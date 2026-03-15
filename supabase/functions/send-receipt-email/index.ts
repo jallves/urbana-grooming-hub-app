@@ -64,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
       tipAmount
     } = body;
 
-    if (!clientName || !clientEmail || !items || !total || !paymentMethod) {
+    if (!clientName || !clientEmail || !items || total === undefined || total === null || !paymentMethod) {
       return new Response(
         JSON.stringify({ error: "Missing required fields" }),
         { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
