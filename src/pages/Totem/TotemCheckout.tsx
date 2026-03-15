@@ -677,6 +677,18 @@ const TotemCheckout: React.FC = () => {
           syncItemsAndReloadSummary(nextExtras, nextProducts);
         }}
       />
+
+      {/* Modal de comprovante para checkout via crédito de assinatura */}
+      <TotemReceiptOptionsModal
+        isOpen={showReceiptModal}
+        onClose={() => {}}
+        onComplete={handleSubscriptionReceiptComplete}
+        clientName={client?.nome || ''}
+        clientEmail={client?.email}
+        total={0}
+        onSendEmail={handleSendSubscriptionReceiptEmail}
+        isPrintAvailable={false}
+      />
     </div>
   );
 };
