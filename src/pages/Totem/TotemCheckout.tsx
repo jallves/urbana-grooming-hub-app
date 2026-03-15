@@ -137,19 +137,33 @@ const TotemCheckout: React.FC = () => {
   const loadCheckout = async () => {
     setLoading(true);
     try {
-      // Verificar créditos de assinatura do cliente
-      if (client?.id) {
-        await checkCredits(client.id);
-      }
+      // Executar TODAS as chamadas em paralelo para máxima velocidade
+      const checkoutBody = {
+        action: 'start',
+        agendamento_id: appointment.id,
+        session_id: session.id,
+        extras: extraServices.map((s) => ({
+          id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA',
+        })),
+        products: productCart.map((p) => ({
+          id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade,
+        })),
+      };
 
-      // Barbeiro via agendamento
-      if (appointment?.barbeiro_id) {
-        const { data: barberData } = await supabase
-          .from('painel_barbeiros')
-          .select('id, nome, foto_url, image_url, specialties')
-          .eq('id', appointment.barbeiro_id)
-          .single();
+      const [, barberResult, checkoutResult] = await Promise.allSettled([
+        // 1. Verificar créditos (fire-and-forget se falhar)
+        client?.id ? checkCredits(client.id) : Promise.resolve(),
+        // 2. Buscar barbeiro
+        appointment?.barbeiro_id
+          ? supabase.from('painel_barbeiros').select('id, nome, foto_url, image_url, specialties').eq('id', appointment.barbeiro_id).single()
+          : Promise.resolve({ data: null }),
+        // 3. Iniciar checkout (edge function)
+        supabase.functions.invoke('totem-checkout', { body: checkoutBody }),
+      ]);
 
+      // Processar barbeiro
+      if (barberResult.status === 'fulfilled') {
+        const barberData = (barberResult.value as any)?.data;
         if (barberData) {
           setBarber({
             id: barberData.id,
@@ -163,35 +177,16 @@ const TotemCheckout: React.FC = () => {
         }
       }
 
-      // Iniciar/atualizar checkout via edge function (idempotente)
-      const { data: checkoutData, error: checkoutError } = await supabase.functions.invoke('totem-checkout', {
-        body: {
-          action: 'start',
-          agendamento_id: appointment.id,
-          session_id: session.id,
-          extras: extraServices.map((s) => ({
-            id: s.id,
-            nome: s.nome,
-            preco: s.preco,
-            tipo: 'SERVICO_EXTRA',
-          })),
-          products: productCart.map((p) => ({
-            id: p.id,
-            nome: p.nome,
-            preco: p.preco,
-            quantidade: p.quantidade,
-          })),
-        },
-      });
-
-      if (checkoutError) {
-        console.error('Erro ao iniciar checkout:', checkoutError);
-        toast.error('Erro ao iniciar checkout');
-        // fallback: usa o cálculo local (resumo já é useMemo)
+      // Processar checkout
+      if (checkoutResult.status === 'fulfilled') {
+        const { data: checkoutData, error: checkoutError } = checkoutResult.value as any;
+        if (checkoutError) {
+          console.error('Erro ao iniciar checkout:', checkoutError);
+        } else if (checkoutData?.venda_id) {
+          setVendaId(checkoutData.venda_id);
+        }
       } else {
-        setVendaId(checkoutData.venda_id);
-        // Sincronizar estado local com dados do servidor se necessário
-        // (já estão no useMemo, mas garantir venda_id foi setado)
+        console.error('Erro ao iniciar checkout:', checkoutResult.reason);
       }
     } catch (error) {
       console.error('Erro ao carregar checkout:', error);

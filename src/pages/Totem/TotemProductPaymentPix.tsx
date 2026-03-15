@@ -220,7 +220,7 @@ const TotemProductPaymentPix: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCheckingConnection(false);
-    }, 1500);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 

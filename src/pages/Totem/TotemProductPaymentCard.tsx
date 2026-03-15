@@ -109,95 +109,45 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [client, cart, sale, barber, pendingTransactionData]);
 
-  // Função chamada após comprovante enviado - finaliza tudo (IDÊNTICA AO SERVIÇO)
+  // Função chamada após comprovante enviado - finaliza tudo (OTIMIZADO)
   const handleReceiptComplete = useCallback(async () => {
     if (!pendingTransactionData) return;
 
-    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
-    console.log('✅ [PRODUCT-CARD] COMPROVANTE PROCESSADO - FINALIZANDO');
-    console.log('✅ [PRODUCT-CARD] ═══════════════════════════════════════');
+    console.log('✅ [PRODUCT-CARD] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
 
-    // NOTA: Confirmação TEF já foi enviada IMEDIATAMENTE pelo useTEFAndroid
-    // ao receber aprovação. NÃO confirmar novamente aqui para evitar duplicata.
-    console.log('[PRODUCT-CARD] Confirmação TEF já enviada pelo useTEFAndroid (imediata)');
+    // Montar itens locais como fallback (sem esperar query)
+    const localItems = cart?.length > 0
+      ? cart.map((item: any) => ({
+          item_id: item.product?.id || item.id,
+          nome: item.product?.nome || item.nome,
+          quantidade: item.quantity || 1,
+          preco_unitario: item.product?.preco || item.preco,
+          subtotal: (item.product?.preco || item.preco) * (item.quantity || 1)
+        }))
+      : [];
 
-    // 2. Finalizar venda no backend
+    // NAVEGAR IMEDIATAMENTE - não bloquear o usuário
+    navigate('/totem/product-payment-success', {
+      state: {
+        sale: { ...sale, items: localItems, total: sale?.total },
+        client,
+        transactionData: { ...pendingTransactionData, paymentMethod: paymentTypeRef.current },
+        emailAlreadySent: true
+      }
+    });
+
+    // Finalizar venda em BACKGROUND (fire-and-forget)
     try {
       const paymentMethod = paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO';
-
-      const { error: finishError } = await supabase.functions.invoke('totem-direct-sale', {
+      await supabase.functions.invoke('totem-direct-sale', {
         body: {
-          action: 'finish',
-          venda_id: sale?.id,
-          payment_method: paymentMethod,
-          transaction_data: pendingTransactionData
+          action: 'finish', venda_id: sale?.id,
+          payment_method: paymentMethod, transaction_data: pendingTransactionData
         }
       });
-
-      if (finishError) {
-        console.error('❌ [PRODUCT-CARD] Erro ao finalizar:', finishError);
-        // Não bloquear - pagamento já foi aprovado na maquininha
-      } else {
-        console.log('✅ [PRODUCT-CARD] Edge function executada com sucesso');
-      }
-
-      // Buscar itens da venda para exibir no comprovante
-      let saleItems: any[] = [];
-      try {
-        const { data: fetchedItems } = await supabase
-          .from('vendas_itens')
-          .select('*')
-          .eq('venda_id', sale?.id)
-          .eq('tipo', 'PRODUTO');
-
-        saleItems = fetchedItems || [];
-      } catch (e) {
-        console.warn('[PRODUCT-CARD] Erro ao buscar itens:', e);
-        if (cart && cart.length > 0) {
-          saleItems = cart.map((item: any) => ({
-            item_id: item.product?.id || item.id,
-            nome: item.product?.nome || item.nome,
-            quantidade: item.quantity || 1,
-            preco_unitario: item.product?.preco || item.preco,
-            subtotal: (item.product?.preco || item.preco) * (item.quantity || 1)
-          }));
-        }
-      }
-
-      console.log('✅ [PRODUCT-CARD] Checkout finalizado com sucesso!');
-
-      // 3. Navegar para tela de sucesso (emailAlreadySent = true)
-      navigate('/totem/product-payment-success', {
-        state: {
-          sale: { ...sale, items: saleItems, total: sale?.total },
-          client,
-          transactionData: {
-            ...pendingTransactionData,
-            paymentMethod: paymentTypeRef.current
-          },
-          emailAlreadySent: true
-        }
-      });
+      console.log('✅ [PRODUCT-CARD] Background finalization done');
     } catch (err) {
-      console.error('❌ [PRODUCT-CARD] Erro crítico:', err);
-
-      // Se pagamento foi aprovado na maquininha, ainda navegar para sucesso
-      if (pendingTransactionData?.nsu || pendingTransactionData?.autorizacao) {
-        toast.warning('Pagamento aprovado com observações');
-        navigate('/totem/product-payment-success', {
-          state: {
-            sale: { ...sale, items: [], total: sale?.total },
-            client,
-            transactionData: { ...pendingTransactionData, paymentMethod: paymentTypeRef.current },
-            emailAlreadySent: true
-          }
-        });
-      } else {
-        toast.error('Erro ao finalizar checkout', {
-          description: 'O pagamento foi aprovado. Procure a recepção.'
-        });
-        navigate('/totem/home');
-      }
+      console.error('❌ [PRODUCT-CARD] Background error:', err);
     }
   }, [pendingTransactionData, sale, client, cart, navigate]);
 
@@ -288,7 +238,7 @@ const TotemProductPaymentCard: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCheckingConnection(false);
-    }, 1500);
+    }, 500);
     return () => clearTimeout(timer);
   }, []);
 

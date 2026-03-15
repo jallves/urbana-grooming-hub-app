@@ -139,87 +139,65 @@ const TotemPaymentCard: React.FC = () => {
   const handleReceiptComplete = useCallback(async () => {
     if (!pendingTransactionData) return;
     
-    console.log('✅ [CARD] ═══════════════════════════════════════');
-    console.log('✅ [CARD] COMPROVANTE PROCESSADO - FINALIZANDO');
-    console.log('✅ [CARD] ═══════════════════════════════════════');
+    console.log('✅ [CARD] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
     
-    // NOTA: Confirmação TEF já foi enviada IMEDIATAMENTE pelo useTEFAndroid
-    // ao receber aprovação. NÃO confirmar novamente aqui para evitar duplicata.
-    console.log('[CARD] Confirmação TEF já enviada pelo useTEFAndroid (imediata)');
-    
-    // 2. Finalizar venda no backend
+    // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
+    const successState = { 
+      appointment, client, total,
+      paymentMethod: paymentTypeRef.current,
+      isDirect, transactionData: pendingTransactionData,
+      selectedProducts, extraServices, resumo,
+      emailAlreadySent: true, tipAmount
+    };
+    navigate('/totem/payment-success', { state: successState });
+
+    // Finalizar venda e estoque em BACKGROUND (fire-and-forget)
+    // O pagamento já foi aprovado e confirmado - estas são operações de registro
     try {
+      const backgroundTasks: Promise<any>[] = [];
+
+      // Edge function de finalização
       if (isDirect) {
-        await supabase.functions.invoke('totem-direct-sale', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            transaction_data: pendingTransactionData
-          }
-        });
+        backgroundTasks.push(
+          supabase.functions.invoke('totem-direct-sale', {
+            body: { action: 'finish', venda_id, transaction_data: pendingTransactionData }
+          })
+        );
       } else {
-        await supabase.functions.invoke('totem-checkout', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            agendamento_id: appointment?.id,
-            session_id: session_id,
-            transaction_data: pendingTransactionData,
-            payment_method: paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO',
-            tipAmount: tipAmount,
-            // Snapshot de itens (fallback caso start falhe e a venda esteja sem itens)
-            extras: (extraServices || []).map((s: any) => ({ id: s.id })),
-            products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
-          }
-        });
+        backgroundTasks.push(
+          supabase.functions.invoke('totem-checkout', {
+            body: {
+              action: 'finish', venda_id, agendamento_id: appointment?.id,
+              session_id, transaction_data: pendingTransactionData,
+              payment_method: paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO',
+              tipAmount,
+              extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+              products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
+            }
+          })
+        );
       }
 
-      // Atualizar estoque dos produtos manualmente
+      // Atualizar estoque em paralelo usando RPC
       if (selectedProducts?.length > 0) {
         for (const product of selectedProducts) {
-          const { data: currentProduct } = await supabase
-            .from('painel_produtos')
-            .select('estoque')
-            .eq('id', product.product_id)
-            .single();
-          
-          if (currentProduct) {
-            await supabase
-              .from('painel_produtos')
-              .update({ estoque: Math.max(0, currentProduct.estoque - product.quantidade) })
-              .eq('id', product.product_id);
-          }
+          backgroundTasks.push(
+            Promise.resolve(
+              supabase.rpc('decrease_product_stock', {
+                p_product_id: product.product_id,
+                p_quantity: product.quantidade
+              })
+            ).then(({ error }) => {
+              if (error) console.warn(`[CARD] Estoque fallback para ${product.product_id}:`, error);
+            })
+          );
         }
       }
 
-      console.log('✅ [CARD] Checkout finalizado com sucesso!');
-      
-      // 3. Navegar para tela de sucesso (emailAlreadySent = true porque já enviamos via modal)
-      navigate('/totem/payment-success', { 
-        state: { 
-          appointment, 
-          client,
-          total,
-          paymentMethod: paymentTypeRef.current,
-          isDirect,
-          transactionData: pendingTransactionData,
-          selectedProducts,
-          extraServices,
-          resumo,
-          emailAlreadySent: true, // Evita duplicação - e-mail já foi enviado no modal de opções
-          tipAmount
-        } 
-      });
+      await Promise.allSettled(backgroundTasks);
+      console.log('✅ [CARD] Background tasks concluídas');
     } catch (error) {
-      console.error('❌ [CARD] Erro ao finalizar:', error);
-      
-      // Se falhou após confirmar TEF, isso é um problema sério
-      // O pagamento foi confirmado mas o checkout falhou
-      toast.error('Erro ao finalizar checkout', {
-        description: 'O pagamento foi aprovado. Procure a recepção.'
-      });
-      
-      navigate('/totem/home');
+      console.error('❌ [CARD] Erro em background tasks:', error);
     }
   }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo]);
 
@@ -317,7 +295,7 @@ const TotemPaymentCard: React.FC = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       setIsCheckingConnection(false);
-    }, 1500); // Aguarda 1.5s para TEF inicializar
+    }, 500); // 500ms para TEF inicializar (otimizado de 1.5s)
     
     return () => clearTimeout(timer);
   }, []);
