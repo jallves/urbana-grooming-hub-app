@@ -281,10 +281,50 @@ export const RealtimeProvider: React.FC<{ children: React.ReactNode }> = ({ chil
             if (status === 'PAGA' || status === 'pago') {
               console.log('💰 [Realtime] Venda finalizada! Atualizando ERP...');
               showToast('success', 'Venda finalizada com sucesso!');
-              // Atualiza TUDO quando uma venda é finalizada
               invalidateAllFinancialQueries();
               refreshAppointments();
             }
+          }
+        }
+      )
+      // ========== ASSINATURAS ==========
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'client_subscriptions'
+        },
+        (payload) => {
+          console.log('📡 [Realtime] client_subscriptions:', payload.eventType);
+          queryClient.invalidateQueries({ queryKey: ['client-subscriptions'] });
+          queryClient.invalidateQueries({ queryKey: ['subscription-renewal-alerts'] });
+          
+          if (payload.eventType === 'INSERT') {
+            showToast('success', 'Nova assinatura criada!');
+          } else if (payload.eventType === 'UPDATE') {
+            const status = (payload.new as any)?.status;
+            if (status === 'cancelled') {
+              showToast('info', 'Assinatura cancelada');
+            }
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'subscription_payments'
+        },
+        (payload) => {
+          console.log('📡 [Realtime] subscription_payments:', payload.eventType);
+          queryClient.invalidateQueries({ queryKey: ['subscription-payments'] });
+          queryClient.invalidateQueries({ queryKey: ['client-subscriptions'] });
+          invalidateAllFinancialQueries();
+          
+          if (payload.eventType === 'INSERT') {
+            showToast('success', 'Pagamento de assinatura registrado!');
           }
         }
       )
