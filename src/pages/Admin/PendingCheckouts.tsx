@@ -47,62 +47,49 @@ const PendingCheckouts: React.FC = () => {
   const [isProcessing, setIsProcessing] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Query direta sem edge function para máxima velocidade
+  // Query direta: busca agendamentos com status_totem = 'CHEGOU' (check-in feito, aguardando checkout)
   const loadPendingCheckouts = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Buscar sessões com check-in pendente diretamente
-      const { data: sessions, error: sessionsError } = await supabase
-        .from('appointment_totem_sessions')
+      const { data: agendamentos, error } = await supabase
+        .from('painel_agendamentos')
         .select(`
-          id,
-          appointment_id,
-          status,
-          totem_session_id,
-          created_at
+          id, data, hora, status, status_totem, updated_at,
+          painel_clientes(nome, whatsapp),
+          painel_barbeiros(nome),
+          painel_servicos(nome, preco)
         `)
-        .eq('status', 'checked_in')
-        .order('created_at', { ascending: false });
+        .eq('status_totem', 'CHEGOU')
+        .order('updated_at', { ascending: false });
 
-      if (sessionsError) throw sessionsError;
+      if (error) throw error;
 
-      if (!sessions || sessions.length === 0) {
+      if (!agendamentos || agendamentos.length === 0) {
         setPendingAppointments([]);
         setIsLoading(false);
         return;
       }
 
-      // Buscar agendamentos vinculados
-      const appointmentIds = sessions.map(s => s.appointment_id).filter(Boolean);
-      
-      const { data: agendamentos, error: agendError } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          id, data, hora, status,
-          painel_clientes(nome, whatsapp),
-          painel_barbeiros(nome),
-          painel_servicos(nome, preco)
-        `)
-        .in('id', appointmentIds);
+      // Buscar sessões vinculadas para obter session_id
+      const appointmentIds = agendamentos.map(a => a.id);
+      const { data: sessions } = await supabase
+        .from('appointment_totem_sessions')
+        .select('appointment_id, totem_session_id, status, created_at')
+        .in('appointment_id', appointmentIds)
+        .order('created_at', { ascending: false });
 
-      if (agendError) throw agendError;
-
-      // Combinar dados
-      const combined = sessions
-        .map(sessao => {
-          const agendamento = agendamentos?.find(a => a.id === sessao.appointment_id);
-          if (!agendamento) return null;
-          return {
-            ...agendamento,
-            painel_clientes: agendamento.painel_clientes || { nome: 'N/A', whatsapp: '' },
-            painel_barbeiros: agendamento.painel_barbeiros || { nome: 'N/A' },
-            painel_servicos: agendamento.painel_servicos || { nome: 'N/A', preco: 0 },
-            session_id: sessao.totem_session_id,
-            session_status: sessao.status,
-            check_in_time: sessao.created_at || '',
-          } as PendingCheckout;
-        })
-        .filter(Boolean) as PendingCheckout[];
+      const combined = agendamentos.map(agendamento => {
+        const sessao = sessions?.find(s => s.appointment_id === agendamento.id);
+        return {
+          ...agendamento,
+          painel_clientes: agendamento.painel_clientes || { nome: 'N/A', whatsapp: '' },
+          painel_barbeiros: agendamento.painel_barbeiros || { nome: 'N/A' },
+          painel_servicos: agendamento.painel_servicos || { nome: 'N/A', preco: 0 },
+          session_id: sessao?.totem_session_id || agendamento.id,
+          session_status: sessao?.status || 'checked_in',
+          check_in_time: sessao?.created_at || agendamento.updated_at || '',
+        } as PendingCheckout;
+      });
 
       setPendingAppointments(combined);
     } catch (error: any) {
