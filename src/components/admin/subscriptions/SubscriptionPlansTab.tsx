@@ -66,6 +66,7 @@ const SubscriptionPlansTab: React.FC = () => {
       price: plan.price, billing_period: plan.billing_period, is_active: plan.is_active,
       color: plan.color || 'amber', display_order: plan.display_order,
       service_ids: plan.services?.map((s: any) => s.id) || [],
+      credits_total: (plan as any).credits_total || 4,
     });
     setDialogOpen(true);
   };
