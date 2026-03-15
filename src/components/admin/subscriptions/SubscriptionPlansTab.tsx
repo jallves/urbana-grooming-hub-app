@@ -81,13 +81,21 @@ const SubscriptionPlansTab: React.FC = () => {
     setDialogOpen(false);
   };
 
+  const recalcPrice = (ids: string[]) => {
+    const services = servicesQuery.data || [];
+    return ids.reduce((sum, id) => {
+      const svc = services.find((s: any) => s.id === id);
+      return sum + (svc?.preco || 0);
+    }, 0);
+  };
+
   const toggleService = (serviceId: string) => {
-    setForm(prev => ({
-      ...prev,
-      service_ids: prev.service_ids.includes(serviceId)
+    setForm(prev => {
+      const newIds = prev.service_ids.includes(serviceId)
         ? prev.service_ids.filter(id => id !== serviceId)
-        : [...prev.service_ids, serviceId],
-    }));
+        : [...prev.service_ids, serviceId];
+      return { ...prev, service_ids: newIds, price: recalcPrice(newIds) };
+    });
   };
 
   const getActiveSubsCount = (planId: string) => 
