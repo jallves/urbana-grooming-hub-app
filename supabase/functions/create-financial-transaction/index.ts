@@ -53,6 +53,8 @@ function normalizePaymentMethod(raw: string | null | undefined) {
     bank_transfer: 'bank_transfer',
     credit_card: 'credit_card',
     debit_card: 'debit_card',
+    subscription_credit: 'subscription_credit',
+    ASSINATURA: 'subscription_credit',
   }
   return map[raw] || raw
 }
