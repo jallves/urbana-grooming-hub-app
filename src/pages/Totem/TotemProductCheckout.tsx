@@ -112,7 +112,7 @@ const TotemProductCheckout: React.FC = () => {
   };
 
   const handlePayment = async (paymentMethod: 'pix' | 'card') => {
-    if (cart.length === 0) {
+    if (!isSubscriptionPurchase && cart.length === 0) {
       toast.error('Carrinho vazio');
       return;
     }
@@ -120,19 +120,20 @@ const TotemProductCheckout: React.FC = () => {
     setIsProcessing(true);
 
     try {
-      console.log('🛒 Criando venda de produtos usando tabela vendas (unificada)');
+      const totalValue = isSubscriptionPurchase ? subscriptionPlan!.price : cartTotal;
+      
+      console.log('🛒 Criando venda:', isSubscriptionPurchase ? 'ASSINATURA' : 'PRODUTOS');
       console.log('🔍 Barbeiro selecionado:', { id: barber.id, staff_id: barber.staff_id, nome: barber.nome });
       
-      // IMPORTANTE: vendas.barbeiro_id tem FK para painel_barbeiros.id
-      // Usar barber.id (que é o id da painel_barbeiros), NÃO barber.staff_id
       const { data: saleData, error: saleError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          barbeiro_id: barber.id, // ID da tabela painel_barbeiros (não staff_id)
-          valor_total: cartTotal,
+          barbeiro_id: barber.id,
+          valor_total: totalValue,
           desconto: 0,
-          status: 'ABERTA'
+          status: 'ABERTA',
+          observacoes: isSubscriptionPurchase ? `ASSINATURA:${subscriptionPlan!.id}` : null
         })
         .select()
         .single();
@@ -142,40 +143,48 @@ const TotemProductCheckout: React.FC = () => {
         throw saleError;
       }
       
-      // Criar objeto sale com campo total para compatibilidade
-      const sale = { ...saleData, total: cartTotal };
-
+      const sale = { ...saleData, total: totalValue };
       console.log('✅ Venda criada:', saleData.id);
 
-      const saleItems = cart.map(item => ({
-        venda_id: saleData.id,
-        tipo: 'PRODUTO',
-        item_id: item.product.id,
-        nome: item.product.nome,
-        quantidade: item.quantity,
-        preco_unitario: item.product.preco,
-        subtotal: item.product.preco * item.quantity
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('vendas_itens')
-        .insert(saleItems);
-
-      if (itemsError) {
-        console.error('❌ Erro ao criar itens:', itemsError);
-        throw itemsError;
+      // Criar itens da venda
+      if (isSubscriptionPurchase) {
+        // Item único: a assinatura
+        const { error: itemsError } = await supabase
+          .from('vendas_itens')
+          .insert({
+            venda_id: saleData.id,
+            tipo: 'ASSINATURA',
+            item_id: subscriptionPlan!.id,
+            nome: `Combo: ${subscriptionPlan!.name}`,
+            quantidade: 1,
+            preco_unitario: subscriptionPlan!.price,
+            subtotal: subscriptionPlan!.price
+          });
+        if (itemsError) throw itemsError;
+      } else {
+        const saleItems = cart.map(item => ({
+          venda_id: saleData.id,
+          tipo: 'PRODUTO',
+          item_id: item.product.id,
+          nome: item.product.nome,
+          quantidade: item.quantity,
+          preco_unitario: item.product.preco,
+          subtotal: item.product.preco * item.quantity
+        }));
+        const { error: itemsError } = await supabase
+          .from('vendas_itens')
+          .insert(saleItems);
+        if (itemsError) throw itemsError;
       }
 
       console.log('✅ Itens criados. Navegando para pagamento:', paymentMethod);
 
+      const navState = { sale, client, cart, barber, subscriptionPlan };
+
       if (paymentMethod === 'pix') {
-        navigate('/totem/product-payment-pix', {
-          state: { sale, client, cart, barber }
-        });
+        navigate('/totem/product-payment-pix', { state: navState });
       } else {
-        navigate('/totem/product-payment-card', {
-          state: { sale, client, cart, barber }
-        });
+        navigate('/totem/product-payment-card', { state: navState });
       }
 
     } catch (error) {
