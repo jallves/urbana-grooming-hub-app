@@ -287,8 +287,13 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
               {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-base text-gray-900 truncate">
+              <h4 className="font-bold text-base text-gray-900 truncate flex items-center gap-1.5">
                 {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+                {appointment.is_encaixe && (
+                  <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-300 flex-shrink-0">
+                    ⚡ Encaixe
+                  </span>
+                )}
               </h4>
               <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
             </div>

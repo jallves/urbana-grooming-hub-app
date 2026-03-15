@@ -260,8 +260,13 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
             {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
           </div>
           <div>
-            <div className="font-semibold text-sm text-gray-900">
+            <div className="font-semibold text-sm text-gray-900 flex items-center gap-1.5">
               {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+              {appointment.is_encaixe && (
+                <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-300">
+                  ⚡ Encaixe
+                </span>
+              )}
             </div>
             <div className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</div>
           </div>
