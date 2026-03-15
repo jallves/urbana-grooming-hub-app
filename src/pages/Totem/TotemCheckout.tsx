@@ -280,14 +280,103 @@ const TotemCheckout: React.FC = () => {
       });
 
       toast.success(`Crédito utilizado! (${activeSubscription.credits_remaining - 1} restantes) ✨`);
-      navigate('/totem/home');
+      
+      // 4. Mostrar modal de comprovante (igual ao fluxo normal)
+      setProcessing(false);
+      setShowReceiptModal(true);
     } catch (error) {
       console.error('Erro ao usar crédito:', error);
       toast.error('Erro ao processar crédito');
-    } finally {
       setProcessing(false);
     }
   };
+
+  // Handler para envio de e-mail de comprovante (assinatura)
+  const handleSendSubscriptionReceiptEmail = useCallback(async (): Promise<boolean> => {
+    if (!client?.email) return false;
+
+    try {
+      const creditsRemaining = activeSubscription 
+        ? activeSubscription.credits_remaining - 1 
+        : 0;
+      const nextBillingDate = activeSubscription?.next_billing_date
+        ? format(new Date(activeSubscription.next_billing_date + 'T12:00:00'), 'dd/MM/yyyy')
+        : null;
+
+      const items: Array<{ name: string; quantity?: number; unitPrice?: number; price: number; type: 'service' | 'product' }> = [];
+
+      // Serviço principal (R$ 0 pois é crédito)
+      if (resumo?.original_service) {
+        items.push({ 
+          name: `${resumo.original_service.nome} (Crédito Assinatura)`, 
+          quantity: 1, 
+          unitPrice: 0, 
+          price: 0, 
+          type: 'service' 
+        });
+      }
+
+      if (items.length === 0) {
+        items.push({ name: 'Serviço (Crédito Assinatura)', price: 0, type: 'service' });
+      }
+
+      // Adicionar info da assinatura como item descritivo
+      items.push({
+        name: `📋 Plano: ${activeSubscription?.plan_name || 'Combo'}`,
+        price: 0,
+        type: 'service'
+      });
+      items.push({
+        name: `🎫 Créditos restantes: ${creditsRemaining}/${activeSubscription?.credits_total || 4}`,
+        price: 0,
+        type: 'service'
+      });
+      if (nextBillingDate) {
+        items.push({
+          name: `📅 Vencimento: ${nextBillingDate}`,
+          price: 0,
+          type: 'service'
+        });
+      }
+
+      const result = await sendReceiptEmail({
+        clientName: client.nome,
+        clientEmail: client.email,
+        transactionType: 'service',
+        items,
+        total: 0,
+        paymentMethod: 'Assinatura (Crédito)',
+        transactionDate: format(new Date(), "dd/MM/yyyy HH:mm"),
+        barberName: appointment?.barbeiro?.nome,
+        tipAmount: 0,
+      });
+
+      return result.success;
+    } catch (error) {
+      console.error('[SUBSCRIPTION] Erro ao enviar e-mail:', error);
+      return false;
+    }
+  }, [client, resumo, appointment, activeSubscription]);
+
+  // Handler após comprovante processado (assinatura)
+  const handleSubscriptionReceiptComplete = useCallback(() => {
+    // Navegar para tela de sucesso → avaliação (fluxo normal)
+    navigate('/totem/payment-success', {
+      state: {
+        appointment,
+        client,
+        total: 0,
+        paymentMethod: 'subscription_credit',
+        isDirect: false,
+        transactionData: null,
+        selectedProducts: productCart,
+        extraServices,
+        resumo,
+        emailAlreadySent: true,
+        tipAmount: 0,
+      }
+    });
+  }, [navigate, appointment, client, productCart, extraServices, resumo]);
 
   const handlePayment = async (method: 'pix' | 'card') => {
     if (!resumo) return;
