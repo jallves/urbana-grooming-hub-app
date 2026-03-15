@@ -5,9 +5,10 @@ import ClientAppointmentCompactTable from './ClientAppointmentCompactTable';
 import ClientAppointmentFilters from './ClientAppointmentFilters';
 import ClientAppointmentEditDialog from './ClientAppointmentEditDialog';
 import ClientAppointmentCreateDialog from './ClientAppointmentCreateDialog';
+import AdminEncaixeModal from './AdminEncaixeModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, Zap } from 'lucide-react';
 
 const ClientAppointmentDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
