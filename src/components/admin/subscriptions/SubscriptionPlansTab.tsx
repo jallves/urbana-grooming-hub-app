@@ -10,7 +10,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { useQuery } from '@tanstack/react-query';
 import { Plus, Pencil, Trash2, Crown, Loader2, Sparkles, Shield, Star, CheckCircle2 } from 'lucide-react';
@@ -189,37 +188,38 @@ const SubscriptionPlansTab: React.FC = () => {
         </div>
       )}
 
-      {/* Create/Edit Dialog - fully responsive */}
+      {/* Create/Edit Dialog - mobile fullscreen approach */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg w-[95vw] sm:w-full p-0 bg-background border shadow-2xl z-[60] max-h-[85vh] flex flex-col">
-          <DialogHeader className="p-4 pb-2 sm:p-6 sm:pb-3 flex-shrink-0">
+        <DialogContent className="max-w-lg w-[100vw] sm:w-[95vw] h-[100dvh] sm:h-auto sm:max-h-[90vh] p-0 bg-background border-0 sm:border shadow-2xl z-[60] rounded-none sm:rounded-lg flex flex-col gap-0">
+          <DialogHeader className="px-4 pt-4 pb-3 sm:px-6 sm:pt-6 sm:pb-4 flex-shrink-0 border-b">
             <DialogTitle className="text-sm sm:text-lg">{editingId ? 'Editar Plano' : 'Novo Plano de Assinatura'}</DialogTitle>
           </DialogHeader>
-          <ScrollArea className="flex-1 px-4 pb-4 sm:px-6 sm:pb-6">
-            <div className="space-y-3 sm:space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-4">
-                <div>
-                  <Label className="text-[11px] sm:text-sm">Nome</Label>
-                  <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') }))} placeholder="Premium" className="text-sm h-9" />
-                </div>
-                <div>
-                  <Label className="text-[11px] sm:text-sm">Slug</Label>
-                  <Input value={form.slug} onChange={e => setForm(f => ({ ...f, slug: e.target.value }))} placeholder="premium" className="text-sm h-9" />
-                </div>
-              </div>
+          
+          <div className="flex-1 overflow-y-auto overscroll-contain px-4 py-3 sm:px-6 sm:py-4">
+            <div className="space-y-4">
+              {/* Nome & Slug */}
               <div>
-                <Label className="text-[11px] sm:text-sm">Descrição</Label>
-                <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Todos os serviços inclusos..." rows={2} className="text-sm" />
+                <Label className="text-xs sm:text-sm font-medium">Nome do Plano</Label>
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value, slug: e.target.value.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') }))} placeholder="Ex: Premium" className="text-sm h-10 mt-1" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">Slug: {form.slug || '—'}</p>
               </div>
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-4">
+
+              {/* Descrição */}
+              <div>
+                <Label className="text-xs sm:text-sm font-medium">Descrição</Label>
+                <Textarea value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Todos os serviços inclusos..." rows={2} className="text-sm mt-1" />
+              </div>
+
+              {/* Preço + Período */}
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label className="text-[11px] sm:text-sm">Preço (R$)</Label>
-                  <Input type="number" step="0.01" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} className="text-sm h-9" />
+                  <Label className="text-xs sm:text-sm font-medium">Preço (R$)</Label>
+                  <Input type="number" step="0.01" min="0" value={form.price} onChange={e => setForm(f => ({ ...f, price: parseFloat(e.target.value) || 0 }))} className="text-sm h-10 mt-1" />
                 </div>
                 <div>
-                  <Label className="text-[11px] sm:text-sm">Período</Label>
+                  <Label className="text-xs sm:text-sm font-medium">Período</Label>
                   <Select value={form.billing_period} onValueChange={v => setForm(f => ({ ...f, billing_period: v }))}>
-                    <SelectTrigger className="text-sm h-9"><SelectValue /></SelectTrigger>
+                    <SelectTrigger className="text-sm h-10 mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[70]">
                       <SelectItem value="monthly">Mensal</SelectItem>
                       <SelectItem value="quarterly">Trimestral</SelectItem>
@@ -228,49 +228,62 @@ const SubscriptionPlansTab: React.FC = () => {
                   </Select>
                 </div>
               </div>
-              <div className="space-y-2.5 sm:space-y-4">
-                <div>
-                  <Label className="text-[11px] sm:text-sm">Créditos/Mês</Label>
-                  <Input type="number" min="1" max="99" value={form.credits_total} onChange={e => setForm(f => ({ ...f, credits_total: parseInt(e.target.value) || 4 }))} className="text-sm h-9" />
-                  <p className="text-[9px] sm:text-[10px] text-muted-foreground mt-0.5">Limite de usos/período</p>
-                </div>
-                <div>
-                  <Label className="text-[11px] sm:text-sm">Cor do Plano</Label>
-                  <div className="flex flex-wrap gap-2 mt-1.5">
-                    {Object.entries(planColors).map(([key, gradient]) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => setForm(f => ({ ...f, color: key }))}
-                        className={`w-8 h-8 rounded-full bg-gradient-to-br ${gradient} border-2 transition-all flex-shrink-0 ${form.color === key ? 'border-foreground scale-110 ring-2 ring-offset-1 ring-foreground/30' : 'border-transparent opacity-60 hover:opacity-100'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
-                <Label className="text-[11px] sm:text-sm">Ativo</Label>
-              </div>
+
+              {/* Créditos */}
               <div>
-                <Label className="mb-1.5 block text-[11px] sm:text-sm">Serviços Inclusos</Label>
-                <div className="border rounded-lg p-2 max-h-36 sm:max-h-48 overflow-y-auto space-y-1">
-                  {servicesQuery.data?.map((svc: any) => (
-                    <label key={svc.id} className="flex items-center gap-2 cursor-pointer hover:bg-accent/50 rounded p-1 sm:p-1.5">
-                      <Checkbox checked={form.service_ids.includes(svc.id)} onCheckedChange={() => toggleService(svc.id)} />
-                      <span className="text-[11px] sm:text-sm flex-1 truncate">{svc.nome}</span>
-                      <span className="text-[9px] sm:text-xs text-muted-foreground flex-shrink-0">R$ {svc.preco?.toFixed(2)}</span>
-                    </label>
+                <Label className="text-xs sm:text-sm font-medium">Créditos por Mês</Label>
+                <Input type="number" min="1" max="99" value={form.credits_total} onChange={e => setForm(f => ({ ...f, credits_total: parseInt(e.target.value) || 4 }))} className="text-sm h-10 mt-1 w-24" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">Quantas vezes o cliente pode usar os serviços por período</p>
+              </div>
+
+              {/* Cor */}
+              <div>
+                <Label className="text-xs sm:text-sm font-medium">Cor do Plano</Label>
+                <div className="flex gap-3 mt-2">
+                  {Object.entries(planColors).map(([key, gradient]) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setForm(f => ({ ...f, color: key }))}
+                      className={`w-9 h-9 rounded-full bg-gradient-to-br ${gradient} border-2 transition-all ${form.color === key ? 'border-foreground scale-110 ring-2 ring-offset-2 ring-foreground/30' : 'border-transparent opacity-50 hover:opacity-100'}`}
+                    />
                   ))}
                 </div>
-                <p className="text-[9px] sm:text-xs text-muted-foreground mt-1">{form.service_ids.length} serviço(s) selecionado(s)</p>
               </div>
-              <Button onClick={handleSave} disabled={createPlan.isPending || updatePlan.isPending} className="w-full bg-amber-500 hover:bg-amber-600 text-white text-xs sm:text-sm h-9 sm:h-10">
-                {(createPlan.isPending || updatePlan.isPending) && <Loader2 className="h-3.5 w-3.5 animate-spin mr-2" />}
-                {editingId ? 'Salvar Alterações' : 'Criar Plano'}
-              </Button>
+
+              {/* Ativo */}
+              <div className="flex items-center gap-3 py-1">
+                <Switch checked={form.is_active} onCheckedChange={v => setForm(f => ({ ...f, is_active: v }))} />
+                <Label className="text-xs sm:text-sm font-medium">Plano ativo</Label>
+              </div>
+
+              {/* Serviços Inclusos */}
+              <div>
+                <Label className="text-xs sm:text-sm font-medium">Serviços Inclusos</Label>
+                <p className="text-[10px] text-muted-foreground mb-2">{form.service_ids.length} serviço(s) selecionado(s) — o preço é calculado automaticamente</p>
+                <div className="border rounded-lg divide-y max-h-[200px] overflow-y-auto overscroll-contain">
+                  {servicesQuery.data?.map((svc: any) => (
+                    <label key={svc.id} className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 px-3 py-2.5 active:bg-accent">
+                      <Checkbox checked={form.service_ids.includes(svc.id)} onCheckedChange={() => toggleService(svc.id)} />
+                      <span className="text-xs sm:text-sm flex-1 truncate">{svc.nome}</span>
+                      <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0 font-medium">R$ {svc.preco?.toFixed(2)}</span>
+                    </label>
+                  ))}
+                  {(!servicesQuery.data || servicesQuery.data.length === 0) && (
+                    <p className="text-xs text-muted-foreground p-3 text-center">Nenhum serviço cadastrado</p>
+                  )}
+                </div>
+              </div>
             </div>
-          </ScrollArea>
+          </div>
+
+          {/* Fixed bottom button */}
+          <div className="flex-shrink-0 border-t px-4 py-3 sm:px-6 sm:py-4 bg-background">
+            <Button onClick={handleSave} disabled={createPlan.isPending || updatePlan.isPending} className="w-full bg-amber-500 hover:bg-amber-600 text-white text-sm h-10 sm:h-11 font-semibold">
+              {(createPlan.isPending || updatePlan.isPending) && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {editingId ? 'Salvar Alterações' : 'Criar Plano'}
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
 
