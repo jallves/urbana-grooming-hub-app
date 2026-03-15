@@ -164,7 +164,7 @@ const SubscriptionPlansTab: React.FC = () => {
                       <p className="text-[10px] sm:text-xs text-muted-foreground italic">Nenhum serviço vinculado</p>
                     )}
                   </div>
-                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">✓ Uso ilimitado dos serviços inclusos</p>
+                  <p className="text-[10px] sm:text-xs text-emerald-600 font-medium">✓ {(plan as any).credits_total || 4} créditos/mês para serviços inclusos</p>
                   <div className="flex gap-2 pt-1 sm:pt-2">
                     <Button variant="outline" size="sm" className="flex-1 gap-1 text-xs sm:text-sm" onClick={() => openEdit(plan)}>
                       <Pencil className="h-3 w-3 sm:h-3.5 sm:w-3.5" /> Editar
