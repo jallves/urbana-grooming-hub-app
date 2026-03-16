@@ -181,17 +181,7 @@ const TotemRating: React.FC = () => {
               </Button>
             </div>
 
-            {/* Countdown */}
-            <div className="pt-3 sm:pt-4 border-t border-urbana-gold/20">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-urbana-gold/20 border border-urbana-gold/40 flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-bold text-urbana-gold">{countdown}</span>
-                </div>
-                <p className="text-xs sm:text-sm text-urbana-gold/60">
-                  segundos para voltar ao início
-                </p>
-              </div>
-            </div>
+            {/* Sem countdown na tela de agendamento — usuário já interagiu */}
           </div>
         </Card>
       </div>
