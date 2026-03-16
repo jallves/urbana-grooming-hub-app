@@ -375,8 +375,8 @@ const TotemRating: React.FC = () => {
             </Button>
           </div>
 
-          {/* Auto-redirect countdown */}
-          <AutoRedirectCountdown countdown={countdown} />
+          {/* Auto-redirect countdown — só aparece se o usuário NÃO interagiu */}
+          {!userInteracted && <AutoRedirectCountdown countdown={countdown} />}
         </Card>
       </div>
     </div>
