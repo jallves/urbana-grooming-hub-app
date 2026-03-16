@@ -320,11 +320,10 @@ const TotemPaymentSuccess: React.FC = () => {
           </div>
         </div>
 
-        {/* Countdown de auto-redirect */}
-        <AutoRedirectCountdown 
-          countdown={countdown} 
-          label={isDirect ? 'segundos para voltar ao início' : 'segundos para avaliação'}
-        />
+        {/* Info de redirecionamento */}
+        <p className="text-sm text-urbana-light/60 animate-pulse">
+          {ratingRedirect ? 'Redirecionando para avaliação...' : 'Redirecionando...'}
+        </p>
 
         {/* Footer */}
         <p className="text-base sm:text-lg text-urbana-gold font-bold pt-2">
