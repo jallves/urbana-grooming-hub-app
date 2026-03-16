@@ -73,7 +73,12 @@ const TotemCheckout: React.FC = () => {
   const [productCart, setProductCart] = useState<CheckoutProductCartItem[]>(location.state?.productCart || []);
   const [extrasModalOpen, setExtrasModalOpen] = useState(false);
 
-  const [barber, setBarber] = useState<BarberInfo | null>(null);
+  const [barber, setBarber] = useState<BarberInfo | null>(() => {
+    // Usar dados do barbeiro já trazidos na navegação para render imediato
+    const b = appointment?.barbeiro;
+    if (b) return { id: b.id, nome: b.nome, foto_url: b.foto_url, image_url: b.image_url };
+    return null;
+  });
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
