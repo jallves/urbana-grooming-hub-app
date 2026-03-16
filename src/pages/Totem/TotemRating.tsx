@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,11 +22,12 @@ const TotemRating: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showScheduleQuestion, setShowScheduleQuestion] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
 
-  // Auto-redirect: 10s na tela de rating e na pergunta de agendamento
-  const { countdown } = useAutoRedirectHome({
+  // Auto-redirect APENAS na tela inicial de avaliação e somente se o usuário NÃO interagiu
+  const { countdown, stopCountdown } = useAutoRedirectHome({
     seconds: 10,
-    enabled: !!(appointment && client),
+    enabled: !!(appointment && client) && !userInteracted && !submitted && !showScheduleQuestion,
   });
 
   React.useEffect(() => {
@@ -99,14 +100,13 @@ const TotemRating: React.FC = () => {
       setSubmitted(true);
       
       toast.success('Avaliação enviada!', {
-        description: 'Obrigado pelo seu feedback! Ele nos ajuda a melhorar.'
+        description: 'Obrigado pelo seu feedback!'
       });
 
-      // Mostrar pergunta sobre agendamento
+      // Ir direto para pergunta de agendamento
       setTimeout(() => {
-        console.log('[RATING] Mostrando pergunta de agendamento');
         setShowScheduleQuestion(true);
-      }, 2000);
+      }, 1500);
       
     } catch (error: any) {
       console.error('[RATING] ❌ Erro ao enviar avaliação:', error);
@@ -181,17 +181,7 @@ const TotemRating: React.FC = () => {
               </Button>
             </div>
 
-            {/* Countdown */}
-            <div className="pt-3 sm:pt-4 border-t border-urbana-gold/20">
-              <div className="flex items-center justify-center gap-2">
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-urbana-gold/20 border border-urbana-gold/40 flex items-center justify-center">
-                  <span className="text-lg sm:text-xl font-bold text-urbana-gold">{countdown}</span>
-                </div>
-                <p className="text-xs sm:text-sm text-urbana-gold/60">
-                  segundos para voltar ao início
-                </p>
-              </div>
-            </div>
+            {/* Sem countdown na tela de agendamento — usuário já interagiu */}
           </div>
         </Card>
       </div>
@@ -302,7 +292,13 @@ const TotemRating: React.FC = () => {
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
-                  onClick={() => setRating(star)}
+                  onClick={() => {
+                    setRating(star);
+                    if (!userInteracted) {
+                      setUserInteracted(true);
+                      stopCountdown();
+                    }
+                  }}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
                   className="transition-all duration-200 active:scale-90"
@@ -340,6 +336,7 @@ const TotemRating: React.FC = () => {
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onFocus={() => { if (!userInteracted) { setUserInteracted(true); stopCountdown(); } }}
               placeholder="Conte-nos mais sobre sua experiência..."
               className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] text-sm sm:text-base md:text-lg bg-black/20 border-urbana-gold/30 focus:border-urbana-gold text-urbana-gold placeholder:text-urbana-gold/40 resize-none backdrop-blur-md"
               maxLength={500}
@@ -379,8 +376,8 @@ const TotemRating: React.FC = () => {
             </Button>
           </div>
 
-          {/* Auto-redirect countdown */}
-          <AutoRedirectCountdown countdown={countdown} />
+          {/* Auto-redirect countdown — só aparece se o usuário NÃO interagiu */}
+          {!userInteracted && <AutoRedirectCountdown countdown={countdown} />}
         </Card>
       </div>
     </div>

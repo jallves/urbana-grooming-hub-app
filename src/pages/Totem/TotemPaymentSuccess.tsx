@@ -5,8 +5,6 @@ import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
-import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
-import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
 
 interface ExtraService {
   service_id?: string;
@@ -55,12 +53,7 @@ const TotemPaymentSuccess: React.FC = () => {
   } = location.state || {};
 
   const ratingRedirect = !isDirect && appointment;
-  const { countdown } = useAutoRedirectHome({
-    seconds: 10,
-    enabled: !!(total != null && client),
-    redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
-    redirectState: ratingRedirect ? { appointment, client } : undefined,
-  });
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -179,10 +172,18 @@ const TotemPaymentSuccess: React.FC = () => {
 
     sendEmailReceipt();
 
-    // Auto-redirect agora é gerenciado pelo useAutoRedirectHome hook
+    // Redirect rápido: 3s para mostrar sucesso, depois vai para avaliação ou home
+    redirectTimerRef.current = setTimeout(() => {
+      if (ratingRedirect) {
+        navigate('/totem/rating', { state: { appointment, client } });
+      } else {
+        navigate('/totem/home');
+      }
+    }, 3000);
 
     return () => {
       document.documentElement.classList.remove('totem-mode');
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
 
@@ -319,11 +320,10 @@ const TotemPaymentSuccess: React.FC = () => {
           </div>
         </div>
 
-        {/* Countdown de auto-redirect */}
-        <AutoRedirectCountdown 
-          countdown={countdown} 
-          label={isDirect ? 'segundos para voltar ao início' : 'segundos para avaliação'}
-        />
+        {/* Info de redirecionamento */}
+        <p className="text-sm text-urbana-light/60 animate-pulse">
+          {ratingRedirect ? 'Redirecionando para avaliação...' : 'Redirecionando...'}
+        </p>
 
         {/* Footer */}
         <p className="text-base sm:text-lg text-urbana-gold font-bold pt-2">
