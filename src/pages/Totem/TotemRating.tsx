@@ -100,14 +100,13 @@ const TotemRating: React.FC = () => {
       setSubmitted(true);
       
       toast.success('Avaliação enviada!', {
-        description: 'Obrigado pelo seu feedback! Ele nos ajuda a melhorar.'
+        description: 'Obrigado pelo seu feedback!'
       });
 
-      // Mostrar pergunta sobre agendamento
+      // Ir direto para pergunta de agendamento
       setTimeout(() => {
-        console.log('[RATING] Mostrando pergunta de agendamento');
         setShowScheduleQuestion(true);
-      }, 2000);
+      }, 1500);
       
     } catch (error: any) {
       console.error('[RATING] ❌ Erro ao enviar avaliação:', error);
