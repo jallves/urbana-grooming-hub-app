@@ -302,7 +302,13 @@ const TotemRating: React.FC = () => {
               {[1, 2, 3, 4, 5].map((star) => (
                 <button
                   key={star}
-                  onClick={() => setRating(star)}
+                  onClick={() => {
+                    setRating(star);
+                    if (!userInteracted) {
+                      setUserInteracted(true);
+                      stopCountdown();
+                    }
+                  }}
                   onMouseEnter={() => setHoveredRating(star)}
                   onMouseLeave={() => setHoveredRating(0)}
                   className="transition-all duration-200 active:scale-90"
