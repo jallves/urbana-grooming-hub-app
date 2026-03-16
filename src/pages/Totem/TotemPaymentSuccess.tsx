@@ -5,8 +5,6 @@ import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
-import { useAutoRedirectHome } from '@/hooks/totem/useAutoRedirectHome';
-import { AutoRedirectCountdown } from '@/components/totem/AutoRedirectCountdown';
 
 interface ExtraService {
   service_id?: string;
