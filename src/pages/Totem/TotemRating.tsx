@@ -336,6 +336,7 @@ const TotemRating: React.FC = () => {
             <Textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
+              onFocus={() => { if (!userInteracted) { setUserInteracted(true); stopCountdown(); } }}
               placeholder="Conte-nos mais sobre sua experiência..."
               className="min-h-[100px] sm:min-h-[120px] md:min-h-[140px] text-sm sm:text-base md:text-lg bg-black/20 border-urbana-gold/30 focus:border-urbana-gold text-urbana-gold placeholder:text-urbana-gold/40 resize-none backdrop-blur-md"
               maxLength={500}
