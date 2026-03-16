@@ -22,7 +22,6 @@ const TotemCheckoutSearch: React.FC = () => {
       
       if (!cleanPhone || cleanPhone.length < 10) {
         setIsSearching(false);
-        
         navigate('/totem/error', {
           state: {
             title: 'Telefone inválido',
@@ -35,21 +34,41 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
       
-      console.log('🔍 Buscando cliente para checkout:', cleanPhone);
+      console.log('🔍 [CheckoutSearch] Buscando cliente:', cleanPhone);
 
-      // Buscar cliente
+      // Construir padrões de busca otimizados (server-side ilike)
+      const searchPatterns: string[] = [cleanPhone];
+      
+      if (cleanPhone.length >= 9) {
+        const last9 = cleanPhone.slice(-9);
+        searchPatterns.push(last9);
+        searchPatterns.push(`${last9.slice(0, 5)}-${last9.slice(5)}`);
+      }
+      
+      if (cleanPhone.length >= 8) {
+        const last8 = cleanPhone.slice(-8);
+        searchPatterns.push(last8);
+        searchPatterns.push(`${last8.slice(0, 4)}-${last8.slice(4)}`);
+      }
+
+      const orClauses = searchPatterns
+        .flatMap(p => [`whatsapp.ilike.%${p}%`, `telefone.ilike.%${p}%`])
+        .join(',');
+
+      // Buscar cliente com filtro server-side
       const { data: clientes, error: clientError } = await supabase
         .from('painel_clientes')
-        .select('*');
+        .select('*')
+        .or(orClauses)
+        .limit(5);
 
       if (clientError) {
         console.error('❌ Erro ao buscar cliente:', clientError);
         setIsSearching(false);
-        
         navigate('/totem/error', {
           state: {
             title: 'Erro de conexão',
-            message: 'Não foi possível conectar ao sistema. Verifique sua conexão e tente novamente.',
+            message: 'Não foi possível conectar ao sistema. Tente novamente.',
             type: 'error',
             showRetry: false,
             showGoHome: true
@@ -58,14 +77,8 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const clientesFiltrados = clientes?.filter((c: any) => {
-        const clientPhoneClean = (c.whatsapp || c.telefone || '').replace(/\D/g, '');
-        return clientPhoneClean.includes(cleanPhone) || cleanPhone.includes(clientPhoneClean);
-      }) || [];
-
-      if (!clientesFiltrados || clientesFiltrados.length === 0) {
+      if (!clientes || clientes.length === 0) {
         setIsSearching(false);
-        
         navigate('/totem/error', {
           state: {
             title: 'Cliente não encontrado',
@@ -79,12 +92,10 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      const cliente = clientesFiltrados[0];
+      const cliente = clientes[0];
       console.log('✅ Cliente encontrado:', cliente.nome);
 
-      // REGRA: Verificar se tem check-in realizado (não pode checkout sem check-in)
-      // Buscar agendamentos com check-in finalizado e checkout pendente
-      // status_totem = 'CHEGOU' é setado pela edge function totem-checkin
+      // Buscar agendamentos com check-in (status_totem = 'CHEGOU') — query direta, sem edge function
       const { data: agendamentosComCheckin, error: checkinError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -95,16 +106,16 @@ const TotemCheckoutSearch: React.FC = () => {
         .eq('cliente_id', cliente.id)
         .eq('status_totem', 'CHEGOU')
         .in('status', ['confirmado', 'em_atendimento'])
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(1);
 
       if (checkinError) {
-        console.error('❌ Erro ao buscar agendamentos com check-in:', checkinError);
+        console.error('❌ Erro ao buscar agendamentos:', checkinError);
         setIsSearching(false);
-        
         navigate('/totem/error', {
           state: {
             title: 'Erro ao buscar atendimento',
-            message: 'Ocorreu um erro ao buscar seus dados de atendimento. Tente novamente.',
+            message: 'Ocorreu um erro. Tente novamente.',
             type: 'error',
             showRetry: false,
             showGoHome: true
@@ -113,40 +124,13 @@ const TotemCheckoutSearch: React.FC = () => {
         return;
       }
 
-      // Se não há agendamentos com check-in finalizado
       if (!agendamentosComCheckin || agendamentosComCheckin.length === 0) {
-        console.log('❌ Nenhum agendamento com check-in finalizado');
-        
-        // Verificar se tem agendamentos pendentes de check-in
-        // Agendamentos sem status_totem ou com status diferente de CHEGOU
-        const { data: agendamentosPendentes } = await supabase
-          .from('painel_agendamentos')
-          .select('id, data, hora, status, status_totem')
-          .eq('cliente_id', cliente.id)
-          .in('status', ['agendado', 'confirmado'])
-          .or('status_totem.is.null,status_totem.neq.CHEGOU');
-        
-        if (agendamentosPendentes && agendamentosPendentes.length > 0) {
-          // Tem agendamento mas não fez check-in
-          setIsSearching(false);
-          navigate('/totem/error', {
-            state: {
-              title: 'Check-in Pendente',
-              message: 'Você possui agendamento(s) aguardando check-in. Por favor, realize o check-in primeiro.',
-              type: 'warning',
-              showRetry: false,
-              showGoHome: true
-            }
-          });
-          return;
-        }
-        
-        // Não tem nenhum agendamento
+        console.log('❌ Nenhum agendamento com check-in');
         setIsSearching(false);
         navigate('/totem/error', {
           state: {
             title: 'Checkout não disponível',
-            message: 'Você não possui agendamentos em andamento. Favor realizar check-in primeiro.',
+            message: 'Você não possui atendimentos em andamento. Realize o check-in primeiro.',
             type: 'warning',
             showRetry: false,
             showGoHome: true
@@ -156,31 +140,28 @@ const TotemCheckoutSearch: React.FC = () => {
       }
 
       const appointment = agendamentosComCheckin[0];
-      console.log('✅ Agendamento com check-in encontrado para checkout:', appointment);
+      console.log('✅ Agendamento para checkout:', appointment.id);
 
-      // Create a simple session object
-      const session = {
-        id: crypto.randomUUID(),
-        created_at: new Date().toISOString(),
-        appointment_id: appointment.id
-      };
-
+      // Navegar imediatamente — session criada inline
       navigate('/totem/checkout', {
         state: {
-          session,
+          session: {
+            id: crypto.randomUUID(),
+            created_at: new Date().toISOString(),
+            appointment_id: appointment.id
+          },
           client: cliente,
-          appointment: appointment
+          appointment
         }
       });
 
     } catch (error) {
       console.error('❌ Erro inesperado:', error);
       setIsSearching(false);
-      
       navigate('/totem/error', {
         state: {
           title: 'Erro inesperado',
-          message: 'Ocorreu um erro inesperado. Por favor, tente novamente ou procure um atendente.',
+          message: 'Tente novamente ou procure um atendente.',
           type: 'error',
           showRetry: false,
           showGoHome: true
