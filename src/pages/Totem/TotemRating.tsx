@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -22,11 +22,12 @@ const TotemRating: React.FC = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [showScheduleQuestion, setShowScheduleQuestion] = useState(false);
+  const [userInteracted, setUserInteracted] = useState(false);
 
-  // Auto-redirect: 10s na tela de rating e na pergunta de agendamento
-  const { countdown } = useAutoRedirectHome({
+  // Auto-redirect APENAS na tela inicial de avaliação e somente se o usuário NÃO interagiu
+  const { countdown, stopCountdown } = useAutoRedirectHome({
     seconds: 10,
-    enabled: !!(appointment && client),
+    enabled: !!(appointment && client) && !userInteracted && !submitted && !showScheduleQuestion,
   });
 
   React.useEffect(() => {
