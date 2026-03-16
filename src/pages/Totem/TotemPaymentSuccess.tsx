@@ -53,12 +53,7 @@ const TotemPaymentSuccess: React.FC = () => {
   } = location.state || {};
 
   const ratingRedirect = !isDirect && appointment;
-  const { countdown } = useAutoRedirectHome({
-    seconds: 10,
-    enabled: !!(total != null && client),
-    redirectTo: ratingRedirect ? '/totem/rating' : '/totem/home',
-    redirectState: ratingRedirect ? { appointment, client } : undefined,
-  });
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
