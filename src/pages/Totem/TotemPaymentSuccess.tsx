@@ -172,10 +172,18 @@ const TotemPaymentSuccess: React.FC = () => {
 
     sendEmailReceipt();
 
-    // Auto-redirect agora é gerenciado pelo useAutoRedirectHome hook
+    // Redirect rápido: 3s para mostrar sucesso, depois vai para avaliação ou home
+    redirectTimerRef.current = setTimeout(() => {
+      if (ratingRedirect) {
+        navigate('/totem/rating', { state: { appointment, client } });
+      } else {
+        navigate('/totem/home');
+      }
+    }, 3000);
 
     return () => {
       document.documentElement.classList.remove('totem-mode');
+      if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     };
   }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
 
