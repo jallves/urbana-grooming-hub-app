@@ -148,7 +148,9 @@ const TotemCheckout: React.FC = () => {
   const loadCheckout = async () => {
     setLoading(true);
     try {
-      // Executar TODAS as chamadas em paralelo para máxima velocidade
+      // Mostrar UI imediatamente — edge function roda em background
+      setLoading(false);
+
       const checkoutBody = {
         action: 'start',
         agendamento_id: appointment.id,
@@ -161,18 +163,17 @@ const TotemCheckout: React.FC = () => {
         })),
       };
 
+      // Tudo em paralelo, sem bloquear a UI
       const [, barberResult, checkoutResult] = await Promise.allSettled([
-        // 1. Verificar créditos (fire-and-forget se falhar)
         client?.id ? checkCredits(client.id) : Promise.resolve(),
-        // 2. Buscar barbeiro
-        appointment?.barbeiro_id
+        // Buscar barbeiro completo apenas se não veio da navegação
+        !barber && appointment?.barbeiro_id
           ? supabase.from('painel_barbeiros').select('id, nome, foto_url, image_url, specialties').eq('id', appointment.barbeiro_id).single()
           : Promise.resolve({ data: null }),
-        // 3. Iniciar checkout (edge function)
         supabase.functions.invoke('totem-checkout', { body: checkoutBody }),
       ]);
 
-      // Processar barbeiro
+      // Atualizar barbeiro se buscou
       if (barberResult.status === 'fulfilled') {
         const barberData = (barberResult.value as any)?.data;
         if (barberData) {
@@ -188,7 +189,6 @@ const TotemCheckout: React.FC = () => {
         }
       }
 
-      // Processar checkout
       if (checkoutResult.status === 'fulfilled') {
         const { data: checkoutData, error: checkoutError } = checkoutResult.value as any;
         if (checkoutError) {
@@ -196,13 +196,9 @@ const TotemCheckout: React.FC = () => {
         } else if (checkoutData?.venda_id) {
           setVendaId(checkoutData.venda_id);
         }
-      } else {
-        console.error('Erro ao iniciar checkout:', checkoutResult.reason);
       }
     } catch (error) {
       console.error('Erro ao carregar checkout:', error);
-      toast.error('Erro ao carregar checkout');
-    } finally {
       setLoading(false);
     }
   };
