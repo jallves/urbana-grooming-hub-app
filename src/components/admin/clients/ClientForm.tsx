@@ -110,7 +110,7 @@ const ClientForm: React.FC<ClientFormProps> = ({ clientId, onCancel, onSuccess }
         };
         
         const { data: updatedData, error } = await supabase
-          .from('client_profiles')
+          .from('painel_clientes')
           .update(updateData)
           .eq('id', clientId)
           .select();
