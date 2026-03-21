@@ -6,7 +6,7 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
 import { useClientSubscriptionNotifier } from '@/hooks/useClientSubscriptionNotifier';
-import { addClientNotification } from '@/hooks/useClientNotifications';
+
 import ClientNotificationBell from '@/components/painel-cliente/ClientNotificationBell';
 import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
