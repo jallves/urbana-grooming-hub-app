@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { addAdminNotification } from '@/hooks/useAdminNotifications';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
