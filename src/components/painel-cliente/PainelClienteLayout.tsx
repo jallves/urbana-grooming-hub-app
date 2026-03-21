@@ -6,6 +6,7 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
 import { useClientSubscriptionNotifier } from '@/hooks/useClientSubscriptionNotifier';
+import { addClientNotification } from '@/hooks/useClientNotifications';
 import ClientNotificationBell from '@/components/painel-cliente/ClientNotificationBell';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
@@ -18,6 +19,16 @@ const PainelClienteLayout: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   useClientAppointmentNotifier();
   useClientSubscriptionNotifier();
+
+  // 🧪 TESTE TEMPORÁRIO - Remover após validação
+  React.useEffect(() => {
+    addClientNotification({
+      title: '☀️ Bom dia, Cliente!',
+      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do cliente.',
+      type: 'update',
+      data: { test: true },
+    });
+  }, []);
 
   // PERSISTÊNCIA DE ROTA: Salvar rota atual toda vez que mudar
   React.useEffect(() => {
