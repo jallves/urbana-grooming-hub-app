@@ -59,6 +59,7 @@ export const useClientSubscriptionCredits = () => {
         credits_total: creditsTotal,
         credits_used: creditsUsed,
         credits_remaining: creditsTotal - creditsUsed,
+        credit_unit_value: creditUnitValue,
         status: sub.status,
         start_date: sub.start_date,
         next_billing_date: sub.next_billing_date,
