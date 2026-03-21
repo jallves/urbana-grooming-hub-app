@@ -452,8 +452,35 @@ Deno.serve(async (req) => {
       const isSubscriptionCredit = payment_method === 'subscription_credit'
       console.log('💰 Garantindo registros financeiros (idempotente)...', { isSubscriptionCredit })
 
+      // Se for crédito de assinatura, buscar valor unitário do plano
+      let subscriptionCreditUnitValue = 0
+      if (isSubscriptionCredit && agendamento?.cliente_id) {
+        const { data: activeSub } = await supabase
+          .from('client_subscriptions')
+          .select('plan_id, credits_total')
+          .eq('client_id', agendamento.cliente_id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (activeSub) {
+          const { data: plan } = await supabase
+            .from('subscription_plans')
+            .select('price')
+            .eq('id', activeSub.plan_id)
+            .single()
+
+          if (plan && activeSub.credits_total > 0) {
+            subscriptionCreditUnitValue = Number((plan.price / activeSub.credits_total).toFixed(2))
+            console.log('💰 Valor unitário do crédito:', subscriptionCreditUnitValue)
+          }
+        }
+      }
+
       // Preparar itens para ERP
-      // Se for crédito de assinatura: preço zerado (já foi pago na aquisição do combo)
+      // Se for crédito de assinatura: preço zerado na receita (já foi pago na aquisição do combo)
+      // mas a comissão será calculada sobre o valor unitário do crédito
       const erpItems = (vendaItens || []).map((item: any) => ({
         type: item.tipo === 'PRODUTO' ? 'product' : 'service',
         id: item.item_id,
@@ -465,13 +492,11 @@ Deno.serve(async (req) => {
       }))
 
       // Extrair transaction_id do PayGo (NSU ou confirmationId)
-      // Prioridade: NSU > confirmationId > gerar interno
       let transactionId: string | null = null
       if (transaction_data) {
         transactionId = transaction_data.nsu || transaction_data.confirmationId || null
         console.log('💳 Transaction ID do PayGo:', transactionId)
       }
-      // Fallback: gerar ID interno se não veio do PayGo (ex: PIX sem NSU)
       if (!transactionId) {
         transactionId = `INT-${venda_id.substring(0, 8)}-${Date.now()}`
         console.log('💳 Transaction ID gerado internamente:', transactionId)
@@ -497,7 +522,8 @@ Deno.serve(async (req) => {
             notes: erpNotes,
             tip_amount: isSubscriptionCredit ? 0 : gorjeta,
             transaction_id: transactionId,
-            is_subscription_usage: isSubscriptionCredit,
+            is_subscription_usage: isSubscriptionCredit, // Comissão REAL para barbeiro atendente
+            subscription_credit_unit_value: subscriptionCreditUnitValue, // Valor unitário para cálculo
           },
         }
       )

@@ -40,7 +40,9 @@ type RequestBody = {
   reference_id?: string | null
   reference_type?: string | null
   transaction_id?: string | null // ID da transação eletrônica (NSU PayGo, código PIX, etc.)
-  is_subscription_usage?: boolean // Flag: uso de crédito de assinatura (valores zerados)
+  is_subscription_usage?: boolean // Flag: uso de crédito de assinatura (comissão REAL para barbeiro atendente)
+  is_subscription_sale?: boolean // Flag: venda de combo/assinatura (comissão ZERO para barbeiro vendedor)
+  subscription_credit_unit_value?: number // Valor unitário do crédito (plan_price / credits_total)
 }
 
 function normalizePaymentMethod(raw: string | null | undefined) {
@@ -291,6 +293,8 @@ Deno.serve(async (req) => {
     const created: any[] = []
 
     const isSubscriptionUsage = body.is_subscription_usage === true
+    const isSubscriptionSale = body.is_subscription_sale === true
+    const subscriptionCreditUnitValue = Number(body.subscription_credit_unit_value || 0)
 
     // ===================== RECEITAS =====================
     for (const item of body.items) {
@@ -375,13 +379,41 @@ Deno.serve(async (req) => {
         const gross = qty * unit
         const net = Math.max(0, gross - discount)
 
-        // Se for uso de crédito de assinatura: comissão zerada
-        const commissionAmount = isSubscriptionUsage ? 0 : Number((net * (serviceCommissionRate / 100)).toFixed(2))
-        const subcategory = isSubscriptionUsage ? 'assinatura_comissao' : (item.isExtra ? 'servico_extra_comissao' : 'servico_comissao')
+        // NOVA LÓGICA DE COMISSÕES:
+        // - Venda de combo (is_subscription_sale): comissão ZERO para vendedor
+        // - Uso de crédito (is_subscription_usage): comissão REAL para barbeiro ATENDENTE
+        // - Serviço normal: comissão normal
         
-        const description = isSubscriptionUsage
-          ? `Comissão R$ 0,00 - ${item.name || 'Serviço'} (uso crédito assinatura - comissão paga na venda do combo)`
-          : `Comissão ${serviceCommissionRate}% - ${item.name || 'Serviço'}`
+        let commissionAmount: number
+        let subcategory: string
+        let description: string
+        let commissionStatus: string
+        let commissionTipo: string
+
+        if (isSubscriptionSale) {
+          // VENDA DO COMBO: comissão zero para o vendedor
+          commissionAmount = 0
+          subcategory = 'venda_combo_comissao'
+          description = `Comissão R$ 0,00 - ${item.name || 'Serviço'} (venda de combo - comissão será paga no uso dos créditos)`
+          commissionStatus = 'paid' // Zerado, considerado quitado
+          commissionTipo = 'venda_combo'
+        } else if (isSubscriptionUsage) {
+          // USO DE CRÉDITO: comissão REAL para barbeiro atendente
+          // Usar valor unitário do crédito (plan_price / credits_total)
+          const creditValue = subscriptionCreditUnitValue > 0 ? subscriptionCreditUnitValue : net
+          commissionAmount = Number((creditValue * (serviceCommissionRate / 100)).toFixed(2))
+          subcategory = 'uso_credito_comissao'
+          description = `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} - ${item.name || 'Serviço'} (uso crédito assinatura)`
+          commissionStatus = 'pending'
+          commissionTipo = 'uso_credito_assinatura'
+        } else {
+          // SERVIÇO NORMAL
+          commissionAmount = Number((net * (serviceCommissionRate / 100)).toFixed(2))
+          subcategory = item.isExtra ? 'servico_extra_comissao' : 'servico_comissao'
+          description = `Comissão ${serviceCommissionRate}% - ${item.name || 'Serviço'}`
+          commissionStatus = 'pending'
+          commissionTipo = item.isExtra ? 'servico_extra' : 'servico'
+        }
         
         const subRef = `commission:service:${item.id}:${subcategory}`
 
@@ -389,11 +421,11 @@ Deno.serve(async (req) => {
           supabase,
           {
             transaction_type: 'commission',
-            category: isSubscriptionUsage ? 'assinatura' : 'comissao',
+            category: (isSubscriptionSale || isSubscriptionUsage) ? 'assinatura' : 'comissao',
             subcategory,
             amount: commissionAmount,
             net_amount: commissionAmount,
-            status: isSubscriptionUsage ? 'completed' : 'pending',
+            status: commissionStatus === 'paid' ? 'completed' : 'pending',
             description,
             transaction_date,
             due_date: transaction_date,
@@ -407,9 +439,8 @@ Deno.serve(async (req) => {
           { reference_id, reference_type, sub_ref: subRef }
         )
 
-         // Para assinatura: registrar comissão zerada com nota explicativa
-         // Para pagamento normal: registrar comissão real
-         if (isSubscriptionUsage) {
+         if (isSubscriptionSale) {
+           // Venda de combo: comissão zero
            await ensureBarberCommission(supabase, {
              barber_id: body.barber_id,
              barber_name: barberName,
@@ -417,8 +448,8 @@ Deno.serve(async (req) => {
              venda_id: reference_id,
              valor: 0,
              commission_rate: 0,
-             status: 'paid', // Já considerado pago (zerado)
-             tipo: 'uso_credito_assinatura',
+             status: 'paid',
+             tipo: 'venda_combo',
            })
 
            await ensureContasPagar(supabase, {
@@ -426,14 +457,15 @@ Deno.serve(async (req) => {
              valor: 0,
              data_vencimento: transaction_date,
              data_pagamento: transaction_date,
-             status: 'pago', // Já quitado (zerado)
+             status: 'pago',
              categoria: 'assinatura',
              fornecedor: barberName,
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
-             forma_pagamento: 'subscription_credit',
+             forma_pagamento: payment_method,
            })
          } else if (commissionAmount > 0) {
+           // Uso de crédito ou serviço normal: comissão real
            await ensureBarberCommission(supabase, {
              barber_id: body.barber_id,
              barber_name: barberName,
@@ -442,7 +474,7 @@ Deno.serve(async (req) => {
              valor: commissionAmount,
              commission_rate: serviceCommissionRate,
              status: 'pending',
-             tipo: item.isExtra ? 'servico_extra' : 'servico',
+             tipo: commissionTipo,
            })
 
            await ensureContasPagar(supabase, {
@@ -451,11 +483,11 @@ Deno.serve(async (req) => {
              data_vencimento: transaction_date,
              data_pagamento: null,
              status: 'pendente',
-             categoria: 'comissao',
+             categoria: isSubscriptionUsage ? 'comissao_assinatura' : 'comissao',
              fornecedor: barberName,
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-             transaction_id: transaction_id, // Mesmo ID da transação para conciliação
-             forma_pagamento: payment_method, // 👈 ADICIONADO
+             transaction_id: transaction_id,
+             forma_pagamento: payment_method,
            })
          }
 

@@ -9,6 +9,7 @@ export interface ActiveSubscription {
   credits_total: number;
   credits_used: number;
   credits_remaining: number;
+  credit_unit_value: number;
   status: string;
   start_date: string;
   next_billing_date: string | null;
@@ -44,8 +45,11 @@ export const useClientSubscriptionCredits = () => {
         .eq('id', sub.plan_id)
         .single();
 
-      const creditsTotal = (sub as any).credits_total || 4;
-      const creditsUsed = (sub as any).credits_used || 0;
+      const creditsTotal = sub.credits_total || 4;
+      const creditsUsed = sub.credits_used || 0;
+      const creditUnitValue = (plan?.price || 0) > 0 && creditsTotal > 0 
+        ? Number(((plan?.price || 0) / creditsTotal).toFixed(2)) 
+        : 0;
 
       const result: ActiveSubscription = {
         id: sub.id,
@@ -55,6 +59,7 @@ export const useClientSubscriptionCredits = () => {
         credits_total: creditsTotal,
         credits_used: creditsUsed,
         credits_remaining: creditsTotal - creditsUsed,
+        credit_unit_value: creditUnitValue,
         status: sub.status,
         start_date: sub.start_date,
         next_billing_date: sub.next_billing_date,
@@ -84,7 +89,7 @@ export const useClientSubscriptionCredits = () => {
           subscription_id: subscriptionId,
           appointment_id: appointmentId,
           service_name: serviceName,
-        } as any);
+        });
 
       if (usageError) {
         console.error('Erro ao registrar uso:', usageError);
@@ -99,11 +104,11 @@ export const useClientSubscriptionCredits = () => {
         .eq('id', subscriptionId)
         .single();
 
-      const newCreditsUsed = ((current as any)?.credits_used || 0) + 1;
+      const newCreditsUsed = (current?.credits_used || 0) + 1;
 
       const { error: updateError } = await supabase
         .from('client_subscriptions')
-        .update({ credits_used: newCreditsUsed } as any)
+        .update({ credits_used: newCreditsUsed })
         .eq('id', subscriptionId);
 
       if (updateError) {
