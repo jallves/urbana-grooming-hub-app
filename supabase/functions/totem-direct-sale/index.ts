@@ -406,6 +406,7 @@ serve(async (req) => {
                   transaction_id: transaction_data?.nsu || null,
                   transaction_date: brazilTime.date,
                   transaction_datetime: brazilTime.datetime,
+                  is_subscription_sale: true, // ZERO comissão na venda do combo
                 }
               }
             )
