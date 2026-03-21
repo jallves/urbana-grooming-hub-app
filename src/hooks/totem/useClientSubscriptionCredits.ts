@@ -44,8 +44,11 @@ export const useClientSubscriptionCredits = () => {
         .eq('id', sub.plan_id)
         .single();
 
-      const creditsTotal = (sub as any).credits_total || 4;
-      const creditsUsed = (sub as any).credits_used || 0;
+      const creditsTotal = sub.credits_total || 4;
+      const creditsUsed = sub.credits_used || 0;
+      const creditUnitValue = (plan?.price || 0) > 0 && creditsTotal > 0 
+        ? Number(((plan?.price || 0) / creditsTotal).toFixed(2)) 
+        : 0;
 
       const result: ActiveSubscription = {
         id: sub.id,
