@@ -119,6 +119,13 @@ const TotemCheckout: React.FC = () => {
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
 
+  // Verifica se o serviço do agendamento está coberto pelo plano de assinatura
+  const isServiceCoveredByPlan = useMemo(() => {
+    if (!activeSubscription || !appointment?.servico_id) return false;
+    if (activeSubscription.allowed_service_ids.length === 0) return false;
+    return activeSubscription.allowed_service_ids.includes(appointment.servico_id);
+  }, [activeSubscription, appointment?.servico_id]);
+
   // Resumo local sempre atualizado automaticamente
   const resumo: CheckoutSummary = useMemo(() => ({
     original_service: originalService,
