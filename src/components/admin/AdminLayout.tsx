@@ -3,7 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
-import { LogOut, Bell, Settings, User, Menu } from 'lucide-react';
+import { LogOut, Settings, User, Menu } from 'lucide-react';
+import AdminNotificationBell from '@/components/admin/AdminNotificationBell';
+import { useAdminAppointmentNotifier } from '@/hooks/useAdminAppointmentNotifier';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
