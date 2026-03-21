@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { CheckCircle, Gift, Edit3, DollarSign } from 'lucide-react';
+import { CheckCircle, Gift, Edit3, DollarSign, Users } from 'lucide-react';
 
 interface CheckoutData {
   appointmentId: string;
@@ -27,8 +28,10 @@ interface AdminCheckoutModalProps {
   onOpenChange: (open: boolean) => void;
   data: CheckoutData | null;
   isProcessing: boolean;
-  onConfirm: (sessionId: string, checkoutType: 'full' | 'courtesy' | 'custom', customValue?: number) => void;
+  onConfirm: (sessionId: string, checkoutType: 'full' | 'courtesy' | 'custom', customValue?: number, payCommission?: boolean) => void;
 }
+
+const COMMISSION_RATE = 40;
 
 const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
   open,
@@ -39,6 +42,16 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
 }) => {
   const [checkoutType, setCheckoutType] = useState<'full' | 'courtesy' | 'custom'>('full');
   const [customValue, setCustomValue] = useState('');
+  const [payCommission, setPayCommission] = useState(true);
+
+  // Reset state when modal opens with new data
+  useEffect(() => {
+    if (open) {
+      setCheckoutType('full');
+      setCustomValue('');
+      setPayCommission(true);
+    }
+  }, [open]);
 
   if (!data) return null;
 
@@ -50,11 +63,20 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
     }
   };
 
+  const getCommissionBase = () => {
+    if (checkoutType === 'courtesy') return data.servicePrice; // Commission on full original price
+    if (checkoutType === 'custom') return parseFloat(customValue) || 0; // Commission on custom value
+    return data.servicePrice; // Full price
+  };
+
+  const commissionValue = payCommission ? getCommissionBase() * (COMMISSION_RATE / 100) : 0;
+
   const handleConfirm = () => {
     onConfirm(
       data.sessionId,
       checkoutType,
-      checkoutType === 'custom' ? parseFloat(customValue) || 0 : undefined
+      checkoutType === 'custom' ? parseFloat(customValue) || 0 : undefined,
+      payCommission
     );
   };
 
@@ -62,7 +84,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-lg">
             <CheckCircle className="h-5 w-5 text-green-600" />
@@ -114,7 +136,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
                 <Gift className="h-4 w-4 text-purple-600" />
                 <div className="flex-1">
                   <p className="font-medium text-sm">Cortesia</p>
-                  <p className="text-xs text-muted-foreground">Serviço gratuito, sem cobrança</p>
+                  <p className="text-xs text-muted-foreground">Cliente não paga, valor R$ 0</p>
                 </div>
                 <Badge variant="secondary" className="bg-purple-100 text-purple-700">Grátis</Badge>
               </label>
@@ -146,19 +168,85 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             )}
           </div>
 
-          {/* Valor final */}
-          <div className="bg-muted rounded-lg p-4 flex items-center justify-between">
-            <span className="font-semibold">Valor Final</span>
-            <span className={`text-2xl font-bold ${finalValue === 0 ? 'text-purple-600' : 'text-green-600'}`}>
-              {finalValue === 0 ? 'CORTESIA' : `R$ ${finalValue.toFixed(2)}`}
-            </span>
+          {/* Comissão do barbeiro */}
+          <div className={`rounded-lg border p-4 space-y-3 ${payCommission ? 'border-blue-300 bg-blue-50/50' : 'border-border'}`}>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <Label htmlFor="pay-commission" className="text-sm font-semibold cursor-pointer">
+                  Pagar comissão ao barbeiro
+                </Label>
+              </div>
+              <Switch
+                id="pay-commission"
+                checked={payCommission}
+                onCheckedChange={setPayCommission}
+              />
+            </div>
+
+            {payCommission && (
+              <div className="text-xs space-y-1 text-muted-foreground">
+                <div className="flex justify-between">
+                  <span>Base de cálculo</span>
+                  <span className="font-medium">
+                    R$ {checkoutType === 'courtesy' ? data.servicePrice.toFixed(2) : (checkoutType === 'custom' ? (parseFloat(customValue) || 0).toFixed(2) : data.servicePrice.toFixed(2))}
+                    {checkoutType === 'courtesy' && <span className="text-purple-600 ml-1">(valor original)</span>}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Taxa</span>
+                  <span className="font-medium">{COMMISSION_RATE}%</span>
+                </div>
+                <div className="flex justify-between border-t pt-1 text-sm font-semibold text-foreground">
+                  <span>Comissão</span>
+                  <span className="text-blue-600">R$ {commissionValue.toFixed(2)}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground pt-1">
+                  💡 {checkoutType === 'courtesy'
+                    ? 'Cortesia: comissão calculada sobre o valor original do serviço'
+                    : checkoutType === 'custom'
+                      ? 'Comissão calculada sobre o valor personalizado'
+                      : 'Comissão calculada sobre o valor total'
+                  }
+                </p>
+              </div>
+            )}
+
+            {!payCommission && (
+              <p className="text-xs text-muted-foreground">
+                Nenhuma comissão será gerada para o barbeiro neste checkout.
+              </p>
+            )}
+          </div>
+
+          {/* Resumo financeiro */}
+          <div className="bg-muted rounded-lg p-4 space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Resumo ERP</p>
+            <div className="flex justify-between text-sm">
+              <span>Contas a Receber</span>
+              <span className={`font-bold ${finalValue === 0 ? 'text-purple-600' : 'text-green-600'}`}>
+                {finalValue === 0 ? 'R$ 0,00 (cortesia)' : `R$ ${finalValue.toFixed(2)}`}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span>Contas a Pagar (comissão)</span>
+              <span className={`font-bold ${commissionValue > 0 ? 'text-red-600' : 'text-muted-foreground'}`}>
+                {commissionValue > 0 ? `R$ ${commissionValue.toFixed(2)}` : 'Sem comissão'}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm border-t pt-2 font-semibold">
+              <span>Resultado líquido</span>
+              <span className={finalValue - commissionValue >= 0 ? 'text-green-600' : 'text-red-600'}>
+                R$ {(finalValue - commissionValue).toFixed(2)}
+              </span>
+            </div>
           </div>
 
           {/* Aviso */}
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
             <p className="text-xs text-amber-800">
               ⚠️ O checkout será finalizado <strong>sem acionar o terminal de pagamento</strong>. 
-              A venda, comissão e registros financeiros serão criados automaticamente.
+              Os registros financeiros serão criados automaticamente no ERP.
             </p>
           </div>
         </div>

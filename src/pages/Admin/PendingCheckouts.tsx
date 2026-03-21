@@ -114,7 +114,8 @@ const PendingCheckouts: React.FC = () => {
   const handleCheckout = async (
     sessionId: string,
     checkoutType: 'full' | 'courtesy' | 'custom',
-    customValue?: number
+    customValue?: number,
+    payCommission?: boolean
   ) => {
     setIsProcessing(true);
     try {
@@ -124,6 +125,7 @@ const PendingCheckouts: React.FC = () => {
           session_id: sessionId,
           checkout_type: checkoutType,
           custom_value: customValue,
+          pay_commission: payCommission ?? true,
         }
       });
 

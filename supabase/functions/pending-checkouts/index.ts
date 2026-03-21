@@ -1,6 +1,8 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const COMMISSION_RATE = 40 // 40% default
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -12,7 +14,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const body = await req.json()
-    const { action, session_id, checkout_type, custom_value } = body
+    const { action, session_id, checkout_type, custom_value, pay_commission } = body
 
     // ==================== ACTION: LIST ====================
     if (action === 'list') {
@@ -21,24 +23,13 @@ Deno.serve(async (req) => {
       const { data: sessoesPendentes, error: listError } = await supabase
         .from('appointment_totem_sessions')
         .select(`
-          id,
-          appointment_id,
-          status,
-          totem_session_id,
-          totem_sessions!inner(
-            id,
-            token,
-            is_valid,
-            created_at
-          )
+          id, appointment_id, status, totem_session_id,
+          totem_sessions!inner(id, token, is_valid, created_at)
         `)
         .eq('status', 'checked_in')
         .order('created_at', { ascending: false })
 
-      if (listError) {
-        console.error('❌ Erro ao listar sessões pendentes:', listError)
-        throw listError
-      }
+      if (listError) throw listError
 
       if (!sessoesPendentes || sessoesPendentes.length === 0) {
         return new Response(
@@ -48,7 +39,7 @@ Deno.serve(async (req) => {
       }
 
       const appointmentIds = sessoesPendentes.map(s => s.appointment_id).filter(Boolean)
-      
+
       const { data: agendamentos, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -71,8 +62,6 @@ Deno.serve(async (req) => {
         }
       }).filter(a => a.id)
 
-      console.log(`✅ Encontrados ${agendamentosPendentes.length} agendamentos pendentes`)
-
       return new Response(
         JSON.stringify({ success: true, count: agendamentosPendentes.length, appointments: agendamentosPendentes }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -81,16 +70,13 @@ Deno.serve(async (req) => {
 
     // ==================== ACTION: FORCE_CHECKOUT ====================
     if (action === 'force_checkout') {
-      console.log('🔧 Forçando checkout para sessão:', session_id, 'Tipo:', checkout_type || 'full')
+      const type = checkout_type || 'full'
+      const shouldPayCommission = pay_commission !== false // default true
+      console.log('🔧 Checkout admin:', { session_id, type, shouldPayCommission, custom_value })
 
-      if (!session_id) {
-        throw new Error('session_id é obrigatório para force_checkout')
-      }
+      if (!session_id) throw new Error('session_id é obrigatório')
 
-      // Determine the checkout type and final value
-      const type = checkout_type || 'full' // 'full' | 'courtesy' | 'custom'
-
-      // Buscar appointment_totem_session
+      // 1. Buscar sessão
       const { data: appointmentSession, error: sessionError } = await supabase
         .from('appointment_totem_sessions')
         .select('*, totem_sessions(*)')
@@ -102,9 +88,8 @@ Deno.serve(async (req) => {
       if (!appointmentSession) throw new Error('Sessão não encontrada ou já finalizada')
 
       const appointment_id = appointmentSession.appointment_id
-      console.log('✅ Sessão válida. Appointment:', appointment_id)
 
-      // Buscar agendamento
+      // 2. Buscar agendamento
       const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -120,35 +105,49 @@ Deno.serve(async (req) => {
       const originalPrice = agendamento.painel_servicos?.preco || 0
       const nomeServico = agendamento.painel_servicos?.nome || 'Serviço'
       const barbeiro_id = agendamento.barbeiro_id
+      const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
 
-      // Calculate final price based on checkout type
-      let finalPrice: number
+      // 3. Calculate prices
+      let revenueAmount: number // What goes into contas_receber
+      let commissionBase: number // Base for commission calculation
       let observacao: string
 
       switch (type) {
         case 'courtesy':
-          finalPrice = 0
-          observacao = `Cortesia administrativa - Agendamento ${appointment_id}`
+          revenueAmount = 0
+          commissionBase = originalPrice // Commission on ORIGINAL price
+          observacao = `Cortesia administrativa - ${nomeServico}`
           break
         case 'custom':
-          finalPrice = typeof custom_value === 'number' ? custom_value : originalPrice
-          observacao = `Checkout admin (valor personalizado R$ ${finalPrice.toFixed(2)}) - Agendamento ${appointment_id}`
+          revenueAmount = typeof custom_value === 'number' ? custom_value : originalPrice
+          commissionBase = revenueAmount // Commission on custom value
+          observacao = `Checkout admin (R$ ${revenueAmount.toFixed(2)}) - ${nomeServico}`
           break
         default:
-          finalPrice = originalPrice
-          observacao = `Checkout administrativo - Agendamento ${appointment_id}`
+          revenueAmount = originalPrice
+          commissionBase = originalPrice
+          observacao = `Checkout administrativo - ${nomeServico}`
       }
 
-      console.log('💰 Preços:', { originalPrice, finalPrice, type })
+      const commissionAmount = shouldPayCommission ? commissionBase * (COMMISSION_RATE / 100) : 0
 
-      // Criar venda
+      console.log('💰 Cálculos:', {
+        originalPrice,
+        revenueAmount,
+        commissionBase,
+        commissionAmount,
+        shouldPayCommission,
+        type
+      })
+
+      // 4. Criar venda
       const { data: novaVenda, error: vendaError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: agendamento.cliente_id,
-          barbeiro_id: barbeiro_id,
-          valor_total: finalPrice,
-          desconto: originalPrice - finalPrice,
+          barbeiro_id,
+          valor_total: revenueAmount,
+          desconto: originalPrice - revenueAmount,
           status: 'PAGA',
           observacoes: observacao
         })
@@ -156,87 +155,138 @@ Deno.serve(async (req) => {
         .single()
 
       if (vendaError) throw vendaError
-      console.log('✅ Venda criada:', novaVenda.id, 'Valor:', finalPrice)
+      console.log('✅ Venda criada:', novaVenda.id)
 
-      // Criar item da venda
-      await supabase
-        .from('vendas_itens')
-        .insert({
-          venda_id: novaVenda.id,
-          tipo: 'servico',
-          item_id: agendamento.servico_id || agendamento.id,
-          nome: nomeServico,
-          quantidade: 1,
-          preco_unitario: finalPrice,
-          subtotal: finalPrice,
-          barbeiro_id: barbeiro_id
-        })
+      // 5. Criar item da venda
+      await supabase.from('vendas_itens').insert({
+        venda_id: novaVenda.id,
+        tipo: 'servico',
+        item_id: agendamento.servico_id || agendamento.id,
+        nome: nomeServico,
+        quantidade: 1,
+        preco_unitario: revenueAmount,
+        subtotal: revenueAmount,
+        barbeiro_id
+      })
 
-      // Gerar comissão (mesmo para cortesia, comissão pode ser zero)
-      const commissionRate = agendamento.painel_barbeiros?.commission_rate 
-        || agendamento.painel_barbeiros?.taxa_comissao 
-        || 50
-      const commissionAmount = finalPrice * (commissionRate / 100)
+      // 6. Contas a Receber (even if zero for courtesy - records the event)
+      const today = new Date().toISOString().split('T')[0]
 
-      // Verificar comissão existente
-      const { data: existingCommission } = await supabase
-        .from('barber_commissions')
-        .select('id')
-        .eq('appointment_id', appointment_id)
-        .maybeSingle()
+      await supabase.from('contas_receber').insert({
+        descricao: type === 'courtesy'
+          ? `Cortesia - ${nomeServico} (${barberName})`
+          : `${nomeServico} - Checkout admin`,
+        valor: revenueAmount,
+        data_vencimento: today,
+        data_recebimento: today,
+        status: 'recebido',
+        categoria: 'servico',
+        forma_pagamento: type === 'courtesy' ? 'cortesia' : 'admin',
+        cliente_id: agendamento.cliente_id,
+        observacoes: observacao
+      })
+      console.log('✅ Contas a receber:', revenueAmount)
 
-      if (!existingCommission) {
-        const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
-
-        await supabase
+      // 7. Comissão + Contas a Pagar (if commission should be paid)
+      if (shouldPayCommission && commissionAmount > 0) {
+        // Verificar comissão existente
+        const { data: existingCommission } = await supabase
           .from('barber_commissions')
-          .insert({
+          .select('id')
+          .eq('appointment_id', appointment_id)
+          .maybeSingle()
+
+        if (!existingCommission) {
+          await supabase.from('barber_commissions').insert({
             barber_id: barbeiro_id,
-            appointment_id: appointment_id,
+            appointment_id,
             venda_id: novaVenda.id,
             valor: commissionAmount,
             amount: commissionAmount,
-            commission_rate: commissionRate,
+            commission_rate: COMMISSION_RATE,
             barber_name: barberName,
             tipo: type === 'courtesy' ? 'cortesia' : 'servico',
             status: 'pending',
             appointment_source: 'admin_checkout'
           })
+          console.log('✅ Comissão criada:', commissionAmount)
+        }
 
-        console.log('✅ Comissão criada:', commissionAmount)
+        // Contas a pagar - barbeiro
+        await supabase.from('contas_pagar').insert({
+          descricao: `Comissão ${barberName} - ${nomeServico}${type === 'courtesy' ? ' (cortesia)' : ''}`,
+          valor: commissionAmount,
+          data_vencimento: today,
+          status: 'pendente',
+          categoria: 'comissao',
+          fornecedor: barberName,
+          observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`
+        })
+        console.log('✅ Contas a pagar (comissão):', commissionAmount)
+
+        // Financial record for commission
+        await supabase.from('financial_records').insert({
+          transaction_type: 'commission',
+          amount: commissionAmount,
+          description: `Comissão ${barberName} - ${nomeServico}${type === 'courtesy' ? ' (cortesia)' : ''}`,
+          category: 'comissao',
+          status: 'pending',
+          barber_id: barbeiro_id,
+          barber_name: barberName,
+          client_id: agendamento.cliente_id,
+          service_id: agendamento.servico_id,
+          service_name: nomeServico,
+          reference_id: novaVenda.id,
+          reference_type: 'venda',
+          payment_method: type === 'courtesy' ? 'cortesia' : 'admin'
+        })
       }
 
-      // Registrar transação financeira
-      if (finalPrice > 0) {
-        await supabase
-          .from('financial_transactions')
-          .insert({
-            transaction_type: 'income',
-            amount: finalPrice,
-            description: `${type === 'custom' ? 'Checkout personalizado' : 'Checkout admin'} - ${nomeServico}`,
-            category: 'servico',
-            payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
-            status: 'completed',
-            barber_id: barbeiro_id,
-            client_id: agendamento.cliente_id,
-            reference_id: novaVenda.id
-          })
-        console.log('✅ Transação financeira criada')
+      // 8. Financial transaction (receita) - only if revenue > 0
+      if (revenueAmount > 0) {
+        await supabase.from('financial_transactions').insert({
+          transaction_type: 'income',
+          amount: revenueAmount,
+          description: `Checkout admin - ${nomeServico}`,
+          category: 'servico',
+          payment_method: 'admin',
+          status: 'completed',
+          barber_id: barbeiro_id,
+          client_id: agendamento.cliente_id,
+          reference_id: novaVenda.id
+        })
       }
 
-      // Atualizar appointment_totem_session
+      // Financial record (receita)
+      await supabase.from('financial_records').insert({
+        transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
+        amount: revenueAmount,
+        description: type === 'courtesy'
+          ? `Cortesia - ${nomeServico} (${barberName})`
+          : `Checkout admin - ${nomeServico}`,
+        category: 'servico',
+        status: 'completed',
+        barber_id: barbeiro_id,
+        barber_name: barberName,
+        client_id: agendamento.cliente_id,
+        service_id: agendamento.servico_id,
+        service_name: nomeServico,
+        reference_id: novaVenda.id,
+        reference_type: 'venda',
+        payment_method: type === 'courtesy' ? 'cortesia' : 'admin'
+      })
+
+      // 9. Update session + appointment
       await supabase
         .from('appointment_totem_sessions')
         .update({ status: 'completed' })
         .eq('id', appointmentSession.id)
 
-      // Invalidar totem_session
       await supabase
         .from('totem_sessions')
         .update({ is_valid: false })
         .eq('id', session_id)
 
-      // Atualizar agendamento
       await supabase
         .from('painel_agendamentos')
         .update({
@@ -247,7 +297,7 @@ Deno.serve(async (req) => {
         })
         .eq('id', appointment_id)
 
-      console.log('✅ Checkout forçado com sucesso! Tipo:', type)
+      console.log('✅ Checkout admin finalizado!', { type, revenueAmount, commissionAmount })
 
       return new Response(
         JSON.stringify({
@@ -257,8 +307,9 @@ Deno.serve(async (req) => {
           venda_id: novaVenda.id,
           appointment_id,
           checkout_type: type,
-          final_price: finalPrice,
-          commission: commissionAmount
+          revenue: revenueAmount,
+          commission: commissionAmount,
+          pay_commission: shouldPayCommission
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
