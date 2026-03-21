@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
           id, appointment_id, status, totem_session_id,
           totem_sessions!inner(id, token, is_valid, created_at)
         `)
-        .eq('status', 'checked_in')
+        .in('status', ['check_in', 'checked_in'])
         .order('created_at', { ascending: false })
 
       if (listError) throw listError
