@@ -293,6 +293,8 @@ Deno.serve(async (req) => {
     const created: any[] = []
 
     const isSubscriptionUsage = body.is_subscription_usage === true
+    const isSubscriptionSale = body.is_subscription_sale === true
+    const subscriptionCreditUnitValue = Number(body.subscription_credit_unit_value || 0)
 
     // ===================== RECEITAS =====================
     for (const item of body.items) {
