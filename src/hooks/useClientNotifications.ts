@@ -18,10 +18,14 @@ function notify() {
 }
 
 export function addClientNotification(notification: Omit<ClientNotification, 'id' | 'timestamp' | 'read'>) {
-  // Avoid duplicate by data.appointmentId + type
-  if (notification.data?.appointmentId) {
+  // Deduplicate by unique data key + title
+  const dedupKey = notification.data?.appointmentId || notification.data?.subscriptionId || notification.data?.type;
+  if (dedupKey) {
     const exists = notifications.some(
-      (n) => n.data?.appointmentId === notification.data?.appointmentId && n.type === notification.type
+      (n) => {
+        const nKey = n.data?.appointmentId || n.data?.subscriptionId || n.data?.type;
+        return nKey === dedupKey && n.title === notification.title;
+      }
     );
     if (exists) return;
   }
