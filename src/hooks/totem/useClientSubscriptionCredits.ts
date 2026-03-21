@@ -13,6 +13,7 @@ export interface ActiveSubscription {
   status: string;
   start_date: string;
   next_billing_date: string | null;
+  allowed_service_ids: string[];
 }
 
 export const useClientSubscriptionCredits = () => {
