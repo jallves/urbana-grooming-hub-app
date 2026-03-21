@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Download, Share, Plus, MoreVertical, Smartphone } from 'lucide-react';
+import { X, Share, Plus, MoreVertical, Smartphone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { usePWA } from '@/hooks/usePWA';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
@@ -9,7 +9,7 @@ interface PWAInstallBannerProps {
 }
 
 const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ context }) => {
-  const { canInstall, isInstalled, isIOS, isAndroid, installApp } = usePWA();
+  const { isInstalled, isIOS, isAndroid } = usePWA();
   const [isVisible, setIsVisible] = useState(false);
 
   const storageKey = `pwa-install-banner-dismissed-${context}`;
@@ -21,22 +21,13 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ context }) => {
     const dismissed = sessionStorage.getItem(storageKey);
     if (dismissed) return;
 
-    // Mostrar se: já pode instalar OU é mobile e não está instalado
-    const shouldShow = (canInstall || isMobile) && !isInstalled;
+    const shouldShow = isMobile && !isInstalled;
 
     if (shouldShow) {
       const timer = setTimeout(() => setIsVisible(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [canInstall, isInstalled, isMobile, storageKey]);
-
-  const handleInstall = async () => {
-    const success = await installApp();
-    if (success) {
-      setIsVisible(false);
-    }
-    // Se iOS, não fecha — mostra as instruções
-  };
+  }, [isInstalled, isMobile, storageKey]);
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -99,17 +90,24 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ context }) => {
               </p>
               <div className="bg-white/5 rounded-xl p-4 space-y-3">
                 <Step number={1}>
-                  Toque no ícone <Share className="inline w-4 h-4 text-blue-400 mx-1 -mt-0.5" /> 
-                  <span className="text-urbana-light font-medium">Compartilhar</span> na barra do Safari
+                  Abra este site no <span className="text-urbana-light font-medium">Safari</span> (navegador padrão da Apple)
                 </Step>
                 <Step number={2}>
-                  Role para baixo e toque em{' '}
+                  Toque no ícone <Share className="inline w-4 h-4 text-blue-400 mx-1 -mt-0.5" /> 
+                  <span className="text-urbana-light font-medium">Compartilhar</span> na barra inferior do Safari
+                </Step>
+                <Step number={3}>
+                  Role a lista para baixo e toque em{' '}
                   <span className="inline-flex items-center gap-1 text-urbana-light font-medium">
                     <Plus className="w-3.5 h-3.5" /> Adicionar à Tela de Início
                   </span>
                 </Step>
-                <Step number={3}>
-                  Toque em <span className="text-urbana-light font-medium">Adicionar</span> no canto superior direito
+                <Step number={4}>
+                  Confirme tocando em <span className="text-urbana-light font-medium">Adicionar</span> no canto superior direito
+                </Step>
+                <Step number={5}>
+                  Pronto! O app aparecerá na sua <span className="text-urbana-light font-medium">tela inicial</span>{' '}
+                  <Smartphone className="inline w-4 h-4 text-urbana-gold mx-0.5 -mt-0.5" />
                 </Step>
               </div>
               <Button
@@ -119,40 +117,35 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ context }) => {
                 Entendi!
               </Button>
             </div>
-          ) : isAndroid ? (
+          ) : (
             <div className="space-y-3">
               <p className="text-xs font-semibold text-urbana-gold/90 uppercase tracking-wider text-center">
                 Como instalar no Android
               </p>
               <div className="bg-white/5 rounded-xl p-4 space-y-3">
                 <Step number={1}>
-                  Toque no botão abaixo <span className="text-urbana-light font-medium">Instalar Aplicativo</span>
+                  Toque nos <MoreVertical className="inline w-4 h-4 text-urbana-light mx-0.5 -mt-0.5" />{' '}
+                  <span className="text-urbana-light font-medium">três pontinhos</span> no canto superior direito do navegador
                 </Step>
                 <Step number={2}>
-                  Na janela que aparecer, toque em <span className="text-urbana-light font-medium">Instalar</span>
+                  Toque em{' '}
+                  <span className="text-urbana-light font-medium">"Adicionar à tela inicial"</span>{' '}
+                  ou{' '}
+                  <span className="text-urbana-light font-medium">"Instalar aplicativo"</span>
                 </Step>
                 <Step number={3}>
-                  O app aparecerá na sua <span className="text-urbana-light font-medium">tela inicial</span>{' '}
+                  Confirme tocando em <span className="text-urbana-light font-medium">Instalar</span>
+                </Step>
+                <Step number={4}>
+                  Pronto! O app aparecerá na sua <span className="text-urbana-light font-medium">tela inicial</span>{' '}
                   <Smartphone className="inline w-4 h-4 text-urbana-gold mx-0.5 -mt-0.5" />
                 </Step>
               </div>
               <Button
-                onClick={handleInstall}
+                onClick={handleDismiss}
                 className="w-full bg-urbana-gold hover:bg-urbana-gold-light text-urbana-black font-bold py-5 text-sm rounded-xl"
               >
-                <Download className="w-4 h-4 mr-2" />
-                Instalar Aplicativo
-              </Button>
-            </div>
-          ) : (
-            /* Desktop ou outro — botão genérico */
-            <div className="space-y-3">
-              <Button
-                onClick={handleInstall}
-                className="w-full bg-urbana-gold hover:bg-urbana-gold-light text-urbana-black font-bold py-5 text-sm rounded-xl"
-              >
-                <Download className="w-4 h-4 mr-2" />
-                Instalar Aplicativo
+                Entendi!
               </Button>
             </div>
           )}
