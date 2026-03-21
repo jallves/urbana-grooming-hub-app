@@ -6,7 +6,7 @@ export interface BarberNotification {
   description: string;
   timestamp: Date;
   read: boolean;
-  type: 'appointment' | 'info' | 'alert';
+  type: 'appointment' | 'info' | 'alert' | 'commission';
   data?: Record<string, any>;
 }
 
