@@ -1,20 +1,31 @@
 import { useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { addAdminNotification } from '@/hooks/useAdminNotifications';
 
 /**
- * Comprehensive admin notifier:
+ * Comprehensive admin notifier with query invalidation:
  * 1. New appointments (INSERT on painel_agendamentos)
  * 2. Appointment status changes (UPDATE on painel_agendamentos)
  * 3. New sales/checkouts (INSERT on vendas)
  * 4. New subscriptions purchased (INSERT on client_subscriptions)
- * 5. Commission records (INSERT on barber_commissions)
+ * 5. Subscription updates (UPDATE on client_subscriptions)
+ * 6. Subscription payments (INSERT on subscription_payments)
+ * 7. Subscription usage (INSERT on subscription_usage)
  */
 export const useAdminAppointmentNotifier = () => {
   const { user } = useAuth();
+  const queryClient = useQueryClient();
   const processedIds = useRef<Set<string>>(new Set());
+
+  const invalidateSubscriptionQueries = () => {
+    queryClient.invalidateQueries({ queryKey: ['client-subscriptions'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-payments'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-plans'] });
+    queryClient.invalidateQueries({ queryKey: ['subscription-renewal-alerts'] });
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -151,6 +162,8 @@ export const useAdminAppointmentNotifier = () => {
           if (processedIds.current.has(key)) return;
           processedIds.current.add(key);
 
+          invalidateSubscriptionQueries();
+
           let clientName = 'Cliente';
           let planName = 'Plano';
 
@@ -178,6 +191,92 @@ export const useAdminAppointmentNotifier = () => {
             description: `${clientName} • ${planName}`,
             duration: 5000,
             position: 'top-center',
+          });
+        }
+      )
+      // Subscription updates (credit usage, cancellation, etc.)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'client_subscriptions',
+        },
+        async (payload) => {
+          const sub = payload.new as any;
+          const old = payload.old as any;
+          const key = `sub-update-${sub.id}-${sub.updated_at}`;
+          if (processedIds.current.has(key)) return;
+          processedIds.current.add(key);
+
+          invalidateSubscriptionQueries();
+
+          if (old.status !== sub.status && sub.status === 'cancelled') {
+            let clientName = 'Cliente';
+            try {
+              const { data } = await supabase.from('painel_clientes').select('nome').eq('id', sub.client_id).maybeSingle();
+              if (data) clientName = data.nome;
+            } catch {}
+
+            addAdminNotification({
+              title: '⚠️ Assinatura Cancelada',
+              description: `${clientName} cancelou a assinatura`,
+              type: 'cancel',
+              data: { subscriptionId: sub.id },
+            });
+
+            toast.info('Assinatura cancelada', {
+              description: clientName,
+              duration: 4000,
+            });
+          }
+        }
+      )
+      // Subscription payments
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'subscription_payments',
+        },
+        async (payload) => {
+          const pay = payload.new as any;
+          const key = `sub-pay-${pay.id}`;
+          if (processedIds.current.has(key)) return;
+          processedIds.current.add(key);
+
+          invalidateSubscriptionQueries();
+
+          addAdminNotification({
+            title: '💰 Pagamento de Assinatura',
+            description: `R$ ${Number(pay.amount).toFixed(2)} registrado`,
+            type: 'info',
+            data: { paymentId: pay.id },
+          });
+        }
+      )
+      // Subscription usage (credit consumed)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'subscription_usage',
+        },
+        async (payload) => {
+          const usage = payload.new as any;
+          const key = `sub-usage-${usage.id}`;
+          if (processedIds.current.has(key)) return;
+          processedIds.current.add(key);
+
+          invalidateSubscriptionQueries();
+
+          addAdminNotification({
+            title: '💈 Crédito de Assinatura Utilizado',
+            description: usage.service_name ? `Serviço: ${usage.service_name}` : 'Crédito consumido',
+            type: 'info',
+            data: { usageId: usage.id },
           });
         }
       )
