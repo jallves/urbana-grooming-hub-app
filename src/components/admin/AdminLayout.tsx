@@ -31,6 +31,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const { displayName } = useEmployeeProfile();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  useAdminAppointmentNotifier();
 
   const handleLogout = () => {
     signOut();
