@@ -26,7 +26,7 @@ Deno.serve(async (req) => {
           id, appointment_id, status, totem_session_id,
           totem_sessions!inner(id, token, is_valid, created_at)
         `)
-        .eq('status', 'checked_in')
+        .in('status', ['check_in', 'checked_in'])
         .order('created_at', { ascending: false })
 
       if (listError) throw listError
@@ -83,7 +83,7 @@ Deno.serve(async (req) => {
         .from('appointment_totem_sessions')
         .select('*, totem_sessions(*)')
         .eq('totem_session_id', session_id)
-        .eq('status', 'checked_in')
+        .in('status', ['check_in', 'checked_in'])
         .maybeSingle()
 
       if (sessionError) throw sessionError
@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
           .from('appointment_totem_sessions')
           .select('*, totem_sessions(*)')
           .eq('appointment_id', session_id)
-          .eq('status', 'checked_in')
+          .in('status', ['check_in', 'checked_in'])
           .maybeSingle()
 
         if (apptError) throw apptError
