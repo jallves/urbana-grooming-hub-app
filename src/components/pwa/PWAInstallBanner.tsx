@@ -14,16 +14,21 @@ const PWAInstallBanner: React.FC<PWAInstallBannerProps> = ({ context }) => {
 
   const storageKey = `pwa-install-banner-dismissed-${context}`;
 
+  // Detectar se é mobile (qualquer dispositivo)
+  const isMobile = /iphone|ipad|ipod|android|mobile/i.test(navigator.userAgent);
+
   useEffect(() => {
-    // Só mostra se pode instalar, não está instalado e não foi dispensado nesta sessão
     const dismissed = sessionStorage.getItem(storageKey);
     if (dismissed) return;
 
-    if (canInstall && !isInstalled) {
+    // Mostrar se: já pode instalar OU é mobile e não está instalado
+    const shouldShow = (canInstall || isMobile) && !isInstalled;
+
+    if (shouldShow) {
       const timer = setTimeout(() => setIsVisible(true), 3000);
       return () => clearTimeout(timer);
     }
-  }, [canInstall, isInstalled, storageKey]);
+  }, [canInstall, isInstalled, isMobile, storageKey]);
 
   const handleInstall = async () => {
     const success = await installApp();
