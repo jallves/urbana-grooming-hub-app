@@ -56,10 +56,10 @@ export function useClientNotifications() {
   const [, setTick] = useState(0);
   const rerender = useCallback(() => setTick((t) => t + 1), []);
 
-  useState(() => {
+  useEffect(() => {
     listeners.add(rerender);
     return () => { listeners.delete(rerender); };
-  });
+  }, [rerender]);
 
   return {
     notifications,
