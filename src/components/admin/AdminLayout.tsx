@@ -93,16 +93,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
                 Bem-vindo, {displayName}
               </span>
               
-              {/* Notificações com touch otimizado */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="relative text-gray-700 hover:text-gray-900 hover:bg-gray-100 
-                min-h-[44px] min-w-[44px] touch-manipulation active:scale-95 flex-shrink-0"
-              >
-                <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
-                <Badge className="absolute top-1 right-1 h-2.5 w-2.5 sm:h-3 sm:w-3 bg-urbana-gold text-white p-0 border-0 text-[8px] sm:text-[10px]" />
-              </Button>
+              {/* Notificações com sino real */}
+              <AdminNotificationBell />
 
               {/* Menu Usuário */}
               <DropdownMenu>
