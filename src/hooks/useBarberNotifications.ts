@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 
 export interface BarberNotification {
   id: string;
@@ -42,14 +42,12 @@ export function markAllAsRead() {
 
 export function useBarberNotifications() {
   const [, setTick] = useState(0);
-
-  // Subscribe to changes
   const rerender = useCallback(() => setTick((t) => t + 1), []);
 
-  useState(() => {
+  useEffect(() => {
     listeners.add(rerender);
     return () => { listeners.delete(rerender); };
-  });
+  }, [rerender]);
 
   return {
     notifications,
