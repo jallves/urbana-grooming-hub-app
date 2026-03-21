@@ -39,12 +39,21 @@ export const useClientSubscriptionCredits = () => {
 
       const sub = subs[0];
 
-      // Buscar nome do plano
-      const { data: plan } = await supabase
-        .from('subscription_plans')
-        .select('name, price')
-        .eq('id', sub.plan_id)
-        .single();
+      // Buscar nome do plano e serviços permitidos em paralelo
+      const [planRes, servicesRes] = await Promise.all([
+        supabase
+          .from('subscription_plans')
+          .select('name, price')
+          .eq('id', sub.plan_id)
+          .single(),
+        supabase
+          .from('subscription_plan_services')
+          .select('service_id')
+          .eq('plan_id', sub.plan_id),
+      ]);
+
+      const plan = planRes.data;
+      const allowedServiceIds = (servicesRes.data || []).map((s: any) => s.service_id);
 
       const creditsTotal = sub.credits_total || 4;
       const creditsUsed = sub.credits_used || 0;
@@ -64,6 +73,7 @@ export const useClientSubscriptionCredits = () => {
         status: sub.status,
         start_date: sub.start_date,
         next_billing_date: sub.next_billing_date,
+        allowed_service_ids: allowedServiceIds,
       };
 
       setActiveSubscription(result);
