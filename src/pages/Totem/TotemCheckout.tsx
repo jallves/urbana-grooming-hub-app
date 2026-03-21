@@ -621,7 +621,7 @@ const TotemCheckout: React.FC = () => {
           <h3 className="text-base font-bold text-urbana-light mb-4 text-center">Forma de Pagamento</h3>
 
           {/* Subscription Credit Button */}
-          {activeSubscription && activeSubscription.credits_remaining > 0 && (
+          {activeSubscription && activeSubscription.credits_remaining > 0 && isServiceCoveredByPlan && (
             <div className="mb-4">
               <Button
                 onClick={handleUseCredit}
@@ -644,6 +644,15 @@ const TotemCheckout: React.FC = () => {
                 <span className="text-xs text-urbana-light/40">ou pague normalmente</span>
                 <div className="flex-1 h-px bg-urbana-gold/20" />
               </div>
+            </div>
+          )}
+
+          {/* Info: serviço não coberto pelo plano */}
+          {activeSubscription && activeSubscription.credits_remaining > 0 && !isServiceCoveredByPlan && appointment?.servico_id && (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <p className="text-xs text-amber-300 text-center">
+                ⚠️ Este serviço não está incluído no plano <strong>{activeSubscription.plan_name}</strong>. O pagamento será realizado normalmente.
+              </p>
             </div>
           )}
 
