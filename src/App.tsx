@@ -555,7 +555,7 @@ function App() {
                   {/* Catch all redirect */}
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Routes>
-                <PWAInstallPromptContext />
+                
                 <PWAUpdateManager />
                 <Toaster />
                 <SonnerToaster position="top-center" richColors />
