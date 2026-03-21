@@ -1,46 +1,53 @@
 import { useState, useCallback, useEffect } from 'react';
 
-export interface BarberNotification {
+export interface AdminNotification {
   id: string;
   title: string;
   description: string;
   timestamp: Date;
   read: boolean;
-  type: 'appointment' | 'info' | 'alert';
+  type: 'appointment' | 'cancel' | 'info' | 'alert';
   data?: Record<string, any>;
 }
 
-// Simple in-memory store shared via module scope
-let notifications: BarberNotification[] = [];
+let notifications: AdminNotification[] = [];
 let listeners: Set<() => void> = new Set();
 
 function notify() {
   listeners.forEach((fn) => fn());
 }
 
-export function addBarberNotification(notification: Omit<BarberNotification, 'id' | 'timestamp' | 'read'>) {
-  const newNotif: BarberNotification = {
+export function addAdminNotification(notification: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>) {
+  // Deduplicate by appointmentId + type
+  if (notification.data?.appointmentId) {
+    const exists = notifications.some(
+      (n) => n.data?.appointmentId === notification.data?.appointmentId && n.type === notification.type
+    );
+    if (exists) return;
+  }
+
+  const newNotif: AdminNotification = {
     ...notification,
     id: crypto.randomUUID(),
     timestamp: new Date(),
     read: false,
   };
-  notifications = [newNotif, ...notifications].slice(0, 50); // Keep max 50
+  notifications = [newNotif, ...notifications].slice(0, 50);
   notify();
   return newNotif;
 }
 
-export function markAsRead(id: string) {
+export function markAdminNotifAsRead(id: string) {
   notifications = notifications.filter((n) => n.id !== id);
   notify();
 }
 
-export function markAllAsRead() {
+export function markAllAdminNotifsAsRead() {
   notifications = [];
   notify();
 }
 
-export function useBarberNotifications() {
+export function useAdminNotifications() {
   const [, setTick] = useState(0);
   const rerender = useCallback(() => setTick((t) => t + 1), []);
 
@@ -52,7 +59,7 @@ export function useBarberNotifications() {
   return {
     notifications,
     unreadCount: notifications.filter((n) => !n.read).length,
-    markAsRead,
-    markAllAsRead,
+    markAsRead: markAdminNotifAsRead,
+    markAllAsRead: markAllAdminNotifsAsRead,
   };
 }
