@@ -40,7 +40,9 @@ type RequestBody = {
   reference_id?: string | null
   reference_type?: string | null
   transaction_id?: string | null // ID da transação eletrônica (NSU PayGo, código PIX, etc.)
-  is_subscription_usage?: boolean // Flag: uso de crédito de assinatura (valores zerados)
+  is_subscription_usage?: boolean // Flag: uso de crédito de assinatura (comissão REAL para barbeiro atendente)
+  is_subscription_sale?: boolean // Flag: venda de combo/assinatura (comissão ZERO para barbeiro vendedor)
+  subscription_credit_unit_value?: number // Valor unitário do crédito (plan_price / credits_total)
 }
 
 function normalizePaymentMethod(raw: string | null | undefined) {
