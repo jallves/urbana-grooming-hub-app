@@ -108,7 +108,7 @@ export const useClientSubscriptionCredits = () => {
 
       const { error: updateError } = await supabase
         .from('client_subscriptions')
-        .update({ credits_used: newCreditsUsed } as any)
+        .update({ credits_used: newCreditsUsed })
         .eq('id', subscriptionId);
 
       if (updateError) {
