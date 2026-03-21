@@ -18,10 +18,14 @@ function notify() {
 }
 
 export function addAdminNotification(notification: Omit<AdminNotification, 'id' | 'timestamp' | 'read'>) {
-  // Deduplicate by appointmentId + type
-  if (notification.data?.appointmentId) {
+  // Deduplicate by unique data key + type
+  const dedupKey = notification.data?.appointmentId || notification.data?.subscriptionId || notification.data?.vendaId || notification.data?.paymentId || notification.data?.usageId;
+  if (dedupKey) {
     const exists = notifications.some(
-      (n) => n.data?.appointmentId === notification.data?.appointmentId && n.type === notification.type
+      (n) => {
+        const nKey = n.data?.appointmentId || n.data?.subscriptionId || n.data?.vendaId || n.data?.paymentId || n.data?.usageId;
+        return nKey === dedupKey && n.title === notification.title;
+      }
     );
     if (exists) return;
   }
