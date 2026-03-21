@@ -19,13 +19,24 @@ function notify() {
 }
 
 export function addBarberNotification(notification: Omit<BarberNotification, 'id' | 'timestamp' | 'read'>) {
+  // Deduplicate by data.appointmentId + type, or by title for non-appointment notifications
+  if (notification.data?.appointmentId) {
+    const exists = notifications.some(
+      (n) => n.data?.appointmentId === notification.data?.appointmentId && n.type === notification.type
+    );
+    if (exists) return;
+  } else if (notification.data?.test) {
+    const exists = notifications.some((n) => n.title === notification.title && n.data?.test);
+    if (exists) return;
+  }
+
   const newNotif: BarberNotification = {
     ...notification,
     id: crypto.randomUUID(),
     timestamp: new Date(),
     read: false,
   };
-  notifications = [newNotif, ...notifications].slice(0, 50); // Keep max 50
+  notifications = [newNotif, ...notifications].slice(0, 50);
   notify();
   return newNotif;
 }
