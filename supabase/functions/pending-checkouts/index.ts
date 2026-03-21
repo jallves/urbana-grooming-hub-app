@@ -76,8 +76,10 @@ Deno.serve(async (req) => {
 
       if (!session_id) throw new Error('session_id é obrigatório')
 
-      // 1. Buscar sessão
-      const { data: appointmentSession, error: sessionError } = await supabase
+      // 1. Buscar sessão - tentar por totem_session_id primeiro, depois por appointment_id
+      let appointmentSession: any = null
+
+      const { data: bySession, error: sessionError } = await supabase
         .from('appointment_totem_sessions')
         .select('*, totem_sessions(*)')
         .eq('totem_session_id', session_id)
@@ -85,9 +87,41 @@ Deno.serve(async (req) => {
         .maybeSingle()
 
       if (sessionError) throw sessionError
-      if (!appointmentSession) throw new Error('Sessão não encontrada ou já finalizada')
 
-      const appointment_id = appointmentSession.appointment_id
+      if (bySession) {
+        appointmentSession = bySession
+      } else {
+        // Fallback: session_id pode ser o appointment_id quando não há totem_session vinculada
+        console.log('⚠️ Sessão não encontrada por totem_session_id, tentando por appointment_id...')
+        const { data: byAppointment, error: apptError } = await supabase
+          .from('appointment_totem_sessions')
+          .select('*, totem_sessions(*)')
+          .eq('appointment_id', session_id)
+          .eq('status', 'checked_in')
+          .maybeSingle()
+
+        if (apptError) throw apptError
+        appointmentSession = byAppointment
+      }
+
+      // Se ainda não encontrou, pode ser agendamento sem sessão de totem - criar checkout direto
+      let appointment_id: string
+
+      if (appointmentSession) {
+        appointment_id = appointmentSession.appointment_id
+      } else {
+        // Verificar se session_id é na verdade um appointment_id válido com status_totem CHEGOU
+        const { data: directAppt } = await supabase
+          .from('painel_agendamentos')
+          .select('id')
+          .eq('id', session_id)
+          .eq('status_totem', 'CHEGOU')
+          .maybeSingle()
+
+        if (!directAppt) throw new Error('Sessão não encontrada ou já finalizada')
+        appointment_id = directAppt.id
+        console.log('✅ Checkout direto por appointment_id (sem sessão totem):', appointment_id)
+      }
 
       // 2. Buscar agendamento
       const { data: agendamento, error: agendError } = await supabase
@@ -277,15 +311,19 @@ Deno.serve(async (req) => {
       })
 
       // 9. Update session + appointment
-      await supabase
-        .from('appointment_totem_sessions')
-        .update({ status: 'completed' })
-        .eq('id', appointmentSession.id)
+      if (appointmentSession) {
+        await supabase
+          .from('appointment_totem_sessions')
+          .update({ status: 'completed' })
+          .eq('id', appointmentSession.id)
 
-      await supabase
-        .from('totem_sessions')
-        .update({ is_valid: false })
-        .eq('id', session_id)
+        if (appointmentSession.totem_session_id) {
+          await supabase
+            .from('totem_sessions')
+            .update({ is_valid: false })
+            .eq('id', appointmentSession.totem_session_id)
+        }
+      }
 
       await supabase
         .from('painel_agendamentos')
