@@ -11,14 +11,13 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { action, session_id } = await req.json()
+    const body = await req.json()
+    const { action, session_id, checkout_type, custom_value } = body
 
     // ==================== ACTION: LIST ====================
     if (action === 'list') {
       console.log('📋 Listando agendamentos com check-in sem checkout...')
 
-      // Buscar sessões do totem que têm check-in mas não têm checkout
-      // Usando a tabela intermediária appointment_totem_sessions
       const { data: sessoesPendentes, error: listError } = await supabase
         .from('appointment_totem_sessions')
         .select(`
@@ -41,44 +40,27 @@ Deno.serve(async (req) => {
         throw listError
       }
 
-      // Se não há sessões pendentes, retornar lista vazia
       if (!sessoesPendentes || sessoesPendentes.length === 0) {
-        console.log('✅ Nenhuma sessão pendente encontrada')
         return new Response(
-          JSON.stringify({
-            success: true,
-            count: 0,
-            appointments: []
-          }),
+          JSON.stringify({ success: true, count: 0, appointments: [] }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         )
       }
 
-      // Buscar detalhes dos agendamentos
       const appointmentIds = sessoesPendentes.map(s => s.appointment_id).filter(Boolean)
       
       const { data: agendamentos, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
-          id,
-          data,
-          hora,
-          status,
-          cliente_id,
-          barbeiro_id,
-          servico_id,
+          id, data, hora, status, cliente_id, barbeiro_id, servico_id,
           painel_clientes(nome, whatsapp, telefone),
           painel_barbeiros(nome),
           painel_servicos(nome, preco)
         `)
         .in('id', appointmentIds)
 
-      if (agendError) {
-        console.error('❌ Erro ao buscar agendamentos:', agendError)
-        throw agendError
-      }
+      if (agendError) throw agendError
 
-      // Combinar dados
       const agendamentosPendentes = sessoesPendentes.map(sessao => {
         const agendamento = agendamentos?.find(a => a.id === sessao.appointment_id)
         return {
@@ -87,29 +69,28 @@ Deno.serve(async (req) => {
           session_status: sessao.status,
           totem_session: sessao.totem_sessions
         }
-      }).filter(a => a.id) // Filtrar apenas os que têm agendamento válido
+      }).filter(a => a.id)
 
-      console.log(`✅ Encontrados ${agendamentosPendentes.length} agendamentos com check-in pendente`)
+      console.log(`✅ Encontrados ${agendamentosPendentes.length} agendamentos pendentes`)
 
       return new Response(
-        JSON.stringify({
-          success: true,
-          count: agendamentosPendentes.length,
-          appointments: agendamentosPendentes
-        }),
+        JSON.stringify({ success: true, count: agendamentosPendentes.length, appointments: agendamentosPendentes }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
     // ==================== ACTION: FORCE_CHECKOUT ====================
     if (action === 'force_checkout') {
-      console.log('🔧 Forçando checkout para sessão:', session_id)
+      console.log('🔧 Forçando checkout para sessão:', session_id, 'Tipo:', checkout_type || 'full')
 
       if (!session_id) {
         throw new Error('session_id é obrigatório para force_checkout')
       }
 
-      // Buscar appointment_totem_session pela totem_session_id
+      // Determine the checkout type and final value
+      const type = checkout_type || 'full' // 'full' | 'courtesy' | 'custom'
+
+      // Buscar appointment_totem_session
       const { data: appointmentSession, error: sessionError } = await supabase
         .from('appointment_totem_sessions')
         .select('*, totem_sessions(*)')
@@ -117,60 +98,65 @@ Deno.serve(async (req) => {
         .eq('status', 'checked_in')
         .maybeSingle()
 
-      if (sessionError) {
-        console.error('❌ Erro ao buscar sessão:', sessionError)
-        throw sessionError
-      }
-
-      if (!appointmentSession) {
-        console.error('❌ Sessão não encontrada ou já finalizada:', session_id)
-        throw new Error('Sessão não encontrada ou já finalizada')
-      }
+      if (sessionError) throw sessionError
+      if (!appointmentSession) throw new Error('Sessão não encontrada ou já finalizada')
 
       const appointment_id = appointmentSession.appointment_id
+      console.log('✅ Sessão válida. Appointment:', appointment_id)
 
-      console.log('✅ Sessão válida para checkout forçado:', session_id, 'Appointment:', appointment_id)
-
-      // Buscar agendamento com detalhes
+      // Buscar agendamento
       const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
           *,
           painel_servicos(nome, preco),
-          painel_barbeiros(id, nome, staff_id)
+          painel_barbeiros(id, nome, staff_id, taxa_comissao, commission_rate)
         `)
         .eq('id', appointment_id)
         .single()
 
-      if (agendError || !agendamento) {
-        console.error('❌ Agendamento não encontrado:', agendError)
-        throw new Error('Agendamento não encontrado')
-      }
+      if (agendError || !agendamento) throw new Error('Agendamento não encontrado')
 
-      // Criar venda se não existir
-      const preco = agendamento.painel_servicos?.preco || 0
+      const originalPrice = agendamento.painel_servicos?.preco || 0
       const nomeServico = agendamento.painel_servicos?.nome || 'Serviço'
       const barbeiro_id = agendamento.barbeiro_id
 
+      // Calculate final price based on checkout type
+      let finalPrice: number
+      let observacao: string
+
+      switch (type) {
+        case 'courtesy':
+          finalPrice = 0
+          observacao = `Cortesia administrativa - Agendamento ${appointment_id}`
+          break
+        case 'custom':
+          finalPrice = typeof custom_value === 'number' ? custom_value : originalPrice
+          observacao = `Checkout admin (valor personalizado R$ ${finalPrice.toFixed(2)}) - Agendamento ${appointment_id}`
+          break
+        default:
+          finalPrice = originalPrice
+          observacao = `Checkout administrativo - Agendamento ${appointment_id}`
+      }
+
+      console.log('💰 Preços:', { originalPrice, finalPrice, type })
+
+      // Criar venda
       const { data: novaVenda, error: vendaError } = await supabase
         .from('vendas')
         .insert({
           cliente_id: agendamento.cliente_id,
           barbeiro_id: barbeiro_id,
-          valor_total: preco,
-          desconto: 0,
-          status: 'pendente',
-          observacoes: `Checkout forçado - Agendamento ${appointment_id}`
+          valor_total: finalPrice,
+          desconto: originalPrice - finalPrice,
+          status: 'PAGA',
+          observacoes: observacao
         })
         .select()
         .single()
 
-      if (vendaError) {
-        console.error('❌ Erro ao criar venda:', vendaError)
-        throw vendaError
-      }
-
-      console.log('✅ Venda criada:', novaVenda.id)
+      if (vendaError) throw vendaError
+      console.log('✅ Venda criada:', novaVenda.id, 'Valor:', finalPrice)
 
       // Criar item da venda
       await supabase
@@ -181,33 +167,76 @@ Deno.serve(async (req) => {
           item_id: agendamento.servico_id || agendamento.id,
           nome: nomeServico,
           quantidade: 1,
-          preco_unitario: preco,
-          subtotal: preco,
+          preco_unitario: finalPrice,
+          subtotal: finalPrice,
           barbeiro_id: barbeiro_id
         })
 
-      // Atualizar appointment_totem_session para completed
-      const { error: updateSessionError } = await supabase
-        .from('appointment_totem_sessions')
-        .update({
-          status: 'completed'
-        })
-        .eq('id', appointmentSession.id)
+      // Gerar comissão (mesmo para cortesia, comissão pode ser zero)
+      const commissionRate = agendamento.painel_barbeiros?.commission_rate 
+        || agendamento.painel_barbeiros?.taxa_comissao 
+        || 50
+      const commissionAmount = finalPrice * (commissionRate / 100)
 
-      if (updateSessionError) {
-        console.error('❌ Erro ao atualizar sessão:', updateSessionError)
-        throw updateSessionError
+      // Verificar comissão existente
+      const { data: existingCommission } = await supabase
+        .from('barber_commissions')
+        .select('id')
+        .eq('appointment_id', appointment_id)
+        .maybeSingle()
+
+      if (!existingCommission) {
+        const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
+
+        await supabase
+          .from('barber_commissions')
+          .insert({
+            barber_id: barbeiro_id,
+            appointment_id: appointment_id,
+            venda_id: novaVenda.id,
+            valor: commissionAmount,
+            amount: commissionAmount,
+            commission_rate: commissionRate,
+            barber_name: barberName,
+            tipo: type === 'courtesy' ? 'cortesia' : 'servico',
+            status: 'pending',
+            appointment_source: 'admin_checkout'
+          })
+
+        console.log('✅ Comissão criada:', commissionAmount)
       }
+
+      // Registrar transação financeira
+      if (finalPrice > 0) {
+        await supabase
+          .from('financial_transactions')
+          .insert({
+            transaction_type: 'income',
+            amount: finalPrice,
+            description: `${type === 'custom' ? 'Checkout personalizado' : 'Checkout admin'} - ${nomeServico}`,
+            category: 'servico',
+            payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
+            status: 'completed',
+            barber_id: barbeiro_id,
+            client_id: agendamento.cliente_id,
+            reference_id: novaVenda.id
+          })
+        console.log('✅ Transação financeira criada')
+      }
+
+      // Atualizar appointment_totem_session
+      await supabase
+        .from('appointment_totem_sessions')
+        .update({ status: 'completed' })
+        .eq('id', appointmentSession.id)
 
       // Invalidar totem_session
       await supabase
         .from('totem_sessions')
-        .update({
-          is_valid: false
-        })
+        .update({ is_valid: false })
         .eq('id', session_id)
 
-      // Atualizar agendamento para concluído
+      // Atualizar agendamento
       await supabase
         .from('painel_agendamentos')
         .update({
@@ -218,21 +247,23 @@ Deno.serve(async (req) => {
         })
         .eq('id', appointment_id)
 
-      console.log('✅ Checkout forçado com sucesso!')
+      console.log('✅ Checkout forçado com sucesso! Tipo:', type)
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: 'Checkout realizado com sucesso',
-          session_id: session_id,
+          message: type === 'courtesy' ? 'Cortesia registrada com sucesso' : 'Checkout realizado com sucesso',
+          session_id,
           venda_id: novaVenda.id,
-          appointment_id: appointment_id
+          appointment_id,
+          checkout_type: type,
+          final_price: finalPrice,
+          commission: commissionAmount
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       )
     }
 
-    // Action inválida
     return new Response(
       JSON.stringify({ error: 'Action inválida. Use "list" ou "force_checkout"' }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' }, status: 400 }
