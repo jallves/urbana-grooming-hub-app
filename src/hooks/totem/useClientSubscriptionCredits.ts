@@ -89,7 +89,7 @@ export const useClientSubscriptionCredits = () => {
           subscription_id: subscriptionId,
           appointment_id: appointmentId,
           service_name: serviceName,
-        } as any);
+        });
 
       if (usageError) {
         console.error('Erro ao registrar uso:', usageError);
