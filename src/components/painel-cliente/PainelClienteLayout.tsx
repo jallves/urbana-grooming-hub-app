@@ -25,7 +25,7 @@ const PainelClienteLayout: React.FC = () => {
     addClientNotification({
       title: '☀️ Bom dia, Cliente!',
       description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do cliente.',
-      type: 'info',
+      type: 'update',
       data: { test: true },
     });
   }, []);
