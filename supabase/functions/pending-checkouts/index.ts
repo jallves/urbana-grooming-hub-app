@@ -311,15 +311,19 @@ Deno.serve(async (req) => {
       })
 
       // 9. Update session + appointment
-      await supabase
-        .from('appointment_totem_sessions')
-        .update({ status: 'completed' })
-        .eq('id', appointmentSession.id)
+      if (appointmentSession) {
+        await supabase
+          .from('appointment_totem_sessions')
+          .update({ status: 'completed' })
+          .eq('id', appointmentSession.id)
 
-      await supabase
-        .from('totem_sessions')
-        .update({ is_valid: false })
-        .eq('id', session_id)
+        if (appointmentSession.totem_session_id) {
+          await supabase
+            .from('totem_sessions')
+            .update({ is_valid: false })
+            .eq('id', appointmentSession.totem_session_id)
+        }
+      }
 
       await supabase
         .from('painel_agendamentos')
