@@ -176,7 +176,9 @@ export const useBarberAppointmentNotifier = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[BarberNotifier] 📡 Status do canal:', status);
+      });
 
     return () => {
       console.log('[BarberNotifier] 🔕 Removendo listeners');
