@@ -32,8 +32,9 @@ export const useAdminAppointmentNotifier = () => {
 
     console.log('[AdminNotifier] 🔔 Escutando notificações admin');
 
+    const channelName = `admin-full-notifications-${user.id}-${Date.now()}`;
     const channel = supabase
-      .channel('admin-full-notifications')
+      .channel(channelName)
       // New appointments
       .on(
         'postgres_changes',
@@ -280,7 +281,9 @@ export const useAdminAppointmentNotifier = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[AdminNotifier] 📡 Status do canal:', status);
+      });
 
     return () => {
       console.log('[AdminNotifier] 🔕 Removendo listeners admin');
