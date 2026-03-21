@@ -20,6 +20,16 @@ const PainelClienteLayout: React.FC = () => {
   useClientAppointmentNotifier();
   useClientSubscriptionNotifier();
 
+  // 🧪 TESTE TEMPORÁRIO - Remover após validação
+  React.useEffect(() => {
+    addClientNotification({
+      title: '☀️ Bom dia, Cliente!',
+      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do cliente.',
+      type: 'info',
+      data: { test: true },
+    });
+  }, []);
+
   // PERSISTÊNCIA DE ROTA: Salvar rota atual toda vez que mudar
   React.useEffect(() => {
     if (location.pathname.startsWith('/painel-cliente/') && location.pathname !== '/painel-cliente/login') {

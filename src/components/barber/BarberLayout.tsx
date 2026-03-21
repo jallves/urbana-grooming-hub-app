@@ -18,6 +18,16 @@ const BarberLayout: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   useBarberAppointmentNotifier();
 
+  // 🧪 TESTE TEMPORÁRIO - Remover após validação
+  React.useEffect(() => {
+    addBarberNotification({
+      title: '☀️ Bom dia, Barbeiro!',
+      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do barbeiro.',
+      type: 'info',
+      data: { test: true },
+    });
+  }, []);
+
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
   }, []);
