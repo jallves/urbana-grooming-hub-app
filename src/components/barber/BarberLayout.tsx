@@ -6,6 +6,7 @@ import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
+import { addBarberNotification } from '@/hooks/useBarberNotifications';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
