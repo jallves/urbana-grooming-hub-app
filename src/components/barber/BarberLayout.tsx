@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
 import { addBarberNotification } from '@/hooks/useBarberNotifications';
+import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
