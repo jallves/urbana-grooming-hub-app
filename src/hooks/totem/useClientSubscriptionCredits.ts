@@ -9,6 +9,7 @@ export interface ActiveSubscription {
   credits_total: number;
   credits_used: number;
   credits_remaining: number;
+  credit_unit_value: number;
   status: string;
   start_date: string;
   next_billing_date: string | null;
