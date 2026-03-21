@@ -16,7 +16,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from '@/components/ui/badge';
+
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 
 interface AdminLayoutProps {
