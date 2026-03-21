@@ -280,7 +280,9 @@ export const useAdminAppointmentNotifier = () => {
           });
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('[AdminNotifier] 📡 Status do canal:', status);
+      });
 
     return () => {
       console.log('[AdminNotifier] 🔕 Removendo listeners admin');
