@@ -6,7 +6,8 @@ import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
-import { addBarberNotification } from '@/hooks/useBarberNotifications';
+
+import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
@@ -18,15 +19,6 @@ const BarberLayout: React.FC = () => {
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
   useBarberAppointmentNotifier();
 
-  // 🧪 TESTE TEMPORÁRIO - Remover após validação
-  React.useEffect(() => {
-    addBarberNotification({
-      title: '☀️ Bom dia, Barbeiro!',
-      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do barbeiro.',
-      type: 'info',
-      data: { test: true },
-    });
-  }, []);
 
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
@@ -51,6 +43,7 @@ const BarberLayout: React.FC = () => {
   return (
     // Container principal - viewport fixo
     <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
+      <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 

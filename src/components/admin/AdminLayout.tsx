@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { addAdminNotification } from '@/hooks/useAdminNotifications';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,15 +33,6 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
   const [sidebarOpen, setSidebarOpen] = useState(false);
   useAdminAppointmentNotifier();
 
-  // 🧪 TESTE TEMPORÁRIO - Remover após validação
-  useEffect(() => {
-    addAdminNotification({
-      title: '☀️ Bom dia, Admin!',
-      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel administrativo.',
-      type: 'info',
-      data: { test: true },
-    });
-  }, []);
 
   const handleLogout = () => {
     signOut();

@@ -6,8 +6,9 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
 import { useClientSubscriptionNotifier } from '@/hooks/useClientSubscriptionNotifier';
-import { addClientNotification } from '@/hooks/useClientNotifications';
+
 import ClientNotificationBell from '@/components/painel-cliente/ClientNotificationBell';
+import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 
@@ -20,15 +21,6 @@ const PainelClienteLayout: React.FC = () => {
   useClientAppointmentNotifier();
   useClientSubscriptionNotifier();
 
-  // 🧪 TESTE TEMPORÁRIO - Remover após validação
-  React.useEffect(() => {
-    addClientNotification({
-      title: '☀️ Bom dia, Cliente!',
-      description: 'Esta é uma notificação de teste para validar o sistema de notificações do painel do cliente.',
-      type: 'update',
-      data: { test: true },
-    });
-  }, []);
 
   // PERSISTÊNCIA DE ROTA: Salvar rota atual toda vez que mudar
   React.useEffect(() => {
@@ -61,6 +53,7 @@ const PainelClienteLayout: React.FC = () => {
   return (
     // Container principal - viewport fixo com safe areas
     <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
+      <PWAInstallBanner context="cliente" />
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 
