@@ -168,56 +168,56 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             )}
           </div>
 
-          {/* Comissão do barbeiro */}
-          <div className={`rounded-lg border p-4 space-y-3 ${payCommission ? 'border-blue-300 bg-blue-50/50' : 'border-border'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
-                <Label htmlFor="pay-commission" className="text-sm font-semibold cursor-pointer">
-                  Pagar comissão ao barbeiro
-                </Label>
+          {/* Comissão do barbeiro - aparece APENAS para cortesia */}
+          {checkoutType === 'courtesy' && (
+            <div className={`rounded-lg border-2 p-4 space-y-3 transition-colors ${payCommission ? 'border-purple-400 bg-purple-50' : 'border-orange-400 bg-orange-50'}`}>
+              <div className="flex items-center gap-2 mb-1">
+                <Gift className="h-4 w-4 text-purple-600" />
+                <p className="text-sm font-bold">Comissão do Barbeiro</p>
               </div>
-              <Switch
-                id="pay-commission"
-                checked={payCommission}
-                onCheckedChange={setPayCommission}
-              />
-            </div>
-
-            {payCommission && (
-              <div className="text-xs space-y-1 text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Base de cálculo</span>
-                  <span className="font-medium">
-                    R$ {checkoutType === 'courtesy' ? data.servicePrice.toFixed(2) : (checkoutType === 'custom' ? (parseFloat(customValue) || 0).toFixed(2) : data.servicePrice.toFixed(2))}
-                    {checkoutType === 'courtesy' && <span className="text-purple-600 ml-1">(valor original)</span>}
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Taxa</span>
-                  <span className="font-medium">{COMMISSION_RATE}%</span>
-                </div>
-                <div className="flex justify-between border-t pt-1 text-sm font-semibold text-foreground">
-                  <span>Comissão</span>
-                  <span className="text-blue-600">R$ {commissionValue.toFixed(2)}</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground pt-1">
-                  💡 {checkoutType === 'courtesy'
-                    ? 'Cortesia: comissão calculada sobre o valor original do serviço'
-                    : checkoutType === 'custom'
-                      ? 'Comissão calculada sobre o valor personalizado'
-                      : 'Comissão calculada sobre o valor total'
-                  }
-                </p>
-              </div>
-            )}
-
-            {!payCommission && (
               <p className="text-xs text-muted-foreground">
-                Nenhuma comissão será gerada para o barbeiro neste checkout.
+                O cliente não será cobrado. Deseja que a barbearia pague a comissão ao barbeiro sobre o valor original do serviço?
               </p>
-            )}
-          </div>
+
+              <div className="flex items-center justify-between bg-background rounded-lg p-3 border">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-blue-600" />
+                  <Label htmlFor="pay-commission" className="text-sm font-semibold cursor-pointer">
+                    Pagar comissão ao barbeiro?
+                  </Label>
+                </div>
+                <Switch
+                  id="pay-commission"
+                  checked={payCommission}
+                  onCheckedChange={setPayCommission}
+                />
+              </div>
+
+              {payCommission ? (
+                <div className="bg-purple-100 rounded-lg p-3 space-y-1 text-xs">
+                  <div className="flex justify-between">
+                    <span className="text-purple-700">Base (valor original)</span>
+                    <span className="font-bold text-purple-800">R$ {data.servicePrice.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-purple-700">Taxa</span>
+                    <span className="font-bold text-purple-800">{COMMISSION_RATE}%</span>
+                  </div>
+                  <div className="flex justify-between border-t border-purple-300 pt-1 text-sm">
+                    <span className="font-semibold text-purple-800">Comissão a pagar</span>
+                    <span className="font-bold text-purple-900">R$ {commissionValue.toFixed(2)}</span>
+                  </div>
+                  <p className="text-[10px] text-purple-600 pt-1">
+                    💰 A barbearia arcará com este custo. Será lançado em Contas a Pagar.
+                  </p>
+                </div>
+              ) : (
+                <div className="bg-orange-100 rounded-lg p-3 text-xs text-orange-700">
+                  ⚠️ Nenhuma comissão será gerada. O barbeiro <strong>não receberá</strong> por este atendimento.
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Resumo financeiro */}
           <div className="bg-muted rounded-lg p-4 space-y-2">
