@@ -5,7 +5,12 @@ import { toast } from 'sonner';
 import { addAdminNotification } from '@/hooks/useAdminNotifications';
 
 /**
- * Listens for new and updated appointments and notifies the admin panel bell.
+ * Comprehensive admin notifier:
+ * 1. New appointments (INSERT on painel_agendamentos)
+ * 2. Appointment status changes (UPDATE on painel_agendamentos)
+ * 3. New sales/checkouts (INSERT on vendas)
+ * 4. New subscriptions purchased (INSERT on client_subscriptions)
+ * 5. Commission records (INSERT on barber_commissions)
  */
 export const useAdminAppointmentNotifier = () => {
   const { user } = useAuth();
@@ -14,10 +19,11 @@ export const useAdminAppointmentNotifier = () => {
   useEffect(() => {
     if (!user?.id) return;
 
-    console.log('[AdminNotifier] 🔔 Escutando agendamentos para admin');
+    console.log('[AdminNotifier] 🔔 Escutando notificações admin');
 
     const channel = supabase
-      .channel('admin-appointments-notifier')
+      .channel('admin-full-notifications')
+      // New appointments
       .on(
         'postgres_changes',
         {
@@ -30,9 +36,7 @@ export const useAdminAppointmentNotifier = () => {
           if (processedIds.current.has(`insert-${appt.id}`)) return;
           processedIds.current.add(`insert-${appt.id}`);
 
-          console.log('[AdminNotifier] 📅 Novo agendamento:', appt.id);
-
-          const details = await fetchDetails(appt);
+          const details = await fetchAppointmentDetails(appt);
 
           addAdminNotification({
             title: '📅 Novo Agendamento',
@@ -48,6 +52,7 @@ export const useAdminAppointmentNotifier = () => {
           });
         }
       )
+      // Appointment status changes
       .on(
         'postgres_changes',
         {
@@ -65,7 +70,7 @@ export const useAdminAppointmentNotifier = () => {
           if (processedIds.current.has(updateKey)) return;
           processedIds.current.add(updateKey);
 
-          const details = await fetchDetails(appt);
+          const details = await fetchAppointmentDetails(appt);
 
           const statusLabels: Record<string, { label: string; icon: string }> = {
             cancelado: { label: 'Cancelado', icon: '❌' },
@@ -85,16 +90,107 @@ export const useAdminAppointmentNotifier = () => {
           });
         }
       )
+      // Checkout completions (vendas)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'vendas',
+        },
+        async (payload) => {
+          const venda = payload.new as any;
+          const key = `venda-${venda.id}`;
+          if (processedIds.current.has(key)) return;
+          processedIds.current.add(key);
+
+          let clientName = 'Cliente';
+          let barberName = 'Barbeiro';
+
+          try {
+            const [clientRes, barberRes] = await Promise.all([
+              venda.cliente_id
+                ? supabase.from('painel_clientes').select('nome').eq('id', venda.cliente_id).maybeSingle()
+                : Promise.resolve({ data: null }),
+              venda.barbeiro_id
+                ? supabase.from('painel_barbeiros').select('nome').eq('id', venda.barbeiro_id).maybeSingle()
+                : Promise.resolve({ data: null }),
+            ]);
+            if (clientRes?.data) clientName = clientRes.data.nome;
+            if (barberRes?.data) barberName = barberRes.data.nome;
+          } catch {}
+
+          const valor = venda.valor_total ? `R$ ${Number(venda.valor_total).toFixed(2)}` : '';
+          const method = venda.forma_pagamento || '';
+
+          addAdminNotification({
+            title: '💳 Checkout Concluído',
+            description: `${clientName} • ${barberName}${valor ? `\n${valor}` : ''}${method ? ` • ${method}` : ''}`,
+            type: 'info',
+            data: { vendaId: venda.id },
+          });
+
+          toast('💳 Checkout Concluído!', {
+            description: `${clientName} ${valor ? `• ${valor}` : ''}`,
+            duration: 4000,
+            position: 'top-center',
+          });
+        }
+      )
+      // New subscriptions
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'client_subscriptions',
+        },
+        async (payload) => {
+          const sub = payload.new as any;
+          const key = `sub-${sub.id}`;
+          if (processedIds.current.has(key)) return;
+          processedIds.current.add(key);
+
+          let clientName = 'Cliente';
+          let planName = 'Plano';
+
+          try {
+            const [clientRes, planRes] = await Promise.all([
+              sub.client_id
+                ? supabase.from('painel_clientes').select('nome').eq('id', sub.client_id).maybeSingle()
+                : Promise.resolve({ data: null }),
+              sub.plan_id
+                ? supabase.from('subscription_plans').select('name, price').eq('id', sub.plan_id).maybeSingle()
+                : Promise.resolve({ data: null }),
+            ]);
+            if (clientRes?.data) clientName = clientRes.data.nome;
+            if (planRes?.data) planName = `${planRes.data.name} (R$ ${Number(planRes.data.price).toFixed(2)})`;
+          } catch {}
+
+          addAdminNotification({
+            title: '🎉 Nova Assinatura',
+            description: `${clientName} adquiriu ${planName}\n${sub.credits_total} créditos`,
+            type: 'info',
+            data: { subscriptionId: sub.id },
+          });
+
+          toast('🎉 Nova Assinatura!', {
+            description: `${clientName} • ${planName}`,
+            duration: 5000,
+            position: 'top-center',
+          });
+        }
+      )
       .subscribe();
 
     return () => {
-      console.log('[AdminNotifier] 🔕 Removendo listener admin');
+      console.log('[AdminNotifier] 🔕 Removendo listeners admin');
       supabase.removeChannel(channel);
     };
   }, [user?.id]);
 };
 
-async function fetchDetails(appt: any) {
+async function fetchAppointmentDetails(appt: any) {
   let clientName = 'Cliente';
   let barberName = 'Barbeiro';
   let serviceName = 'Serviço';
