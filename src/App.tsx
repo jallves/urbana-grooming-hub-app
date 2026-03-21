@@ -90,7 +90,7 @@ import AdminProductsManagement from './pages/AdminProductsManagement';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import Install from './pages/Install';
 import InstallContext from './pages/InstallContext';
-import PWAInstallPromptContext from './components/PWAInstallPromptContext';
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 import AdminClientAppointments from './pages/AdminClientAppointments';
