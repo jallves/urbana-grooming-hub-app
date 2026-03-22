@@ -21,11 +21,46 @@ import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 const FinancialDashboard: React.FC = () => {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
+  const queryClient = useQueryClient();
   
   // Gerar lista de anos (2025 até 2035)
   const years = Array.from({ length: 11 }, (_, i) => (2025 + i).toString());
-  
-  // O RealtimeContext agora invalida as queries automaticamente - não precisa de useEffect manual
+
+  // Realtime: invalidar queries do dashboard quando tabelas financeiras mudam
+  useEffect(() => {
+    const channel = supabase
+      .channel('erp-dashboard-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'financial_records' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_receber' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_pagar' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'cash_flow' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['cash-flow'] });
+        queryClient.invalidateQueries({ queryKey: ['cash-flow-current-month'] });
+        queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'barber_commissions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
+        queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [queryClient]);
 
   // Query para SALDO BANCÁRIO TOTAL (tudo que entrou - tudo que saiu desde o início)
   const { data: totalBalanceData } = useQuery({
