@@ -238,6 +238,7 @@ const TotemCheckout: React.FC = () => {
         },
       });
       if (!error && data?.venda_id) {
+        vendaIdRef.current = data.venda_id;
         setVendaId(data.venda_id);
       }
     } catch (e) {
