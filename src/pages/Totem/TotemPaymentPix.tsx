@@ -114,76 +114,60 @@ const TotemPaymentPix: React.FC = () => {
     if (finalizingRef.current) return;
     finalizingRef.current = true;
     
-    console.log('✅ [PIX] ═══════════════════════════════════════');
-    console.log('✅ [PIX] COMPROVANTE PROCESSADO - FINALIZANDO');
-    console.log('✅ [PIX] ═══════════════════════════════════════');
+    console.log('✅ [PIX] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
     
-    try {
-      if (isDirect) {
-        await supabase.functions.invoke('totem-direct-sale', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            transaction_data: pendingTransactionData
-          }
-        });
-      } else {
-        // Atualizar estoque manualmente
-        if (selectedProducts && selectedProducts.length > 0) {
-          for (const product of selectedProducts) {
-            const { data: currentProduct } = await supabase
-              .from('painel_produtos')
-              .select('estoque')
-              .eq('id', product.product_id)
-              .single();
-            
-            if (currentProduct) {
-              await supabase
-                .from('painel_produtos')
-                .update({ estoque: Math.max(0, currentProduct.estoque - product.quantidade) })
-                .eq('id', product.product_id);
-            }
-          }
-        }
+    // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
+    const successState = { 
+      appointment, client, total,
+      paymentMethod: 'pix',
+      isDirect, transactionData: pendingTransactionData,
+      selectedProducts, extraServices, resumo,
+      emailAlreadySent: true, tipAmount
+    };
+    navigate('/totem/payment-success', { state: successState });
 
-        await supabase.functions.invoke('totem-checkout', {
-          body: {
-            action: 'finish',
-            venda_id: venda_id,
-            agendamento_id: appointment?.id,
-            session_id: session_id,
-            transaction_data: pendingTransactionData,
-            payment_method: 'PIX',
-            tipAmount: tipAmount,
-            extras: (extraServices || []).map((s: any) => ({ id: s.id })),
-            products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
-          }
-        });
+    // Finalizar venda e estoque em BACKGROUND (fire-and-forget)
+    try {
+      const backgroundTasks: Promise<any>[] = [];
+
+      if (isDirect) {
+        backgroundTasks.push(
+          supabase.functions.invoke('totem-direct-sale', {
+            body: { action: 'finish', venda_id, transaction_data: pendingTransactionData }
+          })
+        );
+      } else {
+        backgroundTasks.push(
+          supabase.functions.invoke('totem-checkout', {
+            body: {
+              action: 'finish', venda_id, agendamento_id: appointment?.id,
+              session_id, transaction_data: pendingTransactionData,
+              payment_method: 'PIX', tipAmount,
+              extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+              products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
+            }
+          })
+        );
       }
 
-      console.log('✅ [PIX] Checkout finalizado com sucesso!');
-      
-      navigate('/totem/payment-success', { 
-        state: { 
-          appointment, 
-          client,
-          total,
-          paymentMethod: 'pix',
-          isDirect,
-          transactionData: pendingTransactionData,
-          selectedProducts,
-          extraServices,
-          resumo,
-          emailAlreadySent: true,
-          tipAmount
-        } 
-      });
+      // Atualizar estoque em paralelo usando RPC (mais rápido que select+update sequencial)
+      if (selectedProducts?.length > 0) {
+        for (const product of selectedProducts) {
+          backgroundTasks.push(
+            supabase.rpc('decrease_product_stock', {
+              p_product_id: product.product_id,
+              p_quantity: product.quantidade
+            }).then(({ error }) => {
+              if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
+            })
+          );
+        }
+      }
+
+      await Promise.allSettled(backgroundTasks);
+      console.log('✅ [PIX] Background tasks concluídas');
     } catch (error) {
-      console.error('❌ [PIX] Erro ao finalizar:', error);
-      toast.error('Erro ao finalizar checkout', {
-        description: 'O pagamento foi aprovado. Procure a recepção.'
-      });
-      navigate('/totem/home');
+      console.error('❌ [PIX] Erro em background tasks:', error);
     }
   }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount]);
 
