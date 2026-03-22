@@ -154,10 +154,12 @@ const TotemPaymentPix: React.FC = () => {
       if (selectedProducts?.length > 0) {
         for (const product of selectedProducts) {
           backgroundTasks.push(
-            supabase.rpc('decrease_product_stock', {
-              p_product_id: product.product_id,
-              p_quantity: product.quantidade
-            }).then(({ error }) => {
+            Promise.resolve(
+              supabase.rpc('decrease_product_stock', {
+                p_product_id: product.product_id,
+                p_quantity: product.quantidade
+              })
+            ).then(({ error }) => {
               if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
             })
           );
