@@ -202,6 +202,7 @@ const TotemCheckout: React.FC = () => {
         if (checkoutError) {
           console.error('Erro ao iniciar checkout:', checkoutError);
         } else if (checkoutData?.venda_id) {
+          vendaIdRef.current = checkoutData.venda_id;
           setVendaId(checkoutData.venda_id);
         }
       }
