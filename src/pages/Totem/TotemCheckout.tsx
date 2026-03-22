@@ -386,46 +386,45 @@ const TotemCheckout: React.FC = () => {
     });
   }, [navigate, appointment, client, productCart, extraServices, resumo]);
 
-  const handlePayment = async (method: 'pix' | 'card') => {
+  const handlePayment = (method: 'pix' | 'card') => {
     if (!resumo) return;
     setProcessing(true);
 
-    try {
-      // Atualizar gorjeta / total na venda se já existir
-      if (vendaId) {
-        await supabase
-          .from('vendas')
-          .update({
-            gorjeta: tipAmount,
-            valor_total: totalComGorjeta,
-            forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
-          })
-          .eq('id', vendaId);
-      }
+    const paymentState = {
+      venda_id: vendaId,
+      session_id: session.id,
+      appointment,
+      client,
+      total: totalComGorjeta,
+      tipAmount,
+      resumo,
+      extraServices,
+      selectedProducts: productCart,
+    };
 
-      const paymentState = {
-        venda_id: vendaId,
-        session_id: session.id,
-        appointment,
-        client,
-        total: totalComGorjeta,
-        tipAmount,
-        resumo,
-        extraServices,
-        selectedProducts: productCart,
-      };
-
-      if (method === 'pix') {
-        navigate('/totem/payment-pix', { state: paymentState });
-      } else {
-        navigate('/totem/payment-card', { state: paymentState });
-      }
-    } catch (error) {
-      console.error('Erro no pagamento:', error);
-      toast.error('Erro ao processar pagamento');
-    } finally {
-      setProcessing(false);
+    // NAVEGAR IMEDIATAMENTE - não bloquear por update de venda
+    if (method === 'pix') {
+      navigate('/totem/payment-pix', { state: paymentState });
+    } else {
+      navigate('/totem/payment-card', { state: paymentState });
     }
+
+    // Atualizar gorjeta/total em background (fire-and-forget)
+    if (vendaId) {
+      supabase
+        .from('vendas')
+        .update({
+          gorjeta: tipAmount,
+          valor_total: totalComGorjeta,
+          forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
+        })
+        .eq('id', vendaId)
+        .then(({ error }) => {
+          if (error) console.warn('[Checkout] Erro ao atualizar venda em background:', error);
+        });
+    }
+
+    setProcessing(false);
   };
 
   if (loading) {

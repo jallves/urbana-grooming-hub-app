@@ -26,7 +26,7 @@ const TotemPaymentPix: React.FC = () => {
   
   // Estado para simulação (quando TEF não disponível)
   const [isSimulating, setIsSimulating] = useState(false);
-  const [simulationTimeLeft, setSimulationTimeLeft] = useState(8);
+  const [simulationTimeLeft, setSimulationTimeLeft] = useState(3);
   const [simulationStatus, setSimulationStatus] = useState<'waiting' | 'approved'>('waiting');
   
   // Estado para modal de opções de comprovante (IGUAL AO CARTÃO)
