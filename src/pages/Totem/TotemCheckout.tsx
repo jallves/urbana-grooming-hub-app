@@ -85,6 +85,7 @@ const TotemCheckout: React.FC = () => {
   const [tipAmount, setTipAmount] = useState<number>(0);
   const [tipInput, setTipInput] = useState<string>('0,00');
   const [vendaId, setVendaId] = useState<string | null>(null);
+  const vendaIdRef = useRef<string | null>(null);
   const [usingCredit, setUsingCredit] = useState(false);
   
   // Receipt modal state (for subscription credit checkout)
