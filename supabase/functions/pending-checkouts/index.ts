@@ -310,6 +310,36 @@ Deno.serve(async (req) => {
         payment_method: type === 'courtesy' ? 'cortesia' : 'admin'
       })
 
+      // 8b. Cash Flow - receita (sync)
+      await supabase.from('cash_flow').insert({
+        transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
+        amount: revenueAmount,
+        description: type === 'courtesy'
+          ? `Cortesia - ${nomeServico} (${barberName})`
+          : `Checkout admin - ${nomeServico}`,
+        category: 'servico',
+        payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
+        transaction_date: today,
+        reference_id: novaVenda.id,
+        notes: observacao
+      })
+      console.log('✅ Cash flow (receita):', revenueAmount)
+
+      // Cash Flow - comissão (despesa)
+      if (shouldPayCommission && commissionAmount > 0) {
+        await supabase.from('cash_flow').insert({
+          transaction_type: 'expense',
+          amount: commissionAmount,
+          description: `Comissão ${barberName} - ${nomeServico}${type === 'courtesy' ? ' (cortesia)' : ''}`,
+          category: 'comissao',
+          payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
+          transaction_date: today,
+          reference_id: novaVenda.id,
+          notes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)}`
+        })
+        console.log('✅ Cash flow (comissão):', commissionAmount)
+      }
+
       // 9. Update session + appointment
       if (appointmentSession) {
         await supabase
