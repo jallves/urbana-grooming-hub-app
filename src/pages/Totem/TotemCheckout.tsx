@@ -265,34 +265,64 @@ const TotemCheckout: React.FC = () => {
         return;
       }
 
-      // 2. Atualizar venda para refletir pagamento via assinatura
-      if (vendaId) {
+      // 2. Garantir que temos vendaId (resolver race condition)
+      let currentVendaId = vendaIdRef.current;
+      if (!currentVendaId) {
+        console.warn('[SUBSCRIPTION] vendaId não disponível, criando venda via start...');
+        const { data: startData } = await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'start',
+            agendamento_id: appointment.id,
+            session_id: session.id,
+            extras: [],
+            products: [],
+          }
+        });
+        if (startData?.venda_id) {
+          currentVendaId = startData.venda_id;
+          vendaIdRef.current = currentVendaId;
+          setVendaId(currentVendaId);
+        }
+      }
+
+      // 3. Atualizar venda para refletir pagamento via assinatura
+      if (currentVendaId) {
         await supabase.from('vendas').update({
           valor_total: 0,
           forma_pagamento: 'ASSINATURA',
           status: 'pago',
           gorjeta: 0,
           observacoes: `Crédito assinatura ${activeSubscription.plan_name} - Crédito ${activeSubscription.credits_used + 1}/${activeSubscription.credits_total}`
-        }).eq('id', vendaId);
+        }).eq('id', currentVendaId);
       }
 
-      // 3. Finalizar checkout via edge function (sem PayGo, com ERP completo)
-      await supabase.functions.invoke('totem-checkout', {
-        body: {
-          action: 'finish',
-          venda_id: vendaId,
-          session_id: session.id,
-          agendamento_id: appointment.id,
-          payment_method: 'subscription_credit',
-          tipAmount: 0,
-          extras: extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
-          products: productCart.map(p => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
-        }
-      });
+      // 4. Finalizar checkout via edge function (sem PayGo, com ERP completo)
+      if (currentVendaId) {
+        await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'finish',
+            venda_id: currentVendaId,
+            session_id: session.id,
+            agendamento_id: appointment.id,
+            payment_method: 'subscription_credit',
+            tipAmount: 0,
+            extras: extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
+            products: productCart.map(p => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
+          }
+        });
+      } else {
+        console.error('[SUBSCRIPTION] Impossível finalizar checkout: vendaId indisponível');
+        // Mesmo sem vendaId, marcar agendamento como finalizado para não travar
+        await supabase.from('painel_agendamentos').update({
+          status: 'concluido',
+          status_totem: 'FINALIZADO',
+          updated_at: new Date().toISOString()
+        }).eq('id', appointment.id);
+      }
 
       toast.success(`Crédito utilizado! (${activeSubscription.credits_remaining - 1} restantes) ✨`);
       
-      // 4. Mostrar modal de comprovante (igual ao fluxo normal)
+      // 5. Mostrar modal de comprovante (igual ao fluxo normal)
       setProcessing(false);
       setShowReceiptModal(true);
     } catch (error) {
