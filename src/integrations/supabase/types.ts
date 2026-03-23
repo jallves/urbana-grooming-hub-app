@@ -766,6 +766,42 @@ export type Database = {
         }
         Relationships: []
       }
+      combo_service_items: {
+        Row: {
+          combo_service_id: string
+          component_service_id: string
+          created_at: string | null
+          id: string
+        }
+        Insert: {
+          combo_service_id: string
+          component_service_id: string
+          created_at?: string | null
+          id?: string
+        }
+        Update: {
+          combo_service_id?: string
+          component_service_id?: string
+          created_at?: string | null
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "combo_service_items_combo_service_id_fkey"
+            columns: ["combo_service_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "combo_service_items_component_service_id_fkey"
+            columns: ["component_service_id"]
+            isOneToOne: false
+            referencedRelation: "painel_servicos"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comissoes: {
         Row: {
           barbeiro_id: string | null
