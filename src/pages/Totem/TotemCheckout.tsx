@@ -238,6 +238,30 @@ const TotemCheckout: React.FC = () => {
     setExtraServices(nextExtras);
     setProductCart(nextProducts);
 
+    // Detectar combo automaticamente
+    if (appointment?.servico_id && nextExtras.length > 0) {
+      const mainId = appointment.servico_id;
+      const mainPreco = Number(appointment?.servico?.preco) || 0;
+      const extraIds = nextExtras.map((s) => s.id);
+      const extraPrices: Record<string, number> = {};
+      nextExtras.forEach((s) => { extraPrices[s.id] = Number(s.preco) || 0; });
+
+      const result = await detectCombo(mainId, mainPreco, extraIds, extraPrices);
+      if (result.found && result.combo) {
+        setComboMatch({
+          combo_nome: result.combo.combo_nome,
+          combo_preco: result.combo.combo_preco,
+          savings: result.combo.savings,
+          component_ids: result.combo.component_ids,
+        });
+        toast.success(`Combo detectado: ${result.combo.combo_nome} — economia de R$ ${result.combo.savings.toFixed(2)}! 🎉`);
+      } else {
+        setComboMatch(null);
+      }
+    } else {
+      setComboMatch(null);
+    }
+
     // Sincroniza com backend (idempotente) em background
     try {
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
@@ -255,7 +279,6 @@ const TotemCheckout: React.FC = () => {
       }
     } catch (e) {
       console.error('[TotemCheckout] Erro ao sincronizar itens:', e);
-      // Não bloqueia UI - cálculo local já está correto
     }
   };
 
