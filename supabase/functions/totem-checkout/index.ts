@@ -218,16 +218,22 @@ Deno.serve(async (req) => {
           .in('id', toDelete.map((d: any) => d.id))
       }
 
-      // Calcular total
-      const total = desired.reduce((sum, item) => sum + Number(item.subtotal), 0)
+      // Calcular total (com desconto de combo se aplicável)
+      const rawTotal = desired.reduce((sum, item) => sum + Number(item.subtotal), 0)
+      const comboDiscountAmount = Number(combo_discount) || 0
+      const total = Math.max(0, rawTotal - comboDiscountAmount)
 
-      // Atualizar venda com total
+      if (comboDiscountAmount > 0) {
+        console.log(`🏷️ Combo detectado: "${combo_name}" - Desconto: R$ ${comboDiscountAmount.toFixed(2)}`)
+      }
+
+      // Atualizar venda com total e desconto
       await supabase
         .from('vendas')
-        .update({ valor_total: total })
+        .update({ valor_total: total, desconto: comboDiscountAmount })
         .eq('id', venda.id)
 
-      console.log('✅ Checkout iniciado - Venda:', venda.id, 'Total: R$', total)
+      console.log('✅ Checkout iniciado - Venda:', venda.id, 'Total: R$', total, comboDiscountAmount > 0 ? `(Combo: -R$ ${comboDiscountAmount})` : '')
 
       return new Response(
         JSON.stringify({
