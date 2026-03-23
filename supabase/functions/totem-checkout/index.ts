@@ -421,12 +421,13 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Calcular total com gorjeta
+      // Calcular total com gorjeta e desconto de combo
       const subtotal = vendaItens?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
+      const comboDiscountAmount = Number(combo_discount) || Number(venda.desconto) || 0
       const gorjeta = tipAmount || 0
-      const totalFinal = subtotal + gorjeta
+      const totalFinal = Math.max(0, subtotal - comboDiscountAmount) + gorjeta
 
-      console.log('💰 Subtotal:', subtotal, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
+      console.log('💰 Subtotal:', subtotal, 'Combo desconto:', comboDiscountAmount, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
 
       // Atualizar venda para PAGA (somente se ainda não estiver paga)
       if (!alreadyPaid) {
