@@ -89,6 +89,15 @@ const TotemCheckout: React.FC = () => {
   const vendaIdRef = useRef<string | null>(null);
   const [usingCredit, setUsingCredit] = useState(false);
   
+  // Combo detection
+  const { detectCombo } = useComboDetection();
+  const [comboMatch, setComboMatch] = useState<{
+    combo_nome: string;
+    combo_preco: number;
+    savings: number;
+    component_ids: string[];
+  } | null>(null);
+  
   // Receipt modal state (for subscription credit checkout)
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
