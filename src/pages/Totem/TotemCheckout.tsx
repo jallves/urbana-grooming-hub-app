@@ -123,9 +123,11 @@ const TotemCheckout: React.FC = () => {
     [productCart]
   );
 
+  const comboDiscount = comboMatch?.savings || 0;
+
   const subtotal = useMemo(
-    () => originalService.preco + extraServicesTotal + productsTotal,
-    [originalService.preco, extraServicesTotal, productsTotal]
+    () => originalService.preco + extraServicesTotal + productsTotal - comboDiscount,
+    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount]
   );
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
