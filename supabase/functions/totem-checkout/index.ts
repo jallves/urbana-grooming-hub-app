@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount, transaction_data } = await req.json()
+    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount, transaction_data, combo_discount, combo_name } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
