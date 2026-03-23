@@ -145,9 +145,9 @@ const TotemCheckout: React.FC = () => {
     extra_services: extraServices.map((s) => ({ nome: s.nome, preco: s.preco })),
     products: productCart.map((p) => ({ nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
     subtotal,
-    discount: 0,
+    discount: comboDiscount,
     total: subtotal,
-  }), [originalService, extraServices, productCart, subtotal]);
+  }), [originalService, extraServices, productCart, subtotal, comboDiscount]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
