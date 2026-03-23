@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from '@/components/ui/button';
 import { 
   TrendingDown, 
   Calculator,
@@ -9,7 +10,8 @@ import {
   ArrowUpCircle,
   ArrowDownCircle,
   Filter,
-  Landmark
+  Landmark,
+  RefreshCw
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -274,22 +276,41 @@ const FinancialDashboard: React.FC = () => {
 
   return (
     <div className="space-y-4 sm:space-y-6 p-3 sm:p-4 lg:p-6">
-      {/* Filtro de Ano para Cards */}
+      {/* Filtro de Ano + Botão Atualizar */}
       <Card className="bg-white border-gray-300">
         <CardContent className="p-3 sm:p-4">
-          <div className="flex items-center gap-3">
-            <Filter className="h-4 w-4 text-gray-600 flex-shrink-0" />
-            <Select value={selectedYear} onValueChange={setSelectedYear}>
-              <SelectTrigger className="w-32 bg-white border-gray-300">
-                <SelectValue placeholder="Ano" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                {years.map(year => (
-                  <SelectItem key={year} value={year}>{year}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <span className="text-sm text-gray-600">Dados anuais dos cards abaixo</span>
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <Filter className="h-4 w-4 text-gray-600 flex-shrink-0" />
+              <Select value={selectedYear} onValueChange={setSelectedYear}>
+                <SelectTrigger className="w-32 bg-white border-gray-300">
+                  <SelectValue placeholder="Ano" />
+                </SelectTrigger>
+                <SelectContent className="bg-white border-gray-300">
+                  {years.map(year => (
+                    <SelectItem key={year} value={year}>{year}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-sm text-gray-600 hidden sm:inline">Dados anuais dos cards abaixo</span>
+            </div>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
+                queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
+                queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+                queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
+                queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+                queryClient.invalidateQueries({ queryKey: ['cash-flow'] });
+                queryClient.invalidateQueries({ queryKey: ['cash-flow-current-month'] });
+              }}
+              className="text-gray-400 hover:text-gray-600 h-8 w-8 p-0"
+              title="Atualizar dados"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+            </Button>
           </div>
         </CardContent>
       </Card>
