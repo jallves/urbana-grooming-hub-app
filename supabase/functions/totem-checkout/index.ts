@@ -525,7 +525,7 @@ Deno.serve(async (req) => {
             reference_type: isSubscriptionCredit ? 'totem_subscription_usage' : 'totem_venda',
             items: erpItems,
             payment_method: isSubscriptionCredit ? 'subscription_credit' : (payment_method || 'credit_card'),
-            discount_amount: Number(venda.desconto) || 0,
+            discount_amount: comboDiscountAmount || Number(venda.desconto) || 0,
             notes: erpNotes,
             tip_amount: isSubscriptionCredit ? 0 : gorjeta,
             transaction_id: transactionId,
