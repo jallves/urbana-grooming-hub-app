@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -15,6 +15,7 @@ import TotemCheckoutExtrasModal, {
   CheckoutExtraService,
   CheckoutProductCartItem
 } from '@/components/totem/TotemCheckoutExtrasModal';
+import { useComboDetection } from '@/hooks/totem/useComboDetection';
 
 interface CheckoutSummary {
   original_service: {
@@ -88,6 +89,15 @@ const TotemCheckout: React.FC = () => {
   const vendaIdRef = useRef<string | null>(null);
   const [usingCredit, setUsingCredit] = useState(false);
   
+  // Combo detection
+  const { detectCombo } = useComboDetection();
+  const [comboMatch, setComboMatch] = useState<{
+    combo_nome: string;
+    combo_preco: number;
+    savings: number;
+    component_ids: string[];
+  } | null>(null);
+  
   // Receipt modal state (for subscription credit checkout)
   const [showReceiptModal, setShowReceiptModal] = useState(false);
 
@@ -113,9 +123,11 @@ const TotemCheckout: React.FC = () => {
     [productCart]
   );
 
+  const comboDiscount = comboMatch?.savings || 0;
+
   const subtotal = useMemo(
-    () => originalService.preco + extraServicesTotal + productsTotal,
-    [originalService.preco, extraServicesTotal, productsTotal]
+    () => originalService.preco + extraServicesTotal + productsTotal - comboDiscount,
+    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount]
   );
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
@@ -133,9 +145,9 @@ const TotemCheckout: React.FC = () => {
     extra_services: extraServices.map((s) => ({ nome: s.nome, preco: s.preco })),
     products: productCart.map((p) => ({ nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
     subtotal,
-    discount: 0,
+    discount: comboDiscount,
     total: subtotal,
-  }), [originalService, extraServices, productCart, subtotal]);
+  }), [originalService, extraServices, productCart, subtotal, comboDiscount]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -226,6 +238,30 @@ const TotemCheckout: React.FC = () => {
     setExtraServices(nextExtras);
     setProductCart(nextProducts);
 
+    // Detectar combo automaticamente
+    if (appointment?.servico_id && nextExtras.length > 0) {
+      const mainId = appointment.servico_id;
+      const mainPreco = Number(appointment?.servico?.preco) || 0;
+      const extraIds = nextExtras.map((s) => s.id);
+      const extraPrices: Record<string, number> = {};
+      nextExtras.forEach((s) => { extraPrices[s.id] = Number(s.preco) || 0; });
+
+      const result = await detectCombo(mainId, mainPreco, extraIds, extraPrices);
+      if (result.found && result.combo) {
+        setComboMatch({
+          combo_nome: result.combo.combo_nome,
+          combo_preco: result.combo.combo_preco,
+          savings: result.combo.savings,
+          component_ids: result.combo.component_ids,
+        });
+        toast.success(`Combo detectado: ${result.combo.combo_nome} — economia de R$ ${result.combo.savings.toFixed(2)}! 🎉`);
+      } else {
+        setComboMatch(null);
+      }
+    } else {
+      setComboMatch(null);
+    }
+
     // Sincroniza com backend (idempotente) em background
     try {
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
@@ -243,7 +279,6 @@ const TotemCheckout: React.FC = () => {
       }
     } catch (e) {
       console.error('[TotemCheckout] Erro ao sincronizar itens:', e);
-      // Não bloqueia UI - cálculo local já está correto
     }
   };
 
@@ -610,8 +645,25 @@ const TotemCheckout: React.FC = () => {
                   ))}
               </div>
 
-              {/* Subtotal & Tip */}
+              {/* Combo Discount & Subtotal & Tip */}
               <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-3 space-y-2">
+                {/* Combo Discount */}
+                {comboMatch && (
+                  <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/30 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tag className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-300 text-sm font-bold">Combo detectado!</span>
+                    </div>
+                    <p className="text-xs text-emerald-300/80 mb-1">
+                      {comboMatch.combo_nome} — preço do combo aplicado automaticamente
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-emerald-300/60">Desconto combo</span>
+                      <span className="text-emerald-400 font-bold text-sm">- R$ {comboMatch.savings.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Subtotal */}
                 <div className="flex justify-between items-center text-sm border-b border-dashed border-urbana-gold/20 pb-2">
                   <span className="text-urbana-light/70">SUBTOTAL</span>
