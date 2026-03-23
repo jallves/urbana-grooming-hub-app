@@ -645,8 +645,25 @@ const TotemCheckout: React.FC = () => {
                   ))}
               </div>
 
-              {/* Subtotal & Tip */}
+              {/* Combo Discount & Subtotal & Tip */}
               <div className="bg-urbana-black/40 border-2 border-t-0 border-urbana-gold/30 rounded-b-xl p-3 space-y-2">
+                {/* Combo Discount */}
+                {comboMatch && (
+                  <div className="p-3 bg-emerald-500/10 rounded-xl border border-emerald-500/30 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tag className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-300 text-sm font-bold">Combo detectado!</span>
+                    </div>
+                    <p className="text-xs text-emerald-300/80 mb-1">
+                      {comboMatch.combo_nome} — preço do combo aplicado automaticamente
+                    </p>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-emerald-300/60">Desconto combo</span>
+                      <span className="text-emerald-400 font-bold text-sm">- R$ {comboMatch.savings.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Subtotal */}
                 <div className="flex justify-between items-center text-sm border-b border-dashed border-urbana-gold/20 pb-2">
                   <span className="text-urbana-light/70">SUBTOTAL</span>
