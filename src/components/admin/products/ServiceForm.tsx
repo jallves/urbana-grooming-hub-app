@@ -9,7 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Users, Home, CheckCircle } from 'lucide-react';
+import { Loader2, Users, Home, CheckCircle, Layers } from 'lucide-react';
 
 interface ServiceFormProps {
   serviceId: string | null;
@@ -34,6 +34,12 @@ interface StaffMember {
   role: string | null;
 }
 
+interface ComboComponent {
+  id: string;
+  nome: string;
+  preco: number;
+}
+
 const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, onSuccess }) => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(!!serviceId);
@@ -48,9 +54,15 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
+  // Combo state
+  const [isCombo, setIsCombo] = useState(false);
+  const [availableServices, setAvailableServices] = useState<ComboComponent[]>([]);
+  const [selectedComponentIds, setSelectedComponentIds] = useState<string[]>([]);
+
   useEffect(() => {
     if (isOpen) {
       loadStaff();
+      loadAvailableServices();
       if (serviceId) {
         loadServiceData();
       } else {
@@ -59,9 +71,18 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     }
   }, [serviceId, isOpen]);
 
+  // Calcular soma individual dos componentes selecionados
+  const individualSum = selectedComponentIds.reduce((sum, id) => {
+    const svc = availableServices.find(s => s.id === id);
+    return sum + (svc?.preco || 0);
+  }, 0);
+
+  const comboSavings = isCombo && selectedComponentIds.length >= 2
+    ? individualSum - formData.preco
+    : 0;
+
   const loadStaff = async () => {
     try {
-      // Usar 'ativo' (o campo correto na tabela painel_barbeiros)
       const { data, error } = await supabase
         .from('painel_barbeiros')
         .select('id, nome, email, role')
@@ -76,6 +97,21 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     }
   };
 
+  const loadAvailableServices = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('painel_servicos')
+        .select('id, nome, preco')
+        .eq('ativo', true)
+        .order('nome');
+
+      if (error) throw error;
+      setAvailableServices(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar serviços:', error);
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       nome: '',
@@ -86,6 +122,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       exibir_home: false
     });
     setSelectedStaffIds([]);
+    setIsCombo(false);
+    setSelectedComponentIds([]);
   };
 
   const loadServiceData = async () => {
@@ -120,6 +158,20 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
         } else {
           setSelectedStaffIds(serviceStaff?.map(s => s.staff_id) || []);
         }
+
+        // Carregar componentes do combo (se existirem)
+        const { data: comboItems, error: comboError } = await supabase
+          .from('combo_service_items')
+          .select('component_service_id')
+          .eq('combo_service_id', serviceId);
+
+        if (!comboError && comboItems && comboItems.length > 0) {
+          setIsCombo(true);
+          setSelectedComponentIds(comboItems.map(c => c.component_service_id));
+        } else {
+          setIsCombo(false);
+          setSelectedComponentIds([]);
+        }
       }
     } catch (error) {
       console.error('Erro ao carregar serviço:', error);
@@ -144,6 +196,16 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
 
     if (formData.duracao <= 0) {
       toast.error('Duração deve ser maior que zero');
+      return;
+    }
+
+    if (isCombo && selectedComponentIds.length < 2) {
+      toast.error('Um combo precisa ter pelo menos 2 serviços componentes');
+      return;
+    }
+
+    if (isCombo && formData.preco >= individualSum) {
+      toast.error('O preço do combo deve ser menor que a soma dos serviços individuais');
       return;
     }
 
@@ -191,13 +253,11 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
 
       // Atualizar relacionamento com barbeiros
       if (savedServiceId) {
-        // Remover relacionamentos antigos
         await supabase
           .from('service_staff')
           .delete()
           .eq('service_id', savedServiceId);
 
-        // Inserir novos relacionamentos
         if (selectedStaffIds.length > 0) {
           const serviceStaffData = selectedStaffIds.map(staffId => ({
             service_id: savedServiceId,
@@ -213,10 +273,36 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             toast.error('Serviço salvo, mas houve erro ao vincular barbeiros');
           }
         }
+
+        // Salvar/atualizar componentes do combo
+        // Remover componentes antigos
+        await supabase
+          .from('combo_service_items')
+          .delete()
+          .eq('combo_service_id', savedServiceId);
+
+        // Inserir componentes novos (se for combo)
+        if (isCombo && selectedComponentIds.length >= 2) {
+          const comboData = selectedComponentIds.map(componentId => ({
+            combo_service_id: savedServiceId,
+            component_service_id: componentId
+          }));
+
+          const { error: comboError } = await supabase
+            .from('combo_service_items')
+            .insert(comboData);
+
+          if (comboError) {
+            console.error('Erro ao salvar combo:', comboError);
+            toast.error('Serviço salvo, mas houve erro ao gravar componentes do combo');
+          }
+        }
       }
         
       toast.success(serviceId ? 'Serviço atualizado com sucesso!' : 'Serviço criado com sucesso!', {
-        description: 'O serviço foi salvo e os barbeiros foram vinculados'
+        description: isCombo
+          ? `Combo salvo com ${selectedComponentIds.length} serviços (economia de R$ ${comboSavings.toFixed(2)})`
+          : 'O serviço foi salvo e os barbeiros foram vinculados'
       });
 
       onSuccess();
@@ -235,6 +321,9 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     resetForm();
     onClose();
   };
+
+  // Filtrar serviços disponíveis para combo (excluir o próprio serviço em edição)
+  const comboAvailableServices = availableServices.filter(s => s.id !== serviceId);
 
   return (
     <Dialog open={isOpen} onOpenChange={handleCancel}>
@@ -305,6 +394,102 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                     className="bg-white border-slate-300 text-slate-800"
                   />
                 </div>
+              </div>
+
+              {/* Combo Toggle */}
+              <div className="space-y-3 p-4 rounded-lg border border-indigo-200 bg-indigo-50/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Layers className="h-4 w-4 text-indigo-600" />
+                    <Label htmlFor="is_combo" className="text-slate-700 font-semibold">Combo de Serviços</Label>
+                  </div>
+                  <Switch
+                    id="is_combo"
+                    checked={isCombo}
+                    onCheckedChange={(checked) => {
+                      setIsCombo(checked);
+                      if (!checked) setSelectedComponentIds([]);
+                    }}
+                  />
+                </div>
+                <p className="text-xs text-slate-500">
+                  Ative para vincular serviços individuais que compõem este combo. O preço do combo será aplicado automaticamente no checkout.
+                </p>
+
+                {isCombo && (
+                  <div className="space-y-2 mt-3">
+                    <Label className="text-slate-700 text-sm font-medium">
+                      Serviços que compõem o combo:
+                    </Label>
+                    <div className="max-h-40 overflow-y-auto rounded-md border border-indigo-200 bg-white p-3 space-y-1">
+                      {comboAvailableServices.length === 0 ? (
+                        <p className="text-sm text-slate-400 text-center py-4">
+                          Nenhum serviço disponível
+                        </p>
+                      ) : (
+                        comboAvailableServices.map((svc) => {
+                          // Não mostrar outros combos como componentes
+                          const isSelected = selectedComponentIds.includes(svc.id);
+                          return (
+                            <div key={svc.id} className="flex items-center justify-between p-2 rounded-md hover:bg-indigo-50 transition-colors">
+                              <div className="flex items-center gap-2 flex-1">
+                                <Checkbox
+                                  id={`combo-${svc.id}`}
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) => {
+                                    if (checked) {
+                                      setSelectedComponentIds(prev => [...prev, svc.id]);
+                                    } else {
+                                      setSelectedComponentIds(prev => prev.filter(id => id !== svc.id));
+                                    }
+                                  }}
+                                />
+                                <Label
+                                  htmlFor={`combo-${svc.id}`}
+                                  className="text-sm font-normal cursor-pointer flex-1 text-slate-700"
+                                >
+                                  {svc.nome}
+                                </Label>
+                              </div>
+                              <span className="text-xs font-medium text-slate-500">
+                                R$ {svc.preco.toFixed(2)}
+                              </span>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+
+                    {selectedComponentIds.length >= 2 && (
+                      <div className="p-3 rounded-lg border border-indigo-300 bg-indigo-100/50 space-y-1">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Soma individual:</span>
+                          <span className="text-slate-700 font-medium">R$ {individualSum.toFixed(2)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-600">Preço do combo:</span>
+                          <span className="text-indigo-700 font-bold">R$ {formData.preco.toFixed(2)}</span>
+                        </div>
+                        {comboSavings > 0 ? (
+                          <div className="flex justify-between text-sm pt-1 border-t border-indigo-200">
+                            <span className="text-emerald-700 font-medium">Economia para o cliente:</span>
+                            <span className="text-emerald-700 font-bold">R$ {comboSavings.toFixed(2)}</span>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-red-600 pt-1 border-t border-indigo-200">
+                            ⚠️ O preço do combo deve ser menor que a soma individual
+                          </p>
+                        )}
+                      </div>
+                    )}
+
+                    {selectedComponentIds.length === 1 && (
+                      <p className="text-xs text-amber-600">
+                        Selecione pelo menos 2 serviços para formar um combo
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
 
               {/* Seleção de Barbeiros */}

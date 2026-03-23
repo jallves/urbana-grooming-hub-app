@@ -468,6 +468,8 @@ const TotemCheckout: React.FC = () => {
       resumo,
       extraServices,
       selectedProducts: productCart,
+      comboDiscount: comboMatch?.savings || 0,
+      comboName: comboMatch?.combo_nome || null,
     };
 
     // NAVEGAR IMEDIATAMENTE - não bloquear por update de venda
