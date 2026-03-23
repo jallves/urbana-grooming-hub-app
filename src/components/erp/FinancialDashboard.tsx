@@ -298,19 +298,26 @@ const FinancialDashboard: React.FC = () => {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] });
-                queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] });
-                queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
-                queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
-                queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
-                queryClient.invalidateQueries({ queryKey: ['cash-flow'] });
-                queryClient.invalidateQueries({ queryKey: ['cash-flow-current-month'] });
+              disabled={isRefreshing}
+              onClick={async () => {
+                setIsRefreshing(true);
+                await Promise.all([
+                  queryClient.invalidateQueries({ queryKey: ['total-balance-erp'] }),
+                  queryClient.invalidateQueries({ queryKey: ['financial-yearly-metrics'] }),
+                  queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] }),
+                  queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] }),
+                  queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] }),
+                  queryClient.invalidateQueries({ queryKey: ['cash-flow'] }),
+                  queryClient.invalidateQueries({ queryKey: ['cash-flow-current-month'] }),
+                  queryClient.invalidateQueries({ queryKey: ['cash-flow-transactions'] }),
+                  queryClient.invalidateQueries({ queryKey: ['financial-summary'] }),
+                ]);
+                setTimeout(() => setIsRefreshing(false), 1000);
               }}
               className="text-gray-400 hover:text-gray-600 h-8 w-8 p-0"
               title="Atualizar dados"
             >
-              <RefreshCw className="h-3.5 w-3.5" />
+              <RefreshCw className={`h-3.5 w-3.5 ${isRefreshing ? 'animate-spin' : ''}`} />
             </Button>
           </div>
         </CardContent>
