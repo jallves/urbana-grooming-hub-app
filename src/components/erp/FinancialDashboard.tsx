@@ -23,6 +23,7 @@ import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 const FinancialDashboard: React.FC = () => {
   const now = new Date();
   const [selectedYear, setSelectedYear] = useState(now.getFullYear().toString());
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const queryClient = useQueryClient();
   
   // Gerar lista de anos (2025 até 2035)
