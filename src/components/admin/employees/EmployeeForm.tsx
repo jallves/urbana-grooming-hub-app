@@ -168,7 +168,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           .from('user_roles')
           .upsert([{
             user_id: existingUserId,
-            role: data.role,
+            role: dbRole as any,
           }], {
             onConflict: 'user_id,role',
             ignoreDuplicates: false,
