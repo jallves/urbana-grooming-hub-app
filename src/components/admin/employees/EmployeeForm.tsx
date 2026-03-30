@@ -462,7 +462,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           </div>
 
           {/* Taxa de Comissão (apenas para barbeiros) */}
-          {form.watch('role') === 'barber' && (
+          {(form.watch('role') === 'barber' || form.watch('role') === 'barber_admin') && (
             <div className="space-y-2 md:col-span-1">
               <Label htmlFor="commission_rate" className="text-gray-900 font-raleway font-medium">
                 Taxa de Comissão (%) *
