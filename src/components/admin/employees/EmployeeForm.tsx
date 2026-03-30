@@ -417,6 +417,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
                 <SelectItem value="admin" className="text-gray-900 hover:bg-gray-100 font-raleway">Administrador</SelectItem>
                 <SelectItem value="manager" className="text-gray-900 hover:bg-gray-100 font-raleway">Gerente</SelectItem>
                 <SelectItem value="barber" className="text-gray-900 hover:bg-gray-100 font-raleway">Barbeiro</SelectItem>
+                <SelectItem value="barber_admin" className="text-gray-900 hover:bg-gray-100 font-raleway">Barbeiro Administrador</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.role && (
