@@ -269,7 +269,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      role: dbRoleUpdate,
+      role: dbRoleUpdate as 'admin' | 'manager' | 'barber',
       status: data.status,
       photo_url: photoUrl,
       commission_rate: data.commission_rate || 40,
