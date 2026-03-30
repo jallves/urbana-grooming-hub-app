@@ -1,11 +1,12 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, Clock, DollarSign, Home } from 'lucide-react';
+import { LogOut, Calendar, Clock, DollarSign, Home, ShieldCheck } from 'lucide-react';
 import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 
 import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
