@@ -112,11 +112,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   const createEmployee = async (data: EmployeeFormData) => {
+    const isBarberAdmin = data.role === 'barber_admin';
+    const dbRole = isBarberAdmin ? 'barber' : data.role;
+    
     const employeeData = {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       phone: data.phone.trim(),
-      role: data.role,
+      role: dbRole,
       status: data.status,
       photo_url: photoUrl || null,
       commission_rate: data.commission_rate || 40,
