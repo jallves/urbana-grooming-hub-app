@@ -287,6 +287,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       throw new Error(error.message);
     }
 
+    // Update is_barber_admin on painel_barbeiros
+    if (dbRoleUpdate === 'barber') {
+      await supabase
+        .from('painel_barbeiros')
+        .update({ is_barber_admin: isBarberAdminUpdate })
+        .eq('email', data.email.trim().toLowerCase());
+    }
+
     console.log('Employee updated successfully');
   };
 
