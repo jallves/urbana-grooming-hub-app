@@ -18,6 +18,8 @@ const BarberLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const { data: barberData } = useBarberDataQuery();
+  const isBarberAdmin = barberData?.is_barber_admin || false;
   useBarberAppointmentNotifier();
 
 
