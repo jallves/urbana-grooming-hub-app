@@ -89,6 +89,12 @@ const BarberLayout: React.FC = () => {
                   Barbearia Costa Urbana
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
+                {isBarberAdmin && (
+                  <div className="flex items-center gap-1 sm:hidden">
+                    <ShieldCheck className="h-3 w-3 text-purple-400" />
+                    <span className="text-[10px] text-purple-400 font-medium">Admin</span>
+                  </div>
+                )}
               </div>
             </div>
             
