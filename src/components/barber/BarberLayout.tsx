@@ -259,7 +259,7 @@ const BarberLayout: React.FC = () => {
             
             <div className="flex-1 min-w-0">
               <p className="text-xs text-urbana-light/60 truncate">
-                Barbeiro
+                {isBarberAdmin ? 'Barbeiro Administrador' : 'Barbeiro'}
               </p>
               <p className="text-sm font-semibold text-urbana-light truncate mt-0.5">
                 {displayName || 'Usuário'}
