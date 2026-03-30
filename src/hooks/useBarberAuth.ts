@@ -8,16 +8,15 @@ interface BarberData {
   nome: string;
   email: string;
   is_active: boolean;
+  is_barber_admin: boolean;
 }
 
 export const useBarberAuth = () => {
   const [barber, setBarber] = useState<BarberData | null>(null);
   const [loading, setLoading] = useState(true);
-  const { user } = useAuth(); // Usa o AuthContext ao invés de verificar novamente
+  const { user } = useAuth();
 
   useEffect(() => {
-    // CRÍTICO: Só busca dados do barbeiro se houver usuário autenticado
-    // NÃO faz navegação aqui - isso é responsabilidade do BarberRoute
     if (user?.email) {
       checkBarberAuth();
     } else {
@@ -32,13 +31,12 @@ export const useBarberAuth = () => {
     }
 
     try {
-      // Buscar barbeiro da tabela painel_barbeiros
       const { data: barberData, error } = await supabase
         .from('painel_barbeiros')
-        .select('*')
+        .select('id, nome, email, is_active, is_barber_admin')
         .eq('email', user.email)
         .eq('is_active', true)
-        .maybeSingle(); // maybeSingle ao invés de single para não dar erro se não encontrar
+        .maybeSingle();
 
       if (error) {
         console.error('Erro ao buscar barbeiro:', error);
@@ -51,7 +49,8 @@ export const useBarberAuth = () => {
           id: barberData.id,
           nome: barberData.nome,
           email: barberData.email,
-          is_active: barberData.is_active
+          is_active: barberData.is_active,
+          is_barber_admin: barberData.is_barber_admin || false,
         });
       } else {
         console.warn('Barbeiro não encontrado para:', user.email);
@@ -65,10 +64,8 @@ export const useBarberAuth = () => {
     }
   };
 
-  // Pega os dois primeiros nomes
   const getFirstTwoNames = () => {
     if (!barber?.nome) return 'Barbeiro';
-    
     const nameParts = barber.nome.trim().split(' ');
     if (nameParts.length >= 2) {
       return `${nameParts[0]} ${nameParts[1]}`;
@@ -80,6 +77,7 @@ export const useBarberAuth = () => {
     barber,
     loading,
     checkBarberAuth,
-    displayName: getFirstTwoNames()
+    displayName: getFirstTwoNames(),
+    isBarberAdmin: barber?.is_barber_admin || false,
   };
 };

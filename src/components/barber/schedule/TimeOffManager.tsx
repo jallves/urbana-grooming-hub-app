@@ -67,7 +67,11 @@ const TYPE_BADGE_COLORS = {
   outro: 'bg-gray-500/30 text-gray-200',
 };
 
-const TimeOffManager: React.FC = () => {
+interface TimeOffManagerProps {
+  overrideBarberId?: string;
+}
+
+const TimeOffManager: React.FC<TimeOffManagerProps> = ({ overrideBarberId }) => {
   const { 
     upcomingTimeOffs, 
     loading, 

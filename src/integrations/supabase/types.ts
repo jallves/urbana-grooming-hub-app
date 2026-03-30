@@ -1432,6 +1432,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          is_barber_admin: boolean
           nome: string
           role: string | null
           specialties: string[] | null
@@ -1450,6 +1451,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_barber_admin?: boolean
           nome: string
           role?: string | null
           specialties?: string[] | null
@@ -1468,6 +1470,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          is_barber_admin?: boolean
           nome?: string
           role?: string | null
           specialties?: string[] | null
@@ -2415,6 +2418,7 @@ export type Database = {
       }
       invalidate_session: { Args: { p_session_id: string }; Returns: boolean }
       is_admin_or_higher: { Args: { _user_id: string }; Returns: boolean }
+      is_barber_admin: { Args: { _user_id: string }; Returns: boolean }
       log_admin_activity: {
         Args: {
           p_action: string

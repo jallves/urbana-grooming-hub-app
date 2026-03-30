@@ -33,8 +33,12 @@ interface WorkingHours {
   is_active: boolean;
 }
 
-const SlotBlockManager: React.FC = () => {
-  const { barberData } = useBarberData();
+interface SlotBlockManagerProps {
+  overrideBarberId?: string;
+}
+
+const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId }) => {
+  const { barberData } = useBarberData(overrideBarberId);
   const [staffTableId, setStaffTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);

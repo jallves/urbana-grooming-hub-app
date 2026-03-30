@@ -10,6 +10,7 @@ interface AppointmentWithDetails {
   client_name: string;
   service_name: string;
   is_encaixe?: boolean;
+  barber_name?: string;
   service?: {
     price?: number;
   };
@@ -35,7 +36,8 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
           status,
           is_encaixe,
           painel_clientes!inner(nome),
-          painel_servicos!inner(nome, preco, duracao)
+          painel_servicos!inner(nome, preco, duracao),
+          painel_barbeiros!inner(nome)
         `)
         .eq('barbeiro_id', barberId)
         .gte('data', thirtyDaysAgo.toISOString().split('T')[0])
@@ -45,7 +47,6 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
 
       if (!data) return [];
 
-      // Mapear status do banco para o formato esperado pelo frontend
       const statusMap: Record<string, string> = {
         'agendado': 'scheduled',
         'confirmado': 'confirmed',
@@ -61,6 +62,7 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
         end_time: `${apt.data}T${apt.hora}`,
         client_name: apt.painel_clientes?.nome || 'Cliente',
         service_name: apt.painel_servicos?.nome || 'Serviço',
+        barber_name: apt.painel_barbeiros?.nome || 'Barbeiro',
         is_encaixe: apt.is_encaixe || false,
         service: {
           price: apt.painel_servicos?.preco || 0
@@ -68,7 +70,7 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
       })) as AppointmentWithDetails[];
     },
     enabled: !!barberId,
-    staleTime: 1 * 60 * 1000, // 1 minuto
+    staleTime: 1 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
   });
 
@@ -77,7 +79,7 @@ export const useBarberAppointmentsQuery = (barberId: string | null) => {
     if (!barberId) return;
 
     const channel = supabase
-      .channel('barber-appointments-realtime')
+      .channel(`barber-appointments-realtime-${barberId}`)
       .on(
         'postgres_changes',
         {

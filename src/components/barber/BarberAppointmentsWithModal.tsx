@@ -8,6 +8,7 @@ import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
 import { useBarberAppointmentModal } from '@/hooks/barber/useBarberAppointmentModal';
+import BarberFilter from '@/components/barber/BarberFilter';
 import { 
   PainelBarbeiroCard, 
   PainelBarbeiroCardTitle,
@@ -18,7 +19,13 @@ import { cn } from '@/lib/utils';
 
 const BarberAppointmentsWithModal: React.FC = () => {
   const { data: barberData } = useBarberDataQuery();
-  const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(barberData?.id || null);
+  const isBarberAdmin = barberData?.is_barber_admin || false;
+  
+  // Selected barber for filtering (defaults to own barber)
+  const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
+  const activeBarberId = selectedBarberId || barberData?.id || null;
+  
+  const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(activeBarberId);
   const modalHandlers = useBarberAppointmentModal();
 
   // Encaixe modal state
@@ -37,6 +44,8 @@ const BarberAppointmentsWithModal: React.FC = () => {
     setEncaixeSlotDate(undefined);
     setEncaixeSlotTime(undefined);
   }, []);
+
+  const isViewingOther = isBarberAdmin && selectedBarberId && selectedBarberId !== barberData?.id;
 
   // Calcular stats localmente com useMemo
   const stats = useMemo(() => {
@@ -59,30 +68,10 @@ const BarberAppointmentsWithModal: React.FC = () => {
   }, [appointments]);
 
   const statsCards = [
-    {
-      title: 'Total',
-      value: stats.total,
-      icon: Calendar,
-      variant: 'default' as const,
-    },
-    {
-      title: 'Concluídos',
-      value: stats.completed,
-      icon: Clock,
-      variant: 'success' as const,
-    },
-    {
-      title: 'Próximos',
-      value: stats.upcoming,
-      icon: TrendingUp,
-      variant: 'warning' as const,
-    },
-    {
-      title: 'Receita',
-      value: `R$ ${stats.revenue.toFixed(2)}`,
-      icon: DollarSign,
-      variant: 'highlight' as const,
-    }
+    { title: 'Total', value: stats.total, icon: Calendar, variant: 'default' as const },
+    { title: 'Concluídos', value: stats.completed, icon: Clock, variant: 'success' as const },
+    { title: 'Próximos', value: stats.upcoming, icon: TrendingUp, variant: 'warning' as const },
+    { title: 'Receita', value: `R$ ${stats.revenue.toFixed(2)}`, icon: DollarSign, variant: 'highlight' as const },
   ];
 
   if (isLoading) {
@@ -108,7 +97,19 @@ const BarberAppointmentsWithModal: React.FC = () => {
   return (
     <>
       <div className="w-full space-y-3 sm:space-y-4 md:space-y-6">
-        {/* Stats Cards - Mobile First */}
+        {/* Barber Admin Filter */}
+        {isBarberAdmin && barberData && (
+          <div className="flex items-center justify-end">
+            <BarberFilter
+              isBarberAdmin={isBarberAdmin}
+              currentBarberId={barberData.id}
+              selectedBarberId={activeBarberId || barberData.id}
+              onBarberChange={setSelectedBarberId}
+            />
+          </div>
+        )}
+
+        {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
           {statsCards.map((stat, index) => {
             const IconComp = stat.icon;
@@ -152,10 +153,10 @@ const BarberAppointmentsWithModal: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <PainelBarbeiroCardTitle className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
-                  Meus Agendamentos
+                  {isViewingOther ? 'Agendamentos' : 'Meus Agendamentos'}
                 </PainelBarbeiroCardTitle>
                 <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
-                  Gerencie seus atendimentos - Toque para editar
+                  {isViewingOther ? 'Visualizando agendamentos de outro barbeiro' : 'Gerencie seus atendimentos - Toque para editar'}
                 </p>
               </div>
               <Button
@@ -177,7 +178,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                   Nenhum agendamento encontrado
                 </h3>
                 <p className="text-xs sm:text-sm text-urbana-light/60">
-                  Seus agendamentos aparecerão aqui quando forem criados.
+                  {isViewingOther ? 'Este barbeiro não possui agendamentos.' : 'Seus agendamentos aparecerão aqui quando forem criados.'}
                 </p>
               </div>
             ) : (
@@ -197,19 +198,19 @@ const BarberAppointmentsWithModal: React.FC = () => {
       </div>
 
       {/* Modal de Edição */}
-      {barberData && (
+      {activeBarberId && (
         <>
           <BarberEditAppointmentModal
             isOpen={modalHandlers.isEditModalOpen}
             onClose={modalHandlers.closeEditModal}
             appointmentId={modalHandlers.selectedAppointmentId}
-            barberId={barberData.id}
+            barberId={activeBarberId}
             onSuccess={() => refetch()}
           />
           <BarberEncaixeModal
             isOpen={isEncaixeModalOpen}
             onClose={handleCloseEncaixe}
-            barberId={barberData.id}
+            barberId={activeBarberId}
             slotDate={encaixeSlotDate}
             slotTime={encaixeSlotTime}
             onSuccess={() => refetch()}

@@ -6,6 +6,7 @@ interface BarberData {
   id: string;
   staff_id: string;
   commission_rate: number;
+  is_barber_admin: boolean;
 }
 
 export const useBarberDataQuery = () => {
@@ -18,14 +19,14 @@ export const useBarberDataQuery = () => {
 
       const { data } = await supabase
         .from('painel_barbeiros')
-        .select('id, staff_id, commission_rate')
+        .select('id, staff_id, commission_rate, is_barber_admin')
         .eq('email', user.email)
         .maybeSingle();
 
       return data as BarberData | null;
     },
     enabled: !!user?.email,
-    staleTime: 10 * 60 * 1000, // 10 minutos - dados raramente mudam
+    staleTime: 10 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
 };

@@ -23,7 +23,7 @@ const employeeSchema = z.object({
   name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
   email: z.string().email('Email inválido'),
   phone: z.string().min(10, 'Telefone deve ter pelo menos 10 dígitos'),
-  role: z.enum(['admin', 'manager', 'barber'], {
+  role: z.enum(['admin', 'manager', 'barber', 'barber_admin'], {
     required_error: 'Selecione um cargo',
   }),
   status: z.enum(['active', 'inactive'], {
@@ -112,11 +112,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
   };
 
   const createEmployee = async (data: EmployeeFormData) => {
+    const isBarberAdmin = data.role === 'barber_admin';
+    const dbRole = isBarberAdmin ? 'barber' : data.role;
+    
     const employeeData = {
       name: data.name.trim(),
       email: data.email.trim().toLowerCase(),
       phone: data.phone.trim(),
-      role: data.role,
+      role: dbRole,
       status: data.status,
       photo_url: photoUrl || null,
       commission_rate: data.commission_rate || 40,
@@ -165,7 +168,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           .from('user_roles')
           .upsert([{
             user_id: existingUserId,
-            role: data.role,
+            role: dbRole as any,
           }], {
             onConflict: 'user_id,role',
             ignoreDuplicates: false,
@@ -183,8 +186,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         });
       }
 
-      // 4. Se for barbeiro, criar também na tabela staff
-      if (data.role === 'barber') {
+      // 4. Se for barbeiro (ou barbeiro admin), criar também na tabela staff e definir is_barber_admin
+      if (dbRole === 'barber') {
         const staffData = {
           name: data.name.trim(),
           email: data.email.trim().toLowerCase(),
@@ -202,6 +205,16 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
         if (staffError) {
           console.error('Warning: Failed to sync to staff table:', staffError);
+        }
+
+        // Set is_barber_admin on painel_barbeiros (trigger will create the record)
+        if (isBarberAdmin) {
+          setTimeout(async () => {
+            await supabase
+              .from('painel_barbeiros')
+              .update({ is_barber_admin: true })
+              .eq('email', employeeData.email);
+          }, 1000);
         }
       }
     } catch (error) {
@@ -248,12 +261,15 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       }
     }
 
+    const isBarberAdminUpdate = data.role === 'barber_admin';
+    const dbRoleUpdate = isBarberAdminUpdate ? 'barber' : data.role;
+
     // Atualizar na tabela employees
     const updateData: UpdateEmployeeData = {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      role: data.role,
+      role: dbRoleUpdate as 'admin' | 'manager' | 'barber',
       status: data.status,
       photo_url: photoUrl,
       commission_rate: data.commission_rate || 40,
@@ -269,6 +285,14 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
     if (error) {
       console.error('Error updating employee:', error);
       throw new Error(error.message);
+    }
+
+    // Update is_barber_admin on painel_barbeiros
+    if (dbRoleUpdate === 'barber') {
+      await supabase
+        .from('painel_barbeiros')
+        .update({ is_barber_admin: isBarberAdminUpdate })
+        .eq('email', data.email.trim().toLowerCase());
     }
 
     console.log('Employee updated successfully');
@@ -417,6 +441,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
                 <SelectItem value="admin" className="text-gray-900 hover:bg-gray-100 font-raleway">Administrador</SelectItem>
                 <SelectItem value="manager" className="text-gray-900 hover:bg-gray-100 font-raleway">Gerente</SelectItem>
                 <SelectItem value="barber" className="text-gray-900 hover:bg-gray-100 font-raleway">Barbeiro</SelectItem>
+                <SelectItem value="barber_admin" className="text-gray-900 hover:bg-gray-100 font-raleway">Barbeiro Administrador</SelectItem>
               </SelectContent>
             </Select>
             {form.formState.errors.role && (
@@ -445,7 +470,7 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
           </div>
 
           {/* Taxa de Comissão (apenas para barbeiros) */}
-          {form.watch('role') === 'barber' && (
+          {(form.watch('role') === 'barber' || form.watch('role') === 'barber_admin') && (
             <div className="space-y-2 md:col-span-1">
               <Label htmlFor="commission_rate" className="text-gray-900 font-raleway font-medium">
                 Taxa de Comissão (%) *
