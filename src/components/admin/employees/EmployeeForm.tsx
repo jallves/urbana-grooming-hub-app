@@ -251,12 +251,15 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
       }
     }
 
+    const isBarberAdminUpdate = data.role === 'barber_admin';
+    const dbRoleUpdate = isBarberAdminUpdate ? 'barber' : data.role;
+
     // Atualizar na tabela employees
     const updateData: UpdateEmployeeData = {
       name: data.name,
       email: data.email,
       phone: data.phone,
-      role: data.role,
+      role: dbRoleUpdate,
       status: data.status,
       photo_url: photoUrl,
       commission_rate: data.commission_rate || 40,
