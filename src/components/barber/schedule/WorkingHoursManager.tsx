@@ -32,8 +32,12 @@ const DAYS_OF_WEEK = [
   { value: 6, label: 'Sábado', shortLabel: 'Sáb', icon: Moon },
 ];
 
-const WorkingHoursManager: React.FC = () => {
-  const { barberData } = useBarberData();
+interface WorkingHoursManagerProps {
+  overrideBarberId?: string;
+}
+
+const WorkingHoursManager: React.FC<WorkingHoursManagerProps> = ({ overrideBarberId }) => {
+  const { barberData } = useBarberData(overrideBarberId);
   const queryClient = useQueryClient();
   const [staffTableId, setStaffTableId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
