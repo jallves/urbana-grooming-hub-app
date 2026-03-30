@@ -28,7 +28,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   onDelete,
   onDeactivate,
 }) => {
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (role: string, isBarberAdmin?: boolean) => {
+    if (role === 'barber' && isBarberAdmin) {
+      return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 font-raleway text-xs">Barbeiro Admin</Badge>;
+    }
     switch (role) {
       case 'admin':
         return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-raleway text-xs">Admin</Badge>;

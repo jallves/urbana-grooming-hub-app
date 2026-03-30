@@ -11,6 +11,7 @@ export interface Employee {
   created_at: string;
   updated_at: string;
   last_login?: string;
+  is_barber_admin?: boolean;
 }
 
 export interface CreateEmployeeData {

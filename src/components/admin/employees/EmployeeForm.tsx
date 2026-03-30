@@ -48,13 +48,15 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
   const isEditing = !!employee;
 
+  const resolvedRole = employee?.role === 'barber' && employee?.is_barber_admin ? 'barber_admin' : employee?.role;
+
   const form = useForm<EmployeeFormData>({
     resolver: zodResolver(employeeSchema),
     defaultValues: {
       name: employee?.name || '',
       email: employee?.email || '',
       phone: employee?.phone || '',
-      role: employee?.role || 'barber',
+      role: resolvedRole || 'barber',
       status: employee?.status || 'active',
       commission_rate: employee?.commission_rate || 40,
     },
