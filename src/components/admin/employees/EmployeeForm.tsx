@@ -186,8 +186,8 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         });
       }
 
-      // 4. Se for barbeiro, criar também na tabela staff
-      if (data.role === 'barber') {
+      // 4. Se for barbeiro (ou barbeiro admin), criar também na tabela staff e definir is_barber_admin
+      if (dbRole === 'barber') {
         const staffData = {
           name: data.name.trim(),
           email: data.email.trim().toLowerCase(),
@@ -205,6 +205,16 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
 
         if (staffError) {
           console.error('Warning: Failed to sync to staff table:', staffError);
+        }
+
+        // Set is_barber_admin on painel_barbeiros (trigger will create the record)
+        if (isBarberAdmin) {
+          setTimeout(async () => {
+            await supabase
+              .from('painel_barbeiros')
+              .update({ is_barber_admin: true })
+              .eq('email', employeeData.email);
+          }, 1000);
         }
       }
     } catch (error) {
