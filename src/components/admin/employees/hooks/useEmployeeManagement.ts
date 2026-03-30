@@ -78,11 +78,31 @@ export const useEmployeeManagement = () => {
         }
       }
 
+      // Fetch is_barber_admin from painel_barbeiros for barber employees
+      const barberEmails = (data || []).filter(e => e.role === 'barber').map(e => e.email).filter(Boolean) as string[];
+      let barberAdminMap = new Map<string, boolean>();
+
+      if (barberEmails.length > 0) {
+        const { data: barbers } = await supabase
+          .from('painel_barbeiros')
+          .select('email, is_barber_admin')
+          .in('email', barberEmails);
+
+        if (barbers) {
+          for (const barber of barbers) {
+            if (barber.email) {
+              barberAdminMap.set(barber.email, barber.is_barber_admin || false);
+            }
+          }
+        }
+      }
+
       return (data || []).map(employee => ({
         ...employee,
         role: employee.role as 'admin' | 'manager' | 'barber',
         status: employee.status as 'active' | 'inactive',
         last_login: lastLoginMap.get(employee.email || '') || undefined,
+        is_barber_admin: barberAdminMap.get(employee.email || '') || false,
       })) as Employee[];
     },
     staleTime: 30000,

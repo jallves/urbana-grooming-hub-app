@@ -28,7 +28,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
   onDelete,
   onDeactivate,
 }) => {
-  const getRoleBadge = (role: string) => {
+  const getRoleBadge = (role: string, isBarberAdmin?: boolean) => {
+    if (role === 'barber' && isBarberAdmin) {
+      return <Badge className="bg-purple-500/20 text-purple-400 border-purple-500/30 font-raleway text-xs">Barbeiro Admin</Badge>;
+    }
     switch (role) {
       case 'admin':
         return <Badge className="bg-red-500/20 text-red-400 border-red-500/30 font-raleway text-xs">Admin</Badge>;
@@ -97,7 +100,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
               </div>
               <div className="text-gray-700 font-raleway text-sm truncate">{employee.email}</div>
               <div className="text-gray-700 font-raleway text-sm">{employee.phone}</div>
-              <div>{getRoleBadge(employee.role)}</div>
+              <div>{getRoleBadge(employee.role, employee.is_barber_admin)}</div>
               <div>{getStatusBadge(employee.status)}</div>
               <div className="text-gray-700 font-raleway text-sm">
                 {formatDate(employee.last_login)}
@@ -229,7 +232,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                 </div>
                 <div>
                   <span className="text-gray-600 font-raleway">Cargo:</span>
-                  <div className="mt-1">{getRoleBadge(employee.role)}</div>
+                  <div className="mt-1">{getRoleBadge(employee.role, employee.is_barber_admin)}</div>
                 </div>
                 <div>
                   <span className="text-gray-600 font-raleway">Status:</span>

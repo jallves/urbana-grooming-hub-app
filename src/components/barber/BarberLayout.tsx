@@ -1,11 +1,12 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, Calendar, Clock, DollarSign, Home } from 'lucide-react';
+import { LogOut, Calendar, Clock, DollarSign, Home, ShieldCheck } from 'lucide-react';
 import BarberNotificationBell from '@/components/barber/BarberNotificationBell';
 import { useAuth } from '@/contexts/AuthContext';
 import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 
 import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -17,6 +18,8 @@ const BarberLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const { data: barberData } = useBarberDataQuery();
+  const isBarberAdmin = barberData?.is_barber_admin || false;
   useBarberAppointmentNotifier();
 
 
@@ -97,6 +100,9 @@ const BarberLayout: React.FC = () => {
                 <span className="text-xs sm:text-sm text-urbana-light font-medium">
                   {displayName?.split(' ')[0] || 'Barbeiro'}
                 </span>
+                {isBarberAdmin && (
+                  <ShieldCheck className="h-4 w-4 text-purple-400" />
+                )}
               </div>
               
               <Button
@@ -256,7 +262,7 @@ const BarberLayout: React.FC = () => {
             
             <div className="flex-1 min-w-0">
               <p className="text-xs text-urbana-light/60 truncate">
-                Barbeiro
+                {isBarberAdmin ? 'Barbeiro Administrador' : 'Barbeiro'}
               </p>
               <p className="text-sm font-semibold text-urbana-light truncate mt-0.5">
                 {displayName || 'Usuário'}
