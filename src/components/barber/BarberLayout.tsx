@@ -100,6 +100,9 @@ const BarberLayout: React.FC = () => {
                 <span className="text-xs sm:text-sm text-urbana-light font-medium">
                   {displayName?.split(' ')[0] || 'Barbeiro'}
                 </span>
+                {isBarberAdmin && (
+                  <ShieldCheck className="h-4 w-4 text-purple-400" />
+                )}
               </div>
               
               <Button
