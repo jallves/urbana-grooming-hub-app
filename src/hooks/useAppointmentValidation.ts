@@ -123,15 +123,18 @@ export const useAppointmentValidation = () => {
     date: Date,
     time: string,
     serviceDuration: number = 60,
-    excludeAppointmentId?: string
+    excludeAppointmentId?: string,
+    options?: { skipPastValidation?: boolean }
   ): Promise<ValidationResult> => {
     setIsValidating(true);
 
     try {
-      const pastTimeCheck = validateNotPastTime(date, time);
-      if (!pastTimeCheck.valid) {
-        toast.error(pastTimeCheck.error);
-        return pastTimeCheck;
+      if (!options?.skipPastValidation) {
+        const pastTimeCheck = validateNotPastTime(date, time);
+        if (!pastTimeCheck.valid) {
+          toast.error(pastTimeCheck.error);
+          return pastTimeCheck;
+        }
       }
 
       const conflictCheck = await checkAppointmentConflict(
