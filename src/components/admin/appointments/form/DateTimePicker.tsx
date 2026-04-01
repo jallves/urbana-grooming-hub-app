@@ -16,12 +16,14 @@ interface DateTimePickerProps {
   form: UseFormReturn<any>;
   barberId?: string;
   serviceDuration?: number;
+  skipPastValidation?: boolean;
 }
 
 const DateTimePicker: React.FC<DateTimePickerProps> = ({ 
   form, 
   barberId = '',
-  serviceDuration = 60 
+  serviceDuration = 60,
+  skipPastValidation = false
 }) => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
@@ -42,7 +44,8 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({
         const slots = await getAvailableTimeSlots(
           barberId,
           selectedDate,
-          serviceDuration
+          serviceDuration,
+          { skipPastValidation }
         );
 
         // Filtrar apenas horários disponíveis

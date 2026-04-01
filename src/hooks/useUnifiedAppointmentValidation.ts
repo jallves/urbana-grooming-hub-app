@@ -485,7 +485,8 @@ export const useUnifiedAppointmentValidation = () => {
   const getAvailableTimeSlots = useCallback(async (
     barberId: string,
     date: Date,
-    serviceDuration: number
+    serviceDuration: number,
+    options?: { skipPastValidation?: boolean }
   ): Promise<TimeSlot[]> => {
     setIsValidating(true);
 
@@ -591,8 +592,8 @@ export const useUnifiedAppointmentValidation = () => {
         let available = true;
         let reason: string | undefined;
 
-        // Verificar horário passado
-        if (isToday && isPastTime(date, timeString)) {
+        // Verificar horário passado (skip para admin/barbeiro admin)
+        if (!options?.skipPastValidation && isToday && isPastTime(date, timeString)) {
           available = false;
           reason = 'Horário passado';
         }

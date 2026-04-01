@@ -68,6 +68,7 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
               form={form}
               barberId={selectedStaffId}
               serviceDuration={selectedService?.duration}
+              skipPastValidation={true}
             />
             
             <StaffSelect 

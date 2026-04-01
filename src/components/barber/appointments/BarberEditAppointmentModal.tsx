@@ -81,10 +81,11 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         barberId,
         selectedDate,
         selectedService.duracao,
-        appointmentId || undefined
+        appointmentId || undefined,
+        isBarberAdmin
       );
     }
-  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots]);
+  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots, isBarberAdmin]);
 
   const fetchAppointment = async () => {
     if (!appointmentId) return;

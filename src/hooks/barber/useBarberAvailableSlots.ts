@@ -43,7 +43,8 @@ export const useBarberAvailableSlots = () => {
     barberId: string,
     date: Date,
     serviceDuration: number,
-    excludeAppointmentId?: string
+    excludeAppointmentId?: string,
+    skipPastValidation?: boolean
   ) => {
     setLoading(true);
     console.log('🕐 [BarberSlots] Buscando slots:', {
@@ -135,7 +136,7 @@ export const useBarberAvailableSlots = () => {
 
           // Se for hoje, verificar se já passou (com antecedência mínima)
           let isPast = false;
-          if (isCurrentDay) {
+          if (!skipPastValidation && isCurrentDay) {
             const slotTotalMinutes = hour * 60 + minute;
             const currentTotalMinutes = currentHour * 60 + currentMinute;
             if (slotTotalMinutes <= currentTotalMinutes + MINIMUM_ADVANCE_MINUTES) {
