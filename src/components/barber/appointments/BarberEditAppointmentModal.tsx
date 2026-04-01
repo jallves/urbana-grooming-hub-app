@@ -45,6 +45,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   barberId,
   onSuccess
 }) => {
+  const { data: currentBarberData } = useBarberDataQuery();
+  const isBarberAdmin = currentBarberData?.is_barber_admin || false;
   const [appointment, setAppointment] = useState<any>(null);
   const [services, setServices] = useState<PainelServico[]>([]);
   const [loading, setLoading] = useState(false);
