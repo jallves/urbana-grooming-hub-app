@@ -236,7 +236,7 @@ export const useClientSubscriptions = () => {
       await supabase.from('contas_receber').insert({
         descricao: `Assinatura ${planName} — ${clientName}`,
         valor: data.amount,
-        data_vencimento: data.period_end,
+        data_vencimento: today,
         data_recebimento: today,
         status: 'pago',
         categoria: 'Assinatura',
