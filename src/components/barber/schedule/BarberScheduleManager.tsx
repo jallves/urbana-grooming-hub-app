@@ -1,7 +1,7 @@
 import React, { useState, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BookingAvailabilityToggle from './BookingAvailabilityToggle';
-import { Calendar, Clock, Settings, Lock } from 'lucide-react';
+import { Calendar, Clock, Settings, Lock, Repeat } from 'lucide-react';
 import BarberScheduleSkeleton from '@/components/ui/loading/BarberScheduleSkeleton';
 import BarberFilter from '@/components/barber/BarberFilter';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
@@ -17,6 +17,7 @@ import {
 const WorkingHoursManager = React.lazy(() => import('./WorkingHoursManager'));
 const TimeOffManager = React.lazy(() => import('./TimeOffManager'));
 const SlotBlockManager = React.lazy(() => import('./SlotBlockManager'));
+const RecurringBlockManager = React.lazy(() => import('./RecurringBlockManager'));
 
 const BarberScheduleManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('slot-blocks');
