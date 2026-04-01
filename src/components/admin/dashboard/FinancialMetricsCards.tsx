@@ -12,71 +12,72 @@ interface FinancialMetricsCardsProps {
   year: number;
 }
 
+const isStatusRecebido = (status: string | null) =>
+  status === 'recebido' || status === 'pago';
+
 const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, year }) => {
   const { toast } = useToast();
   const { data: metrics, isLoading, refetch } = useQuery({
     queryKey: ['financial-dashboard-metrics', month, year],
     queryFn: async () => {
-      const firstDayOfMonth = new Date(year, month, 1).toISOString();
-      const lastDayOfMonth = new Date(year, month + 1, 0, 23, 59, 59).toISOString();
+      const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      // Previous month for comparison
-      const firstDayOfLastMonth = new Date(year, month - 1, 1).toISOString();
-      const lastDayOfLastMonth = new Date(year, month, 0, 23, 59, 59).toISOString();
+      const prevFirstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
+      const prevLastDay = new Date(year, month, 0).toISOString().split('T')[0];
 
-      // Current month data
-      const { data: currentData, error: currentError } = await supabase
-        .from('financial_records')
-        .select('transaction_type, status, net_amount, due_date')
-        .gte('transaction_date', firstDayOfMonth.split('T')[0])
-        .lte('transaction_date', lastDayOfMonth.split('T')[0]);
+      const todayStr = new Date().toISOString().split('T')[0];
 
-      if (currentError) throw currentError;
+      const [
+        contasReceberMes,
+        contasPagarMes,
+        contasReceberPrev,
+        contasPagarPrev,
+      ] = await Promise.all([
+        supabase.from('contas_receber').select('valor, status, data_vencimento')
+          .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
+        supabase.from('contas_pagar').select('valor, status, data_vencimento, categoria')
+          .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
+        supabase.from('contas_receber').select('valor, status')
+          .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
+        supabase.from('contas_pagar').select('valor, status, categoria')
+          .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
+      ]);
 
-      // Previous month data
-      const { data: previousData, error: previousError } = await supabase
-        .from('financial_records')
-        .select('transaction_type, status, net_amount')
-        .gte('transaction_date', firstDayOfLastMonth.split('T')[0])
-        .lte('transaction_date', lastDayOfLastMonth.split('T')[0]);
+      const crMes = contasReceberMes.data || [];
+      const cpMes = contasPagarMes.data || [];
+      const crPrev = contasReceberPrev.data || [];
+      const cpPrev = contasPagarPrev.data || [];
 
-      if (previousError) throw previousError;
+      // Current month
+      const revenue = crMes.filter(r => isStatusRecebido(r.status)).reduce((s, r) => s + Number(r.valor), 0);
+      const pendingReceivables = crMes.filter(r => r.status === 'pendente').reduce((s, r) => s + Number(r.valor), 0);
+      const overdueReceivables = crMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
 
-      const currentRevenue = currentData?.filter(r => r.transaction_type === 'revenue' && r.status === 'completed').reduce((sum, r) => sum + r.net_amount, 0) || 0;
-      const currentExpenses = currentData?.filter(r => r.transaction_type === 'expense' && r.status === 'completed').reduce((sum, r) => sum + Math.abs(r.net_amount), 0) || 0;
-      const currentCommissions = currentData?.filter(r => r.transaction_type === 'commission' && r.status === 'completed').reduce((sum, r) => sum + Math.abs(r.net_amount), 0) || 0;
+      const allExpenses = cpMes.filter(r => isStatusRecebido(r.status));
+      const commissions = allExpenses.filter(r => r.categoria === 'Comissão').reduce((s, r) => s + Number(r.valor), 0);
+      const expenses = allExpenses.filter(r => r.categoria !== 'Comissão').reduce((s, r) => s + Number(r.valor), 0);
+      const pendingPayables = cpMes.filter(r => r.status === 'pendente').reduce((s, r) => s + Number(r.valor), 0);
+      const pendingCommissions = cpMes.filter(r => r.status === 'pendente' && r.categoria === 'Comissão').reduce((s, r) => s + Number(r.valor), 0);
+      const overduePayables = cpMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
 
-      const previousRevenue = previousData?.filter(r => r.transaction_type === 'revenue' && r.status === 'completed').reduce((sum, r) => sum + r.net_amount, 0) || 0;
-      const previousExpenses = previousData?.filter(r => r.transaction_type === 'expense' && r.status === 'completed').reduce((sum, r) => sum + Math.abs(r.net_amount), 0) || 0;
+      // Previous month
+      const prevRevenue = crPrev.filter(r => isStatusRecebido(r.status)).reduce((s, r) => s + Number(r.valor), 0);
+      const prevAllExp = cpPrev.filter(r => isStatusRecebido(r.status));
+      const prevExpenses = prevAllExp.filter(r => r.categoria !== 'Comissão').reduce((s, r) => s + Number(r.valor), 0);
 
-      const pendingReceivables = currentData?.filter(r => r.transaction_type === 'revenue' && r.status === 'pending').reduce((sum, r) => sum + r.net_amount, 0) || 0;
-      const pendingPayables = currentData?.filter(r => r.transaction_type === 'expense' && r.status === 'pending').reduce((sum, r) => sum + Math.abs(r.net_amount), 0) || 0;
-      const pendingCommissions = currentData?.filter(r => r.transaction_type === 'commission' && r.status === 'pending').reduce((sum, r) => sum + Math.abs(r.net_amount), 0) || 0;
+      const profit = revenue - expenses - commissions;
+      const prevProfit = prevRevenue - prevExpenses;
 
-      const today = new Date().toISOString();
-      const overdueReceivables = currentData?.filter(r => r.transaction_type === 'revenue' && r.status === 'pending' && r.due_date && r.due_date < today).length || 0;
-      const overduePayables = currentData?.filter(r => r.transaction_type === 'expense' && r.status === 'pending' && r.due_date && r.due_date < today).length || 0;
-
-      const currentProfit = currentRevenue - currentExpenses - currentCommissions;
-      const previousProfit = previousRevenue - previousExpenses;
-      
-      const revenueTrend = previousRevenue ? ((currentRevenue - previousRevenue) / previousRevenue) * 100 : 0;
-      const expenseTrend = previousExpenses ? ((currentExpenses - previousExpenses) / previousExpenses) * 100 : 0;
-      const profitTrend = previousProfit ? ((currentProfit - previousProfit) / Math.abs(previousProfit)) * 100 : 0;
+      const revenueTrend = prevRevenue ? ((revenue - prevRevenue) / prevRevenue) * 100 : 0;
+      const expenseTrend = prevExpenses ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
+      const profitTrend = prevProfit ? ((profit - prevProfit) / Math.abs(prevProfit)) * 100 : 0;
 
       return {
-        revenue: currentRevenue,
-        expenses: currentExpenses,
-        commissions: currentCommissions,
-        profit: currentProfit,
-        revenueTrend,
-        expenseTrend,
-        profitTrend,
-        pendingReceivables,
-        pendingPayables,
-        pendingCommissions,
-        overdueReceivables,
-        overduePayables,
+        revenue, expenses, commissions, profit,
+        revenueTrend, expenseTrend, profitTrend,
+        pendingReceivables, pendingPayables, pendingCommissions,
+        overdueReceivables, overduePayables,
       };
     },
     refetchInterval: 60000,
@@ -99,34 +100,36 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
     );
   }
 
+  const formatCurrency = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
   const cards = [
     {
       title: 'Receita do Mês',
-      value: `R$ ${(metrics?.revenue || 0).toFixed(2)}`,
+      value: formatCurrency(metrics?.revenue || 0),
       icon: DollarSign,
       color: 'text-green-600',
       bgColor: 'bg-green-50',
       trend: metrics?.revenueTrend || 0,
       subtitle: metrics?.pendingReceivables && metrics.pendingReceivables > 0
-        ? `R$ ${metrics.pendingReceivables.toFixed(2)} a receber`
+        ? `${formatCurrency(metrics.pendingReceivables)} a receber`
         : '✓ Tudo recebido',
       alert: (metrics?.overdueReceivables || 0) > 0 ? `${metrics?.overdueReceivables} vencida(s)` : null,
     },
     {
       title: 'Despesas do Mês',
-      value: `R$ ${(metrics?.expenses || 0).toFixed(2)}`,
+      value: formatCurrency(metrics?.expenses || 0),
       icon: CreditCard,
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       trend: metrics?.expenseTrend || 0,
       subtitle: metrics?.pendingPayables && metrics.pendingPayables > 0
-        ? `R$ ${metrics.pendingPayables.toFixed(2)} a pagar`
-        : '✓ Todas as despesas pagas',
+        ? `${formatCurrency(metrics.pendingPayables)} a pagar`
+        : '✓ Todas pagas',
       alert: (metrics?.overduePayables || 0) > 0 ? `${metrics?.overduePayables} vencida(s)` : null,
     },
     {
       title: 'Lucro Líquido',
-      value: `R$ ${(metrics?.profit || 0).toFixed(2)}`,
+      value: formatCurrency(metrics?.profit || 0),
       icon: Wallet,
       color: metrics && metrics.profit >= 0 ? 'text-blue-600' : 'text-orange-600',
       bgColor: metrics && metrics.profit >= 0 ? 'bg-blue-50' : 'bg-orange-50',
@@ -135,13 +138,13 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
     },
     {
       title: 'Comissões do Mês',
-      value: `R$ ${(metrics?.commissions || 0).toFixed(2)}`,
+      value: formatCurrency(metrics?.commissions || 0),
       icon: TrendingUp,
       color: 'text-purple-600',
       bgColor: 'bg-purple-50',
       subtitle: metrics?.pendingCommissions && metrics.pendingCommissions > 0
-        ? `R$ ${metrics.pendingCommissions.toFixed(2)} a pagar aos barbeiros`
-        : '✓ Todas as comissões pagas',
+        ? `${formatCurrency(metrics.pendingCommissions)} pendentes`
+        : '✓ Todas pagas',
     },
   ];
 

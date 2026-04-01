@@ -24,54 +24,67 @@ const TopBarbersWidget: React.FC<TopBarbersWidgetProps> = ({ month, year }) => {
   const { data: topBarbers, isLoading } = useQuery({
     queryKey: ['top-barbers-dashboard', month, year],
     queryFn: async () => {
-      const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
-      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
+      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
-      const { data: revenueData } = await supabase
-        .from('financial_records')
-        .select('barber_id, net_amount')
-        .eq('status', 'completed')
-        .eq('transaction_type', 'revenue')
-        .gte('transaction_date', firstDayOfMonth)
-        .lte('transaction_date', lastDayOfMonth)
-        .not('barber_id', 'is', null);
+      // Get vendas (real sales data) for the month
+      const [vendasResult, barbeirosResult, comissoesResult] = await Promise.all([
+        supabase.from('vendas')
+          .select('barbeiro_id, valor_total')
+          .eq('status', 'pago')
+          .gte('created_at', firstDay)
+          .lte('created_at', lastDay + 'T23:59:59'),
+        supabase.from('painel_barbeiros')
+          .select('id, nome')
+          .eq('ativo', true),
+        supabase.from('contas_pagar')
+          .select('fornecedor, valor')
+          .eq('categoria', 'Comissão')
+          .in('status', ['pago', 'pendente'])
+          .gte('data_vencimento', firstDay)
+          .lte('data_vencimento', lastDay),
+      ]);
 
-      const { data: barbersData } = await supabase
-        .from('painel_barbeiros')
-        .select('id, nome')
-        .eq('ativo', true);
+      const vendas = vendasResult.data || [];
+      const barbeiros = barbeirosResult.data || [];
+      const comissoes = comissoesResult.data || [];
 
       const barberNames: Record<string, string> = {};
-      barbersData?.forEach(barber => { barberNames[barber.id] = barber.nome; });
+      barbeiros.forEach(b => { barberNames[b.id] = b.nome; });
 
       const barberMap = new Map<string, BarberStats>();
-      revenueData?.forEach((record) => {
-        const barberId = record.barber_id;
-        const barberName = barberNames[barberId] || 'Barbeiro';
-        if (!barberMap.has(barberId)) {
-          barberMap.set(barberId, { barber_id: barberId, barber_name: barberName, total_revenue: 0, total_services: 0, total_commissions: 0, average_ticket: 0 });
+
+      vendas.forEach(v => {
+        if (!v.barbeiro_id) return;
+        const name = barberNames[v.barbeiro_id] || 'Barbeiro';
+        if (!barberMap.has(v.barbeiro_id)) {
+          barberMap.set(v.barbeiro_id, {
+            barber_id: v.barbeiro_id,
+            barber_name: name,
+            total_revenue: 0,
+            total_services: 0,
+            total_commissions: 0,
+            average_ticket: 0,
+          });
         }
-        const stats = barberMap.get(barberId)!;
-        stats.total_revenue += record.net_amount || 0;
+        const stats = barberMap.get(v.barbeiro_id)!;
+        stats.total_revenue += Number(v.valor_total) || 0;
         stats.total_services += 1;
       });
 
-      const { data: commissions } = await supabase
-        .from('financial_records')
-        .select('barber_id, net_amount')
-        .eq('status', 'completed')
-        .eq('transaction_type', 'commission')
-        .gte('transaction_date', firstDayOfMonth)
-        .lte('transaction_date', lastDayOfMonth)
-        .not('barber_id', 'is', null);
-
-      commissions?.forEach((comm) => {
-        const stats = barberMap.get(comm.barber_id);
-        if (stats) stats.total_commissions += Math.abs(comm.net_amount || 0);
+      // Match commissions by barber name
+      comissoes.forEach(c => {
+        if (!c.fornecedor) return;
+        for (const [, stats] of barberMap) {
+          if (c.fornecedor.includes(stats.barber_name) || stats.barber_name.includes(c.fornecedor)) {
+            stats.total_commissions += Number(c.valor) || 0;
+            break;
+          }
+        }
       });
 
       return Array.from(barberMap.values())
-        .map(stats => ({ ...stats, average_ticket: stats.total_services > 0 ? stats.total_revenue / stats.total_services : 0 }))
+        .map(s => ({ ...s, average_ticket: s.total_services > 0 ? s.total_revenue / s.total_services : 0 }))
         .sort((a, b) => b.total_revenue - a.total_revenue)
         .slice(0, 5);
     },
