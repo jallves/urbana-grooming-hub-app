@@ -267,8 +267,6 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
   };
 
   const handleRemoveBlock = async (block: RecurringBlock) => {
-    if (!confirm(`Remover bloqueio das ${block.time} de ${format(parseISO(block.startDate), 'dd/MM')} a ${format(parseISO(block.endDate), 'dd/MM')}?`)) return;
-
     setSaving(true);
     try {
       const batchSize = 50;
@@ -284,6 +282,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       toast.error('Erro ao remover bloqueio');
     } finally {
       setSaving(false);
+      setBlockToRemove(null);
     }
   };
 
