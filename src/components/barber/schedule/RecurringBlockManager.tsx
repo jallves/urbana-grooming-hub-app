@@ -9,6 +9,7 @@ import { Loader2, AlertCircle, CalendarRange, Clock, Trash2, Plus, Repeat } from
 import { format, addDays, eachDayOfInterval, getDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import ConfirmActionDialog from '@/components/admin/shared/ConfirmActionDialog';
 
 interface RecurringBlockManagerProps {
   overrideBarberId?: string;
