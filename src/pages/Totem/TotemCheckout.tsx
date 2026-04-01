@@ -340,7 +340,7 @@ const TotemCheckout: React.FC = () => {
           forma_pagamento: 'ASSINATURA',
           status: 'pago',
           gorjeta: 0,
-          observacoes: `Crédito assinatura ${activeSubscription.plan_name} - Crédito ${activeSubscription.credits_used + 1}/${activeSubscription.credits_total}`
+          observacoes: `Crédito assinatura ${activeSubscription.plan_name} - ${serviceCreditsCost} crédito(s) usado(s) - Total: ${activeSubscription.credits_used + serviceCreditsCost}/${activeSubscription.credits_total}`
         }).eq('id', currentVendaId);
       }
 
