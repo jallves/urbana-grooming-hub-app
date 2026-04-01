@@ -16,6 +16,7 @@ interface DateTimePickerProps {
   form: UseFormReturn<any>;
   barberId?: string;
   serviceDuration?: number;
+  skipPastValidation?: boolean;
 }
 
 const DateTimePicker: React.FC<DateTimePickerProps> = ({ 
