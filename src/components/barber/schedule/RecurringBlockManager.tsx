@@ -544,6 +544,41 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
           </div>
         )}
       </div>
+
+      {/* Dialog de confirmação para criar bloqueio */}
+      <ConfirmActionDialog
+        open={confirmCreate}
+        onOpenChange={setConfirmCreate}
+        onConfirm={() => {
+          setConfirmCreate(false);
+          handleCreateBlock();
+        }}
+        type="deactivate"
+        title="Confirmar Bloqueio Recorrente"
+        description={
+          selectedTime
+            ? `O horário ${selectedTime} será bloqueado em ${previewCount} dia(s) de trabalho, de ${startDate ? format(parseISO(startDate), 'dd/MM/yyyy') : ''} até ${endDate ? format(parseISO(endDate), 'dd/MM/yyyy') : ''}. Dias: ${selectedDays.sort((a, b) => a - b).map(d => DAY_LABELS[d]).join(', ')}. Clientes não poderão agendar neste horário durante o período.`
+            : ''
+        }
+        entityName={`🕐 ${selectedTime} • ${previewCount} dias`}
+      />
+
+      {/* Dialog de confirmação para remover bloqueio */}
+      <ConfirmActionDialog
+        open={!!blockToRemove}
+        onOpenChange={(open) => { if (!open) setBlockToRemove(null); }}
+        onConfirm={() => {
+          if (blockToRemove) handleRemoveBlock(blockToRemove);
+        }}
+        type="delete"
+        title="Remover Bloqueio Recorrente"
+        description={
+          blockToRemove
+            ? `Deseja remover o bloqueio das ${blockToRemove.time} de ${format(parseISO(blockToRemove.startDate), 'dd/MM/yyyy')} a ${format(parseISO(blockToRemove.endDate), 'dd/MM/yyyy')}? Isso liberará ${blockToRemove.blockIds.length} dia(s) para agendamento.`
+            : ''
+        }
+        entityName={blockToRemove ? `🕐 ${blockToRemove.time} • ${blockToRemove.blockIds.length} dias` : ''}
+      />
     </div>
   );
 };
