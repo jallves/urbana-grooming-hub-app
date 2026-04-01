@@ -104,36 +104,34 @@ const FinancialDashboard: React.FC = () => {
       const startOfYear = `${year}-01-01`;
       const endOfYear = `${year}-12-31`;
 
-      // Receitas do ano
-      const { data: revenues } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .eq('transaction_type', 'revenue')
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+      // Receitas do ano - usar contas_receber como fonte principal (mais confiável)
+      const { data: contasReceber } = await supabase
+        .from('contas_receber')
+        .select('valor, status')
+        .in('status', ['recebido', 'pago'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      // Despesas do ano (expense + commission = TUDO)
-      const { data: expenses } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .in('transaction_type', ['expense', 'commission'])
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+      // Despesas do ano - usar contas_pagar como fonte principal
+      const { data: contasPagar } = await supabase
+        .from('contas_pagar')
+        .select('valor, status, categoria')
+        .in('status', ['pago', 'pendente'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      // Comissões do ano (APENAS commission - para exibição separada)
+      // Comissões do ano (separado para exibição)
       const { data: commissions } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .eq('transaction_type', 'commission')
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+        .from('contas_pagar')
+        .select('valor, status')
+        .eq('categoria', 'comissao')
+        .in('status', ['pago', 'pendente'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      const total_revenue = revenues?.reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
-      const total_expenses = expenses?.reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
-      const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
+      const total_revenue = contasReceber?.reduce((sum, r) => sum + Number(r.valor), 0) || 0;
+      const total_expenses = contasPagar?.reduce((sum, e) => sum + Number(e.valor), 0) || 0;
+      const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
       const net_profit = total_revenue - total_expenses;
 
       return {
