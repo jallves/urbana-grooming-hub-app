@@ -5,9 +5,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import RevenueRecordForm from './RevenueRecordForm';
@@ -118,21 +119,54 @@ const formatTransactionTime = (dateString: string | null): string => {
   }
 };
 
+// Helper: normaliza status pago/recebido para 'recebido'
+const isStatusRecebido = (status: string | null) => status === 'recebido' || status === 'pago';
+
+const MONTHS = [
+  { value: '0', label: 'Todos os meses' },
+  { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' },
+  { value: '3', label: 'Março' }, { value: '4', label: 'Abril' },
+  { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setembro' }, { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+];
+
 export const ContasAReceber: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const queryClient = useQueryClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
 
-  // Query para contas_receber (tabela ERP real com transaction_id)
+  // Query para contas_receber
   const { data: contasReceber, isLoading } = useQuery({
-    queryKey: ['contas-receber-erp'],
+    queryKey: ['contas-receber-erp', selectedYear, selectedMonth],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contas_receber')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .order('created_at', { ascending: false });
 
+      // Filtro por ano
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth);
+      
+      if (month > 0) {
+        // Filtro mês específico
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const endMonth = month === 12 ? 1 : month + 1;
+        const endYear = month === 12 ? year + 1 : year;
+        const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
+        query = query.gte('data_vencimento', startDate).lt('data_vencimento', endDate);
+      } else {
+        // Filtro só ano
+        query = query.gte('data_vencimento', `${year}-01-01`).lt('data_vencimento', `${year + 1}-01-01`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as ContaReceber[];
     },
@@ -202,7 +236,7 @@ export const ContasAReceber: React.FC = () => {
     setEditingRecord(null);
   };
 
-  // Calcular totais
+  // Calcular totais (trata 'pago' e 'recebido' como o mesmo status)
   const totals = useMemo(() => {
     if (!contasReceber) return { total: 0, pending: 0, completed: 0 };
     
@@ -212,7 +246,7 @@ export const ContasAReceber: React.FC = () => {
         .filter(r => r.status === 'pendente')
         .reduce((sum, r) => sum + Number(r.valor), 0),
       completed: contasReceber
-        .filter(r => r.status === 'recebido')
+        .filter(r => isStatusRecebido(r.status))
         .reduce((sum, r) => sum + Number(r.valor), 0)
     };
   }, [contasReceber]);
@@ -220,6 +254,7 @@ export const ContasAReceber: React.FC = () => {
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, { label: string; className: string }> = {
       recebido: { label: 'Recebido', className: 'bg-green-100 text-green-700 border-green-300' },
+      pago: { label: 'Recebido', className: 'bg-green-100 text-green-700 border-green-300' },
       pendente: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
       cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' }
     };
@@ -272,7 +307,7 @@ export const ContasAReceber: React.FC = () => {
         Number(c.valor),
         fmtDateExport(c.data_vencimento),
         fmtDateExport(c.data_recebimento),
-        c.status === 'recebido' ? 'Recebido' : 'Pendente',
+        c.status === 'recebido' || c.status === 'pago' ? 'Recebido' : 'Pendente',
         c.forma_pagamento || '-',
         c.observacoes || '',
       ]),
@@ -288,7 +323,7 @@ export const ContasAReceber: React.FC = () => {
       if (!byCat[cat]) byCat[cat] = { total: 0, count: 0, recebido: 0, pendente: 0 };
       byCat[cat].total += Number(c.valor);
       byCat[cat].count++;
-      if (c.status === 'recebido') byCat[cat].recebido += Number(c.valor);
+      if (isStatusRecebido(c.status)) byCat[cat].recebido += Number(c.valor);
       else byCat[cat].pendente += Number(c.valor);
     });
     const catData = [
@@ -331,6 +366,31 @@ export const ContasAReceber: React.FC = () => {
               <span className="sm:hidden">Novo</span>
             </Button>
           </div>
+        </div>
+
+        {/* Filtros Mês/Ano */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => (
+                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[100px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Cards de Resumo */}
