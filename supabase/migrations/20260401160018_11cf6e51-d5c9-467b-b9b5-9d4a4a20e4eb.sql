@@ -1,0 +1,1 @@
+UPDATE client_subscriptions SET credits_used = 2, updated_at = now() WHERE id = '2e7cb5f2-b76f-441f-94e3-c1abd6ab4a83';
