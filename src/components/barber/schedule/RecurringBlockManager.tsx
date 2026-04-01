@@ -53,6 +53,10 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
 
+  // Dialog state
+  const [confirmCreate, setConfirmCreate] = useState(false);
+  const [blockToRemove, setBlockToRemove] = useState<RecurringBlock | null>(null);
+
   // Resolve staff table ID
   useEffect(() => {
     const resolveStaffId = async () => {
