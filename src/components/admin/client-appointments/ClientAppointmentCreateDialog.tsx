@@ -484,8 +484,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         selectedDate,
         selectedTime,
         selectedService.duracao,
-        undefined, // excludeAppointmentId
-        false // não mostrar toast, tratamos manualmente
+        undefined,
+        false,
+        { skipPastValidation: true }
       );
 
       console.log('📊 Resultado da validação:', validation);
