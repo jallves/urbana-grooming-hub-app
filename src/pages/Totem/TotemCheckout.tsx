@@ -303,7 +303,8 @@ const TotemCheckout: React.FC = () => {
       const success = await useCredit(
         activeSubscription.id,
         appointment.id,
-        resumo.original_service.nome
+        resumo.original_service.nome,
+        serviceCreditsCost
       );
 
       if (!success) {
