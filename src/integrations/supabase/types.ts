@@ -1884,18 +1884,21 @@ export type Database = {
       subscription_plan_services: {
         Row: {
           created_at: string
+          credits_cost: number
           id: string
           plan_id: string
           service_id: string
         }
         Insert: {
           created_at?: string
+          credits_cost?: number
           id?: string
           plan_id: string
           service_id: string
         }
         Update: {
           created_at?: string
+          credits_cost?: number
           id?: string
           plan_id?: string
           service_id?: string

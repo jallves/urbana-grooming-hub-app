@@ -139,6 +139,18 @@ const TotemCheckout: React.FC = () => {
     return activeSubscription.allowed_service_ids.includes(appointment.servico_id);
   }, [activeSubscription, appointment?.servico_id]);
 
+  // Calcula quantos créditos o serviço agendado custa
+  const serviceCreditsCost = useMemo(() => {
+    if (!activeSubscription || !appointment?.servico_id) return 1;
+    return activeSubscription.service_credits_map[appointment.servico_id] || 1;
+  }, [activeSubscription, appointment?.servico_id]);
+
+  // Verifica se o cliente tem créditos suficientes para o serviço
+  const hasEnoughCredits = useMemo(() => {
+    if (!activeSubscription) return false;
+    return activeSubscription.credits_remaining >= serviceCreditsCost;
+  }, [activeSubscription, serviceCreditsCost]);
+
   // Resumo local sempre atualizado automaticamente
   const resumo: CheckoutSummary = useMemo(() => ({
     original_service: originalService,
@@ -284,14 +296,15 @@ const TotemCheckout: React.FC = () => {
 
   // Handler para usar crédito da assinatura (bypass PayGo)
   const handleUseCredit = async () => {
-    if (!activeSubscription || activeSubscription.credits_remaining <= 0) return;
+    if (!activeSubscription || !hasEnoughCredits) return;
     setProcessing(true);
     try {
       // 1. Usar crédito da assinatura PRIMEIRO
       const success = await useCredit(
         activeSubscription.id,
         appointment.id,
-        resumo.original_service.nome
+        resumo.original_service.nome,
+        serviceCreditsCost
       );
 
       if (!success) {
@@ -327,7 +340,7 @@ const TotemCheckout: React.FC = () => {
           forma_pagamento: 'ASSINATURA',
           status: 'pago',
           gorjeta: 0,
-          observacoes: `Crédito assinatura ${activeSubscription.plan_name} - Crédito ${activeSubscription.credits_used + 1}/${activeSubscription.credits_total}`
+          observacoes: `Crédito assinatura ${activeSubscription.plan_name} - ${serviceCreditsCost} crédito(s) usado(s) - Total: ${activeSubscription.credits_used + serviceCreditsCost}/${activeSubscription.credits_total}`
         }).eq('id', currentVendaId);
       }
 
@@ -355,7 +368,7 @@ const TotemCheckout: React.FC = () => {
         }).eq('id', appointment.id);
       }
 
-      toast.success(`Crédito utilizado! (${activeSubscription.credits_remaining - 1} restantes) ✨`);
+      toast.success(`${serviceCreditsCost} crédito(s) utilizado(s)! (${activeSubscription.credits_remaining - serviceCreditsCost} restantes) ✨`);
       
       // 5. Mostrar modal de comprovante (igual ao fluxo normal)
       setProcessing(false);
@@ -707,7 +720,7 @@ const TotemCheckout: React.FC = () => {
           <h3 className="text-base font-bold text-urbana-light mb-4 text-center">Forma de Pagamento</h3>
 
           {/* Subscription Credit Button */}
-          {activeSubscription && activeSubscription.credits_remaining > 0 && isServiceCoveredByPlan && (
+          {activeSubscription && hasEnoughCredits && isServiceCoveredByPlan && (
             <div className="mb-4">
               <Button
                 onClick={handleUseCredit}
@@ -716,7 +729,7 @@ const TotemCheckout: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Crown className="w-6 h-6" />
-                  <span>Usar 1 Crédito</span>
+                  <span>Usar {serviceCreditsCost} Crédito{serviceCreditsCost > 1 ? 's' : ''}</span>
                 </div>
                 <span className="text-xs text-purple-200/80">
                   {activeSubscription.plan_name} • {activeSubscription.credits_remaining} crédito{activeSubscription.credits_remaining > 1 ? 's' : ''} restante{activeSubscription.credits_remaining > 1 ? 's' : ''}
@@ -738,6 +751,15 @@ const TotemCheckout: React.FC = () => {
             <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
               <p className="text-xs text-amber-300 text-center">
                 ⚠️ Este serviço não está incluído no plano <strong>{activeSubscription.plan_name}</strong>. O pagamento será realizado normalmente.
+              </p>
+            </div>
+          )}
+
+          {/* Info: créditos insuficientes para o serviço */}
+          {activeSubscription && isServiceCoveredByPlan && !hasEnoughCredits && (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <p className="text-xs text-amber-300 text-center">
+                ⚠️ Este serviço consome <strong>{serviceCreditsCost} crédito{serviceCreditsCost > 1 ? 's' : ''}</strong>, mas você possui apenas <strong>{activeSubscription.credits_remaining}</strong>. O pagamento será realizado normalmente.
               </p>
             </div>
           )}

@@ -1,0 +1,1 @@
+ALTER TABLE public.subscription_plan_services ADD COLUMN IF NOT EXISTS credits_cost integer NOT NULL DEFAULT 1;

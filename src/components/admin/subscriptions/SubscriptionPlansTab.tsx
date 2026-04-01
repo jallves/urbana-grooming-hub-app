@@ -34,7 +34,7 @@ const planIcons: Record<string, React.ReactNode> = {
 const emptyForm: PlanFormData = {
   name: '', slug: '', description: '', price: 0,
   billing_period: 'monthly', is_active: true, color: 'amber',
-  display_order: 0, service_ids: [], credits_total: 4,
+  display_order: 0, service_ids: [], service_credits: {}, credits_total: 4,
 };
 
 const SubscriptionPlansTab: React.FC = () => {
@@ -66,6 +66,10 @@ const SubscriptionPlansTab: React.FC = () => {
       price: plan.price, billing_period: plan.billing_period, is_active: plan.is_active,
       color: plan.color || 'amber', display_order: plan.display_order,
       service_ids: plan.services?.map((s: any) => s.id) || [],
+      service_credits: (plan.services || []).reduce((acc: Record<string, number>, s: any) => {
+        acc[s.id] = s.credits_cost || 1;
+        return acc;
+      }, {}),
       credits_total: (plan as any).credits_total || 4,
     });
     setDialogOpen(true);
@@ -94,8 +98,21 @@ const SubscriptionPlansTab: React.FC = () => {
       const newIds = prev.service_ids.includes(serviceId)
         ? prev.service_ids.filter(id => id !== serviceId)
         : [...prev.service_ids, serviceId];
-      return { ...prev, service_ids: newIds, price: recalcPrice(newIds) };
+      const newCredits = { ...prev.service_credits };
+      if (!prev.service_ids.includes(serviceId)) {
+        newCredits[serviceId] = 1; // default 1 crédito
+      } else {
+        delete newCredits[serviceId];
+      }
+      return { ...prev, service_ids: newIds, service_credits: newCredits, price: recalcPrice(newIds) };
     });
+  };
+
+  const updateServiceCredits = (serviceId: string, cost: number) => {
+    setForm(prev => ({
+      ...prev,
+      service_credits: { ...prev.service_credits, [serviceId]: Math.max(1, cost) },
+    }));
   };
 
   const getActiveSubsCount = (planId: string) => 
@@ -283,11 +300,26 @@ const SubscriptionPlansTab: React.FC = () => {
                 <p className="text-[10px] text-muted-foreground mb-2">{form.service_ids.length} serviço(s) selecionado(s) — o preço é calculado automaticamente</p>
                 <div className="border rounded-lg divide-y max-h-[200px] overflow-y-auto overscroll-contain">
                   {servicesQuery.data?.map((svc: any) => (
-                    <label key={svc.id} className="flex items-center gap-3 cursor-pointer hover:bg-accent/50 px-3 py-2.5 active:bg-accent">
-                      <Checkbox checked={form.service_ids.includes(svc.id)} onCheckedChange={() => toggleService(svc.id)} />
-                      <span className="text-xs sm:text-sm flex-1 truncate">{svc.nome}</span>
-                      <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0 font-medium">R$ {svc.preco?.toFixed(2)}</span>
-                    </label>
+                    <div key={svc.id} className="flex items-center gap-3 hover:bg-accent/50 px-3 py-2.5">
+                      <label className="flex items-center gap-3 cursor-pointer flex-1 min-w-0">
+                        <Checkbox checked={form.service_ids.includes(svc.id)} onCheckedChange={() => toggleService(svc.id)} />
+                        <span className="text-xs sm:text-sm flex-1 truncate">{svc.nome}</span>
+                        <span className="text-[10px] sm:text-xs text-muted-foreground flex-shrink-0 font-medium">R$ {svc.preco?.toFixed(2)}</span>
+                      </label>
+                      {form.service_ids.includes(svc.id) && (
+                        <div className="flex items-center gap-1 flex-shrink-0">
+                          <Input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={form.service_credits[svc.id] || 1}
+                            onChange={(e) => updateServiceCredits(svc.id, parseInt(e.target.value) || 1)}
+                            className="w-14 h-7 text-xs text-center px-1"
+                          />
+                          <span className="text-[10px] text-muted-foreground">créd.</span>
+                        </div>
+                      )}
+                    </div>
                   ))}
                   {(!servicesQuery.data || servicesQuery.data.length === 0) && (
                     <p className="text-xs text-muted-foreground p-3 text-center">Nenhum serviço cadastrado</p>

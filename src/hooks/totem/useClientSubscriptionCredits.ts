@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface PlanServiceCreditCost {
+  service_id: string;
+  credits_cost: number;
+}
+
 export interface ActiveSubscription {
   id: string;
   plan_id: string;
@@ -14,6 +19,7 @@ export interface ActiveSubscription {
   start_date: string;
   next_billing_date: string | null;
   allowed_service_ids: string[];
+  service_credits_map: Record<string, number>; // service_id -> credits_cost
 }
 
 export const useClientSubscriptionCredits = () => {
@@ -48,12 +54,17 @@ export const useClientSubscriptionCredits = () => {
           .single(),
         supabase
           .from('subscription_plan_services')
-          .select('service_id')
+          .select('service_id, credits_cost')
           .eq('plan_id', sub.plan_id),
       ]);
 
       const plan = planRes.data;
-      const allowedServiceIds = (servicesRes.data || []).map((s: any) => s.service_id);
+      const planServicesData = servicesRes.data || [];
+      const allowedServiceIds = planServicesData.map((s: any) => s.service_id);
+      const serviceCreditsMap: Record<string, number> = {};
+      planServicesData.forEach((s: any) => {
+        serviceCreditsMap[s.service_id] = s.credits_cost || 1;
+      });
 
       const creditsTotal = sub.credits_total || 4;
       const creditsUsed = sub.credits_used || 0;
@@ -74,6 +85,7 @@ export const useClientSubscriptionCredits = () => {
         start_date: sub.start_date,
         next_billing_date: sub.next_billing_date,
         allowed_service_ids: allowedServiceIds,
+        service_credits_map: serviceCreditsMap,
       };
 
       setActiveSubscription(result);
@@ -90,32 +102,34 @@ export const useClientSubscriptionCredits = () => {
   const useCredit = useCallback(async (
     subscriptionId: string,
     appointmentId: string,
-    serviceName: string
+    serviceName: string,
+    creditsCost: number = 1
   ): Promise<boolean> => {
     try {
-      // 1. Registrar uso do crédito
+      // 1. Registrar uso do crédito (uma entrada por crédito consumido)
+      const usageInserts = Array.from({ length: creditsCost }, () => ({
+        subscription_id: subscriptionId,
+        appointment_id: appointmentId,
+        service_name: serviceName,
+      }));
+
       const { error: usageError } = await supabase
         .from('subscription_usage')
-        .insert({
-          subscription_id: subscriptionId,
-          appointment_id: appointmentId,
-          service_name: serviceName,
-        });
+        .insert(usageInserts);
 
       if (usageError) {
         console.error('Erro ao registrar uso:', usageError);
         return false;
       }
 
-      // 2. Incrementar credits_used na assinatura
-      // Fetch current then update (no RPC needed)
+      // 2. Incrementar credits_used na assinatura pelo custo correto
       const { data: current } = await supabase
         .from('client_subscriptions')
         .select('credits_used')
         .eq('id', subscriptionId)
         .single();
 
-      const newCreditsUsed = (current?.credits_used || 0) + 1;
+      const newCreditsUsed = (current?.credits_used || 0) + creditsCost;
 
       const { error: updateError } = await supabase
         .from('client_subscriptions')

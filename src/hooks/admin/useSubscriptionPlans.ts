@@ -15,7 +15,7 @@ export interface SubscriptionPlan {
   icon: string | null;
   credits_total: number;
   created_at: string;
-  services?: { id: string; nome: string; preco: number }[];
+  services?: { id: string; nome: string; preco: number; credits_cost?: number }[];
 }
 
 export interface PlanFormData {
@@ -28,6 +28,7 @@ export interface PlanFormData {
   color: string;
   display_order: number;
   service_ids: string[];
+  service_credits: Record<string, number>; // service_id -> credits_cost
   credits_total: number;
 }
 
@@ -46,7 +47,7 @@ export const useSubscriptionPlans = () => {
       // Fetch services for each plan
       const { data: planServices } = await supabase
         .from('subscription_plan_services')
-        .select('plan_id, service_id');
+        .select('plan_id, service_id, credits_cost');
 
       const { data: services } = await supabase
         .from('painel_servicos')
@@ -57,7 +58,10 @@ export const useSubscriptionPlans = () => {
         ...plan,
         services: (planServices || [])
           .filter((ps: any) => ps.plan_id === plan.id)
-          .map((ps: any) => services?.find((s: any) => s.id === ps.service_id))
+          .map((ps: any) => {
+            const svc = services?.find((s: any) => s.id === ps.service_id);
+            return svc ? { ...svc, credits_cost: ps.credits_cost || 1 } : null;
+          })
           .filter(Boolean),
       })) as SubscriptionPlan[];
     },
@@ -65,7 +69,7 @@ export const useSubscriptionPlans = () => {
 
   const createPlan = useMutation({
     mutationFn: async (data: PlanFormData) => {
-      const { service_ids, ...planData } = data;
+      const { service_ids, service_credits, ...planData } = data;
       const { data: plan, error } = await supabase
         .from('subscription_plans')
         .insert(planData as any)
@@ -76,7 +80,7 @@ export const useSubscriptionPlans = () => {
       if (service_ids.length > 0) {
         const { error: svcError } = await supabase
           .from('subscription_plan_services')
-          .insert(service_ids.map(sid => ({ plan_id: plan.id, service_id: sid })) as any);
+          .insert(service_ids.map(sid => ({ plan_id: plan.id, service_id: sid, credits_cost: service_credits[sid] || 1 })) as any);
         if (svcError) throw svcError;
       }
       return plan;
@@ -90,7 +94,7 @@ export const useSubscriptionPlans = () => {
 
   const updatePlan = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PlanFormData }) => {
-      const { service_ids, ...planData } = data;
+      const { service_ids, service_credits, ...planData } = data;
       const { error } = await supabase
         .from('subscription_plans')
         .update(planData as any)
@@ -102,7 +106,7 @@ export const useSubscriptionPlans = () => {
       if (service_ids.length > 0) {
         await supabase
           .from('subscription_plan_services')
-          .insert(service_ids.map(sid => ({ plan_id: id, service_id: sid })) as any);
+          .insert(service_ids.map(sid => ({ plan_id: id, service_id: sid, credits_cost: service_credits[sid] || 1 })) as any);
       }
     },
     onSuccess: () => {
