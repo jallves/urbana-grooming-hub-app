@@ -34,7 +34,7 @@ const planIcons: Record<string, React.ReactNode> = {
 const emptyForm: PlanFormData = {
   name: '', slug: '', description: '', price: 0,
   billing_period: 'monthly', is_active: true, color: 'amber',
-  display_order: 0, service_ids: [], credits_total: 4,
+  display_order: 0, service_ids: [], service_credits: {}, credits_total: 4,
 };
 
 const SubscriptionPlansTab: React.FC = () => {
