@@ -1,7 +1,7 @@
 import React, { useState, Suspense } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import BookingAvailabilityToggle from './BookingAvailabilityToggle';
-import { Calendar, Clock, Settings, Lock } from 'lucide-react';
+import { Calendar, Clock, Settings, Lock, Repeat } from 'lucide-react';
 import BarberScheduleSkeleton from '@/components/ui/loading/BarberScheduleSkeleton';
 import BarberFilter from '@/components/barber/BarberFilter';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
@@ -17,6 +17,7 @@ import {
 const WorkingHoursManager = React.lazy(() => import('./WorkingHoursManager'));
 const TimeOffManager = React.lazy(() => import('./TimeOffManager'));
 const SlotBlockManager = React.lazy(() => import('./SlotBlockManager'));
+const RecurringBlockManager = React.lazy(() => import('./RecurringBlockManager'));
 
 const BarberScheduleManager: React.FC = () => {
   const [activeTab, setActiveTab] = useState('slot-blocks');
@@ -61,20 +62,25 @@ const BarberScheduleManager: React.FC = () => {
 
         <PainelBarbeiroCardContent className="p-4 sm:p-5 pt-0">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-urbana-black/50 backdrop-blur-sm border border-urbana-gold/20 rounded-xl p-1 h-auto gap-1 mb-4">
+            <TabsList className="grid w-full grid-cols-4 bg-urbana-black/50 backdrop-blur-sm border border-urbana-gold/20 rounded-xl p-1 h-auto gap-1 mb-4">
               <TabsTrigger value="slot-blocks"
-                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[11px] sm:text-sm py-2 sm:py-3 px-1.5 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
-                <Lock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[10px] sm:text-sm py-2 sm:py-3 px-1 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
+                <Lock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="font-medium truncate">Bloqueios</span>
               </TabsTrigger>
+              <TabsTrigger value="recurring-blocks"
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[10px] sm:text-sm py-2 sm:py-3 px-1 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
+                <Repeat className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span className="font-medium truncate">Recorrente</span>
+              </TabsTrigger>
               <TabsTrigger value="working-hours"
-                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[11px] sm:text-sm py-2 sm:py-3 px-1.5 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
-                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[10px] sm:text-sm py-2 sm:py-3 px-1 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
+                <Clock className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="font-medium truncate">Horários</span>
               </TabsTrigger>
               <TabsTrigger value="time-off"
-                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[11px] sm:text-sm py-2 sm:py-3 px-1.5 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
-                <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                className="data-[state=active]:bg-urbana-gold data-[state=active]:text-urbana-black data-[state=active]:shadow-lg text-urbana-light/80 hover:text-urbana-light text-[10px] sm:text-sm py-2 sm:py-3 px-1 sm:px-4 rounded-lg transition-all duration-200 flex items-center justify-center gap-1 sm:gap-2">
+                <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
                 <span className="font-medium truncate">Folgas</span>
               </TabsTrigger>
             </TabsList>
@@ -82,6 +88,12 @@ const BarberScheduleManager: React.FC = () => {
             <TabsContent value="slot-blocks" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
               <Suspense fallback={<BarberScheduleSkeleton />}>
                 <SlotBlockManager overrideBarberId={isViewingOther ? selectedBarberId! : undefined} />
+              </Suspense>
+            </TabsContent>
+
+            <TabsContent value="recurring-blocks" className="mt-0 focus-visible:outline-none focus-visible:ring-0">
+              <Suspense fallback={<BarberScheduleSkeleton />}>
+                <RecurringBlockManager overrideBarberId={isViewingOther ? selectedBarberId! : undefined} />
               </Suspense>
             </TabsContent>
 
