@@ -69,7 +69,7 @@ export const useSubscriptionPlans = () => {
 
   const createPlan = useMutation({
     mutationFn: async (data: PlanFormData) => {
-      const { service_ids, ...planData } = data;
+      const { service_ids, service_credits, ...planData } = data;
       const { data: plan, error } = await supabase
         .from('subscription_plans')
         .insert(planData as any)
