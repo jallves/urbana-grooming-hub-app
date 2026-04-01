@@ -154,53 +154,45 @@ const FinancialDashboard: React.FC = () => {
       const startOfYear = new Date(today.getFullYear(), 0, 1).toISOString();
 
       const fetchMetrics = async (startDate: string) => {
-        // Receitas
-        const { data: revenues, error: revenuesError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'revenue')
-          .gte('transaction_date', startDate);
+        const startDateOnly = startDate.split('T')[0];
+        
+        // Receitas via contas_receber (fonte confiável)
+        const { data: revenues } = await supabase
+          .from('contas_receber')
+          .select('valor, status')
+          .gte('data_vencimento', startDateOnly);
 
-        if (revenuesError) {
-          console.error('Error fetching revenues:', revenuesError);
-        }
+        // Despesas via contas_pagar
+        const { data: expenses } = await supabase
+          .from('contas_pagar')
+          .select('valor, status, categoria')
+          .neq('categoria', 'comissao')
+          .gte('data_vencimento', startDateOnly);
 
-        // Despesas
-        const { data: expenses, error: expensesError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'expense')
-          .gte('transaction_date', startDate);
+        // Comissões via contas_pagar
+        const { data: commissions } = await supabase
+          .from('contas_pagar')
+          .select('valor, status')
+          .eq('categoria', 'comissao')
+          .gte('data_vencimento', startDateOnly);
 
-        if (expensesError) {
-          console.error('Error fetching expenses:', expensesError);
-        }
-
-        // Comissões
-        const { data: commissions, error: commissionsError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'commission')
-          .gte('transaction_date', startDate);
-
-        if (commissionsError) {
-          console.error('Error fetching commissions:', commissionsError);
-        }
+        const isRecebido = (status: string | null) => 
+          status === 'recebido' || status === 'pago';
 
         const total_revenue = revenues
-          ?.filter(r => r.status === 'completed')
-          .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+          ?.filter(r => isRecebido(r.status))
+          .reduce((sum, r) => sum + Number(r.valor), 0) || 0;
 
         const total_expenses = expenses
-          ?.filter(e => e.status === 'completed')
-          .reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
+          ?.filter(e => e.status === 'pago')
+          .reduce((sum, e) => sum + Number(e.valor), 0) || 0;
 
         const total_commissions = commissions
-          ?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
+          ?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
 
         const pending_amount = revenues
-          ?.filter(r => r.status === 'pending')
-          .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+          ?.filter(r => r.status === 'pendente')
+          .reduce((sum, r) => sum + Number(r.valor), 0) || 0;
 
         const net_profit = total_revenue - total_expenses - total_commissions;
         const profit_margin = total_revenue > 0 ? (net_profit / total_revenue) * 100 : 0;
