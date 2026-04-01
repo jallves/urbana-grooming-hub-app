@@ -28,6 +28,7 @@ export interface PlanFormData {
   color: string;
   display_order: number;
   service_ids: string[];
+  service_credits: Record<string, number>; // service_id -> credits_cost
   credits_total: number;
 }
 
