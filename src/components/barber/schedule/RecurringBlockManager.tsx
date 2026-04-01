@@ -476,7 +476,17 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
         )}
 
         <Button
-          onClick={handleCreateBlock}
+          onClick={() => {
+            if (!selectedTime || selectedDays.length === 0) {
+              toast.error('Preencha todos os campos');
+              return;
+            }
+            if (endDate < startDate) {
+              toast.error('Data final deve ser posterior à data inicial');
+              return;
+            }
+            setConfirmCreate(true);
+          }}
           disabled={saving || !selectedTime || selectedDays.length === 0}
           className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-medium h-10 text-sm"
         >
