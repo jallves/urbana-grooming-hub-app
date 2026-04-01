@@ -139,6 +139,18 @@ const TotemCheckout: React.FC = () => {
     return activeSubscription.allowed_service_ids.includes(appointment.servico_id);
   }, [activeSubscription, appointment?.servico_id]);
 
+  // Calcula quantos créditos o serviço agendado custa
+  const serviceCreditsCost = useMemo(() => {
+    if (!activeSubscription || !appointment?.servico_id) return 1;
+    return activeSubscription.service_credits_map[appointment.servico_id] || 1;
+  }, [activeSubscription, appointment?.servico_id]);
+
+  // Verifica se o cliente tem créditos suficientes para o serviço
+  const hasEnoughCredits = useMemo(() => {
+    if (!activeSubscription) return false;
+    return activeSubscription.credits_remaining >= serviceCreditsCost;
+  }, [activeSubscription, serviceCreditsCost]);
+
   // Resumo local sempre atualizado automaticamente
   const resumo: CheckoutSummary = useMemo(() => ({
     original_service: originalService,
