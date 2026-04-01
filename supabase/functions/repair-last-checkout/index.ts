@@ -65,6 +65,24 @@ Deno.serve(async (req) => {
       }
     }
 
+    // 4.5) Atualizar venda para pago (se ainda não estiver)
+    if (venda.status !== 'pago') {
+      const { error: vendaUpdError } = await supabase
+        .from('vendas')
+        .update({ 
+          status: 'pago', 
+          forma_pagamento: venda.forma_pagamento || 'CARTAO',
+          updated_at: new Date().toISOString() 
+        })
+        .eq('id', venda.id)
+
+      if (vendaUpdError) {
+        console.warn('⚠️ Erro ao atualizar status da venda:', vendaUpdError)
+      } else {
+        console.log('✅ Venda atualizada para pago:', venda.id)
+      }
+    }
+
     // 5) Reprocessar ERP (idempotente: financial_records + contas_receber/pagar + barber_commissions)
     const tipAmount = Number(venda.gorjeta || 0)
 
