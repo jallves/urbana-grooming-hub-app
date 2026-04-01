@@ -1,6 +1,11 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export interface PlanServiceCreditCost {
+  service_id: string;
+  credits_cost: number;
+}
+
 export interface ActiveSubscription {
   id: string;
   plan_id: string;
@@ -14,6 +19,7 @@ export interface ActiveSubscription {
   start_date: string;
   next_billing_date: string | null;
   allowed_service_ids: string[];
+  service_credits_map: Record<string, number>; // service_id -> credits_cost
 }
 
 export const useClientSubscriptionCredits = () => {
