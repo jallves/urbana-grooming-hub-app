@@ -80,7 +80,7 @@ export const useSubscriptionPlans = () => {
       if (service_ids.length > 0) {
         const { error: svcError } = await supabase
           .from('subscription_plan_services')
-          .insert(service_ids.map(sid => ({ plan_id: plan.id, service_id: sid })) as any);
+          .insert(service_ids.map(sid => ({ plan_id: plan.id, service_id: sid, credits_cost: service_credits[sid] || 1 })) as any);
         if (svcError) throw svcError;
       }
       return plan;
