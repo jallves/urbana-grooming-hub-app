@@ -44,7 +44,8 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({
         const slots = await getAvailableTimeSlots(
           barberId,
           selectedDate,
-          serviceDuration
+          serviceDuration,
+          { skipPastValidation }
         );
 
         // Filtrar apenas horários disponíveis
