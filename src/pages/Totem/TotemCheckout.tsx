@@ -720,7 +720,7 @@ const TotemCheckout: React.FC = () => {
           <h3 className="text-base font-bold text-urbana-light mb-4 text-center">Forma de Pagamento</h3>
 
           {/* Subscription Credit Button */}
-          {activeSubscription && activeSubscription.credits_remaining > 0 && isServiceCoveredByPlan && (
+          {activeSubscription && hasEnoughCredits && isServiceCoveredByPlan && (
             <div className="mb-4">
               <Button
                 onClick={handleUseCredit}
@@ -729,7 +729,7 @@ const TotemCheckout: React.FC = () => {
               >
                 <div className="flex items-center gap-2">
                   <Crown className="w-6 h-6" />
-                  <span>Usar 1 Crédito</span>
+                  <span>Usar {serviceCreditsCost} Crédito{serviceCreditsCost > 1 ? 's' : ''}</span>
                 </div>
                 <span className="text-xs text-purple-200/80">
                   {activeSubscription.plan_name} • {activeSubscription.credits_remaining} crédito{activeSubscription.credits_remaining > 1 ? 's' : ''} restante{activeSubscription.credits_remaining > 1 ? 's' : ''}
