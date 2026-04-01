@@ -43,7 +43,8 @@ export const useBarberAvailableSlots = () => {
     barberId: string,
     date: Date,
     serviceDuration: number,
-    excludeAppointmentId?: string
+    excludeAppointmentId?: string,
+    skipPastValidation?: boolean
   ) => {
     setLoading(true);
     console.log('🕐 [BarberSlots] Buscando slots:', {
