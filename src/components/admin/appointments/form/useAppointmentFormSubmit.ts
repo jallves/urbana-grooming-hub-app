@@ -69,13 +69,14 @@ export const useAppointmentFormSubmit = ({
       console.log('Converted startDate:', startDate);
       console.log('Start time ISO:', startTimeISO);
       
-      // Validar disponibilidade antes de salvar
+      // Validar disponibilidade antes de salvar (admin pode agendar retroativo)
       const validation = await validateAppointment(
         data.staff_id,
         data.date,
         data.time,
         selectedService.duration,
-        appointmentId // Excluir o próprio agendamento se for edição
+        appointmentId, // Excluir o próprio agendamento se for edição
+        { skipPastValidation: true }
       );
 
       if (!validation.valid) {
