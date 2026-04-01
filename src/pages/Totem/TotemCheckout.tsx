@@ -368,7 +368,7 @@ const TotemCheckout: React.FC = () => {
         }).eq('id', appointment.id);
       }
 
-      toast.success(`Crédito utilizado! (${activeSubscription.credits_remaining - 1} restantes) ✨`);
+      toast.success(`${serviceCreditsCost} crédito(s) utilizado(s)! (${activeSubscription.credits_remaining - serviceCreditsCost} restantes) ✨`);
       
       // 5. Mostrar modal de comprovante (igual ao fluxo normal)
       setProcessing(false);
