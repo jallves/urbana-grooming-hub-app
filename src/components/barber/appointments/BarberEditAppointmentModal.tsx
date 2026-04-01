@@ -85,7 +85,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         isBarberAdmin
       );
     }
-  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots]);
+  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots, isBarberAdmin]);
 
   const fetchAppointment = async () => {
     if (!appointmentId) return;
