@@ -94,7 +94,7 @@ export const useSubscriptionPlans = () => {
 
   const updatePlan = useMutation({
     mutationFn: async ({ id, data }: { id: string; data: PlanFormData }) => {
-      const { service_ids, ...planData } = data;
+      const { service_ids, service_credits, ...planData } = data;
       const { error } = await supabase
         .from('subscription_plans')
         .update(planData as any)
