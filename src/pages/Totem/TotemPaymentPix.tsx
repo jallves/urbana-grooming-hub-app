@@ -127,53 +127,37 @@ const TotemPaymentPix: React.FC = () => {
     };
     navigate('/totem/payment-success', { state: successState });
 
-    // Finalizar venda e estoque em BACKGROUND (fire-and-forget)
-    try {
-      const backgroundTasks: Promise<any>[] = [];
-
-      if (isDirect) {
-        backgroundTasks.push(
-          supabase.functions.invoke('totem-direct-sale', {
-            body: { action: 'finish', venda_id, transaction_data: pendingTransactionData }
-          })
-        );
-      } else {
-        backgroundTasks.push(
-          supabase.functions.invoke('totem-checkout', {
-            body: {
-              action: 'finish', venda_id, agendamento_id: appointment?.id,
-              session_id, transaction_data: pendingTransactionData,
-              payment_method: 'PIX', tipAmount,
-              extras: (extraServices || []).map((s: any) => ({ id: s.id })),
-              products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
-              combo_discount: comboDiscount || 0,
-              combo_name: comboName || null,
-            }
-          })
-        );
-      }
-
-      // Atualizar estoque em paralelo usando RPC (mais rápido que select+update sequencial)
-      if (selectedProducts?.length > 0) {
-        for (const product of selectedProducts) {
-          backgroundTasks.push(
-            Promise.resolve(
-              supabase.rpc('decrease_product_stock', {
-                p_product_id: product.product_id,
-                p_quantity: product.quantidade
-              })
-            ).then(({ error }) => {
-              if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
-            })
-          );
-        }
-      }
-
-      await Promise.allSettled(backgroundTasks);
-      console.log('✅ [PIX] Background tasks concluídas');
-    } catch (error) {
-      console.error('❌ [PIX] Erro em background tasks:', error);
+    // Finalizar venda e estoque em BACKGROUND usando fetch keepalive
+    // Garante que a requisição sobreviva à navegação/unmount do componente
+    if (isDirect) {
+      fireAndForgetEdgeFunction('totem-direct-sale', {
+        action: 'finish', venda_id, transaction_data: pendingTransactionData
+      });
+    } else {
+      fireAndForgetEdgeFunction('totem-checkout', {
+        action: 'finish', venda_id, agendamento_id: appointment?.id,
+        session_id, transaction_data: pendingTransactionData,
+        payment_method: 'PIX', tipAmount,
+        extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+        products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
+        combo_discount: comboDiscount || 0,
+        combo_name: comboName || null,
+      });
     }
+
+    // Atualizar estoque em paralelo (fire-and-forget)
+    if (selectedProducts?.length > 0) {
+      for (const product of selectedProducts) {
+        supabase.rpc('decrease_product_stock', {
+          p_product_id: product.product_id,
+          p_quantity: product.quantidade
+        }).then(({ error }) => {
+          if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
+        });
+      }
+    }
+
+    console.log('✅ [PIX] Background tasks disparadas via keepalive');
   }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount]);
 
   // Handler para resultado do TEF - IGUAL AO CARTÃO
