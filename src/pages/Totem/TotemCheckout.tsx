@@ -755,6 +755,15 @@ const TotemCheckout: React.FC = () => {
             </div>
           )}
 
+          {/* Info: créditos insuficientes para o serviço */}
+          {activeSubscription && isServiceCoveredByPlan && !hasEnoughCredits && (
+            <div className="mb-4 p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl">
+              <p className="text-xs text-amber-300 text-center">
+                ⚠️ Este serviço consome <strong>{serviceCreditsCost} crédito{serviceCreditsCost > 1 ? 's' : ''}</strong>, mas você possui apenas <strong>{activeSubscription.credits_remaining}</strong>. O pagamento será realizado normalmente.
+              </p>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <Button
               onClick={() => handlePayment('pix')}
