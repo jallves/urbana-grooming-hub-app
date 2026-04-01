@@ -93,9 +93,13 @@ export default defineConfig(({ mode }) => ({
     })
   ].filter(Boolean),
   resolve: {
+    dedupe: ['react', 'react-dom', 'react-router', 'react-router-dom'],
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  optimizeDeps: {
+    include: ['react', 'react-dom', 'react-router-dom'],
   },
   build: {
     rollupOptions: {
