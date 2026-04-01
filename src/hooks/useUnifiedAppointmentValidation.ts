@@ -394,7 +394,8 @@ export const useUnifiedAppointmentValidation = () => {
     time: string,
     serviceDuration: number,
     excludeAppointmentId?: string,
-    showToast: boolean = true
+    showToast: boolean = true,
+    options?: { skipPastValidation?: boolean }
   ): Promise<ValidationResult> => {
     setIsValidating(true);
 
