@@ -331,11 +331,6 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
         let hasAvailable = false;
         for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
-          if (isToday) {
-            const slotDate = new Date(date);
-            slotDate.setHours(Math.floor(mins / 60), mins % 60, 0, 0);
-            if (slotDate <= now) continue;
-          }
           const slotEnd = mins + serviceDuration;
           let conflict = false;
           for (const p of occupied) { if (mins < p.end && slotEnd + BUFFER > p.start) { conflict = true; break; } }
@@ -372,7 +367,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       const slots = await getAvailableTimeSlots(
         selectedBarber.id,
         selectedDate,
-        selectedService.duracao
+        selectedService.duracao,
+        { skipPastValidation: true }
       );
       
       const availableSlots = slots.filter(s => s.available);
@@ -488,8 +484,9 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         selectedDate,
         selectedTime,
         selectedService.duracao,
-        undefined, // excludeAppointmentId
-        false // não mostrar toast, tratamos manualmente
+        undefined,
+        false,
+        { skipPastValidation: true }
       );
 
       console.log('📊 Resultado da validação:', validation);

@@ -394,7 +394,8 @@ export const useUnifiedAppointmentValidation = () => {
     time: string,
     serviceDuration: number,
     excludeAppointmentId?: string,
-    showToast: boolean = true
+    showToast: boolean = true,
+    options?: { skipPastValidation?: boolean }
   ): Promise<ValidationResult> => {
     setIsValidating(true);
 
@@ -402,11 +403,13 @@ export const useUnifiedAppointmentValidation = () => {
       console.log('🔍 [validateAppointment] Iniciando validação:', { barberId, date: date.toISOString(), time, serviceDuration });
 
       // 1. Verificar horário passado (síncrono, rápido)
-      const pastCheck = validateNotPastTime(date, time);
-      if (!pastCheck.valid) {
-        console.log('❌ [validateAppointment] Horário passado');
-        if (showToast) toast.error(pastCheck.error);
-        return pastCheck;
+      if (!options?.skipPastValidation) {
+        const pastCheck = validateNotPastTime(date, time);
+        if (!pastCheck.valid) {
+          console.log('❌ [validateAppointment] Horário passado');
+          if (showToast) toast.error(pastCheck.error);
+          return pastCheck;
+        }
       }
 
       // 2. Verificar horário de funcionamento (síncrono, rápido)
