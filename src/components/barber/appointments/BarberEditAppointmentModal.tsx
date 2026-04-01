@@ -81,7 +81,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         barberId,
         selectedDate,
         selectedService.duracao,
-        appointmentId || undefined
+        appointmentId || undefined,
+        isBarberAdmin
       );
     }
   }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots]);
