@@ -106,7 +106,7 @@ export const useSubscriptionPlans = () => {
       if (service_ids.length > 0) {
         await supabase
           .from('subscription_plan_services')
-          .insert(service_ids.map(sid => ({ plan_id: id, service_id: sid })) as any);
+          .insert(service_ids.map(sid => ({ plan_id: id, service_id: sid, credits_cost: service_credits[sid] || 1 })) as any);
       }
     },
     onSuccess: () => {
