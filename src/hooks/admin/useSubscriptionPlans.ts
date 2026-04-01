@@ -47,7 +47,7 @@ export const useSubscriptionPlans = () => {
       // Fetch services for each plan
       const { data: planServices } = await supabase
         .from('subscription_plan_services')
-        .select('plan_id, service_id');
+        .select('plan_id, service_id, credits_cost');
 
       const { data: services } = await supabase
         .from('painel_servicos')
