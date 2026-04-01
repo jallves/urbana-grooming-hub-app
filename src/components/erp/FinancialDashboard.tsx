@@ -69,23 +69,20 @@ const FinancialDashboard: React.FC = () => {
   const { data: totalBalanceData } = useQuery({
     queryKey: ['total-balance-erp'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('financial_records')
-        .select('transaction_type, net_amount, status')
-        .eq('status', 'completed');
+      // Receitas totais via contas_receber
+      const { data: receitas } = await supabase
+        .from('contas_receber')
+        .select('valor, status')
+        .in('status', ['recebido', 'pago']);
 
-      if (error) {
-        console.error('Erro ao buscar saldo total:', error);
-        throw error;
-      }
+      // Despesas totais via contas_pagar
+      const { data: despesas } = await supabase
+        .from('contas_pagar')
+        .select('valor, status')
+        .eq('status', 'pago');
 
-      const totalRevenue = data
-        ?.filter(t => t.transaction_type === 'revenue')
-        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
-
-      const totalExpense = data
-        ?.filter(t => t.transaction_type === 'expense' || t.transaction_type === 'commission')
-        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+      const totalRevenue = receitas?.reduce((sum, r) => sum + Number(r.valor), 0) || 0;
+      const totalExpense = despesas?.reduce((sum, e) => sum + Number(e.valor), 0) || 0;
 
       return {
         totalRevenue,
@@ -104,36 +101,34 @@ const FinancialDashboard: React.FC = () => {
       const startOfYear = `${year}-01-01`;
       const endOfYear = `${year}-12-31`;
 
-      // Receitas do ano
-      const { data: revenues } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .eq('transaction_type', 'revenue')
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+      // Receitas do ano - usar contas_receber como fonte principal (mais confiável)
+      const { data: contasReceber } = await supabase
+        .from('contas_receber')
+        .select('valor, status')
+        .in('status', ['recebido', 'pago'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      // Despesas do ano (expense + commission = TUDO)
-      const { data: expenses } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .in('transaction_type', ['expense', 'commission'])
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+      // Despesas do ano - usar contas_pagar como fonte principal
+      const { data: contasPagar } = await supabase
+        .from('contas_pagar')
+        .select('valor, status, categoria')
+        .in('status', ['pago', 'pendente'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      // Comissões do ano (APENAS commission - para exibição separada)
+      // Comissões do ano (separado para exibição)
       const { data: commissions } = await supabase
-        .from('financial_records')
-        .select('net_amount')
-        .eq('transaction_type', 'commission')
-        .eq('status', 'completed')
-        .gte('transaction_date', startOfYear)
-        .lte('transaction_date', endOfYear);
+        .from('contas_pagar')
+        .select('valor, status')
+        .eq('categoria', 'comissao')
+        .in('status', ['pago', 'pendente'])
+        .gte('data_vencimento', startOfYear)
+        .lte('data_vencimento', endOfYear);
 
-      const total_revenue = revenues?.reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
-      const total_expenses = expenses?.reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
-      const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
+      const total_revenue = contasReceber?.reduce((sum, r) => sum + Number(r.valor), 0) || 0;
+      const total_expenses = contasPagar?.reduce((sum, e) => sum + Number(e.valor), 0) || 0;
+      const total_commissions = commissions?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
       const net_profit = total_revenue - total_expenses;
 
       return {
@@ -156,53 +151,45 @@ const FinancialDashboard: React.FC = () => {
       const startOfYear = new Date(today.getFullYear(), 0, 1).toISOString();
 
       const fetchMetrics = async (startDate: string) => {
-        // Receitas
-        const { data: revenues, error: revenuesError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'revenue')
-          .gte('transaction_date', startDate);
+        const startDateOnly = startDate.split('T')[0];
+        
+        // Receitas via contas_receber (fonte confiável)
+        const { data: revenues } = await supabase
+          .from('contas_receber')
+          .select('valor, status')
+          .gte('data_vencimento', startDateOnly);
 
-        if (revenuesError) {
-          console.error('Error fetching revenues:', revenuesError);
-        }
+        // Despesas via contas_pagar
+        const { data: expenses } = await supabase
+          .from('contas_pagar')
+          .select('valor, status, categoria')
+          .neq('categoria', 'comissao')
+          .gte('data_vencimento', startDateOnly);
 
-        // Despesas
-        const { data: expenses, error: expensesError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'expense')
-          .gte('transaction_date', startDate);
+        // Comissões via contas_pagar
+        const { data: commissions } = await supabase
+          .from('contas_pagar')
+          .select('valor, status')
+          .eq('categoria', 'comissao')
+          .gte('data_vencimento', startDateOnly);
 
-        if (expensesError) {
-          console.error('Error fetching expenses:', expensesError);
-        }
-
-        // Comissões
-        const { data: commissions, error: commissionsError } = await supabase
-          .from('financial_records')
-          .select('net_amount, status')
-          .eq('transaction_type', 'commission')
-          .gte('transaction_date', startDate);
-
-        if (commissionsError) {
-          console.error('Error fetching commissions:', commissionsError);
-        }
+        const isRecebido = (status: string | null) => 
+          status === 'recebido' || status === 'pago';
 
         const total_revenue = revenues
-          ?.filter(r => r.status === 'completed')
-          .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+          ?.filter(r => isRecebido(r.status))
+          .reduce((sum, r) => sum + Number(r.valor), 0) || 0;
 
         const total_expenses = expenses
-          ?.filter(e => e.status === 'completed')
-          .reduce((sum, e) => sum + Number(e.net_amount), 0) || 0;
+          ?.filter(e => e.status === 'pago')
+          .reduce((sum, e) => sum + Number(e.valor), 0) || 0;
 
         const total_commissions = commissions
-          ?.reduce((sum, c) => sum + Number(c.net_amount), 0) || 0;
+          ?.reduce((sum, c) => sum + Number(c.valor), 0) || 0;
 
         const pending_amount = revenues
-          ?.filter(r => r.status === 'pending')
-          .reduce((sum, r) => sum + Number(r.net_amount), 0) || 0;
+          ?.filter(r => r.status === 'pendente')
+          .reduce((sum, r) => sum + Number(r.valor), 0) || 0;
 
         const net_profit = total_revenue - total_expenses - total_commissions;
         const profit_margin = total_revenue > 0 ? (net_profit / total_revenue) * 100 : 0;
