@@ -5,6 +5,28 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format, parseISO } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays } from 'lucide-react';
+import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import RevenueRecordForm from './RevenueRecordForm';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download } from 'lucide-react';
