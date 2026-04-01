@@ -22,7 +22,8 @@ interface DateTimePickerProps {
 const DateTimePicker: React.FC<DateTimePickerProps> = ({ 
   form, 
   barberId = '',
-  serviceDuration = 60 
+  serviceDuration = 60,
+  skipPastValidation = false
 }) => {
   const [availableTimeSlots, setAvailableTimeSlots] = useState<string[]>([]);
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
