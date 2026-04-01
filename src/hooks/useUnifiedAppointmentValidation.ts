@@ -485,7 +485,8 @@ export const useUnifiedAppointmentValidation = () => {
   const getAvailableTimeSlots = useCallback(async (
     barberId: string,
     date: Date,
-    serviceDuration: number
+    serviceDuration: number,
+    options?: { skipPastValidation?: boolean }
   ): Promise<TimeSlot[]> => {
     setIsValidating(true);
 
