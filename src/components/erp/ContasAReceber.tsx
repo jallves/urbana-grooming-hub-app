@@ -236,7 +236,7 @@ export const ContasAReceber: React.FC = () => {
     setEditingRecord(null);
   };
 
-  // Calcular totais
+  // Calcular totais (trata 'pago' e 'recebido' como o mesmo status)
   const totals = useMemo(() => {
     if (!contasReceber) return { total: 0, pending: 0, completed: 0 };
     
@@ -246,7 +246,7 @@ export const ContasAReceber: React.FC = () => {
         .filter(r => r.status === 'pendente')
         .reduce((sum, r) => sum + Number(r.valor), 0),
       completed: contasReceber
-        .filter(r => r.status === 'recebido')
+        .filter(r => isStatusRecebido(r.status))
         .reduce((sum, r) => sum + Number(r.valor), 0)
     };
   }, [contasReceber]);
@@ -254,6 +254,7 @@ export const ContasAReceber: React.FC = () => {
   const getStatusBadge = (status: string | null) => {
     const variants: Record<string, { label: string; className: string }> = {
       recebido: { label: 'Recebido', className: 'bg-green-100 text-green-700 border-green-300' },
+      pago: { label: 'Recebido', className: 'bg-green-100 text-green-700 border-green-300' },
       pendente: { label: 'Pendente', className: 'bg-yellow-100 text-yellow-700 border-yellow-300' },
       cancelado: { label: 'Cancelado', className: 'bg-red-100 text-red-700 border-red-300' }
     };
