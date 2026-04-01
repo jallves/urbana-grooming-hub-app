@@ -54,12 +54,17 @@ export const useClientSubscriptionCredits = () => {
           .single(),
         supabase
           .from('subscription_plan_services')
-          .select('service_id')
+          .select('service_id, credits_cost')
           .eq('plan_id', sub.plan_id),
       ]);
 
       const plan = planRes.data;
-      const allowedServiceIds = (servicesRes.data || []).map((s: any) => s.service_id);
+      const planServicesData = servicesRes.data || [];
+      const allowedServiceIds = planServicesData.map((s: any) => s.service_id);
+      const serviceCreditsMap: Record<string, number> = {};
+      planServicesData.forEach((s: any) => {
+        serviceCreditsMap[s.service_id] = s.credits_cost || 1;
+      });
 
       const creditsTotal = sub.credits_total || 4;
       const creditsUsed = sub.credits_used || 0;
