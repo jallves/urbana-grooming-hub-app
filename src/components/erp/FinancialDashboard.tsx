@@ -69,23 +69,20 @@ const FinancialDashboard: React.FC = () => {
   const { data: totalBalanceData } = useQuery({
     queryKey: ['total-balance-erp'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('financial_records')
-        .select('transaction_type, net_amount, status')
-        .eq('status', 'completed');
+      // Receitas totais via contas_receber
+      const { data: receitas } = await supabase
+        .from('contas_receber')
+        .select('valor, status')
+        .in('status', ['recebido', 'pago']);
 
-      if (error) {
-        console.error('Erro ao buscar saldo total:', error);
-        throw error;
-      }
+      // Despesas totais via contas_pagar
+      const { data: despesas } = await supabase
+        .from('contas_pagar')
+        .select('valor, status')
+        .eq('status', 'pago');
 
-      const totalRevenue = data
-        ?.filter(t => t.transaction_type === 'revenue')
-        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
-
-      const totalExpense = data
-        ?.filter(t => t.transaction_type === 'expense' || t.transaction_type === 'commission')
-        .reduce((sum, t) => sum + Number(t.net_amount), 0) || 0;
+      const totalRevenue = receitas?.reduce((sum, r) => sum + Number(r.valor), 0) || 0;
+      const totalExpense = despesas?.reduce((sum, e) => sum + Number(e.valor), 0) || 0;
 
       return {
         totalRevenue,
