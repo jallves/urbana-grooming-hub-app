@@ -85,6 +85,7 @@ export const useClientSubscriptionCredits = () => {
         start_date: sub.start_date,
         next_billing_date: sub.next_billing_date,
         allowed_service_ids: allowedServiceIds,
+        service_credits_map: serviceCreditsMap,
       };
 
       setActiveSubscription(result);
