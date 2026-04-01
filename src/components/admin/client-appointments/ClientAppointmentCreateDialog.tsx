@@ -367,7 +367,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       const slots = await getAvailableTimeSlots(
         selectedBarber.id,
         selectedDate,
-        selectedService.duracao
+        selectedService.duracao,
+        { skipPastValidation: true }
       );
       
       const availableSlots = slots.filter(s => s.available);
