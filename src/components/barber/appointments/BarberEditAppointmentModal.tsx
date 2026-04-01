@@ -344,7 +344,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  disabled={(date) => isBefore(date, today)}
+                  disabled={(date) => isBarberAdmin ? false : isBefore(date, today)}
                   locale={ptBR}
                   className="text-urbana-light mx-auto pointer-events-auto"
                   classNames={{
