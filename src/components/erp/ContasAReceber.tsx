@@ -140,21 +140,54 @@ const formatTransactionTime = (dateString: string | null): string => {
   }
 };
 
+// Helper: normaliza status pago/recebido para 'recebido'
+const isStatusRecebido = (status: string | null) => status === 'recebido' || status === 'pago';
+
+const MONTHS = [
+  { value: '0', label: 'Todos os meses' },
+  { value: '1', label: 'Janeiro' }, { value: '2', label: 'Fevereiro' },
+  { value: '3', label: 'Março' }, { value: '4', label: 'Abril' },
+  { value: '5', label: 'Maio' }, { value: '6', label: 'Junho' },
+  { value: '7', label: 'Julho' }, { value: '8', label: 'Agosto' },
+  { value: '9', label: 'Setembro' }, { value: '10', label: 'Outubro' },
+  { value: '11', label: 'Novembro' }, { value: '12', label: 'Dezembro' },
+];
+
 export const ContasAReceber: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
   const queryClient = useQueryClient();
+  const currentYear = new Date().getFullYear();
+  const currentMonth = new Date().getMonth() + 1;
+  const [selectedYear, setSelectedYear] = useState(currentYear.toString());
+  const [selectedMonth, setSelectedMonth] = useState(currentMonth.toString());
 
-  // Query para contas_receber (tabela ERP real com transaction_id)
+  // Query para contas_receber
   const { data: contasReceber, isLoading } = useQuery({
-    queryKey: ['contas-receber-erp'],
+    queryKey: ['contas-receber-erp', selectedYear, selectedMonth],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from('contas_receber')
         .select('*')
-        .order('created_at', { ascending: false })
-        .limit(100);
+        .order('created_at', { ascending: false });
 
+      // Filtro por ano
+      const year = parseInt(selectedYear);
+      const month = parseInt(selectedMonth);
+      
+      if (month > 0) {
+        // Filtro mês específico
+        const startDate = `${year}-${String(month).padStart(2, '0')}-01`;
+        const endMonth = month === 12 ? 1 : month + 1;
+        const endYear = month === 12 ? year + 1 : year;
+        const endDate = `${endYear}-${String(endMonth).padStart(2, '0')}-01`;
+        query = query.gte('data_vencimento', startDate).lt('data_vencimento', endDate);
+      } else {
+        // Filtro só ano
+        query = query.gte('data_vencimento', `${year}-01-01`).lt('data_vencimento', `${year + 1}-01-01`);
+      }
+
+      const { data, error } = await query;
       if (error) throw error;
       return (data || []) as ContaReceber[];
     },
