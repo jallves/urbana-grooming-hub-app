@@ -368,6 +368,31 @@ export const ContasAReceber: React.FC = () => {
           </div>
         </div>
 
+        {/* Filtros Mês/Ano */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <Select value={selectedMonth} onValueChange={setSelectedMonth}>
+            <SelectTrigger className="w-[140px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {MONTHS.map(m => (
+                <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-[100px] h-9 text-sm">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {[currentYear - 1, currentYear, currentYear + 1].map(y => (
+                <SelectItem key={y} value={y.toString()}>{y}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Cards de Resumo */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-4">
           <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
