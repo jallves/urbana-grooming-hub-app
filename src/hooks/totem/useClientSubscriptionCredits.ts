@@ -102,32 +102,34 @@ export const useClientSubscriptionCredits = () => {
   const useCredit = useCallback(async (
     subscriptionId: string,
     appointmentId: string,
-    serviceName: string
+    serviceName: string,
+    creditsCost: number = 1
   ): Promise<boolean> => {
     try {
-      // 1. Registrar uso do crédito
+      // 1. Registrar uso do crédito (uma entrada por crédito consumido)
+      const usageInserts = Array.from({ length: creditsCost }, () => ({
+        subscription_id: subscriptionId,
+        appointment_id: appointmentId,
+        service_name: serviceName,
+      }));
+
       const { error: usageError } = await supabase
         .from('subscription_usage')
-        .insert({
-          subscription_id: subscriptionId,
-          appointment_id: appointmentId,
-          service_name: serviceName,
-        });
+        .insert(usageInserts);
 
       if (usageError) {
         console.error('Erro ao registrar uso:', usageError);
         return false;
       }
 
-      // 2. Incrementar credits_used na assinatura
-      // Fetch current then update (no RPC needed)
+      // 2. Incrementar credits_used na assinatura pelo custo correto
       const { data: current } = await supabase
         .from('client_subscriptions')
         .select('credits_used')
         .eq('id', subscriptionId)
         .single();
 
-      const newCreditsUsed = (current?.credits_used || 0) + 1;
+      const newCreditsUsed = (current?.credits_used || 0) + creditsCost;
 
       const { error: updateError } = await supabase
         .from('client_subscriptions')
