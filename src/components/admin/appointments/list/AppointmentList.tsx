@@ -1,13 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAppointments } from './useAppointments';
 import AppointmentFilters from './AppointmentFilters';
 import AppointmentTable from './AppointmentTable';
 import DeleteConfirmationDialog from './DeleteConfirmationDialog';
 import AppointmentForm from '../AppointmentForm';
+import { format } from 'date-fns';
 
 const AppointmentList: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [dateFilter, setDateFilter] = useState<Date | undefined>(undefined);
+  const [barberFilter, setBarberFilter] = useState('all');
+  const [serviceFilter, setServiceFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -21,12 +25,46 @@ const AppointmentList: React.FC = () => {
     handleDeleteAppointment
   } = useAppointments();
 
-  const filteredAppointments = appointments.filter(appointment => {
-    if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
+  // Extrair barbeiros e serviços únicos
+  const barbers = useMemo(() => {
+    const map = new Map<string, string>();
+    appointments.forEach(a => {
+      if (a.staff?.id && a.staff?.name) map.set(a.staff.id, a.staff.name);
+    });
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [appointments]);
 
-    const clientName = appointment.client?.name?.toLowerCase() || '';
-    return clientName.includes(searchQuery.toLowerCase());
-  });
+  const services = useMemo(() => {
+    const map = new Map<string, string>();
+    appointments.forEach(a => {
+      if (a.service?.id && a.service?.name) map.set(a.service.id, a.service.name);
+    });
+    return Array.from(map, ([id, name]) => ({ id, name })).sort((a, b) => a.name.localeCompare(b.name));
+  }, [appointments]);
+
+  const filteredAppointments = useMemo(() => {
+    return appointments.filter(appointment => {
+      // Status
+      if (statusFilter !== 'all' && appointment.status !== statusFilter) return false;
+
+      // Data
+      if (dateFilter) {
+        const appointmentDate = format(new Date(appointment.start_time), 'yyyy-MM-dd');
+        const filterDate = format(dateFilter, 'yyyy-MM-dd');
+        if (appointmentDate !== filterDate) return false;
+      }
+
+      // Barbeiro
+      if (barberFilter !== 'all' && appointment.staff?.id !== barberFilter) return false;
+
+      // Serviço
+      if (serviceFilter !== 'all' && appointment.service?.id !== serviceFilter) return false;
+
+      // Busca por nome
+      const clientName = appointment.client?.name?.toLowerCase() || '';
+      return clientName.includes(searchQuery.toLowerCase());
+    });
+  }, [appointments, statusFilter, dateFilter, barberFilter, serviceFilter, searchQuery]);
 
   const handleEditAppointment = (appointmentId: string) => {
     setSelectedAppointment(appointmentId);
@@ -40,7 +78,6 @@ const AppointmentList: React.FC = () => {
 
   const executeDeleteAppointment = async () => {
     if (!appointmentToDelete) return;
-
     const success = await handleDeleteAppointment(appointmentToDelete);
     if (success) {
       setAppointmentToDelete(null);
@@ -50,17 +87,23 @@ const AppointmentList: React.FC = () => {
 
   return (
     <div className="w-full h-full flex flex-col">
-      {/* Filtros fixos no topo */}
       <div className="p-4 shrink-0">
         <AppointmentFilters
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           statusFilter={statusFilter}
           setStatusFilter={setStatusFilter}
+          dateFilter={dateFilter}
+          setDateFilter={setDateFilter}
+          barberFilter={barberFilter}
+          setBarberFilter={setBarberFilter}
+          serviceFilter={serviceFilter}
+          setServiceFilter={setServiceFilter}
+          barbers={barbers}
+          services={services}
         />
       </div>
 
-      {/* Tabela com rolagem interna, ocupa todo o restante da altura */}
       <div className="flex-1 overflow-auto">
         <div className="min-w-full">
           <AppointmentTable
@@ -73,7 +116,6 @@ const AppointmentList: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal de edição */}
       {isFormOpen && selectedAppointment && (
         <AppointmentForm
           isOpen={isFormOpen}
@@ -86,7 +128,6 @@ const AppointmentList: React.FC = () => {
         />
       )}
 
-      {/* Modal de confirmação de exclusão */}
       <DeleteConfirmationDialog
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
