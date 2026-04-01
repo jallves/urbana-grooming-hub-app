@@ -98,8 +98,21 @@ const SubscriptionPlansTab: React.FC = () => {
       const newIds = prev.service_ids.includes(serviceId)
         ? prev.service_ids.filter(id => id !== serviceId)
         : [...prev.service_ids, serviceId];
-      return { ...prev, service_ids: newIds, price: recalcPrice(newIds) };
+      const newCredits = { ...prev.service_credits };
+      if (!prev.service_ids.includes(serviceId)) {
+        newCredits[serviceId] = 1; // default 1 crédito
+      } else {
+        delete newCredits[serviceId];
+      }
+      return { ...prev, service_ids: newIds, service_credits: newCredits, price: recalcPrice(newIds) };
     });
+  };
+
+  const updateServiceCredits = (serviceId: string, cost: number) => {
+    setForm(prev => ({
+      ...prev,
+      service_credits: { ...prev.service_credits, [serviceId]: Math.max(1, cost) },
+    }));
   };
 
   const getActiveSubsCount = (planId: string) => 
