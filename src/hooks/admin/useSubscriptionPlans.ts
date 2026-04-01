@@ -58,7 +58,10 @@ export const useSubscriptionPlans = () => {
         ...plan,
         services: (planServices || [])
           .filter((ps: any) => ps.plan_id === plan.id)
-          .map((ps: any) => services?.find((s: any) => s.id === ps.service_id))
+          .map((ps: any) => {
+            const svc = services?.find((s: any) => s.id === ps.service_id);
+            return svc ? { ...svc, credits_cost: ps.credits_cost || 1 } : null;
+          })
           .filter(Boolean),
       })) as SubscriptionPlan[];
     },
