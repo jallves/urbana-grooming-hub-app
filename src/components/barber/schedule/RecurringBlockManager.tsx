@@ -523,7 +523,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
                   </div>
                 </div>
                 <button
-                  onClick={() => handleRemoveBlock(block)}
+                  onClick={() => setBlockToRemove(block)}
                   disabled={saving}
                   className="p-2 rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-colors touch-manipulation"
                 >
