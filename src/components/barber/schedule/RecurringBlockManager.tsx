@@ -9,6 +9,7 @@ import { Loader2, AlertCircle, CalendarRange, Clock, Trash2, Plus, Repeat } from
 import { format, addDays, eachDayOfInterval, getDay, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import ConfirmActionDialog from '@/components/admin/shared/ConfirmActionDialog';
 
 interface RecurringBlockManagerProps {
   overrideBarberId?: string;
@@ -51,6 +52,10 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
   const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
+
+  // Dialog state
+  const [confirmCreate, setConfirmCreate] = useState(false);
+  const [blockToRemove, setBlockToRemove] = useState<RecurringBlock | null>(null);
 
   // Resolve staff table ID
   useEffect(() => {
@@ -262,8 +267,6 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
   };
 
   const handleRemoveBlock = async (block: RecurringBlock) => {
-    if (!confirm(`Remover bloqueio das ${block.time} de ${format(parseISO(block.startDate), 'dd/MM')} a ${format(parseISO(block.endDate), 'dd/MM')}?`)) return;
-
     setSaving(true);
     try {
       const batchSize = 50;
@@ -279,6 +282,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       toast.error('Erro ao remover bloqueio');
     } finally {
       setSaving(false);
+      setBlockToRemove(null);
     }
   };
 
@@ -472,7 +476,17 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
         )}
 
         <Button
-          onClick={handleCreateBlock}
+          onClick={() => {
+            if (!selectedTime || selectedDays.length === 0) {
+              toast.error('Preencha todos os campos');
+              return;
+            }
+            if (endDate < startDate) {
+              toast.error('Data final deve ser posterior à data inicial');
+              return;
+            }
+            setConfirmCreate(true);
+          }}
           disabled={saving || !selectedTime || selectedDays.length === 0}
           className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-medium h-10 text-sm"
         >
@@ -519,7 +533,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
                   </div>
                 </div>
                 <button
-                  onClick={() => handleRemoveBlock(block)}
+                  onClick={() => setBlockToRemove(block)}
                   disabled={saving}
                   className="p-2 rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-colors touch-manipulation"
                 >
@@ -530,6 +544,41 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
           </div>
         )}
       </div>
+
+      {/* Dialog de confirmação para criar bloqueio */}
+      <ConfirmActionDialog
+        open={confirmCreate}
+        onOpenChange={setConfirmCreate}
+        onConfirm={() => {
+          setConfirmCreate(false);
+          handleCreateBlock();
+        }}
+        type="deactivate"
+        title="Confirmar Bloqueio Recorrente"
+        description={
+          selectedTime
+            ? `O horário ${selectedTime} será bloqueado em ${previewCount} dia(s) de trabalho, de ${startDate ? format(parseISO(startDate), 'dd/MM/yyyy') : ''} até ${endDate ? format(parseISO(endDate), 'dd/MM/yyyy') : ''}. Dias: ${selectedDays.sort((a, b) => a - b).map(d => DAY_LABELS[d]).join(', ')}. Clientes não poderão agendar neste horário durante o período.`
+            : ''
+        }
+        entityName={`🕐 ${selectedTime} • ${previewCount} dias`}
+      />
+
+      {/* Dialog de confirmação para remover bloqueio */}
+      <ConfirmActionDialog
+        open={!!blockToRemove}
+        onOpenChange={(open) => { if (!open) setBlockToRemove(null); }}
+        onConfirm={() => {
+          if (blockToRemove) handleRemoveBlock(blockToRemove);
+        }}
+        type="delete"
+        title="Remover Bloqueio Recorrente"
+        description={
+          blockToRemove
+            ? `Deseja remover o bloqueio das ${blockToRemove.time} de ${format(parseISO(blockToRemove.startDate), 'dd/MM/yyyy')} a ${format(parseISO(blockToRemove.endDate), 'dd/MM/yyyy')}? Isso liberará ${blockToRemove.blockIds.length} dia(s) para agendamento.`
+            : ''
+        }
+        entityName={blockToRemove ? `🕐 ${blockToRemove.time} • ${blockToRemove.blockIds.length} dias` : ''}
+      />
     </div>
   );
 };
