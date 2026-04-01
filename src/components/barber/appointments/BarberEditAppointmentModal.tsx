@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -44,6 +45,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   barberId,
   onSuccess
 }) => {
+  const { data: currentBarberData } = useBarberDataQuery();
+  const isBarberAdmin = currentBarberData?.is_barber_admin || false;
   const [appointment, setAppointment] = useState<any>(null);
   const [services, setServices] = useState<PainelServico[]>([]);
   const [loading, setLoading] = useState(false);
@@ -164,11 +167,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       return;
     }
 
-    // Validar que a data/hora é futura
-    const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
-    if (isBefore(appointmentDateTime, new Date())) {
-      toast.error('Não é possível agendar para horário passado');
-      return;
+    // Validar que a data/hora é futura (exceto barbeiro admin)
+    if (!isBarberAdmin) {
+      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+      if (isBefore(appointmentDateTime, new Date())) {
+        toast.error('Não é possível agendar para horário passado');
+        return;
+      }
     }
 
     // Guardar dados anteriores para o e-mail
@@ -239,11 +244,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       return;
     }
 
-    // Validar que a data/hora é futura
-    const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
-    if (isBefore(appointmentDateTime, new Date())) {
-      toast.error('Não é possível agendar para horário passado');
-      return;
+    // Validar que a data/hora é futura (exceto barbeiro admin)
+    if (!isBarberAdmin) {
+      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+      if (isBefore(appointmentDateTime, new Date())) {
+        toast.error('Não é possível agendar para horário passado');
+        return;
+      }
     }
 
     // Abrir dialog de confirmação
@@ -337,7 +344,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                   mode="single"
                   selected={selectedDate}
                   onSelect={setSelectedDate}
-                  disabled={(date) => isBefore(date, today)}
+                  disabled={(date) => isBarberAdmin ? false : isBefore(date, today)}
                   locale={ptBR}
                   className="text-urbana-light mx-auto pointer-events-auto"
                   classNames={{
