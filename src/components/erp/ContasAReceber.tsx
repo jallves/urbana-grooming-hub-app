@@ -323,7 +323,7 @@ export const ContasAReceber: React.FC = () => {
       if (!byCat[cat]) byCat[cat] = { total: 0, count: 0, recebido: 0, pendente: 0 };
       byCat[cat].total += Number(c.valor);
       byCat[cat].count++;
-      if (c.status === 'recebido') byCat[cat].recebido += Number(c.valor);
+      if (isStatusRecebido(c.status)) byCat[cat].recebido += Number(c.valor);
       else byCat[cat].pendente += Number(c.valor);
     });
     const catData = [
