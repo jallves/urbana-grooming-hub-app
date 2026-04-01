@@ -28,6 +28,16 @@ interface WorkingHours {
   is_active: boolean;
 }
 
+const DAY_LABELS: Record<number, string> = {
+  0: 'Dom',
+  1: 'Seg',
+  2: 'Ter',
+  3: 'Qua',
+  4: 'Qui',
+  5: 'Sex',
+  6: 'Sáb',
+};
+
 const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideBarberId }) => {
   const { barberData } = useBarberData(overrideBarberId);
   const [staffTableId, setStaffTableId] = useState<string | null>(null);
@@ -40,6 +50,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
   const [selectedTime, setSelectedTime] = useState('');
   const [startDate, setStartDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(addDays(new Date(), 30), 'yyyy-MM-dd'));
+  const [selectedDays, setSelectedDays] = useState<number[]>([0, 1, 2, 3, 4, 5, 6]);
 
   // Resolve staff table ID
   useEffect(() => {
@@ -57,16 +68,42 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
 
   // Fetch working hours
   useEffect(() => {
-    const fetch = async () => {
+    const fetchWH = async () => {
       if (!staffTableId) return;
       const { data } = await supabase
         .from('working_hours')
         .select('day_of_week, start_time, end_time, is_active')
         .eq('staff_id', staffTableId);
-      if (data) setWorkingHours(data);
+      if (data) {
+        setWorkingHours(data);
+        // Pre-select only active working days
+        const activeDays = data.filter(wh => wh.is_active).map(wh => wh.day_of_week);
+        setSelectedDays(activeDays);
+      }
     };
-    fetch();
+    fetchWH();
   }, [staffTableId]);
+
+  // Get active working day numbers
+  const activeDayNumbers = workingHours.filter(wh => wh.is_active).map(wh => wh.day_of_week);
+
+  // Toggle day selection
+  const toggleDay = (day: number) => {
+    setSelectedDays(prev =>
+      prev.includes(day) ? prev.filter(d => d !== day) : [...prev, day]
+    );
+  };
+
+  // Quick presets
+  const selectWeekdays = () => {
+    setSelectedDays(activeDayNumbers.filter(d => d >= 1 && d <= 5));
+  };
+  const selectWeekends = () => {
+    setSelectedDays(activeDayNumbers.filter(d => d === 0 || d === 6));
+  };
+  const selectAll = () => {
+    setSelectedDays([...activeDayNumbers]);
+  };
 
   // Generate available time slots from all working days
   const getAvailableTimeSlots = (): string[] => {
@@ -104,7 +141,6 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       if (error) throw error;
       if (!data || data.length === 0) { setExistingBlocks([]); return; }
 
-      // Group consecutive blocks by time slot
       const grouped: Record<string, { dates: string[]; ids: string[] }> = {};
       data.forEach(b => {
         const time = b.start_time.substring(0, 5);
@@ -113,10 +149,9 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
         grouped[time].ids.push(b.id);
       });
 
-      // Detect ranges (consecutive or near-consecutive dates for same time)
       const blocks: RecurringBlock[] = [];
       Object.entries(grouped).forEach(([time, { dates, ids }]) => {
-        if (dates.length < 3) return; // Only show as recurring if 3+ days
+        if (dates.length < 3) return;
         const sorted = dates.sort();
         blocks.push({
           time,
@@ -142,7 +177,10 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       toast.error('Preencha todos os campos');
       return;
     }
-
+    if (selectedDays.length === 0) {
+      toast.error('Selecione ao menos um dia da semana');
+      return;
+    }
     if (endDate < startDate) {
       toast.error('Data final deve ser posterior à data inicial');
       return;
@@ -155,33 +193,31 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
         end: parseISO(endDate),
       });
 
-      // Filter only working days for this time slot
       const workingDays = days.filter(day => {
         const dow = getDay(day);
+        // Must be in selected days
+        if (!selectedDays.includes(dow)) return false;
         const schedule = workingHours.find(wh => wh.day_of_week === dow && wh.is_active);
         if (!schedule) return false;
-        // Check if this time falls within this day's working hours
-        const [startH, startM] = schedule.start_time.split(':').map(Number);
-        const [endH, endM] = schedule.end_time.split(':').map(Number);
+        const [sH, sM] = schedule.start_time.split(':').map(Number);
+        const [eH, eM] = schedule.end_time.split(':').map(Number);
         const [slotH, slotM] = selectedTime.split(':').map(Number);
         const slotMin = slotH * 60 + slotM;
-        return slotMin >= startH * 60 + startM && slotMin < endH * 60 + endM;
+        return slotMin >= sH * 60 + sM && slotMin < eH * 60 + eM;
       });
 
       if (workingDays.length === 0) {
-        toast.error('Nenhum dia útil encontrado neste período para este horário');
+        toast.error('Nenhum dia encontrado neste período para este horário e dias selecionados');
         setSaving(false);
         return;
       }
 
-      // Calculate end time (30 min after)
       const [h, m] = selectedTime.split(':').map(Number);
       const totalMin = h * 60 + m + 30;
       const endTimeStr = `${Math.floor(totalMin / 60).toString().padStart(2, '0')}:${(totalMin % 60).toString().padStart(2, '0')}:00`;
 
-      // Check for existing blocks to avoid duplicates
       const datesToBlock = workingDays.map(d => format(d, 'yyyy-MM-dd'));
-      
+
       const { data: existing } = await supabase
         .from('barber_availability')
         .select('date')
@@ -199,7 +235,6 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
         return;
       }
 
-      // Insert in batches of 50
       const records = newDates.map(date => ({
         barber_id: staffTableId,
         date,
@@ -211,9 +246,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       const batchSize = 50;
       for (let i = 0; i < records.length; i += batchSize) {
         const batch = records.slice(i, i + batchSize);
-        const { error } = await supabase
-          .from('barber_availability')
-          .insert(batch);
+        const { error } = await supabase.from('barber_availability').insert(batch);
         if (error) throw error;
       }
 
@@ -228,23 +261,17 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
     }
   };
 
-  // Remove recurring block
   const handleRemoveBlock = async (block: RecurringBlock) => {
     if (!confirm(`Remover bloqueio das ${block.time} de ${format(parseISO(block.startDate), 'dd/MM')} a ${format(parseISO(block.endDate), 'dd/MM')}?`)) return;
 
     setSaving(true);
     try {
-      // Delete in batches
       const batchSize = 50;
       for (let i = 0; i < block.blockIds.length; i += batchSize) {
         const batch = block.blockIds.slice(i, i + batchSize);
-        const { error } = await supabase
-          .from('barber_availability')
-          .delete()
-          .in('id', batch);
+        const { error } = await supabase.from('barber_availability').delete().in('id', batch);
         if (error) throw error;
       }
-
       toast.success(`Bloqueio das ${block.time} removido!`);
       await fetchExistingBlocks();
     } catch (error) {
@@ -257,22 +284,43 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
 
   const timeSlots = getAvailableTimeSlots();
 
+  // Count how many days will be blocked (preview)
+  const getPreviewCount = (): number => {
+    if (!selectedTime || !startDate || !endDate || selectedDays.length === 0) return 0;
+    try {
+      const days = eachDayOfInterval({ start: parseISO(startDate), end: parseISO(endDate) });
+      return days.filter(day => {
+        const dow = getDay(day);
+        if (!selectedDays.includes(dow)) return false;
+        const schedule = workingHours.find(wh => wh.day_of_week === dow && wh.is_active);
+        if (!schedule) return false;
+        const [sH, sM] = schedule.start_time.split(':').map(Number);
+        const [eH, eM] = schedule.end_time.split(':').map(Number);
+        const [slotH, slotM] = selectedTime.split(':').map(Number);
+        const slotMin = slotH * 60 + slotM;
+        return slotMin >= sH * 60 + sM && slotMin < eH * 60 + eM;
+      }).length;
+    } catch { return 0; }
+  };
+
   if (!staffTableId) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-urbana-light/50">
         <AlertCircle className="h-8 w-8 mx-auto mb-2" />
         <p>Dados do barbeiro não encontrados</p>
       </div>
     );
   }
 
+  const previewCount = getPreviewCount();
+
   return (
     <div className="space-y-4">
       {/* Informativo */}
-      <div className="backdrop-blur-sm bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 sm:p-4">
-        <p className="text-[11px] sm:text-sm text-purple-300 leading-relaxed">
-          <Repeat className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 flex-shrink-0" />
-          Bloqueie um horário específico em todos os dias de trabalho de um período. Exemplo: bloquear 17:30 do dia 01 ao dia 30.
+      <div className="backdrop-blur-sm bg-urbana-gold/5 border border-urbana-gold/20 rounded-xl p-3 sm:p-4">
+        <p className="text-[11px] sm:text-sm text-urbana-light/70 leading-relaxed">
+          <Repeat className="h-3.5 w-3.5 sm:h-4 sm:w-4 inline mr-1.5 sm:mr-2 flex-shrink-0 text-urbana-gold" />
+          Bloqueie um horário em vários dias de uma vez. Escolha o horário, o período e os dias da semana desejados.
         </p>
       </div>
 
@@ -308,6 +356,74 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
           </div>
         </div>
 
+        {/* Dias da Semana */}
+        <div className="space-y-2">
+          <Label className="text-urbana-light/70 text-xs sm:text-sm flex items-center gap-1.5">
+            <CalendarRange className="h-3.5 w-3.5" />
+            Dias da Semana
+          </Label>
+
+          {/* Presets */}
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={selectAll}
+              className={cn(
+                'px-2.5 py-1 text-[10px] sm:text-xs rounded-md border transition-colors touch-manipulation',
+                selectedDays.length === activeDayNumbers.length
+                  ? 'bg-urbana-gold/20 border-urbana-gold/50 text-urbana-light'
+                  : 'border-urbana-gold/20 text-urbana-light/60 hover:border-urbana-gold/40'
+              )}
+            >
+              Todos
+            </button>
+            <button
+              type="button"
+              onClick={selectWeekdays}
+              className={cn(
+                'px-2.5 py-1 text-[10px] sm:text-xs rounded-md border transition-colors touch-manipulation',
+                'border-urbana-gold/20 text-urbana-light/60 hover:border-urbana-gold/40'
+              )}
+            >
+              Sem Final de Semana
+            </button>
+            <button
+              type="button"
+              onClick={selectWeekends}
+              className={cn(
+                'px-2.5 py-1 text-[10px] sm:text-xs rounded-md border transition-colors touch-manipulation',
+                'border-urbana-gold/20 text-urbana-light/60 hover:border-urbana-gold/40'
+              )}
+            >
+              Só Final de Semana
+            </button>
+          </div>
+
+          {/* Day toggles */}
+          <div className="grid grid-cols-7 gap-1">
+            {[0, 1, 2, 3, 4, 5, 6].map(day => {
+              const isActive = activeDayNumbers.includes(day);
+              const isSelected = selectedDays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => isActive && toggleDay(day)}
+                  disabled={!isActive}
+                  className={cn(
+                    'py-2 text-[10px] sm:text-xs rounded-lg border transition-all touch-manipulation font-medium',
+                    !isActive && 'opacity-30 cursor-not-allowed border-urbana-gold/10 text-urbana-light/30',
+                    isActive && isSelected && 'bg-urbana-gold/25 border-urbana-gold text-urbana-light',
+                    isActive && !isSelected && 'bg-urbana-black/40 border-urbana-gold/20 text-urbana-light/50 hover:border-urbana-gold/40'
+                  )}
+                >
+                  {DAY_LABELS[day]}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Período */}
         <div className="grid grid-cols-2 gap-3">
           <div className="space-y-1.5">
@@ -340,18 +456,24 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
 
         {/* Preview */}
         {selectedTime && startDate && endDate && (
-          <div className="bg-urbana-black/20 border border-urbana-gold/10 rounded-lg p-2.5 sm:p-3">
+          <div className="bg-urbana-black/20 border border-urbana-gold/10 rounded-lg p-2.5 sm:p-3 space-y-1">
             <p className="text-[11px] sm:text-xs text-urbana-light/60">
-              Será bloqueado o horário <span className="text-urbana-gold font-medium">{selectedTime}</span> em todos os dias de trabalho de{' '}
+              Horário <span className="text-urbana-gold font-medium">{selectedTime}</span> será bloqueado de{' '}
               <span className="text-urbana-gold font-medium">{format(parseISO(startDate), "dd/MM/yyyy")}</span> até{' '}
-              <span className="text-urbana-gold font-medium">{format(parseISO(endDate), "dd/MM/yyyy")}</span>.
+              <span className="text-urbana-gold font-medium">{format(parseISO(endDate), "dd/MM/yyyy")}</span>
+            </p>
+            <p className="text-[11px] sm:text-xs text-urbana-light/50">
+              Dias: <span className="text-urbana-light/70">{selectedDays.sort((a,b) => a-b).map(d => DAY_LABELS[d]).join(', ') || 'Nenhum'}</span>
+              {previewCount > 0 && (
+                <span className="text-urbana-gold font-medium ml-1">• {previewCount} dias serão bloqueados</span>
+              )}
             </p>
           </div>
         )}
 
         <Button
           onClick={handleCreateBlock}
-          disabled={saving || !selectedTime}
+          disabled={saving || !selectedTime || selectedDays.length === 0}
           className="w-full bg-urbana-gold hover:bg-urbana-gold/90 text-urbana-black font-medium h-10 text-sm"
         >
           {saving ? (
@@ -366,7 +488,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
       {/* Bloqueios Existentes */}
       <div className="space-y-2">
         <h3 className="text-sm sm:text-base font-medium text-urbana-light flex items-center gap-2">
-          <Clock className="h-4 w-4 text-red-400" />
+          <Clock className="h-4 w-4 text-destructive" />
           Bloqueios Recorrentes Ativos
         </h3>
 
@@ -383,15 +505,15 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
             {existingBlocks.map((block, idx) => (
               <div
                 key={idx}
-                className="flex items-center justify-between bg-red-500/10 border border-red-500/30 rounded-xl p-3 sm:p-4"
+                className="flex items-center justify-between bg-destructive/10 border border-destructive/30 rounded-xl p-3 sm:p-4"
               >
                 <div className="flex items-center gap-3">
-                  <div className="p-2 bg-red-500/20 rounded-lg">
-                    <Clock className="h-4 w-4 text-red-400" />
+                  <div className="p-2 bg-destructive/20 rounded-lg">
+                    <Clock className="h-4 w-4 text-destructive" />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-red-300">{block.time}</p>
-                    <p className="text-[11px] sm:text-xs text-red-400/70">
+                    <p className="text-sm font-medium text-destructive">{block.time}</p>
+                    <p className="text-[11px] sm:text-xs text-destructive/70">
                       {format(parseISO(block.startDate), 'dd/MM')} → {format(parseISO(block.endDate), 'dd/MM')} • {block.blockIds.length} dias
                     </p>
                   </div>
@@ -399,7 +521,7 @@ const RecurringBlockManager: React.FC<RecurringBlockManagerProps> = ({ overrideB
                 <button
                   onClick={() => handleRemoveBlock(block)}
                   disabled={saving}
-                  className="p-2 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-400 transition-colors touch-manipulation"
+                  className="p-2 rounded-lg bg-destructive/20 hover:bg-destructive/30 text-destructive transition-colors touch-manipulation"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
