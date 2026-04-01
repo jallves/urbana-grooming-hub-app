@@ -307,7 +307,7 @@ export const ContasAReceber: React.FC = () => {
         Number(c.valor),
         fmtDateExport(c.data_vencimento),
         fmtDateExport(c.data_recebimento),
-        c.status === 'recebido' ? 'Recebido' : 'Pendente',
+        c.status === 'recebido' || c.status === 'pago' ? 'Recebido' : 'Pendente',
         c.forma_pagamento || '-',
         c.observacoes || '',
       ]),
