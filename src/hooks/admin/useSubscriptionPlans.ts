@@ -15,7 +15,7 @@ export interface SubscriptionPlan {
   icon: string | null;
   credits_total: number;
   created_at: string;
-  services?: { id: string; nome: string; preco: number }[];
+  services?: { id: string; nome: string; preco: number; credits_cost?: number }[];
 }
 
 export interface PlanFormData {
