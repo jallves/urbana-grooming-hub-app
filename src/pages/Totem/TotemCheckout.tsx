@@ -296,7 +296,7 @@ const TotemCheckout: React.FC = () => {
 
   // Handler para usar crédito da assinatura (bypass PayGo)
   const handleUseCredit = async () => {
-    if (!activeSubscription || activeSubscription.credits_remaining <= 0) return;
+    if (!activeSubscription || !hasEnoughCredits) return;
     setProcessing(true);
     try {
       // 1. Usar crédito da assinatura PRIMEIRO
