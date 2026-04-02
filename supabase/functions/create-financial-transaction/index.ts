@@ -189,6 +189,7 @@ async function ensureBarberCommission(
     if (existing?.id) return existing.id
   }
 
+  const { data, error } = await supabase
     .from('barber_commissions')
     .insert({
       barber_id: params.barber_id,
