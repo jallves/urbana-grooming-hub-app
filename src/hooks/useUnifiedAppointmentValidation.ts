@@ -272,17 +272,21 @@ export const useUnifiedAppointmentValidation = () => {
     barberId: string,
     date: Date,
     time: string,
-    serviceDuration: number
+    serviceDuration: number,
+    preResolvedStaffId?: string
   ): Promise<ValidationResult> => {
     const dateStr = formatDateLocal(date);
     const startMinutes = timeToMinutes(time);
     const endMinutes = startMinutes + serviceDuration;
 
+    // Resolver staffTableId (barber_availability usa staff.id, não painel_barbeiros.id)
+    const staffTableId = preResolvedStaffId || await resolveStaffId(barberId);
+
     // Buscar TODOS os registros de disponibilidade para o dia (pode haver múltiplos slots bloqueados)
     const { data: availabilityRecords, error } = await supabase
       .from('barber_availability')
       .select('is_available, start_time, end_time')
-      .eq('barber_id', barberId)
+      .eq('barber_id', staffTableId)
       .eq('date', dateStr);
 
     if (error) {
@@ -326,7 +330,7 @@ export const useUnifiedAppointmentValidation = () => {
     }
 
     return { valid: true };
-  }, [formatDateLocal, timeToMinutes]);
+  }, [formatDateLocal, timeToMinutes, resolveStaffId]);
 
   /**
    * Verifica conflitos com agendamentos existentes
