@@ -15,7 +15,7 @@ export default defineConfig(({ mode }) => ({
     mode === 'development' && componentTagger(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.png', 'apple-touch-icon.png'],
+      includeAssets: ['favicon.png', 'apple-touch-icon.png', 'apple-touch-icon-180x180.png', 'apple-touch-icon-152x152.png', 'apple-touch-icon-120x120.png', 'apple-splash-*.png'],
       devOptions: {
         enabled: true,
         type: 'module'
