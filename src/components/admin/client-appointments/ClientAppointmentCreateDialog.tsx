@@ -323,11 +323,23 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         if (timeOffDates.has(dateStr)) continue;
         const wh = workingHoursMap.get(dayOfWeek);
         if (!wh) continue;
-        const avail = availabilityMap.get(dateStr);
-        if (avail && avail.is_available === false) continue;
+        const availRecords = availabilityMap.get(dateStr) || [];
+        
+        // Coletar bloqueios e disponibilidade específica
+        const blockedPeriods: { start: number; end: number }[] = [];
+        let effectiveStart = wh.start;
+        let effectiveEnd = wh.end;
+        for (const rec of availRecords) {
+          if (!rec.is_available) {
+            blockedPeriods.push({ start: timeToMin(rec.start_time || '00:00'), end: timeToMin(rec.end_time || '23:59') });
+          } else if (rec.start_time && rec.end_time) {
+            effectiveStart = rec.start_time;
+            effectiveEnd = rec.end_time;
+          }
+        }
 
-        const startMin = timeToMin(avail?.start_time || wh.start);
-        const endMin = timeToMin(avail?.end_time || wh.end);
+        const startMin = timeToMin(effectiveStart);
+        const endMin = timeToMin(effectiveEnd);
         const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
           start: timeToMin(apt.hora), end: timeToMin(apt.hora) + apt.duracao + BUFFER
         }));
@@ -338,6 +350,11 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           const slotEnd = mins + serviceDuration;
           let conflict = false;
           for (const p of occupied) { if (mins < p.end && slotEnd + BUFFER > p.start) { conflict = true; break; } }
+          if (!conflict) {
+            for (const block of blockedPeriods) {
+              if (mins < block.end && slotEnd > block.start) { conflict = true; break; }
+            }
+          }
           if (!conflict) { hasAvailable = true; break; }
         }
         if (hasAvailable) dates.push(date);
