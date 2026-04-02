@@ -78,8 +78,16 @@ const ClientAppointmentDashboard: React.FC = () => {
     }
   }, [normalizeVendas]);
 
+  // Formato da data selecionada para comparar com appointment.data (yyyy-MM-dd)
+  const selectedDateStr = format(selectedDate, 'yyyy-MM-dd');
+
   const filteredAppointments = useMemo(() => {
     return appointments.filter((appointment) => {
+      // Filtrar por data selecionada
+      if (appointment.data !== selectedDateStr) {
+        return false;
+      }
+
       const actualStatus = getActualStatus(appointment);
       
       // Filtrar por status
@@ -91,7 +99,7 @@ const ClientAppointmentDashboard: React.FC = () => {
       const clientName = appointment.painel_clientes?.nome?.toLowerCase() || '';
       return clientName.includes(searchQuery.toLowerCase());
     });
-  }, [appointments, statusFilter, searchQuery, getActualStatus]);
+  }, [appointments, selectedDateStr, statusFilter, searchQuery, getActualStatus]);
 
   const handleEditAppointment = useCallback((appointmentId: string) => {
     setSelectedAppointment(appointmentId);
