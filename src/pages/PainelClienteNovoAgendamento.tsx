@@ -279,13 +279,24 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         const wh = workingHoursMap.get(dayOfWeek);
         if (!wh) continue;
 
-        // Bloqueio específico?
-        const avail = availabilityMap.get(dateStr);
-        if (avail && avail.is_available === false) continue;
+        // Processar bloqueios do dia
+        const availRecords = availabilityMap.get(dateStr) || [];
+        const blockedPeriods: { start: number; end: number }[] = [];
+        let effectiveStart = wh.start;
+        let effectiveEnd = wh.end;
 
-        // Determinar horário efetivo
-        const effectiveStart = avail?.start_time || wh.start;
-        const effectiveEnd = avail?.end_time || wh.end;
+        for (const rec of availRecords) {
+          if (!rec.is_available) {
+            blockedPeriods.push({
+              start: timeToMin(rec.start_time || '00:00'),
+              end: timeToMin(rec.end_time || '23:59')
+            });
+          } else if (rec.start_time && rec.end_time) {
+            effectiveStart = rec.start_time;
+            effectiveEnd = rec.end_time;
+          }
+        }
+
         const startMin = timeToMin(effectiveStart);
         const endMin = timeToMin(effectiveEnd);
 
@@ -307,13 +318,23 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             if (slotDate <= now) continue;
           }
 
-          // Conflito?
+          // Conflito com agendamentos?
           const slotEnd = mins + serviceDuration;
           let conflict = false;
           for (const period of occupied) {
             if (mins < period.end && slotEnd + BUFFER > period.start) {
               conflict = true;
               break;
+            }
+          }
+
+          // Conflito com bloqueios?
+          if (!conflict) {
+            for (const block of blockedPeriods) {
+              if (mins < block.end && slotEnd > block.start) {
+                conflict = true;
+                break;
+              }
             }
           }
 
