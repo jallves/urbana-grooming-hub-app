@@ -225,8 +225,8 @@ const ClientAppointmentDashboard: React.FC = () => {
         </div>
       </div>
 
-      {/* Estatísticas */}
-      <ClientAppointmentStats appointments={appointments} />
+      {/* Estatísticas do dia selecionado */}
+      <ClientAppointmentStats appointments={filteredAppointments} />
 
       {/* Card principal com filtro e tabela - 100% responsivo */}
       <Card className="flex-1 flex flex-col bg-white border-0 shadow-lg min-h-[400px] sm:min-h-[500px] rounded-xl sm:rounded-2xl overflow-hidden">
