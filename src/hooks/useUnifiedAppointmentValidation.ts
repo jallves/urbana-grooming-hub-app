@@ -525,13 +525,12 @@ export const useUnifiedAppointmentValidation = () => {
           .gte('end_date', dateStr)
           .maybeSingle(),
         
-        // 3. Verificar disponibilidade específica (bloqueios)
+        // 3. Verificar disponibilidade específica (bloqueios) - buscar TODOS os registros do dia
         supabase
           .from('barber_availability')
           .select('is_available, start_time, end_time')
           .eq('barber_id', barberId)
-          .eq('date', dateStr)
-          .maybeSingle(),
+          .eq('date', dateStr),
         
         // 4. Buscar agendamentos existentes
         supabase
@@ -544,7 +543,7 @@ export const useUnifiedAppointmentValidation = () => {
 
       const workingHours = workingHoursResult.data;
       const timeOff = timeOffResult.data;
-      const specificAvailability = specificAvailabilityResult.data;
+      const availabilityRecords = specificAvailabilityResult.data || [];
       const existingAppointments = existingAppointmentsResult.data;
 
       if (!workingHours) {
@@ -555,31 +554,36 @@ export const useUnifiedAppointmentValidation = () => {
       // Verificar folga programada
       if (timeOff) {
         console.log('⚠️ [getAvailableTimeSlots] Barbeiro em folga neste dia');
-        return []; // Barbeiro em folga
+        return [];
       }
 
-      if (specificAvailability?.is_available === false) {
-        console.log('⚠️ [getAvailableTimeSlots] Barbeiro não disponível neste dia');
-        return []; // Barbeiro não disponível neste dia
-      }
-
-      // Determinar horário efetivo
+      // Separar bloqueios (is_available=false) e disponibilidades específicas (is_available=true)
+      const blockedPeriods: { start: number; end: number }[] = [];
       let effectiveStart = workingHours.start_time;
       let effectiveEnd = workingHours.end_time;
 
-      if (specificAvailability?.start_time) {
-        effectiveStart = specificAvailability.start_time;
-      }
-      if (specificAvailability?.end_time) {
-        effectiveEnd = specificAvailability.end_time;
+      for (const record of availabilityRecords) {
+        if (!record.is_available) {
+          // Bloqueio de horário específico
+          blockedPeriods.push({
+            start: timeToMinutes(record.start_time),
+            end: timeToMinutes(record.end_time)
+          });
+        } else if (record.start_time && record.end_time) {
+          // Disponibilidade específica (restringe horário)
+          effectiveStart = record.start_time;
+          effectiveEnd = record.end_time;
+        }
       }
 
-      // Mapear períodos ocupados SEM buffer — permite slots consecutivos
+      console.log('🚫 [getAvailableTimeSlots] Bloqueios encontrados:', blockedPeriods.length);
+
+      // Mapear períodos ocupados por agendamentos
       const occupiedPeriods: { start: number; end: number }[] = [];
       existingAppointments?.forEach((apt) => {
         const aptStart = timeToMinutes(apt.hora);
         const aptDuration = (apt.servico as any)?.duracao || 60;
-        const aptEnd = aptStart + aptDuration; // Sem buffer
+        const aptEnd = aptStart + aptDuration;
         occupiedPeriods.push({ start: aptStart, end: aptEnd });
       });
 
@@ -595,19 +599,26 @@ export const useUnifiedAppointmentValidation = () => {
         let available = true;
         let reason: string | undefined;
 
-        // Verificar horário passado (skip para admin/barbeiro admin)
+        // Verificar horário passado
         if (!options?.skipPastValidation && isToday && isPastTime(date, timeString)) {
           available = false;
           reason = 'Horário passado';
         }
 
-        // Verificar conflitos com buffer
-        // O buffer já está incluído em period.end (linha 578: aptEnd = aptStart + aptDuration + BUFFER)
-        // Então basta verificar se o novo slot (sem buffer adicional) conflita com o período ocupado
+        // Verificar bloqueios da barber_availability
+        if (available) {
+          for (const block of blockedPeriods) {
+            if (mins < block.end && slotEnd > block.start) {
+              available = false;
+              reason = 'Horário bloqueado';
+              break;
+            }
+          }
+        }
+
+        // Verificar conflitos com agendamentos
         if (available) {
           for (const period of occupiedPeriods) {
-            // Novo slot conflita se: começa antes do período ocupado+buffer terminar
-            // E termina depois do período ocupado começar (com buffer para o slot anterior)
             if (mins < period.end && slotEnd > period.start) {
               available = false;
               reason = 'Horário ocupado';
