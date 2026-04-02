@@ -471,8 +471,10 @@ const TotemCheckout: React.FC = () => {
     if (!resumo) return;
     setProcessing(true);
 
+    const currentVendaId = vendaIdRef.current ?? vendaId;
+
     const paymentState = {
-      venda_id: vendaId,
+      venda_id: currentVendaId,
       session_id: session.id,
       appointment,
       client,
@@ -493,7 +495,7 @@ const TotemCheckout: React.FC = () => {
     }
 
     // Atualizar gorjeta/total em background (fire-and-forget)
-    if (vendaId) {
+    if (currentVendaId) {
       supabase
         .from('vendas')
         .update({
@@ -501,7 +503,7 @@ const TotemCheckout: React.FC = () => {
           valor_total: totalComGorjeta,
           forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
         })
-        .eq('id', vendaId)
+        .eq('id', currentVendaId)
         .then(({ error }) => {
           if (error) console.warn('[Checkout] Erro ao atualizar venda em background:', error);
         });

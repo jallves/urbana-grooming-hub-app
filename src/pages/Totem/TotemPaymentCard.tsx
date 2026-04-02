@@ -145,9 +145,11 @@ const TotemPaymentCard: React.FC = () => {
     
     console.log('✅ [CARD] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
 
-    const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && venda_id
+    let resolvedVendaId = venda_id ?? null;
+
+    const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && appointment?.id
       ? {
-          venda_id,
+          venda_id: venda_id ?? undefined,
           agendamento_id: appointment?.id,
           session_id,
           transaction_data: pendingTransactionData,
@@ -176,6 +178,10 @@ const TotemPaymentCard: React.FC = () => {
         retryDelayMs: 1200,
       });
 
+      if (finishResult.venda_id) {
+        resolvedVendaId = finishResult.venda_id;
+      }
+
       checkoutFinalized = finishResult.success;
 
       if (!finishResult.success) {
@@ -193,8 +199,8 @@ const TotemPaymentCard: React.FC = () => {
       selectedProducts, extraServices, resumo,
       emailAlreadySent: true,
       tipAmount,
-      venda_id,
-      checkoutFinishPayload: finishPayload,
+      venda_id: resolvedVendaId,
+      checkoutFinishPayload: finishPayload ? { ...finishPayload, venda_id: resolvedVendaId ?? finishPayload.venda_id } : null,
       checkoutFinalized,
     };
     navigate('/totem/payment-success', { state: successState });

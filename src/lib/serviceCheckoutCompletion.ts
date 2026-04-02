@@ -10,7 +10,7 @@ export interface ServiceCheckoutTransactionData {
 }
 
 export interface ServiceCheckoutFinishPayload {
-  venda_id: string;
+  venda_id?: string;
   agendamento_id?: string;
   session_id?: string;
   payment_method?: string;
@@ -23,8 +23,25 @@ export interface ServiceCheckoutFinishPayload {
 }
 
 type PendingCheckoutMap = Record<string, ServiceCheckoutFinishPayload>;
+type PendingCheckoutLookup = string | Pick<ServiceCheckoutFinishPayload, 'venda_id' | 'agendamento_id' | 'session_id'> | null | undefined;
 
 const canUseStorage = () => typeof window !== 'undefined' && typeof window.sessionStorage !== 'undefined';
+
+const getPendingCheckoutKeys = (lookup?: PendingCheckoutLookup): string[] => {
+  if (!lookup) return [];
+
+  if (typeof lookup === 'string') {
+    return lookup ? [lookup] : [];
+  }
+
+  return Array.from(
+    new Set([
+      lookup.venda_id,
+      lookup.agendamento_id,
+      lookup.session_id,
+    ].filter((value): value is string => Boolean(value)))
+  );
+};
 
 const readPendingCheckouts = (): PendingCheckoutMap => {
   if (!canUseStorage()) return {};
@@ -52,31 +69,80 @@ const writePendingCheckouts = (payload: PendingCheckoutMap) => {
 };
 
 export const persistPendingServiceCheckout = (payload: ServiceCheckoutFinishPayload) => {
-  if (!payload.venda_id) return;
+  const keys = getPendingCheckoutKeys(payload);
+  if (keys.length === 0) return;
 
   const pending = readPendingCheckouts();
-  pending[payload.venda_id] = payload;
+
+  for (const key of keys) {
+    pending[key] = payload;
+  }
+
   writePendingCheckouts(pending);
 };
 
-export const getPendingServiceCheckout = (vendaId?: string | null): ServiceCheckoutFinishPayload | null => {
-  if (!vendaId) return null;
+export const getPendingServiceCheckout = (lookup?: PendingCheckoutLookup): ServiceCheckoutFinishPayload | null => {
+  const keys = getPendingCheckoutKeys(lookup);
+  if (keys.length === 0) return null;
 
   const pending = readPendingCheckouts();
-  return pending[vendaId] || null;
+
+  for (const key of keys) {
+    if (pending[key]) {
+      return pending[key];
+    }
+  }
+
+  return null;
 };
 
-export const clearPendingServiceCheckout = (vendaId?: string | null) => {
-  if (!vendaId) return;
+export const clearPendingServiceCheckout = (lookup?: PendingCheckoutLookup) => {
+  const keys = getPendingCheckoutKeys(lookup);
+  if (keys.length === 0) return;
 
   const pending = readPendingCheckouts();
-  if (!pending[vendaId]) return;
 
-  delete pending[vendaId];
+  let hasChanges = false;
+
+  for (const key of keys) {
+    if (!pending[key]) continue;
+    delete pending[key];
+    hasChanges = true;
+  }
+
+  if (!hasChanges) return;
   writePendingCheckouts(pending);
 };
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+const ensureCheckoutVendaId = async (payload: ServiceCheckoutFinishPayload) => {
+  if (payload.venda_id) return payload.venda_id;
+
+  if (!payload.agendamento_id) {
+    throw new Error('agendamento_id é obrigatório para recuperar a venda do checkout');
+  }
+
+  console.warn('[ServiceCheckoutCompletion] venda_id ausente; recuperando venda via totem-checkout/start');
+
+  const { data, error } = await supabase.functions.invoke('totem-checkout', {
+    body: {
+      action: 'start',
+      agendamento_id: payload.agendamento_id,
+      session_id: payload.session_id,
+      extras: payload.extras,
+      products: payload.products,
+    },
+  });
+
+  if (error) throw error;
+
+  if (!data?.venda_id) {
+    throw new Error('Não foi possível recuperar a venda do checkout');
+  }
+
+  return data.venda_id as string;
+};
 
 export async function finalizeServiceCheckout(
   payload: ServiceCheckoutFinishPayload,
@@ -85,13 +151,21 @@ export async function finalizeServiceCheckout(
   const retries = Math.max(0, options?.retries ?? 0);
   const retryDelayMs = Math.max(250, options?.retryDelayMs ?? 1200);
   let lastError = 'Erro desconhecido ao finalizar checkout';
+  let currentPayload = payload;
 
   for (let attempt = 0; attempt <= retries; attempt += 1) {
     try {
+      const vendaId = await ensureCheckoutVendaId(currentPayload);
+
+      if (currentPayload.venda_id !== vendaId) {
+        currentPayload = { ...currentPayload, venda_id: vendaId };
+        persistPendingServiceCheckout(currentPayload);
+      }
+
       const { data, error } = await supabase.functions.invoke('totem-checkout', {
         body: {
           action: 'finish',
-          ...payload,
+          ...currentPayload,
         },
       });
 
@@ -100,8 +174,8 @@ export async function finalizeServiceCheckout(
         throw new Error(data?.error || 'Falha ao finalizar checkout');
       }
 
-      clearPendingServiceCheckout(payload.venda_id);
-      return { success: true as const, data };
+      clearPendingServiceCheckout(currentPayload);
+      return { success: true as const, data, venda_id: currentPayload.venda_id };
     } catch (error: any) {
       lastError = error?.message || lastError;
       console.error(`[ServiceCheckoutCompletion] Tentativa ${attempt + 1} falhou:`, error);
@@ -112,5 +186,5 @@ export async function finalizeServiceCheckout(
     }
   }
 
-  return { success: false as const, error: lastError };
+  return { success: false as const, error: lastError, venda_id: currentPayload.venda_id };
 }
