@@ -208,11 +208,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           .lte('start_date', endDateStr)
           .gte('end_date', startDateStr),
         
-        // Bloqueios de disponibilidade no range
+        // Bloqueios de disponibilidade no range (usa staffTableId, não barberId)
         supabase
           .from('barber_availability')
           .select('date, is_available, start_time, end_time')
-          .eq('barber_id', barberId)
+          .eq('barber_id', staffTableId)
           .gte('date', startDateStr)
           .lte('date', endDateStr),
         
