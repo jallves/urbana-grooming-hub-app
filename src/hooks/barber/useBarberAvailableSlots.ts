@@ -164,10 +164,17 @@ export const useBarberAvailableSlots = () => {
           }
 
           const isOccupied = occupiedSlots.has(timeString);
+
+          // Verificar se o slot está bloqueado
+          const slotMinutes = hour * 60 + minute;
+          const slotEndMinutes = slotMinutes + serviceDuration;
+          const isBlocked = blockedPeriods.some(
+            block => slotMinutes < block.end && slotEndMinutes > block.start
+          );
           
           allSlots.push({
             time: timeString,
-            available: !isOccupied && !isPast
+            available: !isOccupied && !isPast && !isBlocked
           });
         }
       }
