@@ -10,7 +10,7 @@ const AdminBarbers: React.FC = () => {
       description="Gerencie a equipe de barbeiros"
       icon="✂️"
     >
-      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6 bg-gray-50">
+      <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6 bg-gray-50" suppressHydrationWarning>
         <BarberManagement />
       </div>
     </AdminLayout>
