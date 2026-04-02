@@ -162,19 +162,32 @@ async function ensureBarberCommission(
     tipo: string
   }
 ) {
-  // Estratégia idempotente (sem constraint no DB):
-  // considerar uma comissão "igual" quando bate (barber_id + venda_id + tipo + valor + appointment_id)
-  const { data: existing } = await supabase
-    .from('barber_commissions')
-    .select('id')
-    .eq('barber_id', params.barber_id)
-    .eq('venda_id', params.venda_id)
-    .eq('tipo', params.tipo)
-    .eq('valor', params.valor)
-    .eq('appointment_id', params.appointment_id)
-    .maybeSingle()
+  // Idempotência robusta: (barber_id + venda_id + tipo + valor)
+  // Não usar appointment_id na chave pois repair e finalize podem ter valores diferentes
+  if (params.venda_id) {
+    const { data: existing } = await supabase
+      .from('barber_commissions')
+      .select('id')
+      .eq('barber_id', params.barber_id)
+      .eq('venda_id', params.venda_id)
+      .eq('tipo', params.tipo)
+      .eq('valor', params.valor)
+      .maybeSingle()
 
-  if (existing?.id) return existing.id
+    if (existing?.id) return existing.id
+  } else {
+    // Fallback: usar appointment_id quando não há venda_id
+    const { data: existing } = await supabase
+      .from('barber_commissions')
+      .select('id')
+      .eq('barber_id', params.barber_id)
+      .eq('appointment_id', params.appointment_id)
+      .eq('tipo', params.tipo)
+      .eq('valor', params.valor)
+      .maybeSingle()
+
+    if (existing?.id) return existing.id
+  }
 
   const { data, error } = await supabase
     .from('barber_commissions')
