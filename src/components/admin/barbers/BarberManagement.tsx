@@ -193,7 +193,7 @@ const BarberManagement: React.FC = () => {
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="permissions" className="mt-4 space-y-4">
+        <TabsContent value="permissions" className="mt-4 space-y-4" key={`perm-${mode}`}>
           {mode === 'viewing' && (
             <div className="space-y-3">
               <Alert className="border-blue-300 bg-blue-50">
