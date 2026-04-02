@@ -247,7 +247,7 @@ const BarberManagement: React.FC = () => {
           </div>
         </TabsContent>
 
-        <TabsContent value="blocks" className="mt-4">
+        <TabsContent value="blocks" className="mt-4" key="blocks-tab">
           <AdminBarberBlockManager />
         </TabsContent>
       </Tabs>
