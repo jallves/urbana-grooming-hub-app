@@ -121,44 +121,105 @@ const ClientAppointmentDashboard: React.FC = () => {
 
   return (
     <div className="w-full max-w-none h-full bg-gradient-to-br from-gray-50 to-gray-100 p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-      {/* Header com gradiente - Totalmente responsivo */}
-      <div className="relative overflow-hidden bg-white rounded-xl sm:rounded-2xl shadow-lg border border-gray-200 p-4 sm:p-6 md:p-8">
+      {/* Header com gradiente */}
+      <div className="relative overflow-hidden bg-card rounded-xl sm:rounded-2xl shadow-lg border border-border p-4 sm:p-6 md:p-8">
         <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 via-yellow-500/10 to-urbana-gold/10" />
         <div className="relative z-10">
-          <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
-            {/* Ícone e Título */}
-            <div className="flex items-start gap-3 flex-1">
-              <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-urbana-gold to-yellow-600 shadow-lg flex-shrink-0">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-3 sm:gap-4">
+              {/* Ícone e Título */}
+              <div className="flex items-start gap-3 flex-1">
+                <div className="p-2 sm:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-urbana-gold to-yellow-600 shadow-lg flex-shrink-0">
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-foreground font-playfair leading-tight">
+                    Agendamentos de Clientes
+                  </h1>
+                  <p className="text-xs sm:text-sm text-muted-foreground mt-1 font-raleway">
+                    Gerencie agendamentos em tempo real
+                  </p>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 font-playfair leading-tight">
-                  Agendamentos de Clientes
-                </h1>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1 font-raleway">
-                  Gerencie agendamentos em tempo real
-                </p>
+              {/* Botões */}
+              <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+                <Button
+                  onClick={() => setIsEncaixeDialogOpen(true)}
+                  variant="outline"
+                  className="w-full sm:w-auto border-purple-300 text-purple-700 hover:bg-purple-50 text-sm h-10 sm:h-auto font-semibold"
+                >
+                  <Zap className="w-4 h-4 mr-1 sm:mr-2" />
+                  Encaixe
+                </Button>
+                <Button
+                  onClick={handleCreateAppointment}
+                  className="w-full sm:w-auto bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white shadow-lg text-sm sm:text-base h-10 sm:h-auto"
+                >
+                  <Plus className="w-4 h-4 mr-1 sm:mr-2" />
+                  <span className="hidden xs:inline">Novo </span>Agendamento
+                </Button>
               </div>
             </div>
-            {/* Botões - Adaptáveis */}
-            <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+
+            {/* Navegação de Data */}
+            <div className="flex items-center gap-2 sm:gap-3 bg-muted/50 rounded-xl p-2 sm:p-3 border border-border">
               <Button
-                onClick={() => setIsEncaixeDialogOpen(true)}
                 variant="outline"
-                className="w-full sm:w-auto border-purple-300 text-purple-700 hover:bg-purple-50 text-sm h-10 sm:h-auto font-semibold"
+                size="icon"
+                className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+                onClick={() => setSelectedDate(prev => addDays(prev, -1))}
               >
-                <Zap className="w-4 h-4 mr-1 sm:mr-2" />
-                Encaixe
+                <ChevronLeft className="h-4 w-4" />
               </Button>
+
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "flex-1 justify-center text-sm sm:text-base font-semibold h-8 sm:h-9",
+                      isToday(selectedDate) && "border-urbana-gold text-urbana-gold"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {isToday(selectedDate)
+                      ? 'Hoje'
+                      : format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="center">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={(d) => d && setSelectedDate(d)}
+                    initialFocus
+                    className={cn("p-3 pointer-events-auto")}
+                    locale={ptBR}
+                  />
+                </PopoverContent>
+              </Popover>
+
               <Button
-                onClick={handleCreateAppointment}
-                className="w-full sm:w-auto bg-gradient-to-r from-urbana-gold to-yellow-600 hover:from-yellow-600 hover:to-urbana-gold text-white shadow-lg text-sm sm:text-base h-10 sm:h-auto"
+                variant="outline"
+                size="icon"
+                className="h-8 w-8 sm:h-9 sm:w-9 shrink-0"
+                onClick={() => setSelectedDate(prev => addDays(prev, 1))}
               >
-                <Plus className="w-4 h-4 mr-1 sm:mr-2" />
-                <span className="hidden xs:inline">Novo </span>Agendamento
+                <ChevronRight className="h-4 w-4" />
               </Button>
+
+              {!isToday(selectedDate) && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-urbana-gold hover:text-urbana-gold/80 shrink-0"
+                  onClick={() => setSelectedDate(new Date())}
+                >
+                  Hoje
+                </Button>
+              )}
             </div>
           </div>
         </div>
