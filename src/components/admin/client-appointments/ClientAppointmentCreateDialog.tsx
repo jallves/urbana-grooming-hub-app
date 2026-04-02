@@ -278,7 +278,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       const [workingHoursResult, timeOffResult, availabilityResult, appointmentsResult] = await Promise.all([
         supabase.from('working_hours').select('day_of_week, start_time, end_time').eq('staff_id', staffTableId).eq('is_active', true),
         supabase.from('time_off').select('start_date, end_date, type').eq('barber_id', barberId).eq('status', 'ativo').lte('start_date', endDateStr).gte('end_date', startDateStr),
-        supabase.from('barber_availability').select('date, is_available, start_time, end_time').eq('barber_id', barberId).gte('date', startDateStr).lte('date', endDateStr),
+        supabase.from('barber_availability').select('date, is_available, start_time, end_time').eq('barber_id', staffTableId).gte('date', startDateStr).lte('date', endDateStr),
         supabase.from('painel_agendamentos').select('data, hora, servico:painel_servicos(duracao)').eq('barbeiro_id', barberId).gte('data', startDateStr).lte('data', endDateStr).not('status', 'in', '("cancelado","ausente")')
       ]);
 
