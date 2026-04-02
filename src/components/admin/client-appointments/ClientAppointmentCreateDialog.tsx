@@ -295,8 +295,12 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         }
       });
 
-      const availabilityMap = new Map<string, { is_available: boolean; start_time?: string; end_time?: string }>();
-      availabilityResult.data?.forEach(a => availabilityMap.set(a.date, a));
+      const availabilityMap = new Map<string, Array<{ is_available: boolean; start_time?: string; end_time?: string }>>();
+      availabilityResult.data?.forEach(a => {
+        const list = availabilityMap.get(a.date) || [];
+        list.push(a);
+        availabilityMap.set(a.date, list);
+      });
 
       const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
       appointmentsResult.data?.forEach(apt => {
