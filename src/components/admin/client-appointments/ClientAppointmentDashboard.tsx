@@ -17,6 +17,7 @@ import { cn } from '@/lib/utils';
 import { getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 const ClientAppointmentDashboard: React.FC = () => {
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
