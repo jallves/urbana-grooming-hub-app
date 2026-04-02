@@ -186,9 +186,9 @@ async function ensureBarberCommission(
       .eq('valor', params.valor)
       .maybeSingle()
 
-  if (existing?.id) return existing.id
+    if (existing?.id) return existing.id
+  }
 
-  const { data, error } = await supabase
     .from('barber_commissions')
     .insert({
       barber_id: params.barber_id,
