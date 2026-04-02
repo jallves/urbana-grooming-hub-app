@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Clock, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { format, parse, addMinutes, isAfter, isBefore, isEqual, setHours, setMinutes } from 'date-fns';
+import { format, parse, addMinutes, isAfter, isBefore, isEqual } from 'date-fns';
 
 interface AvailableTimeSlotsProps {
   barberId: string;
@@ -35,33 +35,76 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
     }
   }, [barberId, selectedDate, serviceDuration]);
 
+  /**
+   * Resolve o staff_id correto para queries de working_hours e barber_availability
+   */
+  const resolveStaffId = async (bId: string): Promise<string> => {
+    const { data: barberData } = await supabase
+      .from('painel_barbeiros')
+      .select('staff_id')
+      .eq('id', bId)
+      .maybeSingle();
+
+    const authStaffId = barberData?.staff_id || bId;
+
+    const { data: staffRecord } = await supabase
+      .from('staff')
+      .select('id')
+      .eq('staff_id', authStaffId)
+      .maybeSingle();
+
+    return staffRecord?.id || authStaffId;
+  };
+
   const fetchAvailableTimeSlots = async () => {
     setLoading(true);
     try {
       const dateStr = format(selectedDate, 'yyyy-MM-dd');
       const dayOfWeek = selectedDate.getDay();
 
-      // Fetch working hours for this barber
-      const { data: workingHoursData, error: whError } = await supabase
-        .from('working_hours')
-        .select('start_time, end_time, is_active')
-        .eq('staff_id', barberId)
-        .eq('day_of_week', dayOfWeek)
-        .eq('is_active', true)
-        .single();
+      // Resolver staffTableId para working_hours e barber_availability
+      const staffTableId = await resolveStaffId(barberId);
 
-      if (whError || !workingHoursData) {
+      // Queries em paralelo
+      const [workingHoursResult, appointmentsResult, blocksResult] = await Promise.all([
+        supabase
+          .from('working_hours')
+          .select('start_time, end_time, is_active')
+          .eq('staff_id', staffTableId)
+          .eq('day_of_week', dayOfWeek)
+          .eq('is_active', true)
+          .single(),
+        supabase
+          .from('painel_agendamentos')
+          .select('hora, painel_servicos(duracao)')
+          .eq('barbeiro_id', barberId)
+          .eq('data', dateStr)
+          .neq('status', 'cancelado'),
+        supabase
+          .from('barber_availability')
+          .select('is_available, start_time, end_time')
+          .eq('barber_id', staffTableId)
+          .eq('date', dateStr)
+      ]);
+
+      const workingHoursData = workingHoursResult.data;
+      const appointments = appointmentsResult.data;
+      const blocks = blocksResult.data || [];
+
+      if (workingHoursResult.error || !workingHoursData) {
         setTimeSlots([]);
         return;
       }
 
-      // Fetch existing appointments for this date
-      const { data: appointments } = await supabase
-        .from('painel_agendamentos')
-        .select('hora, painel_servicos(duracao)')
-        .eq('barbeiro_id', barberId)
-        .eq('data', dateStr)
-        .neq('status', 'cancelado');
+      // Mapear bloqueios
+      const blockedPeriods: { start: number; end: number }[] = [];
+      for (const block of blocks) {
+        if (!block.is_available) {
+          const [bh, bm] = block.start_time.split(':').map(Number);
+          const [eh, em] = block.end_time.split(':').map(Number);
+          blockedPeriods.push({ start: bh * 60 + bm, end: eh * 60 + em });
+        }
+      }
 
       // Generate time slots
       const slots: TimeSlot[] = [];
@@ -76,10 +119,29 @@ export const AvailableTimeSlots: React.FC<AvailableTimeSlotsProps> = ({
         const slotStr = format(currentSlot, 'HH:mm');
         const slotEnd = addMinutes(currentSlot, serviceDuration);
         
-        // Check if slot is in the past (15 min advance required)
+        // Verificar se slot termina após expediente
+        if (isAfter(slotEnd, endTime)) {
+          currentSlot = addMinutes(currentSlot, 30);
+          continue;
+        }
+
         let isAvailable = true;
+
+        // Check if slot is in the past (15 min advance required)
         if (isToday && isBefore(currentSlot, addMinutes(now, 15))) {
           isAvailable = false;
+        }
+
+        // Verificar bloqueios da barber_availability
+        if (isAvailable) {
+          const slotMinutes = currentSlot.getHours() * 60 + currentSlot.getMinutes();
+          const slotEndMinutes = slotMinutes + serviceDuration;
+          for (const block of blockedPeriods) {
+            if (slotMinutes < block.end && slotEndMinutes > block.start) {
+              isAvailable = false;
+              break;
+            }
+          }
         }
 
         // Check if slot conflicts with existing appointments
