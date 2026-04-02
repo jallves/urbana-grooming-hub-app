@@ -67,7 +67,7 @@ export const useBarberAvailableSlots = () => {
       console.log('🔗 [BarberSlots] Staff ID resolvido:', staffTableId);
 
       // OTIMIZAÇÃO: Queries em paralelo
-      const [workingHoursResult, appointmentsResult] = await Promise.all([
+      const [workingHoursResult, appointmentsResult, blocksResult] = await Promise.all([
         // Buscar horários de trabalho
         supabase
           .from('working_hours')
@@ -83,17 +83,36 @@ export const useBarberAvailableSlots = () => {
           .select('id, hora, servico:painel_servicos(duracao)')
           .eq('barbeiro_id', barberId)
           .eq('data', formattedDate)
-          .neq('status', 'cancelado')
+          .neq('status', 'cancelado'),
+
+        // Buscar bloqueios de horário
+        supabase
+          .from('barber_availability')
+          .select('is_available, start_time, end_time')
+          .eq('barber_id', staffTableId)
+          .eq('date', formattedDate)
       ]);
 
       const workingHours = workingHoursResult.data;
       const appointments = appointmentsResult.data;
+      const blocks = blocksResult.data || [];
 
       if (!workingHours) {
         console.log('❌ [BarberSlots] Sem horário de trabalho para este dia');
         setSlots([]);
         return;
       }
+
+      // Mapear períodos bloqueados
+      const blockedPeriods: { start: number; end: number }[] = [];
+      for (const block of blocks) {
+        if (!block.is_available) {
+          const [bh, bm] = block.start_time.split(':').map(Number);
+          const [eh, em] = block.end_time.split(':').map(Number);
+          blockedPeriods.push({ start: bh * 60 + bm, end: eh * 60 + em });
+        }
+      }
+      console.log('🚫 [BarberSlots] Bloqueios encontrados:', blockedPeriods.length);
 
       const occupiedSlots = new Set<string>();
       
