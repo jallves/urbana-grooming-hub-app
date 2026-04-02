@@ -241,9 +241,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         }
       });
 
-      const availabilityMap = new Map<string, { is_available: boolean; start_time?: string; end_time?: string }>();
+      // Agrupar múltiplos bloqueios por data
+      const availabilityMap = new Map<string, Array<{ is_available: boolean; start_time?: string; end_time?: string }>>();
       availabilityResult.data?.forEach(a => {
-        availabilityMap.set(a.date, a);
+        const list = availabilityMap.get(a.date) || [];
+        list.push(a);
+        availabilityMap.set(a.date, list);
       });
 
       const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
