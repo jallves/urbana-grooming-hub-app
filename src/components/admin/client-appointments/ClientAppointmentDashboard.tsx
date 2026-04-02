@@ -8,7 +8,13 @@ import ClientAppointmentCreateDialog from './ClientAppointmentCreateDialog';
 import AdminEncaixeModal from './AdminEncaixeModal';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Plus, Zap } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, Zap, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
+import { format, addDays, isToday } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { cn } from '@/lib/utils';
+import { getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 const ClientAppointmentDashboard: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
