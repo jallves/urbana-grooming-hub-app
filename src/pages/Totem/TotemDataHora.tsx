@@ -96,7 +96,7 @@ const TotemDataHora: React.FC = () => {
           supabase
             .from('barber_availability')
             .select('date, is_available, start_time, end_time')
-            .eq('barber_id', barberId)
+            .eq('barber_id', staffTableId)
             .gte('date', startDateStr)
             .lte('date', endDateStr),
           supabase
