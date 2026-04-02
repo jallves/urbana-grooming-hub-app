@@ -11,6 +11,7 @@ import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
+import { finalizeServiceCheckout, persistPendingServiceCheckout, type ServiceCheckoutFinishPayload } from '@/lib/serviceCheckoutCompletion';
 import { format } from 'date-fns';
 import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -116,6 +117,46 @@ const TotemPaymentPix: React.FC = () => {
     finalizingRef.current = true;
     
     console.log('✅ [PIX] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
+
+    const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && venda_id
+      ? {
+          venda_id,
+          agendamento_id: appointment?.id,
+          session_id,
+          transaction_data: pendingTransactionData,
+          payment_method: 'PIX',
+          tipAmount,
+          extras: (extraServices || []).map((s: any) => ({ id: s.id })),
+          products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
+          combo_discount: comboDiscount || 0,
+          combo_name: comboName || null,
+        }
+      : null;
+
+    if (finishPayload) {
+      persistPendingServiceCheckout(finishPayload);
+    }
+
+    let checkoutFinalized = isDirect;
+
+    if (isDirect) {
+      fireAndForgetEdgeFunction('totem-direct-sale', {
+        action: 'finish', venda_id, transaction_data: pendingTransactionData
+      });
+    } else if (finishPayload) {
+      const finishResult = await finalizeServiceCheckout(finishPayload, {
+        retries: 1,
+        retryDelayMs: 1200,
+      });
+
+      checkoutFinalized = finishResult.success;
+
+      if (!finishResult.success) {
+        console.error('❌ [PIX] Falha ao finalizar checkout antes da navegação:', finishResult.error);
+      }
+    } else {
+      console.error('❌ [PIX] venda_id ausente ao finalizar checkout de serviço');
+    }
     
     // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
     const successState = { 
@@ -123,27 +164,13 @@ const TotemPaymentPix: React.FC = () => {
       paymentMethod: 'pix',
       isDirect, transactionData: pendingTransactionData,
       selectedProducts, extraServices, resumo,
-      emailAlreadySent: true, tipAmount
+      emailAlreadySent: true,
+      tipAmount,
+      venda_id,
+      checkoutFinishPayload: finishPayload,
+      checkoutFinalized,
     };
     navigate('/totem/payment-success', { state: successState });
-
-    // Finalizar venda e estoque em BACKGROUND usando fetch keepalive
-    // Garante que a requisição sobreviva à navegação/unmount do componente
-    if (isDirect) {
-      fireAndForgetEdgeFunction('totem-direct-sale', {
-        action: 'finish', venda_id, transaction_data: pendingTransactionData
-      });
-    } else {
-      fireAndForgetEdgeFunction('totem-checkout', {
-        action: 'finish', venda_id, agendamento_id: appointment?.id,
-        session_id, transaction_data: pendingTransactionData,
-        payment_method: 'PIX', tipAmount,
-        extras: (extraServices || []).map((s: any) => ({ id: s.id })),
-        products: (selectedProducts || []).map((p: any) => ({ id: p.id || p.product_id, quantidade: p.quantidade })),
-        combo_discount: comboDiscount || 0,
-        combo_name: comboName || null,
-      });
-    }
 
     // Atualizar estoque em paralelo (fire-and-forget)
     if (selectedProducts?.length > 0) {
