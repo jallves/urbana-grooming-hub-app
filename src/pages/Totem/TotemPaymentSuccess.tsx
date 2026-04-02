@@ -80,12 +80,16 @@ const TotemPaymentSuccess: React.FC = () => {
       }
 
       if (checkoutFinalized) {
-        clearPendingServiceCheckout(venda_id);
+        clearPendingServiceCheckout(checkoutFinishPayload || { venda_id, agendamento_id: appointment?.id });
         return;
       }
 
-      const pendingPayload = checkoutFinishPayload || getPendingServiceCheckout(venda_id);
-      if (!pendingPayload?.venda_id) {
+      const pendingPayload = checkoutFinishPayload || getPendingServiceCheckout({
+        venda_id,
+        agendamento_id: appointment?.id,
+      });
+
+      if (!pendingPayload?.agendamento_id && !pendingPayload?.venda_id) {
         return;
       }
 
