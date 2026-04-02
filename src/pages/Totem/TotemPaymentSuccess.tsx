@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import { useToast } from '@/hooks/use-toast';
+import { clearPendingServiceCheckout, finalizeServiceCheckout, getPendingServiceCheckout, type ServiceCheckoutFinishPayload } from '@/lib/serviceCheckoutCompletion';
 
 interface ExtraService {
   service_id?: string;
@@ -38,6 +39,7 @@ const TotemPaymentSuccess: React.FC = () => {
   const location = useLocation();
   const { toast } = useToast();
   const emailSentRef = useRef(false);
+  const finishRetryRef = useRef(false);
   const { 
     appointment, 
     client, 
@@ -49,7 +51,10 @@ const TotemPaymentSuccess: React.FC = () => {
     extraServices = [] as ExtraService[],
     resumo,
     emailAlreadySent = false, // Flag para evitar envio duplicado
-    tipAmount = 0
+    tipAmount = 0,
+    venda_id = null,
+    checkoutFinishPayload = null as ServiceCheckoutFinishPayload | null,
+    checkoutFinalized = false,
   } = location.state || {};
 
   const ratingRedirect = !isDirect && appointment;
@@ -68,6 +73,35 @@ const TotemPaymentSuccess: React.FC = () => {
       navigate('/totem/home');
       return;
     }
+
+    const ensureServiceCheckoutFinalized = async () => {
+      if (finishRetryRef.current || isDirect || paymentMethod === 'subscription_credit') {
+        return;
+      }
+
+      if (checkoutFinalized) {
+        clearPendingServiceCheckout(venda_id);
+        return;
+      }
+
+      const pendingPayload = checkoutFinishPayload || getPendingServiceCheckout(venda_id);
+      if (!pendingPayload?.venda_id) {
+        return;
+      }
+
+      finishRetryRef.current = true;
+
+      const finishResult = await finalizeServiceCheckout(pendingPayload, {
+        retries: 2,
+        retryDelayMs: 1200,
+      });
+
+      if (!finishResult.success) {
+        console.error('[PaymentSuccess] Falha ao reprocessar checkout pendente:', finishResult.error);
+      }
+    };
+
+    void ensureServiceCheckoutFinalized();
 
     // Enviar comprovante por e-mail (APENAS se não foi enviado antes)
     const sendEmailReceipt = async () => {
@@ -185,7 +219,7 @@ const TotemPaymentSuccess: React.FC = () => {
       document.documentElement.classList.remove('totem-mode');
       if (redirectTimerRef.current) clearTimeout(redirectTimerRef.current);
     };
-  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount]);
+  }, [navigate, appointment, client, total, isDirect, paymentMethod, transactionData, toast, selectedProducts, extraServices, resumo, emailAlreadySent, tipAmount, venda_id, checkoutFinishPayload, checkoutFinalized]);
 
   if (total == null || !client) {
     return null;
