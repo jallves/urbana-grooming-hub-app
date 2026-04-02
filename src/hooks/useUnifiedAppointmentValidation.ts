@@ -434,8 +434,8 @@ export const useUnifiedAppointmentValidation = () => {
         checkBarberWorkingHoursWithStaffId(staffTableId, date, time, serviceDuration),
         // Verificar folgas programadas (tabela time_off)
         checkBarberTimeOff(barberId, date),
-        // Verificar disponibilidade específica (bloqueios)
-        checkBarberSpecificAvailability(barberId, date, time, serviceDuration),
+        // Verificar disponibilidade específica (bloqueios) - usa staffTableId já resolvido
+        checkBarberSpecificAvailability(barberId, date, time, serviceDuration, staffTableId),
         // Verificar conflitos com outros agendamentos
         checkAppointmentConflicts(barberId, date, time, serviceDuration, excludeAppointmentId)
       ]);
