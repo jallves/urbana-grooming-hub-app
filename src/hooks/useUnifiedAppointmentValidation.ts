@@ -529,11 +529,11 @@ export const useUnifiedAppointmentValidation = () => {
           .gte('end_date', dateStr)
           .maybeSingle(),
         
-        // 3. Verificar disponibilidade específica (bloqueios) - buscar TODOS os registros do dia
+        // 3. Verificar disponibilidade específica (bloqueios) - usar staffTableId (barber_availability referencia staff.id)
         supabase
           .from('barber_availability')
           .select('is_available, start_time, end_time')
-          .eq('barber_id', barberId)
+          .eq('barber_id', staffTableId)
           .eq('date', dateStr),
         
         // 4. Buscar agendamentos existentes
