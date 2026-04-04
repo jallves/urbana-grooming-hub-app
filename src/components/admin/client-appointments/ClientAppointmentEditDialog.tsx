@@ -62,6 +62,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [appointment, setAppointment] = useState<any>(null);
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   
@@ -69,6 +70,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>('');
   const [selectedServicoId, setSelectedServicoId] = useState<string>('');
+  const [selectedClienteId, setSelectedClienteId] = useState<string>('');
 
   // Carregar dados iniciais quando o dialog abrir
   useEffect(() => {
