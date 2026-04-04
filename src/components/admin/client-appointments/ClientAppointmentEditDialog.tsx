@@ -595,6 +595,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
               <h4 className="text-sm font-semibold text-primary">Resumo da Alteração</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
+                {selectedCliente && selectedCliente.id !== appointment.cliente_id && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Cliente:</span>
+                    <p className="font-medium text-primary">{selectedCliente.nome} ⬅ alterado</p>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">Barbeiro:</span>
                   <p className="font-medium">{selectedBarbeiro.nome}</p>
