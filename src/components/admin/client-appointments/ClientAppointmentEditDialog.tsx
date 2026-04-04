@@ -78,6 +78,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       loadAppointmentData();
       loadBarbeiros();
       loadServicos();
+      loadClientes();
     }
   }, [isOpen, appointmentId]);
 
