@@ -241,6 +241,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         console.log('⚠️ [Admin Edit] Sem working_hours, usando horário padrão');
       }
 
+      // Horário original do agendamento sendo editado
+      const originalTime = appointment?.hora?.substring(0, 5);
+      const originalDate = appointment?.data;
+      const isOriginalDateAndBarber = formattedDate === originalDate && selectedBarbeiroId === appointment?.barbeiro_id;
+
       // Marcar slots ocupados (com buffer de 10min)
       const BUFFER_MINUTES = 10;
       const occupiedSlots = new Set<string>();
