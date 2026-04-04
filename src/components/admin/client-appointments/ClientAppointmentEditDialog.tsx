@@ -157,7 +157,21 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     }
   };
 
-  const fetchAvailableSlots = useCallback(async () => {
+  const loadClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('painel_clientes')
+        .select('id, nome, whatsapp, email')
+        .order('nome');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error loading clientes:', error);
+    }
+  };
+
+
     if (!selectedBarbeiroId || !selectedDate || !selectedServicoId) return;
     
     setLoadingSlots(true);
