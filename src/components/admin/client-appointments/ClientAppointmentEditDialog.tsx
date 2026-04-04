@@ -44,6 +44,13 @@ interface Servico {
   is_active?: boolean;
 }
 
+interface Cliente {
+  id: string;
+  nome: string;
+  whatsapp: string | null;
+  email: string | null;
+}
+
 const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = ({
   isOpen,
   onClose,
