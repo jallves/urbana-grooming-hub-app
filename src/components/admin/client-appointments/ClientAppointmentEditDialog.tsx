@@ -386,6 +386,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
   const selectedBarbeiro = barbeiros.find(b => b.id === selectedBarbeiroId);
   const selectedServico = servicos.find(s => s.id === selectedServicoId);
+  const selectedCliente = clientes.find(c => c.id === selectedClienteId);
   const availableSlotsFiltered = availableSlots.filter(s => s.available);
 
   if (!appointment) {
