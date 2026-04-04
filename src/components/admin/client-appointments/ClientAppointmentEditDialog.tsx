@@ -350,12 +350,17 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       const horaFormatada = `${selectedTime}:00`;
       const dataFormatada = format(selectedDate, 'yyyy-MM-dd');
 
-      const updateData = {
+      const updateData: any = {
         data: dataFormatada,
         hora: horaFormatada,
         barbeiro_id: selectedBarbeiroId,
         servico_id: selectedServicoId
       };
+
+      // Incluir cliente_id se foi alterado
+      if (selectedClienteId && selectedClienteId !== appointment.cliente_id) {
+        updateData.cliente_id = selectedClienteId;
+      }
 
       const previousData = {
         date: appointment.data,
