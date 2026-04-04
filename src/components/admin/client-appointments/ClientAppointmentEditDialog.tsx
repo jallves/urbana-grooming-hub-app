@@ -112,6 +112,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       setSelectedTime(data.hora?.substring(0, 5) || '');
       setSelectedBarbeiroId(data.barbeiro_id);
       setSelectedServicoId(data.servico_id);
+      setSelectedClienteId(data.cliente_id || '');
       
       console.log('📋 [Admin Edit] Agendamento carregado:', {
         id: appointmentId,
