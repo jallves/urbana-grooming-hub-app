@@ -172,6 +172,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   };
 
 
+  const fetchAvailableSlots = useCallback(async () => {
     if (!selectedBarbeiroId || !selectedDate || !selectedServicoId) return;
     
     setLoadingSlots(true);
