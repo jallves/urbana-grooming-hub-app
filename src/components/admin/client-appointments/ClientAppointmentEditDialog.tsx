@@ -9,7 +9,7 @@ import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, User, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ClientAppointmentEditDialogProps {
