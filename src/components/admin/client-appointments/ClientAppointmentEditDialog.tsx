@@ -279,12 +279,20 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           if (slotTotalMinutes + serviceDuration > endTotalMinutes) continue;
           
           // Se for hoje, pular horários passados (15 min de antecedência)
-          if (isCurrentDay) {
+          // MAS sempre permitir o horário original do agendamento sendo editado
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          const isOriginalSlot = isOriginalDateAndBarber && timeString === originalTime;
+          
+          if (isCurrentDay && !isOriginalSlot) {
             const currentTotalMinutes = currentHour * 60 + currentMinute;
             if (slotTotalMinutes <= currentTotalMinutes + 15) continue;
           }
           
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          // Se é o horário original (mesma data e barbeiro), sempre disponível
+          if (isOriginalSlot) {
+            allSlots.push({ time: timeString, available: true });
+            continue;
+          }
           
           // Verificar conflito: todos os slots que o serviço ocuparia devem estar livres
           let isAvailable = true;
