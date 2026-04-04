@@ -1,0 +1,1 @@
+UPDATE client_subscriptions SET credits_used = 2 WHERE id = 'cbf7dccb-ad93-4c83-818a-84639ae5fa1e';
