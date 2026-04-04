@@ -9,7 +9,7 @@ import { format, isToday, isBefore, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, User, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ClientAppointmentEditDialogProps {
@@ -44,6 +44,13 @@ interface Servico {
   is_active?: boolean;
 }
 
+interface Cliente {
+  id: string;
+  nome: string;
+  whatsapp: string | null;
+  email: string | null;
+}
+
 const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = ({
   isOpen,
   onClose,
@@ -55,6 +62,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [appointment, setAppointment] = useState<any>(null);
   const [barbeiros, setBarbeiros] = useState<Barbeiro[]>([]);
   const [servicos, setServicos] = useState<Servico[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [availableSlots, setAvailableSlots] = useState<TimeSlot[]>([]);
   const [calendarOpen, setCalendarOpen] = useState(false);
   
@@ -62,6 +70,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [selectedTime, setSelectedTime] = useState<string>('');
   const [selectedBarbeiroId, setSelectedBarbeiroId] = useState<string>('');
   const [selectedServicoId, setSelectedServicoId] = useState<string>('');
+  const [selectedClienteId, setSelectedClienteId] = useState<string>('');
 
   // Carregar dados iniciais quando o dialog abrir
   useEffect(() => {
@@ -69,6 +78,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       loadAppointmentData();
       loadBarbeiros();
       loadServicos();
+      loadClientes();
     }
   }, [isOpen, appointmentId]);
 
@@ -102,6 +112,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       setSelectedTime(data.hora?.substring(0, 5) || '');
       setSelectedBarbeiroId(data.barbeiro_id);
       setSelectedServicoId(data.servico_id);
+      setSelectedClienteId(data.cliente_id || '');
       
       console.log('📋 [Admin Edit] Agendamento carregado:', {
         id: appointmentId,
@@ -145,6 +156,21 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       console.error('Error loading servicos:', error);
     }
   };
+
+  const loadClientes = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('painel_clientes')
+        .select('id, nome, whatsapp, email')
+        .order('nome');
+
+      if (error) throw error;
+      setClientes(data || []);
+    } catch (error) {
+      console.error('Error loading clientes:', error);
+    }
+  };
+
 
   const fetchAvailableSlots = useCallback(async () => {
     if (!selectedBarbeiroId || !selectedDate || !selectedServicoId) return;
@@ -324,12 +350,17 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       const horaFormatada = `${selectedTime}:00`;
       const dataFormatada = format(selectedDate, 'yyyy-MM-dd');
 
-      const updateData = {
+      const updateData: any = {
         data: dataFormatada,
         hora: horaFormatada,
         barbeiro_id: selectedBarbeiroId,
         servico_id: selectedServicoId
       };
+
+      // Incluir cliente_id se foi alterado
+      if (selectedClienteId && selectedClienteId !== appointment.cliente_id) {
+        updateData.cliente_id = selectedClienteId;
+      }
 
       const previousData = {
         date: appointment.data,
@@ -355,6 +386,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
   const selectedBarbeiro = barbeiros.find(b => b.id === selectedBarbeiroId);
   const selectedServico = servicos.find(s => s.id === selectedServicoId);
+  const selectedCliente = clientes.find(c => c.id === selectedClienteId);
   const availableSlotsFiltered = availableSlots.filter(s => s.available);
 
   if (!appointment) {
@@ -383,6 +415,37 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+          {/* Seleção de Cliente (apenas para status agendado ou check_in_finalizado) */}
+          {(appointment.status === 'agendado' || appointment.status === 'confirmado' || appointment.status_totem === 'CHEGOU') && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Cliente
+              </Label>
+              <Select value={selectedClienteId} onValueChange={setSelectedClienteId}>
+                <SelectTrigger className="h-11 bg-background border-input">
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border max-h-60">
+                  {clientes.map((cliente) => (
+                    <SelectItem
+                      key={cliente.id}
+                      value={cliente.id}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{cliente.nome}</span>
+                        {cliente.whatsapp && (
+                          <span className="text-muted-foreground text-xs">• {cliente.whatsapp}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Seleção de Barbeiro */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
@@ -532,6 +595,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
             <div className="p-4 rounded-lg bg-primary/5 border border-primary/20 space-y-2">
               <h4 className="text-sm font-semibold text-primary">Resumo da Alteração</h4>
               <div className="grid grid-cols-2 gap-2 text-sm">
+                {selectedCliente && selectedCliente.id !== appointment.cliente_id && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Cliente:</span>
+                    <p className="font-medium text-primary">{selectedCliente.nome} ⬅ alterado</p>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">Barbeiro:</span>
                   <p className="font-medium">{selectedBarbeiro.nome}</p>
