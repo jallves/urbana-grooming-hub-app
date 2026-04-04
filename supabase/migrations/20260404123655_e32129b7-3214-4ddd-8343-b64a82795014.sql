@@ -1,0 +1,1 @@
+UPDATE painel_agendamentos SET cliente_id = 'ea4be6fe-0195-46b4-a487-fa9bfcce0308', updated_at = now() WHERE id = 'd45f791d-e69a-4519-aa1c-835e9c30608e';
