@@ -415,8 +415,8 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-          {/* Seleção de Cliente (apenas para status agendado ou check_in_finalizado) */}
-          {(appointment.status === 'agendado' || appointment.status === 'confirmado' || appointment.status_totem === 'CHEGOU') && (
+          {/* Seleção de Cliente (permitido para qualquer status exceto concluído) */}
+          {appointment.status !== 'concluido' && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-medium">
                 <Users className="h-4 w-4 text-muted-foreground" />
