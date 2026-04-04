@@ -316,10 +316,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
       setAvailableSlots(allSlots);
       
-      // Se o horário atual não está disponível, limpar seleção
+      // Se o horário selecionado não está disponível, limpar seleção
+      // MAS manter o horário original do agendamento
       if (selectedTime && !allSlots.find(s => s.time === selectedTime && s.available)) {
-        const originalTime = appointment?.hora?.substring(0, 5);
-        if (selectedTime !== originalTime) {
+        if (selectedTime !== originalTime || !isOriginalDateAndBarber) {
           setSelectedTime('');
         }
       }
