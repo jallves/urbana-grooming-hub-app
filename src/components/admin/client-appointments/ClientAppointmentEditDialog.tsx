@@ -241,6 +241,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         console.log('⚠️ [Admin Edit] Sem working_hours, usando horário padrão');
       }
 
+      // Horário original do agendamento sendo editado
+      const originalTime = appointment?.hora?.substring(0, 5);
+      const originalDate = appointment?.data;
+      const isOriginalDateAndBarber = formattedDate === originalDate && selectedBarbeiroId === appointment?.barbeiro_id;
+
       // Marcar slots ocupados (com buffer de 10min)
       const BUFFER_MINUTES = 10;
       const occupiedSlots = new Set<string>();
@@ -274,12 +279,20 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           if (slotTotalMinutes + serviceDuration > endTotalMinutes) continue;
           
           // Se for hoje, pular horários passados (15 min de antecedência)
-          if (isCurrentDay) {
+          // MAS sempre permitir o horário original do agendamento sendo editado
+          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          const isOriginalSlot = isOriginalDateAndBarber && timeString === originalTime;
+          
+          if (isCurrentDay && !isOriginalSlot) {
             const currentTotalMinutes = currentHour * 60 + currentMinute;
             if (slotTotalMinutes <= currentTotalMinutes + 15) continue;
           }
           
-          const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+          // Se é o horário original (mesma data e barbeiro), sempre disponível
+          if (isOriginalSlot) {
+            allSlots.push({ time: timeString, available: true });
+            continue;
+          }
           
           // Verificar conflito: todos os slots que o serviço ocuparia devem estar livres
           let isAvailable = true;
@@ -303,10 +316,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
       setAvailableSlots(allSlots);
       
-      // Se o horário atual não está disponível, limpar seleção
+      // Se o horário selecionado não está disponível, limpar seleção
+      // MAS manter o horário original do agendamento
       if (selectedTime && !allSlots.find(s => s.time === selectedTime && s.available)) {
-        const originalTime = appointment?.hora?.substring(0, 5);
-        if (selectedTime !== originalTime) {
+        if (selectedTime !== originalTime || !isOriginalDateAndBarber) {
           setSelectedTime('');
         }
       }
@@ -333,7 +346,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
   const handleServicoChange = (servicoId: string) => {
     setSelectedServicoId(servicoId);
-    setSelectedTime(''); // Limpar horário ao mudar serviço (duração pode ser diferente)
+    // NÃO limpar horário - admin pode querer manter o mesmo horário
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
