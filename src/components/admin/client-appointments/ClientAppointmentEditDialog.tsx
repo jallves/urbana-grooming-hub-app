@@ -333,7 +333,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
   const handleServicoChange = (servicoId: string) => {
     setSelectedServicoId(servicoId);
-    setSelectedTime(''); // Limpar horário ao mudar serviço (duração pode ser diferente)
+    // NÃO limpar horário - admin pode querer manter o mesmo horário
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
