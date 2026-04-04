@@ -414,6 +414,37 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
+          {/* Seleção de Cliente (apenas para status agendado ou check_in_finalizado) */}
+          {(appointment.status === 'agendado' || appointment.status === 'confirmado' || appointment.status_totem === 'CHEGOU') && (
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                Cliente
+              </Label>
+              <Select value={selectedClienteId} onValueChange={setSelectedClienteId}>
+                <SelectTrigger className="h-11 bg-background border-input">
+                  <SelectValue placeholder="Selecione o cliente" />
+                </SelectTrigger>
+                <SelectContent className="bg-popover border-border max-h-60">
+                  {clientes.map((cliente) => (
+                    <SelectItem
+                      key={cliente.id}
+                      value={cliente.id}
+                      className="cursor-pointer"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span>{cliente.nome}</span>
+                        {cliente.whatsapp && (
+                          <span className="text-muted-foreground text-xs">• {cliente.whatsapp}</span>
+                        )}
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           {/* Seleção de Barbeiro */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
