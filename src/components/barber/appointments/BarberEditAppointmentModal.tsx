@@ -337,12 +337,12 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 value={selectedService?.id}
                 onValueChange={handleServiceChange}
               >
-                <SelectTrigger className="bg-urbana-black/40 backdrop-blur-sm border-urbana-gold/20 text-urbana-light h-10 text-sm sm:text-base w-full">
+                <SelectTrigger className="bg-urbana-black/60 border-urbana-gold/20 text-urbana-light h-10 text-sm sm:text-base w-full cursor-pointer">
                   <SelectValue placeholder="Selecione um serviço" />
                 </SelectTrigger>
-                <SelectContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 max-w-[90vw]">
+                <SelectContent className="bg-urbana-black border-urbana-gold/20 max-w-[90vw]">
                   {services.map(service => (
-                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base text-urbana-light">
+                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base text-urbana-light cursor-pointer focus:bg-urbana-gold/20 focus:text-urbana-light">
                       {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
                     </SelectItem>
                   ))}
