@@ -117,11 +117,9 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({ onClose, isOpen }) => {
               key={item.href}
               to={item.href}
               onClick={onClose}
-              style={{ animationDelay: `${index * 30}ms` }}
               className={({ isActive }) =>
-                `group flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 lg:p-3 rounded-lg transition-all duration-200 
-                relative overflow-hidden animate-fade-in min-h-[44px] touch-manipulation
-                active:scale-[0.98] ${
+                `group flex items-center gap-2 sm:gap-3 p-2 sm:p-2.5 lg:p-3 rounded-lg transition-colors duration-200 
+                relative overflow-hidden min-h-[44px] touch-manipulation ${
                   isActive
                     ? 'bg-gradient-to-r ' + item.color + ' text-white shadow-md'
                     : 'hover:bg-gray-50 active:bg-gray-100'

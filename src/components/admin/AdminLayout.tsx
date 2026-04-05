@@ -135,7 +135,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         </header>
 
         {/* Área de conteúdo com transição */}
-        <div className="w-full h-full animate-fade-in">
+        <div className="w-full h-full">
           {children}
         </div>
       </main>
