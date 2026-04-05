@@ -27,275 +27,325 @@ interface ReceiptEmailRequest {
   nsu?: string;
   barberName?: string;
   tipAmount?: number;
+  // Password reset fields
+  isPasswordReset?: boolean;
+  newPassword?: string;
 }
 
-const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { 
-      headers: {
-        ...corsHeaders,
-        "Access-Control-Allow-Methods": "POST, OPTIONS"
-      } 
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  }).format(value);
+}
+
+function formatDate(dateStr: string): string {
+  try {
+    const date = new Date(dateStr);
+    return date.toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
     });
+  } catch {
+    return dateStr;
+  }
+}
+
+function formatPaymentMethod(method: string): string {
+  const methods: Record<string, string> = {
+    'credit': 'Cartão de Crédito',
+    'debit': 'Cartão de Débito',
+    'pix': 'PIX',
+    'cash': 'Dinheiro',
+    'voucher': 'Vale/Voucher',
+    'credit_card': 'Cartão de Crédito',
+    'debit_card': 'Cartão de Débito',
+  };
+  return methods[method] || method;
+}
+
+function getTransactionTypeLabel(type: string): string {
+  const labels: Record<string, string> = {
+    'service': 'Serviço',
+    'product': 'Produto',
+    'mixed': 'Serviço + Produto'
+  };
+  return labels[type] || type;
+}
+
+function generatePasswordResetEmailHtml(clientName: string, newPassword: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Nova Senha - Costa Urbana Barbearia</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; text-align: center;">
+                  <h1 style="color: #d4af37; margin: 0; font-size: 24px; font-weight: bold;">
+                    ✂️ Costa Urbana Barbearia
+                  </h1>
+                  <p style="color: #ffffff; margin: 8px 0 0; font-size: 14px; opacity: 0.9;">
+                    Redefinição de Senha
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Content -->
+              <tr>
+                <td style="padding: 30px;">
+                  <h2 style="color: #1a1a2e; margin: 0 0 16px; font-size: 20px;">
+                    Olá, ${clientName}! 👋
+                  </h2>
+                  
+                  <p style="color: #555; font-size: 15px; line-height: 1.6; margin: 0 0 20px;">
+                    Sua senha foi redefinida pelo administrador da barbearia. Utilize as credenciais abaixo para acessar sua conta:
+                  </p>
+                  
+                  <div style="background-color: #f8f9fa; border-radius: 8px; padding: 20px; border-left: 4px solid #d4af37; margin: 20px 0;">
+                    <p style="margin: 0 0 8px; color: #666; font-size: 13px;">SUA NOVA SENHA:</p>
+                    <p style="margin: 0; color: #1a1a2e; font-size: 22px; font-weight: bold; font-family: 'Courier New', monospace; letter-spacing: 2px;">
+                      ${newPassword}
+                    </p>
+                  </div>
+                  
+                  <div style="background-color: #fff3cd; border-radius: 8px; padding: 15px; margin: 20px 0;">
+                    <p style="margin: 0; color: #856404; font-size: 13px;">
+                      🔐 <strong>Dica de segurança:</strong> Recomendamos que você altere sua senha após o primeiro acesso.
+                    </p>
+                  </div>
+                  
+                  <p style="color: #999; font-size: 12px; margin-top: 30px; text-align: center;">
+                    Se você não solicitou esta alteração, entre em contato conosco imediatamente.
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Costa Urbana Barbearia — Este é um e-mail automático
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+function generateReceiptEmailHtml(data: ReceiptEmailRequest): string {
+  const itemsHtml = data.items.map(item => `
+    <tr>
+      <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <div>
+            <span style="color: #333; font-size: 14px; font-weight: 500;">${item.name}</span>
+            ${item.quantity && item.quantity > 1 ? `<span style="color: #888; font-size: 12px; margin-left: 8px;">(x${item.quantity})</span>` : ''}
+            ${item.type ? `<span style="display: inline-block; background-color: ${item.type === 'service' ? '#e3f2fd' : '#f3e5f5'}; color: ${item.type === 'service' ? '#1565c0' : '#7b1fa2'}; font-size: 10px; padding: 2px 6px; border-radius: 4px; margin-left: 8px;">${item.type === 'service' ? 'Serviço' : 'Produto'}</span>` : ''}
+          </div>
+        </div>
+      </td>
+      <td style="padding: 12px 16px; border-bottom: 1px solid #f0f0f0; text-align: right; color: #333; font-weight: 500;">
+        ${formatCurrency(item.price)}
+      </td>
+    </tr>
+  `).join('');
+
+  let totalsHtml = '';
+  
+  if (data.tipAmount && data.tipAmount > 0) {
+    totalsHtml += `
+      <tr>
+        <td style="padding: 8px 16px; text-align: right; color: #666; font-size: 14px;">Gorjeta:</td>
+        <td style="padding: 8px 16px; text-align: right; color: #333; font-size: 14px;">${formatCurrency(data.tipAmount)}</td>
+      </tr>
+    `;
   }
 
-  if (req.method !== "POST") {
-    return new Response(
-      JSON.stringify({ error: "Method not allowed" }),
-      { status: 405, headers: { "Content-Type": "application/json", ...corsHeaders } }
-    );
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Comprovante - Costa Urbana Barbearia</title>
+    </head>
+    <body style="margin: 0; padding: 0; background-color: #f4f4f4; font-family: Arial, sans-serif;">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f4f4f4; padding: 20px;">
+        <tr>
+          <td align="center">
+            <table width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
+              <!-- Header -->
+              <tr>
+                <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 30px; text-align: center;">
+                  <h1 style="color: #d4af37; margin: 0; font-size: 24px; font-weight: bold;">
+                    ✂️ Costa Urbana Barbearia
+                  </h1>
+                  <p style="color: #ffffff; margin: 8px 0 0; font-size: 14px; opacity: 0.9;">
+                    Comprovante de ${getTransactionTypeLabel(data.transactionType)}
+                  </p>
+                </td>
+              </tr>
+              
+              <!-- Client Info -->
+              <tr>
+                <td style="padding: 24px 24px 0;">
+                  <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td style="padding: 8px 0;">
+                        <span style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Cliente</span>
+                        <p style="color: #333; font-size: 16px; margin: 4px 0 0; font-weight: 500;">${data.clientName}</p>
+                      </td>
+                      <td style="padding: 8px 0; text-align: right;">
+                        <span style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Data</span>
+                        <p style="color: #333; font-size: 14px; margin: 4px 0 0;">${formatDate(data.transactionDate)}</p>
+                      </td>
+                    </tr>
+                    ${data.barberName ? `
+                    <tr>
+                      <td style="padding: 8px 0;" colspan="2">
+                        <span style="color: #888; font-size: 12px; text-transform: uppercase; letter-spacing: 1px;">Profissional</span>
+                        <p style="color: #333; font-size: 14px; margin: 4px 0 0;">${data.barberName}</p>
+                      </td>
+                    </tr>
+                    ` : ''}
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Items -->
+              <tr>
+                <td style="padding: 20px 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="border: 1px solid #f0f0f0; border-radius: 8px; overflow: hidden;">
+                    <thead>
+                      <tr style="background-color: #fafafa;">
+                        <th style="padding: 12px 16px; text-align: left; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Item</th>
+                        <th style="padding: 12px 16px; text-align: right; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Valor</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      ${itemsHtml}
+                      ${totalsHtml}
+                      <tr style="background-color: #1a1a2e;">
+                        <td style="padding: 16px; color: #d4af37; font-weight: bold; font-size: 16px;">TOTAL</td>
+                        <td style="padding: 16px; text-align: right; color: #d4af37; font-weight: bold; font-size: 18px;">${formatCurrency(data.total)}</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Payment Info -->
+              <tr>
+                <td style="padding: 0 24px 24px;">
+                  <table width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f9fa; border-radius: 8px; padding: 16px;">
+                    <tr>
+                      <td style="padding: 8px 16px;">
+                        <span style="color: #888; font-size: 12px;">Forma de Pagamento</span>
+                        <p style="color: #333; font-size: 14px; margin: 4px 0 0; font-weight: 500;">${formatPaymentMethod(data.paymentMethod)}</p>
+                      </td>
+                      ${data.nsu ? `
+                      <td style="padding: 8px 16px; text-align: right;">
+                        <span style="color: #888; font-size: 12px;">NSU</span>
+                        <p style="color: #333; font-size: 14px; margin: 4px 0 0; font-family: monospace;">${data.nsu}</p>
+                      </td>
+                      ` : ''}
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <!-- Footer -->
+              <tr>
+                <td style="background-color: #f8f9fa; padding: 20px; text-align: center; border-top: 1px solid #eee;">
+                  <p style="color: #333; font-size: 14px; margin: 0 0 4px;">
+                    Obrigado pela preferência! 🙏
+                  </p>
+                  <p style="color: #999; font-size: 12px; margin: 0;">
+                    Costa Urbana Barbearia — Comprovante gerado automaticamente
+                  </p>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </body>
+    </html>
+  `;
+}
+
+serve(async (req: Request) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const body: ReceiptEmailRequest = await req.json();
-    
-    console.log("Received receipt email request:", JSON.stringify(body, null, 2));
+    const data: ReceiptEmailRequest = await req.json();
 
-    const { 
-      clientName,
-      clientEmail,
-      transactionType,
-      items,
-      total,
-      paymentMethod,
-      transactionDate,
-      nsu,
-      barberName,
-      tipAmount
-    } = body;
+    console.log('[send-receipt-email] Dados recebidos:', {
+      clientName: data.clientName,
+      clientEmail: data.clientEmail,
+      isPasswordReset: data.isPasswordReset,
+      transactionType: data.transactionType,
+    });
 
-    if (!clientName || !clientEmail || !items || total === undefined || total === null || !paymentMethod) {
+    if (!data.clientEmail) {
       return new Response(
-        JSON.stringify({ error: "Missing required fields" }),
-        { status: 400, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({ error: 'E-mail do cliente é obrigatório' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    const formattedTotal = total.toFixed(2).replace('.', ',');
-    const title = 'Comprovante de Pagamento';
-    
-    // URL da logo hospedada publicamente
-    const logoUrl = 'https://barbeariacostaurbana.com.br/images/logo-barbearia-costa-urbana.png';
+    let subject: string;
+    let html: string;
 
-    const paymentMethodText = {
-      'credit': 'Cartão de Crédito',
-      'debit': 'Cartão de Débito',
-      'pix': 'PIX',
-      'cash': 'Dinheiro'
-    }[paymentMethod] || paymentMethod;
-
-    // Separar itens por tipo usando o campo type explícito
-    // IMPORTANTE: Agora confiamos no campo 'type' que vem do frontend
-    const services = items.filter(item => item.type === 'service');
-    const products = items.filter(item => item.type === 'product');
-    
-    // Se nenhum item tem type definido, usar fallback baseado no transactionType
-    const untyped = items.filter(item => !item.type);
-    if (untyped.length > 0) {
-      if (transactionType === 'product') {
-        products.push(...untyped);
-      } else {
-        services.push(...untyped);
-      }
+    if (data.isPasswordReset && data.newPassword) {
+      // Password reset email
+      subject = '🔐 Sua senha foi redefinida - Costa Urbana Barbearia';
+      html = generatePasswordResetEmailHtml(data.clientName, data.newPassword);
+    } else {
+      // Receipt email
+      subject = `✂️ Comprovante ${getTransactionTypeLabel(data.transactionType)} - Costa Urbana Barbearia`;
+      html = generateReceiptEmailHtml(data);
     }
-    
-    console.log(`📧 Email: ${services.length} serviços, ${products.length} produtos`);
 
-    // Calcular subtotais (apenas dos itens, gorjeta é separada)
-    const servicesSubtotal = services.reduce((sum, item) => sum + item.price, 0);
-    const productsSubtotal = products.reduce((sum, item) => sum + item.price, 0);
-    const tipValue = Number(tipAmount || 0);
+    console.log('[send-receipt-email] Enviando e-mail para:', data.clientEmail);
 
-    // Gerar HTML dos serviços (formato mobile-first em lista)
-    const servicesHtml = services.map(item => {
-      const qty = item.quantity || 1;
-      const unitPrice = item.unitPrice ?? (item.price / qty);
-      const subtotal = item.price;
-      return `
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
-        <div style="margin-bottom: 8px;">
-          <span style="color: #333; font-weight: 600; font-size: 14px;">✂️ ${item.name}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #888; font-size: 13px;">${qty} un. × R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
-          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px; margin-left: 20px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
-        </div>
-      </div>
-    `
-    }).join('');
-
-    // Função para determinar emoji baseado no nome do produto
-    const getProductEmoji = (productName: string): string => {
-      const name = productName.toLowerCase();
-      if (name.includes('pomada') || name.includes('cera')) return '🫙';
-      if (name.includes('shampoo') || name.includes('xampu')) return '🧴';
-      if (name.includes('óleo') || name.includes('oleo')) return '💧';
-      if (name.includes('balm') || name.includes('bálsamo')) return '✨';
-      if (name.includes('condicionador')) return '🧴';
-      if (name.includes('gel')) return '💈';
-      if (name.includes('creme')) return '🧴';
-      if (name.includes('toalha')) return '🧣';
-      if (name.includes('pente') || name.includes('escova')) return '🪥';
-      if (name.includes('navalha') || name.includes('gilete')) return '🪒';
-      if (name.includes('tesoura')) return '✂️';
-      if (name.includes('perfume') || name.includes('colônia') || name.includes('colonia')) return '🌸';
-      if (name.includes('desodorante')) return '🧊';
-      if (name.includes('loção') || name.includes('locao')) return '🧴';
-      return '📦'; // emoji padrão para produtos não identificados
-    };
-
-    // Gerar HTML dos produtos (formato mobile-first em lista)
-    const productsHtml = products.map(item => {
-      const qty = item.quantity || 1;
-      const unitPrice = item.unitPrice || (item.price / qty);
-      const subtotal = item.price || (unitPrice * qty);
-      const emoji = getProductEmoji(item.name);
-      
-      console.log(`📦 Produto: ${item.name}, Qtd: ${qty}, Unit: ${unitPrice}, Total: ${subtotal}, Emoji: ${emoji}`);
-      
-      return `
-      <div style="background: #fff; border: 1px solid #e5e5e5; border-radius: 8px; padding: 14px; margin-bottom: 10px;">
-        <div style="margin-bottom: 8px;">
-          <span style="color: #333; font-weight: 600; font-size: 14px;">${emoji} ${item.name}</span>
-        </div>
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span style="color: #888; font-size: 13px;">${qty} un. × R$ ${unitPrice.toFixed(2).replace('.', ',')}</span>
-          <span style="color: #1a1a2e; font-weight: 700; font-size: 16px; margin-left: 20px;">R$ ${subtotal.toFixed(2).replace('.', ',')}</span>
-        </div>
-      </div>
-    `}).join('');
-
-    // Verificar o que tem
-    const hasServices = services.length > 0;
-    const hasProducts = products.length > 0;
-
-    const emailResponse = await resend.emails.send({
-      from: "Barbearia Costa Urbana <noreply@barbeariacostaurbana.com.br>",
-      to: [clientEmail],
-      subject: `✂️ ${title} - Barbearia Costa Urbana`,
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        </head>
-        <body style="margin: 0; padding: 0; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;">
-          <div style="max-width: 480px; margin: 0 auto; padding: 16px;">
-            
-            <!-- HEADER -->
-            <div style="text-align: center; background: linear-gradient(135deg, #1a1a2e, #16213e); color: white; padding: 24px 16px; border-radius: 12px 12px 0 0;">
-              <img src="${logoUrl}" alt="Logo" style="width: 70px; height: 70px; border-radius: 50%; margin-bottom: 12px; border: 2px solid #D4A574;" />
-              <h1 style="margin: 0; font-size: 18px; color: #D4A574;">✂️ ${title}</h1>
-              <p style="margin: 8px 0 0; font-size: 12px; color: #ccc;">Barbearia Costa Urbana</p>
-            </div>
-            
-            <!-- CONTENT -->
-            <div style="background: white; padding: 20px 16px; border-radius: 0 0 12px 12px;">
-              
-              <p style="font-size: 14px; color: #333; margin: 0 0 20px;">
-                Olá <strong>${clientName}</strong>! Segue seu comprovante:
-              </p>
-              
-              <!-- INFO BOX -->
-              <div style="background: #f8f8f8; padding: 14px; border-radius: 8px; border-left: 3px solid #D4A574; margin-bottom: 20px;">
-                <div style="margin-bottom: 8px;">
-                  <span style="color: #666; font-size: 12px;">📅 Data:</span>
-                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${transactionDate}</span>
-                </div>
-                ${barberName ? `
-                <div style="margin-bottom: 8px;">
-                  <span style="color: #666; font-size: 12px;">👨‍💼 Profissional:</span>
-                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${barberName}</span>
-                </div>
-                ` : ''}
-                <div style="margin-bottom: ${nsu ? '8px' : '0'};">
-                  <span style="color: #666; font-size: 12px;">💳 Pagamento:</span>
-                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${paymentMethodText}</span>
-                </div>
-                ${nsu ? `
-                <div>
-                  <span style="color: #666; font-size: 12px;">🔢 NSU:</span>
-                  <span style="color: #333; font-size: 13px; font-weight: 500; margin-left: 8px;">${nsu}</span>
-                </div>
-                ` : ''}
-              </div>
-
-              ${hasServices ? `
-              <!-- SERVIÇOS -->
-              <div style="margin-bottom: 24px;">
-                <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
-                  ✂️ SERVIÇOS
-                </h3>
-                ${servicesHtml}
-                <div style="display: flex; justify-content: space-between; padding: 12px 14px; background: #f0f0f0; border-radius: 6px; margin-top: 12px;">
-                  <span style="color: #555; font-size: 13px; font-weight: 600;">Subtotal Serviços</span>
-                  <span style="color: #333; font-size: 15px; font-weight: 700; margin-left: 20px;">R$ ${servicesSubtotal.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-              ` : ''}
-
-              ${hasProducts ? `
-              <!-- PRODUTOS -->
-              <div style="margin-bottom: 24px;">
-                <h3 style="color: #1a1a2e; margin: 0 0 12px; font-size: 14px; padding-bottom: 8px; border-bottom: 2px solid #D4A574;">
-                  🛍️ PRODUTOS
-                </h3>
-                ${productsHtml}
-                <div style="display: flex; justify-content: space-between; padding: 12px 14px; background: #f0f0f0; border-radius: 6px; margin-top: 12px;">
-                  <span style="color: #555; font-size: 13px; font-weight: 600;">Subtotal Produtos</span>
-                  <span style="color: #333; font-size: 15px; font-weight: 700; margin-left: 20px;">R$ ${productsSubtotal.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-              ` : ''}
-
-              <!-- GORJETA (se houver) -->
-              ${tipValue > 0 ? `
-              <div style="background: #fff; border: 1px solid #f3d7ac; border-radius: 10px; padding: 14px; margin-top: 16px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: #333; font-weight: 700; font-size: 14px;">💖 Gorjeta</span>
-                  <span style="color: #1a1a2e; font-weight: 800; font-size: 16px; margin-left: 20px;">R$ ${tipValue.toFixed(2).replace('.', ',')}</span>
-                </div>
-              </div>
-              ` : ''}
-
-              <!-- TOTAL -->
-              <div style="background: linear-gradient(135deg, #1a1a2e, #16213e); border-radius: 10px; padding: 18px 16px; margin-top: 8px;">
-                <div style="display: flex; justify-content: space-between; align-items: center;">
-                  <span style="color: white; font-weight: 700; font-size: 17px; letter-spacing: 0.5px;">TOTAL</span>
-                  <span style="color: #D4A574; font-weight: 800; font-size: 24px; margin-left: 20px;">R$ ${formattedTotal}</span>
-                </div>
-              </div>
-
-              <!-- FOOTER -->
-              <div style="text-align: center; margin-top: 24px; padding-top: 20px; border-top: 1px solid #eee;">
-                <p style="color: #666; margin: 0 0 8px; font-size: 13px;">Obrigado pela preferência! 🙏</p>
-                <p style="color: #D4A574; font-weight: bold; font-size: 15px; margin: 0;">Barbearia Costa Urbana ✂️</p>
-                <p style="color: #999; font-size: 10px; margin: 12px 0 0;">Comprovante eletrônico gerado automaticamente.</p>
-              </div>
-            </div>
-          </div>
-        </body>
-        </html>
-      `,
+    const emailResult = await resend.emails.send({
+      from: 'Costa Urbana Barbearia <onboarding@resend.dev>',
+      to: [data.clientEmail],
+      subject,
+      html,
     });
 
-    console.log(`Receipt email sent successfully to: ${clientEmail}, ID: ${emailResponse.id}`);
+    console.log('[send-receipt-email] E-mail enviado com sucesso:', emailResult);
 
-    return new Response(JSON.stringify({ 
-      message: "Receipt email sent successfully",
-      emailId: emailResponse.id
-    }), {
-      status: 200,
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  } catch (error: any) {
-    console.error("Error sending receipt email:", error);
     return new Response(
-      JSON.stringify({ error: "Internal server error", details: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      JSON.stringify({ success: true, data: emailResult }),
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+    );
+  } catch (error) {
+    console.error('[send-receipt-email] Erro:', error);
+    return new Response(
+      JSON.stringify({ error: error.message }),
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
-};
-
-serve(handler);
+});
