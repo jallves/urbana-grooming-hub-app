@@ -314,6 +314,7 @@ const BarberLayout: React.FC = () => {
           }
         }
       `}</style>
+      <WeeklyBirthdayPopup context="barber" />
     </div>
   );
 };
