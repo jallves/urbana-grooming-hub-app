@@ -277,7 +277,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   if (loading) {
     return (
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="bg-urbana-black/95 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5">
+        <DialogContent className="bg-urbana-black border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5">
           <div className="flex justify-center items-center py-8">
             <Loader2 className="h-8 w-8 animate-spin text-urbana-gold" />
           </div>
@@ -288,15 +288,28 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-urbana-black/95 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="bg-urbana-black border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden [&_*]:!transition-none [&_*:hover]:!bg-inherit [&_*:hover]:!text-inherit [&_*:hover]:!border-inherit [&_*:hover]:!opacity-inherit [&_*:hover]:!scale-100 [&_*:hover]:!transform-none">
+        <style>{`
+          .barber-edit-modal *:hover {
+            background-color: inherit !important;
+            color: inherit !important;
+            border-color: inherit !important;
+            opacity: inherit !important;
+            transform: none !important;
+            scale: none !important;
+          }
+          .barber-edit-modal button:active {
+            opacity: 0.8 !important;
+          }
+        `}</style>
         <DialogHeader>
-          <DialogTitle className="text-urbana-light text-lg sm:text-xl">Editar Agendamento</DialogTitle>
+          <DialogTitle className="text-urbana-light text-lg sm:text-xl font-bold">Editar Agendamento</DialogTitle>
         </DialogHeader>
 
         {appointment && (
           <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
             {/* Info do Cliente */}
-            <div className="p-3 sm:p-4 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+            <div className="p-3 sm:p-4 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
               <p className="text-xs sm:text-sm text-urbana-light/50 mb-1">Cliente</p>
               <p className="font-medium text-urbana-light text-base sm:text-lg truncate">
                 {appointment.painel_clientes.nome}
@@ -324,12 +337,12 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 value={selectedService?.id}
                 onValueChange={handleServiceChange}
               >
-                <SelectTrigger className="bg-urbana-black/40 backdrop-blur-sm border-urbana-gold/20 text-urbana-light h-10 text-sm sm:text-base w-full">
+                <SelectTrigger className="bg-urbana-black/60 border-urbana-gold/20 text-urbana-light h-10 text-sm sm:text-base w-full cursor-pointer">
                   <SelectValue placeholder="Selecione um serviço" />
                 </SelectTrigger>
-                <SelectContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 max-w-[90vw]">
+                <SelectContent className="bg-urbana-black border-urbana-gold/20 max-w-[90vw]">
                   {services.map(service => (
-                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base text-urbana-light">
+                    <SelectItem key={service.id} value={service.id} className="text-sm sm:text-base text-urbana-light cursor-pointer focus:bg-urbana-gold/20 focus:text-urbana-light">
                       {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
                     </SelectItem>
                   ))}
@@ -340,7 +353,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             {/* Calendário - Responsivo */}
             <div className="space-y-2">
               <Label className="text-urbana-light/70 text-sm">Data</Label>
-              <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/40 backdrop-blur-sm overflow-x-hidden">
+              <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/60 overflow-x-hidden">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -354,13 +367,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                     caption: "flex justify-center pt-1 relative items-center text-sm sm:text-base",
                     caption_label: "text-sm sm:text-base font-medium text-urbana-light",
                     nav: "space-x-1 flex items-center",
-                    nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 hover:text-urbana-gold",
+                    nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 active:text-urbana-gold",
                     head_row: "flex justify-center",
                     head_cell: "text-urbana-light/50 rounded-md w-8 sm:w-9 font-normal text-[10px] sm:text-xs",
                     row: "flex w-full mt-1 justify-center",
                     cell: "relative p-0 text-center text-xs sm:text-sm focus-within:relative focus-within:z-20",
-                    day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light hover:bg-urbana-gold/20",
-                    day_selected: "bg-urbana-gold text-urbana-black hover:bg-urbana-gold",
+                    day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light",
+                    day_selected: "bg-urbana-gold text-urbana-black",
                     day_disabled: "text-urbana-light/20",
                   }}
                 />
@@ -373,7 +386,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 <Label className="text-urbana-light/70 text-sm">Horário Disponível</Label>
                 
                 {isOriginalDate && (
-                  <div className="flex items-center gap-2 p-2 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+                  <div className="flex items-center gap-2 p-2 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
                     <div className="w-4 h-4 rounded border-2 border-sky-400 bg-sky-400/20 flex-shrink-0" />
                     <span className="text-xs text-urbana-light/70">
                       Horário original: <strong className="text-sky-400">{normalizedOriginalTime}</strong>
@@ -403,12 +416,12 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                           key={slot.time}
                           type="button"
                           className={`
-                            h-9 px-2 text-xs sm:text-sm rounded-md font-medium transition-colors touch-manipulation relative
+                            h-9 px-2 text-xs sm:text-sm rounded-md font-medium touch-manipulation relative cursor-pointer
                             ${isSelected 
-                              ? "bg-urbana-gold text-urbana-black" 
+                              ? "!bg-urbana-gold !text-urbana-black" 
                               : isOriginalSlot
-                                ? "bg-sky-400/20 text-sky-300 border-2 border-sky-400"
-                                : "bg-urbana-black/40 text-urbana-light/80 border border-urbana-gold/15 hover:border-urbana-gold/30"
+                                ? "!bg-sky-400/20 !text-sky-300 !border-2 !border-sky-400"
+                                : "!bg-urbana-black/60 !text-urbana-light/80 !border !border-urbana-gold/15"
                             }
                           `}
                           onClick={() => setSelectedTime(slot.time)}
@@ -425,20 +438,20 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </div>
             )}
 
-            {/* Botões de Ação - Mobile First */}
+            {/* Botões de Ação */}
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-3 pt-2 sm:pt-4">
               <Button
                 variant="outline"
                 onClick={onClose}
                 disabled={saving}
-                className="w-full sm:flex-1 h-10 border-urbana-gold/20 text-urbana-light/70 hover:bg-urbana-gold/10 hover:text-urbana-light text-sm touch-manipulation bg-transparent"
+                className="w-full sm:flex-1 h-10 !border-urbana-gold/20 !text-urbana-light/70 text-sm touch-manipulation !bg-transparent cursor-pointer"
               >
                 Cancelar
               </Button>
               <Button
                 onClick={handleSaveClick}
                 disabled={saving || !selectedDate || !selectedTime || !selectedService}
-                className="w-full sm:flex-1 h-10 bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 text-sm touch-manipulation font-semibold"
+                className="w-full sm:flex-1 h-10 !bg-urbana-gold !text-urbana-black text-sm touch-manipulation font-semibold cursor-pointer"
               >
                 Salvar Alterações
               </Button>
@@ -449,14 +462,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       {/* Dialog de confirmação para salvar - Responsivo */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
+        <AlertDialogContent className="bg-urbana-black border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-urbana-light text-base sm:text-lg">
               Confirmar alterações?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-urbana-light/60 text-sm">
               Você está prestes a alterar este agendamento para:
-              <div className="mt-3 p-3 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+              <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
                 <p className="text-urbana-light font-medium text-sm">
                   📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
@@ -474,7 +487,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel 
-              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10 w-full sm:w-auto h-10 text-sm touch-manipulation"
+              className="!bg-urbana-black/60 !border-urbana-gold/20 !text-urbana-light w-full sm:w-auto h-10 text-sm touch-manipulation"
               disabled={saving}
             >
               Não, voltar
@@ -482,7 +495,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             <AlertDialogAction
               onClick={handleSave}
               disabled={saving}
-              className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 w-full sm:w-auto h-10 text-sm touch-manipulation font-semibold"
+              className="!bg-urbana-gold !text-urbana-black w-full sm:w-auto h-10 text-sm touch-manipulation font-semibold"
             >
               {saving ? (
                 <>
