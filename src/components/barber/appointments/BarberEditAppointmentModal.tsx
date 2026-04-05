@@ -309,7 +309,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         {appointment && (
           <div className="space-y-4 sm:space-y-6 overflow-x-hidden">
             {/* Info do Cliente */}
-            <div className="p-3 sm:p-4 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+            <div className="p-3 sm:p-4 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
               <p className="text-xs sm:text-sm text-urbana-light/50 mb-1">Cliente</p>
               <p className="font-medium text-urbana-light text-base sm:text-lg truncate">
                 {appointment.painel_clientes.nome}
