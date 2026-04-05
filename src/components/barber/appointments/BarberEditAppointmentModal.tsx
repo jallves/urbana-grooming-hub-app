@@ -462,14 +462,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       {/* Dialog de confirmação para salvar - Responsivo */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <AlertDialogContent className="bg-urbana-black/95 backdrop-blur-2xl border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
+        <AlertDialogContent className="bg-urbana-black border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-urbana-light text-base sm:text-lg">
               Confirmar alterações?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-urbana-light/60 text-sm">
               Você está prestes a alterar este agendamento para:
-              <div className="mt-3 p-3 bg-urbana-black/40 backdrop-blur-sm rounded-lg border border-urbana-gold/10">
+              <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
                 <p className="text-urbana-light font-medium text-sm">
                   📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
@@ -487,7 +487,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
           </AlertDialogHeader>
           <AlertDialogFooter className="flex-col sm:flex-row gap-2">
             <AlertDialogCancel 
-              className="bg-urbana-black/40 border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10 w-full sm:w-auto h-10 text-sm touch-manipulation"
+              className="!bg-urbana-black/60 !border-urbana-gold/20 !text-urbana-light w-full sm:w-auto h-10 text-sm touch-manipulation"
               disabled={saving}
             >
               Não, voltar
@@ -495,7 +495,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             <AlertDialogAction
               onClick={handleSave}
               disabled={saving}
-              className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold/90 w-full sm:w-auto h-10 text-sm touch-manipulation font-semibold"
+              className="!bg-urbana-gold !text-urbana-black w-full sm:w-auto h-10 text-sm touch-manipulation font-semibold"
             >
               {saving ? (
                 <>
