@@ -353,7 +353,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             {/* Calendário - Responsivo */}
             <div className="space-y-2">
               <Label className="text-urbana-light/70 text-sm">Data</Label>
-              <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/40 backdrop-blur-sm overflow-x-hidden">
+              <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/60 overflow-x-hidden">
                 <Calendar
                   mode="single"
                   selected={selectedDate}
@@ -367,13 +367,13 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                     caption: "flex justify-center pt-1 relative items-center text-sm sm:text-base",
                     caption_label: "text-sm sm:text-base font-medium text-urbana-light",
                     nav: "space-x-1 flex items-center",
-                    nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 hover:text-urbana-gold",
+                    nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 active:text-urbana-gold",
                     head_row: "flex justify-center",
                     head_cell: "text-urbana-light/50 rounded-md w-8 sm:w-9 font-normal text-[10px] sm:text-xs",
                     row: "flex w-full mt-1 justify-center",
                     cell: "relative p-0 text-center text-xs sm:text-sm focus-within:relative focus-within:z-20",
-                    day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light hover:bg-urbana-gold/20",
-                    day_selected: "bg-urbana-gold text-urbana-black hover:bg-urbana-gold",
+                    day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light",
+                    day_selected: "bg-urbana-gold text-urbana-black",
                     day_disabled: "text-urbana-light/20",
                   }}
                 />
