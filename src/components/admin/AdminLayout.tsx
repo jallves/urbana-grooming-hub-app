@@ -18,6 +18,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 import { ThemeToggle } from '@/components/theme/theme-toggle';
+import WeeklyBirthdayPopup from '@/components/birthday/WeeklyBirthdayPopup';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -138,6 +139,8 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         <div className="w-full h-full">
           {children}
         </div>
+
+        <WeeklyBirthdayPopup context="admin" />
       </main>
     </div>
   );
