@@ -288,9 +288,22 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-urbana-black/95 backdrop-blur-2xl border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="bg-urbana-black border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden [&_*]:!transition-none [&_*:hover]:!bg-inherit [&_*:hover]:!text-inherit [&_*:hover]:!border-inherit [&_*:hover]:!opacity-inherit [&_*:hover]:!scale-100 [&_*:hover]:!transform-none">
+        <style>{`
+          .barber-edit-modal *:hover {
+            background-color: inherit !important;
+            color: inherit !important;
+            border-color: inherit !important;
+            opacity: inherit !important;
+            transform: none !important;
+            scale: none !important;
+          }
+          .barber-edit-modal button:active {
+            opacity: 0.8 !important;
+          }
+        `}</style>
         <DialogHeader>
-          <DialogTitle className="text-urbana-light text-lg sm:text-xl">Editar Agendamento</DialogTitle>
+          <DialogTitle className="text-urbana-light text-lg sm:text-xl font-bold">Editar Agendamento</DialogTitle>
         </DialogHeader>
 
         {appointment && (
