@@ -329,7 +329,7 @@ serve(async (req: Request) => {
     console.log('[send-receipt-email] Enviando e-mail para:', data.clientEmail);
 
     const emailResult = await resend.emails.send({
-      from: 'Costa Urbana Barbearia <onboarding@resend.dev>',
+      from: 'Costa Urbana Barbearia <atendimento@barbeariacostaurbana.com.br>',
       to: [data.clientEmail],
       subject,
       html,
