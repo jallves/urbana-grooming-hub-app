@@ -5,6 +5,7 @@ import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
 import BarberEncaixeModal from './appointments/BarberEncaixeModal';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
+import AdminAppointmentForm from '@/components/admin/appointments/AppointmentForm';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
 import { useBarberAppointmentModal } from '@/hooks/barber/useBarberAppointmentModal';
