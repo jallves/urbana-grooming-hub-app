@@ -6,7 +6,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Search, Plus, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAppointmentFormData } from '@/components/admin/appointments/form/useAppointmentFormData';
-import { useAppointmentFormSubmit } from '@/components/admin/appointments/form/useAppointmentFormSubmit';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import NotesField from '@/components/admin/appointments/form/NotesField';
@@ -19,6 +18,8 @@ import { cn } from '@/lib/utils';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarIcon } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 
 interface BarberNewAppointmentModalProps {
   isOpen: boolean;
@@ -46,6 +47,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const [authChecking, setAuthChecking] = useState(true);
   const [clientSearch, setClientSearch] = useState('');
   const [serviceSearch, setServiceSearch] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Time slots
   const [availableSlots, setAvailableSlots] = useState<{ time: string; available: boolean }[]>([]);
@@ -61,14 +63,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
     selectedService,
   } = useAppointmentFormData(undefined, defaultDate);
 
-  const { handleSubmit, isLoading: isSubmitLoading } = useAppointmentFormSubmit({
-    onClose: () => {
-      resetModal();
-      onClose();
-    },
-  });
-
-  const isLoading = isFormLoading || isSubmitLoading;
+  const isLoading = isFormLoading || isSubmitting;
 
   // Verify barber admin authorization
   useEffect(() => {
