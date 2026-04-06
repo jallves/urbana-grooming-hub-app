@@ -146,10 +146,10 @@ const BarberCommissionsComponent: React.FC = () => {
       return c.status === 'pending' && isBefore(date, monthStart);
     });
 
-    const allFiltered = [...monthItems, ...pendingPrev];
-    const stats = calcStats(allFiltered);
+    const monthStats = calcStats(monthItems);
+    const pendingPrevTotal = pendingPrev.reduce((acc: number, c: any) => acc + c.amount, 0);
 
-    return { monthCommissions: monthItems, pendingFromPrevious: pendingPrev, filteredStats: stats };
+    return { monthCommissions: monthItems, pendingFromPrevious: pendingPrev, filteredStats: monthStats, pendingPrevTotal };
   }, [allCommissions, selectedMonth]);
 
   const handlePrevMonth = () => {
