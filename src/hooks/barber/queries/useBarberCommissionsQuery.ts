@@ -106,7 +106,16 @@ export const useBarberCommissionsQuery = () => {
         let commissionType = 'service';
         if (tipo === 'produto') commissionType = 'product';
         if (tipo === 'gorjeta') commissionType = 'tip';
+        if (tipo === 'uso_credito_assinatura') commissionType = 'subscription_usage';
         if (tipo === 'servico_extra') commissionType = 'service';
+
+        const labelMap: Record<string, string> = {
+          'gorjeta': 'Gorjeta',
+          'produto': 'Venda de Produto',
+          'uso_credito_assinatura': 'Uso de Crédito (Plano)',
+          'servico': 'Serviço',
+          'servico_extra': 'Serviço Extra',
+        };
 
         const key = `bc-${record.id}`;
         commissionMap.set(key, {
@@ -115,7 +124,7 @@ export const useBarberCommissionsQuery = () => {
           status: record.status === 'paid' || record.status === 'pago' ? 'paid' : 'pending',
           created_at: record.created_at || '',
           commission_type: commissionType,
-          item_name: record.barber_name ? `${tipo === 'gorjeta' ? 'Gorjeta' : tipo === 'produto' ? 'Produto' : 'Serviço'}` : null,
+          item_name: labelMap[tipo] || 'Serviço',
           appointment_id: record.appointment_id,
           product_sale_id: record.venda_id,
           payment_date: record.payment_date || record.data_pagamento || null,
