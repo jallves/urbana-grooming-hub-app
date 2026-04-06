@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Calendar, Clock, DollarSign, TrendingUp, Zap } from 'lucide-react';
+import { Calendar, Clock, DollarSign, TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
@@ -16,19 +16,25 @@ import {
   PainelBarbeiroCardContent 
 } from '@/components/barber/PainelBarbeiroCard';
 import { cn } from '@/lib/utils';
+import { format, addDays, subDays, isToday, isSameDay } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar as CalendarPicker } from '@/components/ui/calendar';
 
 const BarberAppointmentsWithModal: React.FC = () => {
   const { data: barberData } = useBarberDataQuery();
   const isBarberAdmin = barberData?.is_barber_admin || false;
   
-  // Selected barber for filtering (defaults to own barber)
   const [selectedBarberId, setSelectedBarberId] = useState<string | null>(null);
   const activeBarberId = selectedBarberId || barberData?.id || null;
+  
+  // Date filter state - defaults to today
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [calendarOpen, setCalendarOpen] = useState(false);
   
   const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(activeBarberId);
   const modalHandlers = useBarberAppointmentModal();
 
-  // Encaixe modal state
   const [isEncaixeModalOpen, setIsEncaixeModalOpen] = useState(false);
   const [encaixeSlotDate, setEncaixeSlotDate] = useState<string | undefined>();
   const [encaixeSlotTime, setEncaixeSlotTime] = useState<string | undefined>();
@@ -47,17 +53,25 @@ const BarberAppointmentsWithModal: React.FC = () => {
 
   const isViewingOther = isBarberAdmin && selectedBarberId && selectedBarberId !== barberData?.id;
 
-  // Calcular stats localmente com useMemo
+  // Filter appointments by selected date
+  const filteredAppointments = useMemo(() => {
+    const dateStr = format(selectedDate, 'yyyy-MM-dd');
+    return appointments
+      .filter(a => a.start_time.startsWith(dateStr))
+      .sort((a, b) => a.start_time.localeCompare(b.start_time));
+  }, [appointments, selectedDate]);
+
+  // Stats for the selected day
   const stats = useMemo(() => {
-    const total = appointments.length;
-    const completed = appointments.filter(a => a.status === 'completed').length;
-    const upcoming = appointments.filter(a => 
+    const total = filteredAppointments.length;
+    const completed = filteredAppointments.filter(a => a.status === 'completed').length;
+    const upcoming = filteredAppointments.filter(a => 
       a.status !== 'completed' && 
       a.status !== 'cancelled' && 
       new Date(a.start_time) > new Date()
     ).length;
     
-    const revenue = appointments
+    const revenue = filteredAppointments
       .filter(a => a.status === 'completed')
       .reduce((acc, appointment) => {
         const servicePrice = appointment.service?.price || 0;
@@ -65,7 +79,11 @@ const BarberAppointmentsWithModal: React.FC = () => {
       }, 0);
 
     return { total, completed, upcoming, revenue };
-  }, [appointments]);
+  }, [filteredAppointments]);
+
+  const handlePrevDay = () => setSelectedDate(prev => subDays(prev, 1));
+  const handleNextDay = () => setSelectedDate(prev => addDays(prev, 1));
+  const handleToday = () => setSelectedDate(new Date());
 
   const statsCards = [
     { title: 'Total', value: stats.total, icon: Calendar, variant: 'default' as const },
@@ -108,6 +126,67 @@ const BarberAppointmentsWithModal: React.FC = () => {
             />
           </div>
         )}
+
+        {/* Date Navigation */}
+        <div className="flex items-center justify-between gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handlePrevDay}
+              className="h-8 w-8 sm:h-9 sm:w-9 border-urbana-gold/20 bg-transparent text-urbana-light"
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="h-8 sm:h-9 px-3 sm:px-4 border-urbana-gold/20 bg-transparent text-urbana-light text-xs sm:text-sm font-semibold capitalize min-w-[140px] sm:min-w-[180px]"
+                >
+                  <Calendar className="h-3.5 w-3.5 mr-1.5 text-urbana-gold" />
+                  {isToday(selectedDate)
+                    ? `Hoje — ${format(selectedDate, "dd 'de' MMMM", { locale: ptBR })}`
+                    : format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 bg-urbana-black border-urbana-gold/30" align="start">
+                <CalendarPicker
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => {
+                    if (date) {
+                      setSelectedDate(date);
+                      setCalendarOpen(false);
+                    }
+                  }}
+                  className="pointer-events-auto"
+                />
+              </PopoverContent>
+            </Popover>
+
+            <Button
+              variant="outline"
+              size="icon"
+              onClick={handleNextDay}
+              className="h-8 w-8 sm:h-9 sm:w-9 border-urbana-gold/20 bg-transparent text-urbana-light"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {!isToday(selectedDate) && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleToday}
+              className="h-8 text-xs sm:text-sm border-urbana-gold/20 bg-transparent text-urbana-gold"
+            >
+              Hoje
+            </Button>
+          )}
+        </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3 md:gap-4">
@@ -156,7 +235,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
                   {isViewingOther ? 'Agendamentos' : 'Meus Agendamentos'}
                 </PainelBarbeiroCardTitle>
                 <p className="text-[10px] sm:text-xs md:text-sm text-urbana-light/70 mt-1 leading-tight">
-                  {isViewingOther ? 'Visualizando agendamentos de outro barbeiro' : 'Gerencie seus atendimentos - Toque para editar'}
+                  {filteredAppointments.length} agendamento(s) para {isToday(selectedDate) ? 'hoje' : format(selectedDate, "dd/MM/yyyy")}
                 </p>
               </div>
               <Button
@@ -171,19 +250,19 @@ const BarberAppointmentsWithModal: React.FC = () => {
           </PainelBarbeiroCardHeader>
           
           <PainelBarbeiroCardContent className="px-4 sm:px-6">
-            {appointments.length === 0 ? (
+            {filteredAppointments.length === 0 ? (
               <div className="text-center py-8 sm:py-12">
                 <Calendar className="h-10 w-10 sm:h-12 sm:w-12 text-urbana-light/40 mx-auto mb-3 sm:mb-4" />
                 <h3 className="text-sm sm:text-base md:text-lg font-medium text-urbana-light mb-1 sm:mb-2">
-                  Nenhum agendamento encontrado
+                  Nenhum agendamento para este dia
                 </h3>
                 <p className="text-xs sm:text-sm text-urbana-light/60">
-                  {isViewingOther ? 'Este barbeiro não possui agendamentos.' : 'Seus agendamentos aparecerão aqui quando forem criados.'}
+                  {isViewingOther ? 'Este barbeiro não possui agendamentos nesta data.' : 'Use as setas para navegar entre os dias.'}
                 </p>
               </div>
             ) : (
               <div className="space-y-2 sm:space-y-3 md:space-y-4">
-                {appointments.map((appointment) => (
+                {filteredAppointments.map((appointment) => (
                   <AppointmentCardOptimized
                     key={appointment.id}
                     appointment={appointment}
