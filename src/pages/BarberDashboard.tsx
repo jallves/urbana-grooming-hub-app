@@ -1,5 +1,5 @@
-import React from 'react';
-import { Calendar, DollarSign, Clock, CheckCircle, TrendingUp, ArrowRight, LogOut, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, DollarSign, Clock, CheckCircle, TrendingUp, ArrowRight, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
@@ -12,13 +12,49 @@ import {
   PainelBarbeiroCardContent 
 } from '@/components/barber/PainelBarbeiroCard';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
+import { format } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 
 const BarberDashboard: React.FC = () => {
   const { displayName } = useBarberAuth();
   const { signOut } = useAuth();
   const navigate = useNavigate();
-  const { metrics, loading } = useBarberDashboardMetrics();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+
+  const { metrics, loading } = useBarberDashboardMetrics(selectedMonth, selectedYear);
+
+  const isCurrentMonth = selectedMonth === now.getMonth() && selectedYear === now.getFullYear();
+
+  const handlePrevMonth = () => {
+    if (selectedMonth === 0) {
+      setSelectedMonth(11);
+      setSelectedYear(prev => prev - 1);
+    } else {
+      setSelectedMonth(prev => prev - 1);
+    }
+  };
+
+  const handleNextMonth = () => {
+    if (isCurrentMonth) return;
+    if (selectedMonth === 11) {
+      setSelectedMonth(0);
+      setSelectedYear(prev => prev + 1);
+    } else {
+      setSelectedMonth(prev => prev + 1);
+    }
+  };
+
+  const handleCurrentMonth = () => {
+    setSelectedMonth(now.getMonth());
+    setSelectedYear(now.getFullYear());
+  };
+
+  const monthLabel = format(new Date(selectedYear, selectedMonth, 1), "MMMM 'de' yyyy", { locale: ptBR });
 
   const handleLogout = () => {
     setIsLoggingOut(true);
@@ -42,13 +78,49 @@ const BarberDashboard: React.FC = () => {
 
   return (
     <BarberPageContainer>
-      {/* Estatísticas em Cards - Mobile First Responsive */}
+      {/* Navegação Mensal */}
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handlePrevMonth}
+          className="text-urbana-light/70 hover:text-urbana-gold hover:bg-urbana-gold/10 h-8 w-8 sm:h-9 sm:w-9"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Button>
+
+        <div className="flex flex-col items-center gap-1">
+          <span className="text-sm sm:text-base font-semibold text-urbana-light capitalize">
+            {monthLabel}
+          </span>
+          {!isCurrentMonth && (
+            <button
+              onClick={handleCurrentMonth}
+              className="text-[10px] sm:text-xs text-urbana-gold hover:underline"
+            >
+              Voltar ao mês atual
+            </button>
+          )}
+        </div>
+
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={handleNextMonth}
+          disabled={isCurrentMonth}
+          className="text-urbana-light/70 hover:text-urbana-gold hover:bg-urbana-gold/10 h-8 w-8 sm:h-9 sm:w-9 disabled:opacity-30"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Estatísticas em Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6 lg:mb-8">
         {[
           {
             label: "Agendamentos",
             value: metrics.totalAppointments,
-            subtitle: "Este mês",
+            subtitle: "No período",
             IconComponent: Calendar,
             variant: 'default' as const,
           },
@@ -146,7 +218,9 @@ const BarberDashboard: React.FC = () => {
                   <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-urbana-gold" />
                 </div>
                 <div>
-                  <p className="text-sm sm:text-base text-urbana-light/70">Receita Total do Mês</p>
+                  <p className="text-sm sm:text-base text-urbana-light/70 capitalize">
+                    Receita Total — {format(new Date(selectedYear, selectedMonth, 1), "MMM/yyyy", { locale: ptBR })}
+                  </p>
                   <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold font-playfair">
                     R$ {metrics.totalRevenue.toFixed(2)}
                   </p>
@@ -157,7 +231,7 @@ const BarberDashboard: React.FC = () => {
         </PainelBarbeiroCard>
       </div>
 
-      {/* Ações Rápidas - Mobile First */}
+      {/* Ações Rápidas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
         {[
           {
