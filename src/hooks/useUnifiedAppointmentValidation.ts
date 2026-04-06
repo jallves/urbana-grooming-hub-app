@@ -493,7 +493,7 @@ export const useUnifiedAppointmentValidation = () => {
     barberId: string,
     date: Date,
     serviceDuration: number,
-    options?: { skipPastValidation?: boolean }
+    options?: { skipPastValidation?: boolean; excludeAppointmentId?: string }
   ): Promise<TimeSlot[]> => {
     setIsValidating(true);
 
