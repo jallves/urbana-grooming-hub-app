@@ -220,7 +220,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                 <p className="text-sm text-urbana-light/60 text-center max-w-[280px]">
                   Somente barbeiros administradores podem criar novos agendamentos.
                 </p>
-                <Button onClick={onClose} variant="outline" className="border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10">
+                <Button onClick={onClose} variant="ghost" className="border border-urbana-gold/20 text-urbana-light hover:bg-transparent hover:text-urbana-gold">
                   Fechar
                 </Button>
               </>
@@ -611,11 +611,11 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
             {/* Navigation */}
             <div className="flex items-center justify-between pt-2 border-t border-urbana-light/10">
               {currentStepIndex > 0 ? (
-                <Button type="button" variant="outline" size="sm" onClick={goBack} className="border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10">
+                <Button type="button" variant="ghost" size="sm" onClick={goBack} className="border border-urbana-gold/20 text-urbana-light hover:bg-transparent hover:text-urbana-gold">
                   Voltar
                 </Button>
               ) : (
-                <Button type="button" variant="outline" size="sm" onClick={onClose} className="border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10">
+                <Button type="button" variant="ghost" size="sm" onClick={onClose} className="border border-urbana-gold/20 text-urbana-light hover:bg-transparent hover:text-urbana-gold">
                   Cancelar
                 </Button>
               )}
@@ -625,7 +625,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                   type="submit"
                   size="sm"
                   disabled={isLoading}
-                  className="bg-urbana-gold text-white hover:bg-urbana-gold/90 font-semibold px-6"
+                  className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold hover:opacity-90 font-semibold px-6"
                 >
                   {isLoading ? (
                     <><Loader2 className="h-4 w-4 animate-spin mr-1" /> Salvando...</>
@@ -639,7 +639,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                   size="sm"
                   disabled={!canProceed(currentStep)}
                   onClick={goNext}
-                  className="bg-urbana-gold text-white hover:bg-urbana-gold/90 font-semibold"
+                  className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold hover:opacity-90 font-semibold"
                 >
                   Próximo
                 </Button>
