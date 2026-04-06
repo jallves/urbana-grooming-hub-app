@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Calendar, Clock, DollarSign, TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, DollarSign, TrendingUp, Zap, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
