@@ -5,6 +5,8 @@ import { useAuth } from '@/contexts/AuthContext';
 interface Commission {
   id: string;
   amount: number;
+  gross_revenue: number;
+  commission_rate: number;
   status: string;
   created_at: string;
   commission_type: string;
@@ -118,9 +120,15 @@ export const useBarberCommissionsQuery = () => {
         };
 
         const key = `bc-${record.id}`;
+        const commissionAmount = Number(record.valor || record.amount || 0);
+        const rate = Number(record.commission_rate || 0);
+        const grossRevenue = rate > 0 ? (commissionAmount / (rate / 100)) : commissionAmount;
+
         commissionMap.set(key, {
           id: record.id,
-          amount: Number(record.valor || record.amount || 0),
+          amount: commissionAmount,
+          gross_revenue: grossRevenue,
+          commission_rate: rate,
           status: record.status === 'paid' || record.status === 'pago' ? 'paid' : 'pending',
           created_at: record.created_at || '',
           commission_type: commissionType,
@@ -148,9 +156,12 @@ export const useBarberCommissionsQuery = () => {
           if (category === 'tips' || subcategory.includes('tip')) commissionType = 'tip';
 
           const key = `fr-${record.id}`;
+          const frAmount = Number(record.net_amount || record.amount || 0);
           commissionMap.set(key, {
             id: record.id,
-            amount: Number(record.net_amount || record.amount || 0),
+            amount: frAmount,
+            gross_revenue: frAmount,
+            commission_rate: 0,
             status: record.status === 'completed' ? 'paid' : 'pending',
             created_at: record.transaction_date || record.created_at || '',
             commission_type: commissionType,

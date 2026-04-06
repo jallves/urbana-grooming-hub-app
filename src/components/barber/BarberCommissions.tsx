@@ -55,9 +55,15 @@ const mapCommissionRecord = (record: any) => {
   if (tipo === 'uso_credito_assinatura') commissionType = 'subscription_usage';
   if (tipo === 'servico_extra') commissionType = 'service';
 
+  const commissionAmount = Number(record.valor || record.amount || 0);
+  const rate = Number(record.commission_rate || 0);
+  const grossRevenue = rate > 0 ? (commissionAmount / (rate / 100)) : commissionAmount;
+
   return {
     id: record.id,
-    amount: Number(record.valor || record.amount || 0),
+    amount: commissionAmount,
+    gross_revenue: grossRevenue,
+    commission_rate: rate,
     status: record.status === 'paid' || record.status === 'pago' ? 'paid' : 'pending',
     created_at: record.created_at || '',
     commission_type: commissionType,
@@ -78,6 +84,12 @@ const calcStats = (commissions: any[]) => ({
   productCommissions: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + c.amount, 0),
   tipCommissions: commissions.filter((c: any) => c.commission_type === 'tip').reduce((acc: number, c: any) => acc + c.amount, 0),
   subscriptionUsageCommissions: commissions.filter((c: any) => c.commission_type === 'subscription_usage').reduce((acc: number, c: any) => acc + c.amount, 0),
+  // Receita bruta por segmento
+  grossService: commissions.filter((c: any) => c.commission_type === 'service').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossProduct: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossSubscription: commissions.filter((c: any) => c.commission_type === 'subscription_usage').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossTip: commissions.filter((c: any) => c.commission_type === 'tip').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossTotal: commissions.reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
 });
 
 const BarberCommissionsComponent: React.FC = () => {
@@ -322,7 +334,46 @@ const BarberCommissionsComponent: React.FC = () => {
         )}
       </div>
 
-      {/* Summary Stats Cards */}
+      {/* Receita Bruta por Segmento */}
+      <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
+        <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
+            <Award className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
+            Receita Bruta — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })}
+          </PainelBarbeiroCardTitle>
+          <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-1">
+            Valor total produzido por segmento (antes da comissão)
+          </p>
+        </PainelBarbeiroCardHeader>
+        <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
+          <div className="space-y-2 sm:space-y-3">
+            {[
+              { label: 'Receita Total', value: stats.grossTotal, color: 'text-urbana-gold', icon: <DollarSign className="h-4 w-4 text-urbana-gold" />, bold: true },
+              { label: 'Serviços', value: stats.grossService, color: 'text-blue-400', icon: <Scissors className="h-4 w-4 text-blue-400" /> },
+              { label: 'Planos (Uso de Crédito)', value: stats.grossSubscription, color: 'text-emerald-400', icon: <CreditCard className="h-4 w-4 text-emerald-400" /> },
+              { label: 'Produtos', value: stats.grossProduct, color: 'text-purple-400', icon: <Package className="h-4 w-4 text-purple-400" /> },
+              { label: 'Gorjetas', value: stats.grossTip, color: 'text-pink-400', icon: <Heart className="h-4 w-4 text-pink-400" /> },
+            ].filter(item => item.value > 0 || item.bold).map((item, i) => (
+              <div key={i} className={cn(
+                "flex items-center justify-between p-2.5 sm:p-3 rounded-lg",
+                item.bold ? "bg-urbana-gold/10 border border-urbana-gold/20" : "bg-urbana-black/40 border border-urbana-gold/10"
+              )}>
+                <div className="flex items-center gap-2">
+                  {item.icon}
+                  <span className={cn("text-xs sm:text-sm", item.bold ? "font-semibold text-urbana-gold" : "text-urbana-light/80")}>
+                    {item.label}
+                  </span>
+                </div>
+                <span className={cn("text-sm sm:text-base font-bold", item.color)}>
+                  R$ {item.value.toFixed(2)}
+                </span>
+              </div>
+            ))}
+          </div>
+        </PainelBarbeiroCardContent>
+      </PainelBarbeiroCard>
+
+      {/* Summary Stats Cards - Comissões */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
           { label: "Total Comissões", value: `R$ ${stats.total.toFixed(2)}`, subtitle: "Ganhos totais", IconComponent: DollarSign, variant: 'highlight' as const, color: 'text-urbana-gold' },
