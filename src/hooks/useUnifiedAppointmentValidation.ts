@@ -493,7 +493,7 @@ export const useUnifiedAppointmentValidation = () => {
     barberId: string,
     date: Date,
     serviceDuration: number,
-    options?: { skipPastValidation?: boolean }
+    options?: { skipPastValidation?: boolean; excludeAppointmentId?: string }
   ): Promise<TimeSlot[]> => {
     setIsValidating(true);
 
@@ -536,13 +536,19 @@ export const useUnifiedAppointmentValidation = () => {
           .eq('barber_id', staffTableId)
           .eq('date', dateStr),
         
-        // 4. Buscar agendamentos existentes
-        supabase
-          .from('painel_agendamentos')
-          .select('hora, servico:painel_servicos(duracao)')
-          .eq('barbeiro_id', barberId)
-          .eq('data', dateStr)
-          .not('status', 'in', '("cancelado","ausente")')
+        // 4. Buscar agendamentos existentes (excluir o próprio ao editar)
+        (() => {
+          let query = supabase
+            .from('painel_agendamentos')
+            .select('hora, servico:painel_servicos(duracao)')
+            .eq('barbeiro_id', barberId)
+            .eq('data', dateStr)
+            .not('status', 'in', '("cancelado","ausente")');
+          if (options?.excludeAppointmentId) {
+            query = query.neq('id', options.excludeAppointmentId);
+          }
+          return query;
+        })()
       ]);
 
       const workingHours = workingHoursResult.data;
