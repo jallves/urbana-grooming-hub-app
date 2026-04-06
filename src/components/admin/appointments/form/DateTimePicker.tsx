@@ -71,7 +71,7 @@ const DateTimePicker: React.FC<DateTimePickerProps> = ({
     };
 
     loadAvailableSlots();
-  }, [selectedDate, barberId, serviceDuration, getAvailableTimeSlots, form]);
+  }, [selectedDate, barberId, serviceDuration, appointmentId, getAvailableTimeSlots, form]);
 
   return (
     <div className="grid grid-cols-2 gap-4">
