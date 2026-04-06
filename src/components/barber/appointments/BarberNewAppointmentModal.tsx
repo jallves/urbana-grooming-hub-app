@@ -192,7 +192,84 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   };
 
   const onSubmit = async (data: any) => {
-    await handleSubmit(data, selectedService);
+    if (!selectedService) {
+      toast({ variant: "destructive", title: "Erro", description: "Selecione um serviço válido." });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      // Format date without timezone conversion
+      const startDate = new Date(data.date);
+      const [hours, minutes] = data.time.split(':').map(Number);
+      startDate.setHours(hours, minutes, 0, 0);
+
+      const year = startDate.getFullYear();
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+      const day = String(startDate.getDate()).padStart(2, '0');
+      const dataLocal = `${year}-${month}-${day}`;
+
+      // staff_id from form is painel_barbeiros.id (correct for painel_agendamentos)
+      const painelData = {
+        cliente_id: data.client_id,
+        barbeiro_id: data.staff_id,
+        servico_id: data.service_id,
+        data: dataLocal,
+        hora: format(startDate, 'HH:mm'),
+        status: 'agendado',
+        notas: data.notes || null,
+      };
+
+      console.log('📋 [BarberAdmin] Inserindo agendamento em painel_agendamentos:', painelData);
+
+      const { data: insertedData, error } = await supabase
+        .from('painel_agendamentos')
+        .insert(painelData)
+        .select('id')
+        .single();
+
+      if (error) {
+        console.error('❌ [BarberAdmin] Erro ao inserir agendamento:', error);
+        toast({
+          variant: "destructive",
+          title: "Erro ao Criar",
+          description: error.message?.includes('row-level security')
+            ? 'Permissão negada. Verifique suas credenciais de barbeiro administrador.'
+            : `Erro: ${error.message}`,
+        });
+        return;
+      }
+
+      console.log('✅ [BarberAdmin] Agendamento criado:', insertedData);
+
+      // Send confirmation email
+      if (insertedData?.id) {
+        try {
+          await sendAppointmentConfirmationEmail(insertedData.id);
+          console.log('📧 [BarberAdmin] E-mail de confirmação enviado.');
+        } catch (emailError) {
+          console.error('⚠️ [BarberAdmin] Erro ao enviar e-mail:', emailError);
+        }
+      }
+
+      toast({
+        title: "🎉 Agendamento Criado!",
+        description: `${selectedService.name} - ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+        duration: 5000,
+      });
+
+      resetModal();
+      onClose();
+    } catch (error: any) {
+      console.error('💥 [BarberAdmin] Erro inesperado:', error);
+      toast({
+        variant: "destructive",
+        title: "Erro",
+        description: "Não foi possível salvar o agendamento.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Auth check screen
