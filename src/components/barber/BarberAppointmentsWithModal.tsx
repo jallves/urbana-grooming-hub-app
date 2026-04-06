@@ -1,10 +1,11 @@
 import React, { useMemo, useState, useCallback } from 'react';
-import { Calendar, Clock, DollarSign, TrendingUp, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, Clock, DollarSign, TrendingUp, Zap, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
 import BarberEncaixeModal from './appointments/BarberEncaixeModal';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
+import AdminAppointmentForm from '@/components/admin/appointments/AppointmentForm';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
 import { useBarberAppointmentModal } from '@/hooks/barber/useBarberAppointmentModal';
@@ -35,6 +36,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
   const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(activeBarberId);
   const modalHandlers = useBarberAppointmentModal();
 
+  const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [isEncaixeModalOpen, setIsEncaixeModalOpen] = useState(false);
   const [encaixeSlotDate, setEncaixeSlotDate] = useState<string | undefined>();
   const [encaixeSlotTime, setEncaixeSlotTime] = useState<string | undefined>();
@@ -238,14 +240,26 @@ const BarberAppointmentsWithModal: React.FC = () => {
                   {filteredAppointments.length} agendamento(s) para {isToday(selectedDate) ? 'hoje' : format(selectedDate, "dd/MM/yyyy")}
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => handleOpenEncaixe()}
-                className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
-              >
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-                Encaixe
-              </Button>
+              <div className="flex items-center gap-2">
+                {isBarberAdmin && (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsNewAppointmentOpen(true)}
+                    className="h-8 sm:h-9 px-3 bg-urbana-gold text-white hover:bg-urbana-gold/90 text-xs sm:text-sm touch-manipulation font-semibold"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Novo
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => handleOpenEncaixe()}
+                  className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
+                >
+                  <Zap className="h-3.5 w-3.5 mr-1.5" />
+                  Encaixe
+                </Button>
+              </div>
             </div>
           </PainelBarbeiroCardHeader>
           
@@ -295,6 +309,18 @@ const BarberAppointmentsWithModal: React.FC = () => {
             onSuccess={() => refetch()}
           />
         </>
+      )}
+
+      {/* Modal de Novo Agendamento (Admin Form) - somente barbeiro admin */}
+      {isBarberAdmin && (
+        <AdminAppointmentForm
+          isOpen={isNewAppointmentOpen}
+          onClose={() => {
+            setIsNewAppointmentOpen(false);
+            refetch();
+          }}
+          defaultDate={selectedDate}
+        />
       )}
     </>
   );
