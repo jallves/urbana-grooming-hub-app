@@ -283,10 +283,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           const isOriginalSlot = isOriginalDateAndBarber && timeString === originalTime;
           
-          if (isCurrentDay && !isOriginalSlot) {
-            const currentTotalMinutes = currentHour * 60 + currentMinute;
-            if (slotTotalMinutes <= currentTotalMinutes + 15) continue;
-          }
+          // Admin tem autonomia total - não filtrar horários passados
           
           // Se é o horário original (mesma data e barbeiro), sempre disponível
           if (isOriginalSlot) {
