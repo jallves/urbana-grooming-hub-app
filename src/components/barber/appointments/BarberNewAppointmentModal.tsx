@@ -540,12 +540,12 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                             </Button>
                           </FormControl>
                         </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0 bg-urbana-black border-urbana-gold/30" align="start">
+                        <PopoverContent className="w-auto p-0 bg-gray-900 border-urbana-gold/30" align="start">
                           <Calendar
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
-                            className="pointer-events-auto"
+                            className="pointer-events-auto text-urbana-light [&_.rdp-day]:text-urbana-light [&_.rdp-head_cell]:text-urbana-light/60 [&_.rdp-caption_label]:text-urbana-gold [&_.rdp-nav_button]:text-urbana-gold [&_.rdp-nav_button]:border-urbana-gold/30 [&_.rdp-day_selected]:bg-urbana-gold [&_.rdp-day_selected]:text-urbana-black [&_.rdp-day_today]:bg-urbana-gold/20 [&_.rdp-day_today]:text-urbana-gold"
                           />
                         </PopoverContent>
                       </Popover>
