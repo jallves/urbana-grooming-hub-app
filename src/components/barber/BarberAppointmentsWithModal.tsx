@@ -36,6 +36,7 @@ const BarberAppointmentsWithModal: React.FC = () => {
   const { data: appointments = [], isLoading, refetch } = useBarberAppointmentsQuery(activeBarberId);
   const modalHandlers = useBarberAppointmentModal();
 
+  const [isNewAppointmentOpen, setIsNewAppointmentOpen] = useState(false);
   const [isEncaixeModalOpen, setIsEncaixeModalOpen] = useState(false);
   const [encaixeSlotDate, setEncaixeSlotDate] = useState<string | undefined>();
   const [encaixeSlotTime, setEncaixeSlotTime] = useState<string | undefined>();
