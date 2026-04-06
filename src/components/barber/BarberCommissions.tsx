@@ -55,9 +55,15 @@ const mapCommissionRecord = (record: any) => {
   if (tipo === 'uso_credito_assinatura') commissionType = 'subscription_usage';
   if (tipo === 'servico_extra') commissionType = 'service';
 
+  const commissionAmount = Number(record.valor || record.amount || 0);
+  const rate = Number(record.commission_rate || 0);
+  const grossRevenue = rate > 0 ? (commissionAmount / (rate / 100)) : commissionAmount;
+
   return {
     id: record.id,
-    amount: Number(record.valor || record.amount || 0),
+    amount: commissionAmount,
+    gross_revenue: grossRevenue,
+    commission_rate: rate,
     status: record.status === 'paid' || record.status === 'pago' ? 'paid' : 'pending',
     created_at: record.created_at || '',
     commission_type: commissionType,
@@ -78,6 +84,12 @@ const calcStats = (commissions: any[]) => ({
   productCommissions: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + c.amount, 0),
   tipCommissions: commissions.filter((c: any) => c.commission_type === 'tip').reduce((acc: number, c: any) => acc + c.amount, 0),
   subscriptionUsageCommissions: commissions.filter((c: any) => c.commission_type === 'subscription_usage').reduce((acc: number, c: any) => acc + c.amount, 0),
+  // Receita bruta por segmento
+  grossService: commissions.filter((c: any) => c.commission_type === 'service').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossProduct: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossSubscription: commissions.filter((c: any) => c.commission_type === 'subscription_usage').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossTip: commissions.filter((c: any) => c.commission_type === 'tip').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
+  grossTotal: commissions.reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
 });
 
 const BarberCommissionsComponent: React.FC = () => {
