@@ -5,7 +5,7 @@ import AppointmentCardOptimized from './appointments/AppointmentCardOptimized';
 import BarberEditAppointmentModal from './appointments/BarberEditAppointmentModal';
 import BarberEncaixeModal from './appointments/BarberEncaixeModal';
 import AppointmentSkeleton from '@/components/ui/loading/AppointmentSkeleton';
-import AdminAppointmentForm from '@/components/admin/appointments/AppointmentForm';
+import BarberNewAppointmentModal from './appointments/BarberNewAppointmentModal';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { useBarberAppointmentsQuery } from '@/hooks/barber/queries/useBarberAppointmentsQuery';
 import { useBarberAppointmentModal } from '@/hooks/barber/useBarberAppointmentModal';
@@ -311,9 +311,9 @@ const BarberAppointmentsWithModal: React.FC = () => {
         </>
       )}
 
-      {/* Modal de Novo Agendamento (Admin Form) - somente barbeiro admin */}
+      {/* Modal de Novo Agendamento - somente barbeiro admin */}
       {isBarberAdmin && (
-        <AdminAppointmentForm
+        <BarberNewAppointmentModal
           isOpen={isNewAppointmentOpen}
           onClose={() => {
             setIsNewAppointmentOpen(false);
