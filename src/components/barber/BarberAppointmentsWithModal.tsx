@@ -240,14 +240,26 @@ const BarberAppointmentsWithModal: React.FC = () => {
                   {filteredAppointments.length} agendamento(s) para {isToday(selectedDate) ? 'hoje' : format(selectedDate, "dd/MM/yyyy")}
                 </p>
               </div>
-              <Button
-                size="sm"
-                onClick={() => handleOpenEncaixe()}
-                className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
-              >
-                <Zap className="h-3.5 w-3.5 mr-1.5" />
-                Encaixe
-              </Button>
+              <div className="flex items-center gap-2">
+                {isBarberAdmin && (
+                  <Button
+                    size="sm"
+                    onClick={() => setIsNewAppointmentOpen(true)}
+                    className="h-8 sm:h-9 px-3 bg-urbana-gold text-white hover:bg-urbana-gold/90 text-xs sm:text-sm touch-manipulation font-semibold"
+                  >
+                    <Plus className="h-3.5 w-3.5 mr-1.5" />
+                    Novo
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  onClick={() => handleOpenEncaixe()}
+                  className="h-8 sm:h-9 px-3 bg-purple-600 text-white hover:bg-purple-700 text-xs sm:text-sm touch-manipulation font-semibold"
+                >
+                  <Zap className="h-3.5 w-3.5 mr-1.5" />
+                  Encaixe
+                </Button>
+              </div>
             </div>
           </PainelBarbeiroCardHeader>
           
