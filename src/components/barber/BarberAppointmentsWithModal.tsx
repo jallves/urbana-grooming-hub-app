@@ -310,6 +310,18 @@ const BarberAppointmentsWithModal: React.FC = () => {
           />
         </>
       )}
+
+      {/* Modal de Novo Agendamento (Admin Form) - somente barbeiro admin */}
+      {isBarberAdmin && (
+        <AdminAppointmentForm
+          isOpen={isNewAppointmentOpen}
+          onClose={() => {
+            setIsNewAppointmentOpen(false);
+            refetch();
+          }}
+          defaultDate={selectedDate}
+        />
+      )}
     </>
   );
 };
