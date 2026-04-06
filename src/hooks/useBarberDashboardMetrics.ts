@@ -85,12 +85,6 @@ export const useBarberDashboardMetrics = (selectedMonth?: number, selectedYear?:
             return aptDateTime > now && apt.status !== 'cancelado' && apt.status !== 'concluido';
           }).length;
 
-          const totalRevenue = appointments
-            .filter(apt => apt.status === 'concluido')
-            .reduce((acc, apt) => acc + (apt.painel_servicos?.preco || 0), 0);
-
-          const averageServiceValue = completedAppointments > 0 ? totalRevenue / completedAppointments : 0;
-
           const totalCommissions = commissions?.reduce((acc, comm) => acc + Number(comm.valor || comm.amount || 0), 0) || 0;
           const pendingCommissions = commissions
             ?.filter(comm => comm.status === 'pendente' || comm.status === 'pending')
@@ -98,6 +92,16 @@ export const useBarberDashboardMetrics = (selectedMonth?: number, selectedYear?:
           const paidCommissions = commissions
             ?.filter(comm => comm.status === 'pago' || comm.status === 'paid')
             .reduce((acc, comm) => acc + Number(comm.valor || comm.amount || 0), 0) || 0;
+
+          // Receita bruta calculada a partir das comissões (mesma lógica da aba Comissões)
+          const totalRevenue = commissions?.reduce((acc, comm) => {
+            const commissionAmount = Number(comm.valor || comm.amount || 0);
+            const rate = Number(comm.commission_rate || 0);
+            const grossRevenue = rate > 0 ? (commissionAmount / (rate / 100)) : commissionAmount;
+            return acc + grossRevenue;
+          }, 0) || 0;
+
+          const averageServiceValue = completedAppointments > 0 ? totalRevenue / completedAppointments : 0;
 
           setMetrics({
             totalAppointments,
