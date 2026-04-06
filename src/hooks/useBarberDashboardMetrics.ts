@@ -15,7 +15,7 @@ interface DashboardMetrics {
   paidCommissions: number;
 }
 
-export const useBarberDashboardMetrics = () => {
+export const useBarberDashboardMetrics = (selectedMonth?: number, selectedYear?: number) => {
   const [metrics, setMetrics] = useState<DashboardMetrics>({
     totalAppointments: 0,
     completedAppointments: 0,
@@ -37,7 +37,6 @@ export const useBarberDashboardMetrics = () => {
       try {
         setLoading(true);
 
-        // Buscar ID do barbeiro na tabela painel_barbeiros (que é usada nos agendamentos e comissões)
         const { data: barberData } = await supabase
           .from('painel_barbeiros')
           .select('id, staff_id')
@@ -50,15 +49,13 @@ export const useBarberDashboardMetrics = () => {
           return;
         }
 
-        // IMPORTANTE: barber_commissions.barber_id referencia painel_barbeiros.id (não staff_id)
         const barberId = barberData.id;
 
-        // Buscar todos os agendamentos do barbeiro do mês atual
         const now = new Date();
-        const currentMonth = now.getMonth();
-        const currentYear = now.getFullYear();
-        const firstDayOfMonth = new Date(currentYear, currentMonth, 1).toISOString().split('T')[0];
-        const lastDayOfMonth = new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0];
+        const month = selectedMonth ?? now.getMonth();
+        const year = selectedYear ?? now.getFullYear();
+        const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
+        const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
 
         const { data: appointments } = await supabase
           .from('painel_agendamentos')
@@ -70,39 +67,37 @@ export const useBarberDashboardMetrics = () => {
           .gte('data', firstDayOfMonth)
           .lte('data', lastDayOfMonth);
 
-        // Buscar comissões do barbeiro (serviços e produtos)
-        // barber_commissions.barber_id = painel_barbeiros.id
+        // Buscar comissões do mês selecionado
         const { data: commissions } = await supabase
           .from('barber_commissions')
           .select('*')
-          .eq('barber_id', barberId);
+          .eq('barber_id', barberId)
+          .gte('created_at', `${firstDayOfMonth}T00:00:00`)
+          .lte('created_at', `${lastDayOfMonth}T23:59:59`);
 
         if (appointments) {
           const totalAppointments = appointments.length;
           const completedAppointments = appointments.filter(apt => apt.status === 'concluido').length;
           const cancelledAppointments = appointments.filter(apt => apt.status === 'cancelado').length;
           
-          // Agendamentos futuros
           const upcomingAppointments = appointments.filter(apt => {
             const aptDateTime = new Date(`${apt.data}T${apt.hora}`);
             return aptDateTime > now && apt.status !== 'cancelado' && apt.status !== 'concluido';
           }).length;
 
-          // Calcular receita total dos agendamentos concluídos
           const totalRevenue = appointments
             .filter(apt => apt.status === 'concluido')
             .reduce((acc, apt) => acc + (apt.painel_servicos?.preco || 0), 0);
 
           const averageServiceValue = completedAppointments > 0 ? totalRevenue / completedAppointments : 0;
 
-          // Calcular comissões
-          const totalCommissions = commissions?.reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
+          const totalCommissions = commissions?.reduce((acc, comm) => acc + Number(comm.valor || comm.amount || 0), 0) || 0;
           const pendingCommissions = commissions
-            ?.filter(comm => comm.status === 'pending')
-            .reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
+            ?.filter(comm => comm.status === 'pendente' || comm.status === 'pending')
+            .reduce((acc, comm) => acc + Number(comm.valor || comm.amount || 0), 0) || 0;
           const paidCommissions = commissions
-            ?.filter(comm => comm.status === 'paid')
-            .reduce((acc, comm) => acc + Number(comm.amount), 0) || 0;
+            ?.filter(comm => comm.status === 'pago' || comm.status === 'paid')
+            .reduce((acc, comm) => acc + Number(comm.valor || comm.amount || 0), 0) || 0;
 
           setMetrics({
             totalAppointments,
@@ -124,7 +119,7 @@ export const useBarberDashboardMetrics = () => {
     };
 
     fetchMetrics();
-  }, [user?.email]);
+  }, [user?.email, selectedMonth, selectedYear]);
 
   return { metrics, loading };
 };
