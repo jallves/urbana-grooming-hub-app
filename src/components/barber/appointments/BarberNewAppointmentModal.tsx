@@ -220,7 +220,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                 <p className="text-sm text-urbana-light/60 text-center max-w-[280px]">
                   Somente barbeiros administradores podem criar novos agendamentos.
                 </p>
-                <Button onClick={onClose} variant="outline" className="border-urbana-gold/20 text-urbana-light hover:bg-urbana-gold/10">
+                <Button onClick={onClose} variant="ghost" className="border border-urbana-gold/20 text-urbana-light hover:bg-transparent hover:text-urbana-gold">
                   Fechar
                 </Button>
               </>
