@@ -156,9 +156,12 @@ export const useBarberCommissionsQuery = () => {
           if (category === 'tips' || subcategory.includes('tip')) commissionType = 'tip';
 
           const key = `fr-${record.id}`;
+          const frAmount = Number(record.net_amount || record.amount || 0);
           commissionMap.set(key, {
             id: record.id,
-            amount: Number(record.net_amount || record.amount || 0),
+            amount: frAmount,
+            gross_revenue: frAmount,
+            commission_rate: 0,
             status: record.status === 'completed' ? 'paid' : 'pending',
             created_at: record.transaction_date || record.created_at || '',
             commission_type: commissionType,
