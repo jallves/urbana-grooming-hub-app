@@ -71,6 +71,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const [originalDate, setOriginalDate] = useState<Date | null>(null);
   const [originalTime, setOriginalTime] = useState<string>('');
   
+  // Check-in state: after check-in only services can be edited
+  const isCheckedIn = appointment?.status_totem === 'CHEGOU' || appointment?.status === 'confirmado' && appointment?.status_totem === 'CHEGOU';
+  
   const { slots, loading: slotsLoading, fetchAvailableSlots } = useBarberAvailableSlots();
 
   // Total duration including extras
@@ -183,7 +186,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     const service = services.find(s => s.id === serviceId);
     if (service) {
       setSelectedService(service);
-      setSelectedTime(''); // Reset time when service changes
+      if (!isCheckedIn) {
+        setSelectedTime(''); // Reset time when service changes (only if not checked in)
+      }
     }
   };
 
@@ -197,23 +202,35 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         duracao: service.duracao,
       }]);
       setShowExtraServiceSelect(false);
-      setSelectedTime(''); // Reset time since duration changed
+      if (!isCheckedIn) {
+        setSelectedTime('');
+      }
     }
   };
 
   const handleRemoveExtraService = (serviceId: string) => {
     setExtraServices(prev => prev.filter(s => s.id !== serviceId));
-    setSelectedTime(''); // Reset time since duration changed
+    if (!isCheckedIn) {
+      setSelectedTime('');
+    }
   };
 
   const handleSave = async () => {
-    if (!appointmentId || !selectedDate || !selectedTime || !selectedService) {
+    if (!appointmentId || !selectedService) {
+      toast.error('Selecione um serviço');
+      return;
+    }
+
+    const effectiveDate = isCheckedIn ? originalDate! : selectedDate!;
+    const effectiveTime = isCheckedIn ? originalTime : selectedTime;
+
+    if (!isCheckedIn && (!selectedDate || !selectedTime)) {
       toast.error('Preencha todos os campos');
       return;
     }
 
-    if (!isBarberAdmin) {
-      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+    if (!isCheckedIn && !isBarberAdmin) {
+      const appointmentDateTime = parseISO(`${format(effectiveDate, 'yyyy-MM-dd')}T${effectiveTime}`);
       if (isBefore(appointmentDateTime, new Date())) {
         toast.error('Não é possível agendar para horário passado');
         return;
@@ -230,8 +247,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     setSaving(true);
     try {
       const updateData: any = {
-        data: format(selectedDate, 'yyyy-MM-dd'),
-        hora: selectedTime,
+        data: format(effectiveDate, 'yyyy-MM-dd'),
+        hora: effectiveTime,
         servico_id: selectedService.id,
         servicos_extras: extraServices.length > 0 ? extraServices : null,
         updated_at: new Date().toISOString()
@@ -244,8 +261,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       if (error) throw error;
 
-      const newDate = format(selectedDate, 'yyyy-MM-dd');
-      const newTime = selectedTime.substring(0, 5);
+      const newDate = format(effectiveDate, 'yyyy-MM-dd');
+      const newTime = effectiveTime.substring(0, 5);
       let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
       
       if (previousData.date !== newDate || previousData.time !== newTime) {
@@ -270,7 +287,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         : '';
 
       toast.success('✅ Agendamento atualizado!', {
-        description: `${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}${extraInfo}`
+        description: `${format(effectiveDate, "dd/MM/yyyy", { locale: ptBR })} às ${effectiveTime}${extraInfo}`
       });
       onSuccess();
       onClose();
@@ -286,16 +303,24 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   };
 
   const handleSaveClick = () => {
-    if (!selectedDate || !selectedTime || !selectedService) {
-      toast.error('Preencha todos os campos');
+    if (!selectedService) {
+      toast.error('Selecione um serviço');
       return;
     }
 
-    if (!isBarberAdmin) {
-      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
-      if (isBefore(appointmentDateTime, new Date())) {
-        toast.error('Não é possível agendar para horário passado');
+    // When checked in, date/time are locked - no need to validate them
+    if (!isCheckedIn) {
+      if (!selectedDate || !selectedTime) {
+        toast.error('Preencha todos os campos');
         return;
+      }
+
+      if (!isBarberAdmin) {
+        const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+        if (isBefore(appointmentDateTime, new Date())) {
+          toast.error('Não é possível agendar para horário passado');
+          return;
+        }
       }
     }
 
@@ -373,6 +398,19 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 {appointment.painel_clientes.whatsapp}
               </p>
             </div>
+
+            {/* Check-in Banner - locked date/time */}
+            {isCheckedIn && isBarberAdmin && (
+              <div className="p-3 sm:p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="h-4 w-4 text-amber-400" />
+                  <p className="text-xs sm:text-sm text-amber-400 font-medium">Cliente já fez check-in</p>
+                </div>
+                <p className="text-xs text-urbana-light/60">
+                  Data e horário estão bloqueados. Você pode alterar apenas os serviços.
+                </p>
+              </div>
+            )}
 
             {/* Info do Agendamento Original */}
             <div className="p-3 sm:p-4 bg-sky-500/10 rounded-lg border border-sky-500/20">
@@ -508,38 +546,40 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </div>
             )}
 
-            {/* Calendário */}
-            <div className="space-y-2">
-              <Label className="text-urbana-light/70 text-sm">Data</Label>
-              <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/60 overflow-x-hidden">
-                <Calendar
-                  mode="single"
-                  selected={selectedDate}
-                  onSelect={setSelectedDate}
-                  disabled={(date) => isBarberAdmin ? false : isBefore(date, today)}
-                  locale={ptBR}
-                  className="text-urbana-light mx-auto pointer-events-auto"
-                  classNames={{
-                    months: "space-y-2",
-                    month: "space-y-2",
-                    caption: "flex justify-center pt-1 relative items-center text-sm sm:text-base",
-                    caption_label: "text-sm sm:text-base font-medium text-urbana-light",
-                    nav: "space-x-1 flex items-center",
-                    nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 active:text-urbana-gold",
-                    head_row: "flex justify-center",
-                    head_cell: "text-urbana-light/50 rounded-md w-8 sm:w-9 font-normal text-[10px] sm:text-xs",
-                    row: "flex w-full mt-1 justify-center",
-                    cell: "relative p-0 text-center text-xs sm:text-sm focus-within:relative focus-within:z-20",
-                    day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light",
-                    day_selected: "bg-urbana-gold text-urbana-black",
-                    day_disabled: "text-urbana-light/20",
-                  }}
-                />
+            {/* Calendário - hidden when checked in */}
+            {!isCheckedIn && (
+              <div className="space-y-2">
+                <Label className="text-urbana-light/70 text-sm">Data</Label>
+                <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/60 overflow-x-hidden">
+                  <Calendar
+                    mode="single"
+                    selected={selectedDate}
+                    onSelect={setSelectedDate}
+                    disabled={(date) => isBarberAdmin ? false : isBefore(date, today)}
+                    locale={ptBR}
+                    className="text-urbana-light mx-auto pointer-events-auto"
+                    classNames={{
+                      months: "space-y-2",
+                      month: "space-y-2",
+                      caption: "flex justify-center pt-1 relative items-center text-sm sm:text-base",
+                      caption_label: "text-sm sm:text-base font-medium text-urbana-light",
+                      nav: "space-x-1 flex items-center",
+                      nav_button: "h-7 w-7 sm:h-8 sm:w-8 text-urbana-light/70 active:text-urbana-gold",
+                      head_row: "flex justify-center",
+                      head_cell: "text-urbana-light/50 rounded-md w-8 sm:w-9 font-normal text-[10px] sm:text-xs",
+                      row: "flex w-full mt-1 justify-center",
+                      cell: "relative p-0 text-center text-xs sm:text-sm focus-within:relative focus-within:z-20",
+                      day: "h-8 w-8 sm:h-9 sm:w-9 p-0 font-normal text-xs sm:text-sm text-urbana-light",
+                      day_selected: "bg-urbana-gold text-urbana-black",
+                      day_disabled: "text-urbana-light/20",
+                    }}
+                  />
+                </div>
               </div>
-            </div>
+            )}
 
-            {/* Horários Disponíveis */}
-            {selectedDate && selectedService && (
+            {/* Horários Disponíveis - hidden when checked in */}
+            {!isCheckedIn && selectedDate && selectedService && (
               <div className="space-y-2 overflow-x-hidden">
                 <Label className="text-urbana-light/70 text-sm">Horário Disponível</Label>
                 
@@ -608,7 +648,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </Button>
               <Button
                 onClick={handleSaveClick}
-                disabled={saving || !selectedDate || !selectedTime || !selectedService}
+                disabled={saving || !selectedService || (!isCheckedIn && (!selectedDate || !selectedTime))}
                 className="w-full sm:flex-1 h-10 !bg-urbana-gold !text-urbana-black text-sm touch-manipulation font-semibold cursor-pointer"
               >
                 Salvar Alterações
@@ -629,10 +669,10 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               Você está prestes a alterar este agendamento para:
               <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10 space-y-1">
                 <p className="text-urbana-light font-medium text-sm">
-                  📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                  📅 {(isCheckedIn ? originalDate : selectedDate) && format((isCheckedIn ? originalDate! : selectedDate!), "dd/MM/yyyy", { locale: ptBR })}
                 </p>
                 <p className="text-urbana-light font-medium text-sm">
-                  🕐 {selectedTime}
+                  🕐 {isCheckedIn ? normalizedOriginalTime : selectedTime}
                 </p>
                 <p className="text-urbana-light font-medium text-sm truncate">
                   ✂️ {selectedService?.nome}
