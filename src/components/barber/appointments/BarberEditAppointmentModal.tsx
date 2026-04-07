@@ -485,11 +485,18 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                       <span className="text-urbana-gold font-semibold">R$ {totalPrice.toFixed(2)}</span>
                     </div>
                     {extraSlotsConsumed > 0 && (
-                      <div className="flex items-start gap-2 mt-2 p-2 bg-amber-500/10 rounded border border-amber-500/20">
-                        <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-amber-300">
-                          Este agendamento consumirá <strong>+{extraSlotsConsumed} slot(s)</strong> adicional(is) de 30min do barbeiro.
-                        </p>
+                      <div className={`flex items-start gap-2 mt-2 p-2 rounded border ${nextSlotsConflict ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+                        <AlertTriangle className={`h-4 w-4 flex-shrink-0 mt-0.5 ${nextSlotsConflict ? 'text-red-400' : 'text-amber-400'}`} />
+                        <div className="text-xs">
+                          <p className={nextSlotsConflict ? 'text-red-300' : 'text-amber-300'}>
+                            Este agendamento consumirá <strong>+{extraSlotsConsumed} slot(s)</strong> adicional(is) de 30min.
+                          </p>
+                          {nextSlotsConflict && (
+                            <p className="text-red-400 font-medium mt-1">
+                              ⚠️ Atenção: o próximo horário já está ocupado. Ao salvar, pode haver sobreposição de atendimentos.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
