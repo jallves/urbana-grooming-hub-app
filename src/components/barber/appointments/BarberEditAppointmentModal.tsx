@@ -322,6 +322,24 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     return totalSlots - baseSlots;
   }, [selectedService, totalDuration]);
 
+  // Check if next slots are already occupied
+  const nextSlotsConflict = useMemo(() => {
+    if (extraSlotsConsumed <= 0 || !selectedTime) return false;
+    const [h, m] = selectedTime.split(':').map(Number);
+    const baseDuration = selectedService?.duracao || 0;
+    const baseEndMinutes = h * 60 + m + baseDuration;
+    
+    for (let i = 0; i < extraSlotsConsumed; i++) {
+      const slotMinutes = baseEndMinutes + i * 30;
+      const slotH = Math.floor(slotMinutes / 60).toString().padStart(2, '0');
+      const slotM = (slotMinutes % 60).toString().padStart(2, '0');
+      const slotTime = `${slotH}:${slotM}`;
+      const slot = slots.find(s => s.time === slotTime);
+      if (slot && !slot.available) return true;
+    }
+    return false;
+  }, [extraSlotsConsumed, selectedTime, selectedService, slots]);
+
   if (!isOpen || !appointmentId) return null;
 
   if (loading) {
@@ -467,11 +485,18 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                       <span className="text-urbana-gold font-semibold">R$ {totalPrice.toFixed(2)}</span>
                     </div>
                     {extraSlotsConsumed > 0 && (
-                      <div className="flex items-start gap-2 mt-2 p-2 bg-amber-500/10 rounded border border-amber-500/20">
-                        <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
-                        <p className="text-xs text-amber-300">
-                          Este agendamento consumirá <strong>+{extraSlotsConsumed} slot(s)</strong> adicional(is) de 30min do barbeiro.
-                        </p>
+                      <div className={`flex items-start gap-2 mt-2 p-2 rounded border ${nextSlotsConflict ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
+                        <AlertTriangle className={`h-4 w-4 flex-shrink-0 mt-0.5 ${nextSlotsConflict ? 'text-red-400' : 'text-amber-400'}`} />
+                        <div className="text-xs">
+                          <p className={nextSlotsConflict ? 'text-red-300' : 'text-amber-300'}>
+                            Este agendamento consumirá <strong>+{extraSlotsConsumed} slot(s)</strong> adicional(is) de 30min.
+                          </p>
+                          {nextSlotsConflict && (
+                            <p className="text-red-400 font-medium mt-1">
+                              ⚠️ Atenção: o próximo horário já está ocupado. Ao salvar, pode haver sobreposição de atendimentos.
+                            </p>
+                          )}
+                        </div>
                       </div>
                     )}
                   </div>
