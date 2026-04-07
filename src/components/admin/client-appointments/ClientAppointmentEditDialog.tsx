@@ -187,7 +187,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       const selectedServico = servicos.find(s => s.id === selectedServicoId);
-      const serviceDuration = selectedServico?.duracao || 30;
+      const baseServiceDuration = selectedServico?.duracao || 30;
+      // Include extras duration for the appointment being edited
+      const extrasDuration = appointment?.servicos_extras && Array.isArray(appointment.servicos_extras)
+        ? appointment.servicos_extras.reduce((sum: number, s: any) => sum + (s.duracao || 0), 0)
+        : 0;
+      const serviceDuration = baseServiceDuration + extrasDuration;
       const dayOfWeek = selectedDate.getDay();
       
       const now = new Date();
