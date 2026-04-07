@@ -216,16 +216,21 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   };
 
   const handleSave = async () => {
-    if (!appointmentId || !selectedDate || !selectedTime || !selectedService) {
+    if (!appointmentId || !selectedService) {
+      toast.error('Selecione um serviço');
+      return;
+    }
+
+    const effectiveDate = isCheckedIn ? originalDate! : selectedDate!;
+    const effectiveTime = isCheckedIn ? originalTime : selectedTime;
+
+    if (!isCheckedIn && (!selectedDate || !selectedTime)) {
       toast.error('Preencha todos os campos');
       return;
     }
 
-    // When checked in, keep original date/time - only services change
-    if (isCheckedIn) {
-      // No date/time validation needed - we keep originals
-    } else if (!isBarberAdmin) {
-      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+    if (!isCheckedIn && !isBarberAdmin) {
+      const appointmentDateTime = parseISO(`${format(effectiveDate, 'yyyy-MM-dd')}T${effectiveTime}`);
       if (isBefore(appointmentDateTime, new Date())) {
         toast.error('Não é possível agendar para horário passado');
         return;
@@ -242,8 +247,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     setSaving(true);
     try {
       const updateData: any = {
-        data: format(selectedDate, 'yyyy-MM-dd'),
-        hora: selectedTime,
+        data: format(effectiveDate, 'yyyy-MM-dd'),
+        hora: effectiveTime,
         servico_id: selectedService.id,
         servicos_extras: extraServices.length > 0 ? extraServices : null,
         updated_at: new Date().toISOString()
