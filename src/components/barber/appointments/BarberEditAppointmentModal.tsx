@@ -261,8 +261,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
       if (error) throw error;
 
-      const newDate = format(selectedDate, 'yyyy-MM-dd');
-      const newTime = selectedTime.substring(0, 5);
+      const newDate = format(effectiveDate, 'yyyy-MM-dd');
+      const newTime = effectiveTime.substring(0, 5);
       let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
       
       if (previousData.date !== newDate || previousData.time !== newTime) {
@@ -287,7 +287,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         : '';
 
       toast.success('✅ Agendamento atualizado!', {
-        description: `${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}${extraInfo}`
+        description: `${format(effectiveDate, "dd/MM/yyyy", { locale: ptBR })} às ${effectiveTime}${extraInfo}`
       });
       onSuccess();
       onClose();
