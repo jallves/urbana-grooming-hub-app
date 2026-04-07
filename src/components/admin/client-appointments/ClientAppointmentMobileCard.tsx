@@ -319,6 +319,7 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
               </span>
             </div>
           </div>
+          <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-gray-200">
