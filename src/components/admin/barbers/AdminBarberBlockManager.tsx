@@ -17,6 +17,7 @@ import {
 import { format, addDays, isToday, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface Barber {
   id: string;
@@ -194,7 +195,7 @@ const AdminBarberBlockManager: React.FC = () => {
         
         supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, servico:servico_id(duracao, nome)')
+          .select('id, data, hora, servicos_extras, servico:servico_id(duracao, nome)')
           .eq('barbeiro_id', selectedBarber.id)
           .eq('data', selectedDate)
           .not('status', 'in', '("cancelado","ausente")')
@@ -245,7 +246,8 @@ const AdminBarberBlockManager: React.FC = () => {
         const [aptHour, aptMin] = aptTime.split(':').map(Number);
         const aptTotalMinutes = aptHour * 60 + aptMin;
         
-        const duracao = apt.servico?.duracao || 30;
+        const mainDuration = apt.servico?.duracao || 30;
+        const duracao = calculateTotalAppointmentDuration(mainDuration, apt.servicos_extras);
         const aptEndMinutes = aptTotalMinutes + duracao;
         
         return slotTotalMinutes >= aptTotalMinutes && slotTotalMinutes < aptEndMinutes;

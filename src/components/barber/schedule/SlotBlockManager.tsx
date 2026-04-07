@@ -9,6 +9,7 @@ import { Loader2, Clock, Lock, Unlock, AlertCircle, CalendarDays, CalendarOff } 
 import { format, addDays, isBefore, isToday, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
   time: string;
@@ -164,7 +165,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         // Buscar agendamentos do dia usando barbeiro_id do painel
         supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, servico:servico_id(duracao, nome)')
+          .select('id, data, hora, servicos_extras, servico:servico_id(duracao, nome)')
           .eq('barbeiro_id', barberRecord.id)
           .eq('data', selectedDate)
           .not('status', 'in', '("cancelado","ausente")')
@@ -244,8 +245,9 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         const [aptHour, aptMin] = aptTime.split(':').map(Number);
         const aptTotalMinutes = aptHour * 60 + aptMin;
         
-        // Duração do serviço (padrão 30 min se não encontrar)
-        const duracao = apt.servico?.duracao || 30;
+        // Duração total do agendamento (serviço principal + extras)
+        const mainDuration = apt.servico?.duracao || 30;
+        const duracao = calculateTotalAppointmentDuration(mainDuration, apt.servicos_extras);
         const aptEndMinutes = aptTotalMinutes + duracao;
         
         // Verifica se o slot atual está dentro do intervalo do agendamento
