@@ -1,0 +1,1 @@
+ALTER TABLE public.painel_agendamentos ADD COLUMN IF NOT EXISTS servicos_extras jsonb DEFAULT NULL;

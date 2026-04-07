@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -20,7 +20,7 @@ import { toast } from 'sonner';
 import { format, addDays, parseISO, isBefore, startOfDay, isSameDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useBarberAvailableSlots } from '@/hooks/barber/useBarberAvailableSlots';
-import { Loader2, Clock } from 'lucide-react';
+import { Loader2, Clock, Plus, X, AlertTriangle } from 'lucide-react';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 
 interface BarberEditAppointmentModalProps {
@@ -32,6 +32,13 @@ interface BarberEditAppointmentModalProps {
 }
 
 interface PainelServico {
+  id: string;
+  nome: string;
+  preco: number;
+  duracao: number;
+}
+
+interface ExtraService {
   id: string;
   nome: string;
   preco: number;
@@ -56,11 +63,35 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const [selectedService, setSelectedService] = useState<PainelServico | null>(null);
   const [selectedTime, setSelectedTime] = useState<string>('');
   
+  // Extra services state (barber admin only)
+  const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
+  const [showExtraServiceSelect, setShowExtraServiceSelect] = useState(false);
+  
   // Armazena dados originais do agendamento
   const [originalDate, setOriginalDate] = useState<Date | null>(null);
   const [originalTime, setOriginalTime] = useState<string>('');
   
   const { slots, loading: slotsLoading, fetchAvailableSlots } = useBarberAvailableSlots();
+
+  // Total duration including extras
+  const totalDuration = useMemo(() => {
+    const baseDuration = selectedService?.duracao || 0;
+    const extraDuration = extraServices.reduce((sum, s) => sum + s.duracao, 0);
+    return baseDuration + extraDuration;
+  }, [selectedService, extraServices]);
+
+  // Total price including extras
+  const totalPrice = useMemo(() => {
+    const basePrice = selectedService?.preco || 0;
+    const extraPrice = extraServices.reduce((sum, s) => sum + s.preco, 0);
+    return basePrice + extraPrice;
+  }, [selectedService, extraServices]);
+
+  // Services available to add as extra (exclude main + already added)
+  const availableExtraServices = useMemo(() => {
+    const usedIds = new Set([selectedService?.id, ...extraServices.map(s => s.id)].filter(Boolean));
+    return services.filter(s => !usedIds.has(s.id));
+  }, [services, selectedService, extraServices]);
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -71,21 +102,15 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   useEffect(() => {
     if (selectedDate && selectedService) {
-      console.log('🔍 [BarberEditModal] Chamando fetchAvailableSlots:', {
-        barberId,
-        selectedDate,
-        duracao: selectedService.duracao,
-        appointmentId
-      });
       fetchAvailableSlots(
         barberId,
         selectedDate,
-        selectedService.duracao,
+        totalDuration,
         appointmentId || undefined,
         isBarberAdmin
       );
     }
-  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots, isBarberAdmin]);
+  }, [selectedDate, selectedService, barberId, appointmentId, fetchAvailableSlots, isBarberAdmin, totalDuration]);
 
   const fetchAppointment = async () => {
     if (!appointmentId) return;
@@ -110,13 +135,6 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         return;
       }
 
-      console.log('📋 [BarberEditModal] Agendamento carregado:', {
-        id: data.id,
-        data: data.data,
-        hora: data.hora,
-        servico: data.painel_servicos
-      });
-
       setAppointment(data);
       
       const appointmentDate = parseISO(data.data);
@@ -127,9 +145,16 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       setOriginalDate(appointmentDate);
       setOriginalTime(data.hora?.substring(0, 5) || data.hora);
       
-      // Garantir que o serviço tenha o campo duracao
       if (data.painel_servicos) {
         setSelectedService(data.painel_servicos);
+      }
+
+      // Load existing extra services
+      const existingExtras = (data as any).servicos_extras;
+      if (existingExtras && Array.isArray(existingExtras)) {
+        setExtraServices(existingExtras);
+      } else {
+        setExtraServices([]);
       }
     } catch (error) {
       console.error('Erro ao buscar agendamento:', error);
@@ -162,13 +187,31 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     }
   };
 
+  const handleAddExtraService = (serviceId: string) => {
+    const service = services.find(s => s.id === serviceId);
+    if (service) {
+      setExtraServices(prev => [...prev, {
+        id: service.id,
+        nome: service.nome,
+        preco: service.preco,
+        duracao: service.duracao,
+      }]);
+      setShowExtraServiceSelect(false);
+      setSelectedTime(''); // Reset time since duration changed
+    }
+  };
+
+  const handleRemoveExtraService = (serviceId: string) => {
+    setExtraServices(prev => prev.filter(s => s.id !== serviceId));
+    setSelectedTime(''); // Reset time since duration changed
+  };
+
   const handleSave = async () => {
     if (!appointmentId || !selectedDate || !selectedTime || !selectedService) {
       toast.error('Preencha todos os campos');
       return;
     }
 
-    // Validar que a data/hora é futura (exceto barbeiro admin)
     if (!isBarberAdmin) {
       const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
       if (isBefore(appointmentDateTime, new Date())) {
@@ -177,29 +220,30 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       }
     }
 
-    // Guardar dados anteriores para o e-mail
     const previousData = {
       date: appointment?.data,
       time: appointment?.hora?.substring(0, 5),
-      staffName: undefined, // Barbeiro não muda
+      staffName: undefined,
       serviceName: appointment?.painel_servicos?.nome
     };
 
     setSaving(true);
     try {
+      const updateData: any = {
+        data: format(selectedDate, 'yyyy-MM-dd'),
+        hora: selectedTime,
+        servico_id: selectedService.id,
+        servicos_extras: extraServices.length > 0 ? extraServices : null,
+        updated_at: new Date().toISOString()
+      };
+
       const { error } = await supabase
         .from('painel_agendamentos')
-        .update({
-          data: format(selectedDate, 'yyyy-MM-dd'),
-          hora: selectedTime,
-          servico_id: selectedService.id,
-          updated_at: new Date().toISOString()
-        })
+        .update(updateData)
         .eq('id', appointmentId);
 
       if (error) throw error;
 
-      // Determinar tipo de alteração
       const newDate = format(selectedDate, 'yyyy-MM-dd');
       const newTime = selectedTime.substring(0, 5);
       let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
@@ -210,8 +254,6 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         updateType = 'change_service';
       }
 
-      // Enviar e-mail de atualização
-      console.log('📧 [BarberEdit] Enviando e-mail de atualização...');
       try {
         await sendAppointmentUpdateEmail({
           appointmentId,
@@ -220,11 +262,15 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
           updatedBy: 'barber'
         });
       } catch (emailError) {
-        console.error('⚠️ [BarberEdit] Erro ao enviar e-mail (não crítico):', emailError);
+        console.error('⚠️ Erro ao enviar e-mail (não crítico):', emailError);
       }
 
+      const extraInfo = extraServices.length > 0 
+        ? ` + ${extraServices.length} serviço(s) extra` 
+        : '';
+
       toast.success('✅ Agendamento atualizado!', {
-        description: `Nova data: ${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}`
+        description: `${format(selectedDate, "dd/MM/yyyy", { locale: ptBR })} às ${selectedTime}${extraInfo}`
       });
       onSuccess();
       onClose();
@@ -245,7 +291,6 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       return;
     }
 
-    // Validar que a data/hora é futura (exceto barbeiro admin)
     if (!isBarberAdmin) {
       const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
       if (isBefore(appointmentDateTime, new Date())) {
@@ -254,23 +299,28 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       }
     }
 
-    // Abrir dialog de confirmação
     setShowConfirmDialog(true);
   };
 
-  // Verifica se a data selecionada é a mesma do agendamento original
   const isOriginalDate = useMemo(() => {
     if (!selectedDate || !originalDate) return false;
     return isSameDay(selectedDate, originalDate);
   }, [selectedDate, originalDate]);
 
-  // Normaliza o horário original para comparação (remove segundos se houver)
   const normalizedOriginalTime = useMemo(() => {
     return originalTime?.substring(0, 5) || '';
   }, [originalTime]);
 
   const availableSlots = slots.filter(slot => slot.available);
   const today = startOfDay(new Date());
+
+  // How many extra 30min slots will be consumed
+  const extraSlotsConsumed = useMemo(() => {
+    const baseDuration = selectedService?.duracao || 0;
+    const baseSlots = Math.ceil(baseDuration / 30);
+    const totalSlots = Math.ceil(totalDuration / 30);
+    return totalSlots - baseSlots;
+  }, [selectedService, totalDuration]);
 
   if (!isOpen || !appointmentId) return null;
 
@@ -288,20 +338,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="bg-urbana-black border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden [&_*]:!transition-none [&_*:hover]:!bg-inherit [&_*:hover]:!text-inherit [&_*:hover]:!border-inherit [&_*:hover]:!opacity-inherit [&_*:hover]:!scale-100 [&_*:hover]:!transform-none">
-        <style>{`
-          .barber-edit-modal *:hover {
-            background-color: inherit !important;
-            color: inherit !important;
-            border-color: inherit !important;
-            opacity: inherit !important;
-            transform: none !important;
-            scale: none !important;
-          }
-          .barber-edit-modal button:active {
-            opacity: 0.8 !important;
-          }
-        `}</style>
+      <DialogContent className="bg-urbana-black border border-urbana-gold/20 shadow-2xl shadow-urbana-gold/5 text-urbana-light w-[95vw] sm:w-full max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle className="text-urbana-light text-lg sm:text-xl font-bold">Editar Agendamento</DialogTitle>
         </DialogHeader>
@@ -320,7 +357,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             </div>
 
             {/* Info do Agendamento Original */}
-            <div className="p-3 sm:p-4 bg-sky-500/10 backdrop-blur-sm rounded-lg border border-sky-500/20">
+            <div className="p-3 sm:p-4 bg-sky-500/10 rounded-lg border border-sky-500/20">
               <div className="flex items-center gap-2 mb-1">
                 <Clock className="h-4 w-4 text-sky-400" />
                 <p className="text-xs sm:text-sm text-sky-400 font-medium">Horário Original</p>
@@ -330,9 +367,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </p>
             </div>
 
-            {/* Seleção de Serviço - Responsivo */}
+            {/* Seleção de Serviço Principal */}
             <div className="space-y-2">
-              <Label className="text-urbana-light/70 text-sm">Serviço</Label>
+              <Label className="text-urbana-light/70 text-sm">Serviço Principal</Label>
               <Select
                 value={selectedService?.id}
                 onValueChange={handleServiceChange}
@@ -350,7 +387,103 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </Select>
             </div>
 
-            {/* Calendário - Responsivo */}
+            {/* Serviços Extras - Apenas Barbeiro Admin */}
+            {isBarberAdmin && selectedService && (
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-urbana-light/70 text-sm">Serviços Extras</Label>
+                  {availableExtraServices.length > 0 && !showExtraServiceSelect && (
+                    <button
+                      type="button"
+                      onClick={() => setShowExtraServiceSelect(true)}
+                      className="flex items-center gap-1 text-xs text-urbana-gold cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" />
+                      Adicionar serviço
+                    </button>
+                  )}
+                </div>
+
+                {/* Lista de extras adicionados */}
+                {extraServices.length > 0 && (
+                  <div className="space-y-1.5">
+                    {extraServices.map((extra) => (
+                      <div
+                        key={extra.id}
+                        className="flex items-center justify-between p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm text-urbana-light truncate">{extra.nome}</p>
+                          <p className="text-xs text-urbana-light/50">
+                            R$ {extra.preco.toFixed(2)} · {extra.duracao}min
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveExtraService(extra.id)}
+                          className="ml-2 p-1 text-red-400 cursor-pointer flex-shrink-0"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Select para adicionar extra */}
+                {showExtraServiceSelect && (
+                  <div className="flex gap-2">
+                    <Select onValueChange={handleAddExtraService}>
+                      <SelectTrigger className="bg-urbana-black/60 border-purple-500/30 text-urbana-light h-10 text-sm flex-1 cursor-pointer">
+                        <SelectValue placeholder="Selecione serviço extra" />
+                      </SelectTrigger>
+                      <SelectContent className="bg-urbana-black border-urbana-gold/20 max-w-[90vw]">
+                        {availableExtraServices.map(service => (
+                          <SelectItem key={service.id} value={service.id} className="text-sm text-urbana-light cursor-pointer focus:bg-purple-500/20 focus:text-urbana-light">
+                            {service.nome} - R$ {service.preco.toFixed(2)} ({service.duracao}min)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <button
+                      type="button"
+                      onClick={() => setShowExtraServiceSelect(false)}
+                      className="p-2 text-urbana-light/50 cursor-pointer"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Resumo de duração e preço total */}
+                {extraServices.length > 0 && (
+                  <div className="p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10 space-y-1.5">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-urbana-light/60">Duração total:</span>
+                      <span className="text-urbana-light font-medium">{totalDuration}min</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-urbana-light/60">Valor total:</span>
+                      <span className="text-urbana-gold font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                    </div>
+                    {extraSlotsConsumed > 0 && (
+                      <div className="flex items-start gap-2 mt-2 p-2 bg-amber-500/10 rounded border border-amber-500/20">
+                        <AlertTriangle className="h-4 w-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-300">
+                          Este agendamento consumirá <strong>+{extraSlotsConsumed} slot(s)</strong> adicional(is) de 30min do barbeiro.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {extraServices.length === 0 && !showExtraServiceSelect && (
+                  <p className="text-xs text-urbana-light/40 italic">Nenhum serviço extra adicionado</p>
+                )}
+              </div>
+            )}
+
+            {/* Calendário */}
             <div className="space-y-2">
               <Label className="text-urbana-light/70 text-sm">Data</Label>
               <div className="border border-urbana-gold/20 rounded-lg p-2 sm:p-4 bg-urbana-black/60 overflow-x-hidden">
@@ -380,7 +513,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </div>
             </div>
 
-            {/* Horários Disponíveis - Mobile First */}
+            {/* Horários Disponíveis */}
             {selectedDate && selectedService && (
               <div className="space-y-2 overflow-x-hidden">
                 <Label className="text-urbana-light/70 text-sm">Horário Disponível</Label>
@@ -460,7 +593,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         )}
       </DialogContent>
 
-      {/* Dialog de confirmação para salvar - Responsivo */}
+      {/* Dialog de confirmação */}
       <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <AlertDialogContent className="bg-urbana-black border-urbana-gold/20 w-[90vw] max-w-md overflow-x-hidden">
           <AlertDialogHeader>
@@ -469,7 +602,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
             </AlertDialogTitle>
             <AlertDialogDescription className="text-urbana-light/60 text-sm">
               Você está prestes a alterar este agendamento para:
-              <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10">
+              <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10 space-y-1">
                 <p className="text-urbana-light font-medium text-sm">
                   📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
                 </p>
@@ -479,6 +612,21 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 <p className="text-urbana-light font-medium text-sm truncate">
                   ✂️ {selectedService?.nome}
                 </p>
+                {extraServices.length > 0 && (
+                  <>
+                    <div className="border-t border-urbana-gold/10 my-1 pt-1">
+                      <p className="text-purple-400 text-xs font-medium mb-1">Serviços extras:</p>
+                      {extraServices.map(e => (
+                        <p key={e.id} className="text-urbana-light/80 text-xs">
+                          + {e.nome} (R$ {e.preco.toFixed(2)})
+                        </p>
+                      ))}
+                    </div>
+                    <p className="text-urbana-gold text-sm font-semibold pt-1">
+                      💰 Total: R$ {totalPrice.toFixed(2)} · {totalDuration}min
+                    </p>
+                  </>
+                )}
               </div>
               <strong className="text-urbana-gold block mt-3 text-sm">
                 Tem certeza que deseja salvar estas alterações?
