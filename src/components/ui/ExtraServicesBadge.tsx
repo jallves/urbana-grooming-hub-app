@@ -26,6 +26,7 @@ const ExtraServicesBadge: React.FC<ExtraServicesBadgeProps> = ({
   const totalExtra = extras.reduce((sum, s) => sum + (s.preco || 0), 0);
 
   if (compact) {
+    const names = extras.map(e => e.nome).filter(Boolean).join(', ');
     return (
       <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold ${
         variant === 'dark' 
@@ -33,7 +34,7 @@ const ExtraServicesBadge: React.FC<ExtraServicesBadgeProps> = ({
           : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
       }`}>
         <Plus className="h-2.5 w-2.5" />
-        {extras.length} extra{extras.length > 1 ? 's' : ''}
+        {names || `${extras.length} extra${extras.length > 1 ? 's' : ''}`}
       </span>
     );
   }

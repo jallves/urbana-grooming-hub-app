@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 
 interface ClientAppointmentEditDialogProps {
   isOpen: boolean;
@@ -186,7 +187,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
       const selectedServico = servicos.find(s => s.id === selectedServicoId);
-      const serviceDuration = selectedServico?.duracao || 30;
+      const baseServiceDuration = selectedServico?.duracao || 30;
+      // Include extras duration for the appointment being edited
+      const extrasDuration = appointment?.servicos_extras && Array.isArray(appointment.servicos_extras)
+        ? appointment.servicos_extras.reduce((sum: number, s: any) => sum + (s.duracao || 0), 0)
+        : 0;
+      const serviceDuration = baseServiceDuration + extrasDuration;
       const dayOfWeek = selectedDate.getDay();
       
       const now = new Date();
@@ -424,6 +430,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           <p className="text-sm text-muted-foreground mt-1">
             Cliente: <span className="font-medium text-foreground">{appointment.painel_clientes?.nome}</span>
           </p>
+          {appointment.servicos_extras && Array.isArray(appointment.servicos_extras) && appointment.servicos_extras.length > 0 && (
+            <div className="mt-2">
+              <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
