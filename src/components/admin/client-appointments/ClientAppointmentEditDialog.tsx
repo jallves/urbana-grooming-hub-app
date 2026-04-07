@@ -6,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, isToday, isBefore, startOfDay } from 'date-fns';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";

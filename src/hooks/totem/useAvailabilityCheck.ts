@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addMinutes, parse } from 'date-fns';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
   time: string;
