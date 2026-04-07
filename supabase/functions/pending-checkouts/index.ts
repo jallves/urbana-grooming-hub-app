@@ -201,7 +201,7 @@ Deno.serve(async (req) => {
           cliente_id: agendamento.cliente_id,
           barbeiro_id,
           valor_total: revenueAmount,
-          desconto: originalPrice - revenueAmount,
+          desconto: fullServicePrice - revenueAmount,
           status: 'PAGA',
           observacoes: observacao
         })
@@ -211,17 +211,33 @@ Deno.serve(async (req) => {
       if (vendaError) throw vendaError
       console.log('✅ Venda criada:', novaVenda.id)
 
-      // 5. Criar item da venda
-      await supabase.from('vendas_itens').insert({
+      // 5. Criar itens da venda (serviço principal + extras)
+      const vendaItems: any[] = [{
         venda_id: novaVenda.id,
         tipo: 'servico',
         item_id: agendamento.servico_id || agendamento.id,
         nome: nomeServico,
         quantidade: 1,
-        preco_unitario: revenueAmount,
-        subtotal: revenueAmount,
+        preco_unitario: type === 'courtesy' ? 0 : originalPrice,
+        subtotal: type === 'courtesy' ? 0 : originalPrice,
         barbeiro_id
-      })
+      }]
+
+      // Add extra service items
+      for (const extra of extraItems) {
+        vendaItems.push({
+          venda_id: novaVenda.id,
+          tipo: 'SERVICO_EXTRA',
+          item_id: extra.id,
+          nome: extra.nome,
+          quantidade: 1,
+          preco_unitario: type === 'courtesy' ? 0 : extra.preco,
+          subtotal: type === 'courtesy' ? 0 : extra.preco,
+          barbeiro_id
+        })
+      }
+
+      await supabase.from('vendas_itens').insert(vendaItems)
 
       // 6. Contas a Receber (even if zero for courtesy - records the event)
       const today = new Date().toISOString().split('T')[0]
