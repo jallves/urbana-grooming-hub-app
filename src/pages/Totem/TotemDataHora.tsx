@@ -10,6 +10,7 @@ import { TotemCard, TotemCardTitle } from '@/components/totem/TotemCard';
 import { TotemButton } from '@/components/totem/TotemButton';
 import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
   hora: string;
@@ -101,7 +102,7 @@ const TotemDataHora: React.FC = () => {
             .lte('date', endDateStr),
           supabase
             .from('painel_agendamentos')
-            .select('data, hora, servico:painel_servicos(duracao)')
+            .select('data, hora, servicos_extras, servico:painel_servicos(duracao)')
             .eq('barbeiro_id', barberId)
             .gte('data', startDateStr)
             .lte('data', endDateStr)
@@ -134,7 +135,8 @@ const TotemDataHora: React.FC = () => {
         const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
         appointmentsResult.data?.forEach(apt => {
           const list = appointmentsByDate.get(apt.data) || [];
-          list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+          const mainDuration = (apt.servico as any)?.duracao || 60;
+          list.push({ hora: apt.hora, duracao: calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras) });
           appointmentsByDate.set(apt.data, list);
         });
 

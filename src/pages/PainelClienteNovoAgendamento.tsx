@@ -15,6 +15,7 @@ import SuccessConfirmationDialog from '@/components/client/appointment/SuccessCo
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface Service {
   id: string;
@@ -219,7 +220,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         // Todos os agendamentos no range
         supabase
           .from('painel_agendamentos')
-          .select('data, hora, servico:painel_servicos(duracao)')
+          .select('data, hora, servicos_extras, servico:painel_servicos(duracao)')
           .eq('barbeiro_id', barberId)
           .gte('data', startDateStr)
           .lte('data', endDateStr)
@@ -252,7 +253,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
       appointmentsResult.data?.forEach(apt => {
         const list = appointmentsByDate.get(apt.data) || [];
-        list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        list.push({ hora: apt.hora, duracao: calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras) });
         appointmentsByDate.set(apt.data, list);
       });
 

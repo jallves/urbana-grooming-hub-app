@@ -12,6 +12,7 @@ import { z } from 'zod';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface ClientAppointmentCreateDialogProps {
   isOpen: boolean;
@@ -279,7 +280,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         supabase.from('working_hours').select('day_of_week, start_time, end_time').eq('staff_id', staffTableId).eq('is_active', true),
         supabase.from('time_off').select('start_date, end_date, type').eq('barber_id', barberId).eq('status', 'ativo').lte('start_date', endDateStr).gte('end_date', startDateStr),
         supabase.from('barber_availability').select('date, is_available, start_time, end_time').eq('barber_id', staffTableId).gte('date', startDateStr).lte('date', endDateStr),
-        supabase.from('painel_agendamentos').select('data, hora, servico:painel_servicos(duracao)').eq('barbeiro_id', barberId).gte('data', startDateStr).lte('data', endDateStr).not('status', 'in', '("cancelado","ausente")')
+        supabase.from('painel_agendamentos').select('data, hora, servicos_extras, servico:painel_servicos(duracao)').eq('barbeiro_id', barberId).gte('data', startDateStr).lte('data', endDateStr).not('status', 'in', '("cancelado","ausente")')
       ]);
 
       // Indexar dados
@@ -305,7 +306,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       const appointmentsByDate = new Map<string, Array<{ hora: string; duracao: number }>>();
       appointmentsResult.data?.forEach(apt => {
         const list = appointmentsByDate.get(apt.data) || [];
-        list.push({ hora: apt.hora, duracao: (apt.servico as any)?.duracao || 60 });
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        list.push({ hora: apt.hora, duracao: calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras) });
         appointmentsByDate.set(apt.data, list);
       });
 
