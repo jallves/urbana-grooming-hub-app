@@ -71,6 +71,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const [originalDate, setOriginalDate] = useState<Date | null>(null);
   const [originalTime, setOriginalTime] = useState<string>('');
   
+  // Check-in state: after check-in only services can be edited
+  const isCheckedIn = appointment?.status_totem === 'CHEGOU' || appointment?.status === 'confirmado' && appointment?.status_totem === 'CHEGOU';
+  
   const { slots, loading: slotsLoading, fetchAvailableSlots } = useBarberAvailableSlots();
 
   // Total duration including extras
