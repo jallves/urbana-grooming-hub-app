@@ -425,6 +425,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           <p className="text-sm text-muted-foreground mt-1">
             Cliente: <span className="font-medium text-foreground">{appointment.painel_clientes?.nome}</span>
           </p>
+          {appointment.servicos_extras && Array.isArray(appointment.servicos_extras) && appointment.servicos_extras.length > 0 && (
+            <div className="mt-2">
+              <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
+            </div>
+          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
