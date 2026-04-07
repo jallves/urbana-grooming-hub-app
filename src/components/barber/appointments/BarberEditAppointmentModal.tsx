@@ -221,7 +221,10 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
       return;
     }
 
-    if (!isBarberAdmin) {
+    // When checked in, keep original date/time - only services change
+    if (isCheckedIn) {
+      // No date/time validation needed - we keep originals
+    } else if (!isBarberAdmin) {
       const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
       if (isBefore(appointmentDateTime, new Date())) {
         toast.error('Não é possível agendar para horário passado');
