@@ -186,7 +186,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     const service = services.find(s => s.id === serviceId);
     if (service) {
       setSelectedService(service);
-      setSelectedTime(''); // Reset time when service changes
+      if (!isCheckedIn) {
+        setSelectedTime(''); // Reset time when service changes (only if not checked in)
+      }
     }
   };
 
