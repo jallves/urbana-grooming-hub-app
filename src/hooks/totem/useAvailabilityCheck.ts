@@ -79,7 +79,7 @@ export const useAvailabilityCheck = () => {
 
     let query = supabase
       .from('painel_agendamentos')
-      .select('id, hora, servico:painel_servicos(duracao)')
+      .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
       .eq('barbeiro_id', barberId)
       .eq('data', dateStr)
       .neq('status', 'cancelado');
@@ -101,7 +101,8 @@ export const useAvailabilityCheck = () => {
     // Verificar sobreposição de horários
     for (const apt of appointments) {
       const aptStartTime = apt.hora;
-      const aptDuration = (apt.servico as any)?.duracao || 60;
+      const mainDuration = (apt.servico as any)?.duracao || 60;
+      const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
       const aptEndTime = format(
         addMinutes(parse(aptStartTime, 'HH:mm', new Date()), aptDuration),
         'HH:mm'
