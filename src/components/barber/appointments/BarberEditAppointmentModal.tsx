@@ -202,13 +202,17 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
         duracao: service.duracao,
       }]);
       setShowExtraServiceSelect(false);
-      setSelectedTime(''); // Reset time since duration changed
+      if (!isCheckedIn) {
+        setSelectedTime('');
+      }
     }
   };
 
   const handleRemoveExtraService = (serviceId: string) => {
     setExtraServices(prev => prev.filter(s => s.id !== serviceId));
-    setSelectedTime(''); // Reset time since duration changed
+    if (!isCheckedIn) {
+      setSelectedTime('');
+    }
   };
 
   const handleSave = async () => {
