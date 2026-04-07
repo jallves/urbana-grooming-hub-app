@@ -41,11 +41,17 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
   const isPastAppointment = isPast(appointmentDateTime);
   const isAfter1Hour = isAfter(now, oneHourAfter); // Passou 1 hora do horário
   
+  const isBarberAdmin = barberData?.is_barber_admin || false;
+  
   // Barbeiro:
   // - Pode EDITAR agendamentos futuros
+  // - Barbeiro admin pode editar após check-in (para alterar serviços) até antes do checkout
   // - NÃO pode cancelar (só admin/cliente)
   // - Pode marcar como AUSENTE após 1h do horário
-  const canEdit = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
+  const isCheckedIn = appointment.status_totem === 'CHEGOU';
+  const canEditNormal = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming;
+  const canEditCheckedIn = isBarberAdmin && isCheckedIn && appointment.status !== 'completed' && appointment.status !== 'concluido';
+  const canEdit = canEditNormal || canEditCheckedIn;
   const canMarkAbsent = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isAfter1Hour;
   const canCancel = false;
   const canEncaixe = (appointment.status === 'scheduled' || appointment.status === 'confirmed') && isUpcoming && !appointment.is_encaixe;
