@@ -70,7 +70,21 @@ const TotemCheckout: React.FC = () => {
   const { appointment, client, session } = location.state || {};
 
   // Itens editáveis no CHECKOUT (como era antigamente)
-  const [extraServices, setExtraServices] = useState<CheckoutExtraService[]>(location.state?.extraServices || []);
+  // Pre-populate extras from appointment's servicos_extras (added by barber admin)
+  const initialExtras = useMemo(() => {
+    if (location.state?.extraServices?.length) return location.state.extraServices;
+    const appointmentExtras = appointment?.servicos_extras;
+    if (appointmentExtras && Array.isArray(appointmentExtras)) {
+      return appointmentExtras.map((s: any) => ({
+        id: s.id,
+        nome: s.nome,
+        preco: s.preco,
+        duracao: s.duracao || 30,
+      }));
+    }
+    return [];
+  }, []);
+  const [extraServices, setExtraServices] = useState<CheckoutExtraService[]>(initialExtras);
   const [productCart, setProductCart] = useState<CheckoutProductCartItem[]>(location.state?.productCart || []);
   const [extrasModalOpen, setExtrasModalOpen] = useState(false);
 
