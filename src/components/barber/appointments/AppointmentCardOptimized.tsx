@@ -4,6 +4,7 @@ import { ptBR } from 'date-fns/locale';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { X, Edit, UserX, Zap } from 'lucide-react';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { useBarberAppointmentActionsOptimized } from '@/hooks/barber/useBarberAppointmentActionsOptimized';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import {
@@ -102,13 +103,16 @@ const AppointmentCardOptimized: React.FC<AppointmentCardProps> = ({ appointment,
           </div>
 
           {/* Service Info - Responsivo */}
-          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-2.5 sm:p-3 bg-gray-700/50 rounded-lg">
-            <span className="text-xs sm:text-sm text-gray-300 truncate flex-1">
-              {appointment.service_name}
-            </span>
-            <span className="text-sm sm:text-base text-urbana-gold font-semibold flex-shrink-0">
-              R$ {appointment.service?.price?.toFixed(2) || '0.00'}
-            </span>
+          <div className="space-y-2">
+            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 p-2.5 sm:p-3 bg-gray-700/50 rounded-lg">
+              <span className="text-xs sm:text-sm text-gray-300 truncate flex-1">
+                {appointment.service_name}
+              </span>
+              <span className="text-sm sm:text-base text-urbana-gold font-semibold flex-shrink-0">
+                R$ {appointment.service?.price?.toFixed(2) || '0.00'}
+              </span>
+            </div>
+            <ExtraServicesBadge extras={appointment.servicos_extras} variant="dark" />
           </div>
 
           {/* Actions - Mobile First */}
