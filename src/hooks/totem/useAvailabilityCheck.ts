@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, addMinutes, parse } from 'date-fns';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
   time: string;
@@ -268,19 +269,20 @@ export const useAvailabilityCheck = () => {
         return [];
       }
 
-      // Buscar agendamentos existentes
+      // Buscar agendamentos existentes (incluindo servicos_extras para duração total)
       const { data: appointments } = await supabase
         .from('painel_agendamentos')
-        .select('hora, servico:painel_servicos(duracao)')
+        .select('hora, servicos_extras, servico:painel_servicos(duracao)')
         .eq('barbeiro_id', barberId)
         .eq('data', dateStr)
         .neq('status', 'cancelado');
 
       const occupiedSlots = new Set<string>();
       
-      // Marcar todos os slots ocupados considerando a duração
+      // Marcar todos os slots ocupados considerando a duração total (principal + extras)
       appointments?.forEach((apt) => {
-        const aptDuration = (apt.servico as any)?.duracao || 60;
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const aptStart = parse(apt.hora, 'HH:mm', new Date());
         
         // Marcar slot inicial e próximos baseado na duração
