@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, CheckCircle, User, Scissors, Clock, Calendar, Sparkles } from 'lucide-react';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -204,6 +205,9 @@ const TotemConfirmation: React.FC = () => {
                     <p className="text-xl md:text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold to-urbana-gold-vibrant">
                       R$ {appointment.servico?.preco?.toFixed(2)}
                     </p>
+                    <div className="mt-3">
+                      <ExtraServicesBadge extras={appointment.servicos_extras} variant="dark" />
+                    </div>
                   </div>
                 </div>
               </div>

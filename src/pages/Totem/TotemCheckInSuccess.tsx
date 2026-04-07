@@ -4,6 +4,7 @@ import { CheckCircle, User, Scissors, Sparkles, Crown, Clock, Home } from 'lucid
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { Button } from '@/components/ui/button';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 
 const TotemCheckInSuccess: React.FC = () => {
   const navigate = useNavigate();
@@ -151,6 +152,9 @@ const TotemCheckInSuccess: React.FC = () => {
             <span className="text-lg sm:text-xl font-bold text-urbana-gold">
               {appointment.servico?.nome}
             </span>
+          </div>
+          <div className="mt-2">
+            <ExtraServicesBadge extras={appointment.servicos_extras} variant="dark" />
           </div>
         </div>
 

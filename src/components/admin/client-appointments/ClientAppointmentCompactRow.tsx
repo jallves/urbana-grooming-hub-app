@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format, parseISO, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { MoreHorizontal, Edit, Clock, X, UserX } from 'lucide-react';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,7 @@ interface PainelAgendamento {
   status: string;
   status_totem: string | null;
   is_encaixe?: boolean;
+  servicos_extras?: any[] | null;
   created_at: string;
   updated_at: string;
   painel_clientes: {
@@ -293,6 +295,7 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
           <div className="text-xs font-semibold text-green-600">
             R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
           </div>
+          <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" compact />
         </div>
       </TableCell>
 
