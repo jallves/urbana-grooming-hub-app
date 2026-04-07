@@ -322,6 +322,24 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     return totalSlots - baseSlots;
   }, [selectedService, totalDuration]);
 
+  // Check if next slots are already occupied
+  const nextSlotsConflict = useMemo(() => {
+    if (extraSlotsConsumed <= 0 || !selectedTime) return false;
+    const [h, m] = selectedTime.split(':').map(Number);
+    const baseDuration = selectedService?.duracao || 0;
+    const baseEndMinutes = h * 60 + m + baseDuration;
+    
+    for (let i = 0; i < extraSlotsConsumed; i++) {
+      const slotMinutes = baseEndMinutes + i * 30;
+      const slotH = Math.floor(slotMinutes / 60).toString().padStart(2, '0');
+      const slotM = (slotMinutes % 60).toString().padStart(2, '0');
+      const slotTime = `${slotH}:${slotM}`;
+      const slot = slots.find(s => s.time === slotTime);
+      if (slot && !slot.available) return true;
+    }
+    return false;
+  }, [extraSlotsConsumed, selectedTime, selectedService, slots]);
+
   if (!isOpen || !appointmentId) return null;
 
   if (loading) {
