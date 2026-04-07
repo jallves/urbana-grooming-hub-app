@@ -373,9 +373,20 @@ Deno.serve(async (req) => {
             barbeiro_id: agendamento.barbeiro_id,
           }]
 
-          // Extras (snapshot do frontend, se vier)
-          if (extras && extras.length > 0) {
-            for (const extra of extras) {
+          // Extras: merge frontend + appointment DB extras
+          let rebuildExtras = [...(extras || [])]
+          const appointmentExtrasFinish = agendamento.servicos_extras
+          if (appointmentExtrasFinish && Array.isArray(appointmentExtrasFinish)) {
+            const frontendIds = new Set(rebuildExtras.map((e: any) => e.id))
+            for (const dbExtra of appointmentExtrasFinish) {
+              if (!frontendIds.has(dbExtra.id)) {
+                rebuildExtras.push({ id: dbExtra.id })
+              }
+            }
+          }
+
+          if (rebuildExtras.length > 0) {
+            for (const extra of rebuildExtras) {
               const { data: servicoExtra } = await supabase
                 .from('painel_servicos')
                 .select('id, nome, preco')
