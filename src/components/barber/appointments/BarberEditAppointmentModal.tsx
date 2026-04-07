@@ -669,10 +669,10 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               Você está prestes a alterar este agendamento para:
               <div className="mt-3 p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10 space-y-1">
                 <p className="text-urbana-light font-medium text-sm">
-                  📅 {selectedDate && format(selectedDate, "dd/MM/yyyy", { locale: ptBR })}
+                  📅 {(isCheckedIn ? originalDate : selectedDate) && format((isCheckedIn ? originalDate! : selectedDate!), "dd/MM/yyyy", { locale: ptBR })}
                 </p>
                 <p className="text-urbana-light font-medium text-sm">
-                  🕐 {selectedTime}
+                  🕐 {isCheckedIn ? normalizedOriginalTime : selectedTime}
                 </p>
                 <p className="text-urbana-light font-medium text-sm truncate">
                   ✂️ {selectedService?.nome}
