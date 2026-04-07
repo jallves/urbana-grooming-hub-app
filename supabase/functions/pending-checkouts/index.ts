@@ -123,7 +123,7 @@ Deno.serve(async (req) => {
         console.log('✅ Checkout direto por appointment_id (sem sessão totem):', appointment_id)
       }
 
-      // 2. Buscar agendamento
+      // 2. Buscar agendamento (including servicos_extras)
       const { data: agendamento, error: agendError } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -141,26 +141,46 @@ Deno.serve(async (req) => {
       const barbeiro_id = agendamento.barbeiro_id
       const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
 
-      // 3. Calculate prices
-      let revenueAmount: number // What goes into contas_receber
-      let commissionBase: number // Base for commission calculation
+      // Calculate extras from servicos_extras
+      const appointmentExtras: any[] = agendamento.servicos_extras && Array.isArray(agendamento.servicos_extras) 
+        ? agendamento.servicos_extras 
+        : []
+      
+      // Fetch real prices for extras from DB
+      const extraItems: { id: string; nome: string; preco: number }[] = []
+      for (const extra of appointmentExtras) {
+        const { data: servicoExtra } = await supabase
+          .from('painel_servicos')
+          .select('id, nome, preco')
+          .eq('id', extra.id)
+          .maybeSingle()
+        if (servicoExtra) {
+          extraItems.push(servicoExtra)
+        }
+      }
+      const extrasTotal = extraItems.reduce((sum, e) => sum + Number(e.preco), 0)
+
+      // 3. Calculate prices (including extras)
+      const fullServicePrice = originalPrice + extrasTotal
+      let revenueAmount: number
+      let commissionBase: number
       let observacao: string
 
       switch (type) {
         case 'courtesy':
           revenueAmount = 0
-          commissionBase = originalPrice // Commission on ORIGINAL price
-          observacao = `Cortesia administrativa - ${nomeServico}`
+          commissionBase = fullServicePrice // Commission on FULL price (main + extras)
+          observacao = `Cortesia administrativa - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
           break
         case 'custom':
-          revenueAmount = typeof custom_value === 'number' ? custom_value : originalPrice
-          commissionBase = revenueAmount // Commission on custom value
-          observacao = `Checkout admin (R$ ${revenueAmount.toFixed(2)}) - ${nomeServico}`
+          revenueAmount = typeof custom_value === 'number' ? custom_value : fullServicePrice
+          commissionBase = revenueAmount
+          observacao = `Checkout admin (R$ ${revenueAmount.toFixed(2)}) - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
           break
         default:
-          revenueAmount = originalPrice
-          commissionBase = originalPrice
-          observacao = `Checkout administrativo - ${nomeServico}`
+          revenueAmount = fullServicePrice
+          commissionBase = fullServicePrice
+          observacao = `Checkout administrativo - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
       }
 
       const commissionAmount = shouldPayCommission ? commissionBase * (COMMISSION_RATE / 100) : 0
