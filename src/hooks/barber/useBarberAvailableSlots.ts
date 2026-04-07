@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, addMinutes, parse } from 'date-fns';
 import { BUFFER_MINUTES, MINIMUM_ADVANCE_MINUTES } from '@/lib/utils/timeCalculations';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
   time: string;
@@ -77,10 +78,10 @@ export const useBarberAvailableSlots = () => {
           .eq('is_active', true)
           .maybeSingle(),
         
-        // Buscar agendamentos existentes
+        // Buscar agendamentos existentes (incluindo servicos_extras para duração total)
         supabase
           .from('painel_agendamentos')
-          .select('id, hora, servico:painel_servicos(duracao)')
+          .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
           .eq('barbeiro_id', barberId)
           .eq('data', formattedDate)
           .neq('status', 'cancelado'),
@@ -121,7 +122,8 @@ export const useBarberAvailableSlots = () => {
         // Ignorar o agendamento sendo editado
         if (excludeAppointmentId && apt.id === excludeAppointmentId) return;
         
-        const aptDuration = (apt.servico as any)?.duracao || 60;
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const aptStart = parse(apt.hora, 'HH:mm:ss', new Date());
         
         // Adicionar buffer de 10 minutos

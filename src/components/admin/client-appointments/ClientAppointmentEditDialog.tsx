@@ -207,10 +207,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           .maybeSingle(),
         // Placeholder - será resolvido após staff_id
         Promise.resolve(null),
-        // Buscar agendamentos existentes do dia
+        // Buscar agendamentos existentes do dia (incluindo servicos_extras)
         supabase
           .from('painel_agendamentos')
-          .select('id, hora, servico:painel_servicos(duracao)')
+          .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
           .eq('barbeiro_id', selectedBarbeiroId)
           .eq('data', formattedDate)
           .neq('status', 'cancelado')
@@ -252,7 +252,8 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       
       appointments?.forEach((apt) => {
         if (apt.id === appointmentId) return; // Ignorar o agendamento sendo editado
-        const aptDuration = (apt.servico as any)?.duracao || 60;
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const [aH, aM] = apt.hora.split(':').map(Number);
         const aptStartMin = aH * 60 + aM;
         const totalBlock = aptDuration + BUFFER_MINUTES;
