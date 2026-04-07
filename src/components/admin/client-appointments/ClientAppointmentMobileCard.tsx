@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X, UserX } from 'lucide-react';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -32,7 +33,7 @@ interface PainelAgendamento {
   status: string;
   status_totem: string | null;
   is_encaixe?: boolean;
-  created_at: string;
+  servicos_extras?: any[] | null;
   updated_at: string;
   painel_clientes: {
     nome: string;
