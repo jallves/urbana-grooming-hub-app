@@ -298,16 +298,24 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   };
 
   const handleSaveClick = () => {
-    if (!selectedDate || !selectedTime || !selectedService) {
-      toast.error('Preencha todos os campos');
+    if (!selectedService) {
+      toast.error('Selecione um serviço');
       return;
     }
 
-    if (!isBarberAdmin) {
-      const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
-      if (isBefore(appointmentDateTime, new Date())) {
-        toast.error('Não é possível agendar para horário passado');
+    // When checked in, date/time are locked - no need to validate them
+    if (!isCheckedIn) {
+      if (!selectedDate || !selectedTime) {
+        toast.error('Preencha todos os campos');
         return;
+      }
+
+      if (!isBarberAdmin) {
+        const appointmentDateTime = parseISO(`${format(selectedDate, 'yyyy-MM-dd')}T${selectedTime}`);
+        if (isBefore(appointmentDateTime, new Date())) {
+          toast.error('Não é possível agendar para horário passado');
+          return;
+        }
       }
     }
 
