@@ -394,6 +394,19 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
               </p>
             </div>
 
+            {/* Check-in Banner - locked date/time */}
+            {isCheckedIn && isBarberAdmin && (
+              <div className="p-3 sm:p-4 bg-amber-500/10 rounded-lg border border-amber-500/20">
+                <div className="flex items-center gap-2 mb-1">
+                  <AlertTriangle className="h-4 w-4 text-amber-400" />
+                  <p className="text-xs sm:text-sm text-amber-400 font-medium">Cliente já fez check-in</p>
+                </div>
+                <p className="text-xs text-urbana-light/60">
+                  Data e horário estão bloqueados. Você pode alterar apenas os serviços.
+                </p>
+              </div>
+            )}
+
             {/* Info do Agendamento Original */}
             <div className="p-3 sm:p-4 bg-sky-500/10 rounded-lg border border-sky-500/20">
               <div className="flex items-center gap-2 mb-1">
