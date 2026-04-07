@@ -133,10 +133,23 @@ Deno.serve(async (req) => {
         barbeiro_id: agendamento.barbeiro_id,
       }]
 
-      // Serviços extras
-      if (extras && extras.length > 0) {
-        console.log('📦 Processando serviços extras do frontend:', extras.length)
-        for (const extra of extras) {
+      // Merge servicos_extras from appointment (added by barber admin) with frontend extras
+      const appointmentExtras = agendamento.servicos_extras
+      let mergedExtras = [...(extras || [])]
+      if (appointmentExtras && Array.isArray(appointmentExtras)) {
+        const frontendExtraIds = new Set(mergedExtras.map((e: any) => e.id))
+        for (const dbExtra of appointmentExtras) {
+          if (!frontendExtraIds.has(dbExtra.id)) {
+            mergedExtras.push({ id: dbExtra.id, nome: dbExtra.nome, preco: dbExtra.preco })
+            console.log('📦 Extra do agendamento (barber admin):', dbExtra.nome)
+          }
+        }
+      }
+
+      // Serviços extras (merged: frontend + appointment DB)
+      if (mergedExtras && mergedExtras.length > 0) {
+        console.log('📦 Processando serviços extras (merged):', mergedExtras.length)
+        for (const extra of mergedExtras) {
           const { data: servicoExtra } = await supabase
             .from('painel_servicos')
             .select('id, nome, preco')
