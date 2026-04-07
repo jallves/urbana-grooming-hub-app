@@ -1349,6 +1349,7 @@ export type Database = {
           painel_clientes: Json | null
           painel_servicos: Json | null
           servico_id: string | null
+          servicos_extras: Json | null
           status: string | null
           status_totem: string | null
           updated_at: string | null
@@ -1367,6 +1368,7 @@ export type Database = {
           painel_clientes?: Json | null
           painel_servicos?: Json | null
           servico_id?: string | null
+          servicos_extras?: Json | null
           status?: string | null
           status_totem?: string | null
           updated_at?: string | null
@@ -1385,6 +1387,7 @@ export type Database = {
           painel_clientes?: Json | null
           painel_servicos?: Json | null
           servico_id?: string | null
+          servicos_extras?: Json | null
           status?: string | null
           status_totem?: string | null
           updated_at?: string | null
