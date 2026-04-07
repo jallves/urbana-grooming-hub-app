@@ -12,6 +12,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 
 interface ClientAppointmentEditDialogProps {
   isOpen: boolean;
