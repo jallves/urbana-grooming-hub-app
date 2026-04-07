@@ -12,6 +12,7 @@ import {
   getSundayHours,
   HOMOLOGATION_MODE
 } from '@/lib/utils/timeCalculations';
+import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 
 export interface ValidationResult {
@@ -349,7 +350,7 @@ export const useUnifiedAppointmentValidation = () => {
 
     let query = supabase
       .from('painel_agendamentos')
-      .select('id, hora, servico:painel_servicos(duracao)')
+      .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
       .eq('barbeiro_id', barberId)
       .eq('data', dateStr)
       .not('status', 'in', '("cancelado","ausente")');
@@ -371,7 +372,8 @@ export const useUnifiedAppointmentValidation = () => {
 
     for (const apt of appointments) {
       const aptStart = timeToMinutes(apt.hora);
-      const aptDuration = (apt.servico as any)?.duracao || 60;
+      const mainDuration = (apt.servico as any)?.duracao || 60;
+      const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
       const aptEnd = aptStart + aptDuration; // Sem buffer — permite slots consecutivos
 
       // Sobreposição: novo começa antes do existente terminar E novo termina depois do existente começar
@@ -540,7 +542,7 @@ export const useUnifiedAppointmentValidation = () => {
         (() => {
           let query = supabase
             .from('painel_agendamentos')
-            .select('hora, servico:painel_servicos(duracao)')
+            .select('hora, servicos_extras, servico:painel_servicos(duracao)')
             .eq('barbeiro_id', barberId)
             .eq('data', dateStr)
             .not('status', 'in', '("cancelado","ausente")');
@@ -592,7 +594,8 @@ export const useUnifiedAppointmentValidation = () => {
       const occupiedPeriods: { start: number; end: number }[] = [];
       existingAppointments?.forEach((apt) => {
         const aptStart = timeToMinutes(apt.hora);
-        const aptDuration = (apt.servico as any)?.duracao || 60;
+        const mainDuration = (apt.servico as any)?.duracao || 60;
+        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const aptEnd = aptStart + aptDuration;
         occupiedPeriods.push({ start: aptStart, end: aptEnd });
       });
