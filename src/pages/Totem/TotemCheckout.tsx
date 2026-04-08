@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -481,7 +481,7 @@ const TotemCheckout: React.FC = () => {
     });
   }, [navigate, appointment, client, productCart, extraServices, resumo]);
 
-  const handlePayment = (method: 'pix' | 'card') => {
+  const handlePayment = (method: 'pix' | 'card' | 'cash') => {
     if (!resumo) return;
     setProcessing(true);
 
@@ -504,6 +504,8 @@ const TotemCheckout: React.FC = () => {
     // NAVEGAR IMEDIATAMENTE - não bloquear por update de venda
     if (method === 'pix') {
       navigate('/totem/payment-pix', { state: paymentState });
+    } else if (method === 'cash') {
+      navigate('/totem/payment-cash', { state: paymentState });
     } else {
       navigate('/totem/payment-card', { state: paymentState });
     }
@@ -515,7 +517,7 @@ const TotemCheckout: React.FC = () => {
         .update({
           gorjeta: tipAmount,
           valor_total: totalComGorjeta,
-          forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
+          forma_pagamento: method === 'pix' ? 'PIX' : method === 'cash' ? 'DINHEIRO' : 'CARTAO',
         })
         .eq('id', currentVendaId)
         .then(({ error }) => {
@@ -780,7 +782,7 @@ const TotemCheckout: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Button
               onClick={() => handlePayment('pix')}
               disabled={processing}
@@ -796,6 +798,14 @@ const TotemCheckout: React.FC = () => {
             >
               <CreditCard className="w-8 h-8" />
               Cartão
+            </Button>
+            <Button
+              onClick={() => handlePayment('cash')}
+              disabled={processing}
+              className="h-24 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-2"
+            >
+              <Banknote className="w-8 h-8" />
+              Dinheiro
             </Button>
           </div>
 
