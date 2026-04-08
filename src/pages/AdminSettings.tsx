@@ -1,13 +1,14 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, Smartphone, FileText, Rocket, ScrollText } from "lucide-react";
+import { Users, Shield, Smartphone, FileText, Rocket, ScrollText, Settings } from "lucide-react";
 import TEFDocumentacao from '@/components/admin/tef/TEFDocumentacao';
 import TEFProducao from '@/components/admin/tef/TEFProducao';
 import TotemStatus from '@/components/admin/tef/TotemStatus';
 import UserManagement from '@/components/admin/settings/UserManagement';
 import SessionsManagement from '@/pages/admin/SessionsManagement';
 import { SecurityLogViewer } from '@/components/admin/security/SecurityLogViewer';
+import CheckinModeToggle from '@/components/admin/settings/CheckinModeToggle';
 
 const AdminSettings: React.FC = () => {
   return (
