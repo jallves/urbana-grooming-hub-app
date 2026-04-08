@@ -20,6 +20,11 @@ const AdminSettings: React.FC = () => {
       <div className="w-full h-full p-4 md:p-6">
         <Tabs defaultValue="users" className="w-full">
           {/* Tabs com cores fixas pastéis */}
+          {/* Toggle de homologação check-in */}
+          <div className="mb-4">
+            <CheckinModeToggle />
+          </div>
+
           <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-3 md:grid-cols-6 gap-1 p-1.5 h-auto">
             <TabsTrigger 
               value="users"
