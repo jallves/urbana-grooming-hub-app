@@ -481,7 +481,7 @@ const TotemCheckout: React.FC = () => {
     });
   }, [navigate, appointment, client, productCart, extraServices, resumo]);
 
-  const handlePayment = (method: 'pix' | 'card') => {
+  const handlePayment = (method: 'pix' | 'card' | 'cash') => {
     if (!resumo) return;
     setProcessing(true);
 
@@ -504,6 +504,8 @@ const TotemCheckout: React.FC = () => {
     // NAVEGAR IMEDIATAMENTE - não bloquear por update de venda
     if (method === 'pix') {
       navigate('/totem/payment-pix', { state: paymentState });
+    } else if (method === 'cash') {
+      navigate('/totem/payment-cash', { state: paymentState });
     } else {
       navigate('/totem/payment-card', { state: paymentState });
     }
@@ -515,7 +517,7 @@ const TotemCheckout: React.FC = () => {
         .update({
           gorjeta: tipAmount,
           valor_total: totalComGorjeta,
-          forma_pagamento: method === 'pix' ? 'PIX' : 'CARTAO',
+          forma_pagamento: method === 'pix' ? 'PIX' : method === 'cash' ? 'DINHEIRO' : 'CARTAO',
         })
         .eq('id', currentVendaId)
         .then(({ error }) => {
