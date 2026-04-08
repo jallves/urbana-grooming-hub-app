@@ -463,6 +463,11 @@ function App() {
                       <TotemProtectedRoute><TotemPaymentCard /></TotemProtectedRoute>
                     </AdminRedirectGuard>
                   } />
+                  <Route path="/totem/payment-cash" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemPaymentCash /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
                   <Route path="/totem/payment-success" element={
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemPaymentSuccess /></TotemProtectedRoute>
