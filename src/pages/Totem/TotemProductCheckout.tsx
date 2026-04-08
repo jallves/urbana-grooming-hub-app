@@ -428,7 +428,7 @@ const TotemProductCheckout: React.FC = () => {
             Forma de Pagamento
           </h3>
 
-          <div className="grid grid-cols-2 gap-2 sm:gap-3">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
             {/* PIX Button */}
             <button
               onClick={() => handlePayment('pix')}
@@ -458,6 +458,22 @@ const TotemProductCheckout: React.FC = () => {
                 </div>
                 <span className="text-lg sm:text-xl md:text-2xl font-black text-urbana-gold">CARTÃO</span>
                 <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Débito/Crédito</span>
+              </div>
+            </button>
+
+            {/* Cash Button */}
+            <button
+              onClick={() => handlePayment('cash')}
+              disabled={isProcessing || (!isSubscriptionPurchase && cart.length === 0)}
+              className="group relative h-24 sm:h-28 md:h-32 bg-gradient-to-br from-emerald-600/20 to-teal-700/10 backdrop-blur-md active:from-emerald-600/30 active:to-teal-700/20 border-2 border-emerald-500/50 active:border-emerald-400 rounded-xl transition-all duration-100 active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed overflow-hidden"
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/0 to-emerald-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+              <div className="relative h-full flex flex-col items-center justify-center gap-1 sm:gap-2 p-2">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 rounded-xl bg-emerald-500/20 backdrop-blur-sm flex items-center justify-center">
+                  <Banknote className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-emerald-400" />
+                </div>
+                <span className="text-lg sm:text-xl md:text-2xl font-black text-emerald-400">DINHEIRO</span>
+                <span className="text-[9px] sm:text-[10px] md:text-xs text-urbana-gray-light">Espécie</span>
               </div>
             </button>
           </div>
