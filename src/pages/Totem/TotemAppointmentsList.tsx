@@ -36,6 +36,7 @@ const TotemAppointmentsList: React.FC = () => {
   const { appointments, client } = location.state || {};
   const [checkInInfo, setCheckInInfo] = useState<Record<string, CheckInInfo>>({});
   const [loading, setLoading] = useState(true);
+  const { isEnabled: HOMOLOGATION_MODE } = useCheckinHomologationMode();
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
