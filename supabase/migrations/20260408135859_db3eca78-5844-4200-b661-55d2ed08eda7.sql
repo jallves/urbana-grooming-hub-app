@@ -1,0 +1,1 @@
+UPDATE contas_pagar SET categoria = 'gorjeta' WHERE id = '52dadf0c-8e3c-4896-bc10-e400031d71e2';
