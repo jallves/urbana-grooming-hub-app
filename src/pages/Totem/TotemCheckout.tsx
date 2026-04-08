@@ -782,7 +782,7 @@ const TotemCheckout: React.FC = () => {
             </div>
           )}
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-3 gap-3">
             <Button
               onClick={() => handlePayment('pix')}
               disabled={processing}
@@ -798,6 +798,14 @@ const TotemCheckout: React.FC = () => {
             >
               <CreditCard className="w-8 h-8" />
               Cartão
+            </Button>
+            <Button
+              onClick={() => handlePayment('cash')}
+              disabled={processing}
+              className="h-24 bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white text-lg font-bold rounded-xl flex flex-col items-center justify-center gap-2"
+            >
+              <Banknote className="w-8 h-8" />
+              Dinheiro
             </Button>
           </div>
 

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles, Banknote } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
@@ -111,7 +111,7 @@ const TotemProductCheckout: React.FC = () => {
     });
   };
 
-  const handlePayment = async (paymentMethod: 'pix' | 'card') => {
+  const handlePayment = async (paymentMethod: 'pix' | 'card' | 'cash') => {
     if (!isSubscriptionPurchase && cart.length === 0) {
       toast.error('Carrinho vazio');
       return;
@@ -148,7 +148,6 @@ const TotemProductCheckout: React.FC = () => {
 
       // Criar itens da venda
       if (isSubscriptionPurchase) {
-        // Item único: a assinatura
         const { error: itemsError } = await supabase
           .from('vendas_itens')
           .insert({
@@ -183,6 +182,8 @@ const TotemProductCheckout: React.FC = () => {
 
       if (paymentMethod === 'pix') {
         navigate('/totem/product-payment-pix', { state: navState });
+      } else if (paymentMethod === 'cash') {
+        navigate('/totem/product-payment-cash', { state: navState });
       } else {
         navigate('/totem/product-payment-card', { state: navState });
       }
