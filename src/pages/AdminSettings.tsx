@@ -1,13 +1,14 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, Smartphone, FileText, Rocket, ScrollText } from "lucide-react";
+import { Users, Shield, Smartphone, FileText, Rocket, ScrollText, Settings } from "lucide-react";
 import TEFDocumentacao from '@/components/admin/tef/TEFDocumentacao';
 import TEFProducao from '@/components/admin/tef/TEFProducao';
 import TotemStatus from '@/components/admin/tef/TotemStatus';
 import UserManagement from '@/components/admin/settings/UserManagement';
 import SessionsManagement from '@/pages/admin/SessionsManagement';
 import { SecurityLogViewer } from '@/components/admin/security/SecurityLogViewer';
+import CheckinModeToggle from '@/components/admin/settings/CheckinModeToggle';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -19,6 +20,11 @@ const AdminSettings: React.FC = () => {
       <div className="w-full h-full p-4 md:p-6">
         <Tabs defaultValue="users" className="w-full">
           {/* Tabs com cores fixas pastéis */}
+          {/* Toggle de homologação check-in */}
+          <div className="mb-4">
+            <CheckinModeToggle />
+          </div>
+
           <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-3 md:grid-cols-6 gap-1 p-1.5 h-auto">
             <TabsTrigger 
               value="users"

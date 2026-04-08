@@ -65,8 +65,14 @@ Deno.serve(async (req) => {
       cliente_id = agendamento.cliente_id
 
       // 🔒 REGRA: Check-in só permitido até 1h30 antes do horário agendado
-      // ⚠️ HOMOLOGAÇÃO: Regra temporariamente desabilitada para testes
-      const HOMOLOGATION_MODE = true // Para produção: alterar para false
+      // Buscar configuração dinâmica do banco
+      const { data: settingData } = await supabase
+        .from('settings')
+        .select('value')
+        .eq('key', 'checkin_homologation_mode')
+        .maybeSingle()
+      const HOMOLOGATION_MODE = settingData?.value === true || settingData?.value === 'true'
+      
       if (!HOMOLOGATION_MODE) {
         const [year, month, day] = agendamento.data.split('-').map(Number)
         const [hour, minute] = agendamento.hora.split(':').map(Number)

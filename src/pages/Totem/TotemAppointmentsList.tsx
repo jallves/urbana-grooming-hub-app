@@ -8,7 +8,7 @@ import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import { HOMOLOGATION_MODE } from '@/lib/utils/timeCalculations';
+import { useCheckinHomologationMode } from '@/hooks/useCheckinHomologationMode';
 
 interface Appointment {
   id: string;
@@ -36,6 +36,7 @@ const TotemAppointmentsList: React.FC = () => {
   const { appointments, client } = location.state || {};
   const [checkInInfo, setCheckInInfo] = useState<Record<string, CheckInInfo>>({});
   const [loading, setLoading] = useState(true);
+  const { isEnabled: HOMOLOGATION_MODE } = useCheckinHomologationMode();
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
