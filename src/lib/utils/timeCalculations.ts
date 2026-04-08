@@ -20,7 +20,7 @@
 // 🚨 MODO HOMOLOGAÇÃO - CONFIGURAÇÃO GLOBAL
 // Para produção: alterar para false
 // ============================================
-export const HOMOLOGATION_MODE = true;
+export const HOMOLOGATION_MODE = false;
 // ============================================
 
 export const BUFFER_MINUTES = 10;

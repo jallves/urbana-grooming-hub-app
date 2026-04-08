@@ -1,0 +1,1 @@
+DELETE FROM painel_agendamentos WHERE id = '71258869-33e4-4ce7-a6fb-333119d0b374';
