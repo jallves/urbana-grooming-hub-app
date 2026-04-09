@@ -17,6 +17,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
       const todayStr = new Date().toISOString().split('T')[0];
+      const firstDayOfYear = `${year}-01-01`;
+      const lastDayOfYear = `${year}-12-31`;
 
       const [
         clientesResult,
@@ -24,7 +26,9 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         agendamentosHojeResult,
         agendamentosFuturosResult,
         agendamentosMesResult,
-        gorjetasResult
+        gorjetasResult,
+        receitaAnualResult,
+        concluidosAnualResult
       ] = await Promise.all([
         supabase.from('painel_clientes').select('id', { count: 'exact', head: true }),
         supabase
@@ -52,7 +56,18 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .select('gorjeta')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
-          .eq('status', 'pago')
+          .eq('status', 'pago'),
+        supabase
+          .from('contas_receber')
+          .select('valor, status')
+          .gte('data_vencimento', firstDayOfYear)
+          .lte('data_vencimento', lastDayOfYear),
+        supabase
+          .from('painel_agendamentos')
+          .select('id', { count: 'exact', head: true })
+          .gte('data', firstDayOfMonth)
+          .lte('data', lastDayOfMonth)
+          .eq('status', 'concluido'),
       ]);
 
       const totalClientes = clientesResult.count || 0;
@@ -70,6 +85,12 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const concluidos = agendamentosMes.filter(a => a.status === 'concluido').length;
       const taxaConversao = totalAgendamentos > 0 ? (concluidos / totalAgendamentos) * 100 : 0;
 
+      const concluidosMes = concluidosAnualResult.count || 0;
+
+      const receitaAnual = (receitaAnualResult.data || [])
+        .filter(r => r.status === 'recebido' || r.status === 'pago')
+        .reduce((sum, r) => sum + Number(r.valor), 0);
+
       return {
         totalClientes,
         clientesAtivosMes,
@@ -78,6 +99,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         agendamentosHoje,
         agendamentosFuturos,
         taxaConversao,
+        concluidosMes,
+        receitaAnual,
       };
     },
     refetchInterval: 60000,
