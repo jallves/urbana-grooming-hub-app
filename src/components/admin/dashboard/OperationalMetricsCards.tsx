@@ -83,7 +83,9 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const ticketMedio = vendasMes.length > 0 
         ? vendasMes.reduce((sum, v) => sum + (v.valor_total || 0), 0) / vendasMes.length 
         : 0;
-      const totalGorjetas = gorjetasResult.data?.reduce((sum, v) => sum + (v.gorjeta || 0), 0) || 0;
+      const gorjetasVendas = gorjetasVendasResult.data?.reduce((sum, v) => sum + (v.gorjeta || 0), 0) || 0;
+      const gorjetasComissoes = gorjetasComissoesResult.data?.reduce((sum, v) => sum + Number(v.valor || 0), 0) || 0;
+      const totalGorjetas = gorjetasVendas + gorjetasComissoes;
       const agendamentosHoje = agendamentosHojeResult.count || 0;
       const agendamentosFuturos = agendamentosFuturosResult.count || 0;
       
