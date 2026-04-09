@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Calendar, Receipt, Target, Gift, TrendingUp } from 'lucide-react';
+import { Users, Calendar, Receipt, Target, Gift, TrendingUp, CheckCircle, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface OperationalMetricsCardsProps {
@@ -17,6 +17,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
       const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
       const todayStr = new Date().toISOString().split('T')[0];
+      const firstDayOfYear = `${year}-01-01`;
+      const lastDayOfYear = `${year}-12-31`;
 
       const [
         clientesResult,
@@ -24,7 +26,9 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         agendamentosHojeResult,
         agendamentosFuturosResult,
         agendamentosMesResult,
-        gorjetasResult
+        gorjetasResult,
+        receitaAnualResult,
+        concluidosAnualResult
       ] = await Promise.all([
         supabase.from('painel_clientes').select('id', { count: 'exact', head: true }),
         supabase
@@ -52,7 +56,18 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .select('gorjeta')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
-          .eq('status', 'pago')
+          .eq('status', 'pago'),
+        supabase
+          .from('contas_receber')
+          .select('valor, status')
+          .gte('data_vencimento', firstDayOfYear)
+          .lte('data_vencimento', lastDayOfYear),
+        supabase
+          .from('painel_agendamentos')
+          .select('id', { count: 'exact', head: true })
+          .gte('data', firstDayOfMonth)
+          .lte('data', lastDayOfMonth)
+          .eq('status', 'concluido'),
       ]);
 
       const totalClientes = clientesResult.count || 0;
@@ -70,6 +85,12 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const concluidos = agendamentosMes.filter(a => a.status === 'concluido').length;
       const taxaConversao = totalAgendamentos > 0 ? (concluidos / totalAgendamentos) * 100 : 0;
 
+      const concluidosMes = concluidosAnualResult.count || 0;
+
+      const receitaAnual = (receitaAnualResult.data || [])
+        .filter(r => r.status === 'recebido' || r.status === 'pago')
+        .reduce((sum, r) => sum + Number(r.valor), 0);
+
       return {
         totalClientes,
         clientesAtivosMes,
@@ -78,6 +99,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         agendamentosHoje,
         agendamentosFuturos,
         taxaConversao,
+        concluidosMes,
+        receitaAnual,
       };
     },
     refetchInterval: 60000,
@@ -85,8 +108,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
-        {[1, 2, 3, 4, 5, 6].map(i => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3 sm:gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
           <Card key={i} className="bg-white border-gray-200">
             <CardContent className="p-3 sm:p-4">
               <Skeleton className="h-4 w-16 mb-2" />
@@ -109,15 +132,17 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
 
   const cards = [
     { title: 'Clientes Total', value: metrics?.totalClientes || 0, icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-50', subtitle: `${metrics?.clientesAtivosMes || 0} ativos este mês` },
+    { title: 'Concluídos no Mês', value: metrics?.concluidosMes || 0, icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-50', subtitle: `Taxa: ${(metrics?.taxaConversao || 0).toFixed(1)}%` },
     { title: 'Ticket Médio', value: formatCurrency(metrics?.ticketMedio || 0), icon: Receipt, color: 'text-emerald-600', bgColor: 'bg-emerald-50', subtitle: 'Por venda' },
-    { title: 'Taxa Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target, color: 'text-indigo-600', bgColor: 'bg-indigo-50', subtitle: 'Agendados → Concluídos' },
+    { title: 'Receita Bruta Anual', value: formatCurrency(metrics?.receitaAnual || 0), icon: DollarSign, color: 'text-violet-600', bgColor: 'bg-violet-50', subtitle: `Ano ${year}` },
     { title: 'Gorjetas do Mês', value: formatCurrency(metrics?.totalGorjetas || 0), icon: Gift, color: 'text-pink-600', bgColor: 'bg-pink-50', subtitle: 'Total recebido' },
     { title: 'Agendamentos Hoje', value: metrics?.agendamentosHoje || 0, icon: Calendar, color: 'text-amber-600', bgColor: 'bg-amber-50', subtitle: 'Para hoje' },
     { title: 'Agenda Futura', value: metrics?.agendamentosFuturos || 0, icon: TrendingUp, color: 'text-cyan-600', bgColor: 'bg-cyan-50', subtitle: 'Próximos dias' },
+    { title: 'Taxa Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target, color: 'text-indigo-600', bgColor: 'bg-indigo-50', subtitle: 'Agendados → Concluídos' },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
       {cards.map((card, index) => {
         const Icon = card.icon;
         return (
