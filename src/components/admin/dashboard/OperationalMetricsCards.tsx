@@ -58,6 +58,12 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
           .eq('status', 'pago'),
         supabase
+          .from('barber_commissions')
+          .select('valor')
+          .eq('tipo', 'gorjeta')
+          .gte('created_at', firstDayOfMonth)
+          .lte('created_at', lastDayOfMonth + 'T23:59:59'),
+        supabase
           .from('contas_receber')
           .select('valor, status')
           .gte('data_vencimento', firstDayOfYear)
