@@ -2,7 +2,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Calendar, Receipt, Target, Gift, TrendingUp } from 'lucide-react';
+import { Users, Calendar, Receipt, Target, Gift, TrendingUp, CheckCircle, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 interface OperationalMetricsCardsProps {
