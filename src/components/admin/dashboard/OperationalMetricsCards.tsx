@@ -132,11 +132,13 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
 
   const cards = [
     { title: 'Clientes Total', value: metrics?.totalClientes || 0, icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-50', subtitle: `${metrics?.clientesAtivosMes || 0} ativos este mês` },
+    { title: 'Concluídos no Mês', value: metrics?.concluidosMes || 0, icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-50', subtitle: `Taxa: ${(metrics?.taxaConversao || 0).toFixed(1)}%` },
     { title: 'Ticket Médio', value: formatCurrency(metrics?.ticketMedio || 0), icon: Receipt, color: 'text-emerald-600', bgColor: 'bg-emerald-50', subtitle: 'Por venda' },
-    { title: 'Taxa Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target, color: 'text-indigo-600', bgColor: 'bg-indigo-50', subtitle: 'Agendados → Concluídos' },
+    { title: 'Receita Bruta Anual', value: formatCurrency(metrics?.receitaAnual || 0), icon: DollarSign, color: 'text-violet-600', bgColor: 'bg-violet-50', subtitle: `Ano ${year}` },
     { title: 'Gorjetas do Mês', value: formatCurrency(metrics?.totalGorjetas || 0), icon: Gift, color: 'text-pink-600', bgColor: 'bg-pink-50', subtitle: 'Total recebido' },
     { title: 'Agendamentos Hoje', value: metrics?.agendamentosHoje || 0, icon: Calendar, color: 'text-amber-600', bgColor: 'bg-amber-50', subtitle: 'Para hoje' },
     { title: 'Agenda Futura', value: metrics?.agendamentosFuturos || 0, icon: TrendingUp, color: 'text-cyan-600', bgColor: 'bg-cyan-50', subtitle: 'Próximos dias' },
+    { title: 'Taxa Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target, color: 'text-indigo-600', bgColor: 'bg-indigo-50', subtitle: 'Agendados → Concluídos' },
   ];
 
   return (
