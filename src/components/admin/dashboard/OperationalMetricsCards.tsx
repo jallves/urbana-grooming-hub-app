@@ -26,7 +26,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         agendamentosHojeResult,
         agendamentosFuturosResult,
         agendamentosMesResult,
-        gorjetasResult,
+        gorjetasVendasResult,
+        gorjetasComissoesResult,
         receitaAnualResult,
         concluidosAnualResult
       ] = await Promise.all([
