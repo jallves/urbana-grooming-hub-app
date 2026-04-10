@@ -81,7 +81,7 @@ const PendingAccountsWidget: React.FC = () => {
           .eq('status', 'pendente')
       ]);
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getTodayInBrazil();
       
       const totalReceber = receberResult.data?.reduce((sum, r) => sum + (r.valor || 0), 0) || 0;
       const vencidasReceber = receberResult.data?.filter(r => r.data_vencimento && r.data_vencimento < todayStr).length || 0;
