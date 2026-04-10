@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, DollarSign, AlertCircle, CreditCard, Wallet, 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 interface FinancialMetricsCardsProps {
   month: number;
@@ -20,13 +21,17 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
   const { data: metrics, isLoading, refetch } = useQuery({
     queryKey: ['financial-dashboard-metrics', month, year],
     queryFn: async () => {
-      const firstDay = new Date(year, month, 1).toISOString().split('T')[0];
-      const lastDay = new Date(year, month + 1, 0).toISOString().split('T')[0];
+      const lastDayNum = new Date(year, month + 1, 0).getDate();
+      const firstDay = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
 
-      const prevFirstDay = new Date(year, month - 1, 1).toISOString().split('T')[0];
-      const prevLastDay = new Date(year, month, 0).toISOString().split('T')[0];
+      const prevMonth = month === 0 ? 12 : month;
+      const prevYear = month === 0 ? year - 1 : year;
+      const prevLastDayNum = new Date(year, month, 0).getDate();
+      const prevFirstDay = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+      const prevLastDay = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(prevLastDayNum).padStart(2, '0')}`;
 
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getTodayInBrazil();
 
       const [
         contasReceberMes,

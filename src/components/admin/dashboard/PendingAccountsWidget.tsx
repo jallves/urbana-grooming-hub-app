@@ -9,6 +9,7 @@ import { useNavigate } from 'react-router-dom';
 import { Skeleton } from '@/components/ui/skeleton';
 import { format, isAfter, startOfDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
+import { getNowInBrazil, getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 interface ContaReceber {
   id: string;
@@ -31,7 +32,7 @@ interface ContaPagar {
 
 const PendingAccountsWidget: React.FC = () => {
   const navigate = useNavigate();
-  const today = startOfDay(new Date());
+  const today = startOfDay(getNowInBrazil());
 
   // Fetch from contas_receber (ERP table)
   const { data: contasReceber, isLoading: isLoadingReceber } = useQuery({
