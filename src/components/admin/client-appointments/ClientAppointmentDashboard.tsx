@@ -14,10 +14,10 @@ import { Plus, Zap, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react
 import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { getTodayInBrazil } from '@/lib/utils/dateUtils';
+import { getNowInBrazil } from '@/lib/utils/dateUtils';
 
 const ClientAppointmentDashboard: React.FC = () => {
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [selectedDate, setSelectedDate] = useState<Date>(getNowInBrazil());
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [selectedAppointment, setSelectedAppointment] = useState<string | null>(null);
@@ -215,7 +215,7 @@ const ClientAppointmentDashboard: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-urbana-gold hover:text-urbana-gold/80 shrink-0"
-                  onClick={() => setSelectedDate(new Date())}
+                  onClick={() => setSelectedDate(getNowInBrazil())}
                 >
                   Hoje
                 </Button>
