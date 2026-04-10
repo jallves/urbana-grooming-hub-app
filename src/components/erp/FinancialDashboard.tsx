@@ -19,6 +19,7 @@ import type { DashboardMetrics } from '@/types/erp';
 import { ContasAReceber } from './ContasAReceber';
 import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
+import ComissoesManager from './ComissoesManager';
 
 const FinancialDashboard: React.FC = () => {
   const now = new Date();
@@ -408,9 +409,9 @@ const FinancialDashboard: React.FC = () => {
         </Card>
       </div>
 
-      {/* Tabs Principais: Contas a Receber, Contas a Pagar e Fluxo de Caixa */}
+      {/* Tabs Principais */}
       <Tabs defaultValue="receber" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto p-1 gap-1">
+        <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200 h-auto p-1 gap-1">
           <TabsTrigger 
             value="receber"
             className="bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
@@ -428,6 +429,14 @@ const FinancialDashboard: React.FC = () => {
             <span className="sm:hidden">Pagar</span>
           </TabsTrigger>
           <TabsTrigger 
+            value="comissoes"
+            className="bg-gradient-to-r from-purple-500 to-violet-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
+          >
+            <TrendingDown className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Comissões</span>
+            <span className="sm:hidden">Comissões</span>
+          </TabsTrigger>
+          <TabsTrigger 
             value="fluxo"
             className="bg-gradient-to-r from-blue-500 to-cyan-500 text-white text-xs sm:text-sm lg:text-base py-2 sm:py-3 font-semibold rounded-md data-[state=active]:shadow-lg data-[state=active]:scale-[1.02] transition-all"
           >
@@ -443,6 +452,10 @@ const FinancialDashboard: React.FC = () => {
 
         <TabsContent value="pagar" className="mt-6">
           <ContasAPagar />
+        </TabsContent>
+
+        <TabsContent value="comissoes" className="mt-6">
+          <ComissoesManager />
         </TabsContent>
 
         <TabsContent value="fluxo" className="mt-6">
