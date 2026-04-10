@@ -1,6 +1,7 @@
 import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CalendarDays } from 'lucide-react';
+import { getNowInBrazil } from '@/lib/utils/dateUtils';
 
 interface DashboardMonthFilterProps {
   month: number;
@@ -30,7 +31,7 @@ const DashboardMonthFilter: React.FC<DashboardMonthFilterProps> = ({
   onMonthChange,
   onYearChange,
 }) => {
-  const currentYear = new Date().getFullYear();
+  const currentYear = getNowInBrazil().getFullYear();
   const anos = Array.from({ length: 5 }, (_, i) => currentYear - i);
 
   return (
