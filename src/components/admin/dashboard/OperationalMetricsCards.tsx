@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Users, Calendar, Receipt, Target, Gift, TrendingUp, CheckCircle, DollarSign } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getTodayInBrazil } from '@/lib/utils/dateUtils';
 
 interface OperationalMetricsCardsProps {
   month: number;
@@ -14,9 +15,10 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
   const { data: metrics, isLoading } = useQuery({
     queryKey: ['operational-metrics-dashboard', month, year],
     queryFn: async () => {
-      const firstDayOfMonth = new Date(year, month, 1).toISOString().split('T')[0];
-      const lastDayOfMonth = new Date(year, month + 1, 0).toISOString().split('T')[0];
-      const todayStr = new Date().toISOString().split('T')[0];
+      const firstDayOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-01`;
+      const lastDay = new Date(year, month + 1, 0).getDate();
+      const lastDayOfMonth = `${year}-${String(month + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+      const todayStr = getTodayInBrazil();
       const firstDayOfYear = `${year}-01-01`;
       const lastDayOfYear = `${year}-12-31`;
 

@@ -1,4 +1,5 @@
 import React from 'react';
+import { getNowInBrazil } from '@/lib/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -34,7 +35,7 @@ const InactiveClientsWidget: React.FC = () => {
         .in('cliente_id', clients.map(c => c.id))
         .order('data', { ascending: false });
 
-      const today = new Date();
+      const today = getNowInBrazil();
 
       // Map last appointment per client
       const lastAppointmentMap = new Map<string, string>();

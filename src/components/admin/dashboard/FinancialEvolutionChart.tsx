@@ -1,4 +1,5 @@
 import React from 'react';
+import { getNowInBrazil } from '@/lib/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,13 +13,16 @@ const FinancialEvolutionChart: React.FC = () => {
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['financial-evolution-chart'],
     queryFn: async () => {
-      const now = new Date();
+      const now = getNowInBrazil();
       const months = [];
 
       for (let i = 5; i >= 0; i--) {
         const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
-        const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
+        const m = date.getMonth();
+        const y = date.getFullYear();
+        const lastDayNum = new Date(y, m + 1, 0).getDate();
+        const firstDay = `${y}-${String(m + 1).padStart(2, '0')}-01`;
+        const lastDay = `${y}-${String(m + 1).padStart(2, '0')}-${String(lastDayNum).padStart(2, '0')}`;
 
         const [crResult, cpResult] = await Promise.all([
           supabase.from('contas_receber').select('valor, status')

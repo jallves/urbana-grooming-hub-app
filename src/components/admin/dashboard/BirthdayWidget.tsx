@@ -1,4 +1,5 @@
 import React from 'react';
+import { getNowInBrazil } from '@/lib/utils/dateUtils';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,7 +47,7 @@ const BirthdayWidget: React.FC<BirthdayWidgetProps> = ({ month, year }) => {
     },
   });
 
-  const today = new Date();
+  const today = getNowInBrazil();
   const todayDay = today.getDate();
   const todayMonth = today.getMonth();
 
