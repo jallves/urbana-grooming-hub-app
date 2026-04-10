@@ -12,7 +12,7 @@ const FinancialEvolutionChart: React.FC = () => {
   const { data: chartData, isLoading } = useQuery({
     queryKey: ['financial-evolution-chart'],
     queryFn: async () => {
-      const now = new Date();
+      const now = getNowInBrazil();
       const months = [];
 
       for (let i = 5; i >= 0; i--) {

@@ -46,7 +46,7 @@ const BirthdayWidget: React.FC<BirthdayWidgetProps> = ({ month, year }) => {
     },
   });
 
-  const today = new Date();
+  const today = getNowInBrazil();
   const todayDay = today.getDate();
   const todayMonth = today.getMonth();
 

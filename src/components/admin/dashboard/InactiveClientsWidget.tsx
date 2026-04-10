@@ -34,7 +34,7 @@ const InactiveClientsWidget: React.FC = () => {
         .in('cliente_id', clients.map(c => c.id))
         .order('data', { ascending: false });
 
-      const today = new Date();
+      const today = getNowInBrazil();
 
       // Map last appointment per client
       const lastAppointmentMap = new Map<string, string>();
