@@ -175,7 +175,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         hora: data.hora?.substring(0, 5),
         barbeiro: data.painel_barbeiros?.nome,
         servico: data.painel_servicos?.nome,
-        extras: data.servicos_extras?.length || 0
+        extras: (extras as any)?.length || 0
       });
     } catch (error) {
       console.error('Error loading appointment:', error);
