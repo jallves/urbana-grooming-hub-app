@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -10,7 +10,7 @@ import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDurati
 import { ptBR } from 'date-fns/locale';
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2, Plus, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 
@@ -53,6 +53,19 @@ interface Cliente {
   email: string | null;
 }
 
+interface ExtraService {
+  id: string;
+  nome: string;
+  preco: number;
+  duracao: number;
+}
+
+interface SlotConflict {
+  time: string;
+  clientName?: string;
+  serviceName?: string;
+}
+
 const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = ({
   isOpen,
   onClose,
@@ -74,6 +87,33 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [selectedServicoId, setSelectedServicoId] = useState<string>('');
   const [selectedClienteId, setSelectedClienteId] = useState<string>('');
 
+  // Extra services state
+  const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
+  const [showExtraServiceSelect, setShowExtraServiceSelect] = useState(false);
+  const [slotConflicts, setSlotConflicts] = useState<SlotConflict[]>([]);
+
+  // Total duration including extras
+  const totalDuration = useMemo(() => {
+    const selectedServico = servicos.find(s => s.id === selectedServicoId);
+    const baseDuration = selectedServico?.duracao || 0;
+    const extraDuration = extraServices.reduce((sum, s) => sum + s.duracao, 0);
+    return baseDuration + extraDuration;
+  }, [servicos, selectedServicoId, extraServices]);
+
+  // Total price including extras
+  const totalPrice = useMemo(() => {
+    const selectedServico = servicos.find(s => s.id === selectedServicoId);
+    const basePrice = selectedServico?.preco || 0;
+    const extraPrice = extraServices.reduce((sum, s) => sum + s.preco, 0);
+    return basePrice + extraPrice;
+  }, [servicos, selectedServicoId, extraServices]);
+
+  // Available extra services (exclude main + already added)
+  const availableExtraServices = useMemo(() => {
+    const usedIds = new Set([selectedServicoId, ...extraServices.map(s => s.id)].filter(Boolean));
+    return servicos.filter(s => !usedIds.has(s.id));
+  }, [servicos, selectedServicoId, extraServices]);
+
   // Carregar dados iniciais quando o dialog abrir
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -84,12 +124,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     }
   }, [isOpen, appointmentId]);
 
-  // Buscar horários disponíveis quando mudar barbeiro, data ou serviço
+  // Buscar horários disponíveis quando mudar barbeiro, data, serviço ou extras
   useEffect(() => {
     if (selectedBarbeiroId && selectedDate && selectedServicoId) {
       fetchAvailableSlots();
     }
-  }, [selectedBarbeiroId, selectedDate, selectedServicoId]);
+  }, [selectedBarbeiroId, selectedDate, selectedServicoId, totalDuration]);
 
   const loadAppointmentData = async () => {
     try {
@@ -116,12 +156,26 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       setSelectedServicoId(data.servico_id);
       setSelectedClienteId(data.cliente_id || '');
       
+      // Load existing extra services
+      const extras = data.servicos_extras as any;
+      if (extras && Array.isArray(extras)) {
+        setExtraServices(extras.map((s: any) => ({
+          id: s.id || s.servico_id,
+          nome: s.nome,
+          preco: Number(s.preco) || 0,
+          duracao: Number(s.duracao) || 30,
+        })));
+      } else {
+        setExtraServices([]);
+      }
+      
       console.log('📋 [Admin Edit] Agendamento carregado:', {
         id: appointmentId,
         data: data.data,
         hora: data.hora?.substring(0, 5),
         barbeiro: data.painel_barbeiros?.nome,
-        servico: data.painel_servicos?.nome
+        servico: data.painel_servicos?.nome,
+        extras: (extras as any)?.length || 0
       });
     } catch (error) {
       console.error('Error loading appointment:', error);
@@ -173,51 +227,48 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     }
   };
 
+  const handleAddExtraService = (serviceId: string) => {
+    const service = servicos.find(s => s.id === serviceId);
+    if (service) {
+      setExtraServices(prev => [...prev, {
+        id: service.id,
+        nome: service.nome,
+        preco: service.preco,
+        duracao: service.duracao,
+      }]);
+      setShowExtraServiceSelect(false);
+    }
+  };
+
+  const handleRemoveExtraService = (serviceId: string) => {
+    setExtraServices(prev => prev.filter(s => s.id !== serviceId));
+  };
 
   const fetchAvailableSlots = useCallback(async () => {
     if (!selectedBarbeiroId || !selectedDate || !selectedServicoId) return;
     
     setLoadingSlots(true);
-    console.log('🕐 [Admin Edit] Buscando horários disponíveis (otimizado):', {
-      barbeiro: selectedBarbeiroId,
-      data: format(selectedDate, 'yyyy-MM-dd'),
-      servico: selectedServicoId
-    });
+    setSlotConflicts([]);
 
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
-      const selectedServico = servicos.find(s => s.id === selectedServicoId);
-      const baseServiceDuration = selectedServico?.duracao || 30;
-      // Include extras duration for the appointment being edited
-      const extrasDuration = appointment?.servicos_extras && Array.isArray(appointment.servicos_extras)
-        ? appointment.servicos_extras.reduce((sum: number, s: any) => sum + (s.duracao || 0), 0)
-        : 0;
-      const serviceDuration = baseServiceDuration + extrasDuration;
+      const serviceDuration = totalDuration || 30;
       const dayOfWeek = selectedDate.getDay();
-      
-      const now = new Date();
-      const currentHour = now.getHours();
-      const currentMinute = now.getMinutes();
-      const isCurrentDay = isToday(selectedDate);
 
       // Resolver staff_id do barbeiro para buscar working_hours
       const selectedBarber = barbeiros.find(b => b.id === selectedBarbeiroId);
       const authStaffId = selectedBarber?.staff_id || selectedBarbeiroId;
 
-      // OTIMIZAÇÃO: 3 queries em paralelo em vez de N queries individuais
-      const [staffResult, workingHoursResult, appointmentsResult] = await Promise.all([
-        // Resolver ID na tabela staff
+      const [staffResult, , appointmentsResult] = await Promise.all([
         supabase
           .from('staff')
           .select('id')
           .eq('staff_id', authStaffId)
           .maybeSingle(),
-        // Placeholder - será resolvido após staff_id
         Promise.resolve(null),
-        // Buscar agendamentos existentes do dia (incluindo servicos_extras)
         supabase
           .from('painel_agendamentos')
-          .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
+          .select('id, hora, servicos_extras, cliente_id, servico_id, servico:painel_servicos(duracao, nome), cliente:painel_clientes(nome)')
           .eq('barbeiro_id', selectedBarbeiroId)
           .eq('data', formattedDate)
           .neq('status', 'cancelado')
@@ -225,7 +276,6 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
       const staffTableId = staffResult.data?.id || authStaffId;
 
-      // Buscar working_hours com o ID correto
       const { data: workingHours } = await supabase
         .from('working_hours')
         .select('start_time, end_time')
@@ -236,7 +286,6 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
       const appointments = appointmentsResult.data;
 
-      // Determinar horários de início/fim
       const startTime = workingHours?.start_time || '08:30';
       const endTime = workingHours?.end_time || '20:00';
       const startHour = parseInt(startTime.split(':')[0]);
@@ -244,21 +293,16 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       const endHour = parseInt(endTime.split(':')[0]);
       const endMinute = parseInt(endTime.split(':')[1]) || 0;
 
-      if (!workingHours) {
-        console.log('⚠️ [Admin Edit] Sem working_hours, usando horário padrão');
-      }
-
-      // Horário original do agendamento sendo editado
       const originalTime = appointment?.hora?.substring(0, 5);
       const originalDate = appointment?.data;
       const isOriginalDateAndBarber = formattedDate === originalDate && selectedBarbeiroId === appointment?.barbeiro_id;
 
-      // Marcar slots ocupados (com buffer de 10min)
+      // Build occupied slots map with conflict info
       const BUFFER_MINUTES = 10;
-      const occupiedSlots = new Set<string>();
+      const occupiedSlots = new Map<string, { clientName?: string; serviceName?: string }>();
       
-      appointments?.forEach((apt) => {
-        if (apt.id === appointmentId) return; // Ignorar o agendamento sendo editado
+      appointments?.forEach((apt: any) => {
+        if (apt.id === appointmentId) return;
         const mainDuration = (apt.servico as any)?.duracao || 60;
         const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const [aH, aM] = apt.hora.split(':').map(Number);
@@ -269,11 +313,32 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           const slotMin = aptStartMin + i;
           const h = Math.floor(slotMin / 60);
           const m = slotMin % 60;
-          occupiedSlots.add(`${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`);
+          occupiedSlots.set(
+            `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
+            { clientName: (apt.cliente as any)?.nome, serviceName: (apt.servico as any)?.nome }
+          );
         }
       });
 
-      // Gerar slots
+      // Check for conflicts with the selected time + total duration
+      const conflicts: SlotConflict[] = [];
+      if (selectedTime) {
+        const [stH, stM] = selectedTime.split(':').map(Number);
+        const selectedStartMin = stH * 60 + stM;
+        for (let i = 0; i < serviceDuration; i += 30) {
+          const checkMin = selectedStartMin + i;
+          const checkH = Math.floor(checkMin / 60);
+          const checkM = checkMin % 60;
+          const checkStr = `${checkH.toString().padStart(2, '0')}:${checkM.toString().padStart(2, '0')}`;
+          const conflict = occupiedSlots.get(checkStr);
+          if (conflict) {
+            conflicts.push({ time: checkStr, ...conflict });
+          }
+        }
+      }
+      setSlotConflicts(conflicts);
+
+      // Generate slots
       const allSlots: TimeSlot[] = [];
       
       for (let hour = startHour; hour <= endHour; hour++) {
@@ -283,23 +348,16 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           const slotTotalMinutes = hour * 60 + minute;
           const endTotalMinutes = endHour * 60 + endMinute;
           
-          // Verificar se o serviço cabe antes do fim do expediente
           if (slotTotalMinutes + serviceDuration > endTotalMinutes) continue;
           
-          // Se for hoje, pular horários passados (15 min de antecedência)
-          // MAS sempre permitir o horário original do agendamento sendo editado
           const timeString = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
           const isOriginalSlot = isOriginalDateAndBarber && timeString === originalTime;
           
-          // Admin tem autonomia total - não filtrar horários passados
-          
-          // Se é o horário original (mesma data e barbeiro), sempre disponível
           if (isOriginalSlot) {
             allSlots.push({ time: timeString, available: true });
             continue;
           }
           
-          // Verificar conflito: todos os slots que o serviço ocuparia devem estar livres
           let isAvailable = true;
           for (let i = 0; i < serviceDuration; i += 30) {
             const checkMin = slotTotalMinutes + i;
@@ -316,13 +374,8 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         }
       }
 
-      const availableCount = allSlots.filter(s => s.available).length;
-      console.log('✅ [Admin Edit] Slots disponíveis:', availableCount, 'de', allSlots.length, '(otimizado - 2 queries)');
-
       setAvailableSlots(allSlots);
       
-      // Se o horário selecionado não está disponível, limpar seleção
-      // MAS manter o horário original do agendamento
       if (selectedTime && !allSlots.find(s => s.time === selectedTime && s.available)) {
         if (selectedTime !== originalTime || !isOriginalDateAndBarber) {
           setSelectedTime('');
@@ -334,24 +387,23 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedBarbeiroId, selectedDate, selectedServicoId, servicos, appointmentId, appointment, barbeiros]);
+  }, [selectedBarbeiroId, selectedDate, selectedServicoId, servicos, appointmentId, appointment, barbeiros, totalDuration, selectedTime]);
 
   const handleDateSelect = (date: Date | undefined) => {
     if (date) {
       setSelectedDate(date);
-      setSelectedTime(''); // Limpar horário ao mudar data
+      setSelectedTime('');
       setCalendarOpen(false);
     }
   };
 
   const handleBarbeiroChange = (barbeiroId: string) => {
     setSelectedBarbeiroId(barbeiroId);
-    setSelectedTime(''); // Limpar horário ao mudar barbeiro
+    setSelectedTime('');
   };
 
   const handleServicoChange = (servicoId: string) => {
     setSelectedServicoId(servicoId);
-    // NÃO limpar horário - admin pode querer manter o mesmo horário
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -372,10 +424,16 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
         data: dataFormatada,
         hora: horaFormatada,
         barbeiro_id: selectedBarbeiroId,
-        servico_id: selectedServicoId
+        servico_id: selectedServicoId,
+        servicos_extras: extraServices.length > 0 ? extraServices.map(s => ({
+          id: s.id,
+          servico_id: s.id,
+          nome: s.nome,
+          preco: s.preco,
+          duracao: s.duracao,
+        })) : null,
       };
 
-      // Incluir cliente_id se foi alterado
       if (selectedClienteId && selectedClienteId !== appointment.cliente_id) {
         updateData.cliente_id = selectedClienteId;
       }
@@ -430,15 +488,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
           <p className="text-sm text-muted-foreground mt-1">
             Cliente: <span className="font-medium text-foreground">{appointment.painel_clientes?.nome}</span>
           </p>
-          {appointment.servicos_extras && Array.isArray(appointment.servicos_extras) && appointment.servicos_extras.length > 0 && (
-            <div className="mt-2">
-              <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
-            </div>
-          )}
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-5 pt-4">
-          {/* Seleção de Cliente (permitido para qualquer status exceto concluído) */}
+          {/* Seleção de Cliente */}
           {appointment.status !== 'concluido' && (
             <div className="space-y-2">
               <Label className="flex items-center gap-2 text-sm font-medium">
@@ -451,11 +504,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
                 </SelectTrigger>
                 <SelectContent className="bg-popover border-border max-h-60">
                   {clientes.map((cliente) => (
-                    <SelectItem
-                      key={cliente.id}
-                      value={cliente.id}
-                      className="cursor-pointer"
-                    >
+                    <SelectItem key={cliente.id} value={cliente.id} className="cursor-pointer">
                       <div className="flex items-center gap-2">
                         <span>{cliente.nome}</span>
                         {cliente.whatsapp && (
@@ -481,11 +530,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
                 {barbeiros.map((barbeiro) => (
-                  <SelectItem
-                    key={barbeiro.id}
-                    value={barbeiro.id}
-                    className="cursor-pointer"
-                  >
+                  <SelectItem key={barbeiro.id} value={barbeiro.id} className="cursor-pointer">
                     {barbeiro.nome}
                   </SelectItem>
                 ))}
@@ -493,11 +538,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
             </Select>
           </div>
 
-          {/* Seleção de Serviço */}
+          {/* Seleção de Serviço Principal */}
           <div className="space-y-2">
             <Label className="flex items-center gap-2 text-sm font-medium">
               <Scissors className="h-4 w-4 text-muted-foreground" />
-              Serviço
+              Serviço Principal
             </Label>
             <Select value={selectedServicoId} onValueChange={handleServicoChange}>
               <SelectTrigger className="h-11 bg-background border-input">
@@ -505,11 +550,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
               </SelectTrigger>
               <SelectContent className="bg-popover border-border">
                 {servicos.map((servico) => (
-                  <SelectItem
-                    key={servico.id}
-                    value={servico.id}
-                    className="cursor-pointer"
-                  >
+                  <SelectItem key={servico.id} value={servico.id} className="cursor-pointer">
                     <div className="flex items-center justify-between w-full gap-4">
                       <span>{servico.nome}</span>
                       <span className="text-muted-foreground text-xs">
@@ -521,6 +562,125 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
               </SelectContent>
             </Select>
           </div>
+
+          {/* Serviços Extras */}
+          <div className="space-y-3 p-4 rounded-lg bg-muted/30 border border-border">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2 text-sm font-medium">
+                <Plus className="h-4 w-4 text-muted-foreground" />
+                Serviços Extras
+              </Label>
+              {availableExtraServices.length > 0 && !showExtraServiceSelect && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowExtraServiceSelect(true)}
+                  className="h-8 text-xs gap-1"
+                >
+                  <Plus className="h-3 w-3" />
+                  Adicionar
+                </Button>
+              )}
+            </div>
+
+            {/* Select para adicionar extra */}
+            {showExtraServiceSelect && (
+              <div className="flex gap-2">
+                <Select onValueChange={handleAddExtraService}>
+                  <SelectTrigger className="h-10 text-sm flex-1 bg-background border-input">
+                    <SelectValue placeholder="Selecione serviço extra" />
+                  </SelectTrigger>
+                  <SelectContent className="bg-popover border-border max-h-60">
+                    {availableExtraServices.map(s => (
+                      <SelectItem key={s.id} value={s.id} className="cursor-pointer">
+                        <div className="flex items-center justify-between w-full gap-4">
+                          <span>{s.nome}</span>
+                          <span className="text-muted-foreground text-xs">
+                            R$ {s.preco.toFixed(2)} • {s.duracao}min
+                          </span>
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowExtraServiceSelect(false)}
+                  className="h-10 px-2"
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* Lista de extras adicionados */}
+            {extraServices.length > 0 ? (
+              <div className="space-y-2">
+                {extraServices.map((service) => (
+                  <div key={service.id} className="flex items-center justify-between p-2.5 rounded-md bg-background border border-border">
+                    <div>
+                      <p className="text-sm font-medium">{service.nome}</p>
+                      <p className="text-xs text-muted-foreground">
+                        R$ {service.preco.toFixed(2)} • {service.duracao}min
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleRemoveExtraService(service.id)}
+                      className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">Nenhum serviço extra adicionado</p>
+            )}
+
+            {/* Resumo de duração e preço total */}
+            {(selectedServico || extraServices.length > 0) && (
+              <div className="flex items-center justify-between pt-2 border-t border-border text-sm">
+                <span className="text-muted-foreground">
+                  Duração total: <span className="font-medium text-foreground">{totalDuration}min</span>
+                </span>
+                <span className="text-muted-foreground">
+                  Total: <span className="font-semibold text-primary">R$ {totalPrice.toFixed(2)}</span>
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Alerta de conflitos de slots */}
+          {slotConflicts.length > 0 && (
+            <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/30 space-y-2">
+              <div className="flex items-center gap-2 text-destructive">
+                <AlertTriangle className="h-4 w-4" />
+                <span className="text-sm font-semibold">Atenção: Sobreposição de horários</span>
+              </div>
+              <p className="text-xs text-destructive/80">
+                Os serviços extras vão consumir slots que possuem agendamentos:
+              </p>
+              <ul className="text-xs space-y-1">
+                {slotConflicts.map((conflict, i) => (
+                  <li key={i} className="flex items-center gap-1 text-destructive/90">
+                    <Clock className="h-3 w-3" />
+                    <span className="font-medium">{conflict.time}</span>
+                    {conflict.clientName && <span>— {conflict.clientName}</span>}
+                    {conflict.serviceName && <span className="text-muted-foreground">({conflict.serviceName})</span>}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-muted-foreground italic">
+                Como administrador, você pode prosseguir com a sobreposição.
+              </p>
+            </div>
+          )}
 
           {/* Seleção de Data */}
           <div className="space-y-2">
@@ -609,6 +769,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
               <div className="flex items-center gap-2 mt-2 text-sm text-primary">
                 <CheckCircle2 className="h-4 w-4" />
                 Horário selecionado: <span className="font-semibold">{selectedTime}</span>
+                {totalDuration > 30 && (
+                  <span className="text-muted-foreground text-xs">
+                    (ocupa {Math.ceil(totalDuration / 30)} slots)
+                  </span>
+                )}
               </div>
             )}
           </div>
@@ -632,6 +797,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
                   <span className="text-muted-foreground">Serviço:</span>
                   <p className="font-medium">{selectedServico.nome}</p>
                 </div>
+                {extraServices.length > 0 && (
+                  <div className="col-span-2">
+                    <span className="text-muted-foreground">Extras:</span>
+                    <p className="font-medium">{extraServices.map(s => s.nome).join(', ')}</p>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">Data:</span>
                   <p className="font-medium">{format(selectedDate, "dd/MM/yyyy")}</p>
@@ -639,6 +810,10 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
                 <div>
                   <span className="text-muted-foreground">Horário:</span>
                   <p className="font-medium">{selectedTime}</p>
+                </div>
+                <div className="col-span-2">
+                  <span className="text-muted-foreground">Total:</span>
+                  <p className="font-semibold text-primary">R$ {totalPrice.toFixed(2)} • {totalDuration}min</p>
                 </div>
               </div>
             </div>

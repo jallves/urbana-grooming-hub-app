@@ -78,8 +78,7 @@ const TotemCheckoutExtrasModal: React.FC<TotemCheckoutExtrasModalProps> = ({
           .select("id, nome, preco, duracao")
           .eq("ativo", true)
           .neq("id", mainServiceId || "")
-          .order("preco", { ascending: true })
-          .limit(12);
+          .order("nome", { ascending: true });
 
         if (servicesError) throw servicesError;
         setAvailableServices((servicesData || []) as any);

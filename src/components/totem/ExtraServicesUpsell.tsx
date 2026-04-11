@@ -45,9 +45,9 @@ export const ExtraServicesUpsell: React.FC<ExtraServicesUpsellProps> = ({
       const { data, error } = await supabase
         .from('painel_servicos')
         .select('id, nome, preco, duracao')
+        .eq('is_active', true)
         .neq('id', currentServiceId)
-        .order('preco', { ascending: true })
-        .limit(4);
+        .order('nome', { ascending: true });
 
       if (error) throw error;
 
