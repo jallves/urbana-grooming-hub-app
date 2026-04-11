@@ -161,8 +161,8 @@ const TotemCheckoutExtrasModal: React.FC<TotemCheckoutExtrasModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-screen h-screen max-w-none m-0 p-0 rounded-none bg-urbana-black/95 border-0 text-urbana-light overflow-hidden [&>button[class*='absolute']]:hidden [&>button]:hidden [&_.absolute.right-4.top-4]:hidden [&>div]:!max-h-none">
-        <div className="h-full w-full flex flex-col">
+      <DialogContent className="w-screen h-screen max-w-none max-h-none m-0 p-0 rounded-none bg-urbana-black/95 border-0 text-urbana-light overflow-hidden [&>button[class*='absolute']]:hidden [&>button]:hidden [&_.absolute.right-4.top-4]:hidden">
+        <div className="h-screen w-full flex flex-col overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-urbana-gold/20">
             <Button
