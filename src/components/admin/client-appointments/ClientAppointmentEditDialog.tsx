@@ -157,8 +157,9 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       setSelectedClienteId(data.cliente_id || '');
       
       // Load existing extra services
-      if (data.servicos_extras && Array.isArray(data.servicos_extras)) {
-        setExtraServices(data.servicos_extras.map((s: any) => ({
+      const extras = data.servicos_extras as any;
+      if (extras && Array.isArray(extras)) {
+        setExtraServices(extras.map((s: any) => ({
           id: s.id || s.servico_id,
           nome: s.nome,
           preco: Number(s.preco) || 0,
