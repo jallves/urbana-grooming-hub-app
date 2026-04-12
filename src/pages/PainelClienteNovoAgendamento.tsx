@@ -16,6 +16,8 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
+import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
+import { ShoppingBag, Sparkles } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -58,6 +60,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  
+  // State para extras
+  const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
@@ -473,7 +480,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         selectedBarber.id,
         selectedDate,
         selectedTime,
-        selectedService.duracao
+        calculateTotalAppointmentDuration(selectedService.duracao, extraServices.length > 0 ? extraServices : null)
       );
 
       if (!validation.valid) {
@@ -499,6 +506,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
+      // Build servicos_extras JSON
+      const servicosExtrasPayload = extraServices.length > 0
+        ? extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }))
+        : null;
+
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
         .insert({
@@ -507,7 +519,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           servico_id: selectedService.id,
           data: dataLocal,
           hora: selectedTime,
-          status: 'agendado'
+          status: 'agendado',
+          servicos_extras: servicosExtrasPayload
         })
         .select()
         .single();
@@ -585,6 +598,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       setSelectedBarber(null);
       setSelectedDate(null);
       setSelectedTime(null);
+      setExtraServices([]);
+      setSelectedProducts([]);
     } else if (step === 'datetime') {
       setStep('barber');
       setSelectedDate(null);
@@ -881,7 +896,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
                             <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
                             <div className="min-w-0">
-                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Serviço</p>
+                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Serviço Principal</p>
                               <p className="font-semibold text-sm sm:text-base truncate">{selectedService?.nome}</p>
                               <p className="text-xs sm:text-sm text-urbana-gold mt-0.5 sm:mt-1">R$ {selectedService?.preco.toFixed(2)}</p>
                             </div>
@@ -918,10 +933,75 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             <div className="min-w-0">
                               <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Horário</p>
                               <p className="font-semibold text-sm sm:text-lg">{selectedTime}</p>
-                              <p className="text-xs text-white/60 mt-0.5 sm:mt-1">{selectedService?.duracao} min</p>
+                              <p className="text-xs text-white/60 mt-0.5 sm:mt-1">
+                                {selectedService ? calculateTotalAppointmentDuration(
+                                  selectedService.duracao,
+                                  extraServices.length > 0 ? extraServices : null
+                                ) : selectedService?.duracao} min
+                              </p>
                             </div>
                           </div>
                         </div>
+
+                        {/* Extras Summary */}
+                        {extraServices.length > 0 && (
+                          <div className="bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
+                            <p className="text-xs text-white/60 mb-2 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3 text-urbana-gold" /> Serviços Extras
+                            </p>
+                            <div className="space-y-1">
+                              {extraServices.map(s => (
+                                <div key={s.id} className="flex justify-between text-sm text-white">
+                                  <span className="truncate mr-2">{s.nome}</span>
+                                  <span className="text-urbana-gold shrink-0">R$ {s.preco.toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {selectedProducts.length > 0 && (
+                          <div className="bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
+                            <p className="text-xs text-white/60 mb-2 flex items-center gap-1">
+                              <ShoppingBag className="w-3 h-3 text-urbana-gold" /> Produtos
+                            </p>
+                            <div className="space-y-1">
+                              {selectedProducts.map(p => (
+                                <div key={p.id} className="flex justify-between text-sm text-white">
+                                  <span className="truncate mr-2">{p.nome} x{p.quantidade}</span>
+                                  <span className="text-urbana-gold shrink-0">R$ {(p.preco * p.quantidade).toFixed(2)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Total */}
+                        {(extraServices.length > 0 || selectedProducts.length > 0) && (
+                          <div className="flex justify-between items-center bg-urbana-gold/10 p-3 rounded-lg border border-urbana-gold/30">
+                            <span className="text-sm font-semibold text-white">Total Estimado</span>
+                            <span className="text-xl font-bold text-urbana-gold">
+                              R$ {(
+                                (selectedService?.preco || 0) +
+                                extraServices.reduce((s, x) => s + x.preco, 0) +
+                                selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
+                              ).toFixed(2)}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Add Extras Button */}
+                        <Button
+                          onClick={() => setShowExtrasModal(true)}
+                          variant="outline"
+                          className="w-full border-urbana-gold/30 text-urbana-gold hover:bg-urbana-gold/10 hover:text-urbana-gold"
+                        >
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          {extraServices.length > 0 || selectedProducts.length > 0 
+                            ? 'Editar Serviços Extras e Produtos' 
+                            : 'Adicionar Serviços Extras ou Produtos'}
+                        </Button>
+
                         <Button
                           onClick={handleConfirm}
                           disabled={creating || isValidating}
@@ -947,25 +1027,41 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             )}
       </div>
 
+      {/* Modal de extras */}
+      {selectedService && (
+        <ClientBookingExtrasModal
+          open={showExtrasModal}
+          onOpenChange={setShowExtrasModal}
+          mainServiceId={selectedService.id}
+          initialExtraServices={extraServices}
+          initialProducts={selectedProducts}
+          onApply={({ extraServices: es, products: ps }) => {
+            setExtraServices(es);
+            setSelectedProducts(ps);
+          }}
+        />
+      )}
+
       {/* Modal de confirmação de sucesso */}
       {showSuccessDialog && selectedService && selectedBarber && selectedDate && selectedTime && (
         <SuccessConfirmationDialog
           isOpen={showSuccessDialog}
           onClose={() => {
             setShowSuccessDialog(false);
-            // Resetar formulário e voltar para o início
             setStep('service');
             setSelectedService(null);
             setSelectedBarber(null);
             setSelectedDate(null);
             setSelectedTime(null);
+            setExtraServices([]);
+            setSelectedProducts([]);
           }}
           appointmentDetails={{
             serviceName: selectedService.nome,
             barberName: selectedBarber.nome,
             date: selectedDate,
             time: selectedTime,
-            price: selectedService.preco
+            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco, 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
           }}
         />
       )}
