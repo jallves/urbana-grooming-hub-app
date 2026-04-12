@@ -16,6 +16,8 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
+import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
+import { ShoppingBag, Sparkles } from 'lucide-react';
 
 interface Service {
   id: string;
