@@ -598,6 +598,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       setSelectedBarber(null);
       setSelectedDate(null);
       setSelectedTime(null);
+      setExtraServices([]);
+      setSelectedProducts([]);
     } else if (step === 'datetime') {
       setStep('barber');
       setSelectedDate(null);
