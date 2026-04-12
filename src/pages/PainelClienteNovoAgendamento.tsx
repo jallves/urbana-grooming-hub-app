@@ -506,6 +506,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
+      // Build servicos_extras JSON
+      const servicosExtrasPayload = extraServices.length > 0
+        ? extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }))
+        : null;
+
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
         .insert({
@@ -514,7 +519,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           servico_id: selectedService.id,
           data: dataLocal,
           hora: selectedTime,
-          status: 'agendado'
+          status: 'agendado',
+          servicos_extras: servicosExtrasPayload
         })
         .select()
         .single();
