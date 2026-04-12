@@ -1027,25 +1027,41 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             )}
       </div>
 
+      {/* Modal de extras */}
+      {selectedService && (
+        <ClientBookingExtrasModal
+          open={showExtrasModal}
+          onOpenChange={setShowExtrasModal}
+          mainServiceId={selectedService.id}
+          initialExtraServices={extraServices}
+          initialProducts={selectedProducts}
+          onApply={({ extraServices: es, products: ps }) => {
+            setExtraServices(es);
+            setSelectedProducts(ps);
+          }}
+        />
+      )}
+
       {/* Modal de confirmação de sucesso */}
       {showSuccessDialog && selectedService && selectedBarber && selectedDate && selectedTime && (
         <SuccessConfirmationDialog
           isOpen={showSuccessDialog}
           onClose={() => {
             setShowSuccessDialog(false);
-            // Resetar formulário e voltar para o início
             setStep('service');
             setSelectedService(null);
             setSelectedBarber(null);
             setSelectedDate(null);
             setSelectedTime(null);
+            setExtraServices([]);
+            setSelectedProducts([]);
           }}
           appointmentDetails={{
             serviceName: selectedService.nome,
             barberName: selectedBarber.nome,
             date: selectedDate,
             time: selectedTime,
-            price: selectedService.preco
+            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco, 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
           }}
         />
       )}
