@@ -60,6 +60,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [creating, setCreating] = useState(false);
   const [showSuccessDialog, setShowSuccessDialog] = useState(false);
+  
+  // State para extras
+  const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
+  const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
