@@ -480,7 +480,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         selectedBarber.id,
         selectedDate,
         selectedTime,
-        selectedService.duracao
+        calculateTotalAppointmentDuration(selectedService.duracao, extraServices.length > 0 ? extraServices : null)
       );
 
       if (!validation.valid) {
