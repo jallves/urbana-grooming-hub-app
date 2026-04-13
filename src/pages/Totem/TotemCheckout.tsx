@@ -385,6 +385,16 @@ const TotemCheckout: React.FC = () => {
 
       toast.success(`${serviceCreditsCost} crédito(s) utilizado(s)! (${activeSubscription.credits_remaining - serviceCreditsCost} restantes) ✨`);
       
+      // Register coffee in background
+      if (wantsCoffee) {
+        supabase.from('coffee_records' as any).insert({
+          appointment_id: appointment?.id || null,
+          client_id: client?.id || null,
+          barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
+          quantity: 1,
+        }).then(() => {});
+      }
+
       // 5. Mostrar modal de comprovante (igual ao fluxo normal)
       setProcessing(false);
       setShowReceiptModal(true);
