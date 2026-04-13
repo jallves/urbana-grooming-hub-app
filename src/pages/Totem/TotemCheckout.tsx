@@ -704,6 +704,29 @@ const TotemCheckout: React.FC = () => {
                   <span className="text-urbana-light font-medium">R$ {subtotal.toFixed(2)}</span>
                 </div>
 
+                {/* Coffee Toggle */}
+                <div 
+                  onClick={() => setWantsCoffee(!wantsCoffee)}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    wantsCoffee 
+                      ? 'bg-amber-500/20 border-amber-500/50' 
+                      : 'bg-urbana-black/30 border-urbana-gold/20 hover:border-amber-500/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Coffee className={`w-5 h-5 ${wantsCoffee ? 'text-amber-400' : 'text-urbana-light/50'}`} />
+                      <span className={`text-sm font-medium ${wantsCoffee ? 'text-amber-300' : 'text-urbana-light/60'}`}>
+                        Quero um café ☕
+                      </span>
+                    </div>
+                    <div className={`w-10 h-5 rounded-full transition-all ${wantsCoffee ? 'bg-amber-500' : 'bg-urbana-light/20'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white mt-0.5 transition-all ${wantsCoffee ? 'ml-5' : 'ml-0.5'}`} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-urbana-light/40 mt-1">Cortesia da casa • sem custo</p>
+                </div>
+
                 {/* Tip Input */}
                 <div className="p-3 bg-pink-500/10 rounded-xl border border-pink-500/30">
                   <div className="flex items-center gap-2 mb-2">
