@@ -220,15 +220,16 @@ const ComissoesManager: React.FC = () => {
       const valor = Number(c.valor || 0);
       const status = normalizeStatus(c.status);
 
+      // Gorjetas são contabilizadas separadamente, não entram em Pago/Pendente
       if (c.tipo === 'gorjeta') {
         summary.totalGorjeta += valor;
-      }
-
-      if (status === 'pago') {
+      } else if (status === 'pago') {
         summary.totalPago += valor;
       } else {
         summary.totalPendente += valor;
       }
+
+      // Total Geral = Pago + Pendente + Gorjetas (sem dupla contagem)
       summary.totalGeral += valor;
       summary.qtdComissoes++;
     }
