@@ -20,13 +20,14 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
         .gte('data_vencimento', startDate)
         .lte('data_vencimento', endDate);
 
-      // Also check vendas for product details
-      const { data: vendas } = await supabase
-        .from('vendas')
-        .select('valor_total, itens, status, created_at')
-        .eq('status', 'pago')
-        .gte('created_at', `${startDate}T00:00:00`)
-        .lte('created_at', `${endDate}T23:59:59`);
+      // Get product sales from vendas_itens
+      const { data: vendasItens } = await supabase
+        .from('vendas_itens')
+        .select('nome, preco_unitario, quantidade, subtotal, tipo, venda_id, vendas!inner(status, created_at)')
+        .eq('tipo', 'produto')
+        .eq('vendas.status', 'pago')
+        .gte('vendas.created_at', `${startDate}T00:00:00`)
+        .lte('vendas.created_at', `${endDate}T23:59:59`);
 
       // Get current stock levels
       const { data: produtos } = await supabase
@@ -36,17 +37,12 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
 
       const produtosSales: Record<string, { nome: string; vendas: number; receita: number }> = {};
 
-      // Parse vendas items for product breakdown
-      vendas?.forEach(v => {
-        if (!v.itens || !Array.isArray(v.itens)) return;
-        (v.itens as any[]).forEach((item: any) => {
-          if (item.tipo === 'produto' || item.type === 'product') {
-            const key = item.nome || item.name || 'Produto';
-            if (!produtosSales[key]) produtosSales[key] = { nome: key, vendas: 0, receita: 0 };
-            produtosSales[key].vendas += item.quantidade || item.quantity || 1;
-            produtosSales[key].receita += Number(item.preco || item.price || 0) * (item.quantidade || item.quantity || 1);
-          }
-        });
+      // Parse vendas_itens for product breakdown
+      vendasItens?.forEach((item: any) => {
+        const key = item.nome || 'Produto';
+        if (!produtosSales[key]) produtosSales[key] = { nome: key, vendas: 0, receita: 0 };
+        produtosSales[key].vendas += item.quantidade || 1;
+        produtosSales[key].receita += Number(item.subtotal || 0);
       });
 
       const totalReceita = receber?.filter(r => r.status === 'recebido' || r.status === 'pago').reduce((s, r) => s + Number(r.valor), 0) || 0;
