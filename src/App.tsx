@@ -90,6 +90,7 @@ import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import TotemUpsell from './pages/Totem/TotemUpsell';
 import AdminProductsManagement from './pages/AdminProductsManagement';
 import AdminSubscriptions from './pages/AdminSubscriptions';
+import AdminRelatorios from './pages/AdminRelatorios';
 import Install from './pages/Install';
 import InstallContext from './pages/InstallContext';
 
@@ -269,6 +270,11 @@ function App() {
                   <Route path="/admin/assinaturas" element={
                     <AdminRoute>
                       <AdminSubscriptions />
+                    </AdminRoute>
+                  } />
+                  <Route path="/admin/relatorios" element={
+                    <AdminRoute>
+                      <AdminRelatorios />
                     </AdminRoute>
                   } />
                   <Route path="/admin/produtos-totem" element={

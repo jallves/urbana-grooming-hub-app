@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote, Coffee } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -102,6 +102,7 @@ const TotemCheckout: React.FC = () => {
   const [vendaId, setVendaId] = useState<string | null>(null);
   const vendaIdRef = useRef<string | null>(null);
   const [usingCredit, setUsingCredit] = useState(false);
+  const [wantsCoffee, setWantsCoffee] = useState(false);
   
   // Combo detection
   const { detectCombo } = useComboDetection();
@@ -384,6 +385,16 @@ const TotemCheckout: React.FC = () => {
 
       toast.success(`${serviceCreditsCost} crédito(s) utilizado(s)! (${activeSubscription.credits_remaining - serviceCreditsCost} restantes) ✨`);
       
+      // Register coffee in background
+      if (wantsCoffee) {
+        supabase.from('coffee_records' as any).insert({
+          appointment_id: appointment?.id || null,
+          client_id: client?.id || null,
+          barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
+          quantity: 1,
+        }).then(() => {});
+      }
+
       // 5. Mostrar modal de comprovante (igual ao fluxo normal)
       setProcessing(false);
       setShowReceiptModal(true);
@@ -522,6 +533,21 @@ const TotemCheckout: React.FC = () => {
         .eq('id', currentVendaId)
         .then(({ error }) => {
           if (error) console.warn('[Checkout] Erro ao atualizar venda em background:', error);
+        });
+    }
+
+    // Register coffee in background (fire-and-forget)
+    if (wantsCoffee) {
+      supabase
+        .from('coffee_records' as any)
+        .insert({
+          appointment_id: appointment?.id || null,
+          client_id: client?.id || null,
+          barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
+          quantity: 1,
+        })
+        .then(({ error }: any) => {
+          if (error) console.warn('[Checkout] Erro ao registrar café:', error);
         });
     }
 
@@ -701,6 +727,29 @@ const TotemCheckout: React.FC = () => {
                 <div className="flex justify-between items-center text-sm border-b border-dashed border-urbana-gold/20 pb-2">
                   <span className="text-urbana-light/70">SUBTOTAL</span>
                   <span className="text-urbana-light font-medium">R$ {subtotal.toFixed(2)}</span>
+                </div>
+
+                {/* Coffee Toggle */}
+                <div 
+                  onClick={() => setWantsCoffee(!wantsCoffee)}
+                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                    wantsCoffee 
+                      ? 'bg-amber-500/20 border-amber-500/50' 
+                      : 'bg-urbana-black/30 border-urbana-gold/20 hover:border-amber-500/30'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Coffee className={`w-5 h-5 ${wantsCoffee ? 'text-amber-400' : 'text-urbana-light/50'}`} />
+                      <span className={`text-sm font-medium ${wantsCoffee ? 'text-amber-300' : 'text-urbana-light/60'}`}>
+                        Quero um café ☕
+                      </span>
+                    </div>
+                    <div className={`w-10 h-5 rounded-full transition-all ${wantsCoffee ? 'bg-amber-500' : 'bg-urbana-light/20'}`}>
+                      <div className={`w-4 h-4 rounded-full bg-white mt-0.5 transition-all ${wantsCoffee ? 'ml-5' : 'ml-0.5'}`} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-urbana-light/40 mt-1">Cortesia da casa • sem custo</p>
                 </div>
 
                 {/* Tip Input */}
