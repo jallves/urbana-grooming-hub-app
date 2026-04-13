@@ -766,6 +766,58 @@ export type Database = {
         }
         Relationships: []
       }
+      coffee_records: {
+        Row: {
+          appointment_id: string | null
+          barber_id: string | null
+          client_id: string | null
+          created_at: string
+          id: string
+          notes: string | null
+          quantity: number
+        }
+        Insert: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+        }
+        Update: {
+          appointment_id?: string | null
+          barber_id?: string | null
+          client_id?: string | null
+          created_at?: string
+          id?: string
+          notes?: string | null
+          quantity?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "coffee_records_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "painel_agendamentos"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coffee_records_barber_id_fkey"
+            columns: ["barber_id"]
+            isOneToOne: false
+            referencedRelation: "painel_barbeiros"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "coffee_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       combo_service_items: {
         Row: {
           combo_service_id: string
