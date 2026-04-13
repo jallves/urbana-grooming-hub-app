@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote, Coffee } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -102,6 +102,7 @@ const TotemCheckout: React.FC = () => {
   const [vendaId, setVendaId] = useState<string | null>(null);
   const vendaIdRef = useRef<string | null>(null);
   const [usingCredit, setUsingCredit] = useState(false);
+  const [wantsCoffee, setWantsCoffee] = useState(false);
   
   // Combo detection
   const { detectCombo } = useComboDetection();
