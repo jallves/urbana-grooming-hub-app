@@ -469,15 +469,21 @@ const ComissoesManager: React.FC = () => {
 
       {/* Tabs: Resumo por Barbeiro / Detalhamento */}
       <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200">
-          <TabsTrigger value="resumo" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-xs sm:text-sm">
-            <Users className="h-3.5 w-3.5 mr-1" /> Resumo por Barbeiro
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto">
+          <TabsTrigger value="resumo" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+            <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
+            <span className="hidden sm:inline">Resumo por Barbeiro</span>
+            <span className="sm:hidden">Resumo</span>
           </TabsTrigger>
-          <TabsTrigger value="detalhes" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-xs sm:text-sm">
-            <FileText className="h-3.5 w-3.5 mr-1" /> Detalhamento
+          <TabsTrigger value="detalhes" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+            <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
+            <span className="hidden sm:inline">Detalhamento</span>
+            <span className="sm:hidden">Detalhe</span>
           </TabsTrigger>
-          <TabsTrigger value="contas" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-xs sm:text-sm">
-            <Receipt className="h-3.5 w-3.5 mr-1" /> Contas a Pagar
+          <TabsTrigger value="contas" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+            <Receipt className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
+            <span className="hidden sm:inline">Contas a Pagar</span>
+            <span className="sm:hidden">Pagar</span>
           </TabsTrigger>
         </TabsList>
 
