@@ -548,7 +548,8 @@ const ComissoesManager: React.FC = () => {
             <div className="flex items-center justify-center h-32"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
           ) : (
             <Card className="bg-white border-gray-200 overflow-hidden">
-              <div className="overflow-x-auto">
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow className="bg-gray-50">
@@ -596,6 +597,43 @@ const ComissoesManager: React.FC = () => {
                   </TableBody>
                 </Table>
               </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-gray-100">
+                {filteredCommissions.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400 text-sm">
+                    Nenhuma comissão encontrada.
+                  </div>
+                ) : (
+                  filteredCommissions.map(c => (
+                    <div key={c.id} className="p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-medium text-gray-900">{c.barber_name || '-'}</span>
+                        <span className="font-bold text-sm text-gray-900">{formatCurrency(Number(c.valor || 0))}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {getTipoBadge(c.tipo)}
+                        {getStatusBadge(c.status)}
+                        <span className="text-[10px] text-gray-400">
+                          {c.created_at ? format(parseISO(c.created_at), 'dd/MM/yy HH:mm') : '-'}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between text-xs text-gray-500">
+                        <span>{c.appointment_source || '-'}</span>
+                        <div className="flex items-center gap-2">
+                          {c.data_pagamento && <span>Pago: {format(parseISO(c.data_pagamento), 'dd/MM/yy')}</span>}
+                          {normalizeStatus(c.status) === 'pago' && (
+                            <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setReceiptCommission(c)}>
+                              <Printer className="h-3 w-3 text-gray-500" />
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+
               {filteredCommissions.length > 0 && (
                 <div className="p-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
                   <span>{filteredCommissions.length} registros</span>
