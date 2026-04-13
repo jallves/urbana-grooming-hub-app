@@ -656,7 +656,8 @@ const ComissoesManager: React.FC = () => {
               </CardTitle>
               <p className="text-xs text-gray-500">Registros do módulo Contas a Pagar com categoria "Comissão"</p>
             </CardHeader>
-            <div className="overflow-x-auto">
+            {/* Desktop table */}
+            <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="bg-gray-50">
@@ -702,6 +703,38 @@ const ComissoesManager: React.FC = () => {
                 </TableBody>
               </Table>
             </div>
+
+            {/* Mobile cards */}
+            <div className="md:hidden divide-y divide-gray-100">
+              {contasPagarComissoes.length === 0 ? (
+                <div className="text-center py-8 text-gray-400 text-sm">
+                  Nenhuma conta a pagar neste período.
+                </div>
+              ) : (
+                contasPagarComissoes.map((cp: any) => (
+                  <div key={cp.id} className="p-3 space-y-1.5">
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="text-xs font-medium text-gray-900 line-clamp-2 flex-1">{cp.descricao}</span>
+                      <span className="font-bold text-sm text-gray-900 flex-shrink-0">{formatCurrency(Number(cp.valor || 0))}</span>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {cp.status === 'pago' ? (
+                        <Badge className="bg-green-100 text-green-800 border-green-200 text-[10px]">Pago</Badge>
+                      ) : (
+                        <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px]">Pendente</Badge>
+                      )}
+                      {cp.fornecedor && <span className="text-[10px] text-gray-500">{cp.fornecedor}</span>}
+                    </div>
+                    <div className="flex items-center gap-3 text-[10px] text-gray-400">
+                      <span>Venc: {cp.data_vencimento ? format(parseISO(cp.data_vencimento), 'dd/MM/yy') : '-'}</span>
+                      {cp.data_pagamento && <span>Pago: {format(parseISO(cp.data_pagamento), 'dd/MM/yy')}</span>}
+                      {cp.forma_pagamento && <span>{cp.forma_pagamento}</span>}
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
             {contasPagarComissoes.length > 0 && (
               <div className="p-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
                 <span>{contasPagarComissoes.length} registros</span>
