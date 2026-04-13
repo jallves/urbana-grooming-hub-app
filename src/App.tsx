@@ -272,6 +272,11 @@ function App() {
                       <AdminSubscriptions />
                     </AdminRoute>
                   } />
+                  <Route path="/admin/relatorios" element={
+                    <AdminRoute>
+                      <AdminRelatorios />
+                    </AdminRoute>
+                  } />
                   <Route path="/admin/produtos-totem" element={
                     <AdminRoute>
                       <AdminProductsManagement />
