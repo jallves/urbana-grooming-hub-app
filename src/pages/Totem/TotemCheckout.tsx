@@ -526,6 +526,21 @@ const TotemCheckout: React.FC = () => {
         });
     }
 
+    // Register coffee in background (fire-and-forget)
+    if (wantsCoffee) {
+      supabase
+        .from('coffee_records' as any)
+        .insert({
+          appointment_id: appointment?.id || null,
+          client_id: client?.id || null,
+          barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
+          quantity: 1,
+        })
+        .then(({ error }: any) => {
+          if (error) console.warn('[Checkout] Erro ao registrar café:', error);
+        });
+    }
+
     setProcessing(false);
   };
 
