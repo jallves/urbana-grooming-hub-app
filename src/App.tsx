@@ -86,6 +86,7 @@ import TotemProductPaymentCash from './pages/Totem/TotemProductPaymentCash';
 import TotemProductPaymentSuccess from './pages/Totem/TotemProductPaymentSuccess';
 import TotemProductSale from './pages/Totem/TotemProductSale';
 import TotemError from './pages/Totem/TotemError';
+import TotemCoffee from './pages/Totem/TotemCoffee';
 import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import TotemUpsell from './pages/Totem/TotemUpsell';
 import AdminProductsManagement from './pages/AdminProductsManagement';
