@@ -72,10 +72,40 @@ const RelatoriosGerenciais: React.FC = () => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className={`flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg border transition-all
-                ${tab.bg} ${tab.border} ${tab.text} font-medium
-                data-[state=active]:${tab.activeBg} data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-md`}
-              style={{ '--active-bg': tab.activeBg } as any}
+              className={`flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg border transition-all font-medium
+                ${tab.bg} ${tab.border} ${tab.text}
+                data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-md`}
+              style={{
+                // @ts-ignore
+                '--tw-bg-opacity': undefined,
+              }}
+              data-active-bg={tab.activeBg}
+              onClick={(e) => {
+                // Active styling is handled via inline style below
+              }}
+              ref={(el) => {
+                if (!el) return;
+                const observer = new MutationObserver(() => {
+                  const isActive = el.getAttribute('data-state') === 'active';
+                  if (isActive) {
+                    el.style.backgroundColor = tab.activeHex;
+                    el.style.color = '#ffffff';
+                    el.style.borderColor = 'transparent';
+                  } else {
+                    el.style.backgroundColor = '';
+                    el.style.color = '';
+                    el.style.borderColor = '';
+                  }
+                });
+                observer.observe(el, { attributes: true, attributeFilter: ['data-state'] });
+                // Initial check
+                const isActive = el.getAttribute('data-state') === 'active';
+                if (isActive) {
+                  el.style.backgroundColor = tab.activeHex;
+                  el.style.color = '#ffffff';
+                  el.style.borderColor = 'transparent';
+                }
+              }}
             >
               <tab.icon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{tab.label}</span>
