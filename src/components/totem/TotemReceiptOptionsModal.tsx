@@ -130,10 +130,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
   };
 
   const handleSkip = () => {
-    // Permitir pular apenas se não tem e-mail
-    if (!clientEmail) {
-      onComplete();
-    }
+    onComplete();
   };
 
   const formatCurrency = (value: number) => {
@@ -199,7 +196,24 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
                 </Button>
               )}
 
-              {/* Botão futuro - Só Imprimir (aparece desabilitado como preview) */}
+              {/* Opção: Não enviar comprovante */}
+              <Button
+                onClick={handleSkip}
+                className="w-full h-16 sm:h-20 text-lg sm:text-xl bg-gradient-to-r from-gray-600 to-gray-700 hover:from-gray-500 hover:to-gray-600 text-white font-bold rounded-xl shadow-lg shadow-gray-600/20 transition-all duration-200 active:scale-[0.98]"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 sm:w-7 sm:h-7 mr-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M22 2L2 22" />
+                  <path d="M2 8.5l8 5 1.5-.9M22 3.5l-8 5" />
+                  <path d="M2 2l10 6.5L22 2" />
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                </svg>
+                <div className="text-left">
+                  <div>Não Enviar Comprovante</div>
+                  <div className="text-xs opacity-70">Finalizar sem envio por e-mail</div>
+                </div>
+              </Button>
+
+              {/* Imprimir (em breve) */}
               {!isPrintAvailable && (
                 <Button
                   disabled
@@ -210,17 +224,6 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
                     <div>Imprimir Comprovante</div>
                     <div className="text-xs">Em breve</div>
                   </div>
-                </Button>
-              )}
-
-              {/* Pular (só se não tem e-mail) */}
-              {!clientEmail && (
-                <Button
-                  onClick={handleSkip}
-                  variant="ghost"
-                  className="w-full h-12 text-urbana-light/60 hover:text-urbana-light"
-                >
-                  Continuar sem comprovante
                 </Button>
               )}
             </>
