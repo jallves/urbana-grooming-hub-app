@@ -455,6 +455,11 @@ function App() {
                       <TotemProtectedRoute><TotemUpsell /></TotemProtectedRoute>
                     </AdminRedirectGuard>
                   } />
+                  <Route path="/totem/coffee" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemCoffee /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
                   <Route path="/totem/checkout" element={
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemCheckout /></TotemProtectedRoute>
