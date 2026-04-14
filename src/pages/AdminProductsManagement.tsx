@@ -77,8 +77,9 @@ const AdminProductsManagement: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      if (!formData.nome || formData.preco <= 0) {
-        toast.error('Preencha todos os campos obrigatórios');
+      const isCafe = formData.nome.toLowerCase().includes('café') || formData.nome.toLowerCase().includes('cafe');
+      if (!formData.nome || (!isCafe && formData.preco <= 0)) {
+        toast.error('Preencha todos os campos obrigatórios (somente Café pode ter preço R$0)');
         return;
       }
 
