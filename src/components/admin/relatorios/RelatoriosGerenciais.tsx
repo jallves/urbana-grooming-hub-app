@@ -12,13 +12,13 @@ import RelatorioCafe from './RelatorioCafe';
 import RelatorioResumo from './RelatorioResumo';
 
 const TAB_CONFIGS = [
-  { value: 'resumo', label: 'Resumo', icon: BarChart3, bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', activeBg: 'bg-slate-600' },
-  { value: 'pagamentos', label: 'Pagamentos', icon: CreditCard, bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', activeBg: 'bg-emerald-600' },
-  { value: 'barbeiros', label: 'Barbeiros', icon: Users, bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', activeBg: 'bg-blue-600' },
-  { value: 'servicos', label: 'Serviços', icon: Scissors, bg: 'bg-violet-50', border: 'border-violet-300', text: 'text-violet-700', activeBg: 'bg-violet-600' },
-  { value: 'produtos', label: 'Produtos', icon: ShoppingBag, bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', activeBg: 'bg-orange-600' },
-  { value: 'assinaturas', label: 'Assinaturas', icon: Crown, bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', activeBg: 'bg-purple-600' },
-  { value: 'cafe', label: 'Café', icon: Coffee, bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', activeBg: 'bg-amber-600' },
+  { value: 'resumo', label: 'Resumo', icon: BarChart3, bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', activeBg: 'bg-slate-600', activeHex: '#475569' },
+  { value: 'pagamentos', label: 'Pagamentos', icon: CreditCard, bg: 'bg-emerald-50', border: 'border-emerald-300', text: 'text-emerald-700', activeBg: 'bg-emerald-600', activeHex: '#059669' },
+  { value: 'barbeiros', label: 'Barbeiros', icon: Users, bg: 'bg-blue-50', border: 'border-blue-300', text: 'text-blue-700', activeBg: 'bg-blue-600', activeHex: '#2563eb' },
+  { value: 'servicos', label: 'Serviços', icon: Scissors, bg: 'bg-violet-50', border: 'border-violet-300', text: 'text-violet-700', activeBg: 'bg-violet-600', activeHex: '#7c3aed' },
+  { value: 'produtos', label: 'Produtos', icon: ShoppingBag, bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', activeBg: 'bg-orange-600', activeHex: '#ea580c' },
+  { value: 'assinaturas', label: 'Assinaturas', icon: Crown, bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', activeBg: 'bg-purple-600', activeHex: '#9333ea' },
+  { value: 'cafe', label: 'Café', icon: Coffee, bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', activeBg: 'bg-amber-600', activeHex: '#d97706' },
 ];
 
 const RelatoriosGerenciais: React.FC = () => {
@@ -72,10 +72,40 @@ const RelatoriosGerenciais: React.FC = () => {
             <TabsTrigger
               key={tab.value}
               value={tab.value}
-              className={`flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg border transition-all
-                ${tab.bg} ${tab.border} ${tab.text} font-medium
-                data-[state=active]:${tab.activeBg} data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-md`}
-              style={{ '--active-bg': tab.activeBg } as any}
+              className={`flex items-center gap-1.5 text-xs sm:text-sm px-2.5 sm:px-3 py-2 rounded-lg border transition-all font-medium
+                ${tab.bg} ${tab.border} ${tab.text}
+                data-[state=active]:text-white data-[state=active]:border-transparent data-[state=active]:shadow-md`}
+              style={{
+                // @ts-ignore
+                '--tw-bg-opacity': undefined,
+              }}
+              data-active-bg={tab.activeBg}
+              onClick={(e) => {
+                // Active styling is handled via inline style below
+              }}
+              ref={(el) => {
+                if (!el) return;
+                const observer = new MutationObserver(() => {
+                  const isActive = el.getAttribute('data-state') === 'active';
+                  if (isActive) {
+                    el.style.backgroundColor = tab.activeHex;
+                    el.style.color = '#ffffff';
+                    el.style.borderColor = 'transparent';
+                  } else {
+                    el.style.backgroundColor = '';
+                    el.style.color = '';
+                    el.style.borderColor = '';
+                  }
+                });
+                observer.observe(el, { attributes: true, attributeFilter: ['data-state'] });
+                // Initial check
+                const isActive = el.getAttribute('data-state') === 'active';
+                if (isActive) {
+                  el.style.backgroundColor = tab.activeHex;
+                  el.style.color = '#ffffff';
+                  el.style.borderColor = 'transparent';
+                }
+              }}
             >
               <tab.icon className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">{tab.label}</span>
