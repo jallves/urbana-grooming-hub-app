@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { decrementCoffeeStock } from '@/utils/coffeeStock';
 import { useClientSubscriptionCredits } from '@/hooks/totem/useClientSubscriptionCredits';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
 import TotemReceiptOptionsModal from '@/components/totem/TotemReceiptOptionsModal';
