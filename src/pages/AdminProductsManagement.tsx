@@ -77,9 +77,21 @@ const AdminProductsManagement: React.FC = () => {
 
   const handleSave = async () => {
     try {
-      const isCafe = formData.nome.toLowerCase().includes('café') || formData.nome.toLowerCase().includes('cafe');
-      if (!formData.nome || (!isCafe && formData.preco <= 0)) {
-        toast.error('Preencha todos os campos obrigatórios (somente Café pode ter preço R$0)');
+      const nomeLower = formData.nome.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+      const isCafe = nomeLower.includes('cafe');
+      
+      if (!formData.nome) {
+        toast.error('Preencha o nome do produto');
+        return;
+      }
+      
+      if (!isCafe && formData.preco <= 0) {
+        toast.error('Somente o produto Café pode ter preço R$0,00');
+        return;
+      }
+      
+      if (isCafe && formData.preco < 0) {
+        toast.error('O preço não pode ser negativo');
         return;
       }
 
