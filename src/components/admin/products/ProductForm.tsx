@@ -29,17 +29,36 @@ interface ProductFormProps {
   onSuccess: () => void;
 }
 
-const productFormSchema = z.object({
-  name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
-  description: z.string().nullable().optional(),
-  price: z.coerce.number().positive({ message: 'O preço deve ser maior que zero' }),
-  cost_price: z.coerce.number().nonnegative().nullable().optional(),
-  stock_quantity: z.coerce.number().int().nonnegative().nullable().optional(),
-  is_active: z.boolean().default(true),
-  images: z.array(z.string()).default([]),
-  commission_value: z.coerce.number().nonnegative().nullable().optional(),
-  commission_percentage: z.coerce.number().nonnegative().nullable().optional(),
-});
+const normalizeProductName = (value: string) =>
+  value
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const productFormSchema = z
+  .object({
+    name: z.string().min(3, { message: 'O nome deve ter pelo menos 3 caracteres' }),
+    description: z.string().nullable().optional(),
+    price: z.coerce.number().min(0, { message: 'O preço não pode ser negativo' }),
+    cost_price: z.coerce.number().nonnegative().nullable().optional(),
+    stock_quantity: z.coerce.number().int().nonnegative().nullable().optional(),
+    is_active: z.boolean().default(true),
+    images: z.array(z.string()).default([]),
+    commission_value: z.coerce.number().nonnegative().nullable().optional(),
+    commission_percentage: z.coerce.number().nonnegative().nullable().optional(),
+  })
+  .superRefine(({ name, price }, ctx) => {
+    const isCafe = normalizeProductName(name) === 'cafe';
+
+    if (price === 0 && !isCafe) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['price'],
+        message: 'Somente o produto Café pode ter preço R$ 0,00',
+      });
+    }
+  });
 
 type ProductFormValues = z.infer<typeof productFormSchema>;
 
