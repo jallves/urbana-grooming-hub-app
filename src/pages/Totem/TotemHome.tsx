@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff, AlertTriangle } from 'lucide-react';
+import { LogOut, CalendarPlus, UserCheck, Wallet, Package, Sparkles, Settings, Wifi, WifiOff, AlertTriangle, Coffee } from 'lucide-react';
 import { useTotemAuth } from '@/contexts/TotemAuthContext';
 import { NewFeaturesModal } from '@/components/totem/NewFeaturesModal';
 import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
@@ -157,6 +157,10 @@ const TotemHome: React.FC = () => {
       glowColor: 'shadow-purple-500/50',
     }
   ];
+
+  const handleCoffee = () => {
+    navigate('/totem/coffee');
+  };
 
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 relative font-poppins overflow-hidden">
@@ -354,7 +358,32 @@ const TotemHome: React.FC = () => {
           })}
         </div>
 
-        {/* Instructions with elegant styling */}
+        {/* Coffee Card - Special standalone */}
+        <div className="px-1 sm:px-2 pt-2 sm:pt-3 animate-slide-up" style={{ animationDelay: '1s' }}>
+          <button
+            onClick={handleCoffee}
+            className="group relative w-full backdrop-blur-md rounded-xl md:rounded-2xl p-3 sm:p-4 transition-all duration-300 active:scale-95 border border-amber-500/30 overflow-hidden shadow-lg active:shadow-2xl active:border-amber-400/50 flex items-center gap-3 sm:gap-4"
+            style={{ touchAction: 'manipulation', WebkitTapHighlightColor: 'transparent', background: 'rgba(0, 0, 0, 0.15)' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 via-yellow-500/5 to-orange-500/10 group-active:opacity-[0.2] transition-all duration-300" />
+            <div className="relative w-10 h-10 sm:w-12 sm:h-12 rounded-xl backdrop-blur-sm flex items-center justify-center border border-amber-500/20"
+                 style={{ background: 'rgba(0,0,0,0.2)' }}>
+              <span className="text-2xl sm:text-3xl">☕</span>
+            </div>
+            <div className="relative text-left flex-1">
+              <h3 className="text-sm sm:text-base font-bold text-urbana-gold group-active:text-urbana-gold-vibrant">
+                Café Cortesia
+              </h3>
+              <p className="text-[9px] sm:text-xs text-urbana-gold/60">
+                Retire seu café gratuitamente
+              </p>
+            </div>
+            <div className="relative text-urbana-gold/40 group-active:text-urbana-gold">
+              <Coffee className="w-5 h-5 sm:w-6 sm:h-6" />
+            </div>
+          </button>
+        </div>
+
         <div className="pt-2 sm:pt-4 md:pt-6 animate-fade-in" style={{ animationDelay: '1s' }}>
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-urbana-gold/5 border border-urbana-gold/20 rounded-full backdrop-blur-sm">
             <span className="inline-block w-1.5 h-1.5 bg-urbana-gold-vibrant rounded-full opacity-80" />
