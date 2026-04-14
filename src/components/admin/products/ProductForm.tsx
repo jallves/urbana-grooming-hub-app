@@ -49,7 +49,8 @@ const productFormSchema = z
     commission_percentage: z.coerce.number().nonnegative().nullable().optional(),
   })
   .superRefine(({ name, price }, ctx) => {
-    const isCafe = normalizeProductName(name) === 'cafe';
+    const normalized = normalizeProductName(name);
+    const isCafe = normalized.includes('cafe');
 
     if (price === 0 && !isCafe) {
       ctx.addIssue({
