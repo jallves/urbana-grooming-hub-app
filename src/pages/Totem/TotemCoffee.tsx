@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Coffee, Minus, Plus, ArrowLeft, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
+import { decrementCoffeeStock } from '@/utils/coffeeStock';
 import { toast } from 'sonner';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -39,6 +40,9 @@ const TotemCoffee: React.FC = () => {
       });
 
       if (error) throw error;
+
+      // Abater estoque do café
+      await decrementCoffeeStock(quantity);
 
       const msg = COFFEE_MESSAGES[Math.floor(Math.random() * COFFEE_MESSAGES.length)];
       setSuccessMessage(msg);
