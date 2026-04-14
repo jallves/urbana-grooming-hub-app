@@ -158,6 +158,10 @@ const TotemHome: React.FC = () => {
     }
   ];
 
+  const handleCoffee = () => {
+    navigate('/totem/coffee');
+  };
+
   return (
     <div className="fixed inset-0 w-screen h-screen flex flex-col items-center justify-center p-2 sm:p-4 md:p-6 lg:p-8 relative font-poppins overflow-hidden">
       {/* Background image */}
