@@ -385,7 +385,7 @@ const TotemCheckout: React.FC = () => {
 
       toast.success(`${serviceCreditsCost} crédito(s) utilizado(s)! (${activeSubscription.credits_remaining - serviceCreditsCost} restantes) ✨`);
       
-      // Register coffee in background
+      // Register coffee in background + decrement stock
       if (wantsCoffee) {
         supabase.from('coffee_records' as any).insert({
           appointment_id: appointment?.id || null,
@@ -393,6 +393,7 @@ const TotemCheckout: React.FC = () => {
           barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
           quantity: 1,
         }).then(() => {});
+        decrementCoffeeStock(1);
       }
 
       // 5. Mostrar modal de comprovante (igual ao fluxo normal)
@@ -536,7 +537,7 @@ const TotemCheckout: React.FC = () => {
         });
     }
 
-    // Register coffee in background (fire-and-forget)
+    // Register coffee in background (fire-and-forget) + decrement stock
     if (wantsCoffee) {
       supabase
         .from('coffee_records' as any)
@@ -549,6 +550,7 @@ const TotemCheckout: React.FC = () => {
         .then(({ error }: any) => {
           if (error) console.warn('[Checkout] Erro ao registrar café:', error);
         });
+      decrementCoffeeStock(1);
     }
 
     setProcessing(false);
