@@ -1,0 +1,1 @@
+UPDATE painel_produtos SET preco = 0, updated_at = NOW() WHERE id = 'b59d80f3-5479-4941-afab-5e0e96e5e959';
