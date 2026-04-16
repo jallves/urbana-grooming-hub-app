@@ -242,10 +242,22 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           comissaoByAppointment.get(ag.id) ||
           (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
+        // Detecta cortesia: forma de pagamento "cortesia" OU venda paga com valor total zero
+        const formaLower = String(formaPagamento || '').toLowerCase();
+        const isCortesia = !!venda && (
+          formaLower.includes('cortesia') ||
+          formaLower.includes('courtesy') ||
+          formaLower.includes('free') ||
+          (venda.status === 'pago' && Number(valorTotal) === 0)
+        );
+
         // Status do pagamento - mais didático
         let statusPagamento: string;
         if (ag.status === 'cancelado') {
           statusPagamento = 'Cancelado';
+        } else if (isCortesia) {
+          // Cortesia sempre conta como pago (valor zerado é esperado)
+          statusPagamento = 'Cortesia (Pago)';
         } else if (venda) {
           statusPagamento = venda.status === 'pago' ? 'Pago (Recebido)' : 'Aguardando Pagamento';
         } else if (ag.status === 'concluido') {
@@ -272,12 +284,12 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           data_checkin: dataCheckin,
           data_checkout: dataCheckout,
           origem_checkout: origemCheckout,
-          forma_pagamento: formaPagamento,
+          forma_pagamento: isCortesia ? 'cortesia' : formaPagamento,
           valor_servico: valorServico,
           desconto,
           gorjeta,
           valor_total: valorTotal,
-          valor_recebido: valorRecebido,
+          valor_recebido: isCortesia ? 0 : valorRecebido,
           comissao_barbeiro: comissaoValor,
           status_pagamento: statusPagamento,
         };
@@ -455,6 +467,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             <p className="font-semibold text-blue-800 mb-1">📖 Legenda do Relatório:</p>
             <p><strong>Status Pgto:</strong> Refere-se ao <em>pagamento do cliente</em> (Contas a Receber), <strong>não</strong> ao pagamento de comissão do barbeiro.</p>
             <p>• <span className="text-green-700 font-medium">Pago (Recebido)</span> = cliente pagou e o valor entrou no caixa.</p>
+            <p>• <span className="text-purple-700 font-medium">Cortesia (Pago)</span> = atendimento gratuito autorizado. Considerado <strong>quitado</strong> (valor R$ 0,00 esperado).</p>
             <p>• <span className="text-yellow-700 font-medium">Aguardando Pagamento</span> = checkout iniciado mas ainda não foi pago.</p>
             <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
             <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
@@ -542,6 +555,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <td>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
                           r.status_pagamento === 'Pago (Recebido)' ? 'bg-green-100 text-green-700' :
+                          r.status_pagamento === 'Cortesia (Pago)' ? 'bg-purple-100 text-purple-700' :
                           r.status_pagamento === 'Aguardando Pagamento' ? 'bg-yellow-100 text-yellow-700' :
                           r.status_pagamento === 'Cancelado' ? 'bg-red-100 text-red-700' :
                           r.status_pagamento === 'Concluído sem Cobrança' ? 'bg-orange-100 text-orange-700' :
@@ -549,6 +563,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                         }`}
                         title="Refere-se ao pagamento do cliente (Contas a Receber). Não representa pagamento de comissão ao barbeiro.">
                           {r.status_pagamento === 'Pago (Recebido)' ? 'Pago' :
+                           r.status_pagamento === 'Cortesia (Pago)' ? 'Cortesia' :
                            r.status_pagamento === 'Aguardando Pagamento' ? 'Aguardando' :
                            r.status_pagamento === 'Concluído sem Cobrança' ? 'S/ Cobrança' :
                            r.status_pagamento}
