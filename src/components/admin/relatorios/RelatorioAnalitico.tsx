@@ -242,10 +242,22 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           comissaoByAppointment.get(ag.id) ||
           (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
+        // Detecta cortesia: forma de pagamento "cortesia" OU venda paga com valor total zero
+        const formaLower = String(formaPagamento || '').toLowerCase();
+        const isCortesia = !!venda && (
+          formaLower.includes('cortesia') ||
+          formaLower.includes('courtesy') ||
+          formaLower.includes('free') ||
+          (venda.status === 'pago' && Number(valorTotal) === 0)
+        );
+
         // Status do pagamento - mais didático
         let statusPagamento: string;
         if (ag.status === 'cancelado') {
           statusPagamento = 'Cancelado';
+        } else if (isCortesia) {
+          // Cortesia sempre conta como pago (valor zerado é esperado)
+          statusPagamento = 'Cortesia (Pago)';
         } else if (venda) {
           statusPagamento = venda.status === 'pago' ? 'Pago (Recebido)' : 'Aguardando Pagamento';
         } else if (ag.status === 'concluido') {
