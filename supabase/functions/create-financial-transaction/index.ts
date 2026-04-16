@@ -481,6 +481,7 @@ Deno.serve(async (req) => {
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
              forma_pagamento: payment_method,
+             venda_id: reference_type === 'venda' ? reference_id : null,
            })
          } else if (commissionAmount > 0) {
            // Uso de crédito ou serviço normal: comissão real
