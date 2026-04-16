@@ -57,6 +57,7 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
   if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
   if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
   if (s.includes('transfer')) return 'Transferência';
+  if (s === 'admin') return 'Não Informado (Admin)';
   // Fallback: capitaliza
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
@@ -322,7 +323,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           data_checkin: dataCheckin,
           data_checkout: dataCheckout,
           origem_checkout: origemCheckout,
-          forma_pagamento: isCortesia ? 'cortesia' : formaPagamento,
+          forma_pagamento: formaPagamentoDisplay,
           valor_servico: valorServico,
           desconto,
           gorjeta,
