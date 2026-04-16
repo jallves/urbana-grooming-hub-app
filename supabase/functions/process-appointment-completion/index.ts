@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
       throw new Error('Erro ao buscar dados do barbeiro')
     }
 
-    const commission_rate = staff?.commission_rate || 50
+    const commission_rate = staff?.commission_rate || 40
     const service_price = agendamento.servico?.preco || 0
     const commission_amount = service_price * (commission_rate / 100)
 
