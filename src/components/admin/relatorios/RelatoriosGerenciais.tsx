@@ -20,6 +20,7 @@ const TAB_CONFIGS = [
   { value: 'produtos', label: 'Produtos', icon: ShoppingBag, bg: 'bg-orange-50', border: 'border-orange-300', text: 'text-orange-700', activeBg: 'bg-orange-600', activeHex: '#ea580c' },
   { value: 'assinaturas', label: 'Assinaturas', icon: Crown, bg: 'bg-purple-50', border: 'border-purple-300', text: 'text-purple-700', activeBg: 'bg-purple-600', activeHex: '#9333ea' },
   { value: 'cafe', label: 'Café', icon: Coffee, bg: 'bg-amber-50', border: 'border-amber-300', text: 'text-amber-700', activeBg: 'bg-amber-600', activeHex: '#d97706' },
+  { value: 'analitico', label: 'Analítico', icon: ClipboardList, bg: 'bg-teal-50', border: 'border-teal-300', text: 'text-teal-700', activeBg: 'bg-teal-600', activeHex: '#0d9488' },
 ];
 
 const RelatoriosGerenciais: React.FC = () => {
@@ -122,6 +123,7 @@ const RelatoriosGerenciais: React.FC = () => {
         <TabsContent value="produtos" className="mt-4"><RelatorioProdutos filters={filters} /></TabsContent>
         <TabsContent value="assinaturas" className="mt-4"><RelatorioAssinaturas filters={filters} /></TabsContent>
         <TabsContent value="cafe" className="mt-4"><RelatorioCafe filters={filters} /></TabsContent>
+        <TabsContent value="analitico" className="mt-4"><RelatorioAnalitico filters={filters} /></TabsContent>
       </Tabs>
     </div>
   );
