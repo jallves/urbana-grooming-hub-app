@@ -528,10 +528,99 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
+          {/* Selectores dedicados de Cliente e Barbeiro (autocomplete) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Popover open={openCliente} onOpenChange={setOpenCliente}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCliente}
+                  className="w-full justify-between bg-white border-gray-300 h-9 text-xs font-normal"
+                >
+                  <span className="truncate">
+                    {filterCliente === 'todos' ? '👤 Todos os Clientes' : filterCliente}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar cliente..." className="h-9 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos"
+                        onSelect={() => { setFilterCliente('todos'); setOpenCliente(false); }}
+                      >
+                        <Check className={cn('mr-2 h-3.5 w-3.5', filterCliente === 'todos' ? 'opacity-100' : 'opacity-0')} />
+                        Todos os Clientes
+                      </CommandItem>
+                      {clienteOptions.map(nome => (
+                        <CommandItem
+                          key={nome}
+                          value={nome}
+                          onSelect={() => { setFilterCliente(nome); setOpenCliente(false); }}
+                        >
+                          <Check className={cn('mr-2 h-3.5 w-3.5', filterCliente === nome ? 'opacity-100' : 'opacity-0')} />
+                          {nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            <Popover open={openBarbeiro} onOpenChange={setOpenBarbeiro}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openBarbeiro}
+                  className="w-full justify-between bg-white border-gray-300 h-9 text-xs font-normal"
+                >
+                  <span className="truncate">
+                    {filterBarbeiro === 'todos' ? '✂️ Todos os Barbeiros' : filterBarbeiro}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar barbeiro..." className="h-9 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum barbeiro encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos"
+                        onSelect={() => { setFilterBarbeiro('todos'); setOpenBarbeiro(false); }}
+                      >
+                        <Check className={cn('mr-2 h-3.5 w-3.5', filterBarbeiro === 'todos' ? 'opacity-100' : 'opacity-0')} />
+                        Todos os Barbeiros
+                      </CommandItem>
+                      {barbeiroOptions.map(nome => (
+                        <CommandItem
+                          key={nome}
+                          value={nome}
+                          onSelect={() => { setFilterBarbeiro(nome); setOpenBarbeiro(false); }}
+                        >
+                          <Check className={cn('mr-2 h-3.5 w-3.5', filterBarbeiro === nome ? 'opacity-100' : 'opacity-0')} />
+                          {nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por cliente, barbeiro, serviço ou extras..."
+              placeholder="Buscar por serviço ou extras..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
