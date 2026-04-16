@@ -57,6 +57,7 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
   if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
   if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
   if (s.includes('transfer')) return 'Transferência';
+  if (s === 'admin') return 'Não Informado (Admin)';
   // Fallback: capitaliza
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
@@ -101,7 +102,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         vendaIds.length > 0
           ? supabase
               .from('vendas')
-              .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, created_at, updated_at')
+              .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, observacoes, created_at, updated_at')
               .in('id', vendaIds)
           : Promise.resolve({ data: [] as any[] }),
         vendaIds.length > 0
@@ -238,7 +239,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         // Checkout: momento exato em que a venda foi criada (finalização do checkout)
         const dataCheckout = venda ? (venda.created_at || venda.updated_at) : null;
 
-        // Pagamento
+        // Pagamento (normaliza status case-insensitive: aceita 'pago' e 'PAGA')
+        const vendaStatusLower = String(venda?.status || '').toLowerCase();
+        const vendaPaga = vendaStatusLower === 'pago' || vendaStatusLower === 'paga';
+        const vendaObs = String(venda?.observacoes || '').toLowerCase();
+        const isAdminCheckout = vendaObs.includes('checkout administrativo') || vendaObs.includes('cortesia administrativa');
+        const isAdminCortesia = vendaObs.includes('cortesia administrativa');
+
         const formaPagamento = venda ? (venda.forma_pagamento || '') : '';
         const valorServico = Number(servico?.preco || 0);
         const desconto = venda ? Number(venda.desconto || 0) : 0;
@@ -251,7 +258,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         );
         const valorRecebido = contaReceber
           ? Number(contaReceber.valor)
-          : venda && venda.status === 'pago'
+          : vendaPaga
           ? valorTotal
           : 0;
 
@@ -260,13 +267,14 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           comissaoByAppointment.get(ag.id) ||
           (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
-        // Detecta cortesia: forma de pagamento "cortesia" OU venda paga com valor total zero
+        // Detecta cortesia: forma de pagamento "cortesia", obs admin de cortesia, OU venda paga com valor zero
         const formaLower = String(formaPagamento || '').toLowerCase();
         const isCortesia = !!venda && (
           formaLower.includes('cortesia') ||
           formaLower.includes('courtesy') ||
           formaLower.includes('free') ||
-          (venda.status === 'pago' && Number(valorTotal) === 0)
+          isAdminCortesia ||
+          (vendaPaga && Number(valorTotal) === 0)
         );
 
         // Status do pagamento - mais didático
@@ -277,18 +285,31 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           // Cortesia sempre conta como pago (valor zerado é esperado)
           statusPagamento = 'Cortesia (Pago)';
         } else if (venda) {
-          statusPagamento = venda.status === 'pago' ? 'Pago (Recebido)' : 'Aguardando Pagamento';
+          statusPagamento = vendaPaga ? 'Pago (Recebido)' : 'Aguardando Pagamento';
         } else if (ag.status === 'concluido') {
           statusPagamento = 'Concluído sem Cobrança';
         } else {
           statusPagamento = 'Sem Checkout';
         }
 
-        // Origem do checkout: Totem ou Admin (manual)
+        // Origem do checkout: Admin (manual) tem prioridade — identificado pela observação da venda.
+        // O admin override também cria sessão no totem por baixo dos panos, então não dá pra
+        // confiar só em appointment_totem_sessions.
         let origemCheckout = '-';
         if (venda) {
-          origemCheckout = totemAppointments.has(ag.id) ? 'Totem' : 'Admin (Manual)';
+          if (isAdminCheckout) {
+            origemCheckout = 'Admin (Manual)';
+          } else if (totemAppointments.has(ag.id)) {
+            origemCheckout = 'Totem';
+          } else {
+            origemCheckout = 'Admin (Manual)';
+          }
         }
+
+        // Forma de pagamento exibida: cortesia explícita > forma original > 'Cortesia' (admin sem forma)
+        const formaPagamentoDisplay = isCortesia
+          ? 'cortesia'
+          : (formaPagamento || (isAdminCheckout ? 'admin' : ''));
 
         return {
           agendamento_id: ag.id,
@@ -302,7 +323,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           data_checkin: dataCheckin,
           data_checkout: dataCheckout,
           origem_checkout: origemCheckout,
-          forma_pagamento: isCortesia ? 'cortesia' : formaPagamento,
+          forma_pagamento: formaPagamentoDisplay,
           valor_servico: valorServico,
           desconto,
           gorjeta,
