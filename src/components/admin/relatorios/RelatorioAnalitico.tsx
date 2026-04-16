@@ -319,17 +319,18 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       'Barbeiro': r.barbeiro_nome,
       'Serviço': r.servico_nome,
       'Extras': r.servicos_extras,
-      'Status': r.status_agendamento,
-      'Check-in': r.data_checkin ? formatDate(r.data_checkin) : '-',
-      'Checkout': r.data_checkout ? formatDate(r.data_checkout) : '-',
-      'Pagamento': getPaymentMethodLabel(r.forma_pagamento) || '-',
+      'Status Agendamento': r.status_agendamento,
+      'Data Check-in': r.data_checkin ? formatDate(r.data_checkin) : '-',
+      'Data Checkout': r.data_checkout ? formatDate(r.data_checkout) : '-',
+      'Origem do Checkout': r.origem_checkout,
+      'Forma de Pagamento': normalizePaymentMethod(r.forma_pagamento),
       'Valor Serviço': r.valor_servico,
       'Desconto': r.desconto,
       'Gorjeta': r.gorjeta,
       'Valor Total': r.valor_total,
-      'Valor Recebido': r.valor_recebido,
+      'Valor Recebido (Cliente)': r.valor_recebido,
       'Comissão Barbeiro': r.comissao_barbeiro,
-      'Status Pgto': r.status_pagamento,
+      'Status Pagamento': r.status_pagamento,
     }));
 
     const wb = XLSX.utils.book_new();
@@ -358,28 +359,29 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
     const headers = [
       'Data', 'Hora', 'Cliente', 'Barbeiro', 'Serviço', 'Extras', 'Status',
-      'Check-in', 'Checkout', 'Pagamento', 'Valor', 'Desc.', 'Gorj.', 'Total',
-      'Recebido', 'Comissão', 'Pgto',
+      'Check-in', 'Checkout', 'Origem', 'Forma Pgto', 'Valor', 'Desc.', 'Gorj.', 'Total',
+      'Recebido', 'Comissão', 'Status Pgto',
     ];
 
     const body = filtered.map(r => [
       format(new Date(r.data_agendamento), 'dd/MM', { locale: ptBR }),
       r.hora,
-      r.cliente_nome.length > 14 ? r.cliente_nome.slice(0, 14) + '…' : r.cliente_nome,
-      r.barbeiro_nome.length > 10 ? r.barbeiro_nome.slice(0, 10) + '…' : r.barbeiro_nome,
-      r.servico_nome.length > 14 ? r.servico_nome.slice(0, 14) + '…' : r.servico_nome,
-      r.servicos_extras.length > 14 ? r.servicos_extras.slice(0, 14) + '…' : r.servicos_extras || '-',
+      r.cliente_nome.length > 12 ? r.cliente_nome.slice(0, 12) + '…' : r.cliente_nome,
+      r.barbeiro_nome.length > 9 ? r.barbeiro_nome.slice(0, 9) + '…' : r.barbeiro_nome,
+      r.servico_nome.length > 12 ? r.servico_nome.slice(0, 12) + '…' : r.servico_nome,
+      r.servicos_extras.length > 12 ? r.servicos_extras.slice(0, 12) + '…' : r.servicos_extras || '-',
       r.status_agendamento.slice(0, 9),
       r.data_checkin ? format(new Date(r.data_checkin), 'dd/MM HH:mm') : '-',
       r.data_checkout ? format(new Date(r.data_checkout), 'dd/MM HH:mm') : '-',
-      getPaymentMethodLabel(r.forma_pagamento)?.slice(0, 8) || '-',
+      r.origem_checkout,
+      normalizePaymentMethod(r.forma_pagamento),
       formatCurrency(r.valor_servico),
       formatCurrency(r.desconto),
       formatCurrency(r.gorjeta),
       formatCurrency(r.valor_total),
       formatCurrency(r.valor_recebido),
       formatCurrency(r.comissao_barbeiro),
-      r.status_pagamento.slice(0, 8),
+      r.status_pagamento,
     ]);
 
     (doc as any).autoTable({
