@@ -253,7 +253,8 @@ Deno.serve(async (req) => {
         categoria: 'servico',
         forma_pagamento: type === 'courtesy' ? 'cortesia' : 'admin',
         cliente_id: agendamento.cliente_id,
-        observacoes: observacao
+        observacoes: observacao,
+        venda_id: novaVenda.id, // FK padronizada para vendas.id
       })
       console.log('✅ Contas a receber:', revenueAmount)
 
