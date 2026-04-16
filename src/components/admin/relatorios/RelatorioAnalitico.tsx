@@ -554,6 +554,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <td>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
                           r.status_pagamento === 'Pago (Recebido)' ? 'bg-green-100 text-green-700' :
+                          r.status_pagamento === 'Cortesia (Pago)' ? 'bg-purple-100 text-purple-700' :
                           r.status_pagamento === 'Aguardando Pagamento' ? 'bg-yellow-100 text-yellow-700' :
                           r.status_pagamento === 'Cancelado' ? 'bg-red-100 text-red-700' :
                           r.status_pagamento === 'Concluído sem Cobrança' ? 'bg-orange-100 text-orange-700' :
@@ -561,6 +562,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                         }`}
                         title="Refere-se ao pagamento do cliente (Contas a Receber). Não representa pagamento de comissão ao barbeiro.">
                           {r.status_pagamento === 'Pago (Recebido)' ? 'Pago' :
+                           r.status_pagamento === 'Cortesia (Pago)' ? 'Cortesia' :
                            r.status_pagamento === 'Aguardando Pagamento' ? 'Aguardando' :
                            r.status_pagamento === 'Concluído sem Cobrança' ? 'S/ Cobrança' :
                            r.status_pagamento}
