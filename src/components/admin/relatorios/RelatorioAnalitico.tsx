@@ -47,17 +47,21 @@ const statusMap: Record<string, string> = {
 };
 
 // Normaliza forma de pagamento para nomenclatura amigável e consistente
+// IMPORTANTE: 'Assinatura' (uso de crédito de plano) deve ser checado ANTES de 'credit'
+// para evitar que 'credit_subscription' caia em 'Cartão de Crédito'.
 const normalizePaymentMethod = (raw: string | null | undefined): string => {
   if (!raw) return '-';
   const s = String(raw).toLowerCase().trim();
+  // Assinatura primeiro (evita conflito com 'credit')
+  if (s.includes('subscription') || s.includes('assinatura') || s.includes('plano')) return 'Assinatura';
   if (s.includes('pix')) return 'PIX';
-  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
   if (s.includes('debit') || s.includes('débito') || s.includes('debito')) return 'Cartão de Débito';
+  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
   if (s.includes('cash') || s.includes('dinheiro') || s.includes('especie') || s.includes('espécie')) return 'Dinheiro';
-  if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
   if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
   if (s.includes('transfer')) return 'Transferência';
-  if (s === 'admin') return 'Não Informado (Admin)';
+  // Checkout fechado pelo administrador (sem método específico) → 'Admin'
+  if (s === 'admin') return 'Admin';
   // Fallback: capitaliza
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
@@ -711,7 +715,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
             <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
             <p><strong>Origem Checkout:</strong> <span className="text-teal-700">Totem</span> (cliente finalizou no totem) ou <span className="text-indigo-700">Admin (Manual)</span> (finalizado pelo administrador).</p>
-            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Crédito de Assinatura (uso de plano), Cortesia.</p>
+            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Assinatura (uso de crédito do plano), Cortesia, <span className="text-indigo-700">Admin</span> (checkout manual fechado pelo administrador, sem método específico).</p>
           </div>
         </CardContent>
       </Card>
