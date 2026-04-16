@@ -185,6 +185,11 @@ const PendingAccountsWidget: React.FC = () => {
                       <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
                     )}
                   </div>
+                  {item.cliente_nome && (
+                    <p className="text-xs text-gray-700 mt-0.5 truncate font-medium">
+                      Cliente: {item.cliente_nome}
+                    </p>
+                  )}
                   <p className="text-xs text-gray-500 mt-1">
                     {getCategoryLabel(item.categoria)}
                   </p>
