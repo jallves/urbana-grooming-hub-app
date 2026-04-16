@@ -465,23 +465,24 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Barbeiro</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Serviço</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Extras</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Status</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Check-in</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Checkout</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Pagamento</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Status Agend.</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Check-in</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Checkout</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Origem Checkout</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Forma Pgto</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Valor Serv.</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Desconto</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Gorjeta</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Total</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Recebido</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Comissão</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Pgto</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Valor recebido do cliente">Recebido (Cliente)</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Comissão devida ao barbeiro">Comissão Barbeiro</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap" title="Status do pagamento do cliente (não da comissão)">Status Pgto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={17} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={18} className="text-center py-8 text-gray-500">
                       Nenhum agendamento encontrado para o período selecionado.
                     </TableCell>
                   </TableRow>
@@ -509,7 +510,16 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkin)}</TableCell>
                       <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkout)}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {getPaymentMethodLabel(r.forma_pagamento) || '-'}
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          r.origem_checkout === 'Totem' ? 'bg-teal-100 text-teal-700' :
+                          r.origem_checkout === 'Admin (Manual)' ? 'bg-indigo-100 text-indigo-700' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {r.origem_checkout}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-[11px]">
+                        {normalizePaymentMethod(r.forma_pagamento)}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatCurrency(r.valor_servico)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap text-orange-600">
@@ -522,11 +532,14 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <TableCell className="text-right whitespace-nowrap text-emerald-700">{formatCurrency(r.valor_recebido)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap text-violet-700">{formatCurrency(r.comissao_barbeiro)}</TableCell>
                       <TableCell>
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          r.status_pagamento === 'Pago' ? 'bg-green-100 text-green-700' :
-                          r.status_pagamento === 'Pendente' ? 'bg-yellow-100 text-yellow-700' :
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                          r.status_pagamento === 'Pago (Recebido)' ? 'bg-green-100 text-green-700' :
+                          r.status_pagamento === 'Aguardando Pagamento' ? 'bg-yellow-100 text-yellow-700' :
+                          r.status_pagamento === 'Cancelado' ? 'bg-red-100 text-red-700' :
+                          r.status_pagamento === 'Concluído sem Cobrança' ? 'bg-orange-100 text-orange-700' :
                           'bg-gray-100 text-gray-500'
-                        }`}>
+                        }`}
+                        title="Refere-se ao pagamento do cliente (Contas a Receber). Não representa pagamento de comissão ao barbeiro.">
                           {r.status_pagamento}
                         </span>
                       </TableCell>
