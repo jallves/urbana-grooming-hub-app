@@ -551,6 +551,7 @@ export const ContasAReceber: React.FC = () => {
                       <TableRow className="bg-gray-50">
                         <TableHead className="px-3 text-xs">Data</TableHead>
                         <TableHead className="px-2 text-xs">Hora</TableHead>
+                        <TableHead className="px-2 text-xs">Cliente</TableHead>
                         <TableHead className="px-2 text-xs">Descrição</TableHead>
                         <TableHead className="px-2 text-xs">Categoria</TableHead>
                         <TableHead className="px-2 text-xs">Pagamento</TableHead>
