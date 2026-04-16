@@ -84,8 +84,12 @@ const getCategoryColors = (category: string | null): string => {
 };
 
 // Mapeamento de formas de pagamento
+// Quando forma_pagamento está vazia em contas_pagar, trata-se de checkout
+// finalizado manualmente pelo admin (sem TEF/PayGo) → exibe "Admin"
 const getPaymentMethodLabel = (method: string | null): string => {
-  if (!method) return '-';
+  if (!method || !method.trim()) return 'Admin';
+  const normalized = method.toLowerCase().trim();
+  if (normalized.includes('subscription') || normalized.includes('assinatura') || normalized.includes('plano')) return 'Assinatura';
   const map: Record<string, string> = {
     'pix': 'PIX',
     'debito': 'Débito',
@@ -94,13 +98,19 @@ const getPaymentMethodLabel = (method: string | null): string => {
     'debit': 'Débito',
     'credit': 'Crédito',
     'cash': 'Dinheiro',
+    'admin': 'Admin',
+    'manual': 'Admin',
   };
-  return map[method.toLowerCase()] || method;
+  return map[normalized] || method;
 };
 
 // Cores por forma de pagamento
 const getPaymentMethodColors = (method: string | null): string => {
-  if (!method) return 'bg-gray-100 text-gray-700 border-gray-300';
+  if (!method || !method.trim()) return 'bg-slate-100 text-slate-700 border-slate-300';
+  const normalized = method.toLowerCase().trim();
+  if (normalized.includes('subscription') || normalized.includes('assinatura') || normalized.includes('plano')) {
+    return 'bg-purple-100 text-purple-700 border-purple-300';
+  }
   const colors: Record<string, string> = {
     'pix': 'bg-emerald-100 text-emerald-700 border-emerald-300',
     'debito': 'bg-sky-100 text-sky-700 border-sky-300',
@@ -109,8 +119,10 @@ const getPaymentMethodColors = (method: string | null): string => {
     'credit': 'bg-violet-100 text-violet-700 border-violet-300',
     'dinheiro': 'bg-lime-100 text-lime-700 border-lime-300',
     'cash': 'bg-lime-100 text-lime-700 border-lime-300',
+    'admin': 'bg-slate-100 text-slate-700 border-slate-300',
+    'manual': 'bg-slate-100 text-slate-700 border-slate-300',
   };
-  return colors[method.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
+  return colors[normalized] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
 // Função auxiliar para formatar horário da transação
