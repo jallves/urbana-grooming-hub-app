@@ -32,6 +32,7 @@ interface ContaReceber {
   data_recebimento: string | null;
   categoria: string | null;
   cliente_id: string | null;
+  cliente_nome?: string | null;
   status: string | null;
   observacoes: string | null;
   transaction_id: string | null; // ID da transação eletrônica (NSU, PIX, etc.)
