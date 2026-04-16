@@ -101,7 +101,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         vendaIds.length > 0
           ? supabase
               .from('vendas')
-              .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, created_at, updated_at')
+              .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, observacoes, created_at, updated_at')
               .in('id', vendaIds)
           : Promise.resolve({ data: [] as any[] }),
         vendaIds.length > 0
