@@ -72,8 +72,9 @@ async function ensureContasReceber(
     status: 'pendente' | 'recebido'
     observacoes: string
     categoria?: string | null
-    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
-    forma_pagamento?: string | null // 👈 ADICIONADO: Forma de pagamento
+    transaction_id?: string | null // Referência externa (NSU, PIX, gateway)
+    forma_pagamento?: string | null
+    venda_id?: string | null // FK padronizada para vendas.id
   }
 ) {
   const { data: existing } = await supabase
@@ -95,8 +96,9 @@ async function ensureContasReceber(
       cliente_id: params.cliente_id,
       status: params.status,
       observacoes: params.observacoes,
-      transaction_id: params.transaction_id || null, // ID da transação eletrônica
-      forma_pagamento: params.forma_pagamento || null, // 👈 ADICIONADO: Forma de pagamento
+      transaction_id: params.transaction_id || null,
+      forma_pagamento: params.forma_pagamento || null,
+      venda_id: params.venda_id || null,
     })
     .select('id')
     .single()
@@ -116,8 +118,9 @@ async function ensureContasPagar(
     observacoes: string
     categoria?: string | null
     fornecedor?: string | null
-    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
-    forma_pagamento?: string | null // 👈 ADICIONADO: Forma de pagamento
+    transaction_id?: string | null // Referência externa (NSU, PIX, gateway)
+    forma_pagamento?: string | null
+    venda_id?: string | null // FK padronizada para vendas.id
   }
 ) {
   const { data: existing } = await supabase
@@ -139,8 +142,9 @@ async function ensureContasPagar(
       fornecedor: params.fornecedor || null,
       status: params.status,
       observacoes: params.observacoes,
-      transaction_id: params.transaction_id || null, // ID da transação eletrônica
-      forma_pagamento: params.forma_pagamento || null, // 👈 ADICIONADO: Forma de pagamento
+      transaction_id: params.transaction_id || null,
+      forma_pagamento: params.forma_pagamento || null,
+      venda_id: params.venda_id || null,
     })
     .select('id')
     .single()
