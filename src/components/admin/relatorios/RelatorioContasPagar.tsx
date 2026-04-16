@@ -198,7 +198,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
     [rows]
   );
   const formaPgtoOptions = useMemo(
-    () => Array.from(new Set(rows.map(r => normalizePaymentMethod(r.forma_pagamento)).filter(f => f && f !== '-'))).sort(),
+    () => Array.from(new Set(rows.map(r => normalizePaymentMethod(r.forma_pagamento, r.observacoes)).filter(f => f && f !== '-'))).sort(),
     [rows]
   );
 
@@ -208,7 +208,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
       if (filterFornecedor !== 'todos' && r.fornecedor !== filterFornecedor) return false;
       if (filterCategoria !== 'todos' && r.categoria_label !== filterCategoria) return false;
       if (filterStatus !== 'todos' && r.status_label !== filterStatus) return false;
-      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento) !== filterFormaPgto) return false;
+      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento, r.observacoes) !== filterFormaPgto) return false;
       if (term && !(
         r.fornecedor.toLowerCase().includes(term) ||
         r.descricao.toLowerCase().includes(term) ||
@@ -273,7 +273,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
       'Serviço (Agend.)': r.servico_nome,
       'Data Agend.': r.agendamento_data ? formatDate(r.agendamento_data) : '-',
       'Hora Agend.': r.agendamento_hora || '-',
-      'Forma de Pagamento': normalizePaymentMethod(r.forma_pagamento),
+      'Forma de Pagamento': normalizePaymentMethod(r.forma_pagamento, r.observacoes),
       'Valor': r.valor,
       'Status': r.status_label,
     }));
@@ -338,7 +338,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
       r.cliente_nome.length > 14 ? r.cliente_nome.slice(0, 14) + '…' : r.cliente_nome,
       r.servico_nome.length > 14 ? r.servico_nome.slice(0, 14) + '…' : r.servico_nome,
       r.agendamento_data ? `${formatDate(r.agendamento_data)} ${r.agendamento_hora || ''}` : '-',
-      normalizePaymentMethod(r.forma_pagamento),
+      normalizePaymentMethod(r.forma_pagamento, r.observacoes),
       formatCurrency(r.valor),
       r.status_label,
     ]);
@@ -596,7 +596,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
                       <td className="whitespace-nowrap text-gray-600">
                         {r.agendamento_data ? `${formatDate(r.agendamento_data)} ${r.agendamento_hora || ''}` : '-'}
                       </td>
-                      <td>{normalizePaymentMethod(r.forma_pagamento)}</td>
+                      <td>{normalizePaymentMethod(r.forma_pagamento, r.observacoes)}</td>
                       <td className="text-right font-semibold text-rose-700">{formatCurrency(r.valor)}</td>
                       <td>
                         <span className={cn('inline-block px-2 py-0.5 rounded text-[10px] font-medium', statusBadge(r.status))}>
