@@ -467,6 +467,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             <p className="font-semibold text-blue-800 mb-1">📖 Legenda do Relatório:</p>
             <p><strong>Status Pgto:</strong> Refere-se ao <em>pagamento do cliente</em> (Contas a Receber), <strong>não</strong> ao pagamento de comissão do barbeiro.</p>
             <p>• <span className="text-green-700 font-medium">Pago (Recebido)</span> = cliente pagou e o valor entrou no caixa.</p>
+            <p>• <span className="text-purple-700 font-medium">Cortesia (Pago)</span> = atendimento gratuito autorizado. Considerado <strong>quitado</strong> (valor R$ 0,00 esperado).</p>
             <p>• <span className="text-yellow-700 font-medium">Aguardando Pagamento</span> = checkout iniciado mas ainda não foi pago.</p>
             <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
             <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
