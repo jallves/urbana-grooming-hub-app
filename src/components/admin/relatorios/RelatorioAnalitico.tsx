@@ -467,49 +467,46 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       <Card className="bg-white border-gray-200 overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Hora</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Cliente</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Barbeiro</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Serviço</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Extras</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Status Agend.</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Check-in</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Checkout</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Origem Checkout</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Forma Pgto</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Valor Serv.</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Desconto</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Gorjeta</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Total</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Valor recebido do cliente">Recebido (Cliente)</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Comissão devida ao barbeiro">Comissão Barbeiro</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap" title="Status do pagamento do cliente (não da comissão)">Status Pgto</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
+            <table className="w-full caption-bottom text-[11px] border-collapse [&_th]:px-2 [&_th]:py-2 [&_td]:px-2 [&_td]:py-1.5 [&_th]:font-semibold [&_th]:text-gray-600 [&_th]:text-left [&_th]:bg-gray-50 [&_tr]:border-b [&_tr]:border-gray-100">
+              <thead>
+                <tr>
+                  <th className="whitespace-nowrap">Data / Hora</th>
+                  <th>Cliente</th>
+                  <th>Barbeiro</th>
+                  <th>Serviço</th>
+                  <th>Extras</th>
+                  <th className="whitespace-nowrap">Status</th>
+                  <th className="whitespace-nowrap">Check-in / Checkout</th>
+                  <th className="whitespace-nowrap">Origem</th>
+                  <th className="whitespace-nowrap">Forma Pgto</th>
+                  <th className="text-right whitespace-nowrap">Valor</th>
+                  <th className="text-right whitespace-nowrap" title="Desconto / Gorjeta">Desc / Gorj</th>
+                  <th className="text-right whitespace-nowrap">Total</th>
+                  <th className="text-right whitespace-nowrap" title="Recebido do cliente">Recebido</th>
+                  <th className="text-right whitespace-nowrap" title="Comissão devida ao barbeiro">Comissão</th>
+                  <th className="whitespace-nowrap" title="Status do pagamento do cliente (não da comissão)">Status Pgto</th>
+                </tr>
+              </thead>
+              <tbody>
                 {filtered.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={18} className="text-center py-8 text-gray-500">
+                  <tr>
+                    <td colSpan={15} className="text-center py-8 text-gray-500">
                       Nenhum agendamento encontrado para o período selecionado.
-                    </TableCell>
-                  </TableRow>
+                    </td>
+                  </tr>
                 ) : (
                   filtered.map(r => (
-                    <TableRow key={r.agendamento_id} className="hover:bg-gray-50 text-xs">
-                      <TableCell className="whitespace-nowrap">
-                        {format(new Date(r.data_agendamento), 'dd/MM/yyyy', { locale: ptBR })}
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap">{r.hora}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[120px] truncate" title={r.cliente_nome}>{r.cliente_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[100px] truncate" title={r.barbeiro_nome}>{r.barbeiro_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[120px] truncate" title={r.servico_nome}>{r.servico_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[120px] truncate text-gray-500" title={r.servicos_extras}>{r.servicos_extras || '-'}</TableCell>
-                      <TableCell>
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                    <tr key={r.agendamento_id} className="hover:bg-gray-50 align-top">
+                      <td className="whitespace-nowrap">
+                        <div className="font-medium text-gray-800">{format(new Date(r.data_agendamento), 'dd/MM/yy', { locale: ptBR })}</div>
+                        <div className="text-[10px] text-gray-500">{r.hora}</div>
+                      </td>
+                      <td className="max-w-[140px] truncate" title={r.cliente_nome}>{r.cliente_nome}</td>
+                      <td className="max-w-[110px] truncate" title={r.barbeiro_nome}>{r.barbeiro_nome}</td>
+                      <td className="max-w-[130px] truncate" title={r.servico_nome}>{r.servico_nome}</td>
+                      <td className="max-w-[130px] truncate text-gray-500" title={r.servicos_extras}>{r.servicos_extras || '-'}</td>
+                      <td>
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
                           r.status_agendamento === 'Concluído' ? 'bg-green-100 text-green-700' :
                           r.status_agendamento === 'Cancelado' ? 'bg-red-100 text-red-700' :
                           r.status_agendamento === 'Confirmado' ? 'bg-blue-100 text-blue-700' :
@@ -517,32 +514,32 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                         }`}>
                           {r.status_agendamento}
                         </span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkin)}</TableCell>
-                      <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkout)}</TableCell>
-                      <TableCell className="whitespace-nowrap">
+                      </td>
+                      <td className="whitespace-nowrap text-[10px] leading-tight">
+                        <div><span className="text-gray-400">In:</span> <span className="text-gray-700">{formatDate(r.data_checkin)}</span></div>
+                        <div><span className="text-gray-400">Out:</span> <span className="text-gray-700">{formatDate(r.data_checkout)}</span></div>
+                      </td>
+                      <td className="whitespace-nowrap">
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           r.origem_checkout === 'Totem' ? 'bg-teal-100 text-teal-700' :
                           r.origem_checkout === 'Admin (Manual)' ? 'bg-indigo-100 text-indigo-700' :
                           'bg-gray-100 text-gray-500'
                         }`}>
-                          {r.origem_checkout}
+                          {r.origem_checkout === 'Admin (Manual)' ? 'Admin' : r.origem_checkout}
                         </span>
-                      </TableCell>
-                      <TableCell className="whitespace-nowrap text-[11px]">
+                      </td>
+                      <td className="whitespace-nowrap text-[10px]">
                         {normalizePaymentMethod(r.forma_pagamento)}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap">{formatCurrency(r.valor_servico)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-orange-600">
-                        {r.desconto > 0 ? formatCurrency(r.desconto) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-emerald-600">
-                        {r.gorjeta > 0 ? formatCurrency(r.gorjeta) : '-'}
-                      </TableCell>
-                      <TableCell className="text-right whitespace-nowrap font-medium">{formatCurrency(r.valor_total)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-emerald-700">{formatCurrency(r.valor_recebido)}</TableCell>
-                      <TableCell className="text-right whitespace-nowrap text-violet-700">{formatCurrency(r.comissao_barbeiro)}</TableCell>
-                      <TableCell>
+                      </td>
+                      <td className="text-right whitespace-nowrap tabular-nums">{formatCurrency(r.valor_servico)}</td>
+                      <td className="text-right whitespace-nowrap text-[10px] tabular-nums leading-tight">
+                        <div className="text-orange-600">{r.desconto > 0 ? `-${formatCurrency(r.desconto)}` : '-'}</div>
+                        <div className="text-emerald-600">{r.gorjeta > 0 ? `+${formatCurrency(r.gorjeta)}` : '-'}</div>
+                      </td>
+                      <td className="text-right whitespace-nowrap font-medium tabular-nums">{formatCurrency(r.valor_total)}</td>
+                      <td className="text-right whitespace-nowrap text-emerald-700 tabular-nums">{formatCurrency(r.valor_recebido)}</td>
+                      <td className="text-right whitespace-nowrap text-violet-700 tabular-nums">{formatCurrency(r.comissao_barbeiro)}</td>
+                      <td>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
                           r.status_pagamento === 'Pago (Recebido)' ? 'bg-green-100 text-green-700' :
                           r.status_pagamento === 'Aguardando Pagamento' ? 'bg-yellow-100 text-yellow-700' :
@@ -551,14 +548,17 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                           'bg-gray-100 text-gray-500'
                         }`}
                         title="Refere-se ao pagamento do cliente (Contas a Receber). Não representa pagamento de comissão ao barbeiro.">
-                          {r.status_pagamento}
+                          {r.status_pagamento === 'Pago (Recebido)' ? 'Pago' :
+                           r.status_pagamento === 'Aguardando Pagamento' ? 'Aguardando' :
+                           r.status_pagamento === 'Concluído sem Cobrança' ? 'S/ Cobrança' :
+                           r.status_pagamento}
                         </span>
-                      </TableCell>
-                    </TableRow>
+                      </td>
+                    </tr>
                   ))
                 )}
-              </TableBody>
-            </Table>
+              </tbody>
+            </table>
           </div>
         </CardContent>
       </Card>
