@@ -537,8 +537,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                           r.origem_checkout === 'Totem' ? 'bg-teal-100 text-teal-700' :
                           r.origem_checkout === 'Admin (Manual)' ? 'bg-indigo-100 text-indigo-700' :
                           'bg-gray-100 text-gray-500'
-                        }`}>
-                          {r.origem_checkout === 'Admin (Manual)' ? 'Admin' : r.origem_checkout}
+                        }`} title={r.origem_checkout}>
+                          {r.origem_checkout === 'Totem' ? '🖥️ Totem' :
+                           r.origem_checkout === 'Admin (Manual)' ? '👤 Admin' :
+                           r.origem_checkout}
                         </span>
                       </td>
                       <td className="whitespace-nowrap text-[10px]">
