@@ -168,6 +168,7 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
           servico_nome: servico?.nome || (categoriaRaw === 'gorjeta' ? 'Gorjeta' : categoriaRaw === 'produto' ? 'Produto' : '—'),
           valor: Number(c.valor || 0),
           forma_pagamento: c.forma_pagamento || '',
+          observacoes: c.observacoes || null,
           status: statusRaw,
           status_label: statusLabel,
         };
