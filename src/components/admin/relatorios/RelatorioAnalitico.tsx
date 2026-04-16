@@ -63,6 +63,10 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCliente, setFilterCliente] = useState<string>('todos');
+  const [filterBarbeiro, setFilterBarbeiro] = useState<string>('todos');
+  const [openCliente, setOpenCliente] = useState(false);
+  const [openBarbeiro, setOpenBarbeiro] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterOrigem, setFilterOrigem] = useState<string>('todos');
   const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
