@@ -482,6 +482,14 @@ export const ContasAReceber: React.FC = () => {
                         {getStatusBadge(conta.status)}
                       </div>
                       
+                      {/* Cliente - destacado para identificação rápida */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-0.5">Cliente</span>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {conta.cliente_nome || <span className="text-gray-400 italic font-normal">Sem cliente vinculado</span>}
+                        </p>
+                      </div>
+
                       {/* Descrição - completa, sem cortes */}
                       <div className="mb-2">
                         <span className="text-xs text-gray-500 block mb-0.5">Descrição</span>
