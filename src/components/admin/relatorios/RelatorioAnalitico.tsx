@@ -102,7 +102,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const agendamentoIds = ags.map((a: any) => a.id);
 
       // 2. Fetch related data in parallel
-      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes] = await Promise.all([
+      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes, gorjetasStandaloneRes] = await Promise.all([
         vendaIds.length > 0
           ? supabase
               .from('vendas')
@@ -144,6 +144,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
               .in('appointment_id', agendamentoIds)
               .order('created_at', { ascending: true })
           : Promise.resolve({ data: [] as any[] }),
+        // Gorjetas avulsas (sem appointment/venda link) registradas no período
+        supabase
+          .from('barber_commissions')
+          .select('id, barber_id, barber_name, valor, status, tipo, created_at, data_pagamento')
+          .eq('tipo', 'gorjeta')
+          .gte('created_at', `${startDate}T00:00:00`)
+          .lte('created_at', `${endDate}T23:59:59`),
       ]);
 
       const vendas = vendasRes.data || [];
@@ -338,6 +345,50 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         };
       });
 
+      // 4. Adiciona gorjetas avulsas (sem appointment/venda link) como linhas próprias
+      // Isso garante que gorjetas registradas manualmente (ex: R$45 Carlos) apareçam no relatório
+      const gorjetasStandalone = (gorjetasStandaloneRes.data || []) as any[];
+      const gorjetasOrfas = gorjetasStandalone.filter(
+        (g) => !g.appointment_id && !g.venda_id
+      );
+      gorjetasOrfas.forEach((g) => {
+        const dataGorjeta = g.created_at || new Date().toISOString();
+        const dataStr = dataGorjeta.split('T')[0];
+        const horaStr = dataGorjeta.includes('T')
+          ? dataGorjeta.split('T')[1].slice(0, 5)
+          : '--:--';
+        const valorGorj = Number(g.valor || 0);
+        const isPaga = String(g.status || '').toLowerCase() === 'pago';
+        result.push({
+          agendamento_id: `gorjeta-${g.id}`,
+          data_agendamento: dataStr,
+          hora: horaStr,
+          cliente_nome: '—',
+          barbeiro_nome: g.barber_name || 'N/A',
+          servico_nome: 'Gorjeta avulsa',
+          servicos_extras: '',
+          status_agendamento: 'Gorjeta',
+          data_checkin: null,
+          data_checkout: dataGorjeta,
+          origem_checkout: 'Admin (Manual)',
+          forma_pagamento: 'admin',
+          valor_servico: 0,
+          desconto: 0,
+          gorjeta: valorGorj,
+          valor_total: valorGorj,
+          valor_recebido: isPaga ? valorGorj : 0,
+          comissao_barbeiro: valorGorj,
+          status_pagamento: isPaga ? 'Pago (Recebido)' : 'Aguardando Pagamento',
+        });
+      });
+
+      // Ordena por data + hora
+      result.sort((a, b) => {
+        const da = `${a.data_agendamento} ${a.hora}`;
+        const db = `${b.data_agendamento} ${b.hora}`;
+        return da.localeCompare(db);
+      });
+
       return result;
     },
   });
@@ -459,7 +510,9 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const exportToPDF = async () => {
     const { default: jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    // jspdf-autotable v5+ usa função nomeada, não mais doc.autoTable()
+    const autoTableModule = await import('jspdf-autotable');
+    const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable || autoTableModule;
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -496,7 +549,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       r.status_pagamento,
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [headers],
       body,
       startY: 32,
