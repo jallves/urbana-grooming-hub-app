@@ -510,11 +510,65 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por cliente, barbeiro ou serviço..."
+              placeholder="Buscar por cliente, barbeiro, serviço ou extras..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
             />
+          </div>
+
+          {/* Filtros funcionais */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Origem" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todas Origens</SelectItem>
+                {origemOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterFormaPgto} onValueChange={setFilterFormaPgto}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Forma Pgto" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todas Formas</SelectItem>
+                {formaPgtoOptions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatusPgto} onValueChange={setFilterStatusPgto}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Status Pgto" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todos Pgtos</SelectItem>
+                {statusPgtoOptions.map(sp => <SelectItem key={sp} value={sp}>{sp}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Limpar Filtros
+            </Button>
           </div>
           {/* Legenda explicativa */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-[11px] text-gray-700 space-y-1">
