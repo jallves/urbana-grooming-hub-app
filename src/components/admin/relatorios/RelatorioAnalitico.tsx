@@ -87,7 +87,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const agendamentoIds = ags.map((a: any) => a.id);
 
       // 2. Fetch related data in parallel
-      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes] = await Promise.all([
+      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes] = await Promise.all([
         vendaIds.length > 0
           ? supabase
               .from('vendas')
@@ -121,6 +121,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
           .gte('data_vencimento', startDate)
           .lte('data_vencimento', endDate),
+        // Sessões de totem para identificar origem do checkout
+        agendamentoIds.length > 0
+          ? supabase
+              .from('appointment_totem_sessions')
+              .select('appointment_id, status, totem_session_id')
+              .in('appointment_id', agendamentoIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       const vendas = vendasRes.data || [];
@@ -128,6 +135,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const commissions = commissionsRes.data || [];
       const comissoesLegacy = comissoesRes.data || [];
       const contasReceber = contasReceberRes.data || [];
+      const totemSessions = totemSessionsRes.data || [];
+
+      // Set de agendamentos que passaram pelo totem
+      const totemAppointments = new Set(totemSessions.map((t: any) => t.appointment_id));
 
       // Build maps
       const vendasMap = new Map(vendas.map((v: any) => [v.id, v]));
