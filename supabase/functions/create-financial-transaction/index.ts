@@ -72,8 +72,9 @@ async function ensureContasReceber(
     status: 'pendente' | 'recebido'
     observacoes: string
     categoria?: string | null
-    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
-    forma_pagamento?: string | null // 👈 ADICIONADO: Forma de pagamento
+    transaction_id?: string | null // Referência externa (NSU, PIX, gateway)
+    forma_pagamento?: string | null
+    venda_id?: string | null // FK padronizada para vendas.id
   }
 ) {
   const { data: existing } = await supabase
@@ -95,8 +96,9 @@ async function ensureContasReceber(
       cliente_id: params.cliente_id,
       status: params.status,
       observacoes: params.observacoes,
-      transaction_id: params.transaction_id || null, // ID da transação eletrônica
-      forma_pagamento: params.forma_pagamento || null, // 👈 ADICIONADO: Forma de pagamento
+      transaction_id: params.transaction_id || null,
+      forma_pagamento: params.forma_pagamento || null,
+      venda_id: params.venda_id || null,
     })
     .select('id')
     .single()
@@ -116,8 +118,9 @@ async function ensureContasPagar(
     observacoes: string
     categoria?: string | null
     fornecedor?: string | null
-    transaction_id?: string | null // ID da transação eletrônica (NSU, PIX, etc.)
-    forma_pagamento?: string | null // 👈 ADICIONADO: Forma de pagamento
+    transaction_id?: string | null // Referência externa (NSU, PIX, gateway)
+    forma_pagamento?: string | null
+    venda_id?: string | null // FK padronizada para vendas.id
   }
 ) {
   const { data: existing } = await supabase
@@ -139,8 +142,9 @@ async function ensureContasPagar(
       fornecedor: params.fornecedor || null,
       status: params.status,
       observacoes: params.observacoes,
-      transaction_id: params.transaction_id || null, // ID da transação eletrônica
-      forma_pagamento: params.forma_pagamento || null, // 👈 ADICIONADO: Forma de pagamento
+      transaction_id: params.transaction_id || null,
+      forma_pagamento: params.forma_pagamento || null,
+      venda_id: params.venda_id || null,
     })
     .select('id')
     .single()
@@ -368,6 +372,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
+           venda_id: reference_type === 'venda' ? reference_id : null,
          })
        }
 
@@ -476,6 +481,7 @@ Deno.serve(async (req) => {
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
              forma_pagamento: payment_method,
+             venda_id: reference_type === 'venda' ? reference_id : null,
            })
          } else if (commissionAmount > 0) {
            // Uso de crédito ou serviço normal: comissão real
@@ -501,6 +507,7 @@ Deno.serve(async (req) => {
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
              forma_pagamento: payment_method,
+             venda_id: reference_type === 'venda' ? reference_id : null,
            })
          }
 
@@ -580,7 +587,8 @@ Deno.serve(async (req) => {
             fornecedor: barberName,
             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
             transaction_id: transaction_id,
-            forma_pagamento: payment_method, // 👈 ADICIONADO
+            forma_pagamento: payment_method,
+            venda_id: reference_type === 'venda' ? reference_id : null,
           })
 
           created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
@@ -621,10 +629,11 @@ Deno.serve(async (req) => {
            data_recebimento: transaction_date,
            cliente_id: body.client_id || null,
            status: 'recebido',
-           categoria: 'gorjeta', // Categoria em PORTUGUÊS
+           categoria: 'gorjeta',
            observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
-           transaction_id: transaction_id, // ID da transação eletrônica
-           forma_pagamento: payment_method, // 👈 ADICIONADO
+           transaction_id: transaction_id,
+           forma_pagamento: payment_method,
+           venda_id: reference_type === 'venda' ? reference_id : null,
          })
        }
 
@@ -673,11 +682,12 @@ Deno.serve(async (req) => {
            data_vencimento: transaction_date,
            data_pagamento: null,
            status: 'pendente',
-           categoria: 'gorjeta', // Categoria em PORTUGUÊS
+           categoria: 'gorjeta',
            fornecedor: barberName,
            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
-           transaction_id: transaction_id, // Mesmo ID da transação para conciliação
-           forma_pagamento: payment_method, // 👈 ADICIONADO
+           transaction_id: transaction_id,
+           forma_pagamento: payment_method,
+           venda_id: reference_type === 'venda' ? reference_id : null,
          })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })

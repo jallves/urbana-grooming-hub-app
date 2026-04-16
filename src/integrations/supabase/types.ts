@@ -917,6 +917,7 @@ export type Database = {
           transaction_id: string | null
           updated_at: string | null
           valor: number
+          venda_id: string | null
         }
         Insert: {
           categoria?: string | null
@@ -932,6 +933,7 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string | null
           valor: number
+          venda_id?: string | null
         }
         Update: {
           categoria?: string | null
@@ -947,8 +949,17 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string | null
           valor?: number
+          venda_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contas_pagar_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       contas_receber: {
         Row: {
@@ -965,6 +976,7 @@ export type Database = {
           transaction_id: string | null
           updated_at: string | null
           valor: number
+          venda_id: string | null
         }
         Insert: {
           categoria?: string | null
@@ -980,6 +992,7 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string | null
           valor: number
+          venda_id?: string | null
         }
         Update: {
           categoria?: string | null
@@ -995,6 +1008,7 @@ export type Database = {
           transaction_id?: string | null
           updated_at?: string | null
           valor?: number
+          venda_id?: string | null
         }
         Relationships: [
           {
@@ -1002,6 +1016,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contas_receber_venda_id_fkey"
+            columns: ["venda_id"]
+            isOneToOne: false
+            referencedRelation: "vendas"
             referencedColumns: ["id"]
           },
         ]

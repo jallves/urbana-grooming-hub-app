@@ -253,7 +253,8 @@ Deno.serve(async (req) => {
         categoria: 'servico',
         forma_pagamento: type === 'courtesy' ? 'cortesia' : 'admin',
         cliente_id: agendamento.cliente_id,
-        observacoes: observacao
+        observacoes: observacao,
+        venda_id: novaVenda.id, // FK padronizada para vendas.id
       })
       console.log('✅ Contas a receber:', revenueAmount)
 
@@ -290,7 +291,9 @@ Deno.serve(async (req) => {
           status: 'pendente',
           categoria: 'comissao',
           fornecedor: barberName,
-          observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`
+          forma_pagamento: 'admin',
+          observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
+          venda_id: novaVenda.id, // FK padronizada para vendas.id
         })
         console.log('✅ Contas a pagar (comissão):', commissionAmount)
 
