@@ -3,7 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FileSpreadsheet, FileText, Loader2, Search, X } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
@@ -60,6 +63,10 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterCliente, setFilterCliente] = useState<string>('todos');
+  const [filterBarbeiro, setFilterBarbeiro] = useState<string>('todos');
+  const [openCliente, setOpenCliente] = useState(false);
+  const [openBarbeiro, setOpenBarbeiro] = useState(false);
   const [filterStatus, setFilterStatus] = useState<string>('todos');
   const [filterOrigem, setFilterOrigem] = useState<string>('todos');
   const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
@@ -311,6 +318,14 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   });
 
   // Listas únicas para os selects de filtro
+  const clienteOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.cliente_nome).filter(n => n && n !== 'N/A'))).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [rows]
+  );
+  const barbeiroOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.barbeiro_nome).filter(n => n && n !== 'N/A'))).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [rows]
+  );
   const statusOptions = useMemo(
     () => Array.from(new Set(rows.map(r => r.status_agendamento).filter(Boolean))).sort(),
     [rows]
@@ -331,6 +346,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const filtered = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     return rows.filter(r => {
+      if (filterCliente !== 'todos' && r.cliente_nome !== filterCliente) return false;
+      if (filterBarbeiro !== 'todos' && r.barbeiro_nome !== filterBarbeiro) return false;
       if (term && !(
         r.cliente_nome.toLowerCase().includes(term) ||
         r.barbeiro_nome.toLowerCase().includes(term) ||
@@ -343,10 +360,12 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
       return true;
     });
-  }, [rows, searchTerm, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+  }, [rows, searchTerm, filterCliente, filterBarbeiro, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
 
   const hasActiveFilters =
     !!searchTerm ||
+    filterCliente !== 'todos' ||
+    filterBarbeiro !== 'todos' ||
     filterStatus !== 'todos' ||
     filterOrigem !== 'todos' ||
     filterFormaPgto !== 'todos' ||
@@ -354,6 +373,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const clearFilters = () => {
     setSearchTerm('');
+    setFilterCliente('todos');
+    setFilterBarbeiro('todos');
     setFilterStatus('todos');
     setFilterOrigem('todos');
     setFilterFormaPgto('todos');
@@ -507,10 +528,99 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           </div>
         </CardHeader>
         <CardContent className="pt-0 space-y-3">
+          {/* Selectores dedicados de Cliente e Barbeiro (autocomplete) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+            <Popover open={openCliente} onOpenChange={setOpenCliente}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openCliente}
+                  className="w-full justify-between bg-white border-gray-300 h-9 text-xs font-normal"
+                >
+                  <span className="truncate">
+                    {filterCliente === 'todos' ? '👤 Todos os Clientes' : filterCliente}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar cliente..." className="h-9 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum cliente encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos"
+                        onSelect={() => { setFilterCliente('todos'); setOpenCliente(false); }}
+                      >
+                        <Check className={cn('mr-2 h-3.5 w-3.5', filterCliente === 'todos' ? 'opacity-100' : 'opacity-0')} />
+                        Todos os Clientes
+                      </CommandItem>
+                      {clienteOptions.map(nome => (
+                        <CommandItem
+                          key={nome}
+                          value={nome}
+                          onSelect={() => { setFilterCliente(nome); setOpenCliente(false); }}
+                        >
+                          <Check className={cn('mr-2 h-3.5 w-3.5', filterCliente === nome ? 'opacity-100' : 'opacity-0')} />
+                          {nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+
+            <Popover open={openBarbeiro} onOpenChange={setOpenBarbeiro}>
+              <PopoverTrigger asChild>
+                <Button
+                  variant="outline"
+                  role="combobox"
+                  aria-expanded={openBarbeiro}
+                  className="w-full justify-between bg-white border-gray-300 h-9 text-xs font-normal"
+                >
+                  <span className="truncate">
+                    {filterBarbeiro === 'todos' ? '✂️ Todos os Barbeiros' : filterBarbeiro}
+                  </span>
+                  <ChevronsUpDown className="ml-2 h-3.5 w-3.5 shrink-0 opacity-50" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0 bg-white" align="start">
+                <Command>
+                  <CommandInput placeholder="Buscar barbeiro..." className="h-9 text-xs" />
+                  <CommandList>
+                    <CommandEmpty>Nenhum barbeiro encontrado.</CommandEmpty>
+                    <CommandGroup>
+                      <CommandItem
+                        value="todos"
+                        onSelect={() => { setFilterBarbeiro('todos'); setOpenBarbeiro(false); }}
+                      >
+                        <Check className={cn('mr-2 h-3.5 w-3.5', filterBarbeiro === 'todos' ? 'opacity-100' : 'opacity-0')} />
+                        Todos os Barbeiros
+                      </CommandItem>
+                      {barbeiroOptions.map(nome => (
+                        <CommandItem
+                          key={nome}
+                          value={nome}
+                          onSelect={() => { setFilterBarbeiro(nome); setOpenBarbeiro(false); }}
+                        >
+                          <Check className={cn('mr-2 h-3.5 w-3.5', filterBarbeiro === nome ? 'opacity-100' : 'opacity-0')} />
+                          {nome}
+                        </CommandItem>
+                      ))}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+          </div>
+
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por cliente, barbeiro, serviço ou extras..."
+              placeholder="Buscar por serviço ou extras..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
