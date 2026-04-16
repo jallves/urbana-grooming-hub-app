@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
-import { Filter, CreditCard, Users, Scissors, ShoppingBag, Coffee, Crown, BarChart3 } from 'lucide-react';
+import { Filter, CreditCard, Users, Scissors, ShoppingBag, Coffee, Crown, BarChart3, ClipboardList } from 'lucide-react';
 import RelatorioPagamentos from './RelatorioPagamentos';
 import RelatorioBarbeiros from './RelatorioBarbeiros';
 import RelatorioServicos from './RelatorioServicos';
@@ -10,6 +10,7 @@ import RelatorioProdutos from './RelatorioProdutos';
 import RelatorioAssinaturas from './RelatorioAssinaturas';
 import RelatorioCafe from './RelatorioCafe';
 import RelatorioResumo from './RelatorioResumo';
+import RelatorioAnalitico from './RelatorioAnalitico';
 
 const TAB_CONFIGS = [
   { value: 'resumo', label: 'Resumo', icon: BarChart3, bg: 'bg-slate-100', border: 'border-slate-300', text: 'text-slate-700', activeBg: 'bg-slate-600', activeHex: '#475569' },
