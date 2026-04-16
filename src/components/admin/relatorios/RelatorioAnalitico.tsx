@@ -318,6 +318,14 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   });
 
   // Listas únicas para os selects de filtro
+  const clienteOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.cliente_nome).filter(n => n && n !== 'N/A'))).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [rows]
+  );
+  const barbeiroOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.barbeiro_nome).filter(n => n && n !== 'N/A'))).sort((a, b) => a.localeCompare(b, 'pt-BR')),
+    [rows]
+  );
   const statusOptions = useMemo(
     () => Array.from(new Set(rows.map(r => r.status_agendamento).filter(Boolean))).sort(),
     [rows]
