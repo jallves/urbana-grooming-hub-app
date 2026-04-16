@@ -25,6 +25,7 @@ interface AnalyticalRow {
   status_agendamento: string;
   data_checkin: string | null;
   data_checkout: string | null;
+  origem_checkout: string;
   forma_pagamento: string;
   valor_servico: number;
   desconto: number;
@@ -41,6 +42,21 @@ const statusMap: Record<string, string> = {
   concluido: 'Concluído',
   cancelado: 'Cancelado',
   no_show: 'Não compareceu',
+};
+
+// Normaliza forma de pagamento para nomenclatura amigável e consistente
+const normalizePaymentMethod = (raw: string | null | undefined): string => {
+  if (!raw) return '-';
+  const s = String(raw).toLowerCase().trim();
+  if (s.includes('pix')) return 'PIX';
+  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
+  if (s.includes('debit') || s.includes('débito') || s.includes('debito')) return 'Cartão de Débito';
+  if (s.includes('cash') || s.includes('dinheiro') || s.includes('especie') || s.includes('espécie')) return 'Dinheiro';
+  if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
+  if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
+  if (s.includes('transfer')) return 'Transferência';
+  // Fallback: capitaliza
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
