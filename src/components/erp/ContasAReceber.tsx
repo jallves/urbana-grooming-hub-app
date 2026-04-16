@@ -568,7 +568,12 @@ export const ContasAReceber: React.FC = () => {
                           <TableCell className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
                             {formatTransactionTime(conta.created_at)}
                           </TableCell>
-                          <TableCell className="px-2 py-2 text-xs max-w-[250px]">
+                          <TableCell className="px-2 py-2 text-xs max-w-[180px]">
+                            <span className="block truncate font-medium text-gray-800" title={conta.cliente_nome || 'Sem cliente vinculado'}>
+                              {conta.cliente_nome || <span className="text-gray-400 italic">—</span>}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-xs max-w-[220px]">
                             <span className="block truncate" title={conta.descricao || '-'}>
                               {conta.descricao || '-'}
                             </span>
