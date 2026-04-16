@@ -141,8 +141,15 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const contasReceber = contasReceberRes.data || [];
       const totemSessions = totemSessionsRes.data || [];
 
-      // Set de agendamentos que passaram pelo totem
-      const totemAppointments = new Set(totemSessions.map((t: any) => t.appointment_id));
+      // Mapa: appointment_id -> data exata de check-in (primeira sessão criada no totem)
+      const checkinMap = new Map<string, string>();
+      const totemAppointments = new Set<string>();
+      totemSessions.forEach((t: any) => {
+        if (!checkinMap.has(t.appointment_id)) {
+          checkinMap.set(t.appointment_id, t.created_at);
+        }
+        totemAppointments.add(t.appointment_id);
+      });
 
       // Build maps
       const vendasMap = new Map(vendas.map((v: any) => [v.id, v]));
