@@ -60,6 +60,10 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterOrigem, setFilterOrigem] = useState<string>('todos');
+  const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
+  const [filterStatusPgto, setFilterStatusPgto] = useState<string>('todos');
   const startDate = `${filters.ano}-${String(filters.mes).padStart(2, '0')}-01`;
   const endDate = new Date(filters.ano, filters.mes, 0).toISOString().split('T')[0];
 
