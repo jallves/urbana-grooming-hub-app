@@ -682,11 +682,12 @@ Deno.serve(async (req) => {
            data_vencimento: transaction_date,
            data_pagamento: null,
            status: 'pendente',
-           categoria: 'gorjeta', // Categoria em PORTUGUÊS
+           categoria: 'gorjeta',
            fornecedor: barberName,
            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
-           transaction_id: transaction_id, // Mesmo ID da transação para conciliação
-           forma_pagamento: payment_method, // 👈 ADICIONADO
+           transaction_id: transaction_id,
+           forma_pagamento: payment_method,
+           venda_id: reference_type === 'venda' ? reference_id : null,
          })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })
