@@ -345,6 +345,50 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         };
       });
 
+      // 4. Adiciona gorjetas avulsas (sem appointment/venda link) como linhas próprias
+      // Isso garante que gorjetas registradas manualmente (ex: R$45 Carlos) apareçam no relatório
+      const gorjetasStandalone = (gorjetasStandaloneRes.data || []) as any[];
+      const gorjetasOrfas = gorjetasStandalone.filter(
+        (g) => !g.appointment_id && !g.venda_id
+      );
+      gorjetasOrfas.forEach((g) => {
+        const dataGorjeta = g.created_at || new Date().toISOString();
+        const dataStr = dataGorjeta.split('T')[0];
+        const horaStr = dataGorjeta.includes('T')
+          ? dataGorjeta.split('T')[1].slice(0, 5)
+          : '--:--';
+        const valorGorj = Number(g.valor || 0);
+        const isPaga = String(g.status || '').toLowerCase() === 'pago';
+        result.push({
+          agendamento_id: `gorjeta-${g.id}`,
+          data_agendamento: dataStr,
+          hora: horaStr,
+          cliente_nome: '—',
+          barbeiro_nome: g.barber_name || 'N/A',
+          servico_nome: 'Gorjeta avulsa',
+          servicos_extras: '',
+          status_agendamento: 'Gorjeta',
+          data_checkin: null,
+          data_checkout: dataGorjeta,
+          origem_checkout: 'Admin (Manual)',
+          forma_pagamento: 'admin',
+          valor_servico: 0,
+          desconto: 0,
+          gorjeta: valorGorj,
+          valor_total: valorGorj,
+          valor_recebido: isPaga ? valorGorj : 0,
+          comissao_barbeiro: valorGorj,
+          status_pagamento: isPaga ? 'Pago (Recebido)' : 'Aguardando Pagamento',
+        });
+      });
+
+      // Ordena por data + hora
+      result.sort((a, b) => {
+        const da = `${a.data_agendamento} ${a.hora}`;
+        const db = `${b.data_agendamento} ${b.hora}`;
+        return da.localeCompare(db);
+      });
+
       return result;
     },
   });
