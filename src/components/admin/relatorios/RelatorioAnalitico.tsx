@@ -310,12 +310,55 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     },
   });
 
-  const filtered = rows.filter(r =>
-    !searchTerm ||
-    r.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.barbeiro_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.servico_nome.toLowerCase().includes(searchTerm.toLowerCase())
+  // Listas únicas para os selects de filtro
+  const statusOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.status_agendamento).filter(Boolean))).sort(),
+    [rows]
   );
+  const origemOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.origem_checkout).filter(o => o && o !== '-'))).sort(),
+    [rows]
+  );
+  const formaPgtoOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => normalizePaymentMethod(r.forma_pagamento)).filter(f => f && f !== '-'))).sort(),
+    [rows]
+  );
+  const statusPgtoOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.status_pagamento).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  const filtered = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    return rows.filter(r => {
+      if (term && !(
+        r.cliente_nome.toLowerCase().includes(term) ||
+        r.barbeiro_nome.toLowerCase().includes(term) ||
+        r.servico_nome.toLowerCase().includes(term) ||
+        r.servicos_extras.toLowerCase().includes(term)
+      )) return false;
+      if (filterStatus !== 'todos' && r.status_agendamento !== filterStatus) return false;
+      if (filterOrigem !== 'todos' && r.origem_checkout !== filterOrigem) return false;
+      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento) !== filterFormaPgto) return false;
+      if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
+      return true;
+    });
+  }, [rows, searchTerm, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+
+  const hasActiveFilters =
+    !!searchTerm ||
+    filterStatus !== 'todos' ||
+    filterOrigem !== 'todos' ||
+    filterFormaPgto !== 'todos' ||
+    filterStatusPgto !== 'todos';
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('todos');
+    setFilterOrigem('todos');
+    setFilterFormaPgto('todos');
+    setFilterStatusPgto('todos');
+  };
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
