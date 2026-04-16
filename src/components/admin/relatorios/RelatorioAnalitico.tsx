@@ -440,7 +440,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -449,6 +449,17 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
             />
+          </div>
+          {/* Legenda explicativa */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-[11px] text-gray-700 space-y-1">
+            <p className="font-semibold text-blue-800 mb-1">📖 Legenda do Relatório:</p>
+            <p><strong>Status Pgto:</strong> Refere-se ao <em>pagamento do cliente</em> (Contas a Receber), <strong>não</strong> ao pagamento de comissão do barbeiro.</p>
+            <p>• <span className="text-green-700 font-medium">Pago (Recebido)</span> = cliente pagou e o valor entrou no caixa.</p>
+            <p>• <span className="text-yellow-700 font-medium">Aguardando Pagamento</span> = checkout iniciado mas ainda não foi pago.</p>
+            <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
+            <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
+            <p><strong>Origem Checkout:</strong> <span className="text-teal-700">Totem</span> (cliente finalizou no totem) ou <span className="text-indigo-700">Admin (Manual)</span> (finalizado pelo administrador).</p>
+            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Crédito de Assinatura (uso de plano), Cortesia.</p>
           </div>
         </CardContent>
       </Card>
