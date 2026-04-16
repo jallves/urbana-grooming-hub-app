@@ -220,16 +220,16 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         }
         const extrasStr = extrasArr.join(', ');
 
-        // Check-in
+        // Check-in: prioriza data exata da sessão de totem; fallback para updated_at se status indica chegada
         const hasCheckin =
           ag.status_totem === 'CHEGOU' ||
           ag.status_totem === 'FINALIZADO' ||
           ag.status === 'confirmado' ||
           ag.status === 'concluido';
-        const dataCheckin = hasCheckin ? (ag.updated_at || ag.created_at) : null;
+        const dataCheckin = checkinMap.get(ag.id) || (hasCheckin ? (ag.updated_at || ag.created_at) : null);
 
-        // Checkout
-        const dataCheckout = venda ? (venda.updated_at || venda.created_at) : null;
+        // Checkout: momento exato em que a venda foi criada (finalização do checkout)
+        const dataCheckout = venda ? (venda.created_at || venda.updated_at) : null;
 
         // Pagamento
         const formaPagamento = venda ? (venda.forma_pagamento || '') : '';
