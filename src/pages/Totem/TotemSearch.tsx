@@ -137,20 +137,8 @@ const TotemSearch: React.FC = () => {
 
       // Processar checkouts pendentes
       const checkoutsPendentes = checkoutsResponse.data;
-      if (checkoutsPendentes && checkoutsPendentes.length > 0) {
-        console.log(`🔔 ${checkoutsPendentes.length} checkout(s) pendente(s)`);
-        toast.info('Checkouts Pendentes', {
-          description: `Você possui ${checkoutsPendentes.length} atendimento(s) aguardando pagamento!`,
-          duration: 5000
-        });
-        navigate('/totem/pending-checkouts', {
-          state: { whatsapp: cliente.whatsapp, cliente }
-        });
-        setIsSearching(false);
-        return;
-      }
 
-      // Roteamento por ação
+      // Roteamento por ação - Produtos e agendamentos são permitidos mesmo com checkout pendente
       if (action === 'novo-agendamento') {
         navigate('/totem/servico', { state: { client: cliente } });
         setIsSearching(false);
@@ -159,6 +147,20 @@ const TotemSearch: React.FC = () => {
 
       if (action === 'produtos') {
         navigate('/totem/products', { state: { client: cliente } });
+        setIsSearching(false);
+        return;
+      }
+
+      // Para CHECK-IN: bloquear se houver checkouts pendentes
+      if (checkoutsPendentes && checkoutsPendentes.length > 0) {
+        console.log(`🔔 ${checkoutsPendentes.length} checkout(s) pendente(s) - bloqueando check-in`);
+        toast.info('Checkouts Pendentes', {
+          description: `Você possui ${checkoutsPendentes.length} atendimento(s) aguardando pagamento! Finalize antes de fazer check-in.`,
+          duration: 5000
+        });
+        navigate('/totem/pending-checkouts', {
+          state: { whatsapp: cliente.whatsapp, cliente }
+        });
         setIsSearching(false);
         return;
       }
