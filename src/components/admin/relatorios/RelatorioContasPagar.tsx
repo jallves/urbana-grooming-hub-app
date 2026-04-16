@@ -33,6 +33,7 @@ interface PayableRow {
   // Valores
   valor: number;
   forma_pagamento: string;
+  observacoes: string | null;
   status: string;
   status_label: string;
 }
