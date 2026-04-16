@@ -47,17 +47,21 @@ const statusMap: Record<string, string> = {
 };
 
 // Normaliza forma de pagamento para nomenclatura amigável e consistente
+// IMPORTANTE: 'Assinatura' (uso de crédito de plano) deve ser checado ANTES de 'credit'
+// para evitar que 'credit_subscription' caia em 'Cartão de Crédito'.
 const normalizePaymentMethod = (raw: string | null | undefined): string => {
   if (!raw) return '-';
   const s = String(raw).toLowerCase().trim();
+  // Assinatura primeiro (evita conflito com 'credit')
+  if (s.includes('subscription') || s.includes('assinatura') || s.includes('plano')) return 'Assinatura';
   if (s.includes('pix')) return 'PIX';
-  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
   if (s.includes('debit') || s.includes('débito') || s.includes('debito')) return 'Cartão de Débito';
+  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
   if (s.includes('cash') || s.includes('dinheiro') || s.includes('especie') || s.includes('espécie')) return 'Dinheiro';
-  if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
   if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
   if (s.includes('transfer')) return 'Transferência';
-  if (s === 'admin') return 'Não Informado (Admin)';
+  // Checkout fechado pelo administrador (sem método específico) → 'Admin'
+  if (s === 'admin') return 'Admin';
   // Fallback: capitaliza
   return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
