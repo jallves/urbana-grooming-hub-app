@@ -102,7 +102,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const agendamentoIds = ags.map((a: any) => a.id);
 
       // 2. Fetch related data in parallel
-      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes] = await Promise.all([
+      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes, gorjetasStandaloneRes] = await Promise.all([
         vendaIds.length > 0
           ? supabase
               .from('vendas')
@@ -144,6 +144,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
               .in('appointment_id', agendamentoIds)
               .order('created_at', { ascending: true })
           : Promise.resolve({ data: [] as any[] }),
+        // Gorjetas avulsas (sem appointment/venda link) registradas no período
+        supabase
+          .from('barber_commissions')
+          .select('id, barber_id, barber_name, valor, status, tipo, created_at, data_pagamento')
+          .eq('tipo', 'gorjeta')
+          .gte('created_at', `${startDate}T00:00:00`)
+          .lte('created_at', `${endDate}T23:59:59`),
       ]);
 
       const vendas = vendasRes.data || [];
