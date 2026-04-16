@@ -25,6 +25,7 @@ interface AnalyticalRow {
   status_agendamento: string;
   data_checkin: string | null;
   data_checkout: string | null;
+  origem_checkout: string;
   forma_pagamento: string;
   valor_servico: number;
   desconto: number;
@@ -41,6 +42,21 @@ const statusMap: Record<string, string> = {
   concluido: 'Concluído',
   cancelado: 'Cancelado',
   no_show: 'Não compareceu',
+};
+
+// Normaliza forma de pagamento para nomenclatura amigável e consistente
+const normalizePaymentMethod = (raw: string | null | undefined): string => {
+  if (!raw) return '-';
+  const s = String(raw).toLowerCase().trim();
+  if (s.includes('pix')) return 'PIX';
+  if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
+  if (s.includes('debit') || s.includes('débito') || s.includes('debito')) return 'Cartão de Débito';
+  if (s.includes('cash') || s.includes('dinheiro') || s.includes('especie') || s.includes('espécie')) return 'Dinheiro';
+  if (s.includes('subscription') || s.includes('assinatura') || s.includes('credit_subscription') || s.includes('plano')) return 'Crédito de Assinatura';
+  if (s.includes('cortesia') || s.includes('courtesy') || s.includes('free')) return 'Cortesia';
+  if (s.includes('transfer')) return 'Transferência';
+  // Fallback: capitaliza
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
 };
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
@@ -71,7 +87,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const agendamentoIds = ags.map((a: any) => a.id);
 
       // 2. Fetch related data in parallel
-      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes] = await Promise.all([
+      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes, totemSessionsRes] = await Promise.all([
         vendaIds.length > 0
           ? supabase
               .from('vendas')
@@ -105,6 +121,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
           .gte('data_vencimento', startDate)
           .lte('data_vencimento', endDate),
+        // Sessões de totem para identificar origem do checkout
+        agendamentoIds.length > 0
+          ? supabase
+              .from('appointment_totem_sessions')
+              .select('appointment_id, status, totem_session_id')
+              .in('appointment_id', agendamentoIds)
+          : Promise.resolve({ data: [] as any[] }),
       ]);
 
       const vendas = vendasRes.data || [];
@@ -112,6 +135,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const commissions = commissionsRes.data || [];
       const comissoesLegacy = comissoesRes.data || [];
       const contasReceber = contasReceberRes.data || [];
+      const totemSessions = totemSessionsRes.data || [];
+
+      // Set de agendamentos que passaram pelo totem
+      const totemAppointments = new Set(totemSessions.map((t: any) => t.appointment_id));
 
       // Build maps
       const vendasMap = new Map(vendas.map((v: any) => [v.id, v]));
@@ -215,13 +242,23 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           comissaoByAppointment.get(ag.id) ||
           (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
-        const statusPagamento = venda
-          ? venda.status === 'pago'
-            ? 'Pago'
-            : 'Pendente'
-          : ag.status === 'concluido'
-          ? 'Pendente'
-          : '-';
+        // Status do pagamento - mais didático
+        let statusPagamento: string;
+        if (ag.status === 'cancelado') {
+          statusPagamento = 'Cancelado';
+        } else if (venda) {
+          statusPagamento = venda.status === 'pago' ? 'Pago (Recebido)' : 'Aguardando Pagamento';
+        } else if (ag.status === 'concluido') {
+          statusPagamento = 'Concluído sem Cobrança';
+        } else {
+          statusPagamento = 'Sem Checkout';
+        }
+
+        // Origem do checkout: Totem ou Admin (manual)
+        let origemCheckout = '-';
+        if (venda) {
+          origemCheckout = totemAppointments.has(ag.id) ? 'Totem' : 'Admin (Manual)';
+        }
 
         return {
           agendamento_id: ag.id,
@@ -234,6 +271,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           status_agendamento: statusMap[ag.status || ''] || ag.status || '',
           data_checkin: dataCheckin,
           data_checkout: dataCheckout,
+          origem_checkout: origemCheckout,
           forma_pagamento: formaPagamento,
           valor_servico: valorServico,
           desconto,
@@ -281,17 +319,18 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       'Barbeiro': r.barbeiro_nome,
       'Serviço': r.servico_nome,
       'Extras': r.servicos_extras,
-      'Status': r.status_agendamento,
-      'Check-in': r.data_checkin ? formatDate(r.data_checkin) : '-',
-      'Checkout': r.data_checkout ? formatDate(r.data_checkout) : '-',
-      'Pagamento': getPaymentMethodLabel(r.forma_pagamento) || '-',
+      'Status Agendamento': r.status_agendamento,
+      'Data Check-in': r.data_checkin ? formatDate(r.data_checkin) : '-',
+      'Data Checkout': r.data_checkout ? formatDate(r.data_checkout) : '-',
+      'Origem do Checkout': r.origem_checkout,
+      'Forma de Pagamento': normalizePaymentMethod(r.forma_pagamento),
       'Valor Serviço': r.valor_servico,
       'Desconto': r.desconto,
       'Gorjeta': r.gorjeta,
       'Valor Total': r.valor_total,
-      'Valor Recebido': r.valor_recebido,
+      'Valor Recebido (Cliente)': r.valor_recebido,
       'Comissão Barbeiro': r.comissao_barbeiro,
-      'Status Pgto': r.status_pagamento,
+      'Status Pagamento': r.status_pagamento,
     }));
 
     const wb = XLSX.utils.book_new();
@@ -320,28 +359,29 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
     const headers = [
       'Data', 'Hora', 'Cliente', 'Barbeiro', 'Serviço', 'Extras', 'Status',
-      'Check-in', 'Checkout', 'Pagamento', 'Valor', 'Desc.', 'Gorj.', 'Total',
-      'Recebido', 'Comissão', 'Pgto',
+      'Check-in', 'Checkout', 'Origem', 'Forma Pgto', 'Valor', 'Desc.', 'Gorj.', 'Total',
+      'Recebido', 'Comissão', 'Status Pgto',
     ];
 
     const body = filtered.map(r => [
       format(new Date(r.data_agendamento), 'dd/MM', { locale: ptBR }),
       r.hora,
-      r.cliente_nome.length > 14 ? r.cliente_nome.slice(0, 14) + '…' : r.cliente_nome,
-      r.barbeiro_nome.length > 10 ? r.barbeiro_nome.slice(0, 10) + '…' : r.barbeiro_nome,
-      r.servico_nome.length > 14 ? r.servico_nome.slice(0, 14) + '…' : r.servico_nome,
-      r.servicos_extras.length > 14 ? r.servicos_extras.slice(0, 14) + '…' : r.servicos_extras || '-',
+      r.cliente_nome.length > 12 ? r.cliente_nome.slice(0, 12) + '…' : r.cliente_nome,
+      r.barbeiro_nome.length > 9 ? r.barbeiro_nome.slice(0, 9) + '…' : r.barbeiro_nome,
+      r.servico_nome.length > 12 ? r.servico_nome.slice(0, 12) + '…' : r.servico_nome,
+      r.servicos_extras.length > 12 ? r.servicos_extras.slice(0, 12) + '…' : r.servicos_extras || '-',
       r.status_agendamento.slice(0, 9),
       r.data_checkin ? format(new Date(r.data_checkin), 'dd/MM HH:mm') : '-',
       r.data_checkout ? format(new Date(r.data_checkout), 'dd/MM HH:mm') : '-',
-      getPaymentMethodLabel(r.forma_pagamento)?.slice(0, 8) || '-',
+      r.origem_checkout,
+      normalizePaymentMethod(r.forma_pagamento),
       formatCurrency(r.valor_servico),
       formatCurrency(r.desconto),
       formatCurrency(r.gorjeta),
       formatCurrency(r.valor_total),
       formatCurrency(r.valor_recebido),
       formatCurrency(r.comissao_barbeiro),
-      r.status_pagamento.slice(0, 8),
+      r.status_pagamento,
     ]);
 
     (doc as any).autoTable({
@@ -400,7 +440,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             </div>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
@@ -409,6 +449,17 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
             />
+          </div>
+          {/* Legenda explicativa */}
+          <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-[11px] text-gray-700 space-y-1">
+            <p className="font-semibold text-blue-800 mb-1">📖 Legenda do Relatório:</p>
+            <p><strong>Status Pgto:</strong> Refere-se ao <em>pagamento do cliente</em> (Contas a Receber), <strong>não</strong> ao pagamento de comissão do barbeiro.</p>
+            <p>• <span className="text-green-700 font-medium">Pago (Recebido)</span> = cliente pagou e o valor entrou no caixa.</p>
+            <p>• <span className="text-yellow-700 font-medium">Aguardando Pagamento</span> = checkout iniciado mas ainda não foi pago.</p>
+            <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
+            <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
+            <p><strong>Origem Checkout:</strong> <span className="text-teal-700">Totem</span> (cliente finalizou no totem) ou <span className="text-indigo-700">Admin (Manual)</span> (finalizado pelo administrador).</p>
+            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Crédito de Assinatura (uso de plano), Cortesia.</p>
           </div>
         </CardContent>
       </Card>
@@ -425,23 +476,24 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Barbeiro</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Serviço</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap">Extras</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Status</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Check-in</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Checkout</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Pagamento</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Status Agend.</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Check-in</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Data Checkout</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Origem Checkout</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap">Forma Pgto</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Valor Serv.</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Desconto</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Gorjeta</TableHead>
                   <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Total</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Recebido</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right">Comissão</TableHead>
-                  <TableHead className="text-xs font-semibold whitespace-nowrap">Pgto</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Valor recebido do cliente">Recebido (Cliente)</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap text-right" title="Comissão devida ao barbeiro">Comissão Barbeiro</TableHead>
+                  <TableHead className="text-xs font-semibold whitespace-nowrap" title="Status do pagamento do cliente (não da comissão)">Status Pgto</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filtered.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={17} className="text-center py-8 text-gray-500">
+                    <TableCell colSpan={18} className="text-center py-8 text-gray-500">
                       Nenhum agendamento encontrado para o período selecionado.
                     </TableCell>
                   </TableRow>
@@ -469,7 +521,16 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkin)}</TableCell>
                       <TableCell className="whitespace-nowrap text-[11px]">{formatDate(r.data_checkout)}</TableCell>
                       <TableCell className="whitespace-nowrap">
-                        {getPaymentMethodLabel(r.forma_pagamento) || '-'}
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
+                          r.origem_checkout === 'Totem' ? 'bg-teal-100 text-teal-700' :
+                          r.origem_checkout === 'Admin (Manual)' ? 'bg-indigo-100 text-indigo-700' :
+                          'bg-gray-100 text-gray-500'
+                        }`}>
+                          {r.origem_checkout}
+                        </span>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-[11px]">
+                        {normalizePaymentMethod(r.forma_pagamento)}
                       </TableCell>
                       <TableCell className="text-right whitespace-nowrap">{formatCurrency(r.valor_servico)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap text-orange-600">
@@ -482,11 +543,14 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                       <TableCell className="text-right whitespace-nowrap text-emerald-700">{formatCurrency(r.valor_recebido)}</TableCell>
                       <TableCell className="text-right whitespace-nowrap text-violet-700">{formatCurrency(r.comissao_barbeiro)}</TableCell>
                       <TableCell>
-                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
-                          r.status_pagamento === 'Pago' ? 'bg-green-100 text-green-700' :
-                          r.status_pagamento === 'Pendente' ? 'bg-yellow-100 text-yellow-700' :
+                        <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium whitespace-nowrap ${
+                          r.status_pagamento === 'Pago (Recebido)' ? 'bg-green-100 text-green-700' :
+                          r.status_pagamento === 'Aguardando Pagamento' ? 'bg-yellow-100 text-yellow-700' :
+                          r.status_pagamento === 'Cancelado' ? 'bg-red-100 text-red-700' :
+                          r.status_pagamento === 'Concluído sem Cobrança' ? 'bg-orange-100 text-orange-700' :
                           'bg-gray-100 text-gray-500'
-                        }`}>
+                        }`}
+                        title="Refere-se ao pagamento do cliente (Contas a Receber). Não representa pagamento de comissão ao barbeiro.">
                           {r.status_pagamento}
                         </span>
                       </TableCell>
