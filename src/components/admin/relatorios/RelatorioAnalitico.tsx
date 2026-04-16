@@ -459,7 +459,9 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const exportToPDF = async () => {
     const { default: jsPDF } = await import('jspdf');
-    await import('jspdf-autotable');
+    // jspdf-autotable v5+ usa função nomeada, não mais doc.autoTable()
+    const autoTableModule = await import('jspdf-autotable');
+    const autoTable = (autoTableModule as any).default || (autoTableModule as any).autoTable || autoTableModule;
 
     const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
 
@@ -496,7 +498,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       r.status_pagamento,
     ]);
 
-    (doc as any).autoTable({
+    autoTable(doc, {
       head: [headers],
       body,
       startY: 32,
