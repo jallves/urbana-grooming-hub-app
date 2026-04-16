@@ -51,88 +51,177 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['relatorio-analitico', filters],
     queryFn: async () => {
-      // Fetch all data in parallel
-      const [agendamentosRes, vendasRes, contasReceberRes, comissoesRes] = await Promise.all([
-        supabase
-          .from('painel_agendamentos')
-          .select('id, data, hora, status, status_totem, updated_at, created_at, cliente_id, barbeiro_id, servico_id, venda_id, servicos_extras, painel_clientes, painel_barbeiros, painel_servicos')
-          .gte('data', startDate)
-          .lte('data', endDate)
-          .order('data', { ascending: true })
-          .order('hora', { ascending: true }),
-        supabase
-          .from('vendas')
-          .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, created_at, cliente_id, barbeiro_id')
-          .gte('created_at', `${startDate}T00:00:00`)
-          .lte('created_at', `${endDate}T23:59:59`),
-        supabase
-          .from('contas_receber')
-          .select('id, valor, status, forma_pagamento, data_recebimento, descricao, created_at')
-          .gte('data_vencimento', startDate)
-          .lte('data_vencimento', endDate),
+      // 1. Fetch appointments with explicit relations
+      const { data: agendamentos = [] } = await supabase
+        .from('painel_agendamentos')
+        .select(`
+          id, data, hora, status, status_totem, updated_at, created_at,
+          cliente_id, barbeiro_id, servico_id, venda_id, servicos_extras,
+          cliente:painel_clientes!painel_agendamentos_cliente_id_fkey(id, nome),
+          barbeiro:painel_barbeiros!painel_agendamentos_barbeiro_id_fkey(id, nome),
+          servico:painel_servicos!painel_agendamentos_servico_id_fkey(id, nome, preco)
+        `)
+        .gte('data', startDate)
+        .lte('data', endDate)
+        .order('data', { ascending: true })
+        .order('hora', { ascending: true });
+
+      const ags = agendamentos || [];
+      const vendaIds = ags.map((a: any) => a.venda_id).filter(Boolean);
+      const agendamentoIds = ags.map((a: any) => a.id);
+
+      // 2. Fetch related data in parallel
+      const [vendasRes, vendasItensRes, commissionsRes, comissoesRes, contasReceberRes] = await Promise.all([
+        vendaIds.length > 0
+          ? supabase
+              .from('vendas')
+              .select('id, valor_total, desconto, gorjeta, forma_pagamento, status, created_at, updated_at')
+              .in('id', vendaIds)
+          : Promise.resolve({ data: [] as any[] }),
+        vendaIds.length > 0
+          ? supabase
+              .from('vendas_itens')
+              .select('venda_id, nome, tipo, quantidade, preco_unitario, subtotal')
+              .in('venda_id', vendaIds)
+          : Promise.resolve({ data: [] as any[] }),
+        // barber_commissions: pode vir por appointment_id OU venda_id
         supabase
           .from('barber_commissions')
-          .select('id, barber_id, valor, status, venda_id, tipo, created_at')
-          .gte('created_at', `${startDate}T00:00:00`)
-          .lte('created_at', `${endDate}T23:59:59`),
+          .select('id, appointment_id, venda_id, valor, status')
+          .or(
+            [
+              agendamentoIds.length > 0 ? `appointment_id.in.(${agendamentoIds.join(',')})` : '',
+              vendaIds.length > 0 ? `venda_id.in.(${vendaIds.join(',')})` : '',
+            ].filter(Boolean).join(',')
+          ),
+        vendaIds.length > 0
+          ? supabase
+              .from('comissoes')
+              .select('venda_id, valor, status')
+              .in('venda_id', vendaIds)
+          : Promise.resolve({ data: [] as any[] }),
+        supabase
+          .from('contas_receber')
+          .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
+          .gte('data_vencimento', startDate)
+          .lte('data_vencimento', endDate),
       ]);
 
-      const agendamentos = agendamentosRes.data || [];
       const vendas = vendasRes.data || [];
+      const vendasItens = vendasItensRes.data || [];
+      const commissions = commissionsRes.data || [];
+      const comissoesLegacy = comissoesRes.data || [];
       const contasReceber = contasReceberRes.data || [];
-      const comissoes = comissoesRes.data || [];
 
-      // Build lookup maps
-      const vendasMap = new Map(vendas.map(v => [v.id, v]));
-      const comissoesByVenda = new Map<string, number>();
-      comissoes.forEach(c => {
-        const key = c.venda_id || '';
-        comissoesByVenda.set(key, (comissoesByVenda.get(key) || 0) + Number(c.valor));
+      // Build maps
+      const vendasMap = new Map(vendas.map((v: any) => [v.id, v]));
+      const itensByVenda = new Map<string, any[]>();
+      vendasItens.forEach((it: any) => {
+        const arr = itensByVenda.get(it.venda_id) || [];
+        arr.push(it);
+        itensByVenda.set(it.venda_id, arr);
       });
 
-      // Build analytical rows
-      const result: AnalyticalRow[] = agendamentos.map(ag => {
-        const clienteData = ag.painel_clientes as any;
-        const barbeiroData = ag.painel_barbeiros as any;
-        const servicoData = ag.painel_servicos as any;
-
-        const clienteNome = clienteData?.nome || 'N/A';
-        const barbeiroNome = barbeiroData?.nome || 'N/A';
-        const servicoNome = servicoData?.nome || 'N/A';
-
-        // Extras
-        let extrasStr = '';
-        if (ag.servicos_extras && Array.isArray(ag.servicos_extras)) {
-          extrasStr = (ag.servicos_extras as any[]).map((e: any) => e.nome || e.name || '').filter(Boolean).join(', ');
+      // Comissões por appointment_id e venda_id
+      const comissaoByAppointment = new Map<string, number>();
+      const comissaoByVenda = new Map<string, number>();
+      commissions.forEach((c: any) => {
+        if (c.appointment_id) {
+          comissaoByAppointment.set(c.appointment_id, (comissaoByAppointment.get(c.appointment_id) || 0) + Number(c.valor || 0));
         }
+        if (c.venda_id) {
+          comissaoByVenda.set(c.venda_id, (comissaoByVenda.get(c.venda_id) || 0) + Number(c.valor || 0));
+        }
+      });
+      comissoesLegacy.forEach((c: any) => {
+        if (c.venda_id && !comissaoByVenda.has(c.venda_id)) {
+          comissaoByVenda.set(c.venda_id, (comissaoByVenda.get(c.venda_id) || 0) + Number(c.valor || 0));
+        }
+      });
 
-        // Check-in: when status_totem became 'CHEGOU'
-        const hasCheckin = ag.status_totem === 'CHEGOU' || ag.status === 'confirmado' || ag.status === 'concluido';
+      // 3. Build rows
+      const result: AnalyticalRow[] = ags.map((ag: any) => {
+        const cliente = Array.isArray(ag.cliente) ? ag.cliente[0] : ag.cliente;
+        const barbeiro = Array.isArray(ag.barbeiro) ? ag.barbeiro[0] : ag.barbeiro;
+        const servico = Array.isArray(ag.servico) ? ag.servico[0] : ag.servico;
 
-        // Venda linked
-        const venda = ag.venda_id ? vendasMap.get(ag.venda_id) : null;
+        const clienteNome = cliente?.nome || 'N/A';
+        const barbeiroNome = barbeiro?.nome || 'N/A';
+        const servicoNome = servico?.nome || 'N/A';
 
+        const venda: any = ag.venda_id ? vendasMap.get(ag.venda_id) : null;
+        const itens = ag.venda_id ? (itensByVenda.get(ag.venda_id) || []) : [];
+
+        // Extras: prioriza vendas_itens (excluindo o serviço principal), senão usa servicos_extras
+        let extrasArr: string[] = [];
+        if (itens.length > 0) {
+          const principalNome = servicoNome.toLowerCase();
+          extrasArr = itens
+            .filter((it: any) => {
+              const nome = (it.nome || '').toLowerCase();
+              // Pula o serviço principal (apenas o primeiro match)
+              return nome !== principalNome;
+            })
+            .map((it: any) => {
+              const qtd = it.quantidade > 1 ? `${it.quantidade}x ` : '';
+              return `${qtd}${it.nome}`;
+            });
+          // Remove o primeiro item igual ao principal apenas uma vez
+          const idxPrincipal = itens.findIndex((it: any) => (it.nome || '').toLowerCase() === principalNome);
+          if (idxPrincipal === -1 && itens.length > 1) {
+            // Se não encontrou principal, considera o primeiro como principal
+            extrasArr = itens.slice(1).map((it: any) => {
+              const qtd = it.quantidade > 1 ? `${it.quantidade}x ` : '';
+              return `${qtd}${it.nome}`;
+            });
+          }
+        } else if (ag.servicos_extras && Array.isArray(ag.servicos_extras)) {
+          extrasArr = (ag.servicos_extras as any[])
+            .map((e: any) => e.nome || e.name || '')
+            .filter(Boolean);
+        }
+        const extrasStr = extrasArr.join(', ');
+
+        // Check-in
+        const hasCheckin =
+          ag.status_totem === 'CHEGOU' ||
+          ag.status_totem === 'FINALIZADO' ||
+          ag.status === 'confirmado' ||
+          ag.status === 'concluido';
         const dataCheckin = hasCheckin ? (ag.updated_at || ag.created_at) : null;
-        const dataCheckout = venda ? venda.created_at : null;
+
+        // Checkout
+        const dataCheckout = venda ? (venda.updated_at || venda.created_at) : null;
+
+        // Pagamento
         const formaPagamento = venda ? (venda.forma_pagamento || '') : '';
-        const valorServico = servicoData?.preco || 0;
+        const valorServico = Number(servico?.preco || 0);
         const desconto = venda ? Number(venda.desconto || 0) : 0;
         const gorjeta = venda ? Number(venda.gorjeta || 0) : 0;
         const valorTotal = venda ? Number(venda.valor_total || 0) : valorServico;
 
-        // Contas a receber matching
-        const contaReceber = contasReceber.find(cr =>
-          cr.descricao?.includes(ag.id) ||
-          (venda && cr.descricao?.includes(venda.id))
+        // Recebido
+        const contaReceber = contasReceber.find(
+          (cr: any) => cr.descricao?.includes(ag.id) || (venda && cr.descricao?.includes(venda.id))
         );
-        const valorRecebido = contaReceber ? Number(contaReceber.valor) : (venda && venda.status === 'pago' ? valorTotal : 0);
+        const valorRecebido = contaReceber
+          ? Number(contaReceber.valor)
+          : venda && venda.status === 'pago'
+          ? valorTotal
+          : 0;
 
-        // Comissão
-        const comissaoValor = ag.venda_id ? (comissoesByVenda.get(ag.venda_id) || 0) : 0;
+        // Comissão (tenta por appointment_id, depois por venda_id)
+        const comissaoValor =
+          comissaoByAppointment.get(ag.id) ||
+          (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
         const statusPagamento = venda
-          ? venda.status === 'pago' ? 'Pago' : 'Pendente'
-          : ag.status === 'concluido' ? 'Pendente' : '-';
+          ? venda.status === 'pago'
+            ? 'Pago'
+            : 'Pendente'
+          : ag.status === 'concluido'
+          ? 'Pendente'
+          : '-';
 
         return {
           agendamento_id: ag.id,
@@ -208,7 +297,6 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     const wb = XLSX.utils.book_new();
     const ws = XLSX.utils.json_to_sheet(wsData);
 
-    // Auto column widths
     const colWidths = Object.keys(wsData[0] || {}).map(key => ({
       wch: Math.max(key.length + 2, ...wsData.map(r => String((r as any)[key] || '').length + 2)),
     }));
@@ -231,23 +319,25 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     doc.text(`Gerado em: ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: ptBR })}`, 14, 27);
 
     const headers = [
-      'Data', 'Hora', 'Cliente', 'Barbeiro', 'Serviço', 'Status',
-      'Check-in', 'Checkout', 'Pagamento', 'Valor', 'Desc.', 'Total',
+      'Data', 'Hora', 'Cliente', 'Barbeiro', 'Serviço', 'Extras', 'Status',
+      'Check-in', 'Checkout', 'Pagamento', 'Valor', 'Desc.', 'Gorj.', 'Total',
       'Recebido', 'Comissão', 'Pgto',
     ];
 
     const body = filtered.map(r => [
       format(new Date(r.data_agendamento), 'dd/MM', { locale: ptBR }),
       r.hora,
-      r.cliente_nome.length > 15 ? r.cliente_nome.slice(0, 15) + '…' : r.cliente_nome,
-      r.barbeiro_nome.length > 12 ? r.barbeiro_nome.slice(0, 12) + '…' : r.barbeiro_nome,
-      r.servico_nome.length > 15 ? r.servico_nome.slice(0, 15) + '…' : r.servico_nome,
-      r.status_agendamento.slice(0, 10),
+      r.cliente_nome.length > 14 ? r.cliente_nome.slice(0, 14) + '…' : r.cliente_nome,
+      r.barbeiro_nome.length > 10 ? r.barbeiro_nome.slice(0, 10) + '…' : r.barbeiro_nome,
+      r.servico_nome.length > 14 ? r.servico_nome.slice(0, 14) + '…' : r.servico_nome,
+      r.servicos_extras.length > 14 ? r.servicos_extras.slice(0, 14) + '…' : r.servicos_extras || '-',
+      r.status_agendamento.slice(0, 9),
       r.data_checkin ? format(new Date(r.data_checkin), 'dd/MM HH:mm') : '-',
       r.data_checkout ? format(new Date(r.data_checkout), 'dd/MM HH:mm') : '-',
       getPaymentMethodLabel(r.forma_pagamento)?.slice(0, 8) || '-',
       formatCurrency(r.valor_servico),
       formatCurrency(r.desconto),
+      formatCurrency(r.gorjeta),
       formatCurrency(r.valor_total),
       formatCurrency(r.valor_recebido),
       formatCurrency(r.comissao_barbeiro),
@@ -258,8 +348,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       head: [headers],
       body,
       startY: 32,
-      styles: { fontSize: 6, cellPadding: 1.5 },
-      headStyles: { fillColor: [55, 65, 81], fontSize: 6 },
+      styles: { fontSize: 5.5, cellPadding: 1.2 },
+      headStyles: { fillColor: [55, 65, 81], fontSize: 5.5 },
       alternateRowStyles: { fillColor: [245, 245, 245] },
       margin: { left: 5, right: 5 },
     });
@@ -280,7 +370,6 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   return (
     <div className="space-y-4">
-      {/* Header with actions */}
       <Card className="bg-white border-gray-200">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -324,7 +413,6 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <Card className="bg-white border-gray-200 overflow-hidden">
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -364,10 +452,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
                         {format(new Date(r.data_agendamento), 'dd/MM/yyyy', { locale: ptBR })}
                       </TableCell>
                       <TableCell className="whitespace-nowrap">{r.hora}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[120px] truncate">{r.cliente_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[100px] truncate">{r.barbeiro_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[120px] truncate">{r.servico_nome}</TableCell>
-                      <TableCell className="whitespace-nowrap max-w-[100px] truncate text-gray-500">{r.servicos_extras || '-'}</TableCell>
+                      <TableCell className="whitespace-nowrap max-w-[120px] truncate" title={r.cliente_nome}>{r.cliente_nome}</TableCell>
+                      <TableCell className="whitespace-nowrap max-w-[100px] truncate" title={r.barbeiro_nome}>{r.barbeiro_nome}</TableCell>
+                      <TableCell className="whitespace-nowrap max-w-[120px] truncate" title={r.servico_nome}>{r.servico_nome}</TableCell>
+                      <TableCell className="whitespace-nowrap max-w-[120px] truncate text-gray-500" title={r.servicos_extras}>{r.servicos_extras || '-'}</TableCell>
                       <TableCell>
                         <span className={`inline-block px-1.5 py-0.5 rounded text-[10px] font-medium ${
                           r.status_agendamento === 'Concluído' ? 'bg-green-100 text-green-700' :
@@ -411,7 +499,6 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         </CardContent>
       </Card>
 
-      {/* Totals */}
       {filtered.length > 0 && (
         <Card className="bg-white border-gray-200">
           <CardContent className="p-4">
