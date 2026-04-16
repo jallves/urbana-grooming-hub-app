@@ -242,13 +242,23 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           comissaoByAppointment.get(ag.id) ||
           (ag.venda_id ? comissaoByVenda.get(ag.venda_id) || 0 : 0);
 
-        const statusPagamento = venda
-          ? venda.status === 'pago'
-            ? 'Pago'
-            : 'Pendente'
-          : ag.status === 'concluido'
-          ? 'Pendente'
-          : '-';
+        // Status do pagamento - mais didático
+        let statusPagamento: string;
+        if (ag.status === 'cancelado') {
+          statusPagamento = 'Cancelado';
+        } else if (venda) {
+          statusPagamento = venda.status === 'pago' ? 'Pago (Recebido)' : 'Aguardando Pagamento';
+        } else if (ag.status === 'concluido') {
+          statusPagamento = 'Concluído sem Cobrança';
+        } else {
+          statusPagamento = 'Sem Checkout';
+        }
+
+        // Origem do checkout: Totem ou Admin (manual)
+        let origemCheckout = '-';
+        if (venda) {
+          origemCheckout = totemAppointments.has(ag.id) ? 'Totem' : 'Admin (Manual)';
+        }
 
         return {
           agendamento_id: ag.id,
@@ -261,6 +271,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           status_agendamento: statusMap[ag.status || ''] || ag.status || '',
           data_checkin: dataCheckin,
           data_checkout: dataCheckout,
+          origem_checkout: origemCheckout,
           forma_pagamento: formaPagamento,
           valor_servico: valorServico,
           desconto,
