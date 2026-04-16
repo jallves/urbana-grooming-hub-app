@@ -89,40 +89,46 @@ const getCategoryColors = (category: string | null): string => {
 const getPaymentMethodLabel = (method: string | null): string => {
   if (!method || !method.trim()) return 'Admin';
   const normalized = method.toLowerCase().trim();
-  if (normalized.includes('subscription') || normalized.includes('assinatura') || normalized.includes('plano')) return 'Assinatura';
-  const map: Record<string, string> = {
-    'pix': 'PIX',
-    'debito': 'Débito',
-    'credito': 'Crédito',
-    'dinheiro': 'Dinheiro',
-    'debit': 'Débito',
-    'credit': 'Crédito',
-    'cash': 'Dinheiro',
-    'admin': 'Admin',
-    'manual': 'Admin',
-  };
-  return map[normalized] || method;
+  // Assinatura (crédito de plano) — verificar ANTES de "credit" para evitar confusão
+  if (
+    normalized.includes('subscription') ||
+    normalized.includes('assinatura') ||
+    normalized.includes('plano')
+  ) return 'Assinatura';
+  // PIX
+  if (normalized.includes('pix')) return 'PIX';
+  // Débito
+  if (normalized.includes('debit') || normalized.includes('debito') || normalized.includes('débito')) return 'Débito';
+  // Crédito (cartão)
+  if (
+    normalized.includes('credit_card') ||
+    normalized === 'credit' ||
+    normalized === 'credito' ||
+    normalized === 'crédito' ||
+    normalized === 'cartao' ||
+    normalized === 'cartão' ||
+    normalized.includes('cartao_credito') ||
+    normalized.includes('cartão_crédito')
+  ) return 'Crédito';
+  // Dinheiro
+  if (normalized.includes('dinheiro') || normalized.includes('cash') || normalized.includes('especie') || normalized.includes('espécie')) return 'Dinheiro';
+  // Admin / manual
+  if (normalized === 'admin' || normalized === 'manual' || normalized.includes('admin')) return 'Admin';
+  return method;
 };
 
 // Cores por forma de pagamento
 const getPaymentMethodColors = (method: string | null): string => {
-  if (!method || !method.trim()) return 'bg-slate-100 text-slate-700 border-slate-300';
-  const normalized = method.toLowerCase().trim();
-  if (normalized.includes('subscription') || normalized.includes('assinatura') || normalized.includes('plano')) {
-    return 'bg-purple-100 text-purple-700 border-purple-300';
+  const label = getPaymentMethodLabel(method);
+  switch (label) {
+    case 'PIX': return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+    case 'Débito': return 'bg-sky-100 text-sky-700 border-sky-300';
+    case 'Crédito': return 'bg-violet-100 text-violet-700 border-violet-300';
+    case 'Dinheiro': return 'bg-lime-100 text-lime-700 border-lime-300';
+    case 'Assinatura': return 'bg-purple-100 text-purple-700 border-purple-300';
+    case 'Admin': return 'bg-slate-100 text-slate-700 border-slate-300';
+    default: return 'bg-gray-100 text-gray-700 border-gray-300';
   }
-  const colors: Record<string, string> = {
-    'pix': 'bg-emerald-100 text-emerald-700 border-emerald-300',
-    'debito': 'bg-sky-100 text-sky-700 border-sky-300',
-    'debit': 'bg-sky-100 text-sky-700 border-sky-300',
-    'credito': 'bg-violet-100 text-violet-700 border-violet-300',
-    'credit': 'bg-violet-100 text-violet-700 border-violet-300',
-    'dinheiro': 'bg-lime-100 text-lime-700 border-lime-300',
-    'cash': 'bg-lime-100 text-lime-700 border-lime-300',
-    'admin': 'bg-slate-100 text-slate-700 border-slate-300',
-    'manual': 'bg-slate-100 text-slate-700 border-slate-300',
-  };
-  return colors[normalized] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
 
 // Função auxiliar para formatar horário da transação
