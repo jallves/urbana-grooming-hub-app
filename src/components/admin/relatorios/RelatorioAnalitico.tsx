@@ -346,6 +346,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const filtered = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
     return rows.filter(r => {
+      if (filterCliente !== 'todos' && r.cliente_nome !== filterCliente) return false;
+      if (filterBarbeiro !== 'todos' && r.barbeiro_nome !== filterBarbeiro) return false;
       if (term && !(
         r.cliente_nome.toLowerCase().includes(term) ||
         r.barbeiro_nome.toLowerCase().includes(term) ||
@@ -358,10 +360,12 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
       return true;
     });
-  }, [rows, searchTerm, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+  }, [rows, searchTerm, filterCliente, filterBarbeiro, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
 
   const hasActiveFilters =
     !!searchTerm ||
+    filterCliente !== 'todos' ||
+    filterBarbeiro !== 'todos' ||
     filterStatus !== 'todos' ||
     filterOrigem !== 'todos' ||
     filterFormaPgto !== 'todos' ||
@@ -369,6 +373,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const clearFilters = () => {
     setSearchTerm('');
+    setFilterCliente('todos');
+    setFilterBarbeiro('todos');
     setFilterStatus('todos');
     setFilterOrigem('todos');
     setFilterFormaPgto('todos');
