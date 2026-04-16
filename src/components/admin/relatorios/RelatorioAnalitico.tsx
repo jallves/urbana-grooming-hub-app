@@ -715,7 +715,7 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             <p>• <span className="text-red-700 font-medium">Cancelado</span> = agendamento cancelado.</p>
             <p>• <span className="text-orange-700 font-medium">Concluído sem Cobrança</span> = atendido mas sem registro de venda.</p>
             <p><strong>Origem Checkout:</strong> <span className="text-teal-700">Totem</span> (cliente finalizou no totem) ou <span className="text-indigo-700">Admin (Manual)</span> (finalizado pelo administrador).</p>
-            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Crédito de Assinatura (uso de plano), Cortesia.</p>
+            <p><strong>Forma de Pagamento:</strong> Dinheiro, PIX, Cartão de Débito, Cartão de Crédito, Assinatura (uso de crédito do plano), Cortesia, <span className="text-indigo-700">Admin</span> (checkout manual fechado pelo administrador, sem método específico).</p>
           </div>
         </CardContent>
       </Card>
