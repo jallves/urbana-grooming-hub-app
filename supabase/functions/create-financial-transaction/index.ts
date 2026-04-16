@@ -629,10 +629,11 @@ Deno.serve(async (req) => {
            data_recebimento: transaction_date,
            cliente_id: body.client_id || null,
            status: 'recebido',
-           categoria: 'gorjeta', // Categoria em PORTUGUÊS
+           categoria: 'gorjeta',
            observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
-           transaction_id: transaction_id, // ID da transação eletrônica
-           forma_pagamento: payment_method, // 👈 ADICIONADO
+           transaction_id: transaction_id,
+           forma_pagamento: payment_method,
+           venda_id: reference_type === 'venda' ? reference_id : null,
          })
        }
 
