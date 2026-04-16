@@ -18,6 +18,8 @@ interface ContaReceber {
   data_vencimento: string;
   status: string;
   categoria: string | null;
+  cliente_id: string | null;
+  cliente_nome?: string | null;
 }
 
 interface ContaPagar {
