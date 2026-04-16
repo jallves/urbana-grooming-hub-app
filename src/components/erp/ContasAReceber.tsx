@@ -321,8 +321,9 @@ export const ContasAReceber: React.FC = () => {
 
     // Detalhado
     const detailData = [
-      ['Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
+      ['Cliente', 'Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
       ...contasReceber.map(c => [
+        c.cliente_nome || '-',
         c.descricao,
         getCategoryLabel(c.categoria),
         Number(c.valor),
@@ -334,7 +335,7 @@ export const ContasAReceber: React.FC = () => {
       ]),
     ];
     const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-    wsDetail['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+    wsDetail['!cols'] = [{ wch: 22 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsDetail, 'Detalhado');
 
     // Por categoria
