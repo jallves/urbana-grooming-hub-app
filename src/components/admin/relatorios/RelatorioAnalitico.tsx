@@ -1,14 +1,13 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FileSpreadsheet, FileText, Loader2, Search } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Search, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { getPaymentMethodLabel } from '@/utils/categoryMappings';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 interface Props {
   filters: { mes: number; ano: number };
@@ -61,6 +60,10 @@ const normalizePaymentMethod = (raw: string | null | undefined): string => {
 
 const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [searchTerm, setSearchTerm] = useState('');
+  const [filterStatus, setFilterStatus] = useState<string>('todos');
+  const [filterOrigem, setFilterOrigem] = useState<string>('todos');
+  const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
+  const [filterStatusPgto, setFilterStatusPgto] = useState<string>('todos');
   const startDate = `${filters.ano}-${String(filters.mes).padStart(2, '0')}-01`;
   const endDate = new Date(filters.ano, filters.mes, 0).toISOString().split('T')[0];
 
@@ -121,12 +124,13 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
           .gte('data_vencimento', startDate)
           .lte('data_vencimento', endDate),
-        // Sessões de totem para identificar origem do checkout
+        // Sessões de totem para identificar origem do checkout E o horário exato de check-in
         agendamentoIds.length > 0
           ? supabase
               .from('appointment_totem_sessions')
-              .select('appointment_id, status, totem_session_id')
+              .select('appointment_id, status, totem_session_id, created_at')
               .in('appointment_id', agendamentoIds)
+              .order('created_at', { ascending: true })
           : Promise.resolve({ data: [] as any[] }),
       ]);
 
@@ -137,8 +141,15 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
       const contasReceber = contasReceberRes.data || [];
       const totemSessions = totemSessionsRes.data || [];
 
-      // Set de agendamentos que passaram pelo totem
-      const totemAppointments = new Set(totemSessions.map((t: any) => t.appointment_id));
+      // Mapa: appointment_id -> data exata de check-in (primeira sessão criada no totem)
+      const checkinMap = new Map<string, string>();
+      const totemAppointments = new Set<string>();
+      totemSessions.forEach((t: any) => {
+        if (!checkinMap.has(t.appointment_id)) {
+          checkinMap.set(t.appointment_id, t.created_at);
+        }
+        totemAppointments.add(t.appointment_id);
+      });
 
       // Build maps
       const vendasMap = new Map(vendas.map((v: any) => [v.id, v]));
@@ -209,16 +220,16 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         }
         const extrasStr = extrasArr.join(', ');
 
-        // Check-in
+        // Check-in: prioriza data exata da sessão de totem; fallback para updated_at se status indica chegada
         const hasCheckin =
           ag.status_totem === 'CHEGOU' ||
           ag.status_totem === 'FINALIZADO' ||
           ag.status === 'confirmado' ||
           ag.status === 'concluido';
-        const dataCheckin = hasCheckin ? (ag.updated_at || ag.created_at) : null;
+        const dataCheckin = checkinMap.get(ag.id) || (hasCheckin ? (ag.updated_at || ag.created_at) : null);
 
-        // Checkout
-        const dataCheckout = venda ? (venda.updated_at || venda.created_at) : null;
+        // Checkout: momento exato em que a venda foi criada (finalização do checkout)
+        const dataCheckout = venda ? (venda.created_at || venda.updated_at) : null;
 
         // Pagamento
         const formaPagamento = venda ? (venda.forma_pagamento || '') : '';
@@ -299,12 +310,55 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     },
   });
 
-  const filtered = rows.filter(r =>
-    !searchTerm ||
-    r.cliente_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.barbeiro_nome.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    r.servico_nome.toLowerCase().includes(searchTerm.toLowerCase())
+  // Listas únicas para os selects de filtro
+  const statusOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.status_agendamento).filter(Boolean))).sort(),
+    [rows]
   );
+  const origemOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.origem_checkout).filter(o => o && o !== '-'))).sort(),
+    [rows]
+  );
+  const formaPgtoOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => normalizePaymentMethod(r.forma_pagamento)).filter(f => f && f !== '-'))).sort(),
+    [rows]
+  );
+  const statusPgtoOptions = useMemo(
+    () => Array.from(new Set(rows.map(r => r.status_pagamento).filter(Boolean))).sort(),
+    [rows]
+  );
+
+  const filtered = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    return rows.filter(r => {
+      if (term && !(
+        r.cliente_nome.toLowerCase().includes(term) ||
+        r.barbeiro_nome.toLowerCase().includes(term) ||
+        r.servico_nome.toLowerCase().includes(term) ||
+        r.servicos_extras.toLowerCase().includes(term)
+      )) return false;
+      if (filterStatus !== 'todos' && r.status_agendamento !== filterStatus) return false;
+      if (filterOrigem !== 'todos' && r.origem_checkout !== filterOrigem) return false;
+      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento) !== filterFormaPgto) return false;
+      if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
+      return true;
+    });
+  }, [rows, searchTerm, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+
+  const hasActiveFilters =
+    !!searchTerm ||
+    filterStatus !== 'todos' ||
+    filterOrigem !== 'todos' ||
+    filterFormaPgto !== 'todos' ||
+    filterStatusPgto !== 'todos';
+
+  const clearFilters = () => {
+    setSearchTerm('');
+    setFilterStatus('todos');
+    setFilterOrigem('todos');
+    setFilterFormaPgto('todos');
+    setFilterStatusPgto('todos');
+  };
 
   const formatDate = (d: string | null) => {
     if (!d) return '-';
@@ -456,11 +510,65 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <Input
-              placeholder="Buscar por cliente, barbeiro ou serviço..."
+              placeholder="Buscar por cliente, barbeiro, serviço ou extras..."
               value={searchTerm}
               onChange={e => setSearchTerm(e.target.value)}
               className="pl-9 bg-white border-gray-300"
             />
+          </div>
+
+          {/* Filtros funcionais */}
+          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
+            <Select value={filterStatus} onValueChange={setFilterStatus}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Status" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todos os Status</SelectItem>
+                {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterOrigem} onValueChange={setFilterOrigem}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Origem" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todas Origens</SelectItem>
+                {origemOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterFormaPgto} onValueChange={setFilterFormaPgto}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Forma Pgto" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todas Formas</SelectItem>
+                {formaPgtoOptions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterStatusPgto} onValueChange={setFilterStatusPgto}>
+              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
+                <SelectValue placeholder="Status Pgto" />
+              </SelectTrigger>
+              <SelectContent className="bg-white border-gray-300">
+                <SelectItem value="todos">Todos Pgtos</SelectItem>
+                {statusPgtoOptions.map(sp => <SelectItem key={sp} value={sp}>{sp}</SelectItem>)}
+              </SelectContent>
+            </Select>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={clearFilters}
+              disabled={!hasActiveFilters}
+              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100"
+            >
+              <X className="h-3.5 w-3.5 mr-1" />
+              Limpar Filtros
+            </Button>
           </div>
           {/* Legenda explicativa */}
           <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-[11px] text-gray-700 space-y-1">
