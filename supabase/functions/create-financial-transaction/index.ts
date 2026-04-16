@@ -587,7 +587,8 @@ Deno.serve(async (req) => {
             fornecedor: barberName,
             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
             transaction_id: transaction_id,
-            forma_pagamento: payment_method, // 👈 ADICIONADO
+            forma_pagamento: payment_method,
+            venda_id: reference_type === 'venda' ? reference_id : null,
           })
 
           created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
