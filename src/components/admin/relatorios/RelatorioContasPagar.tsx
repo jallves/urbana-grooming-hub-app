@@ -53,16 +53,24 @@ const STATUS_LABELS: Record<string, string> = {
   atrasado: 'Atrasado',
 };
 
-const normalizePaymentMethod = (raw: string | null | undefined): string => {
-  if (!raw) return '-';
-  const s = String(raw).toLowerCase().trim();
+const normalizePaymentMethod = (raw: string | null | undefined, observacoes?: string | null): string => {
+  const s = (raw ? String(raw).toLowerCase().trim() : '');
+  // Quando vazio: tenta inferir checkout administrativo pelas observações
+  if (!s) {
+    const obs = (observacoes || '').toLowerCase();
+    if (obs.includes('checkout admin') || obs.includes('checkout administrativo') || obs.includes('cortesia')) {
+      return 'Admin';
+    }
+    return '-';
+  }
   if (s.includes('pix')) return 'PIX';
   if (s.includes('debit') || s.includes('débito') || s.includes('debito')) return 'Cartão de Débito';
   if (s.includes('credit') || s.includes('crédito') || s.includes('credito')) return 'Cartão de Crédito';
   if (s.includes('cash') || s.includes('dinheiro') || s.includes('especie') || s.includes('espécie')) return 'Dinheiro';
   if (s.includes('transfer')) return 'Transferência';
   if (s === 'admin') return 'Admin';
-  return raw.charAt(0).toUpperCase() + raw.slice(1);
+  if (s === 'cortesia') return 'Cortesia';
+  return raw!.charAt(0).toUpperCase() + raw!.slice(1);
 };
 
 // Extrai venda_id da string de observações (formato: "id=<uuid>;...")
