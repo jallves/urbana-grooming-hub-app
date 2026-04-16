@@ -42,12 +42,26 @@ const PendingAccountsWidget: React.FC = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from('contas_receber')
-        .select('id, descricao, valor, data_vencimento, status, categoria')
+        .select('id, descricao, valor, data_vencimento, status, categoria, cliente_id')
         .eq('status', 'pendente')
         .order('data_vencimento', { ascending: true, nullsFirst: false })
         .limit(5);
 
-      return (data || []) as ContaReceber[];
+      const rows = (data || []) as ContaReceber[];
+      const clienteIds = Array.from(new Set(rows.map(r => r.cliente_id).filter((id): id is string => !!id)));
+
+      if (clienteIds.length > 0) {
+        const { data: clientes } = await supabase
+          .from('painel_clientes')
+          .select('id, nome')
+          .in('id', clienteIds);
+        const nomeMap = new Map(clientes?.map(c => [c.id, c.nome]));
+        rows.forEach(r => {
+          r.cliente_nome = r.cliente_id ? nomeMap.get(r.cliente_id) || null : null;
+        });
+      }
+
+      return rows;
     },
     refetchInterval: 60000,
   });
