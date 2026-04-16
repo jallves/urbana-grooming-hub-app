@@ -32,6 +32,7 @@ interface ContaReceber {
   data_recebimento: string | null;
   categoria: string | null;
   cliente_id: string | null;
+  cliente_nome?: string | null;
   status: string | null;
   observacoes: string | null;
   transaction_id: string | null; // ID da transação eletrônica (NSU, PIX, etc.)
@@ -168,7 +169,27 @@ export const ContasAReceber: React.FC = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as ContaReceber[];
+
+      const rows = (data || []) as ContaReceber[];
+
+      // Enriquecer com nome do cliente via JOIN manual (sem FK declarada)
+      const clienteIds = Array.from(
+        new Set(rows.map(r => r.cliente_id).filter((id): id is string => !!id))
+      );
+
+      if (clienteIds.length > 0) {
+        const { data: clientes } = await supabase
+          .from('painel_clientes')
+          .select('id, nome')
+          .in('id', clienteIds);
+
+        const nomeMap = new Map((clientes || []).map(c => [c.id, c.nome]));
+        rows.forEach(r => {
+          r.cliente_nome = r.cliente_id ? nomeMap.get(r.cliente_id) || null : null;
+        });
+      }
+
+      return rows;
     },
   });
 
@@ -300,8 +321,9 @@ export const ContasAReceber: React.FC = () => {
 
     // Detalhado
     const detailData = [
-      ['Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
+      ['Cliente', 'Descrição', 'Categoria', 'Valor (R$)', 'Vencimento', 'Recebimento', 'Status', 'Forma Pgto', 'Observações'],
       ...contasReceber.map(c => [
+        c.cliente_nome || '-',
         c.descricao,
         getCategoryLabel(c.categoria),
         Number(c.valor),
@@ -313,7 +335,7 @@ export const ContasAReceber: React.FC = () => {
       ]),
     ];
     const wsDetail = XLSX.utils.aoa_to_sheet(detailData);
-    wsDetail['!cols'] = [{ wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
+    wsDetail['!cols'] = [{ wch: 22 }, { wch: 30 }, { wch: 15 }, { wch: 15 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 25 }];
     XLSX.utils.book_append_sheet(wb, wsDetail, 'Detalhado');
 
     // Por categoria
@@ -460,6 +482,14 @@ export const ContasAReceber: React.FC = () => {
                         {getStatusBadge(conta.status)}
                       </div>
                       
+                      {/* Cliente - destacado para identificação rápida */}
+                      <div className="mb-2">
+                        <span className="text-xs text-gray-500 block mb-0.5">Cliente</span>
+                        <p className="text-sm font-semibold text-gray-900">
+                          {conta.cliente_nome || <span className="text-gray-400 italic font-normal">Sem cliente vinculado</span>}
+                        </p>
+                      </div>
+
                       {/* Descrição - completa, sem cortes */}
                       <div className="mb-2">
                         <span className="text-xs text-gray-500 block mb-0.5">Descrição</span>
@@ -521,6 +551,7 @@ export const ContasAReceber: React.FC = () => {
                       <TableRow className="bg-gray-50">
                         <TableHead className="px-3 text-xs">Data</TableHead>
                         <TableHead className="px-2 text-xs">Hora</TableHead>
+                        <TableHead className="px-2 text-xs">Cliente</TableHead>
                         <TableHead className="px-2 text-xs">Descrição</TableHead>
                         <TableHead className="px-2 text-xs">Categoria</TableHead>
                         <TableHead className="px-2 text-xs">Pagamento</TableHead>
@@ -537,7 +568,12 @@ export const ContasAReceber: React.FC = () => {
                           <TableCell className="px-2 py-2 text-xs text-gray-500 whitespace-nowrap">
                             {formatTransactionTime(conta.created_at)}
                           </TableCell>
-                          <TableCell className="px-2 py-2 text-xs max-w-[250px]">
+                          <TableCell className="px-2 py-2 text-xs max-w-[180px]">
+                            <span className="block truncate font-medium text-gray-800" title={conta.cliente_nome || 'Sem cliente vinculado'}>
+                              {conta.cliente_nome || <span className="text-gray-400 italic">—</span>}
+                            </span>
+                          </TableCell>
+                          <TableCell className="px-2 py-2 text-xs max-w-[220px]">
                             <span className="block truncate" title={conta.descricao || '-'}>
                               {conta.descricao || '-'}
                             </span>
