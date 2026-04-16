@@ -169,7 +169,27 @@ export const ContasAReceber: React.FC = () => {
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []) as ContaReceber[];
+
+      const rows = (data || []) as ContaReceber[];
+
+      // Enriquecer com nome do cliente via JOIN manual (sem FK declarada)
+      const clienteIds = Array.from(
+        new Set(rows.map(r => r.cliente_id).filter((id): id is string => !!id))
+      );
+
+      if (clienteIds.length > 0) {
+        const { data: clientes } = await supabase
+          .from('painel_clientes')
+          .select('id, nome')
+          .in('id', clienteIds);
+
+        const nomeMap = new Map((clientes || []).map(c => [c.id, c.nome]));
+        rows.forEach(r => {
+          r.cliente_nome = r.cliente_id ? nomeMap.get(r.cliente_id) || null : null;
+        });
+      }
+
+      return rows;
     },
   });
 
