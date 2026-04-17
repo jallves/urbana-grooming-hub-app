@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown, DollarSign, CheckCircle2, Clock, Users, Heart, Gift } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MultiSelectFilter from './shared/MultiSelectFilter';
+import PaymentMethodBar from './shared/PaymentMethodBar';
 
 interface Props {
   filters: { mes: number; ano: number };
@@ -72,10 +73,11 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [filterBarbeiro, setFilterBarbeiro] = useState<string>('todos');
   const [openCliente, setOpenCliente] = useState(false);
   const [openBarbeiro, setOpenBarbeiro] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [filterOrigem, setFilterOrigem] = useState<string>('todos');
-  const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
-  const [filterStatusPgto, setFilterStatusPgto] = useState<string>('todos');
+  // Filtros multi-seleção (vazio = todos)
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [filterOrigem, setFilterOrigem] = useState<string[]>([]);
+  const [filterFormaPgto, setFilterFormaPgto] = useState<string[]>([]);
+  const [filterStatusPgto, setFilterStatusPgto] = useState<string[]>([]);
   const startDate = `${filters.ano}-${String(filters.mes).padStart(2, '0')}-01`;
   const endDate = new Date(filters.ano, filters.mes, 0).toISOString().split('T')[0];
 
@@ -430,31 +432,63 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         r.servico_nome.toLowerCase().includes(term) ||
         r.servicos_extras.toLowerCase().includes(term)
       )) return false;
-      if (filterStatus !== 'todos' && r.status_agendamento !== filterStatus) return false;
-      if (filterOrigem !== 'todos' && r.origem_checkout !== filterOrigem) return false;
-      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento) !== filterFormaPgto) return false;
-      if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
+      // Multi-seleção: lista vazia = todos
+      if (filterStatus.length > 0 && !filterStatus.includes(r.status_agendamento)) return false;
+      if (filterOrigem.length > 0 && !filterOrigem.includes(r.origem_checkout)) return false;
+      if (filterFormaPgto.length > 0 && !filterFormaPgto.includes(normalizePaymentMethod(r.forma_pagamento))) return false;
+      if (filterStatusPgto.length > 0 && !filterStatusPgto.includes(r.status_pagamento)) return false;
       return true;
     });
   }, [rows, searchTerm, filterCliente, filterBarbeiro, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+
+  // Dashboard: totais e breakdown por forma de pagamento
+  const dashboard = useMemo(() => {
+    let total = 0;
+    let recebido = 0;
+    let pendente = 0;
+    let comissoes = 0;
+    let gorjetas = 0;
+    let cortesias = 0;
+    const porFormaPgto: Record<string, number> = {};
+
+    filtered.forEach(r => {
+      total += r.valor_total;
+      gorjetas += r.gorjeta;
+      comissoes += r.comissao_barbeiro;
+
+      if (r.status_pagamento === 'Cortesia (Pago)') {
+        cortesias += 1;
+      } else if (r.status_pagamento === 'Pago (Recebido)') {
+        recebido += r.valor_recebido;
+        const forma = normalizePaymentMethod(r.forma_pagamento);
+        if (forma !== '-' && r.valor_recebido > 0) {
+          porFormaPgto[forma] = (porFormaPgto[forma] || 0) + r.valor_recebido;
+        }
+      } else if (r.status_pagamento === 'Aguardando Pagamento') {
+        pendente += r.valor_total;
+      }
+    });
+
+    return { total, recebido, pendente, comissoes, gorjetas, cortesias, porFormaPgto, count: filtered.length };
+  }, [filtered]);
 
   const hasActiveFilters =
     !!searchTerm ||
     filterCliente !== 'todos' ||
     filterBarbeiro !== 'todos' ||
-    filterStatus !== 'todos' ||
-    filterOrigem !== 'todos' ||
-    filterFormaPgto !== 'todos' ||
-    filterStatusPgto !== 'todos';
+    filterStatus.length > 0 ||
+    filterOrigem.length > 0 ||
+    filterFormaPgto.length > 0 ||
+    filterStatusPgto.length > 0;
 
   const clearFilters = () => {
     setSearchTerm('');
     setFilterCliente('todos');
     setFilterBarbeiro('todos');
-    setFilterStatus('todos');
-    setFilterOrigem('todos');
-    setFilterFormaPgto('todos');
-    setFilterStatusPgto('todos');
+    setFilterStatus([]);
+    setFilterOrigem([]);
+    setFilterFormaPgto([]);
+    setFilterStatusPgto([]);
   };
 
   const formatDate = (d: string | null) => {
@@ -573,8 +607,78 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     );
   }
 
+  const formatBRL = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
   return (
     <div className="space-y-4">
+      {/* Mini-Dashboard: 6 cards de totais */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2">
+        <Card className="bg-teal-50 border-teal-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <DollarSign className="h-3.5 w-3.5 text-teal-600" />
+              <p className="text-[11px] text-teal-700 font-medium">Total Geral</p>
+            </div>
+            <p className="text-base font-bold text-teal-900">{formatBRL(dashboard.total)}</p>
+            <p className="text-[10px] text-teal-600 mt-0.5">{dashboard.count} lançamentos</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <p className="text-[11px] text-green-700 font-medium">Recebido</p>
+            </div>
+            <p className="text-base font-bold text-green-900">{formatBRL(dashboard.recebido)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Clock className="h-3.5 w-3.5 text-yellow-600" />
+              <p className="text-[11px] text-yellow-700 font-medium">Pendente</p>
+            </div>
+            <p className="text-base font-bold text-yellow-900">{formatBRL(dashboard.pendente)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Users className="h-3.5 w-3.5 text-blue-600" />
+              <p className="text-[11px] text-blue-700 font-medium">Comissões</p>
+            </div>
+            <p className="text-base font-bold text-blue-900">{formatBRL(dashboard.comissoes)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-pink-50 border-pink-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Heart className="h-3.5 w-3.5 text-pink-600" />
+              <p className="text-[11px] text-pink-700 font-medium">Gorjetas</p>
+            </div>
+            <p className="text-base font-bold text-pink-900">{formatBRL(dashboard.gorjetas)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-purple-50 border-purple-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Gift className="h-3.5 w-3.5 text-purple-600" />
+              <p className="text-[11px] text-purple-700 font-medium">Cortesias</p>
+            </div>
+            <p className="text-base font-bold text-purple-900">{dashboard.cortesias}</p>
+            <p className="text-[10px] text-purple-600 mt-0.5">atendimentos</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Barra de distribuição por forma de pagamento */}
+      <PaymentMethodBar
+        data={dashboard.porFormaPgto}
+        accent="teal"
+        title="Recebido por forma de pagamento"
+      />
+
       <Card className="bg-white border-gray-200">
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -705,48 +809,36 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
             />
           </div>
 
-          {/* Filtros funcionais */}
+          {/* Filtros funcionais (multi-seleção) */}
           <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todos os Status</SelectItem>
-                {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterOrigem} onValueChange={setFilterOrigem}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Origem" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Origens</SelectItem>
-                {origemOptions.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterFormaPgto} onValueChange={setFilterFormaPgto}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Forma Pgto" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Formas</SelectItem>
-                {formaPgtoOptions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterStatusPgto} onValueChange={setFilterStatusPgto}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Status Pgto" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todos Pgtos</SelectItem>
-                {statusPgtoOptions.map(sp => <SelectItem key={sp} value={sp}>{sp}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
+            <MultiSelectFilter
+              placeholder="Status"
+              options={statusOptions}
+              selected={filterStatus}
+              onChange={setFilterStatus}
+              selectedLabel="status"
+            />
+            <MultiSelectFilter
+              placeholder="Origem"
+              options={origemOptions}
+              selected={filterOrigem}
+              onChange={setFilterOrigem}
+              selectedLabel="origens"
+            />
+            <MultiSelectFilter
+              placeholder="Forma Pgto"
+              options={formaPgtoOptions}
+              selected={filterFormaPgto}
+              onChange={setFilterFormaPgto}
+              selectedLabel="formas"
+            />
+            <MultiSelectFilter
+              placeholder="Status Pgto"
+              options={statusPgtoOptions}
+              selected={filterStatusPgto}
+              onChange={setFilterStatusPgto}
+              selectedLabel="status pgto"
+            />
             <Button
               variant="outline"
               size="sm"

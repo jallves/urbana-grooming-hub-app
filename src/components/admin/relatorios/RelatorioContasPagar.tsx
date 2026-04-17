@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown, Wallet, CheckCircle2, Clock, Layers } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MultiSelectFilter from './shared/MultiSelectFilter';
+import PaymentMethodBar from './shared/PaymentMethodBar';
 
 interface Props {
   filters: { mes: number; ano: number };
@@ -84,9 +85,10 @@ const extractVendaIdFromObs = (obs: string | null): string | null => {
 const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterFornecedor, setFilterFornecedor] = useState<string>('todos');
-  const [filterCategoria, setFilterCategoria] = useState<string>('todos');
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
+  // Filtros multi-seleção (vazio = todos)
+  const [filterCategoria, setFilterCategoria] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [filterFormaPgto, setFilterFormaPgto] = useState<string[]>([]);
   const [openFornecedor, setOpenFornecedor] = useState(false);
 
   const startDate = `${filters.ano}-${String(filters.mes).padStart(2, '0')}-01`;
@@ -206,9 +208,10 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
     const term = searchTerm.toLowerCase().trim();
     return rows.filter(r => {
       if (filterFornecedor !== 'todos' && r.fornecedor !== filterFornecedor) return false;
-      if (filterCategoria !== 'todos' && r.categoria_label !== filterCategoria) return false;
-      if (filterStatus !== 'todos' && r.status_label !== filterStatus) return false;
-      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento, r.observacoes) !== filterFormaPgto) return false;
+      // Multi-seleção: lista vazia = todos
+      if (filterCategoria.length > 0 && !filterCategoria.includes(r.categoria_label)) return false;
+      if (filterStatus.length > 0 && !filterStatus.includes(r.status_label)) return false;
+      if (filterFormaPgto.length > 0 && !filterFormaPgto.includes(normalizePaymentMethod(r.forma_pagamento, r.observacoes))) return false;
       if (term && !(
         r.fornecedor.toLowerCase().includes(term) ||
         r.descricao.toLowerCase().includes(term) ||
@@ -219,30 +222,46 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
     });
   }, [rows, searchTerm, filterFornecedor, filterCategoria, filterStatus, filterFormaPgto]);
 
-  // Totais
+  // Totais + breakdown por categoria + por forma de pagamento
   const totals = useMemo(() => {
     let totalPago = 0, totalPendente = 0, totalGeral = 0;
+    const porCategoria: Record<string, { total: number; pago: number; pendente: number }> = {};
+    const porFormaPgto: Record<string, number> = {};
+
     filtered.forEach(r => {
       totalGeral += r.valor;
-      if (r.status === 'pago') totalPago += r.valor;
-      else if (r.status === 'pendente' || r.status === 'atrasado') totalPendente += r.valor;
+      const isPago = r.status === 'pago';
+      const isPend = r.status === 'pendente' || r.status === 'atrasado';
+      if (isPago) totalPago += r.valor;
+      else if (isPend) totalPendente += r.valor;
+
+      const cat = r.categoria_label;
+      if (!porCategoria[cat]) porCategoria[cat] = { total: 0, pago: 0, pendente: 0 };
+      porCategoria[cat].total += r.valor;
+      if (isPago) porCategoria[cat].pago += r.valor;
+      if (isPend) porCategoria[cat].pendente += r.valor;
+
+      if (isPago) {
+        const forma = normalizePaymentMethod(r.forma_pagamento, r.observacoes);
+        if (forma !== '-') porFormaPgto[forma] = (porFormaPgto[forma] || 0) + r.valor;
+      }
     });
-    return { totalPago, totalPendente, totalGeral, count: filtered.length };
+    return { totalPago, totalPendente, totalGeral, count: filtered.length, porCategoria, porFormaPgto };
   }, [filtered]);
 
   const hasActiveFilters =
     !!searchTerm ||
     filterFornecedor !== 'todos' ||
-    filterCategoria !== 'todos' ||
-    filterStatus !== 'todos' ||
-    filterFormaPgto !== 'todos';
+    filterCategoria.length > 0 ||
+    filterStatus.length > 0 ||
+    filterFormaPgto.length > 0;
 
   const clearFilters = () => {
     setSearchTerm('');
     setFilterFornecedor('todos');
-    setFilterCategoria('todos');
-    setFilterStatus('todos');
-    setFilterFormaPgto('todos');
+    setFilterCategoria([]);
+    setFilterStatus([]);
+    setFilterFormaPgto([]);
   };
 
   const formatDate = (d: string | null) => {
@@ -389,29 +408,74 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="bg-rose-50 border-rose-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-rose-600 font-medium">Total Geral</p>
-            <p className="text-lg font-bold text-rose-800">{formatCurrency(totals.totalGeral)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Wallet className="h-3.5 w-3.5 text-rose-600" />
+              <p className="text-[11px] text-rose-700 font-medium">Total Geral</p>
+            </div>
+            <p className="text-lg font-bold text-rose-900">{formatCurrency(totals.totalGeral)}</p>
+            <p className="text-[10px] text-rose-600 mt-0.5">{totals.count} lançamentos</p>
           </CardContent>
         </Card>
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-green-600 font-medium">Pago</p>
-            <p className="text-lg font-bold text-green-800">{formatCurrency(totals.totalPago)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <p className="text-[11px] text-green-700 font-medium">Pago</p>
+            </div>
+            <p className="text-lg font-bold text-green-900">{formatCurrency(totals.totalPago)}</p>
           </CardContent>
         </Card>
         <Card className="bg-yellow-50 border-yellow-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-yellow-600 font-medium">Pendente</p>
-            <p className="text-lg font-bold text-yellow-800">{formatCurrency(totals.totalPendente)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Clock className="h-3.5 w-3.5 text-yellow-600" />
+              <p className="text-[11px] text-yellow-700 font-medium">Pendente</p>
+            </div>
+            <p className="text-lg font-bold text-yellow-900">{formatCurrency(totals.totalPendente)}</p>
           </CardContent>
         </Card>
         <Card className="bg-slate-50 border-slate-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-slate-600 font-medium">Lançamentos</p>
-            <p className="text-lg font-bold text-slate-800">{totals.count}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Layers className="h-3.5 w-3.5 text-slate-600" />
+              <p className="text-[11px] text-slate-700 font-medium">% Pago</p>
+            </div>
+            <p className="text-lg font-bold text-slate-900">
+              {totals.totalGeral > 0 ? `${((totals.totalPago / totals.totalGeral) * 100).toFixed(1)}%` : '0%'}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Breakdown por categoria */}
+      {Object.keys(totals.porCategoria).length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Distribuição por categoria</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {Object.entries(totals.porCategoria)
+              .sort(([, a], [, b]) => b.total - a.total)
+              .map(([cat, d]) => (
+                <div key={cat} className="border border-gray-100 rounded-md p-2 bg-gray-50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-medium text-gray-700 truncate" title={cat}>{cat}</span>
+                    <span className="text-[11px] font-semibold text-gray-900 whitespace-nowrap ml-2">{formatCurrency(d.total)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-green-700">✓ {formatCurrency(d.pago)}</span>
+                    <span className="text-yellow-700">⏳ {formatCurrency(d.pendente)}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barra por forma de pagamento (apenas pagas) */}
+      <PaymentMethodBar
+        data={totals.porFormaPgto}
+        accent="rose"
+        title="Pago por forma de pagamento"
+      />
 
       <Card className="bg-white border-gray-200">
         <CardHeader className="pb-3">
@@ -491,43 +555,34 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-            <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Categorias</SelectItem>
-                {categoriaOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todos os Status</SelectItem>
-                {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterFormaPgto} onValueChange={setFilterFormaPgto}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Forma Pgto" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Formas</SelectItem>
-                {formaPgtoOptions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <MultiSelectFilter
+              placeholder="Categoria"
+              options={categoriaOptions}
+              selected={filterCategoria}
+              onChange={setFilterCategoria}
+              selectedLabel="categorias"
+            />
+            <MultiSelectFilter
+              placeholder="Status"
+              options={statusOptions}
+              selected={filterStatus}
+              onChange={setFilterStatus}
+              selectedLabel="status"
+            />
+            <MultiSelectFilter
+              placeholder="Forma Pgto"
+              options={formaPgtoOptions}
+              selected={filterFormaPgto}
+              onChange={setFilterFormaPgto}
+              selectedLabel="formas"
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100 col-span-2 lg:col-span-1"
+              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               <X className="h-3.5 w-3.5 mr-1" />
               Limpar Filtros
