@@ -465,6 +465,29 @@ Deno.serve(async (req) => {
             updated_at: new Date().toISOString(),
           })
           .eq('id', venda_id)
+
+        // 📦 Baixa de estoque para produtos vendidos (somente na primeira finalização)
+        const productItems = (vendaItens || []).filter(
+          (it: any) => String(it.tipo || '').toUpperCase() === 'PRODUTO'
+        )
+        if (productItems.length > 0) {
+          console.log(`📦 Decrementando estoque de ${productItems.length} produto(s)...`)
+          for (const prod of productItems) {
+            try {
+              const { error: stockError } = await supabase.rpc('decrease_product_stock', {
+                p_product_id: prod.item_id,
+                p_quantity: Number(prod.quantidade || 1),
+              })
+              if (stockError) {
+                console.error(`❌ Erro ao decrementar estoque ${prod.nome}:`, stockError)
+              } else {
+                console.log(`✅ Estoque decrementado: ${prod.nome} (-${prod.quantidade})`)
+              }
+            } catch (e) {
+              console.error(`❌ Exceção ao decrementar estoque ${prod.nome}:`, e)
+            }
+          }
+        }
       }
 
 
