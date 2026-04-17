@@ -83,6 +83,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['relatorio-analitico', filters],
+    staleTime: 0,
+    gcTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     queryFn: async () => {
       // 1. Fetch appointments with explicit relations
       const { data: agendamentos = [] } = await supabase
@@ -135,9 +139,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           : Promise.resolve({ data: [] as any[] }),
         supabase
           .from('contas_receber')
-          .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
-          .gte('data_vencimento', startDate)
-          .lte('data_vencimento', endDate),
+          .select('id, valor, status, forma_pagamento, data_vencimento, data_recebimento, descricao, venda_id, observacoes, cliente_id, created_at')
+          .or(`and(data_vencimento.gte.${startDate},data_vencimento.lte.${endDate}),and(data_recebimento.gte.${startDate},data_recebimento.lte.${endDate})`),
         // Sessões de totem para identificar origem do checkout E o horário exato de check-in
         agendamentoIds.length > 0
           ? supabase
@@ -381,6 +384,63 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           valor_recebido: isPaga ? valorGorj : 0,
           comissao_barbeiro: valorGorj,
           status_pagamento: isPaga ? 'Pago (Recebido)' : 'Aguardando Pagamento',
+        });
+      });
+
+      // 5. Adiciona lançamentos avulsos de contas_receber (sem agendamento associado)
+      // Ex: vendas de produtos no totem, serviços lançados manualmente sem agendamento
+      const venda_ids_with_appointment = new Set(ags.map((a: any) => a.venda_id).filter(Boolean));
+      const contasReceberOrfas = (contasReceber as any[]).filter((cr) => {
+        return !cr.venda_id || !venda_ids_with_appointment.has(cr.venda_id);
+      });
+
+      const clienteIdsOrfas = Array.from(
+        new Set(contasReceberOrfas.map((cr) => cr.cliente_id).filter(Boolean))
+      );
+      const clientesMapOrfa = new Map<string, string>();
+      if (clienteIdsOrfas.length > 0) {
+        const { data: cls } = await supabase
+          .from('painel_clientes')
+          .select('id, nome')
+          .in('id', clienteIdsOrfas);
+        (cls || []).forEach((c: any) => clientesMapOrfa.set(c.id, c.nome));
+      }
+
+      contasReceberOrfas.forEach((cr) => {
+        const dataRef = cr.data_recebimento || cr.data_vencimento || (cr.created_at ? cr.created_at.split('T')[0] : startDate);
+        const statusLower = String(cr.status || '').toLowerCase();
+        const isPaga = statusLower === 'recebido' || statusLower === 'pago';
+        const valorCR = Number(cr.valor || 0);
+        const desc = String(cr.descricao || 'Lançamento avulso');
+        const isProd = /^Produto:/i.test(desc);
+        const isCortesiaDesc = /Cortesia/i.test(desc);
+        const tipoLabel = isProd ? 'Produto avulso' : isCortesiaDesc ? 'Cortesia' : 'Serviço avulso';
+        const formaDisplay = isCortesiaDesc ? 'cortesia' : (cr.forma_pagamento || 'admin');
+
+        result.push({
+          agendamento_id: `cr-${cr.id}`,
+          data_agendamento: dataRef,
+          hora: '--:--',
+          cliente_nome: cr.cliente_id ? (clientesMapOrfa.get(cr.cliente_id) || '—') : '—',
+          barbeiro_nome: 'N/A',
+          servico_nome: desc.replace(/^(Produto|Serviço|Cortesia)[:\-]\s*/i, '').trim() || tipoLabel,
+          servicos_extras: '',
+          status_agendamento: tipoLabel,
+          data_checkin: null,
+          data_checkout: cr.created_at,
+          origem_checkout: 'Avulso',
+          forma_pagamento: formaDisplay,
+          valor_servico: isCortesiaDesc ? 0 : valorCR,
+          desconto: 0,
+          gorjeta: 0,
+          valor_total: valorCR,
+          valor_recebido: isPaga && !isCortesiaDesc ? valorCR : 0,
+          comissao_barbeiro: 0,
+          status_pagamento: isCortesiaDesc
+            ? 'Cortesia (Pago)'
+            : isPaga
+            ? 'Pago (Recebido)'
+            : 'Aguardando Pagamento',
         });
       });
 
