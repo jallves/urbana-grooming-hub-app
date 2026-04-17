@@ -408,29 +408,74 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="bg-rose-50 border-rose-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-rose-600 font-medium">Total Geral</p>
-            <p className="text-lg font-bold text-rose-800">{formatCurrency(totals.totalGeral)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Wallet className="h-3.5 w-3.5 text-rose-600" />
+              <p className="text-[11px] text-rose-700 font-medium">Total Geral</p>
+            </div>
+            <p className="text-lg font-bold text-rose-900">{formatCurrency(totals.totalGeral)}</p>
+            <p className="text-[10px] text-rose-600 mt-0.5">{totals.count} lançamentos</p>
           </CardContent>
         </Card>
         <Card className="bg-green-50 border-green-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-green-600 font-medium">Pago</p>
-            <p className="text-lg font-bold text-green-800">{formatCurrency(totals.totalPago)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <p className="text-[11px] text-green-700 font-medium">Pago</p>
+            </div>
+            <p className="text-lg font-bold text-green-900">{formatCurrency(totals.totalPago)}</p>
           </CardContent>
         </Card>
         <Card className="bg-yellow-50 border-yellow-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-yellow-600 font-medium">Pendente</p>
-            <p className="text-lg font-bold text-yellow-800">{formatCurrency(totals.totalPendente)}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Clock className="h-3.5 w-3.5 text-yellow-600" />
+              <p className="text-[11px] text-yellow-700 font-medium">Pendente</p>
+            </div>
+            <p className="text-lg font-bold text-yellow-900">{formatCurrency(totals.totalPendente)}</p>
           </CardContent>
         </Card>
         <Card className="bg-slate-50 border-slate-200">
           <CardContent className="p-3">
-            <p className="text-[11px] text-slate-600 font-medium">Lançamentos</p>
-            <p className="text-lg font-bold text-slate-800">{totals.count}</p>
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Layers className="h-3.5 w-3.5 text-slate-600" />
+              <p className="text-[11px] text-slate-700 font-medium">% Pago</p>
+            </div>
+            <p className="text-lg font-bold text-slate-900">
+              {totals.totalGeral > 0 ? `${((totals.totalPago / totals.totalGeral) * 100).toFixed(1)}%` : '0%'}
+            </p>
           </CardContent>
         </Card>
       </div>
+
+      {/* Breakdown por categoria */}
+      {Object.keys(totals.porCategoria).length > 0 && (
+        <div className="bg-white border border-gray-200 rounded-lg p-3">
+          <p className="text-xs font-semibold text-gray-700 mb-2">Distribuição por categoria</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+            {Object.entries(totals.porCategoria)
+              .sort(([, a], [, b]) => b.total - a.total)
+              .map(([cat, d]) => (
+                <div key={cat} className="border border-gray-100 rounded-md p-2 bg-gray-50">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-[11px] font-medium text-gray-700 truncate" title={cat}>{cat}</span>
+                    <span className="text-[11px] font-semibold text-gray-900 whitespace-nowrap ml-2">{formatCurrency(d.total)}</span>
+                  </div>
+                  <div className="flex items-center gap-2 text-[10px]">
+                    <span className="text-green-700">✓ {formatCurrency(d.pago)}</span>
+                    <span className="text-yellow-700">⏳ {formatCurrency(d.pendente)}</span>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
+
+      {/* Barra por forma de pagamento (apenas pagas) */}
+      <PaymentMethodBar
+        data={totals.porFormaPgto}
+        accent="rose"
+        title="Pago por forma de pagamento"
+      />
 
       <Card className="bg-white border-gray-200">
         <CardHeader className="pb-3">
