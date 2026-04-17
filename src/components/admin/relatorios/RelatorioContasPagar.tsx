@@ -208,9 +208,10 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
     const term = searchTerm.toLowerCase().trim();
     return rows.filter(r => {
       if (filterFornecedor !== 'todos' && r.fornecedor !== filterFornecedor) return false;
-      if (filterCategoria !== 'todos' && r.categoria_label !== filterCategoria) return false;
-      if (filterStatus !== 'todos' && r.status_label !== filterStatus) return false;
-      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento, r.observacoes) !== filterFormaPgto) return false;
+      // Multi-seleção: lista vazia = todos
+      if (filterCategoria.length > 0 && !filterCategoria.includes(r.categoria_label)) return false;
+      if (filterStatus.length > 0 && !filterStatus.includes(r.status_label)) return false;
+      if (filterFormaPgto.length > 0 && !filterFormaPgto.includes(normalizePaymentMethod(r.forma_pagamento, r.observacoes))) return false;
       if (term && !(
         r.fornecedor.toLowerCase().includes(term) ||
         r.descricao.toLowerCase().includes(term) ||
@@ -221,23 +222,39 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
     });
   }, [rows, searchTerm, filterFornecedor, filterCategoria, filterStatus, filterFormaPgto]);
 
-  // Totais
+  // Totais + breakdown por categoria + por forma de pagamento
   const totals = useMemo(() => {
     let totalPago = 0, totalPendente = 0, totalGeral = 0;
+    const porCategoria: Record<string, { total: number; pago: number; pendente: number }> = {};
+    const porFormaPgto: Record<string, number> = {};
+
     filtered.forEach(r => {
       totalGeral += r.valor;
-      if (r.status === 'pago') totalPago += r.valor;
-      else if (r.status === 'pendente' || r.status === 'atrasado') totalPendente += r.valor;
+      const isPago = r.status === 'pago';
+      const isPend = r.status === 'pendente' || r.status === 'atrasado';
+      if (isPago) totalPago += r.valor;
+      else if (isPend) totalPendente += r.valor;
+
+      const cat = r.categoria_label;
+      if (!porCategoria[cat]) porCategoria[cat] = { total: 0, pago: 0, pendente: 0 };
+      porCategoria[cat].total += r.valor;
+      if (isPago) porCategoria[cat].pago += r.valor;
+      if (isPend) porCategoria[cat].pendente += r.valor;
+
+      if (isPago) {
+        const forma = normalizePaymentMethod(r.forma_pagamento, r.observacoes);
+        if (forma !== '-') porFormaPgto[forma] = (porFormaPgto[forma] || 0) + r.valor;
+      }
     });
-    return { totalPago, totalPendente, totalGeral, count: filtered.length };
+    return { totalPago, totalPendente, totalGeral, count: filtered.length, porCategoria, porFormaPgto };
   }, [filtered]);
 
   const hasActiveFilters =
     !!searchTerm ||
     filterFornecedor !== 'todos' ||
-    filterCategoria !== 'todos' ||
-    filterStatus !== 'todos' ||
-    filterFormaPgto !== 'todos';
+    filterCategoria.length > 0 ||
+    filterStatus.length > 0 ||
+    filterFormaPgto.length > 0;
 
   const clearFilters = () => {
     setSearchTerm('');
