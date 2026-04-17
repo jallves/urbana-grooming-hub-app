@@ -73,10 +73,11 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
   const [filterBarbeiro, setFilterBarbeiro] = useState<string>('todos');
   const [openCliente, setOpenCliente] = useState(false);
   const [openBarbeiro, setOpenBarbeiro] = useState(false);
-  const [filterStatus, setFilterStatus] = useState<string>('todos');
-  const [filterOrigem, setFilterOrigem] = useState<string>('todos');
-  const [filterFormaPgto, setFilterFormaPgto] = useState<string>('todos');
-  const [filterStatusPgto, setFilterStatusPgto] = useState<string>('todos');
+  // Filtros multi-seleção (vazio = todos)
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [filterOrigem, setFilterOrigem] = useState<string[]>([]);
+  const [filterFormaPgto, setFilterFormaPgto] = useState<string[]>([]);
+  const [filterStatusPgto, setFilterStatusPgto] = useState<string[]>([]);
   const startDate = `${filters.ano}-${String(filters.mes).padStart(2, '0')}-01`;
   const endDate = new Date(filters.ano, filters.mes, 0).toISOString().split('T')[0];
 
@@ -431,31 +432,63 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         r.servico_nome.toLowerCase().includes(term) ||
         r.servicos_extras.toLowerCase().includes(term)
       )) return false;
-      if (filterStatus !== 'todos' && r.status_agendamento !== filterStatus) return false;
-      if (filterOrigem !== 'todos' && r.origem_checkout !== filterOrigem) return false;
-      if (filterFormaPgto !== 'todos' && normalizePaymentMethod(r.forma_pagamento) !== filterFormaPgto) return false;
-      if (filterStatusPgto !== 'todos' && r.status_pagamento !== filterStatusPgto) return false;
+      // Multi-seleção: lista vazia = todos
+      if (filterStatus.length > 0 && !filterStatus.includes(r.status_agendamento)) return false;
+      if (filterOrigem.length > 0 && !filterOrigem.includes(r.origem_checkout)) return false;
+      if (filterFormaPgto.length > 0 && !filterFormaPgto.includes(normalizePaymentMethod(r.forma_pagamento))) return false;
+      if (filterStatusPgto.length > 0 && !filterStatusPgto.includes(r.status_pagamento)) return false;
       return true;
     });
   }, [rows, searchTerm, filterCliente, filterBarbeiro, filterStatus, filterOrigem, filterFormaPgto, filterStatusPgto]);
+
+  // Dashboard: totais e breakdown por forma de pagamento
+  const dashboard = useMemo(() => {
+    let total = 0;
+    let recebido = 0;
+    let pendente = 0;
+    let comissoes = 0;
+    let gorjetas = 0;
+    let cortesias = 0;
+    const porFormaPgto: Record<string, number> = {};
+
+    filtered.forEach(r => {
+      total += r.valor_total;
+      gorjetas += r.gorjeta;
+      comissoes += r.comissao_barbeiro;
+
+      if (r.status_pagamento === 'Cortesia (Pago)') {
+        cortesias += 1;
+      } else if (r.status_pagamento === 'Pago (Recebido)') {
+        recebido += r.valor_recebido;
+        const forma = normalizePaymentMethod(r.forma_pagamento);
+        if (forma !== '-' && r.valor_recebido > 0) {
+          porFormaPgto[forma] = (porFormaPgto[forma] || 0) + r.valor_recebido;
+        }
+      } else if (r.status_pagamento === 'Aguardando Pagamento') {
+        pendente += r.valor_total;
+      }
+    });
+
+    return { total, recebido, pendente, comissoes, gorjetas, cortesias, porFormaPgto, count: filtered.length };
+  }, [filtered]);
 
   const hasActiveFilters =
     !!searchTerm ||
     filterCliente !== 'todos' ||
     filterBarbeiro !== 'todos' ||
-    filterStatus !== 'todos' ||
-    filterOrigem !== 'todos' ||
-    filterFormaPgto !== 'todos' ||
-    filterStatusPgto !== 'todos';
+    filterStatus.length > 0 ||
+    filterOrigem.length > 0 ||
+    filterFormaPgto.length > 0 ||
+    filterStatusPgto.length > 0;
 
   const clearFilters = () => {
     setSearchTerm('');
     setFilterCliente('todos');
     setFilterBarbeiro('todos');
-    setFilterStatus('todos');
-    setFilterOrigem('todos');
-    setFilterFormaPgto('todos');
-    setFilterStatusPgto('todos');
+    setFilterStatus([]);
+    setFilterOrigem([]);
+    setFilterFormaPgto([]);
+    setFilterStatusPgto([]);
   };
 
   const formatDate = (d: string | null) => {
