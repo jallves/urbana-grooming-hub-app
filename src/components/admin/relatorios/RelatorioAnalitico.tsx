@@ -83,6 +83,10 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['relatorio-analitico', filters],
+    staleTime: 0,
+    gcTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     queryFn: async () => {
       // 1. Fetch appointments with explicit relations
       const { data: agendamentos = [] } = await supabase

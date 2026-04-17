@@ -96,6 +96,10 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
 
   const { data: rows = [], isLoading } = useQuery({
     queryKey: ['relatorio-contas-pagar', filters],
+    staleTime: 0,
+    gcTime: 30_000,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     queryFn: async () => {
       // 1. Busca contas a pagar do período (por vencimento OU pagamento)
       const [byVencRes, byPagRes] = await Promise.all([
