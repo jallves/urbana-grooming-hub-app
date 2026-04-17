@@ -510,43 +510,34 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
             />
           </div>
 
-          <div className="grid grid-cols-2 lg:grid-cols-5 gap-2">
-            <Select value={filterCategoria} onValueChange={setFilterCategoria}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Categoria" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Categorias</SelectItem>
-                {categoriaOptions.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Status" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todos os Status</SelectItem>
-                {statusOptions.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
-            <Select value={filterFormaPgto} onValueChange={setFilterFormaPgto}>
-              <SelectTrigger className="bg-white border-gray-300 h-9 text-xs">
-                <SelectValue placeholder="Forma Pgto" />
-              </SelectTrigger>
-              <SelectContent className="bg-white border-gray-300">
-                <SelectItem value="todos">Todas Formas</SelectItem>
-                {formaPgtoOptions.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-              </SelectContent>
-            </Select>
-
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <MultiSelectFilter
+              placeholder="Categoria"
+              options={categoriaOptions}
+              selected={filterCategoria}
+              onChange={setFilterCategoria}
+              selectedLabel="categorias"
+            />
+            <MultiSelectFilter
+              placeholder="Status"
+              options={statusOptions}
+              selected={filterStatus}
+              onChange={setFilterStatus}
+              selectedLabel="status"
+            />
+            <MultiSelectFilter
+              placeholder="Forma Pgto"
+              options={formaPgtoOptions}
+              selected={filterFormaPgto}
+              onChange={setFilterFormaPgto}
+              selectedLabel="formas"
+            />
             <Button
               variant="outline"
               size="sm"
               onClick={clearFilters}
               disabled={!hasActiveFilters}
-              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100 col-span-2 lg:col-span-1"
+              className="h-9 text-xs border-gray-300 text-gray-700 hover:bg-gray-100"
             >
               <X className="h-3.5 w-3.5 mr-1" />
               Limpar Filtros
