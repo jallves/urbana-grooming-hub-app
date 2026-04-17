@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown } from 'lucide-react';
+import { FileSpreadsheet, FileText, Loader2, Search, X, Check, ChevronsUpDown, DollarSign, CheckCircle2, Clock, Users, Heart, Gift } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import MultiSelectFilter from './shared/MultiSelectFilter';
+import PaymentMethodBar from './shared/PaymentMethodBar';
 
 interface Props {
   filters: { mes: number; ano: number };
