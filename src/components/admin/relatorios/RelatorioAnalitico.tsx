@@ -139,9 +139,8 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
           : Promise.resolve({ data: [] as any[] }),
         supabase
           .from('contas_receber')
-          .select('id, valor, status, forma_pagamento, data_recebimento, descricao')
-          .gte('data_vencimento', startDate)
-          .lte('data_vencimento', endDate),
+          .select('id, valor, status, forma_pagamento, data_vencimento, data_recebimento, descricao, venda_id, observacoes, cliente_id, created_at')
+          .or(`and(data_vencimento.gte.${startDate},data_vencimento.lte.${endDate}),and(data_recebimento.gte.${startDate},data_recebimento.lte.${endDate})`),
         // Sessões de totem para identificar origem do checkout E o horário exato de check-in
         agendamentoIds.length > 0
           ? supabase
