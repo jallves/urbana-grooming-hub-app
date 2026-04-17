@@ -607,9 +607,78 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
     );
   }
 
+  const formatBRL = (v: number) =>
+    v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
   return (
     <div className="space-y-4">
-      <Card className="bg-white border-gray-200">
+      {/* Mini-Dashboard: 6 cards de totais */}
+      <div className="grid grid-cols-2 lg:grid-cols-6 gap-2">
+        <Card className="bg-teal-50 border-teal-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <DollarSign className="h-3.5 w-3.5 text-teal-600" />
+              <p className="text-[11px] text-teal-700 font-medium">Total Geral</p>
+            </div>
+            <p className="text-base font-bold text-teal-900">{formatBRL(dashboard.total)}</p>
+            <p className="text-[10px] text-teal-600 mt-0.5">{dashboard.count} lançamentos</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-green-50 border-green-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <CheckCircle2 className="h-3.5 w-3.5 text-green-600" />
+              <p className="text-[11px] text-green-700 font-medium">Recebido</p>
+            </div>
+            <p className="text-base font-bold text-green-900">{formatBRL(dashboard.recebido)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-yellow-50 border-yellow-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Clock className="h-3.5 w-3.5 text-yellow-600" />
+              <p className="text-[11px] text-yellow-700 font-medium">Pendente</p>
+            </div>
+            <p className="text-base font-bold text-yellow-900">{formatBRL(dashboard.pendente)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-blue-50 border-blue-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Users className="h-3.5 w-3.5 text-blue-600" />
+              <p className="text-[11px] text-blue-700 font-medium">Comissões</p>
+            </div>
+            <p className="text-base font-bold text-blue-900">{formatBRL(dashboard.comissoes)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-pink-50 border-pink-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Heart className="h-3.5 w-3.5 text-pink-600" />
+              <p className="text-[11px] text-pink-700 font-medium">Gorjetas</p>
+            </div>
+            <p className="text-base font-bold text-pink-900">{formatBRL(dashboard.gorjetas)}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-purple-50 border-purple-200">
+          <CardContent className="p-3">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              <Gift className="h-3.5 w-3.5 text-purple-600" />
+              <p className="text-[11px] text-purple-700 font-medium">Cortesias</p>
+            </div>
+            <p className="text-base font-bold text-purple-900">{dashboard.cortesias}</p>
+            <p className="text-[10px] text-purple-600 mt-0.5">atendimentos</p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Barra de distribuição por forma de pagamento */}
+      <PaymentMethodBar
+        data={dashboard.porFormaPgto}
+        accent="teal"
+        title="Recebido por forma de pagamento"
+      />
+
         <CardHeader className="pb-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-lg font-semibold text-gray-800">
