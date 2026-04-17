@@ -259,9 +259,9 @@ const RelatorioContasPagar: React.FC<Props> = ({ filters }) => {
   const clearFilters = () => {
     setSearchTerm('');
     setFilterFornecedor('todos');
-    setFilterCategoria('todos');
-    setFilterStatus('todos');
-    setFilterFormaPgto('todos');
+    setFilterCategoria([]);
+    setFilterStatus([]);
+    setFilterFormaPgto([]);
   };
 
   const formatDate = (d: string | null) => {
