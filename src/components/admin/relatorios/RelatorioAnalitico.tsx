@@ -387,6 +387,63 @@ const RelatorioAnalitico: React.FC<Props> = ({ filters }) => {
         });
       });
 
+      // 5. Adiciona lançamentos avulsos de contas_receber (sem agendamento associado)
+      // Ex: vendas de produtos no totem, serviços lançados manualmente sem agendamento
+      const venda_ids_with_appointment = new Set(ags.map((a: any) => a.venda_id).filter(Boolean));
+      const contasReceberOrfas = (contasReceber as any[]).filter((cr) => {
+        return !cr.venda_id || !venda_ids_with_appointment.has(cr.venda_id);
+      });
+
+      const clienteIdsOrfas = Array.from(
+        new Set(contasReceberOrfas.map((cr) => cr.cliente_id).filter(Boolean))
+      );
+      const clientesMapOrfa = new Map<string, string>();
+      if (clienteIdsOrfas.length > 0) {
+        const { data: cls } = await supabase
+          .from('painel_clientes')
+          .select('id, nome')
+          .in('id', clienteIdsOrfas);
+        (cls || []).forEach((c: any) => clientesMapOrfa.set(c.id, c.nome));
+      }
+
+      contasReceberOrfas.forEach((cr) => {
+        const dataRef = cr.data_recebimento || cr.data_vencimento || (cr.created_at ? cr.created_at.split('T')[0] : startDate);
+        const statusLower = String(cr.status || '').toLowerCase();
+        const isPaga = statusLower === 'recebido' || statusLower === 'pago';
+        const valorCR = Number(cr.valor || 0);
+        const desc = String(cr.descricao || 'Lançamento avulso');
+        const isProd = /^Produto:/i.test(desc);
+        const isCortesiaDesc = /Cortesia/i.test(desc);
+        const tipoLabel = isProd ? 'Produto avulso' : isCortesiaDesc ? 'Cortesia' : 'Serviço avulso';
+        const formaDisplay = isCortesiaDesc ? 'cortesia' : (cr.forma_pagamento || 'admin');
+
+        result.push({
+          agendamento_id: `cr-${cr.id}`,
+          data_agendamento: dataRef,
+          hora: '--:--',
+          cliente_nome: cr.cliente_id ? (clientesMapOrfa.get(cr.cliente_id) || '—') : '—',
+          barbeiro_nome: 'N/A',
+          servico_nome: desc.replace(/^(Produto|Serviço|Cortesia)[:\-]\s*/i, '').trim() || tipoLabel,
+          servicos_extras: '',
+          status_agendamento: tipoLabel,
+          data_checkin: null,
+          data_checkout: cr.created_at,
+          origem_checkout: 'Avulso',
+          forma_pagamento: formaDisplay,
+          valor_servico: isCortesiaDesc ? 0 : valorCR,
+          desconto: 0,
+          gorjeta: 0,
+          valor_total: valorCR,
+          valor_recebido: isPaga && !isCortesiaDesc ? valorCR : 0,
+          comissao_barbeiro: 0,
+          status_pagamento: isCortesiaDesc
+            ? 'Cortesia (Pago)'
+            : isPaga
+            ? 'Pago (Recebido)'
+            : 'Aguardando Pagamento',
+        });
+      });
+
       // Ordena por data + hora
       result.sort((a, b) => {
         const da = `${a.data_agendamento} ${a.hora}`;
