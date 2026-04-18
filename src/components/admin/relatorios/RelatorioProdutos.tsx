@@ -39,6 +39,7 @@ const PAYMENT_LABELS: Record<string, string> = {
   CREDITO: 'Crédito', credit: 'Crédito', credito: 'Crédito',
   DEBITO: 'Débito', debit: 'Débito', debito: 'Débito',
   DINHEIRO: 'Dinheiro', cash: 'Dinheiro', dinheiro: 'Dinheiro',
+  CORTESIA: 'Cortesia',
 };
 
 const PAYMENT_COLORS: Record<string, string> = {
@@ -46,6 +47,7 @@ const PAYMENT_COLORS: Record<string, string> = {
   CREDITO: 'bg-blue-100 text-blue-700 border-blue-200',
   DEBITO: 'bg-cyan-100 text-cyan-700 border-cyan-200',
   DINHEIRO: 'bg-amber-100 text-amber-700 border-amber-200',
+  CORTESIA: 'bg-yellow-100 text-yellow-800 border-yellow-300',
 };
 
 const normalizePay = (p: string | null) => {
@@ -55,6 +57,7 @@ const normalizePay = (p: string | null) => {
   if (u.includes('CRED')) return 'CREDITO';
   if (u.includes('DEB')) return 'DEBITO';
   if (u.includes('DIN') || u.includes('CASH')) return 'DINHEIRO';
+  if (u.includes('CORTES') || u.includes('CAFE') || u.includes('CAFÉ')) return 'CORTESIA';
   return u;
 };
 
