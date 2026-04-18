@@ -75,9 +75,9 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
 
   return (
     <TableRow className="text-xs sm:text-sm">
-      <TableCell className="font-medium px-2 sm:px-4 py-2 sm:py-3">
-        <div className="flex flex-col space-y-1">
-          <span className="truncate max-w-[100px] sm:max-w-none">
+      <TableCell className="font-medium px-2 sm:px-4 py-2 sm:py-3 max-w-[120px] sm:max-w-none">
+        <div className="flex flex-col space-y-1 min-w-0">
+          <span className="truncate block" title={appointment.client?.name}>
             {appointment.client?.name || 'Cliente não encontrado'}
           </span>
           {isPainelAppointment && (
@@ -86,9 +86,9 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
               Painel
             </Badge>
           )}
-          <div className="sm:hidden text-[10px] text-muted-foreground space-y-0.5">
-            <div>{appointment.service?.name || 'Serviço N/A'}</div>
-            <div>{appointment.staff?.name || 'Não atribuído'}</div>
+          <div className="sm:hidden text-[10px] text-muted-foreground space-y-0.5 min-w-0">
+            <div className="truncate">{appointment.service?.name || 'Serviço N/A'}</div>
+            <div className="truncate">{appointment.staff?.name || 'Não atribuído'}</div>
           </div>
         </div>
       </TableCell>
