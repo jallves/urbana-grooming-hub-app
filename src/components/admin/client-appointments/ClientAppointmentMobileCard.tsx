@@ -282,25 +282,27 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
 
   return (
     <>
-      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
-        <div className="flex justify-between items-start mb-3">
-          <div className="flex items-center gap-3">
+      <div className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm overflow-hidden">
+        <div className="flex justify-between items-start gap-2 mb-3">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
             <div className="w-12 h-12 rounded-full bg-gradient-to-br from-urbana-gold to-yellow-600 flex items-center justify-center text-white font-bold text-base flex-shrink-0">
               {appointment.painel_clientes?.nome?.charAt(0)?.toUpperCase() || 'C'}
             </div>
             <div className="flex-1 min-w-0">
-              <h4 className="font-bold text-base text-gray-900 truncate flex items-center gap-1.5">
-                {appointment.painel_clientes?.nome || 'Nome não encontrado'}
+              <h4 className="font-bold text-sm sm:text-base text-gray-900 flex items-center gap-1.5 min-w-0">
+                <span className="truncate min-w-0">{appointment.painel_clientes?.nome || 'Nome não encontrado'}</span>
                 {appointment.is_encaixe && (
                   <span className="px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-purple-100 text-purple-700 border border-purple-300 flex-shrink-0">
-                    ⚡ Encaixe
+                    ⚡
                   </span>
                 )}
               </h4>
-              <p className="text-xs text-gray-500">{appointment.painel_clientes?.whatsapp}</p>
+              <p className="text-xs text-gray-500 truncate">{appointment.painel_clientes?.whatsapp}</p>
             </div>
           </div>
-          {getStatusBadge(actualStatus)}
+          <div className="flex-shrink-0 max-w-[110px]">
+            {getStatusBadge(actualStatus)}
+          </div>
         </div>
 
         <div className="space-y-2 bg-gray-50 rounded-lg p-3 mb-3">
