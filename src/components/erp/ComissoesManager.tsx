@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -13,7 +13,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
   Users, DollarSign, Clock, CheckCircle, Download, FileText, Search,
-  Filter, TrendingUp, AlertCircle, Loader2, Receipt, Printer
+  TrendingUp, AlertCircle, Loader2, Receipt, Printer, Scissors, Package, Coins
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import * as XLSX from 'xlsx';
@@ -48,12 +48,52 @@ interface Barber {
 
 interface BarberSummary {
   barber: Barber;
+  // Serviços
+  servicoPago: number;
+  servicoPendente: number;
+  // Produtos
+  produtoPago: number;
+  produtoPendente: number;
+  // Gorjetas
+  gorjetaPaga: number;
+  gorjetaPendente: number;
+  // Plano
+  planoPago: number;
+  planoPendente: number;
+  // Totais
   totalPago: number;
   totalPendente: number;
-  totalGorjeta: number;
   totalGeral: number;
   qtdComissoes: number;
 }
+
+// ─── Theme Colors (FIXED per tab) ─────────────────────────
+const TAB_THEMES = {
+  resumo: {
+    activeBg: 'data-[state=active]:bg-purple-600',
+    activeText: 'data-[state=active]:text-white',
+    border: 'border-purple-200',
+    bg: 'bg-purple-50',
+    text: 'text-purple-700',
+    headerBg: 'bg-purple-100',
+  },
+  detalhes: {
+    activeBg: 'data-[state=active]:bg-blue-600',
+    activeText: 'data-[state=active]:text-white',
+    border: 'border-blue-200',
+    bg: 'bg-blue-50',
+    text: 'text-blue-700',
+    headerBg: 'bg-blue-100',
+  },
+  contas: {
+    activeBg: 'data-[state=active]:bg-amber-600',
+    activeText: 'data-[state=active]:text-white',
+    border: 'border-amber-200',
+    bg: 'bg-amber-50',
+    text: 'text-amber-700',
+    headerBg: 'bg-amber-100',
+  },
+};
 
 // ─── Helpers ──────────────────────────────────────────────
 const formatCurrency = (v: number) =>
@@ -75,13 +115,13 @@ const getStatusBadge = (status: string | null) => {
 const getTipoBadge = (tipo: string | null) => {
   switch (tipo) {
     case 'servico':
-      return <Badge variant="outline" className="text-blue-700 border-blue-300">Serviço</Badge>;
+      return <Badge variant="outline" className="text-blue-700 border-blue-300 bg-blue-50">Serviço</Badge>;
     case 'produto':
-      return <Badge variant="outline" className="text-purple-700 border-purple-300">Produto</Badge>;
+      return <Badge variant="outline" className="text-purple-700 border-purple-300 bg-purple-50">Produto</Badge>;
     case 'gorjeta':
-      return <Badge variant="outline" className="text-pink-700 border-pink-300">Gorjeta</Badge>;
+      return <Badge variant="outline" className="text-pink-700 border-pink-300 bg-pink-50">Gorjeta</Badge>;
     case 'plano':
-      return <Badge variant="outline" className="text-indigo-700 border-indigo-300">Plano</Badge>;
+      return <Badge variant="outline" className="text-indigo-700 border-indigo-300 bg-indigo-50">Plano</Badge>;
     default:
       return <Badge variant="outline">{tipo || '-'}</Badge>;
   }
@@ -106,7 +146,7 @@ const ComissoesManager: React.FC = () => {
   const [selectedStatus, setSelectedStatus] = useState('todos');
   const [selectedTipo, setSelectedTipo] = useState('todos');
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeView, setActiveView] = useState('resumo');
+  const [activeView, setActiveView] = useState<'resumo' | 'detalhes' | 'contas'>('resumo');
   const [receiptCommission, setReceiptCommission] = useState<Commission | null>(null);
 
   const years = Array.from({ length: 5 }, (_, i) => (currentYear - i).toString());
@@ -151,7 +191,6 @@ const ComissoesManager: React.FC = () => {
     },
   });
 
-  // Also fetch from contas_pagar with categoria='Comissão' for cross-reference
   const { data: contasPagarComissoes = [] } = useQuery({
     queryKey: ['contas-pagar-comissoes', selectedYear, selectedMonth],
     queryFn: async () => {
@@ -164,7 +203,7 @@ const ComissoesManager: React.FC = () => {
       const { data } = await supabase
         .from('contas_pagar')
         .select('*')
-        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%')
+        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%,categoria.ilike.%gorjeta%')
         .gte('data_vencimento', firstDay)
         .lte('data_vencimento', lastDay)
         .order('data_vencimento', { ascending: false });
@@ -188,19 +227,22 @@ const ComissoesManager: React.FC = () => {
     });
   }, [commissions, selectedBarber, selectedStatus, selectedTipo, searchQuery]);
 
-  // ─── Barber Summaries ─────────────────────────────────
+  // ─── Barber Summaries (Detailed by Type & Status) ─────
   const barberSummaries = useMemo((): BarberSummary[] => {
     const map = new Map<string, BarberSummary>();
 
+    const initSummary = (barber: Barber): BarberSummary => ({
+      barber,
+      servicoPago: 0, servicoPendente: 0,
+      produtoPago: 0, produtoPendente: 0,
+      gorjetaPaga: 0, gorjetaPendente: 0,
+      planoPago: 0, planoPendente: 0,
+      totalPago: 0, totalPendente: 0, totalGeral: 0,
+      qtdComissoes: 0,
+    });
+
     for (const barber of barbers) {
-      map.set(barber.id, {
-        barber,
-        totalPago: 0,
-        totalPendente: 0,
-        totalGorjeta: 0,
-        totalGeral: 0,
-        qtdComissoes: 0,
-      });
+      map.set(barber.id, initSummary(barber));
     }
 
     for (const c of commissions) {
@@ -213,23 +255,31 @@ const ComissoesManager: React.FC = () => {
           taxa_comissao: c.commission_rate,
           ativo: true,
         };
-        summary = { barber, totalPago: 0, totalPendente: 0, totalGorjeta: 0, totalGeral: 0, qtdComissoes: 0 };
+        summary = initSummary(barber);
         map.set(c.barber_id, summary);
       }
 
       const valor = Number(c.valor || 0);
       const status = normalizeStatus(c.status);
+      const tipo = c.tipo || 'servico';
+      const isPago = status === 'pago';
 
-      // Gorjetas são contabilizadas separadamente, não entram em Pago/Pendente
-      if (c.tipo === 'gorjeta') {
-        summary.totalGorjeta += valor;
-      } else if (status === 'pago') {
-        summary.totalPago += valor;
+      if (tipo === 'gorjeta') {
+        if (isPago) summary.gorjetaPaga += valor;
+        else summary.gorjetaPendente += valor;
+      } else if (tipo === 'produto') {
+        if (isPago) summary.produtoPago += valor;
+        else summary.produtoPendente += valor;
+      } else if (tipo === 'plano') {
+        if (isPago) summary.planoPago += valor;
+        else summary.planoPendente += valor;
       } else {
-        summary.totalPendente += valor;
+        if (isPago) summary.servicoPago += valor;
+        else summary.servicoPendente += valor;
       }
 
-      // Total Geral = Pago + Pendente + Gorjetas (sem dupla contagem)
+      if (isPago) summary.totalPago += valor;
+      else summary.totalPendente += valor;
       summary.totalGeral += valor;
       summary.qtdComissoes++;
     }
@@ -250,28 +300,40 @@ const ComissoesManager: React.FC = () => {
     const totalGorjetas = commissions
       .filter(c => c.tipo === 'gorjeta')
       .reduce((s, c) => s + Number(c.valor || 0), 0);
+    const totalProdutos = commissions
+      .filter(c => c.tipo === 'produto')
+      .reduce((s, c) => s + Number(c.valor || 0), 0);
+    const totalServicos = commissions
+      .filter(c => !c.tipo || c.tipo === 'servico')
+      .reduce((s, c) => s + Number(c.valor || 0), 0);
     const total = commissions.reduce((s, c) => s + Number(c.valor || 0), 0);
     const barbeirosAtivos = new Set(commissions.map(c => c.barber_id)).size;
 
-    return { totalPago, totalPendente, totalGorjetas, total, barbeirosAtivos, qtd: commissions.length };
+    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length };
   }, [commissions]);
 
   // ─── Export Excel ─────────────────────────────────────
   const handleExportExcel = useCallback(() => {
     const monthLabel = months.find(m => m.value === selectedMonth)?.label || '';
 
-    // Sheet 1: Resumo por Barbeiro
+    // Sheet: Resumo Detalhado por Barbeiro (Planilha estilo Excel)
     const resumoData = barberSummaries.map(s => ({
       'Barbeiro': s.barber.nome,
-      'Taxa Comissão (%)': s.barber.taxa_comissao || 0,
-      'Total Pago (R$)': s.totalPago,
-      'Total Pendente (R$)': s.totalPendente,
-      'Total Gorjetas (R$)': s.totalGorjeta,
-      'Total Geral (R$)': s.totalGeral,
+      'Taxa (%)': s.barber.taxa_comissao || 0,
+      'Serviços Pagos (R$)': s.servicoPago,
+      'Serviços Pendentes (R$)': s.servicoPendente,
+      'Produtos Pagos (R$)': s.produtoPago,
+      'Produtos Pendentes (R$)': s.produtoPendente,
+      'Gorjetas Pagas (R$)': s.gorjetaPaga,
+      'Gorjetas Pendentes (R$)': s.gorjetaPendente,
+      'Plano Pago (R$)': s.planoPago,
+      'Plano Pendente (R$)': s.planoPendente,
+      'TOTAL PAGO (R$)': s.totalPago,
+      'TOTAL PENDENTE (R$)': s.totalPendente,
+      'TOTAL GERAL (R$)': s.totalGeral,
       'Qtd Comissões': s.qtdComissoes,
     }));
 
-    // Sheet 2: Detalhamento
     const detalheData = filteredCommissions.map(c => ({
       'Data': c.created_at ? format(parseISO(c.created_at), 'dd/MM/yyyy HH:mm', { locale: ptBR }) : '-',
       'Barbeiro': c.barber_name || '-',
@@ -283,10 +345,10 @@ const ComissoesManager: React.FC = () => {
       'ID Venda': c.venda_id ? c.venda_id.substring(0, 8) : '-',
     }));
 
-    // Sheet 3: Contas a Pagar (Comissões)
     const contasPagarData = contasPagarComissoes.map((cp: any) => ({
       'Descrição': cp.descricao,
-      'Fornecedor': cp.fornecedor || '-',
+      'Fornecedor (Barbeiro)': cp.fornecedor || '-',
+      'Categoria': cp.categoria || '-',
       'Valor (R$)': Number(cp.valor || 0),
       'Vencimento': cp.data_vencimento ? format(parseISO(cp.data_vencimento), 'dd/MM/yyyy') : '-',
       'Pagamento': cp.data_pagamento ? format(parseISO(cp.data_pagamento), 'dd/MM/yyyy') : '-',
@@ -296,17 +358,21 @@ const ComissoesManager: React.FC = () => {
 
     const wb = XLSX.utils.book_new();
 
-    // KPI sheet
     const kpiSheet = XLSX.utils.aoa_to_sheet([
-      ['RELATÓRIO DE COMISSÕES'],
+      ['RELATÓRIO DE COMISSÕES — BARBEARIA COSTA URBANA'],
       [`Período: ${monthLabel} / ${selectedYear}`],
       [`Gerado em: ${format(getNowInBrazil(), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`],
       [],
-      ['INDICADORES'],
+      ['INDICADORES GERAIS'],
       ['Total Geral', kpis.total],
       ['Total Pago', kpis.totalPago],
       ['Total Pendente', kpis.totalPendente],
-      ['Total Gorjetas', kpis.totalGorjetas],
+      [],
+      ['POR TIPO'],
+      ['Serviços', kpis.totalServicos],
+      ['Produtos', kpis.totalProdutos],
+      ['Gorjetas', kpis.totalGorjetas],
+      [],
       ['Barbeiros Ativos', kpis.barbeirosAtivos],
       ['Qtd. Comissões', kpis.qtd],
     ]);
@@ -329,9 +395,8 @@ const ComissoesManager: React.FC = () => {
 
     XLSX.writeFile(wb, `comissoes_${selectedMonth}_${selectedYear}.xlsx`);
     toast.success('Relatório exportado com sucesso!');
-  }, [barberSummaries, filteredCommissions, contasPagarComissoes, kpis, selectedMonth, selectedYear]);
+  }, [barberSummaries, filteredCommissions, contasPagarComissoes, kpis, selectedMonth, selectedYear, months]);
 
-  // ─── Receipt Dialog ───────────────────────────────────
   const handlePrintReceipt = useCallback(() => {
     if (!receiptCommission) return;
     const c = receiptCommission;
@@ -367,7 +432,24 @@ const ComissoesManager: React.FC = () => {
     w.print();
   }, [receiptCommission]);
 
-  // ─── Render ───────────────────────────────────────────
+  // Totals row helper for spreadsheet
+  const summaryTotals = useMemo(() => {
+    return barberSummaries.reduce((acc, s) => ({
+      servicoPago: acc.servicoPago + s.servicoPago,
+      servicoPendente: acc.servicoPendente + s.servicoPendente,
+      produtoPago: acc.produtoPago + s.produtoPago,
+      produtoPendente: acc.produtoPendente + s.produtoPendente,
+      gorjetaPaga: acc.gorjetaPaga + s.gorjetaPaga,
+      gorjetaPendente: acc.gorjetaPendente + s.gorjetaPendente,
+      totalPago: acc.totalPago + s.totalPago,
+      totalPendente: acc.totalPendente + s.totalPendente,
+      totalGeral: acc.totalGeral + s.totalGeral,
+    }), {
+      servicoPago: 0, servicoPendente: 0, produtoPago: 0, produtoPendente: 0,
+      gorjetaPaga: 0, gorjetaPendente: 0, totalPago: 0, totalPendente: 0, totalGeral: 0,
+    });
+  }, [barberSummaries]);
+
   const monthLabel = months.find(m => m.value === selectedMonth)?.label || '';
 
   return (
@@ -385,7 +467,7 @@ const ComissoesManager: React.FC = () => {
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" size="sm" onClick={handleExportExcel} className="text-green-700 border-green-300 hover:bg-green-50">
-            <Download className="h-4 w-4 mr-1" /> Excel
+            <Download className="h-4 w-4 mr-1" /> Exportar Excel
           </Button>
         </div>
       </div>
@@ -445,13 +527,14 @@ const ComissoesManager: React.FC = () => {
       </Card>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
         {[
           { title: 'Total Geral', value: formatCurrency(kpis.total), icon: DollarSign, color: 'text-blue-700', bg: 'bg-blue-50' },
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
           { title: 'Total Pendente', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-          { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: TrendingUp, color: 'text-pink-700', bg: 'bg-pink-50' },
-          { title: 'Barbeiros', value: kpis.barbeirosAtivos.toString(), icon: Users, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Serviços', value: formatCurrency(kpis.totalServicos), icon: Scissors, color: 'text-blue-700', bg: 'bg-blue-50' },
+          { title: 'Produtos', value: formatCurrency(kpis.totalProdutos), icon: Package, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
           <Card key={i} className="bg-white border-gray-200">
             <CardContent className="p-3 sm:p-4">
@@ -460,107 +543,251 @@ const ComissoesManager: React.FC = () => {
                   <card.icon className={`h-3.5 w-3.5 ${card.color}`} />
                 </div>
               </div>
-              <p className="text-lg font-bold text-gray-900">{card.value}</p>
+              <p className="text-base sm:text-lg font-bold text-gray-900">{card.value}</p>
               <p className="text-xs text-gray-500">{card.title}</p>
             </CardContent>
           </Card>
         ))}
       </div>
 
-      {/* Tabs: Resumo por Barbeiro / Detalhamento */}
-      <Tabs value={activeView} onValueChange={setActiveView} className="w-full">
+      {/* Tabs */}
+      <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="w-full">
         <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto">
-          <TabsTrigger value="resumo" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+          <TabsTrigger value="resumo" className={`${TAB_THEMES.resumo.activeBg} ${TAB_THEMES.resumo.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
             <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Resumo por Barbeiro</span>
             <span className="sm:hidden">Resumo</span>
           </TabsTrigger>
-          <TabsTrigger value="detalhes" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+          <TabsTrigger value="detalhes" className={`${TAB_THEMES.detalhes.activeBg} ${TAB_THEMES.detalhes.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
             <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Detalhamento</span>
             <span className="sm:hidden">Detalhe</span>
           </TabsTrigger>
-          <TabsTrigger value="contas" className="data-[state=active]:bg-purple-600 data-[state=active]:text-white text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3">
+          <TabsTrigger value="contas" className={`${TAB_THEMES.contas.activeBg} ${TAB_THEMES.contas.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
             <Receipt className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Contas a Pagar</span>
             <span className="sm:hidden">Pagar</span>
           </TabsTrigger>
         </TabsList>
 
-        {/* TAB: Resumo por Barbeiro */}
-        <TabsContent value="resumo" className="mt-4">
+        {/* TAB: Resumo por Barbeiro — PLANILHA DIDÁTICA (ROXO) */}
+        <TabsContent value="resumo" key="resumo-tab" className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+            <div className="flex items-center justify-center h-32"><Loader2 className="h-6 w-6 animate-spin text-purple-400" /></div>
           ) : barberSummaries.length === 0 ? (
-            <Card className="bg-white border-gray-200"><CardContent className="p-8 text-center text-gray-500">
+            <Card className={`bg-white ${TAB_THEMES.resumo.border}`}><CardContent className="p-8 text-center text-gray-500">
               <AlertCircle className="h-8 w-8 mx-auto mb-2 text-gray-300" />Nenhuma comissão encontrada neste período.
             </CardContent></Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-              {barberSummaries.map(s => (
-                <Card key={s.barber.id} className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-                  <CardContent className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <Avatar className="h-10 w-10">
+            <Card className={`bg-white ${TAB_THEMES.resumo.border} border-2 overflow-hidden`}>
+              <CardHeader className={`${TAB_THEMES.resumo.bg} border-b ${TAB_THEMES.resumo.border} py-3`}>
+                <CardTitle className={`text-sm font-bold ${TAB_THEMES.resumo.text} flex items-center gap-2`}>
+                  <Users className="h-4 w-4" />
+                  Planilha de Comissões por Barbeiro — {monthLabel}/{selectedYear}
+                </CardTitle>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Visualize todas as comissões (Serviços, Produtos, Gorjetas) separadas por status (Pago / Pendente).
+                </p>
+              </CardHeader>
+
+              {/* Desktop: Spreadsheet style */}
+              <div className="hidden lg:block overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow className={TAB_THEMES.resumo.headerBg}>
+                      <TableHead className="text-xs font-bold text-purple-900 sticky left-0 bg-purple-100 z-10 min-w-[180px]">
+                        Barbeiro
+                      </TableHead>
+                      <TableHead colSpan={2} className="text-xs font-bold text-blue-900 text-center border-l border-purple-300 bg-blue-50">
+                        <div className="flex items-center justify-center gap-1">
+                          <Scissors className="h-3 w-3" /> Serviços
+                        </div>
+                      </TableHead>
+                      <TableHead colSpan={2} className="text-xs font-bold text-purple-900 text-center border-l border-purple-300 bg-purple-50">
+                        <div className="flex items-center justify-center gap-1">
+                          <Package className="h-3 w-3" /> Produtos
+                        </div>
+                      </TableHead>
+                      <TableHead colSpan={2} className="text-xs font-bold text-pink-900 text-center border-l border-purple-300 bg-pink-50">
+                        <div className="flex items-center justify-center gap-1">
+                          <Coins className="h-3 w-3" /> Gorjetas
+                        </div>
+                      </TableHead>
+                      <TableHead colSpan={3} className="text-xs font-bold text-gray-900 text-center border-l border-purple-300 bg-gray-100">
+                        Totais
+                      </TableHead>
+                    </TableRow>
+                    <TableRow className="bg-purple-50">
+                      <TableHead className="text-[10px] font-medium text-purple-700 sticky left-0 bg-purple-50 z-10">
+                        Profissional
+                      </TableHead>
+                      <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">✓ Pago</TableHead>
+                      <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
+                      <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">✓ Pago</TableHead>
+                      <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
+                      <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">✓ Paga</TableHead>
+                      <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
+                      <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">Total Pago</TableHead>
+                      <TableHead className="text-[10px] font-medium text-yellow-700 text-right">Total Pendente</TableHead>
+                      <TableHead className="text-[10px] font-bold text-gray-900 text-right">Total Geral</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {barberSummaries.map((s, idx) => (
+                      <TableRow key={s.barber.id} className={idx % 2 === 0 ? 'bg-white hover:bg-purple-50/50' : 'bg-gray-50/50 hover:bg-purple-50/50'}>
+                        <TableCell className={`sticky left-0 z-10 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                          <div className="flex items-center gap-2">
+                            <Avatar className="h-7 w-7">
+                              <AvatarImage src={s.barber.foto_url || ''} />
+                              <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-[10px]">
+                                {s.barber.nome.substring(0, 2).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="min-w-0">
+                              <p className="text-xs font-semibold text-gray-900 truncate">{s.barber.nome}</p>
+                              <p className="text-[10px] text-gray-500">{s.barber.taxa_comissao || 0}% • {s.qtdComissoes}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-green-700 border-l border-purple-100">{formatCurrency(s.servicoPago)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.servicoPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-green-700 border-l border-purple-100">{formatCurrency(s.produtoPago)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.produtoPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-green-700 border-l border-purple-100">{formatCurrency(s.gorjetaPaga)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.gorjetaPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-100 bg-green-50/40">{formatCurrency(s.totalPago)}</TableCell>
+                        <TableCell className="text-right text-xs font-bold text-yellow-800 bg-yellow-50/40">{formatCurrency(s.totalPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-bold text-purple-900 bg-purple-50/40">{formatCurrency(s.totalGeral)}</TableCell>
+                      </TableRow>
+                    ))}
+                    {/* Totals row */}
+                    <TableRow className="bg-purple-100 font-bold border-t-2 border-purple-400">
+                      <TableCell className="sticky left-0 bg-purple-100 z-10 text-xs font-bold text-purple-900">
+                        TOTAL GERAL
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-300">{formatCurrency(summaryTotals.servicoPago)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.servicoPendente)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-300">{formatCurrency(summaryTotals.produtoPago)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.produtoPendente)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-300">{formatCurrency(summaryTotals.gorjetaPaga)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.gorjetaPendente)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-green-900 border-l border-purple-300 bg-green-100">{formatCurrency(summaryTotals.totalPago)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-yellow-900 bg-yellow-100">{formatCurrency(summaryTotals.totalPendente)}</TableCell>
+                      <TableCell className="text-right text-sm font-extrabold text-purple-900 bg-purple-200">{formatCurrency(summaryTotals.totalGeral)}</TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* Mobile/Tablet: Card view per barber with all categories */}
+              <div className="lg:hidden divide-y divide-purple-100">
+                {barberSummaries.map(s => (
+                  <div key={s.barber.id} className="p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-9 w-9">
                         <AvatarImage src={s.barber.foto_url || ''} />
-                        <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-sm">
+                        <AvatarFallback className="bg-purple-100 text-purple-700 font-bold text-xs">
                           {s.barber.nome.substring(0, 2).toUpperCase()}
                         </AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{s.barber.nome}</p>
-                        <p className="text-xs text-gray-500">
-                          Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} comissões
-                        </p>
+                        <p className="font-semibold text-sm text-gray-900 truncate">{s.barber.nome}</p>
+                        <p className="text-[10px] text-gray-500">Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} comissões</p>
                       </div>
-                      {!s.barber.ativo && <Badge variant="outline" className="text-red-600 border-red-300 text-xs">Inativo</Badge>}
                     </div>
-                    <div className="space-y-1.5">
-                      <div className="flex justify-between text-sm">
-                        <span className="text-green-700">✓ Pago</span>
-                        <span className="font-semibold text-green-700">{formatCurrency(s.totalPago)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm">
-                        <span className="text-yellow-700">⏳ Pendente</span>
-                        <span className="font-semibold text-yellow-700">{formatCurrency(s.totalPendente)}</span>
-                      </div>
-                      {s.totalGorjeta > 0 && (
-                        <div className="flex justify-between text-sm">
-                          <span className="text-pink-700">💰 Gorjetas</span>
-                          <span className="font-semibold text-pink-700">{formatCurrency(s.totalGorjeta)}</span>
+
+                    <div className="grid grid-cols-3 gap-1.5">
+                      {/* Serviços */}
+                      <div className="bg-blue-50 rounded p-1.5 border border-blue-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Scissors className="h-3 w-3 text-blue-700" />
+                          <span className="text-[10px] font-semibold text-blue-900">Serviços</span>
                         </div>
-                      )}
-                      <div className="flex justify-between text-sm pt-1.5 border-t border-gray-100">
-                        <span className="font-bold text-gray-900">Total</span>
-                        <span className="font-bold text-gray-900">{formatCurrency(s.totalGeral)}</span>
+                        <div className="text-[10px] text-green-700 flex justify-between">
+                          <span>Pago</span><span className="font-semibold">{formatCurrency(s.servicoPago)}</span>
+                        </div>
+                        <div className="text-[10px] text-yellow-700 flex justify-between">
+                          <span>Pend.</span><span className="font-semibold">{formatCurrency(s.servicoPendente)}</span>
+                        </div>
+                      </div>
+                      {/* Produtos */}
+                      <div className="bg-purple-50 rounded p-1.5 border border-purple-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Package className="h-3 w-3 text-purple-700" />
+                          <span className="text-[10px] font-semibold text-purple-900">Produtos</span>
+                        </div>
+                        <div className="text-[10px] text-green-700 flex justify-between">
+                          <span>Pago</span><span className="font-semibold">{formatCurrency(s.produtoPago)}</span>
+                        </div>
+                        <div className="text-[10px] text-yellow-700 flex justify-between">
+                          <span>Pend.</span><span className="font-semibold">{formatCurrency(s.produtoPendente)}</span>
+                        </div>
+                      </div>
+                      {/* Gorjetas */}
+                      <div className="bg-pink-50 rounded p-1.5 border border-pink-100">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Coins className="h-3 w-3 text-pink-700" />
+                          <span className="text-[10px] font-semibold text-pink-900">Gorjetas</span>
+                        </div>
+                        <div className="text-[10px] text-green-700 flex justify-between">
+                          <span>Paga</span><span className="font-semibold">{formatCurrency(s.gorjetaPaga)}</span>
+                        </div>
+                        <div className="text-[10px] text-yellow-700 flex justify-between">
+                          <span>Pend.</span><span className="font-semibold">{formatCurrency(s.gorjetaPendente)}</span>
+                        </div>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+
+                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-purple-100">
+                      <div className="bg-green-50 rounded p-1.5 text-center border border-green-200">
+                        <p className="text-[9px] text-green-700 font-medium">TOTAL PAGO</p>
+                        <p className="text-xs font-bold text-green-800">{formatCurrency(s.totalPago)}</p>
+                      </div>
+                      <div className="bg-yellow-50 rounded p-1.5 text-center border border-yellow-200">
+                        <p className="text-[9px] text-yellow-700 font-medium">PENDENTE</p>
+                        <p className="text-xs font-bold text-yellow-800">{formatCurrency(s.totalPendente)}</p>
+                      </div>
+                      <div className="bg-purple-100 rounded p-1.5 text-center border border-purple-300">
+                        <p className="text-[9px] text-purple-700 font-medium">TOTAL</p>
+                        <p className="text-xs font-bold text-purple-900">{formatCurrency(s.totalGeral)}</p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
           )}
         </TabsContent>
 
-        {/* TAB: Detalhamento */}
-        <TabsContent value="detalhes" className="mt-4">
+        {/* TAB: Detalhamento (AZUL) */}
+        <TabsContent value="detalhes" key="detalhes-tab" className="mt-4">
           {isLoading ? (
-            <div className="flex items-center justify-center h-32"><Loader2 className="h-6 w-6 animate-spin text-gray-400" /></div>
+            <div className="flex items-center justify-center h-32"><Loader2 className="h-6 w-6 animate-spin text-blue-400" /></div>
           ) : (
-            <Card className="bg-white border-gray-200 overflow-hidden">
+            <Card className={`bg-white ${TAB_THEMES.detalhes.border} border-2 overflow-hidden`}>
+              <CardHeader className={`${TAB_THEMES.detalhes.bg} border-b ${TAB_THEMES.detalhes.border} py-3`}>
+                <CardTitle className={`text-sm font-bold ${TAB_THEMES.detalhes.text} flex items-center gap-2`}>
+                  <FileText className="h-4 w-4" />
+                  Detalhamento de Comissões — Linha a Linha
+                </CardTitle>
+                <p className="text-xs text-gray-600 mt-0.5">
+                  Cada lançamento individual com data, tipo, valor, status e origem.
+                </p>
+              </CardHeader>
+
               {/* Desktop table */}
               <div className="hidden md:block overflow-x-auto">
                 <Table>
                   <TableHeader>
-                    <TableRow className="bg-gray-50">
-                      <TableHead className="text-xs font-semibold">Data</TableHead>
-                      <TableHead className="text-xs font-semibold">Barbeiro</TableHead>
-                      <TableHead className="text-xs font-semibold">Tipo</TableHead>
-                      <TableHead className="text-xs font-semibold text-right">Valor</TableHead>
-                      <TableHead className="text-xs font-semibold">Status</TableHead>
-                      <TableHead className="text-xs font-semibold">Pagamento</TableHead>
-                      <TableHead className="text-xs font-semibold">Origem</TableHead>
-                      <TableHead className="text-xs font-semibold text-center">Ações</TableHead>
+                    <TableRow className={TAB_THEMES.detalhes.headerBg}>
+                      <TableHead className="text-xs font-bold text-blue-900">Data</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Barbeiro</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Tipo</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900 text-right">Valor</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Status</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Pagamento</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900">Origem</TableHead>
+                      <TableHead className="text-xs font-bold text-blue-900 text-center">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -571,8 +798,8 @@ const ComissoesManager: React.FC = () => {
                         </TableCell>
                       </TableRow>
                     ) : (
-                      filteredCommissions.map(c => (
-                        <TableRow key={c.id} className="hover:bg-gray-50">
+                      filteredCommissions.map((c, idx) => (
+                        <TableRow key={c.id} className={idx % 2 === 0 ? 'bg-white hover:bg-blue-50/50' : 'bg-gray-50/40 hover:bg-blue-50/50'}>
                           <TableCell className="text-xs">
                             {c.created_at ? format(parseISO(c.created_at), 'dd/MM/yy HH:mm') : '-'}
                           </TableCell>
@@ -587,7 +814,7 @@ const ComissoesManager: React.FC = () => {
                           <TableCell className="text-center">
                             {normalizeStatus(c.status) === 'pago' && (
                               <Button variant="ghost" size="sm" onClick={() => setReceiptCommission(c)} title="Gerar Recibo">
-                                <Printer className="h-3.5 w-3.5 text-gray-500" />
+                                <Printer className="h-3.5 w-3.5 text-blue-600" />
                               </Button>
                             )}
                           </TableCell>
@@ -599,11 +826,9 @@ const ComissoesManager: React.FC = () => {
               </div>
 
               {/* Mobile cards */}
-              <div className="md:hidden divide-y divide-gray-100">
+              <div className="md:hidden divide-y divide-blue-100">
                 {filteredCommissions.length === 0 ? (
-                  <div className="text-center py-8 text-gray-400 text-sm">
-                    Nenhuma comissão encontrada.
-                  </div>
+                  <div className="text-center py-8 text-gray-400 text-sm">Nenhuma comissão encontrada.</div>
                 ) : (
                   filteredCommissions.map(c => (
                     <div key={c.id} className="p-3 space-y-2">
@@ -624,7 +849,7 @@ const ComissoesManager: React.FC = () => {
                           {c.data_pagamento && <span>Pago: {format(parseISO(c.data_pagamento), 'dd/MM/yy')}</span>}
                           {normalizeStatus(c.status) === 'pago' && (
                             <Button variant="ghost" size="sm" className="h-6 w-6 p-0" onClick={() => setReceiptCommission(c)}>
-                              <Printer className="h-3 w-3 text-gray-500" />
+                              <Printer className="h-3 w-3 text-blue-600" />
                             </Button>
                           )}
                         </div>
@@ -635,9 +860,9 @@ const ComissoesManager: React.FC = () => {
               </div>
 
               {filteredCommissions.length > 0 && (
-                <div className="p-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
-                  <span>{filteredCommissions.length} registros</span>
-                  <span className="font-semibold text-gray-700">
+                <div className="p-3 border-t border-blue-100 bg-blue-50 flex items-center justify-between text-xs">
+                  <span className="text-blue-700">{filteredCommissions.length} registros</span>
+                  <span className="font-semibold text-blue-900">
                     Total: {formatCurrency(filteredCommissions.reduce((s, c) => s + Number(c.valor || 0), 0))}
                   </span>
                 </div>
@@ -646,42 +871,51 @@ const ComissoesManager: React.FC = () => {
           )}
         </TabsContent>
 
-        {/* TAB: Contas a Pagar (Comissões) */}
-        <TabsContent value="contas" className="mt-4">
-          <Card className="bg-white border-gray-200 overflow-hidden">
-            <CardHeader className="pb-2 p-3 sm:p-4">
-              <CardTitle className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+        {/* TAB: Contas a Pagar (ÂMBAR) */}
+        <TabsContent value="contas" key="contas-tab" className="mt-4">
+          <Card className={`bg-white ${TAB_THEMES.contas.border} border-2 overflow-hidden`}>
+            <CardHeader className={`${TAB_THEMES.contas.bg} border-b ${TAB_THEMES.contas.border} py-3`}>
+              <CardTitle className={`text-sm font-bold ${TAB_THEMES.contas.text} flex items-center gap-2`}>
                 <Receipt className="h-4 w-4" />
-                Contas a Pagar — Comissões ({monthLabel}/{selectedYear})
+                Contas a Pagar — Comissões e Gorjetas ({monthLabel}/{selectedYear})
               </CardTitle>
-              <p className="text-xs text-gray-500">Registros do módulo Contas a Pagar com categoria "Comissão"</p>
+              <p className="text-xs text-gray-600 mt-0.5">
+                Registros lançados no módulo Contas a Pagar com categoria "Comissão" ou "Gorjeta".
+              </p>
             </CardHeader>
+
             {/* Desktop table */}
             <div className="hidden md:block overflow-x-auto">
               <Table>
                 <TableHeader>
-                  <TableRow className="bg-gray-50">
-                    <TableHead className="text-xs font-semibold">Descrição</TableHead>
-                    <TableHead className="text-xs font-semibold">Fornecedor</TableHead>
-                    <TableHead className="text-xs font-semibold text-right">Valor</TableHead>
-                    <TableHead className="text-xs font-semibold">Vencimento</TableHead>
-                    <TableHead className="text-xs font-semibold">Pagamento</TableHead>
-                    <TableHead className="text-xs font-semibold">Status</TableHead>
-                    <TableHead className="text-xs font-semibold">Forma</TableHead>
+                  <TableRow className={TAB_THEMES.contas.headerBg}>
+                    <TableHead className="text-xs font-bold text-amber-900">Descrição</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Barbeiro</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Categoria</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900 text-right">Valor</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Vencimento</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Pagamento</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Status</TableHead>
+                    <TableHead className="text-xs font-bold text-amber-900">Forma</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {contasPagarComissoes.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-gray-400">
+                      <TableCell colSpan={8} className="text-center py-8 text-gray-400">
                         Nenhuma conta a pagar de comissão neste período.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    contasPagarComissoes.map((cp: any) => (
-                      <TableRow key={cp.id} className="hover:bg-gray-50">
-                        <TableCell className="text-xs font-medium max-w-[200px] truncate">{cp.descricao}</TableCell>
+                    contasPagarComissoes.map((cp: any, idx: number) => (
+                      <TableRow key={cp.id} className={idx % 2 === 0 ? 'bg-white hover:bg-amber-50/50' : 'bg-gray-50/40 hover:bg-amber-50/50'}>
+                        <TableCell className="text-xs font-medium max-w-[220px] truncate">{cp.descricao}</TableCell>
                         <TableCell className="text-xs">{cp.fornecedor || '-'}</TableCell>
+                        <TableCell className="text-xs">
+                          <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50">
+                            {cp.categoria || '-'}
+                          </Badge>
+                        </TableCell>
                         <TableCell className="text-right font-semibold text-sm">{formatCurrency(Number(cp.valor || 0))}</TableCell>
                         <TableCell className="text-xs">
                           {cp.data_vencimento ? format(parseISO(cp.data_vencimento), 'dd/MM/yy') : '-'}
@@ -705,11 +939,9 @@ const ComissoesManager: React.FC = () => {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-gray-100">
+            <div className="md:hidden divide-y divide-amber-100">
               {contasPagarComissoes.length === 0 ? (
-                <div className="text-center py-8 text-gray-400 text-sm">
-                  Nenhuma conta a pagar neste período.
-                </div>
+                <div className="text-center py-8 text-gray-400 text-sm">Nenhuma conta a pagar neste período.</div>
               ) : (
                 contasPagarComissoes.map((cp: any) => (
                   <div key={cp.id} className="p-3 space-y-1.5">
@@ -723,6 +955,9 @@ const ComissoesManager: React.FC = () => {
                       ) : (
                         <Badge className="bg-yellow-100 text-yellow-800 border-yellow-200 text-[10px]">Pendente</Badge>
                       )}
+                      <Badge variant="outline" className="text-amber-700 border-amber-300 bg-amber-50 text-[10px]">
+                        {cp.categoria || '-'}
+                      </Badge>
                       {cp.fornecedor && <span className="text-[10px] text-gray-500">{cp.fornecedor}</span>}
                     </div>
                     <div className="flex items-center gap-3 text-[10px] text-gray-400">
@@ -736,9 +971,9 @@ const ComissoesManager: React.FC = () => {
             </div>
 
             {contasPagarComissoes.length > 0 && (
-              <div className="p-3 border-t border-gray-100 bg-gray-50 flex items-center justify-between text-xs text-gray-500">
-                <span>{contasPagarComissoes.length} registros</span>
-                <span className="font-semibold text-gray-700">
+              <div className="p-3 border-t border-amber-100 bg-amber-50 flex items-center justify-between text-xs">
+                <span className="text-amber-700">{contasPagarComissoes.length} registros</span>
+                <span className="font-semibold text-amber-900">
                   Total: {formatCurrency(contasPagarComissoes.reduce((s: number, c: any) => s + Number(c.valor || 0), 0))}
                 </span>
               </div>
