@@ -430,7 +430,11 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
                         </Badge>
                       </TableCell>
                       <TableCell className="text-xs">
-                        <Badge variant="outline" className={`text-[10px] ${v.origem === 'Totem' ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-50 text-gray-700'}`}>
+                        <Badge variant="outline" className={`text-[10px] ${
+                          v.origem === 'Totem' ? 'bg-purple-50 text-purple-700 border-purple-200'
+                          : v.origem === 'Cortesia' ? 'bg-yellow-50 text-yellow-800 border-yellow-300'
+                          : 'bg-gray-50 text-gray-700'
+                        }`}>
                           {v.origem}
                         </Badge>
                       </TableCell>
