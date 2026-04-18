@@ -88,9 +88,25 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
 
       const itens = (vendasItens || []) as any[];
 
-      // Buscar dados de clientes/barbeiros
-      const clienteIds = [...new Set(itens.map(i => i.vendas?.cliente_id).filter(Boolean))];
-      const barbeiroIds = [...new Set(itens.map(i => i.vendas?.barbeiro_id).filter(Boolean))];
+      // Cafés cortesia (coffee_records) — entram como cortesia no relatório
+      const { data: cafes } = await supabase
+        .from('coffee_records')
+        .select('id, quantity, created_at, client_id, barber_id')
+        .gte('created_at', `${startDate}T00:00:00`)
+        .lte('created_at', `${endDate}T23:59:59`)
+        .order('created_at', { ascending: false });
+
+      const cafeRecords = (cafes || []) as any[];
+
+      // Buscar dados de clientes/barbeiros (incluindo dos cafés)
+      const clienteIds = [...new Set([
+        ...itens.map(i => i.vendas?.cliente_id).filter(Boolean),
+        ...cafeRecords.map(c => c.client_id).filter(Boolean),
+      ])];
+      const barbeiroIds = [...new Set([
+        ...itens.map(i => i.vendas?.barbeiro_id).filter(Boolean),
+        ...cafeRecords.map(c => c.barber_id).filter(Boolean),
+      ])];
 
       const [clientesRes, barbeirosRes, produtosRes] = await Promise.all([
         clienteIds.length
@@ -105,7 +121,7 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
       const clientesMap = new Map((clientesRes.data || []).map((c: any) => [c.id, c]));
       const barbeirosMap = new Map((barbeirosRes.data || []).map((b: any) => [b.id, b]));
 
-      const vendas: VendaProduto[] = itens.map((it) => {
+      const vendasProdutos: VendaProduto[] = itens.map((it) => {
         const v = it.vendas || {};
         const cli = clientesMap.get(v.cliente_id) as any;
         const barb = barbeirosMap.get(v.barbeiro_id) as any;
@@ -128,6 +144,33 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
           origem: isTotem ? 'Totem' : 'Painel',
         };
       });
+
+      // Cafés cortesia (R$ 0) — aparecem na lista e contagem como "Cortesia"
+      const vendasCafe: VendaProduto[] = cafeRecords.map((c) => {
+        const cli = clientesMap.get(c.client_id) as any;
+        const barb = barbeirosMap.get(c.barber_id) as any;
+        return {
+          venda_id: c.id,
+          created_at: c.created_at,
+          produto_id: null,
+          produto_nome: 'Café (Cortesia)',
+          quantidade: Number(c.quantity || 1),
+          preco_unitario: 0,
+          subtotal: 0,
+          forma_pagamento: 'CORTESIA',
+          status: 'completed',
+          cliente_id: c.client_id,
+          cliente_nome: cli?.nome || 'Cliente avulso',
+          cliente_telefone: cli?.telefone || null,
+          barbeiro_id: c.barber_id,
+          barbeiro_nome: barb?.nome || '—',
+          origem: 'Cortesia',
+        };
+      });
+
+      const vendas = [...vendasProdutos, ...vendasCafe].sort(
+        (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
 
       const produtos = produtosRes.data || [];
       const totalReceita = vendas.reduce((s, v) => s + v.subtotal, 0);
