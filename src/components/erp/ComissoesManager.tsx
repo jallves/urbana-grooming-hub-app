@@ -552,18 +552,27 @@ const ComissoesManager: React.FC = () => {
 
       {/* Tabs */}
       <Tabs value={activeView} onValueChange={(v) => setActiveView(v as any)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto">
-          <TabsTrigger value="resumo" className={`${TAB_THEMES.resumo.activeBg} ${TAB_THEMES.resumo.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
+        <TabsList className="grid w-full grid-cols-3 bg-gray-100 border border-gray-200 h-auto gap-1 p-1">
+          <TabsTrigger
+            value="resumo"
+            className="bg-purple-100 text-purple-800 border border-purple-200 hover:bg-purple-200 data-[state=active]:bg-purple-600 data-[state=active]:text-white data-[state=active]:border-purple-700 data-[state=active]:shadow-md text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3 transition-colors"
+          >
             <Users className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Resumo por Barbeiro</span>
             <span className="sm:hidden">Resumo</span>
           </TabsTrigger>
-          <TabsTrigger value="detalhes" className={`${TAB_THEMES.detalhes.activeBg} ${TAB_THEMES.detalhes.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
+          <TabsTrigger
+            value="detalhes"
+            className="bg-blue-100 text-blue-800 border border-blue-200 hover:bg-blue-200 data-[state=active]:bg-blue-600 data-[state=active]:text-white data-[state=active]:border-blue-700 data-[state=active]:shadow-md text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3 transition-colors"
+          >
             <FileText className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Detalhamento</span>
             <span className="sm:hidden">Detalhe</span>
           </TabsTrigger>
-          <TabsTrigger value="contas" className={`${TAB_THEMES.contas.activeBg} ${TAB_THEMES.contas.activeText} text-gray-700 text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3`}>
+          <TabsTrigger
+            value="contas"
+            className="bg-amber-100 text-amber-800 border border-amber-200 hover:bg-amber-200 data-[state=active]:bg-amber-600 data-[state=active]:text-white data-[state=active]:border-amber-700 data-[state=active]:shadow-md text-[10px] sm:text-xs md:text-sm py-2 px-1 sm:px-3 transition-colors"
+          >
             <Receipt className="h-3 w-3 sm:h-3.5 sm:w-3.5 mr-0.5 sm:mr-1 flex-shrink-0" />
             <span className="hidden sm:inline">Contas a Pagar</span>
             <span className="sm:hidden">Pagar</span>
