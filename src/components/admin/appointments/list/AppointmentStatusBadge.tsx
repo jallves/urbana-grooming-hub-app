@@ -25,10 +25,22 @@ const statusLabels: Record<string, string> = {
   ausente: 'Ausente',
 };
 
+const statusLabelsShort: Record<string, string> = {
+  scheduled: 'Agend.',
+  confirmed: 'Conf.',
+  completed: 'Final.',
+  cancelled: 'Canc.',
+  no_show: 'N/Comp.',
+  ausente: 'Ausente',
+};
+
 const AppointmentStatusBadge: React.FC<AppointmentStatusBadgeProps> = ({ status }) => {
+  const fullLabel = statusLabels[status] || status;
+  const shortLabel = statusLabelsShort[status] || status;
   return (
-    <Badge className={statusColors[status]}>
-      {statusLabels[status] || status}
+    <Badge className={`${statusColors[status]} text-[10px] sm:text-xs px-1.5 sm:px-2.5 py-0.5 whitespace-nowrap`}>
+      <span className="hidden sm:inline">{fullLabel}</span>
+      <span className="sm:hidden">{shortLabel}</span>
     </Badge>
   );
 };
