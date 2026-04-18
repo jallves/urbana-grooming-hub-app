@@ -377,6 +377,7 @@ const RelatorioProdutos: React.FC<Props> = ({ filters }) => {
                 <SelectItem value="CREDITO">Crédito</SelectItem>
                 <SelectItem value="DEBITO">Débito</SelectItem>
                 <SelectItem value="DINHEIRO">Dinheiro</SelectItem>
+                <SelectItem value="CORTESIA">Cortesia</SelectItem>
               </SelectContent>
             </Select>
           </div>
