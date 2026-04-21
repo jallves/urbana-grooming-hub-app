@@ -1094,6 +1094,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           }}
         />
       )}
+
+      <ProductCrossSellDialog
+        isOpen={showCrossSell}
+        onClose={() => {
+          setShowCrossSell(false);
+          executeBooking([]);
+        }}
+        onConfirm={(products) => {
+          setCrossSellProducts(products);
+          setShowCrossSell(false);
+          executeBooking(products);
+        }}
+        isSubmitting={creating}
+      />
     </ClientPageContainer>
   );
 };
