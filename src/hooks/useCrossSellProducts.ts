@@ -98,19 +98,25 @@ export const useCrossSellProducts = (limit: number = 3) => {
           _sales: salesRank.get(p.id) || 0,
         }));
 
-        // 1. prioriza produtos de estética (ordenados por mais vendidos)
+        // 1. PRIORIDADE: produtos de estética/cuidados (ordenados por mais vendidos)
         const estetica = all
           .filter(p => isEstetica(p.nome))
           .sort((a, b) => b._sales - a._sales || b.estoque - a.estoque);
 
-        // 2. fallback: TOP mais vendidos (excluindo bebidas)
-        const topVendidos = all
-          .filter(p => !isBebida(p.nome) && !isEstetica(p.nome))
+        // 2. COMPLEMENTO: TOP mais vendidos de qualquer tipo (não-estética, não-bebida)
+        const outrosTopVendidos = all
+          .filter(p => !isEstetica(p.nome) && !isBebida(p.nome))
           .sort((a, b) => b._sales - a._sales || b.estoque - a.estoque);
 
+        // 3. ÚLTIMO RECURSO: bebidas/snacks também por mais vendidos (caso ainda falte)
+        const bebidas = all
+          .filter(p => isBebida(p.nome) && !isEstetica(p.nome))
+          .sort((a, b) => b._sales - a._sales || b.estoque - a.estoque);
+
+        // Preenche até o limit: estética primeiro, depois outros mais vendidos, depois bebidas
         const selected: CrossSellProduct[] = [];
         const seen = new Set<string>();
-        for (const p of [...estetica, ...topVendidos]) {
+        for (const p of [...estetica, ...outrosTopVendidos, ...bebidas]) {
           if (selected.length >= limit) break;
           if (seen.has(p.id)) continue;
           seen.add(p.id);
