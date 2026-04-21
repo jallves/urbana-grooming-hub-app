@@ -653,12 +653,12 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           </Button>
         </div>
         
-        <VisuallyHidden>
+        <div className="sr-only">
           <DialogTitle>Novo Agendamento</DialogTitle>
           <DialogDescription>
             Crie um novo agendamento selecionando cliente, serviço, barbeiro e horário
           </DialogDescription>
-        </VisuallyHidden>
+        </div>
 
         <div className="flex flex-col h-full bg-white overflow-hidden">
           {/* Header - Fixo */}
@@ -1055,12 +1055,12 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       }
     }}>
       <DialogContent className="max-w-md" style={{ zIndex: 10000 }}>
-        <VisuallyHidden>
+        <div className="sr-only">
           <DialogTitle>Agendamento Confirmado</DialogTitle>
           <DialogDescription>
             Seu agendamento foi criado com sucesso
           </DialogDescription>
-        </VisuallyHidden>
+        </div>
         
         <div className="flex flex-col items-center justify-center py-6 px-4 text-center">
           {/* Ícone de sucesso grande e animado */}
