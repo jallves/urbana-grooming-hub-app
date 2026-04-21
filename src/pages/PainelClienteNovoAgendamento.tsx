@@ -527,9 +527,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
       // Build servicos_extras JSON
-      const servicosExtrasPayload = extraServices.length > 0
-        ? extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }))
-        : null;
+      const extrasFromServices = extraServices.map(s => ({ 
+        id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao 
+      }));
+      const extrasFromProducts = extraProducts.map(p => ({
+        tipo: 'produto' as const,
+        produto_id: p.id,
+        nome: p.nome,
+        preco: p.preco,
+        quantidade: 1,
+      }));
+      const allExtras = [...extrasFromServices, ...extrasFromProducts];
+      const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
 
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
