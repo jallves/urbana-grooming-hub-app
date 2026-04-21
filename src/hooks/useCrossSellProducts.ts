@@ -63,38 +63,59 @@ export const useCrossSellProducts = (limit: number = 3) => {
     const load = async () => {
       setLoading(true);
       try {
-        const { data, error } = await supabase
-          .from('painel_produtos')
-          .select('id, nome, preco, estoque, imagem_url, descricao')
-          .eq('ativo', true)
-          .gt('estoque', 0)
-          .gt('preco', 0)
-          .order('estoque', { ascending: false });
+        // Busca produtos ativos + ranking de mais vendidos em paralelo
+        const [productsRes, salesRes] = await Promise.all([
+          supabase
+            .from('painel_produtos')
+            .select('id, nome, preco, estoque, imagem_url, descricao')
+            .eq('ativo', true)
+            .gt('estoque', 0)
+            .gt('preco', 0),
+          supabase
+            .from('vendas_itens')
+            .select('item_id, quantidade')
+            .eq('tipo', 'produto')
+            .limit(2000),
+        ]);
 
-        if (error) throw error;
+        if (productsRes.error) throw productsRes.error;
         if (cancelled) return;
 
-        const all = (data || []).map(p => ({
+        // Ranking de vendas por produto
+        const salesRank = new Map<string, number>();
+        (salesRes.data || []).forEach((row: any) => {
+          if (!row.item_id) return;
+          salesRank.set(row.item_id, (salesRank.get(row.item_id) || 0) + (Number(row.quantidade) || 1));
+        });
+
+        const all = (productsRes.data || []).map(p => ({
           id: p.id,
           nome: p.nome,
           preco: Number(p.preco) || 0,
           estoque: Number(p.estoque) || 0,
           imagem_url: parseImagem(p.imagem_url),
           descricao: p.descricao,
+          _sales: salesRank.get(p.id) || 0,
         }));
 
-        // 1. prioriza produtos de estética
-        const estetica = all.filter(p => isEstetica(p.nome));
-        // 2. fallback: produtos que não são bebidas
-        const naoBebida = all.filter(p => !isBebida(p.nome) && !isEstetica(p.nome));
+        // 1. prioriza produtos de estética (ordenados por mais vendidos)
+        const estetica = all
+          .filter(p => isEstetica(p.nome))
+          .sort((a, b) => b._sales - a._sales || b.estoque - a.estoque);
+
+        // 2. fallback: TOP mais vendidos (excluindo bebidas)
+        const topVendidos = all
+          .filter(p => !isBebida(p.nome) && !isEstetica(p.nome))
+          .sort((a, b) => b._sales - a._sales || b.estoque - a.estoque);
 
         const selected: CrossSellProduct[] = [];
         const seen = new Set<string>();
-        for (const p of [...estetica, ...naoBebida]) {
+        for (const p of [...estetica, ...topVendidos]) {
           if (selected.length >= limit) break;
           if (seen.has(p.id)) continue;
           seen.add(p.id);
-          selected.push(p);
+          const { _sales, ...rest } = p as any;
+          selected.push(rest);
         }
 
         setProducts(selected);
