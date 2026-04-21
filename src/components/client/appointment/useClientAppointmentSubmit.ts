@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 
 
 interface UseClientAppointmentSubmitProps {
@@ -23,7 +24,11 @@ export const useClientAppointmentSubmit = ({
 }: UseClientAppointmentSubmitProps) => {
   const [isLoading, setIsLoading] = useState(false);
   
-  const handleSubmit = async (data: ClientAppointmentFormValues, selectedService: Service | null) => {
+  const handleSubmit = async (
+    data: ClientAppointmentFormValues,
+    selectedService: Service | null,
+    extraProducts: CrossSellProduct[] = []
+  ) => {
     try {
       setIsLoading(true);
       
@@ -72,13 +77,25 @@ export const useClientAppointmentSubmit = ({
       const day = String(startDate.getDate()).padStart(2, '0');
       const dataLocal = `${year}-${month}-${day}`;
 
-      const painelData = {
+      // Monta servicos_extras com produtos sugeridos no popup de cross-sell
+      const servicos_extras = extraProducts.length > 0
+        ? extraProducts.map(p => ({
+            tipo: 'produto',
+            produto_id: p.id,
+            nome: p.nome,
+            preco: p.preco,
+            quantidade: 1,
+          }))
+        : null;
+
+      const painelData: any = {
         cliente_id: clientId,
         barbeiro_id: staffData.id,
         servico_id: data.service_id,
         data: dataLocal,
         hora: format(startDate, 'HH:mm'),
-        status: 'agendado'
+        status: 'agendado',
+        ...(servicos_extras ? { servicos_extras } : {}),
       };
       
       console.log('Saving client appointment to painel_agendamentos:', painelData);

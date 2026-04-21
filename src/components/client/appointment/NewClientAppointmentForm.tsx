@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
 import { useClientAppointmentForm } from './useClientAppointmentForm';
@@ -10,6 +10,8 @@ import ClientDateTimePicker from './ClientDateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
 import AppointmentFormActions from '@/components/admin/appointments/form/AppointmentFormActions';
 import { useClientAuth } from '@/contexts/ClientAuthContext';
+import ProductCrossSellDialog from './ProductCrossSellDialog';
+import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 
 interface NewClientAppointmentFormProps {
   isOpen: boolean;
@@ -23,6 +25,8 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
   defaultDate = new Date()
 }) => {
   const { client } = useClientAuth();
+  const [showCrossSell, setShowCrossSell] = useState(false);
+  const [pendingFormData, setPendingFormData] = useState<any>(null);
   
   const {
     form,
@@ -44,8 +48,22 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
       console.error('Cliente não autenticado');
       return;
     }
-    
-    await handleSubmit(data, selectedService);
+
+    // Antes de confirmar, abre popup de cross-sell de produtos
+    setPendingFormData(data);
+    setShowCrossSell(true);
+  };
+
+  const handleCrossSellConfirm = async (selectedProducts: CrossSellProduct[]) => {
+    if (!pendingFormData) return;
+    setShowCrossSell(false);
+    await handleSubmit(pendingFormData, selectedService, selectedProducts);
+    setPendingFormData(null);
+  };
+
+  const handleCrossSellClose = () => {
+    // Fechar = continuar sem produtos
+    handleCrossSellConfirm([]);
   };
 
   // Get form values for StaffSelect
@@ -103,6 +121,13 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
           </form>
         </Form>
       </DialogContent>
+
+      <ProductCrossSellDialog
+        isOpen={showCrossSell}
+        onClose={handleCrossSellClose}
+        onConfirm={handleCrossSellConfirm}
+        isSubmitting={isSubmitLoading}
+      />
     </Dialog>
   );
 };
