@@ -130,79 +130,141 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
             </div>
           ) : (
             <>
-              {/* Carrossel horizontal — scroll rápido com snap */}
-              <div
-                className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] sm:grid sm:grid-cols-4 sm:overflow-visible sm:snap-none"
-              >
-                {products.map((p, idx) => {
-                  const selected = selectedIds.has(p.id);
-                  return (
+              {/* Carrossel — 1 produto por vez com loop infinito */}
+              <div className="relative">
+                {/* Setas (visíveis em desktop e mobile) */}
+                {products.length > 1 && (
+                  <>
                     <button
-                      key={p.id}
                       type="button"
-                      onClick={() => toggle(p.id)}
+                      onClick={goPrev}
                       disabled={isSubmitting}
-                      style={{ animationDelay: `${idx * 60}ms` }}
-                      className={cn(
-                        'relative text-left rounded-xl border-2 bg-white overflow-hidden transition-all duration-150',
-                        'hover:shadow-lg hover:-translate-y-0.5 animate-fade-in',
-                        'flex-shrink-0 w-[42vw] max-w-[170px] sm:w-auto sm:max-w-none snap-center',
-                        selected
-                          ? 'border-amber-500 ring-2 ring-amber-200 shadow-md'
-                          : 'border-gray-200'
-                      )}
+                      aria-label="Produto anterior"
+                      className="absolute left-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white shadow-lg border border-amber-200 flex items-center justify-center hover:bg-amber-50 active:scale-95 transition disabled:opacity-50"
                     >
-                      {/* Selected badge */}
-                      {selected && (
-                        <div className="absolute top-2 right-2 z-10 h-7 w-7 rounded-full bg-amber-500 text-white flex items-center justify-center shadow">
-                          <Check className="h-4 w-4" strokeWidth={3} />
-                        </div>
-                      )}
-
-                      {/* Imagem */}
-                      <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden">
-                        {p.imagem_url ? (
-                          <img
-                            src={p.imagem_url}
-                            alt={p.nome}
-                            className="w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <Package className="h-10 w-10 text-gray-300" />
-                        )}
-                      </div>
-
-                      {/* Info */}
-                      <div className="p-2.5">
-                        <p className="text-sm font-semibold text-gray-900 line-clamp-2 min-h-[2.5rem]">
-                          {p.nome}
-                        </p>
-                        <p className="text-base font-bold text-amber-600 mt-1">
-                          {formatBRL(p.preco)}
-                        </p>
-                        <div
-                          className={cn(
-                            'mt-2 flex items-center justify-center gap-1 rounded-md py-1.5 text-xs font-semibold transition-colors',
-                            selected
-                              ? 'bg-amber-500 text-white'
-                              : 'bg-amber-100 text-amber-700'
-                          )}
-                        >
-                          {selected ? (
-                            <>
-                              <Check className="h-3.5 w-3.5" /> Adicionado
-                            </>
-                          ) : (
-                            <>
-                              <Plus className="h-3.5 w-3.5" /> Adicionar
-                            </>
-                          )}
-                        </div>
-                      </div>
+                      <ChevronLeft className="h-5 w-5 text-amber-700" />
                     </button>
-                  );
-                })}
+                    <button
+                      type="button"
+                      onClick={goNext}
+                      disabled={isSubmitting}
+                      aria-label="Próximo produto"
+                      className="absolute right-0 top-1/2 -translate-y-1/2 z-20 h-10 w-10 rounded-full bg-white shadow-lg border border-amber-200 flex items-center justify-center hover:bg-amber-50 active:scale-95 transition disabled:opacity-50"
+                    >
+                      <ChevronRight className="h-5 w-5 text-amber-700" />
+                    </button>
+                  </>
+                )}
+
+                {/* Viewport do carrossel */}
+                <div
+                  className="overflow-hidden mx-10 rounded-xl"
+                  onTouchStart={handleTouchStart}
+                  onTouchEnd={handleTouchEnd}
+                >
+                  <div
+                    className="flex transition-transform duration-300 ease-out"
+                    style={{ transform: `translateX(-${currentIdx * 100}%)` }}
+                  >
+                    {products.map((p) => {
+                      const selected = selectedIds.has(p.id);
+                      return (
+                        <div key={p.id} className="w-full flex-shrink-0 px-1">
+                          <button
+                            type="button"
+                            onClick={() => toggle(p.id)}
+                            disabled={isSubmitting}
+                            className={cn(
+                              'relative w-full text-left rounded-xl border-2 bg-white overflow-hidden transition-all duration-200',
+                              'active:scale-[0.99]',
+                              selected
+                                ? 'border-amber-500 ring-2 ring-amber-200 shadow-md'
+                                : 'border-gray-200 shadow-sm'
+                            )}
+                          >
+                            {selected && (
+                              <div className="absolute top-2 right-2 z-10 h-8 w-8 rounded-full bg-amber-500 text-white flex items-center justify-center shadow">
+                                <Check className="h-5 w-5" strokeWidth={3} />
+                              </div>
+                            )}
+
+                            {/* Imagem grande */}
+                            <div className="aspect-square bg-gray-100 flex items-center justify-center overflow-hidden max-h-[260px]">
+                              {p.imagem_url ? (
+                                <img
+                                  src={p.imagem_url}
+                                  alt={p.nome}
+                                  className="w-full h-full object-cover"
+                                  loading="lazy"
+                                />
+                              ) : (
+                                <Package className="h-16 w-16 text-gray-300" />
+                              )}
+                            </div>
+
+                            {/* Info */}
+                            <div className="p-3">
+                              <p className="text-base font-semibold text-gray-900 line-clamp-2 min-h-[3rem]">
+                                {p.nome}
+                              </p>
+                              {p.descricao && (
+                                <p className="text-xs text-gray-500 line-clamp-2 mt-1">
+                                  {p.descricao}
+                                </p>
+                              )}
+                              <p className="text-xl font-bold text-amber-600 mt-2">
+                                {formatBRL(p.preco)}
+                              </p>
+                              <div
+                                className={cn(
+                                  'mt-3 flex items-center justify-center gap-1.5 rounded-lg py-2.5 text-sm font-semibold transition-colors',
+                                  selected
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-amber-100 text-amber-700'
+                                )}
+                              >
+                                {selected ? (
+                                  <>
+                                    <Check className="h-4 w-4" /> Adicionado ao agendamento
+                                  </>
+                                ) : (
+                                  <>
+                                    <Plus className="h-4 w-4" /> Adicionar este produto
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Indicadores (bullets) */}
+                {products.length > 1 && (
+                  <div className="flex items-center justify-center gap-2 mt-3">
+                    {products.map((_, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setCurrentIdx(i)}
+                        aria-label={`Ir para produto ${i + 1}`}
+                        className={cn(
+                          'h-2 rounded-full transition-all',
+                          i === currentIdx ? 'w-6 bg-amber-500' : 'w-2 bg-amber-200'
+                        )}
+                      />
+                    ))}
+                  </div>
+                )}
+
+                {/* Contador */}
+                {products.length > 1 && (
+                  <p className="text-center text-[11px] text-gray-500 mt-1">
+                    {currentIdx + 1} de {products.length} • Arraste ou use as setas
+                  </p>
+                )}
               </div>
 
               {/* Total */}
