@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCrossSellProducts, CrossSellProduct } from '@/hooks/useCrossSellProducts';
-import { Check, Plus, Sparkles, X, Package } from 'lucide-react';
+import { Check, Plus, Sparkles, X, Package, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductCrossSellDialogProps {
