@@ -10,7 +10,6 @@ import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { z } from 'zod';
 import barbershopBg from '@/assets/barbershop-background.jpg';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
