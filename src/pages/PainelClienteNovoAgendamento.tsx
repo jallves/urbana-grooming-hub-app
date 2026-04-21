@@ -535,7 +535,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         produto_id: p.id,
         nome: p.nome,
         preco: p.preco,
-        quantidade: 1,
+        quantidade: (p as any).quantidade || 1,
       }));
       const allExtras = [...extrasFromServices, ...extrasFromProducts];
       const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
