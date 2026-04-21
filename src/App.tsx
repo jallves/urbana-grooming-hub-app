@@ -591,9 +591,9 @@ function App() {
             </AuthProvider>
           } />
         </Routes>
-          </QueryClientProvider>
-        </BrowserRouter>
-      </SidebarProvider>
+          </BrowserRouter>
+        </SidebarProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
