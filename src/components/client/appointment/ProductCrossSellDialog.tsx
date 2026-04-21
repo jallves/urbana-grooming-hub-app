@@ -23,6 +23,34 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
 }) => {
   const { products, loading } = useCrossSellProducts(4);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [currentIdx, setCurrentIdx] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+
+  // Reset índice quando abrir/fechar
+  useEffect(() => {
+    if (isOpen) setCurrentIdx(0);
+  }, [isOpen]);
+
+  const goPrev = () => {
+    if (products.length === 0) return;
+    setCurrentIdx((i) => (i - 1 + products.length) % products.length);
+  };
+  const goNext = () => {
+    if (products.length === 0) return;
+    setCurrentIdx((i) => (i + 1) % products.length);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX.current === null) return;
+    const delta = e.changedTouches[0].clientX - touchStartX.current;
+    if (Math.abs(delta) > 40) {
+      delta > 0 ? goPrev() : goNext();
+    }
+    touchStartX.current = null;
+  };
 
   const toggle = (id: string) => {
     setSelectedIds(prev => {
