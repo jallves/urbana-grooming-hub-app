@@ -21,7 +21,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   onConfirm,
   isSubmitting = false,
 }) => {
-  const { products, loading } = useCrossSellProducts(3);
+  const { products, loading } = useCrossSellProducts(4);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
