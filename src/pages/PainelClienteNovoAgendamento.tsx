@@ -67,6 +67,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+  
+  // Cross-sell popup
+  const [showCrossSell, setShowCrossSell] = useState(false);
+  const [crossSellProducts, setCrossSellProducts] = useState<CrossSellProduct[]>([]);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
