@@ -460,6 +460,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       navigate('/painel-cliente/login');
       return;
     }
+    if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
+      toast.error('Selecione todos os campos');
+      return;
+    }
+    // Abre o popup de produtos antes de criar o agendamento
+    setShowCrossSell(true);
+  };
+
+  const executeBooking = async (extraProducts: CrossSellProduct[] = []) => {
+    if (!cliente) {
+      toast.error('Cliente não autenticado');
+      navigate('/painel-cliente/login');
+      return;
+    }
 
     if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
       toast.error('Selecione todos os campos');
