@@ -84,7 +84,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent
-        className="max-w-[95vw] sm:max-w-[560px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[92vh] overflow-y-auto [&>button[type='button']:last-child]:hidden"
+        className="max-w-[94vw] sm:max-w-[480px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[95vh] overflow-y-auto rounded-2xl [&>button[type='button']:last-child]:hidden"
       >
         <div className="sr-only">
           <DialogTitle>Que tal levar um produto?</DialogTitle>
@@ -97,29 +97,29 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
           onClick={onClose}
           disabled={isSubmitting}
           aria-label="Fechar e continuar sem produtos"
-          className="absolute top-3 right-3 z-20 h-9 w-9 rounded-full bg-white shadow-md border border-gray-200 flex items-center justify-center hover:bg-gray-100 transition-colors disabled:opacity-50"
+          className="absolute top-2.5 right-2.5 z-30 h-9 w-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
         >
-          <X className="h-5 w-5 text-gray-700" />
+          <X className="h-5 w-5 text-amber-700" />
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-5 py-4 text-white">
-          <div className="flex items-center gap-2 mb-1">
-            <Sparkles className="h-5 w-5" />
-            <span className="text-xs font-semibold uppercase tracking-wider opacity-90">
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-white pr-14">
+          <div className="flex items-center gap-1.5 mb-0.5">
+            <Sparkles className="h-4 w-4" />
+            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
               Oferta exclusiva
             </span>
           </div>
-          <h2 className="text-xl sm:text-2xl font-bold">
+          <h2 className="text-lg sm:text-xl font-bold leading-tight">
             Que tal levar um produto?
           </h2>
-          <p className="text-sm text-white/90 mt-1">
-            Adicione ao seu agendamento e pague tudo no checkout. 
+          <p className="text-[11px] sm:text-xs text-white/90 mt-0.5">
+            Adicione ao agendamento e pague tudo no checkout.
           </p>
         </div>
 
         {/* Body */}
-        <div className="p-4 sm:p-5">
+        <div className="p-3 sm:p-4">
           {loading ? (
             <div className="py-10 text-center text-sm text-gray-500">
               Carregando sugestões...
