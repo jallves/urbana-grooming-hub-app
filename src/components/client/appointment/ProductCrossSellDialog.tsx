@@ -1,14 +1,14 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useCrossSellProducts, CrossSellProduct } from '@/hooks/useCrossSellProducts';
-import { Check, Plus, Sparkles, X, Package, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Minus, Sparkles, X, Package, ShoppingBag } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ProductCrossSellDialogProps {
   isOpen: boolean;
   onClose: () => void;
-  onConfirm: (selectedProducts: CrossSellProduct[]) => void;
+  onConfirm: (selectedProducts: (CrossSellProduct & { quantidade: number })[]) => void;
   isSubmitting?: boolean;
 }
 
@@ -22,50 +22,33 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   isSubmitting = false,
 }) => {
   const { products, loading } = useCrossSellProducts(4);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [currentIdx, setCurrentIdx] = useState(0);
-  const touchStartX = useRef<number | null>(null);
+  // Mapa: produto.id -> quantidade selecionada
+  const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  // Reset índice quando abrir/fechar
+  // Reset ao abrir
   useEffect(() => {
-    if (isOpen) setCurrentIdx(0);
+    if (isOpen) setQuantities({});
   }, [isOpen]);
 
-  const goPrev = () => {
-    if (products.length === 0) return;
-    setCurrentIdx((i) => (i - 1 + products.length) % products.length);
-  };
-  const goNext = () => {
-    if (products.length === 0) return;
-    setCurrentIdx((i) => (i + 1) % products.length);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.touches[0].clientX;
-  };
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return;
-    const delta = e.changedTouches[0].clientX - touchStartX.current;
-    if (Math.abs(delta) > 40) {
-      delta > 0 ? goPrev() : goNext();
-    }
-    touchStartX.current = null;
-  };
-
-  const toggle = (id: string) => {
-    setSelectedIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
+  const setQty = (id: string, max: number, delta: number) => {
+    setQuantities(prev => {
+      const current = prev[id] || 0;
+      const next = Math.max(0, Math.min(max, current + delta));
+      const copy = { ...prev };
+      if (next === 0) delete copy[id];
+      else copy[id] = next;
+      return copy;
     });
   };
 
-  const selectedProducts = products.filter(p => selectedIds.has(p.id));
-  const total = selectedProducts.reduce((sum, p) => sum + p.preco, 0);
+  const selectedProducts = products
+    .filter(p => (quantities[p.id] || 0) > 0)
+    .map(p => ({ ...p, quantidade: quantities[p.id] }));
+  const total = selectedProducts.reduce((sum, p) => sum + p.preco * p.quantidade, 0);
+  const totalItems = selectedProducts.reduce((sum, p) => sum + p.quantidade, 0);
 
   const handleSkip = () => {
-    setSelectedIds(new Set());
+    setQuantities({});
     onConfirm([]);
   };
 
@@ -73,8 +56,8 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
     onConfirm(selectedProducts);
   };
 
-  // Se não há produtos, fecha automaticamente confirmando vazio
-  React.useEffect(() => {
+  // Se não há produtos disponíveis, fecha automaticamente
+  useEffect(() => {
     if (!loading && isOpen && products.length === 0) {
       onConfirm([]);
     }
@@ -84,14 +67,14 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent
-        className="max-w-[94vw] sm:max-w-[480px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[95vh] overflow-y-auto rounded-2xl [&>button[type='button']:last-child]:hidden"
+        className="max-w-[94vw] sm:max-w-[440px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[95dvh] flex flex-col rounded-2xl [&>button[type='button']:last-child]:hidden"
       >
         <div className="sr-only">
           <DialogTitle>Que tal levar um produto?</DialogTitle>
           <DialogDescription>Sugestões de produtos para complementar seu agendamento</DialogDescription>
         </div>
 
-        {/* Botão fechar grande e visível */}
+        {/* Botão fechar */}
         <button
           type="button"
           onClick={onClose}
@@ -103,25 +86,25 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-white pr-14">
+        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-white pr-14 shrink-0">
           <div className="flex items-center gap-1.5 mb-0.5">
             <Sparkles className="h-4 w-4" />
             <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
-              Oferta exclusiva
+              Sugestões para você
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold leading-tight">
-            Que tal levar um produto?
+            Quer levar algum produto?
           </h2>
           <p className="text-[11px] sm:text-xs text-white/90 mt-0.5">
-            Adicione ao agendamento e pague tudo no checkout.
+            Adicione e pague tudo junto no checkout.
           </p>
         </div>
 
-        {/* Body */}
-        <div className="p-3 sm:p-4">
+        {/* Body — lista vertical scrollável */}
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
-            <div className="py-10 text-center text-sm text-gray-500">
+            <div className="py-8 text-center text-sm text-gray-500">
               Carregando sugestões...
             </div>
           ) : products.length === 0 ? (
@@ -129,177 +112,127 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
               Nenhum produto disponível no momento.
             </div>
           ) : (
-            <>
-              {/* Carrossel — 1 produto por vez com loop infinito */}
-              <div className="relative">
-                {/* Viewport do carrossel — full-width no mobile, setas sobrepostas */}
-                <div
-                  className="overflow-hidden rounded-xl touch-pan-y"
-                  onTouchStart={handleTouchStart}
-                  onTouchEnd={handleTouchEnd}
-                >
+            <div className="space-y-2">
+              {products.map((p) => {
+                const qty = quantities[p.id] || 0;
+                const isSelected = qty > 0;
+                const maxStock = Math.min(p.estoque, 9);
+                return (
                   <div
-                    className="flex transition-transform duration-300 ease-out"
-                    style={{ transform: `translateX(-${currentIdx * 100}%)` }}
+                    key={p.id}
+                    className={cn(
+                      'flex items-center gap-3 p-2 rounded-xl border-2 bg-white transition-all',
+                      isSelected
+                        ? 'border-amber-500 shadow-sm bg-amber-50/40'
+                        : 'border-gray-200'
+                    )}
                   >
-                    {products.map((p) => {
-                      const selected = selectedIds.has(p.id);
-                      return (
-                        <div key={p.id} className="w-full flex-shrink-0">
-                          <button
-                            type="button"
-                            onClick={() => toggle(p.id)}
-                            disabled={isSubmitting}
-                            className={cn(
-                              'relative w-full text-left rounded-xl border-2 bg-white overflow-hidden transition-all duration-200',
-                              'active:scale-[0.99] flex flex-row sm:flex-col',
-                              selected
-                                ? 'border-amber-500 ring-2 ring-amber-200 shadow-md'
-                                : 'border-gray-200 shadow-sm'
-                            )}
-                          >
-                            {selected && (
-                              <div className="absolute top-2 right-2 z-10 h-7 w-7 rounded-full bg-amber-500 text-white flex items-center justify-center shadow">
-                                <Check className="h-4 w-4" strokeWidth={3} />
-                              </div>
-                            )}
-
-                            {/* Imagem — quadrada lateral no mobile, topo no desktop */}
-                            <div className="w-32 h-32 sm:w-full sm:h-auto sm:aspect-square shrink-0 bg-gray-100 flex items-center justify-center overflow-hidden">
-                              {p.imagem_url ? (
-                                <img
-                                  src={p.imagem_url}
-                                  alt={p.nome}
-                                  className="w-full h-full object-cover"
-                                  loading="lazy"
-                                />
-                              ) : (
-                                <Package className="h-12 w-12 text-gray-300" />
-                              )}
-                            </div>
-
-                            {/* Info */}
-                            <div className="flex-1 min-w-0 p-2.5 sm:p-3 flex flex-col justify-between">
-                              <div>
-                                <p className="text-sm sm:text-base font-semibold text-gray-900 line-clamp-2 leading-tight">
-                                  {p.nome}
-                                </p>
-                                <p className="text-lg sm:text-xl font-bold text-amber-600 mt-1.5">
-                                  {formatBRL(p.preco)}
-                                </p>
-                              </div>
-                              <div
-                                className={cn(
-                                  'mt-2 flex items-center justify-center gap-1 rounded-lg py-2 text-xs sm:text-sm font-semibold transition-colors',
-                                  selected
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-amber-100 text-amber-700'
-                                )}
-                              >
-                                {selected ? (
-                                  <>
-                                    <Check className="h-3.5 w-3.5" /> Adicionado
-                                  </>
-                                ) : (
-                                  <>
-                                    <Plus className="h-3.5 w-3.5" /> Adicionar
-                                  </>
-                                )}
-                              </div>
-                            </div>
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Setas + Bullets em uma única linha de controle */}
-                {products.length > 1 && (
-                  <div className="flex items-center justify-between gap-3 mt-3 px-1">
-                    <button
-                      type="button"
-                      onClick={goPrev}
-                      disabled={isSubmitting}
-                      aria-label="Produto anterior"
-                      className="h-10 w-10 shrink-0 rounded-full bg-white shadow border border-amber-200 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
-                    >
-                      <ChevronLeft className="h-5 w-5 text-amber-700" />
-                    </button>
-
-                    {/* Bullets */}
-                    <div className="flex items-center justify-center gap-1.5 flex-1">
-                      {products.map((_, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => setCurrentIdx(i)}
-                          aria-label={`Ir para produto ${i + 1}`}
-                          className={cn(
-                            'h-2 rounded-full transition-all',
-                            i === currentIdx ? 'w-6 bg-amber-500' : 'w-2 bg-amber-200'
-                          )}
+                    {/* Imagem */}
+                    <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                      {p.imagem_url ? (
+                        <img
+                          src={p.imagem_url}
+                          alt={p.nome}
+                          className="w-full h-full object-cover"
+                          loading="lazy"
                         />
-                      ))}
+                      ) : (
+                        <Package className="h-7 w-7 text-gray-300" />
+                      )}
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={goNext}
-                      disabled={isSubmitting}
-                      aria-label="Próximo produto"
-                      className="h-10 w-10 shrink-0 rounded-full bg-white shadow border border-amber-200 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
-                    >
-                      <ChevronRight className="h-5 w-5 text-amber-700" />
-                    </button>
+                    {/* Info */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight">
+                        {p.nome}
+                      </p>
+                      <p className="text-base font-bold text-amber-600 mt-0.5">
+                        {formatBRL(p.preco)}
+                      </p>
+                    </div>
+
+                    {/* Controle de quantidade / Adicionar */}
+                    {isSelected ? (
+                      <div className="flex items-center gap-1 shrink-0 bg-amber-500 rounded-full p-1 shadow-sm">
+                        <button
+                          type="button"
+                          onClick={() => setQty(p.id, maxStock, -1)}
+                          disabled={isSubmitting}
+                          aria-label="Diminuir"
+                          className="h-7 w-7 rounded-full bg-white text-amber-700 flex items-center justify-center active:scale-90 transition shadow-sm"
+                        >
+                          <Minus className="h-3.5 w-3.5" strokeWidth={3} />
+                        </button>
+                        <span className="min-w-[20px] text-center text-sm font-bold text-white px-1">
+                          {qty}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setQty(p.id, maxStock, 1)}
+                          disabled={isSubmitting || qty >= maxStock}
+                          aria-label="Aumentar"
+                          className="h-7 w-7 rounded-full bg-white text-amber-700 flex items-center justify-center active:scale-90 transition shadow-sm disabled:opacity-50"
+                        >
+                          <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => setQty(p.id, maxStock, 1)}
+                        disabled={isSubmitting}
+                        className="shrink-0 h-9 px-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1 active:scale-95 transition shadow-sm"
+                      >
+                        <Plus className="h-3.5 w-3.5" strokeWidth={3} /> Incluir
+                      </button>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* Total */}
-              {selectedProducts.length > 0 && (
-                <div className="mt-3 p-2.5 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-medium text-amber-900">
-                    {selectedProducts.length}{' '}
-                    {selectedProducts.length === 1 ? 'item' : 'itens'}
-                  </span>
-                  <span className="text-base sm:text-lg font-bold text-amber-700">
-                    {formatBRL(total)}
-                  </span>
-                </div>
-              )}
-
-              {/* Ações */}
-              <div className="mt-3 flex flex-row gap-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={handleSkip}
-                  disabled={isSubmitting}
-                  className="flex-1 border-gray-300 h-11 text-sm"
-                >
-                  Não, obrigado
-                </Button>
-                <Button
-                  type="button"
-                  onClick={handleConfirm}
-                  disabled={isSubmitting}
-                  className="flex-[1.5] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-sm"
-                >
-                  {isSubmitting
-                    ? 'Confirmando...'
-                    : selectedProducts.length > 0
-                      ? `Confirmar (${selectedProducts.length})`
-                      : 'Confirmar agendamento'}
-                </Button>
-              </div>
-
-              <p className="mt-2 text-[10px] sm:text-[11px] text-center text-gray-500">
-                ✓ Pagamento apenas no checkout da barbearia
-              </p>
-            </>
+                );
+              })}
+            </div>
           )}
         </div>
+
+        {/* Footer fixo */}
+        {!loading && products.length > 0 && (
+          <div className="shrink-0 border-t border-amber-200/60 bg-white/80 backdrop-blur-sm p-3 sm:p-4 space-y-2">
+            {totalItems > 0 && (
+              <div className="flex items-center justify-between px-1">
+                <span className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-amber-900">
+                  <ShoppingBag className="h-4 w-4" />
+                  {totalItems} {totalItems === 1 ? 'item' : 'itens'}
+                </span>
+                <span className="text-base sm:text-lg font-bold text-amber-700">
+                  {formatBRL(total)}
+                </span>
+              </div>
+            )}
+
+            <div className="flex flex-row gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleSkip}
+                disabled={isSubmitting}
+                className="flex-1 border-gray-300 h-11 text-xs sm:text-sm"
+              >
+                Não, obrigado
+              </Button>
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={isSubmitting}
+                className="flex-[1.5] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+              >
+                {isSubmitting
+                  ? 'Confirmando...'
+                  : totalItems > 0
+                    ? `Confirmar com ${totalItems} ${totalItems === 1 ? 'item' : 'itens'}`
+                    : 'Confirmar agendamento'}
+              </Button>
+            </div>
+          </div>
+        )}
       </DialogContent>
     </Dialog>
   );
