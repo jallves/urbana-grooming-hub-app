@@ -258,25 +258,25 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
 
               {/* Total */}
               {selectedProducts.length > 0 && (
-                <div className="mt-4 p-3 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-between">
-                  <span className="text-sm font-medium text-amber-900">
+                <div className="mt-3 p-2.5 rounded-lg bg-amber-100 border border-amber-200 flex items-center justify-between">
+                  <span className="text-xs sm:text-sm font-medium text-amber-900">
                     {selectedProducts.length}{' '}
-                    {selectedProducts.length === 1 ? 'produto adicionado' : 'produtos adicionados'}
+                    {selectedProducts.length === 1 ? 'item' : 'itens'}
                   </span>
-                  <span className="text-lg font-bold text-amber-700">
+                  <span className="text-base sm:text-lg font-bold text-amber-700">
                     {formatBRL(total)}
                   </span>
                 </div>
               )}
 
               {/* Ações */}
-              <div className="mt-5 flex flex-col sm:flex-row gap-2">
+              <div className="mt-3 flex flex-row gap-2">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleSkip}
                   disabled={isSubmitting}
-                  className="flex-1 border-gray-300"
+                  className="flex-1 border-gray-300 h-11 text-sm"
                 >
                   Não, obrigado
                 </Button>
@@ -284,18 +284,18 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                   type="button"
                   onClick={handleConfirm}
                   disabled={isSubmitting}
-                  className="flex-1 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold"
+                  className="flex-[1.5] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-sm"
                 >
                   {isSubmitting
                     ? 'Confirmando...'
                     : selectedProducts.length > 0
-                      ? `Confirmar com ${selectedProducts.length} ${selectedProducts.length === 1 ? 'produto' : 'produtos'}`
+                      ? `Confirmar (${selectedProducts.length})`
                       : 'Confirmar agendamento'}
                 </Button>
               </div>
 
-              <p className="mt-3 text-[11px] text-center text-gray-500">
-                ✓ O pagamento será feito apenas no momento do checkout na barbearia
+              <p className="mt-2 text-[10px] sm:text-[11px] text-center text-gray-500">
+                ✓ Pagamento apenas no checkout da barbearia
               </p>
             </>
           )}
