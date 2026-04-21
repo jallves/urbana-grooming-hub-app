@@ -132,10 +132,10 @@ const queryClient = new QueryClient({
 function App() {
   return (
     <ErrorBoundary>
-      <SidebarProvider>
-        <BrowserRouter>
-          <QueryClientProvider client={queryClient}>
-          <Routes>
+      <QueryClientProvider client={queryClient}>
+        <SidebarProvider>
+          <BrowserRouter>
+            <Routes>
             {/* Rotas públicas SEM AuthProvider */}
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -591,9 +591,9 @@ function App() {
             </AuthProvider>
           } />
         </Routes>
-          </QueryClientProvider>
-        </BrowserRouter>
-      </SidebarProvider>
+          </BrowserRouter>
+        </SidebarProvider>
+      </QueryClientProvider>
     </ErrorBoundary>
   );
 }
