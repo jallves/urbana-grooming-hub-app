@@ -18,6 +18,8 @@ import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmai
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
 import { ShoppingBag, Sparkles } from 'lucide-react';
+import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
+import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 
 interface Service {
   id: string;
@@ -65,6 +67,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+  
+  // Cross-sell popup
+  const [showCrossSell, setShowCrossSell] = useState(false);
+  const [crossSellProducts, setCrossSellProducts] = useState<CrossSellProduct[]>([]);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
 
@@ -454,6 +460,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       navigate('/painel-cliente/login');
       return;
     }
+    if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
+      toast.error('Selecione todos os campos');
+      return;
+    }
+    // Abre o popup de produtos antes de criar o agendamento
+    setShowCrossSell(true);
+  };
+
+  const executeBooking = async (extraProducts: CrossSellProduct[] = []) => {
+    if (!cliente) {
+      toast.error('Cliente não autenticado');
+      navigate('/painel-cliente/login');
+      return;
+    }
 
     if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
       toast.error('Selecione todos os campos');
@@ -507,9 +527,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
       // Build servicos_extras JSON
-      const servicosExtrasPayload = extraServices.length > 0
-        ? extraServices.map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }))
-        : null;
+      const extrasFromServices = extraServices.map(s => ({ 
+        id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao 
+      }));
+      const extrasFromProducts = extraProducts.map(p => ({
+        tipo: 'produto' as const,
+        produto_id: p.id,
+        nome: p.nome,
+        preco: p.preco,
+        quantidade: 1,
+      }));
+      const allExtras = [...extrasFromServices, ...extrasFromProducts];
+      const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
 
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
@@ -1065,6 +1094,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           }}
         />
       )}
+
+      <ProductCrossSellDialog
+        isOpen={showCrossSell}
+        onClose={() => {
+          setShowCrossSell(false);
+          executeBooking([]);
+        }}
+        onConfirm={(products) => {
+          setCrossSellProducts(products);
+          setShowCrossSell(false);
+          executeBooking(products);
+        }}
+        isSubmitting={creating}
+      />
     </ClientPageContainer>
   );
 };
