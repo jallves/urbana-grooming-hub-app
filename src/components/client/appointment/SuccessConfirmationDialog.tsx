@@ -6,7 +6,6 @@ import { CheckCircle2, Calendar, Clock, User, Scissors, Info, AlertCircle } from
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PainelClienteCard, PainelClienteCardHeader, PainelClienteCardTitle, PainelClienteCardDescription, PainelClienteCardContent } from '@/components/painel-cliente/PainelClienteCard';
-import { VisuallyHidden } from '@radix-ui/react-visually-hidden';
 
 interface SuccessConfirmationDialogProps {
   isOpen: boolean;
@@ -32,12 +31,12 @@ const SuccessConfirmationDialog: React.FC<SuccessConfirmationDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
         <DialogContent className="max-w-[95vw] sm:max-w-[600px] p-0 overflow-hidden bg-transparent border-none max-h-[90vh] overflow-y-auto" aria-describedby="success-dialog-description">
-        <VisuallyHidden>
+        <div className="sr-only">
           <DialogTitle>Agendamento Confirmado</DialogTitle>
           <DialogDescription id="success-dialog-description">
             Seu agendamento foi confirmado com sucesso
           </DialogDescription>
-        </VisuallyHidden>
+        </div>
         <PainelClienteCard variant="success" className="w-full">
           {/* Header com ícone de sucesso */}
           <PainelClienteCardHeader className="text-center pb-2 sm:pb-4">
