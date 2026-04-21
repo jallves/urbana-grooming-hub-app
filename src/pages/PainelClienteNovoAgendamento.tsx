@@ -18,6 +18,8 @@ import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmai
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
 import { ShoppingBag, Sparkles } from 'lucide-react';
+import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
+import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 
 interface Service {
   id: string;
