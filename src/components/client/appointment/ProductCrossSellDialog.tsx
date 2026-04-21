@@ -21,7 +21,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   onConfirm,
   isSubmitting = false,
 }) => {
-  const { products, loading } = useCrossSellProducts(3);
+  const { products, loading } = useCrossSellProducts(4);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -102,8 +102,11 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {products.map((p) => {
+              {/* Carrossel horizontal — scroll rápido com snap */}
+              <div
+                className="flex gap-3 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory scroll-smooth [scrollbar-width:thin] sm:grid sm:grid-cols-4 sm:overflow-visible sm:snap-none"
+              >
+                {products.map((p, idx) => {
                   const selected = selectedIds.has(p.id);
                   return (
                     <button
@@ -111,9 +114,11 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                       type="button"
                       onClick={() => toggle(p.id)}
                       disabled={isSubmitting}
+                      style={{ animationDelay: `${idx * 60}ms` }}
                       className={cn(
-                        'relative text-left rounded-xl border-2 bg-white overflow-hidden transition-all',
-                        'hover:shadow-lg hover:-translate-y-0.5',
+                        'relative text-left rounded-xl border-2 bg-white overflow-hidden transition-all duration-150',
+                        'hover:shadow-lg hover:-translate-y-0.5 animate-fade-in',
+                        'flex-shrink-0 w-[42vw] max-w-[170px] sm:w-auto sm:max-w-none snap-center',
                         selected
                           ? 'border-amber-500 ring-2 ring-amber-200 shadow-md'
                           : 'border-gray-200'
