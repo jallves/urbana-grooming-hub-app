@@ -56,8 +56,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent
-        className="max-w-[95vw] sm:max-w-[560px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[92vh] overflow-y-auto"
-        hideClose
+        className="max-w-[95vw] sm:max-w-[560px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[92vh] overflow-y-auto [&>button[type='button']:last-child]:hidden"
       >
         <div className="sr-only">
           <DialogTitle>Que tal levar um produto?</DialogTitle>
