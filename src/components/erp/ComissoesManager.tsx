@@ -337,17 +337,16 @@ const ComissoesManager: React.FC = () => {
     }
 
     // Calcular Total Líquido a Pagar por barbeiro
-    // Regra: BRUTO de comissões (pago + pendente, EXCLUINDO gorjetas) − vales.
-    // Gorjeta já foi paga em mãos no checkout, então não compõe o bruto a pagar
-    // nem entra como dedução. O vale abate do BRUTO total (independente do
-    // status da comissão), pois ao quitar o vale o sistema marcou comissões
-    // como pagas — descontar só do pendente causaria desconto duplo.
+    // Regra: deve refletir o MESMO valor do módulo "Contas a Pagar" — ou seja,
+    // somente comissões PENDENTES (excluindo gorjetas, que já foram entregues
+    // em mãos no checkout). Vales pagos já marcaram as comissões equivalentes
+    // como pagas, removendo-as do pendente — não devem ser subtraídos de novo.
     for (const s of map.values()) {
-      const brutoSemGorjeta =
-        s.servicoPago + s.servicoPendente +
-        s.produtoPago + s.produtoPendente +
-        s.planoPago + s.planoPendente;
-      s.totalLiquidoPagar = brutoSemGorjeta - s.valeTotal;
+      const pendenteSemGorjeta =
+        s.servicoPendente +
+        s.produtoPendente +
+        s.planoPendente;
+      s.totalLiquidoPagar = pendenteSemGorjeta;
     }
 
     return Array.from(map.values())
@@ -380,14 +379,13 @@ const ComissoesManager: React.FC = () => {
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
 
-    // Bruto a pagar = serviços + produtos + planos (pagos + pendentes), SEM gorjeta.
-    // Gorjetas já foram entregues em mãos no checkout, então não estão na fila
-    // de pagamento. Líquido = Bruto − Vales (vales abatidos já marcaram comissões
-    // como pagas; descontar do pendente causaria desconto duplo).
-    const totalBrutoSemGorjeta = commissions
-      .filter(c => c.tipo !== 'gorjeta')
+    // Líquido a Pagar = comissões PENDENTES (sem gorjeta).
+    // Espelha exatamente o "Total Pendente" do módulo Contas a Pagar.
+    // Vales pagos já abateram comissões equivalentes (marcadas como pagas),
+    // por isso não entram aqui novamente como dedução.
+    const liquidoPagar = commissions
+      .filter(c => c.tipo !== 'gorjeta' && normalizeStatus(c.status) === 'pendente')
       .reduce((s, c) => s + Number(c.valor || 0), 0);
-    const liquidoPagar = totalBrutoSemGorjeta - totalVales;
 
     return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
