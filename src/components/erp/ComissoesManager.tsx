@@ -374,12 +374,10 @@ const ComissoesManager: React.FC = () => {
       return c === 'vale' || c.includes('vale');
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
-    const valesPendentes = valesArr
-      .filter(cp => (cp.status || '').toLowerCase() !== 'pago')
-      .reduce((s, cp) => s + Number(cp.valor || 0), 0);
-    // Líquido a Pagar = somente comissões pendentes − vales pendentes
-    // (valores já pagos não entram, pois já saíram do caixa)
-    const liquidoPagar = totalPendente - valesPendentes;
+    // Líquido a Pagar = comissões pendentes − TODOS os vales (pendentes + pagos)
+    // Vale é adiantamento contra a comissão; mesmo já pago, ele abate do
+    // saldo que ainda deve ser entregue ao barbeiro.
+    const liquidoPagar = totalPendente - totalVales;
 
     return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
