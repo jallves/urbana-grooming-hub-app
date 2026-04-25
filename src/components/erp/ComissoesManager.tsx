@@ -365,9 +365,16 @@ const ComissoesManager: React.FC = () => {
       .reduce((s, c) => s + Number(c.valor || 0), 0);
     const total = commissions.reduce((s, c) => s + Number(c.valor || 0), 0);
     const barbeirosAtivos = new Set(commissions.map(c => c.barber_id)).size;
+    const totalVales = (contasPagarComissoes as any[])
+      .filter(cp => {
+        const c = (cp.categoria || '').toLowerCase();
+        return c === 'vale' || c.includes('vale');
+      })
+      .reduce((s, cp) => s + Number(cp.valor || 0), 0);
+    const liquidoPagar = total - totalVales;
 
-    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length };
-  }, [commissions]);
+    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
+  }, [commissions, contasPagarComissoes]);
 
   // ─── Export Excel ─────────────────────────────────────
   const handleExportExcel = useCallback(() => {
