@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw, Heart, ChevronLeft, ChevronRight, AlertTriangle, CreditCard, Award } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw, Heart, ChevronLeft, ChevronRight, AlertTriangle, CreditCard, Award, Wallet, Minus } from 'lucide-react';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
@@ -113,6 +113,56 @@ const BarberCommissionsComponent: React.FC = () => {
   const activeData = isViewingOther ? otherData : ownData;
   const isLoading = isViewingOther ? otherLoading : ownLoading;
 
+  // ─── Buscar VALES do barbeiro ativo (contas_pagar categoria = vale) ──────
+  const activeBarberName = isViewingOther
+    ? null // será carregado pela query abaixo
+    : barberData?.nome || null;
+
+  const activeBarberId = isViewingOther ? selectedBarberId : barberData?.id || null;
+
+  const { data: valesData } = useQuery({
+    queryKey: ['barber-vales', activeBarberId],
+    queryFn: async () => {
+      if (!activeBarberId) return [];
+      // Buscar nome do barbeiro
+      const { data: bb } = await supabase
+        .from('painel_barbeiros')
+        .select('nome')
+        .eq('id', activeBarberId)
+        .maybeSingle();
+      const nome = bb?.nome?.trim();
+      if (!nome) return [];
+
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select('*')
+        .or('categoria.eq.vale,categoria.ilike.%vale%')
+        .ilike('fornecedor', nome)
+        .order('data_vencimento', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Erro ao buscar vales:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!activeBarberId,
+    staleTime: 30 * 1000,
+  });
+
+  // Realtime para vales
+  useEffect(() => {
+    if (!activeBarberId) return;
+    const channel = supabase
+      .channel('barber-vales-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_pagar' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['barber-vales', activeBarberId] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeBarberId, queryClient]);
+
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
@@ -129,6 +179,7 @@ const BarberCommissionsComponent: React.FC = () => {
     setIsRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
     if (selectedBarberId) await queryClient.invalidateQueries({ queryKey: ['barber-commissions-other', selectedBarberId] });
+    await queryClient.invalidateQueries({ queryKey: ['barber-vales', activeBarberId] });
     await refetch();
     toast.success('Comissões atualizadas!');
     setIsRefreshing(false);
@@ -178,6 +229,26 @@ const BarberCommissionsComponent: React.FC = () => {
   }, [selectedMonth]);
 
   const stats = filteredStats;
+
+  // ─── Filtrar Vales do mês selecionado ─────────────────────────────────
+  const monthVales = useMemo(() => {
+    const monthStart = startOfMonth(selectedMonth);
+    const monthEnd = endOfMonth(selectedMonth);
+    return (valesData || []).filter((v: any) => {
+      const ref = v.data_vencimento ? new Date(v.data_vencimento + 'T00:00:00') : new Date(v.created_at);
+      return ref >= monthStart && ref <= monthEnd;
+    });
+  }, [valesData, selectedMonth]);
+
+  const valesStats = useMemo(() => {
+    const total = monthVales.reduce((s: number, v: any) => s + Number(v.valor || 0), 0);
+    const pago = monthVales.filter((v: any) => (v.status || '').toLowerCase() === 'pago')
+      .reduce((s: number, v: any) => s + Number(v.valor || 0), 0);
+    const pendente = total - pago;
+    return { total, pago, pendente, qtd: monthVales.length };
+  }, [monthVales]);
+
+  const liquidoAReceber = stats.total - valesStats.total;
 
   // Group commissions by category for detailed view
   const groupedCommissions = useMemo(() => {
