@@ -793,11 +793,14 @@ const ComissoesManager: React.FC = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-900 truncate">{s.barber.nome}</p>
-                        <p className="text-[10px] text-gray-500">Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} comissões</p>
+                        <p className="text-[10px] text-gray-500">
+                          Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} com.
+                          {s.qtdVales > 0 && <span className="text-orange-600 font-medium"> • {s.qtdVales} vale{s.qtdVales > 1 ? 's' : ''}</span>}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {/* Serviços */}
                       <div className="bg-blue-50 rounded p-1.5 border border-blue-100">
                         <div className="flex items-center gap-1 mb-1">
@@ -837,9 +840,22 @@ const ComissoesManager: React.FC = () => {
                           <span>Pend.</span><span className="font-semibold">{formatCurrency(s.gorjetaPendente)}</span>
                         </div>
                       </div>
+                      {/* Vales */}
+                      <div className="bg-orange-50 rounded p-1.5 border border-orange-200">
+                        <div className="flex items-center gap-1 mb-1">
+                          <DollarSign className="h-3 w-3 text-orange-700" />
+                          <span className="text-[10px] font-semibold text-orange-900">Vales</span>
+                        </div>
+                        <div className="text-[10px] text-orange-700 flex justify-between">
+                          <span>Pago</span><span className="font-semibold">{s.valePago > 0 ? `- ${formatCurrency(s.valePago)}` : formatCurrency(0)}</span>
+                        </div>
+                        <div className="text-[10px] text-orange-700 flex justify-between">
+                          <span>Pend.</span><span className="font-semibold">{s.valePendente > 0 ? `- ${formatCurrency(s.valePendente)}` : formatCurrency(0)}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-purple-100">
+                    <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-purple-100">
                       <div className="bg-green-50 rounded p-1.5 text-center border border-green-200">
                         <p className="text-[9px] text-green-700 font-medium">TOTAL PAGO</p>
                         <p className="text-xs font-bold text-green-800">{formatCurrency(s.totalPago)}</p>
@@ -848,9 +864,13 @@ const ComissoesManager: React.FC = () => {
                         <p className="text-[9px] text-yellow-700 font-medium">PENDENTE</p>
                         <p className="text-xs font-bold text-yellow-800">{formatCurrency(s.totalPendente)}</p>
                       </div>
-                      <div className="bg-purple-100 rounded p-1.5 text-center border border-purple-300">
-                        <p className="text-[9px] text-purple-700 font-medium">TOTAL</p>
+                      <div className="bg-purple-50 rounded p-1.5 text-center border border-purple-200">
+                        <p className="text-[9px] text-purple-700 font-medium">TOTAL BRUTO</p>
                         <p className="text-xs font-bold text-purple-900">{formatCurrency(s.totalGeral)}</p>
+                      </div>
+                      <div className={`rounded p-1.5 text-center border ${s.totalLiquidoPagar < 0 ? 'bg-red-100 border-red-300' : 'bg-purple-100 border-purple-400'}`}>
+                        <p className={`text-[9px] font-medium ${s.totalLiquidoPagar < 0 ? 'text-red-700' : 'text-purple-700'}`}>A PAGAR (LÍQUIDO)</p>
+                        <p className={`text-xs font-extrabold ${s.totalLiquidoPagar < 0 ? 'text-red-800' : 'text-purple-900'}`}>{formatCurrency(s.totalLiquidoPagar)}</p>
                       </div>
                     </div>
                   </div>
