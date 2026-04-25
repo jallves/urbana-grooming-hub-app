@@ -240,6 +240,38 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
               )}
             />
 
+            {requiresBarber(categoryValue) && (
+              <FormField
+                control={form.control}
+                name="barber_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">
+                      Funcionário (Barbeiro) <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Selecione o barbeiro" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {barbers.map((b) => (
+                          <SelectItem key={b.id} value={b.nome}>
+                            {b.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vincula este lançamento ao barbeiro para descontar do total a pagar de comissões.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
             <FormField
               control={form.control}
               name="description"
