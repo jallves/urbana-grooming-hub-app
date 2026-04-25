@@ -404,6 +404,27 @@ Deno.serve(async (req) => {
       throw new Error('Forma de pagamento é obrigatória')
     }
 
+    // ============= DETECÇÃO AUTOMÁTICA DE COMBO =============
+    // Se os serviços enviados formam um combo cadastrado, ratear o desconto
+    // do combo proporcionalmente entre os itens componentes ANTES de gerar
+    // receita e comissão. Evita que receita/comissão sejam calculadas em
+    // cima do preço de tabela quando o cliente pagou o preço de combo.
+    const isSubscriptionFlow =
+      body.is_subscription_usage === true || body.is_subscription_sale === true
+    let appliedCombo: Awaited<ReturnType<typeof detectApplicableCombo>> = null
+    if (!isSubscriptionFlow) {
+      const serviceItems = body.items.filter((i) => i.type === 'service')
+      appliedCombo = await detectApplicableCombo(supabase, serviceItems)
+      if (appliedCombo) {
+        console.log(
+          `🏷️ Combo detectado automaticamente: "${appliedCombo.comboName}" - ` +
+            `Preço combo R$ ${appliedCombo.comboPrice.toFixed(2)} - ` +
+            `Desconto rateado R$ ${appliedCombo.discount.toFixed(2)}`
+        )
+        body.items = applyComboDiscountToItems(body.items, appliedCombo)
+      }
+    }
+
     const brazilNow = getBrazilDateTime()
     const transaction_date = body.transaction_date || brazilNow.date
     const transaction_datetime = body.transaction_datetime || brazilNow.datetime
