@@ -336,13 +336,12 @@ const ComissoesManager: React.FC = () => {
       summary.qtdVales++;
     }
 
-    // Calcular Total Líquido a Pagar
-    // Regra: considerar apenas comissões PENDENTES e abater TODOS os vales
-    // (pendentes + pagos), pois o vale é um adiantamento entregue ao barbeiro
-    // contra a comissão a receber. Se o vale já foi pago, ele já foi
-    // "consumido" como adiantamento e deve continuar abatendo do líquido.
+    // Calcular Total Líquido a Pagar por barbeiro
+    // Regra: comissões PENDENTES (bruto) − vales (pendentes + pagos) − gorjetas
+    // já pagas no período. Vale é adiantamento entregue ao barbeiro; gorjeta
+    // paga já foi entregue em mãos. Ambos devem abater do saldo a entregar.
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalPendente - s.valeTotal;
+      s.totalLiquidoPagar = s.totalPendente - s.valeTotal - s.gorjetaPaga;
     }
 
     return Array.from(map.values())
