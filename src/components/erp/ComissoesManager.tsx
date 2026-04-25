@@ -374,12 +374,19 @@ const ComissoesManager: React.FC = () => {
       return c === 'vale' || c.includes('vale');
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
-    // Líquido a Pagar = comissões pendentes − TODOS os vales (pendentes + pagos)
-    // Vale é adiantamento contra a comissão; mesmo já pago, ele abate do
-    // saldo que ainda deve ser entregue ao barbeiro.
-    const liquidoPagar = totalPendente - totalVales;
 
-    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
+    // Gorjetas JÁ PAGAS no período também abatem do líquido (foram entregues
+    // em mãos ao barbeiro, geralmente em dinheiro do cliente, então não devem
+    // ser pagas novamente no fechamento).
+    const totalGorjetasPagas = commissions
+      .filter(c => c.tipo === 'gorjeta' && normalizeStatus(c.status) === 'pago')
+      .reduce((s, c) => s + Number(c.valor || 0), 0);
+
+    // Total Pendente (KPI) = valor BRUTO de comissões pendentes (sem abater nada)
+    // Líquido a Pagar = comissões pendentes − vales (pendentes + pagos) − gorjetas já pagas
+    const liquidoPagar = totalPendente - totalVales - totalGorjetasPagas;
+
+    return { totalPago, totalPendente, totalGorjetas, totalGorjetasPagas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
 
   // ─── Export Excel ─────────────────────────────────────
