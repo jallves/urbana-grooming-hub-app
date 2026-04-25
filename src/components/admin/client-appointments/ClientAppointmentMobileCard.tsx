@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X, UserX } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X, UserX, RotateCcw } from 'lucide-react';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -368,6 +368,16 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
                 >
                   <UserX className="mr-3 h-4 w-4" />
                   <span className="text-sm font-medium">Marcar Ausente</span>
+                </DropdownMenuItem>
+              )}
+
+              {actualStatus === 'ausente' && (
+                <DropdownMenuItem
+                  className="cursor-pointer text-blue-600 py-2.5"
+                  onClick={() => onStatusChange(appointment.id, 'agendado')}
+                >
+                  <RotateCcw className="mr-3 h-4 w-4" />
+                  <span className="text-sm font-medium">Reabrir Agendamento</span>
                 </DropdownMenuItem>
               )}
 
