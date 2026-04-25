@@ -210,7 +210,7 @@ const ComissoesManager: React.FC = () => {
       const { data } = await supabase
         .from('contas_pagar')
         .select('*')
-        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%,categoria.ilike.%gorjeta%')
+        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%,categoria.ilike.%gorjeta%,categoria.eq.vale,categoria.ilike.%vale%,categoria.eq.staff_payments')
         .gte('data_vencimento', firstDay)
         .lte('data_vencimento', lastDay)
         .order('data_vencimento', { ascending: false });
