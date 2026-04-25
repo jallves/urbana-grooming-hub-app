@@ -288,22 +288,54 @@ export const ContasAPagar: React.FC = () => {
       // Mapear gross_amount para valor (campo usado pelo FinancialRecordForm)
       const valorFinal = values.gross_amount || values.amount || 0;
       
-      const { error } = await supabase.from('contas_pagar').insert({
+      const isVale = String(values.category || '').toLowerCase().includes('vale');
+      // Se for vale, força como pendente para que o RPC marque como pago após abater as comissões
+      const initialStatus = isVale ? 'pendente' : (values.status === 'completed' ? 'pago' : 'pendente');
+      const initialPaymentDate = isVale ? null : (values.status === 'completed' ? format(new Date(), 'yyyy-MM-dd') : null);
+
+      const { data: inserted, error } = await supabase.from('contas_pagar').insert({
         descricao: values.description,
         valor: valorFinal,
         data_vencimento: format(values.transaction_date, 'yyyy-MM-dd'),
-        data_pagamento: values.status === 'completed' ? format(new Date(), 'yyyy-MM-dd') : null,
+        data_pagamento: initialPaymentDate,
         categoria: values.category,
         fornecedor: values.barber_name || null,
-        status: values.status === 'completed' ? 'pago' : 'pendente',
+        status: initialStatus,
         forma_pagamento: values.payment_method || null,
         observacoes: values.notes || null,
-      });
+      }).select('id').single();
 
       if (error) throw error;
+
+      // 🔁 Se for vale com fornecedor (barbeiro), aciona o abatimento automático em comissões
+      if (isVale && values.barber_name && inserted?.id) {
+        const { data: result, error: rpcError } = await supabase
+          .rpc('apply_vale_to_commissions', { p_vale_id: inserted.id });
+
+        if (rpcError) {
+          console.error('[Vale] RPC apply_vale_to_commissions error:', rpcError);
+          toast.error('Vale criado, mas falhou ao abater comissões', { description: rpcError.message });
+        } else {
+          const r: any = result || {};
+          if (r.success) {
+            const fully = r.commissions_fully_paid ?? 0;
+            const split = r.commissions_split ?? 0;
+            const abated = Number(r.total_abated || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 });
+            const uncovered = Number(r.remaining_uncovered || 0);
+            const parts = [`${fully} comissão(ões) integral(is)`, `${split} parcial(is)`, `R$ ${abated} abatido`];
+            if (uncovered > 0) parts.push(`saldo sem cobertura: R$ ${uncovered.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`);
+            toast.success('Vale aplicado às comissões', { description: parts.join(' • ') });
+          } else {
+            toast.warning('Vale criado, mas não foi abatido', { description: r.error || 'Verifique o cadastro do barbeiro' });
+          }
+        }
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['comissoes-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
       toast.success('Lançamento criado com sucesso!');
       setFormOpen(false);
     },
