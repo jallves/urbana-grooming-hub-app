@@ -114,10 +114,6 @@ const BarberCommissionsComponent: React.FC = () => {
   const isLoading = isViewingOther ? otherLoading : ownLoading;
 
   // ─── Buscar VALES do barbeiro ativo (contas_pagar categoria = vale) ──────
-  const activeBarberName = isViewingOther
-    ? null // será carregado pela query abaixo
-    : barberData?.nome || null;
-
   const activeBarberId = isViewingOther ? selectedBarberId : barberData?.id || null;
 
   const { data: valesData } = useQuery({
