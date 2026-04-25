@@ -287,15 +287,31 @@ export const useClientAppointments = () => {
         }
       }
 
+      // *** REABRIR (de ausente para agendado) ***
+      if (newStatus === 'agendado') {
+        if (currentStatus !== 'ausente') {
+          toast.error('Não é possível reabrir', {
+            description: 'Apenas agendamentos com status "Ausente" podem ser reabertos'
+          });
+          return;
+        }
+      }
+
       // Atualizar status (para outros status que não 'concluido')
       console.log(`📝 [ADMIN] Atualizando painel_agendamentos para ${newStatus}:`, appointmentId);
-      
+
+      // Quando reabrindo (ausente -> agendado), também limpar status_totem
+      const updatePayload: Record<string, any> = {
+        status: newStatus,
+        updated_at: new Date().toISOString(),
+      };
+      if (newStatus === 'agendado') {
+        updatePayload.status_totem = null;
+      }
+
       const { data, error } = await supabase
         .from('painel_agendamentos')
-        .update({ 
-          status: newStatus,
-          updated_at: new Date().toISOString()
-        })
+        .update(updatePayload)
         .eq('id', appointmentId)
         .select()
         .single();
@@ -312,7 +328,14 @@ export const useClientAppointments = () => {
       if (user) {
         await supabase.from('admin_activity_log').insert({
           admin_id: user.id,
-          action: newStatus === 'cancelado' ? 'cancel_appointment' : 'mark_absent_appointment',
+          action:
+            newStatus === 'cancelado'
+              ? 'cancel_appointment'
+              : newStatus === 'ausente'
+              ? 'mark_absent_appointment'
+              : newStatus === 'agendado'
+              ? 'reopen_appointment'
+              : 'update_appointment_status',
           entity: 'painel_agendamentos',
           entity_id: appointmentId,
           details: {
@@ -340,6 +363,8 @@ export const useClientAppointments = () => {
         ? 'Agendamento cancelado com sucesso'
         : newStatus === 'ausente'
         ? 'Cliente marcado como ausente'
+        : newStatus === 'agendado'
+        ? 'Agendamento reaberto com sucesso'
         : `Status alterado para ${newStatus}`;
         
       toast.success(successMessage);

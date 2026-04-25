@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Edit, Check, X, Clock, Trash2, Users, CheckCircle, UserX } from 'lucide-react';
+import { MoreHorizontal, Edit, Check, X, Clock, Trash2, Users, CheckCircle, UserX, RotateCcw } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -167,6 +167,17 @@ const AppointmentRow: React.FC<AppointmentRowProps> = ({
               <DropdownMenuItem onClick={handleAbsentClick}>
                 <UserX className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
                 <span className="text-xs sm:text-sm">Marcar Ausente</span>
+              </DropdownMenuItem>
+            )}
+
+            {/* Botão Reabrir - aparece apenas quando status atual é "ausente" */}
+            {appointment.status === 'ausente' && (
+              <DropdownMenuItem
+                className="text-blue-600 focus:text-blue-700"
+                onClick={() => onStatusChange(appointment.id, 'agendado')}
+              >
+                <RotateCcw className="mr-2 h-3 w-3 sm:h-4 sm:w-4" />
+                <span className="text-xs sm:text-sm">Reabrir Agendamento</span>
               </DropdownMenuItem>
             )}
             

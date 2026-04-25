@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { format, parseISO, parse } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { MoreHorizontal, Edit, Clock, X, UserX } from 'lucide-react';
+import { MoreHorizontal, Edit, Clock, X, UserX, RotateCcw } from 'lucide-react';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
@@ -352,6 +352,18 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
               >
                 <UserX className="mr-3 h-4 w-4" />
                 <span className="text-sm font-medium">Marcar como Ausente</span>
+              </DropdownMenuItem>
+            )}
+
+            {actualStatus === 'ausente' && (
+              <DropdownMenuItem
+                className="cursor-pointer hover:bg-blue-50 focus:bg-blue-50 text-blue-600 py-2.5"
+                onClick={() => {
+                  onStatusChange(appointment.id, 'agendado');
+                }}
+              >
+                <RotateCcw className="mr-3 h-4 w-4" />
+                <span className="text-sm font-medium">Reabrir Agendamento</span>
               </DropdownMenuItem>
             )}
           </DropdownMenuContent>
