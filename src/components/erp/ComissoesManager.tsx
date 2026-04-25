@@ -498,12 +498,18 @@ const ComissoesManager: React.FC = () => {
       produtoPendente: acc.produtoPendente + s.produtoPendente,
       gorjetaPaga: acc.gorjetaPaga + s.gorjetaPaga,
       gorjetaPendente: acc.gorjetaPendente + s.gorjetaPendente,
+      valePago: acc.valePago + s.valePago,
+      valePendente: acc.valePendente + s.valePendente,
+      valeTotal: acc.valeTotal + s.valeTotal,
       totalPago: acc.totalPago + s.totalPago,
       totalPendente: acc.totalPendente + s.totalPendente,
       totalGeral: acc.totalGeral + s.totalGeral,
+      totalLiquidoPagar: acc.totalLiquidoPagar + s.totalLiquidoPagar,
     }), {
       servicoPago: 0, servicoPendente: 0, produtoPago: 0, produtoPendente: 0,
-      gorjetaPaga: 0, gorjetaPendente: 0, totalPago: 0, totalPendente: 0, totalGeral: 0,
+      gorjetaPaga: 0, gorjetaPendente: 0,
+      valePago: 0, valePendente: 0, valeTotal: 0,
+      totalPago: 0, totalPendente: 0, totalGeral: 0, totalLiquidoPagar: 0,
     });
   }, [barberSummaries]);
 
