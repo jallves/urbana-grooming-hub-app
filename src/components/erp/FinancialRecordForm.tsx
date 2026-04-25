@@ -2,6 +2,8 @@ import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
@@ -26,6 +28,7 @@ const formSchema = z.object({
   status: z.enum(['pending', 'completed', 'cancelled']),
   payment_method: z.string().optional(),
   notes: z.string().optional(),
+  barber_name: z.string().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -59,7 +62,22 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
       status: 'pending',
       payment_method: '',
       notes: '',
+      barber_name: '',
     },
+  });
+
+  // Lista de barbeiros ativos para vincular vales/comissões
+  const { data: barbers = [] } = useQuery({
+    queryKey: ['form-barbers-active'],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from('painel_barbeiros')
+        .select('id, nome')
+        .eq('ativo', true)
+        .order('nome');
+      return (data || []) as Array<{ id: string; nome: string }>;
+    },
+    enabled: open,
   });
 
   // Reset form quando initialData mudar (edição)
@@ -77,6 +95,7 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
         status: initialData.status || 'pending',
         payment_method: initialData.payment_method || '',
         notes: initialData.notes || '',
+        barber_name: (initialData as any).barber_name || '',
       });
     } else if (open && !initialData) {
       // Reset para valores padrão quando for novo registro
@@ -92,11 +111,13 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
         status: 'pending',
         payment_method: '',
         notes: '',
+        barber_name: '',
       });
     }
   }, [open, initialData, form]);
 
   const transactionType = form.watch('transaction_type');
+  const categoryValue = form.watch('category');
   const grossAmount = form.watch('gross_amount') || 0;
   const discountAmount = form.watch('discount_amount') || 0;
   const taxAmount = form.watch('tax_amount') || 0;
@@ -108,6 +129,7 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
 
   const categories: Record<'expense' | 'commission', Array<{ value: string; label: string }>> = {
     expense: [
+      { value: 'vale', label: 'Vale (Adiantamento de Funcionário)' },
       { value: 'supplies', label: 'Insumos' },
       { value: 'rent', label: 'Aluguel' },
       { value: 'utilities', label: 'Utilidades' },
@@ -116,8 +138,12 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
     ],
     commission: [
       { value: 'staff_payments', label: 'Pagamento de Funcionários' },
+      { value: 'vale', label: 'Vale (Adiantamento de Funcionário)' },
     ],
   };
+
+  // Categorias que exigem seleção de barbeiro
+  const requiresBarber = (cat: string) => ['vale', 'staff_payments'].includes(cat);
 
   const paymentMethods = [
     { value: 'cash', label: 'Dinheiro' },
@@ -213,6 +239,38 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 </FormItem>
               )}
             />
+
+            {requiresBarber(categoryValue) && (
+              <FormField
+                control={form.control}
+                name="barber_name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">
+                      Funcionário (Barbeiro) <span className="text-destructive">*</span>
+                    </FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <FormControl>
+                        <SelectTrigger className="h-9 text-sm">
+                          <SelectValue placeholder="Selecione o barbeiro" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {barbers.map((b) => (
+                          <SelectItem key={b.id} value={b.nome}>
+                            {b.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Vincula este lançamento ao barbeiro para descontar do total a pagar de comissões.
+                    </p>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             <FormField
               control={form.control}

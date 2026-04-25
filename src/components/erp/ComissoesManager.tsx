@@ -60,11 +60,18 @@ interface BarberSummary {
   // Plano
   planoPago: number;
   planoPendente: number;
+  // Vales (adiantamentos a descontar do total a pagar)
+  valePago: number;
+  valePendente: number;
+  valeTotal: number;
   // Totais
   totalPago: number;
   totalPendente: number;
   totalGeral: number;
+  // Total Líquido a Pagar (totalGeral - vales)
+  totalLiquidoPagar: number;
   qtdComissoes: number;
+  qtdVales: number;
 }
 
 // ─── Theme Colors (FIXED per tab) ─────────────────────────
@@ -203,7 +210,7 @@ const ComissoesManager: React.FC = () => {
       const { data } = await supabase
         .from('contas_pagar')
         .select('*')
-        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%,categoria.ilike.%gorjeta%')
+        .or('categoria.eq.Comissão,categoria.eq.comissao,categoria.ilike.%comiss%,categoria.ilike.%gorjeta%,categoria.eq.vale,categoria.ilike.%vale%,categoria.eq.staff_payments')
         .gte('data_vencimento', firstDay)
         .lte('data_vencimento', lastDay)
         .order('data_vencimento', { ascending: false });
@@ -237,8 +244,11 @@ const ComissoesManager: React.FC = () => {
       produtoPago: 0, produtoPendente: 0,
       gorjetaPaga: 0, gorjetaPendente: 0,
       planoPago: 0, planoPendente: 0,
+      valePago: 0, valePendente: 0, valeTotal: 0,
       totalPago: 0, totalPendente: 0, totalGeral: 0,
+      totalLiquidoPagar: 0,
       qtdComissoes: 0,
+      qtdVales: 0,
     });
 
     for (const barber of barbers) {
@@ -284,10 +294,57 @@ const ComissoesManager: React.FC = () => {
       summary.qtdComissoes++;
     }
 
+    // Agregar vales (categoria = 'vale') por barbeiro (fornecedor)
+    const isValeCategory = (cat: string | null) => {
+      if (!cat) return false;
+      const c = cat.toLowerCase();
+      return c === 'vale' || c.includes('vale');
+    };
+
+    for (const cp of contasPagarComissoes as any[]) {
+      if (!isValeCategory(cp.categoria)) continue;
+      const fornecedor = (cp.fornecedor || '').trim();
+      if (!fornecedor) continue;
+
+      // Localizar barbeiro pelo nome (case-insensitive, trim)
+      let summary: BarberSummary | undefined;
+      for (const s of map.values()) {
+        if (s.barber.nome.trim().toLowerCase() === fornecedor.toLowerCase()) {
+          summary = s;
+          break;
+        }
+      }
+
+      // Se não existir barbeiro registrado, criar entrada virtual
+      if (!summary) {
+        const virtual: Barber = {
+          id: `vale-${fornecedor}`,
+          nome: fornecedor,
+          foto_url: null,
+          taxa_comissao: null,
+          ativo: true,
+        };
+        summary = initSummary(virtual);
+        map.set(virtual.id, summary);
+      }
+
+      const valor = Number(cp.valor || 0);
+      const isPago = (cp.status || '').toLowerCase() === 'pago';
+      if (isPago) summary.valePago += valor;
+      else summary.valePendente += valor;
+      summary.valeTotal += valor;
+      summary.qtdVales++;
+    }
+
+    // Calcular Total Líquido a Pagar (Total Geral - Vales)
+    for (const s of map.values()) {
+      s.totalLiquidoPagar = s.totalGeral - s.valeTotal;
+    }
+
     return Array.from(map.values())
-      .filter(s => s.qtdComissoes > 0 || s.barber.ativo)
+      .filter(s => s.qtdComissoes > 0 || s.qtdVales > 0 || s.barber.ativo)
       .sort((a, b) => b.totalGeral - a.totalGeral);
-  }, [barbers, commissions]);
+  }, [barbers, commissions, contasPagarComissoes]);
 
   // ─── KPIs ─────────────────────────────────────────────
   const kpis = useMemo(() => {
@@ -308,9 +365,16 @@ const ComissoesManager: React.FC = () => {
       .reduce((s, c) => s + Number(c.valor || 0), 0);
     const total = commissions.reduce((s, c) => s + Number(c.valor || 0), 0);
     const barbeirosAtivos = new Set(commissions.map(c => c.barber_id)).size;
+    const totalVales = (contasPagarComissoes as any[])
+      .filter(cp => {
+        const c = (cp.categoria || '').toLowerCase();
+        return c === 'vale' || c.includes('vale');
+      })
+      .reduce((s, cp) => s + Number(cp.valor || 0), 0);
+    const liquidoPagar = total - totalVales;
 
-    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length };
-  }, [commissions]);
+    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
+  }, [commissions, contasPagarComissoes]);
 
   // ─── Export Excel ─────────────────────────────────────
   const handleExportExcel = useCallback(() => {
@@ -441,12 +505,18 @@ const ComissoesManager: React.FC = () => {
       produtoPendente: acc.produtoPendente + s.produtoPendente,
       gorjetaPaga: acc.gorjetaPaga + s.gorjetaPaga,
       gorjetaPendente: acc.gorjetaPendente + s.gorjetaPendente,
+      valePago: acc.valePago + s.valePago,
+      valePendente: acc.valePendente + s.valePendente,
+      valeTotal: acc.valeTotal + s.valeTotal,
       totalPago: acc.totalPago + s.totalPago,
       totalPendente: acc.totalPendente + s.totalPendente,
       totalGeral: acc.totalGeral + s.totalGeral,
+      totalLiquidoPagar: acc.totalLiquidoPagar + s.totalLiquidoPagar,
     }), {
       servicoPago: 0, servicoPendente: 0, produtoPago: 0, produtoPendente: 0,
-      gorjetaPaga: 0, gorjetaPendente: 0, totalPago: 0, totalPendente: 0, totalGeral: 0,
+      gorjetaPaga: 0, gorjetaPendente: 0,
+      valePago: 0, valePendente: 0, valeTotal: 0,
+      totalPago: 0, totalPendente: 0, totalGeral: 0, totalLiquidoPagar: 0,
     });
   }, [barberSummaries]);
 
@@ -532,8 +602,8 @@ const ComissoesManager: React.FC = () => {
           { title: 'Total Geral', value: formatCurrency(kpis.total), icon: DollarSign, color: 'text-blue-700', bg: 'bg-blue-50' },
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
           { title: 'Total Pendente', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-          { title: 'Serviços', value: formatCurrency(kpis.totalServicos), icon: Scissors, color: 'text-blue-700', bg: 'bg-blue-50' },
-          { title: 'Produtos', value: formatCurrency(kpis.totalProdutos), icon: Package, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Vales (descontar)', value: kpis.totalVales > 0 ? `- ${formatCurrency(kpis.totalVales)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
+          { title: 'Líquido a Pagar', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
           { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
           <Card key={i} className="bg-white border-gray-200">
@@ -622,7 +692,12 @@ const ComissoesManager: React.FC = () => {
                           <Coins className="h-3 w-3" /> Gorjetas
                         </div>
                       </TableHead>
-                      <TableHead colSpan={3} className="text-xs font-bold text-gray-900 text-center border-l border-purple-300 bg-gray-100">
+                      <TableHead colSpan={2} className="text-xs font-bold text-orange-900 text-center border-l border-purple-300 bg-orange-50">
+                        <div className="flex items-center justify-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Vales
+                        </div>
+                      </TableHead>
+                      <TableHead colSpan={4} className="text-xs font-bold text-gray-900 text-center border-l border-purple-300 bg-gray-100">
                         Totais
                       </TableHead>
                     </TableRow>
@@ -636,9 +711,12 @@ const ComissoesManager: React.FC = () => {
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
                       <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">✓ Paga</TableHead>
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
+                      <TableHead className="text-[10px] font-medium text-orange-700 text-right border-l border-purple-200">✓ Pago</TableHead>
+                      <TableHead className="text-[10px] font-medium text-orange-700 text-right">⏳ Pendente</TableHead>
                       <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">Total Pago</TableHead>
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">Total Pendente</TableHead>
-                      <TableHead className="text-[10px] font-bold text-gray-900 text-right">Total Geral</TableHead>
+                      <TableHead className="text-[10px] font-bold text-gray-900 text-right">Total Bruto</TableHead>
+                      <TableHead className="text-[10px] font-bold text-purple-900 text-right border-l border-purple-200">A Pagar (Líquido)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -654,7 +732,10 @@ const ComissoesManager: React.FC = () => {
                             </Avatar>
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-gray-900 truncate">{s.barber.nome}</p>
-                              <p className="text-[10px] text-gray-500">{s.barber.taxa_comissao || 0}% • {s.qtdComissoes}</p>
+                              <p className="text-[10px] text-gray-500">
+                                {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} com.
+                                {s.qtdVales > 0 && <span className="text-orange-600 font-medium"> • {s.qtdVales} vale{s.qtdVales > 1 ? 's' : ''}</span>}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -664,9 +745,18 @@ const ComissoesManager: React.FC = () => {
                         <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.produtoPendente)}</TableCell>
                         <TableCell className="text-right text-xs font-semibold text-green-700 border-l border-purple-100">{formatCurrency(s.gorjetaPaga)}</TableCell>
                         <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.gorjetaPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-orange-700 border-l border-purple-100 bg-orange-50/40">
+                          {s.valePago > 0 ? `- ${formatCurrency(s.valePago)}` : formatCurrency(0)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-orange-700 bg-orange-50/40">
+                          {s.valePendente > 0 ? `- ${formatCurrency(s.valePendente)}` : formatCurrency(0)}
+                        </TableCell>
                         <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-100 bg-green-50/40">{formatCurrency(s.totalPago)}</TableCell>
                         <TableCell className="text-right text-xs font-bold text-yellow-800 bg-yellow-50/40">{formatCurrency(s.totalPendente)}</TableCell>
                         <TableCell className="text-right text-xs font-bold text-purple-900 bg-purple-50/40">{formatCurrency(s.totalGeral)}</TableCell>
+                        <TableCell className={`text-right text-xs font-extrabold border-l border-purple-200 ${s.totalLiquidoPagar < 0 ? 'text-red-700 bg-red-50' : 'text-purple-900 bg-purple-100'}`}>
+                          {formatCurrency(s.totalLiquidoPagar)}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {/* Totals row */}
@@ -680,9 +770,18 @@ const ComissoesManager: React.FC = () => {
                       <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.produtoPendente)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-300">{formatCurrency(summaryTotals.gorjetaPaga)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.gorjetaPendente)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-orange-800 border-l border-purple-300 bg-orange-100">
+                        {summaryTotals.valePago > 0 ? `- ${formatCurrency(summaryTotals.valePago)}` : formatCurrency(0)}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-bold text-orange-800 bg-orange-100">
+                        {summaryTotals.valePendente > 0 ? `- ${formatCurrency(summaryTotals.valePendente)}` : formatCurrency(0)}
+                      </TableCell>
                       <TableCell className="text-right text-xs font-bold text-green-900 border-l border-purple-300 bg-green-100">{formatCurrency(summaryTotals.totalPago)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-yellow-900 bg-yellow-100">{formatCurrency(summaryTotals.totalPendente)}</TableCell>
                       <TableCell className="text-right text-sm font-extrabold text-purple-900 bg-purple-200">{formatCurrency(summaryTotals.totalGeral)}</TableCell>
+                      <TableCell className={`text-right text-sm font-extrabold border-l border-purple-300 ${summaryTotals.totalLiquidoPagar < 0 ? 'text-red-700 bg-red-100' : 'text-purple-900 bg-purple-300'}`}>
+                        {formatCurrency(summaryTotals.totalLiquidoPagar)}
+                      </TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
@@ -701,11 +800,14 @@ const ComissoesManager: React.FC = () => {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-900 truncate">{s.barber.nome}</p>
-                        <p className="text-[10px] text-gray-500">Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} comissões</p>
+                        <p className="text-[10px] text-gray-500">
+                          Taxa: {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} com.
+                          {s.qtdVales > 0 && <span className="text-orange-600 font-medium"> • {s.qtdVales} vale{s.qtdVales > 1 ? 's' : ''}</span>}
+                        </p>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5">
+                    <div className="grid grid-cols-2 gap-1.5">
                       {/* Serviços */}
                       <div className="bg-blue-50 rounded p-1.5 border border-blue-100">
                         <div className="flex items-center gap-1 mb-1">
@@ -745,9 +847,22 @@ const ComissoesManager: React.FC = () => {
                           <span>Pend.</span><span className="font-semibold">{formatCurrency(s.gorjetaPendente)}</span>
                         </div>
                       </div>
+                      {/* Vales */}
+                      <div className="bg-orange-50 rounded p-1.5 border border-orange-200">
+                        <div className="flex items-center gap-1 mb-1">
+                          <DollarSign className="h-3 w-3 text-orange-700" />
+                          <span className="text-[10px] font-semibold text-orange-900">Vales</span>
+                        </div>
+                        <div className="text-[10px] text-orange-700 flex justify-between">
+                          <span>Pago</span><span className="font-semibold">{s.valePago > 0 ? `- ${formatCurrency(s.valePago)}` : formatCurrency(0)}</span>
+                        </div>
+                        <div className="text-[10px] text-orange-700 flex justify-between">
+                          <span>Pend.</span><span className="font-semibold">{s.valePendente > 0 ? `- ${formatCurrency(s.valePendente)}` : formatCurrency(0)}</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-1.5 pt-1 border-t border-purple-100">
+                    <div className="grid grid-cols-2 gap-1.5 pt-1 border-t border-purple-100">
                       <div className="bg-green-50 rounded p-1.5 text-center border border-green-200">
                         <p className="text-[9px] text-green-700 font-medium">TOTAL PAGO</p>
                         <p className="text-xs font-bold text-green-800">{formatCurrency(s.totalPago)}</p>
@@ -756,9 +871,13 @@ const ComissoesManager: React.FC = () => {
                         <p className="text-[9px] text-yellow-700 font-medium">PENDENTE</p>
                         <p className="text-xs font-bold text-yellow-800">{formatCurrency(s.totalPendente)}</p>
                       </div>
-                      <div className="bg-purple-100 rounded p-1.5 text-center border border-purple-300">
-                        <p className="text-[9px] text-purple-700 font-medium">TOTAL</p>
+                      <div className="bg-purple-50 rounded p-1.5 text-center border border-purple-200">
+                        <p className="text-[9px] text-purple-700 font-medium">TOTAL BRUTO</p>
                         <p className="text-xs font-bold text-purple-900">{formatCurrency(s.totalGeral)}</p>
+                      </div>
+                      <div className={`rounded p-1.5 text-center border ${s.totalLiquidoPagar < 0 ? 'bg-red-100 border-red-300' : 'bg-purple-100 border-purple-400'}`}>
+                        <p className={`text-[9px] font-medium ${s.totalLiquidoPagar < 0 ? 'text-red-700' : 'text-purple-700'}`}>A PAGAR (LÍQUIDO)</p>
+                        <p className={`text-xs font-extrabold ${s.totalLiquidoPagar < 0 ? 'text-red-800' : 'text-purple-900'}`}>{formatCurrency(s.totalLiquidoPagar)}</p>
                       </div>
                     </div>
                   </div>

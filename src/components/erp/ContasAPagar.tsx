@@ -63,6 +63,12 @@ const getCategoryLabel = (category: string | null): string => {
     'gorjeta': 'Gorjeta',
     'staff_payments': 'Comissão',
     'comissao': 'Comissão',
+    'vale': 'Vale',
+    'supplies': 'Insumos',
+    'rent': 'Aluguel',
+    'utilities': 'Utilidades',
+    'marketing': 'Marketing',
+    'other': 'Outros',
   };
   return map[category.toLowerCase()] || category;
 };
@@ -79,6 +85,7 @@ const getCategoryColors = (category: string | null): string => {
     'gorjeta': 'bg-amber-100 text-amber-700 border-amber-300',
     'staff_payments': 'bg-teal-100 text-teal-700 border-teal-300',
     'comissao': 'bg-teal-100 text-teal-700 border-teal-300',
+    'vale': 'bg-orange-100 text-orange-700 border-orange-300',
   };
   return colors[category.toLowerCase()] || 'bg-gray-100 text-gray-700 border-gray-300';
 };
@@ -289,6 +296,8 @@ export const ContasAPagar: React.FC = () => {
         categoria: values.category,
         fornecedor: values.barber_name || null,
         status: values.status === 'completed' ? 'pago' : 'pendente',
+        forma_pagamento: values.payment_method || null,
+        observacoes: values.notes || null,
       });
 
       if (error) throw error;
