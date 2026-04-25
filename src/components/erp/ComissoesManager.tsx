@@ -244,8 +244,11 @@ const ComissoesManager: React.FC = () => {
       produtoPago: 0, produtoPendente: 0,
       gorjetaPaga: 0, gorjetaPendente: 0,
       planoPago: 0, planoPendente: 0,
+      valePago: 0, valePendente: 0, valeTotal: 0,
       totalPago: 0, totalPendente: 0, totalGeral: 0,
+      totalLiquidoPagar: 0,
       qtdComissoes: 0,
+      qtdVales: 0,
     });
 
     for (const barber of barbers) {
@@ -291,10 +294,57 @@ const ComissoesManager: React.FC = () => {
       summary.qtdComissoes++;
     }
 
+    // Agregar vales (categoria = 'vale') por barbeiro (fornecedor)
+    const isValeCategory = (cat: string | null) => {
+      if (!cat) return false;
+      const c = cat.toLowerCase();
+      return c === 'vale' || c.includes('vale');
+    };
+
+    for (const cp of contasPagarComissoes as any[]) {
+      if (!isValeCategory(cp.categoria)) continue;
+      const fornecedor = (cp.fornecedor || '').trim();
+      if (!fornecedor) continue;
+
+      // Localizar barbeiro pelo nome (case-insensitive, trim)
+      let summary: BarberSummary | undefined;
+      for (const s of map.values()) {
+        if (s.barber.nome.trim().toLowerCase() === fornecedor.toLowerCase()) {
+          summary = s;
+          break;
+        }
+      }
+
+      // Se não existir barbeiro registrado, criar entrada virtual
+      if (!summary) {
+        const virtual: Barber = {
+          id: `vale-${fornecedor}`,
+          nome: fornecedor,
+          foto_url: null,
+          taxa_comissao: null,
+          ativo: true,
+        };
+        summary = initSummary(virtual);
+        map.set(virtual.id, summary);
+      }
+
+      const valor = Number(cp.valor || 0);
+      const isPago = (cp.status || '').toLowerCase() === 'pago';
+      if (isPago) summary.valePago += valor;
+      else summary.valePendente += valor;
+      summary.valeTotal += valor;
+      summary.qtdVales++;
+    }
+
+    // Calcular Total Líquido a Pagar (Total Geral - Vales)
+    for (const s of map.values()) {
+      s.totalLiquidoPagar = s.totalGeral - s.valeTotal;
+    }
+
     return Array.from(map.values())
-      .filter(s => s.qtdComissoes > 0 || s.barber.ativo)
+      .filter(s => s.qtdComissoes > 0 || s.qtdVales > 0 || s.barber.ativo)
       .sort((a, b) => b.totalGeral - a.totalGeral);
-  }, [barbers, commissions]);
+  }, [barbers, commissions, contasPagarComissoes]);
 
   // ─── KPIs ─────────────────────────────────────────────
   const kpis = useMemo(() => {
