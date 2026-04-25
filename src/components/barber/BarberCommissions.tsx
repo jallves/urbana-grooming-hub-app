@@ -244,7 +244,9 @@ const BarberCommissionsComponent: React.FC = () => {
     return { total, pago, pendente, qtd: monthVales.length };
   }, [monthVales]);
 
-  const liquidoAReceber = stats.total - valesStats.total;
+  // Líquido a Receber = comissões PENDENTES - vales (pagas já foram quitadas)
+  const liquidoAReceber = stats.pending - valesStats.total;
+  const pendenteLiquido = stats.pending - valesStats.total;
 
   // Group commissions by category for detailed view
   const groupedCommissions = useMemo(() => {
