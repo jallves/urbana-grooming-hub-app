@@ -2412,6 +2412,7 @@ export type Database = {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
       }
+      apply_vale_to_commissions: { Args: { p_vale_id: string }; Returns: Json }
       array_to_comma_string: { Args: { arr: string[] }; Returns: string }
       cancel_appointment_by_client: {
         Args: { p_appointment_id: string; p_client_id: string }
