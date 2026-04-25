@@ -337,11 +337,17 @@ const ComissoesManager: React.FC = () => {
     }
 
     // Calcular Total Líquido a Pagar por barbeiro
-    // Regra: comissões PENDENTES (bruto) − vales (pendentes + pagos).
-    // Gorjeta NÃO entra como dedução: já é paga em mãos no momento do
-    // checkout, portanto seu valor não aparece em "comissões pendentes".
+    // Regra: BRUTO de comissões (pago + pendente, EXCLUINDO gorjetas) − vales.
+    // Gorjeta já foi paga em mãos no checkout, então não compõe o bruto a pagar
+    // nem entra como dedução. O vale abate do BRUTO total (independente do
+    // status da comissão), pois ao quitar o vale o sistema marcou comissões
+    // como pagas — descontar só do pendente causaria desconto duplo.
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalPendente - s.valeTotal;
+      const brutoSemGorjeta =
+        s.servicoPago + s.servicoPendente +
+        s.produtoPago + s.produtoPendente +
+        s.planoPago + s.planoPendente;
+      s.totalLiquidoPagar = brutoSemGorjeta - s.valeTotal;
     }
 
     return Array.from(map.values())
