@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw, Heart, ChevronLeft, ChevronRight, AlertTriangle, CreditCard, Award } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, Package, Scissors, RefreshCw, Heart, ChevronLeft, ChevronRight, AlertTriangle, CreditCard, Award, Wallet, Minus } from 'lucide-react';
 import { useBarberCommissionsQuery } from '@/hooks/barber/queries/useBarberCommissionsQuery';
 import BarberCommissionsSkeleton from '@/components/ui/loading/BarberCommissionsSkeleton';
 import { BarberPageContainer } from '@/components/barber/BarberPageContainer';
@@ -113,6 +113,52 @@ const BarberCommissionsComponent: React.FC = () => {
   const activeData = isViewingOther ? otherData : ownData;
   const isLoading = isViewingOther ? otherLoading : ownLoading;
 
+  // ─── Buscar VALES do barbeiro ativo (contas_pagar categoria = vale) ──────
+  const activeBarberId = isViewingOther ? selectedBarberId : barberData?.id || null;
+
+  const { data: valesData } = useQuery({
+    queryKey: ['barber-vales', activeBarberId],
+    queryFn: async () => {
+      if (!activeBarberId) return [];
+      // Buscar nome do barbeiro
+      const { data: bb } = await supabase
+        .from('painel_barbeiros')
+        .select('nome')
+        .eq('id', activeBarberId)
+        .maybeSingle();
+      const nome = bb?.nome?.trim();
+      if (!nome) return [];
+
+      const { data, error } = await supabase
+        .from('contas_pagar')
+        .select('*')
+        .or('categoria.eq.vale,categoria.ilike.%vale%')
+        .ilike('fornecedor', nome)
+        .order('data_vencimento', { ascending: false })
+        .limit(100);
+
+      if (error) {
+        console.error('Erro ao buscar vales:', error);
+        return [];
+      }
+      return data || [];
+    },
+    enabled: !!activeBarberId,
+    staleTime: 30 * 1000,
+  });
+
+  // Realtime para vales
+  useEffect(() => {
+    if (!activeBarberId) return;
+    const channel = supabase
+      .channel('barber-vales-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contas_pagar' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['barber-vales', activeBarberId] });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [activeBarberId, queryClient]);
+
   useEffect(() => {
     if (!user?.id) return;
     const channel = supabase
@@ -129,6 +175,7 @@ const BarberCommissionsComponent: React.FC = () => {
     setIsRefreshing(true);
     await queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
     if (selectedBarberId) await queryClient.invalidateQueries({ queryKey: ['barber-commissions-other', selectedBarberId] });
+    await queryClient.invalidateQueries({ queryKey: ['barber-vales', activeBarberId] });
     await refetch();
     toast.success('Comissões atualizadas!');
     setIsRefreshing(false);
@@ -178,6 +225,26 @@ const BarberCommissionsComponent: React.FC = () => {
   }, [selectedMonth]);
 
   const stats = filteredStats;
+
+  // ─── Filtrar Vales do mês selecionado ─────────────────────────────────
+  const monthVales = useMemo(() => {
+    const monthStart = startOfMonth(selectedMonth);
+    const monthEnd = endOfMonth(selectedMonth);
+    return (valesData || []).filter((v: any) => {
+      const ref = v.data_vencimento ? new Date(v.data_vencimento + 'T00:00:00') : new Date(v.created_at);
+      return ref >= monthStart && ref <= monthEnd;
+    });
+  }, [valesData, selectedMonth]);
+
+  const valesStats = useMemo(() => {
+    const total = monthVales.reduce((s: number, v: any) => s + Number(v.valor || 0), 0);
+    const pago = monthVales.filter((v: any) => (v.status || '').toLowerCase() === 'pago')
+      .reduce((s: number, v: any) => s + Number(v.valor || 0), 0);
+    const pendente = total - pago;
+    return { total, pago, pendente, qtd: monthVales.length };
+  }, [monthVales]);
+
+  const liquidoAReceber = stats.total - valesStats.total;
 
   // Group commissions by category for detailed view
   const groupedCommissions = useMemo(() => {
@@ -379,6 +446,8 @@ const BarberCommissionsComponent: React.FC = () => {
           { label: "Total Comissões", value: `R$ ${stats.total.toFixed(2)}`, subtitle: "Ganhos totais", IconComponent: DollarSign, variant: 'highlight' as const, color: 'text-urbana-gold' },
           { label: "Pendentes", value: `R$ ${stats.pending.toFixed(2)}`, subtitle: "A receber", IconComponent: Clock, variant: 'warning' as const, color: 'text-yellow-400' },
           { label: "Pagas", value: `R$ ${stats.paid.toFixed(2)}`, subtitle: "Já recebidas", IconComponent: TrendingUp, variant: 'success' as const, color: 'text-green-400' },
+          { label: "Vales (Descontos)", value: `- R$ ${valesStats.total.toFixed(2)}`, subtitle: `${valesStats.qtd} lançamento(s)`, IconComponent: Minus, variant: 'warning' as const, color: 'text-orange-400' },
+          { label: "Líquido a Receber", value: `R$ ${liquidoAReceber.toFixed(2)}`, subtitle: "Comissões − Vales", IconComponent: Wallet, variant: 'success' as const, color: 'text-emerald-400' },
           { label: "Serviços", value: `R$ ${stats.serviceCommissions.toFixed(2)}`, subtitle: "Atendimentos", IconComponent: Scissors, variant: 'info' as const, color: 'text-blue-400' },
           { label: "Planos (Uso)", value: `R$ ${(stats.subscriptionUsageCommissions || 0).toFixed(2)}`, subtitle: "Créditos executados", IconComponent: CreditCard, variant: 'default' as const, color: 'text-emerald-400' },
           { label: "Produtos", value: `R$ ${stats.productCommissions.toFixed(2)}`, subtitle: "Vendas", IconComponent: Package, variant: 'default' as const, color: 'text-purple-400' },
@@ -425,6 +494,66 @@ const BarberCommissionsComponent: React.FC = () => {
           <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
             <div className="space-y-1.5 sm:space-y-2">
               {pendingFromPrevious.map(renderCommissionCard)}
+            </div>
+          </PainelBarbeiroCardContent>
+        </PainelBarbeiroCard>
+      )}
+
+      {/* Vales (Descontos do Barbeiro) */}
+      {monthVales.length > 0 && (
+        <PainelBarbeiroCard variant="warning" className="mb-4 sm:mb-6 border-orange-500/30">
+          <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <div className="flex items-center gap-2">
+              <Wallet className="h-4 w-4 text-orange-400 flex-shrink-0" />
+              <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-orange-400">
+                Vales — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })} ({monthVales.length})
+              </PainelBarbeiroCardTitle>
+            </div>
+            <p className="text-[10px] sm:text-xs text-urbana-light/60 mt-1 ml-6">
+              Adiantamentos descontados das suas comissões — Total: <span className="font-bold text-orange-400">R$ {valesStats.total.toFixed(2)}</span>
+              {valesStats.pendente > 0 && (
+                <> · Pendente: R$ {valesStats.pendente.toFixed(2)}</>
+              )}
+              {valesStats.pago > 0 && (
+                <> · Quitado: R$ {valesStats.pago.toFixed(2)}</>
+              )}
+            </p>
+          </PainelBarbeiroCardHeader>
+          <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
+            <div className="space-y-1.5 sm:space-y-2">
+              {monthVales.map((v: any) => {
+                const isPago = (v.status || '').toLowerCase() === 'pago';
+                return (
+                  <div key={v.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-urbana-black/40 border border-orange-500/20">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <Wallet className="h-3 w-3 sm:h-4 sm:w-4 text-orange-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm text-urbana-light leading-tight truncate">
+                          {v.descricao || 'Vale / Adiantamento'}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-0.5">
+                          Vencimento: {formatBrazilDateOnly(v.data_vencimento)}
+                          {v.forma_pagamento && ` · ${v.forma_pagamento}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isPago ? (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[9px] sm:text-[10px]">Quitado</Badge>
+                      ) : (
+                        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px] sm:text-[10px]">Pendente</Badge>
+                      )}
+                      <span className="text-sm sm:text-base font-bold text-orange-400">
+                        - R$ {Number(v.valor).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="mt-3 pt-3 border-t border-orange-500/20 flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-semibold text-urbana-light">Líquido a Receber (Comissões − Vales)</span>
+              <span className="text-base sm:text-lg font-bold text-emerald-400">R$ {liquidoAReceber.toFixed(2)}</span>
             </div>
           </PainelBarbeiroCardContent>
         </PainelBarbeiroCard>
