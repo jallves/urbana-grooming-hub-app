@@ -250,6 +250,137 @@ async function upsertFinancialRecord(
   return { id: data.id, alreadyExisted: false, obs: null }
 }
 
+/**
+ * Detecta se um conjunto de itens de serviço forma um combo cadastrado em
+ * `combo_service_items` e, se sim, retorna o desconto total que deve ser
+ * rateado proporcionalmente entre os itens componentes.
+ *
+ * Regra: o combo é considerado aplicável quando TODOS os componentes do combo
+ * estão presentes nos itens da venda (com quantidade ≥ 1). O primeiro combo
+ * detectado (mais específico — mais componentes) é aplicado.
+ *
+ * Retorna { comboServiceId, comboName, comboPrice, componentIds, discount }
+ * ou null se nenhum combo aplicável for encontrado.
+ */
+async function detectApplicableCombo(
+  supabase: any,
+  serviceItems: CheckoutItem[]
+): Promise<{
+  comboServiceId: string
+  comboName: string
+  comboPrice: number
+  componentIds: string[]
+  discount: number
+} | null> {
+  if (!serviceItems || serviceItems.length < 2) return null
+
+  // Carrega todos os combos com seus componentes
+  const { data: combos, error } = await supabase
+    .from('combo_service_items')
+    .select('combo_service_id, component_service_id')
+
+  if (error || !combos || combos.length === 0) return null
+
+  // Agrupa: combo_service_id -> Set(component_service_id)
+  const comboMap = new Map<string, Set<string>>()
+  for (const row of combos) {
+    const set = comboMap.get(row.combo_service_id) || new Set<string>()
+    set.add(row.component_service_id)
+    comboMap.set(row.combo_service_id, set)
+  }
+
+  const itemServiceIds = new Set(serviceItems.map((i) => i.id))
+
+  // Encontra combos cujos componentes estejam TODOS presentes
+  // Prioriza o combo com MAIS componentes (mais específico)
+  let bestComboId: string | null = null
+  let bestSize = 0
+  for (const [comboId, components] of comboMap.entries()) {
+    let allPresent = true
+    for (const cid of components) {
+      if (!itemServiceIds.has(cid)) {
+        allPresent = false
+        break
+      }
+    }
+    if (allPresent && components.size > bestSize) {
+      bestComboId = comboId
+      bestSize = components.size
+    }
+  }
+
+  if (!bestComboId) return null
+
+  // Busca preço e nome do combo
+  const { data: comboService } = await supabase
+    .from('painel_servicos')
+    .select('id, nome, preco')
+    .eq('id', bestComboId)
+    .maybeSingle()
+
+  if (!comboService) return null
+
+  const componentIds = Array.from(comboMap.get(bestComboId) || [])
+  // Preço total dos itens componentes (sem desconto), considerando quantidade
+  const componentItems = serviceItems.filter((i) => componentIds.includes(i.id))
+  const componentsGross = componentItems.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
+    0
+  )
+  const comboPrice = Number(comboService.preco || 0)
+  const discount = Math.max(0, componentsGross - comboPrice)
+
+  if (discount <= 0) return null
+
+  return {
+    comboServiceId: bestComboId,
+    comboName: comboService.nome,
+    comboPrice,
+    componentIds,
+    discount,
+  }
+}
+
+/**
+ * Aplica o desconto do combo proporcionalmente nos itens componentes,
+ * mutando seus campos `discount` (somando ao desconto pré-existente).
+ * Retorna a lista de itens com desconto aplicado.
+ */
+function applyComboDiscountToItems(
+  items: CheckoutItem[],
+  combo: { componentIds: string[]; discount: number }
+): CheckoutItem[] {
+  const componentItems = items.filter(
+    (i) => i.type === 'service' && combo.componentIds.includes(i.id)
+  )
+  const totalGross = componentItems.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
+    0
+  )
+  if (totalGross <= 0) return items
+
+  // Distribui o desconto proporcionalmente. O último item recebe a sobra
+  // para garantir que a soma dos descontos seja exatamente combo.discount.
+  let acumulado = 0
+  const componentIdsDone = new Set<string>()
+  return items.map((it) => {
+    if (it.type !== 'service' || !combo.componentIds.includes(it.id)) return it
+    if (componentIdsDone.has(it.id)) return it
+    componentIdsDone.add(it.id)
+
+    const gross = Number(it.price || 0) * Number(it.quantity || 1)
+    const isLast = componentIdsDone.size === componentItems.length
+    let share: number
+    if (isLast) {
+      share = Number((combo.discount - acumulado).toFixed(2))
+    } else {
+      share = Number(((gross / totalGross) * combo.discount).toFixed(2))
+      acumulado += share
+    }
+    return { ...it, discount: Number(it.discount || 0) + share }
+  })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
