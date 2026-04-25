@@ -336,13 +336,12 @@ const ComissoesManager: React.FC = () => {
       summary.qtdVales++;
     }
 
-    // Calcular Total Líquido a Pagar
-    // Regra: considerar apenas comissões PENDENTES e abater TODOS os vales
-    // (pendentes + pagos), pois o vale é um adiantamento entregue ao barbeiro
-    // contra a comissão a receber. Se o vale já foi pago, ele já foi
-    // "consumido" como adiantamento e deve continuar abatendo do líquido.
+    // Calcular Total Líquido a Pagar por barbeiro
+    // Regra: comissões PENDENTES (bruto) − vales (pendentes + pagos) − gorjetas
+    // já pagas no período. Vale é adiantamento entregue ao barbeiro; gorjeta
+    // paga já foi entregue em mãos. Ambos devem abater do saldo a entregar.
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalPendente - s.valeTotal;
+      s.totalLiquidoPagar = s.totalPendente - s.valeTotal - s.gorjetaPaga;
     }
 
     return Array.from(map.values())
@@ -374,12 +373,19 @@ const ComissoesManager: React.FC = () => {
       return c === 'vale' || c.includes('vale');
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
-    // Líquido a Pagar = comissões pendentes − TODOS os vales (pendentes + pagos)
-    // Vale é adiantamento contra a comissão; mesmo já pago, ele abate do
-    // saldo que ainda deve ser entregue ao barbeiro.
-    const liquidoPagar = totalPendente - totalVales;
 
-    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
+    // Gorjetas JÁ PAGAS no período também abatem do líquido (foram entregues
+    // em mãos ao barbeiro, geralmente em dinheiro do cliente, então não devem
+    // ser pagas novamente no fechamento).
+    const totalGorjetasPagas = commissions
+      .filter(c => c.tipo === 'gorjeta' && normalizeStatus(c.status) === 'pago')
+      .reduce((s, c) => s + Number(c.valor || 0), 0);
+
+    // Total Pendente (KPI) = valor BRUTO de comissões pendentes (sem abater nada)
+    // Líquido a Pagar = comissões pendentes − vales (pendentes + pagos) − gorjetas já pagas
+    const liquidoPagar = totalPendente - totalVales - totalGorjetasPagas;
+
+    return { totalPago, totalPendente, totalGorjetas, totalGorjetasPagas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
 
   // ─── Export Excel ─────────────────────────────────────
@@ -607,10 +613,10 @@ const ComissoesManager: React.FC = () => {
         {[
           { title: 'Total Geral', value: formatCurrency(kpis.total), icon: DollarSign, color: 'text-blue-700', bg: 'bg-blue-50' },
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
-          { title: 'Total Pendente', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-          { title: 'Vales (descontar)', value: kpis.totalVales > 0 ? `- ${formatCurrency(kpis.totalVales)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
-          { title: 'Líquido a Pagar (Pend. − Vales)', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
-          { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
+          { title: 'Total Pendente (Bruto)', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
+          { title: 'Vales + Gorjetas Pagas (descontar)', value: (kpis.totalVales + kpis.totalGorjetasPagas) > 0 ? `- ${formatCurrency(kpis.totalVales + kpis.totalGorjetasPagas)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
+          { title: 'Líquido a Pagar', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Gorjetas (total)', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
           <Card key={i} className="bg-white border-gray-200">
             <CardContent className="p-3 sm:p-4">
