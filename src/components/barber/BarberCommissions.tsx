@@ -244,7 +244,9 @@ const BarberCommissionsComponent: React.FC = () => {
     return { total, pago, pendente, qtd: monthVales.length };
   }, [monthVales]);
 
-  const liquidoAReceber = stats.total - valesStats.total;
+  // Líquido a Receber = comissões PENDENTES - vales (pagas já foram quitadas)
+  const liquidoAReceber = stats.pending - valesStats.total;
+  const pendenteLiquido = stats.pending - valesStats.total;
 
   // Group commissions by category for detailed view
   const groupedCommissions = useMemo(() => {
@@ -444,10 +446,10 @@ const BarberCommissionsComponent: React.FC = () => {
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
           { label: "Total Comissões", value: `R$ ${stats.total.toFixed(2)}`, subtitle: "Ganhos totais", IconComponent: DollarSign, variant: 'highlight' as const, color: 'text-urbana-gold' },
-          { label: "Pendentes", value: `R$ ${stats.pending.toFixed(2)}`, subtitle: "A receber", IconComponent: Clock, variant: 'warning' as const, color: 'text-yellow-400' },
+          { label: "Pendentes (Bruto)", value: `R$ ${stats.pending.toFixed(2)}`, subtitle: "Antes dos vales", IconComponent: Clock, variant: 'warning' as const, color: 'text-yellow-400' },
           { label: "Pagas", value: `R$ ${stats.paid.toFixed(2)}`, subtitle: "Já recebidas", IconComponent: TrendingUp, variant: 'success' as const, color: 'text-green-400' },
           { label: "Vales (Descontos)", value: `- R$ ${valesStats.total.toFixed(2)}`, subtitle: `${valesStats.qtd} lançamento(s)`, IconComponent: Minus, variant: 'warning' as const, color: 'text-orange-400' },
-          { label: "Líquido a Receber", value: `R$ ${liquidoAReceber.toFixed(2)}`, subtitle: "Comissões − Vales", IconComponent: Wallet, variant: 'success' as const, color: 'text-emerald-400' },
+          { label: "Líquido a Receber", value: `R$ ${liquidoAReceber.toFixed(2)}`, subtitle: "Pendente − Vales", IconComponent: Wallet, variant: 'success' as const, color: 'text-emerald-400' },
           { label: "Serviços", value: `R$ ${stats.serviceCommissions.toFixed(2)}`, subtitle: "Atendimentos", IconComponent: Scissors, variant: 'info' as const, color: 'text-blue-400' },
           { label: "Planos (Uso)", value: `R$ ${(stats.subscriptionUsageCommissions || 0).toFixed(2)}`, subtitle: "Créditos executados", IconComponent: CreditCard, variant: 'default' as const, color: 'text-emerald-400' },
           { label: "Produtos", value: `R$ ${stats.productCommissions.toFixed(2)}`, subtitle: "Vendas", IconComponent: Package, variant: 'default' as const, color: 'text-purple-400' },
