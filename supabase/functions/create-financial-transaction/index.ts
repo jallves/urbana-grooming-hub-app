@@ -493,7 +493,7 @@ Deno.serve(async (req) => {
           transaction_type: 'revenue',
           category,
           subcategory,
-          amount: gross,
+          amount: net,
           net_amount: net,
           status: 'completed',
           description,
