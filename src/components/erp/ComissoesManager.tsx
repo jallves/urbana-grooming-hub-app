@@ -336,9 +336,12 @@ const ComissoesManager: React.FC = () => {
       summary.qtdVales++;
     }
 
-    // Calcular Total Líquido a Pagar (Total Geral - Vales)
+    // Calcular Total Líquido a Pagar
+    // Regra: considerar apenas o que ainda NÃO foi pago (comissões pendentes)
+    // e abater os vales que ainda estão pendentes (vales já pagos já saíram do caixa
+    // e não devem ser descontados novamente do líquido a pagar).
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalGeral - s.valeTotal;
+      s.totalLiquidoPagar = s.totalPendente - s.valePendente;
     }
 
     return Array.from(map.values())
