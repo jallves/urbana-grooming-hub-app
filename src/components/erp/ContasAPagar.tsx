@@ -296,6 +296,8 @@ export const ContasAPagar: React.FC = () => {
         categoria: values.category,
         fornecedor: values.barber_name || null,
         status: values.status === 'completed' ? 'pago' : 'pendente',
+        forma_pagamento: values.payment_method || null,
+        observacoes: values.notes || null,
       });
 
       if (error) throw error;
