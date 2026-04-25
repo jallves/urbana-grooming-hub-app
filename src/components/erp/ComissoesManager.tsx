@@ -336,9 +336,12 @@ const ComissoesManager: React.FC = () => {
       summary.qtdVales++;
     }
 
-    // Calcular Total Líquido a Pagar (Total Geral - Vales)
+    // Calcular Total Líquido a Pagar
+    // Regra: considerar apenas o que ainda NÃO foi pago (comissões pendentes)
+    // e abater os vales que ainda estão pendentes (vales já pagos já saíram do caixa
+    // e não devem ser descontados novamente do líquido a pagar).
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalGeral - s.valeTotal;
+      s.totalLiquidoPagar = s.totalPendente - s.valePendente;
     }
 
     return Array.from(map.values())
@@ -365,13 +368,17 @@ const ComissoesManager: React.FC = () => {
       .reduce((s, c) => s + Number(c.valor || 0), 0);
     const total = commissions.reduce((s, c) => s + Number(c.valor || 0), 0);
     const barbeirosAtivos = new Set(commissions.map(c => c.barber_id)).size;
-    const totalVales = (contasPagarComissoes as any[])
-      .filter(cp => {
-        const c = (cp.categoria || '').toLowerCase();
-        return c === 'vale' || c.includes('vale');
-      })
+    const valesArr = (contasPagarComissoes as any[]).filter(cp => {
+      const c = (cp.categoria || '').toLowerCase();
+      return c === 'vale' || c.includes('vale');
+    });
+    const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
+    const valesPendentes = valesArr
+      .filter(cp => (cp.status || '').toLowerCase() !== 'pago')
       .reduce((s, cp) => s + Number(cp.valor || 0), 0);
-    const liquidoPagar = total - totalVales;
+    // Líquido a Pagar = somente comissões pendentes − vales pendentes
+    // (valores já pagos não entram, pois já saíram do caixa)
+    const liquidoPagar = totalPendente - valesPendentes;
 
     return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
@@ -603,7 +610,7 @@ const ComissoesManager: React.FC = () => {
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
           { title: 'Total Pendente', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
           { title: 'Vales (descontar)', value: kpis.totalVales > 0 ? `- ${formatCurrency(kpis.totalVales)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
-          { title: 'Líquido a Pagar', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Líquido a Pagar (Pend. − Vales)', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
           { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
           <Card key={i} className="bg-white border-gray-200">
