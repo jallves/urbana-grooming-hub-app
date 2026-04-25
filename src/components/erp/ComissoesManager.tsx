@@ -380,11 +380,14 @@ const ComissoesManager: React.FC = () => {
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
 
-    // Total Pendente (KPI) = valor BRUTO de comissões pendentes (sem abater nada)
-    // Líquido a Pagar = comissões pendentes − vales (pendentes + pagos)
-    // Gorjetas NÃO são deduzidas: já foram entregues em mãos ao barbeiro
-    // no momento do checkout, então não estão entre as comissões a pagar.
-    const liquidoPagar = totalPendente - totalVales;
+    // Bruto a pagar = serviços + produtos + planos (pagos + pendentes), SEM gorjeta.
+    // Gorjetas já foram entregues em mãos no checkout, então não estão na fila
+    // de pagamento. Líquido = Bruto − Vales (vales abatidos já marcaram comissões
+    // como pagas; descontar do pendente causaria desconto duplo).
+    const totalBrutoSemGorjeta = commissions
+      .filter(c => c.tipo !== 'gorjeta')
+      .reduce((s, c) => s + Number(c.valor || 0), 0);
+    const liquidoPagar = totalBrutoSemGorjeta - totalVales;
 
     return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
