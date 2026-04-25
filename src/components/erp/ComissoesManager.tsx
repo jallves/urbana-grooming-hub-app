@@ -60,11 +60,18 @@ interface BarberSummary {
   // Plano
   planoPago: number;
   planoPendente: number;
+  // Vales (adiantamentos a descontar do total a pagar)
+  valePago: number;
+  valePendente: number;
+  valeTotal: number;
   // Totais
   totalPago: number;
   totalPendente: number;
   totalGeral: number;
+  // Total Líquido a Pagar (totalGeral - vales)
+  totalLiquidoPagar: number;
   qtdComissoes: number;
+  qtdVales: number;
 }
 
 // ─── Theme Colors (FIXED per tab) ─────────────────────────
