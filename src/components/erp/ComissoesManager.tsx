@@ -602,8 +602,8 @@ const ComissoesManager: React.FC = () => {
           { title: 'Total Geral', value: formatCurrency(kpis.total), icon: DollarSign, color: 'text-blue-700', bg: 'bg-blue-50' },
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
           { title: 'Total Pendente', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-          { title: 'Serviços', value: formatCurrency(kpis.totalServicos), icon: Scissors, color: 'text-blue-700', bg: 'bg-blue-50' },
-          { title: 'Produtos', value: formatCurrency(kpis.totalProdutos), icon: Package, color: 'text-purple-700', bg: 'bg-purple-50' },
+          { title: 'Vales (descontar)', value: kpis.totalVales > 0 ? `- ${formatCurrency(kpis.totalVales)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
+          { title: 'Líquido a Pagar', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
           { title: 'Gorjetas', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
           <Card key={i} className="bg-white border-gray-200">
