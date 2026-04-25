@@ -337,11 +337,11 @@ const ComissoesManager: React.FC = () => {
     }
 
     // Calcular Total Líquido a Pagar por barbeiro
-    // Regra: comissões PENDENTES (bruto) − vales (pendentes + pagos) − gorjetas
-    // já pagas no período. Vale é adiantamento entregue ao barbeiro; gorjeta
-    // paga já foi entregue em mãos. Ambos devem abater do saldo a entregar.
+    // Regra: comissões PENDENTES (bruto) − vales (pendentes + pagos).
+    // Gorjeta NÃO entra como dedução: já é paga em mãos no momento do
+    // checkout, portanto seu valor não aparece em "comissões pendentes".
     for (const s of map.values()) {
-      s.totalLiquidoPagar = s.totalPendente - s.valeTotal - s.gorjetaPaga;
+      s.totalLiquidoPagar = s.totalPendente - s.valeTotal;
     }
 
     return Array.from(map.values())
@@ -374,18 +374,13 @@ const ComissoesManager: React.FC = () => {
     });
     const totalVales = valesArr.reduce((s, cp) => s + Number(cp.valor || 0), 0);
 
-    // Gorjetas JÁ PAGAS no período também abatem do líquido (foram entregues
-    // em mãos ao barbeiro, geralmente em dinheiro do cliente, então não devem
-    // ser pagas novamente no fechamento).
-    const totalGorjetasPagas = commissions
-      .filter(c => c.tipo === 'gorjeta' && normalizeStatus(c.status) === 'pago')
-      .reduce((s, c) => s + Number(c.valor || 0), 0);
-
     // Total Pendente (KPI) = valor BRUTO de comissões pendentes (sem abater nada)
-    // Líquido a Pagar = comissões pendentes − vales (pendentes + pagos) − gorjetas já pagas
-    const liquidoPagar = totalPendente - totalVales - totalGorjetasPagas;
+    // Líquido a Pagar = comissões pendentes − vales (pendentes + pagos)
+    // Gorjetas NÃO são deduzidas: já foram entregues em mãos ao barbeiro
+    // no momento do checkout, então não estão entre as comissões a pagar.
+    const liquidoPagar = totalPendente - totalVales;
 
-    return { totalPago, totalPendente, totalGorjetas, totalGorjetasPagas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
+    return { totalPago, totalPendente, totalGorjetas, totalProdutos, totalServicos, total, barbeirosAtivos, qtd: commissions.length, totalVales, liquidoPagar };
   }, [commissions, contasPagarComissoes]);
 
   // ─── Export Excel ─────────────────────────────────────
@@ -614,7 +609,7 @@ const ComissoesManager: React.FC = () => {
           { title: 'Total Geral', value: formatCurrency(kpis.total), icon: DollarSign, color: 'text-blue-700', bg: 'bg-blue-50' },
           { title: 'Total Pago', value: formatCurrency(kpis.totalPago), icon: CheckCircle, color: 'text-green-700', bg: 'bg-green-50' },
           { title: 'Total Pendente (Bruto)', value: formatCurrency(kpis.totalPendente), icon: Clock, color: 'text-yellow-700', bg: 'bg-yellow-50' },
-          { title: 'Vales + Gorjetas Pagas (descontar)', value: (kpis.totalVales + kpis.totalGorjetasPagas) > 0 ? `- ${formatCurrency(kpis.totalVales + kpis.totalGorjetasPagas)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
+          { title: 'Vales (descontar)', value: kpis.totalVales > 0 ? `- ${formatCurrency(kpis.totalVales)}` : formatCurrency(0), icon: DollarSign, color: 'text-orange-700', bg: 'bg-orange-50' },
           { title: 'Líquido a Pagar', value: formatCurrency(kpis.liquidoPagar), icon: TrendingUp, color: 'text-purple-700', bg: 'bg-purple-50' },
           { title: 'Gorjetas (total)', value: formatCurrency(kpis.totalGorjetas), icon: Coins, color: 'text-pink-700', bg: 'bg-pink-50' },
         ].map((card, i) => (
