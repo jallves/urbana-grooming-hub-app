@@ -685,7 +685,12 @@ const ComissoesManager: React.FC = () => {
                           <Coins className="h-3 w-3" /> Gorjetas
                         </div>
                       </TableHead>
-                      <TableHead colSpan={3} className="text-xs font-bold text-gray-900 text-center border-l border-purple-300 bg-gray-100">
+                      <TableHead colSpan={2} className="text-xs font-bold text-orange-900 text-center border-l border-purple-300 bg-orange-50">
+                        <div className="flex items-center justify-center gap-1">
+                          <DollarSign className="h-3 w-3" /> Vales
+                        </div>
+                      </TableHead>
+                      <TableHead colSpan={4} className="text-xs font-bold text-gray-900 text-center border-l border-purple-300 bg-gray-100">
                         Totais
                       </TableHead>
                     </TableRow>
@@ -699,9 +704,12 @@ const ComissoesManager: React.FC = () => {
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
                       <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">✓ Paga</TableHead>
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">⏳ Pendente</TableHead>
+                      <TableHead className="text-[10px] font-medium text-orange-700 text-right border-l border-purple-200">✓ Pago</TableHead>
+                      <TableHead className="text-[10px] font-medium text-orange-700 text-right">⏳ Pendente</TableHead>
                       <TableHead className="text-[10px] font-medium text-green-700 text-right border-l border-purple-200">Total Pago</TableHead>
                       <TableHead className="text-[10px] font-medium text-yellow-700 text-right">Total Pendente</TableHead>
-                      <TableHead className="text-[10px] font-bold text-gray-900 text-right">Total Geral</TableHead>
+                      <TableHead className="text-[10px] font-bold text-gray-900 text-right">Total Bruto</TableHead>
+                      <TableHead className="text-[10px] font-bold text-purple-900 text-right border-l border-purple-200">A Pagar (Líquido)</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -717,7 +725,10 @@ const ComissoesManager: React.FC = () => {
                             </Avatar>
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-gray-900 truncate">{s.barber.nome}</p>
-                              <p className="text-[10px] text-gray-500">{s.barber.taxa_comissao || 0}% • {s.qtdComissoes}</p>
+                              <p className="text-[10px] text-gray-500">
+                                {s.barber.taxa_comissao || 0}% • {s.qtdComissoes} com.
+                                {s.qtdVales > 0 && <span className="text-orange-600 font-medium"> • {s.qtdVales} vale{s.qtdVales > 1 ? 's' : ''}</span>}
+                              </p>
                             </div>
                           </div>
                         </TableCell>
@@ -727,9 +738,18 @@ const ComissoesManager: React.FC = () => {
                         <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.produtoPendente)}</TableCell>
                         <TableCell className="text-right text-xs font-semibold text-green-700 border-l border-purple-100">{formatCurrency(s.gorjetaPaga)}</TableCell>
                         <TableCell className="text-right text-xs font-semibold text-yellow-700">{formatCurrency(s.gorjetaPendente)}</TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-orange-700 border-l border-purple-100 bg-orange-50/40">
+                          {s.valePago > 0 ? `- ${formatCurrency(s.valePago)}` : formatCurrency(0)}
+                        </TableCell>
+                        <TableCell className="text-right text-xs font-semibold text-orange-700 bg-orange-50/40">
+                          {s.valePendente > 0 ? `- ${formatCurrency(s.valePendente)}` : formatCurrency(0)}
+                        </TableCell>
                         <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-100 bg-green-50/40">{formatCurrency(s.totalPago)}</TableCell>
                         <TableCell className="text-right text-xs font-bold text-yellow-800 bg-yellow-50/40">{formatCurrency(s.totalPendente)}</TableCell>
                         <TableCell className="text-right text-xs font-bold text-purple-900 bg-purple-50/40">{formatCurrency(s.totalGeral)}</TableCell>
+                        <TableCell className={`text-right text-xs font-extrabold border-l border-purple-200 ${s.totalLiquidoPagar < 0 ? 'text-red-700 bg-red-50' : 'text-purple-900 bg-purple-100'}`}>
+                          {formatCurrency(s.totalLiquidoPagar)}
+                        </TableCell>
                       </TableRow>
                     ))}
                     {/* Totals row */}
@@ -743,9 +763,18 @@ const ComissoesManager: React.FC = () => {
                       <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.produtoPendente)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-green-800 border-l border-purple-300">{formatCurrency(summaryTotals.gorjetaPaga)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-yellow-800">{formatCurrency(summaryTotals.gorjetaPendente)}</TableCell>
+                      <TableCell className="text-right text-xs font-bold text-orange-800 border-l border-purple-300 bg-orange-100">
+                        {summaryTotals.valePago > 0 ? `- ${formatCurrency(summaryTotals.valePago)}` : formatCurrency(0)}
+                      </TableCell>
+                      <TableCell className="text-right text-xs font-bold text-orange-800 bg-orange-100">
+                        {summaryTotals.valePendente > 0 ? `- ${formatCurrency(summaryTotals.valePendente)}` : formatCurrency(0)}
+                      </TableCell>
                       <TableCell className="text-right text-xs font-bold text-green-900 border-l border-purple-300 bg-green-100">{formatCurrency(summaryTotals.totalPago)}</TableCell>
                       <TableCell className="text-right text-xs font-bold text-yellow-900 bg-yellow-100">{formatCurrency(summaryTotals.totalPendente)}</TableCell>
                       <TableCell className="text-right text-sm font-extrabold text-purple-900 bg-purple-200">{formatCurrency(summaryTotals.totalGeral)}</TableCell>
+                      <TableCell className={`text-right text-sm font-extrabold border-l border-purple-300 ${summaryTotals.totalLiquidoPagar < 0 ? 'text-red-700 bg-red-100' : 'text-purple-900 bg-purple-300'}`}>
+                        {formatCurrency(summaryTotals.totalLiquidoPagar)}
+                      </TableCell>
                     </TableRow>
                   </TableBody>
                 </Table>
