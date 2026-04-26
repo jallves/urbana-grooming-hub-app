@@ -17,6 +17,14 @@ interface ClientAppointmentCreateDialogProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: () => void;
+  /** Pré-seleciona barbeiro (id de painel_barbeiros). Usado pelo Painel do Barbeiro. */
+  prefilledBarberId?: string;
+  /** Pré-seleciona data (formato yyyy-MM-dd). */
+  prefilledDate?: string;
+  /** Pré-seleciona horário (formato HH:mm). */
+  prefilledTime?: string;
+  /** Quando true, impede o usuário de mudar o barbeiro escolhido. */
+  lockBarber?: boolean;
 }
 
 interface Client {
@@ -57,7 +65,11 @@ const appointmentSchema = z.object({
 const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps> = ({
   isOpen,
   onClose,
-  onCreate
+  onCreate,
+  prefilledBarberId,
+  prefilledDate,
+  prefilledTime,
+  lockBarber,
 }) => {
   console.log('🔵 [CreateDialog] Renderizando com isOpen:', isOpen);
   
@@ -99,6 +111,45 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       resetForm();
     }
   }, [isOpen]);
+
+  // Aplicar pré-seleções quando o dialog abre (uma vez)
+  useEffect(() => {
+    if (!isOpen) return;
+    if (prefilledBarberId || prefilledDate || prefilledTime) {
+      // Não conseguimos resolver objetos completos sem fetch, então
+      // fazemos um fetch leve para preencher selectedBarber.
+      (async () => {
+        try {
+          if (prefilledBarberId) {
+            const { data } = await supabase
+              .from('painel_barbeiros')
+              .select('id, nome, image_url, staff_id')
+              .eq('id', prefilledBarberId)
+              .maybeSingle();
+            if (data) {
+              setSelectedBarber({
+                id: data.id,
+                staff_id: (data as any).staff_id || data.id,
+                nome: data.nome,
+                image_url: data.image_url,
+              });
+            }
+          }
+          if (prefilledDate) {
+            // yyyy-MM-dd local
+            const [y, m, d] = prefilledDate.split('-').map(Number);
+            setSelectedDate(new Date(y, m - 1, d, 12, 0, 0));
+          }
+          if (prefilledTime) {
+            setSelectedTime(prefilledTime.length === 5 ? prefilledTime : prefilledTime.substring(0, 5));
+          }
+        } catch (e) {
+          console.error('[CreateDialog] Falha ao aplicar pré-seleções:', e);
+        }
+      })();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, prefilledBarberId, prefilledDate, prefilledTime]);
 
   const resetForm = () => {
     setStep('client');
