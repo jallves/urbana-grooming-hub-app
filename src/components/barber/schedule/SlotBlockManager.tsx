@@ -5,11 +5,23 @@ import { useBarberData } from '@/hooks/barber/useBarberData';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Loader2, Clock, Lock, Unlock, AlertCircle, CalendarDays, CalendarOff } from 'lucide-react';
+import { Loader2, Clock, Lock, Unlock, AlertCircle, CalendarDays, CalendarOff, CalendarPlus } from 'lucide-react';
 import { format, addDays, isBefore, isToday, getDay } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
+import ClientAppointmentCreateDialog from '@/components/admin/client-appointments/ClientAppointmentCreateDialog';
 
 interface TimeSlot {
   time: string;
@@ -41,6 +53,7 @@ interface SlotBlockManagerProps {
 const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId }) => {
   const { barberData } = useBarberData(overrideBarberId);
   const [staffTableId, setStaffTableId] = useState<string | null>(null);
+  const [painelBarberId, setPainelBarberId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
@@ -49,6 +62,13 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
   const [appointments, setAppointments] = useState<any[]>([]);
   const [workingHours, setWorkingHours] = useState<WorkingHours[]>([]);
   const [isDayOff, setIsDayOff] = useState(false);
+
+  // Diálogo de escolha (Bloquear/Agendar) ao clicar num slot disponível
+  const [actionSlot, setActionSlot] = useState<TimeSlot | null>(null);
+
+  // Diálogo de criação de agendamento (reaproveitado do admin)
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
+  const [prefillForCreate, setPrefillForCreate] = useState<{ time: string; date: string } | null>(null);
 
   // Resolver o ID correto da tabela staff (working_hours.staff_id referencia staff.id)
   useEffect(() => {
@@ -152,6 +172,8 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         setAppointments([]);
         return;
       }
+
+      setPainelBarberId(barberRecord.id);
 
       // Buscar bloqueios e agendamentos em paralelo
       const [blocksResult, appointmentsResult] = await Promise.all([
@@ -321,6 +343,43 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
     }
   };
 
+  // Quando o usuário clica num slot, decide:
+  // - Se já está bloqueado → desbloqueia direto (mantém UX antiga)
+  // - Se está disponível → abre AlertDialog perguntando "Bloquear" ou "Agendar"
+  const handleSlotClick = (slot: TimeSlot) => {
+    if (slot.hasAppointment) return;
+
+    const now = new Date();
+    const slotDateTime = new Date(`${selectedDate}T${slot.time}:00`);
+    if (isBefore(slotDateTime, now)) {
+      toast.error('Não é possível alterar horários passados');
+      return;
+    }
+
+    if (slot.isBlocked && slot.blockId) {
+      // Já está bloqueado → desbloqueia direto
+      toggleSlotBlock(slot);
+      return;
+    }
+
+    // Slot disponível → abre menu de escolha
+    setActionSlot(slot);
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!actionSlot) return;
+    const slot = actionSlot;
+    setActionSlot(null);
+    await toggleSlotBlock(slot);
+  };
+
+  const handleStartAppointment = () => {
+    if (!actionSlot) return;
+    setPrefillForCreate({ time: actionSlot.time, date: selectedDate });
+    setActionSlot(null);
+    setCreateDialogOpen(true);
+  };
+
   // Calcular horário de fim (30 min depois)
   const calculateEndTime = (startTime: string): string => {
     const [hours, minutes] = startTime.split(':').map(Number);
@@ -482,7 +541,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
                 return (
                   <button
                     key={slot.time}
-                    onClick={() => canToggle && toggleSlotBlock(slot)}
+                    onClick={() => canToggle && handleSlotClick(slot)}
                     disabled={!canToggle || isSaving}
                     className={cn(
                       getSlotClasses(slot),
@@ -536,6 +595,76 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
             </div>
           </div>
         </>
+      )}
+
+      {/* AlertDialog de escolha: Bloquear vs Agendar */}
+      <AlertDialog open={!!actionSlot} onOpenChange={(open) => !open && setActionSlot(null)}>
+        <AlertDialogContent className="bg-urbana-black/95 border-urbana-gold/30 backdrop-blur-xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-urbana-light flex items-center gap-2">
+              <Clock className="h-5 w-5 text-urbana-gold" />
+              Horário {actionSlot?.time}
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-urbana-light/70">
+              {format(new Date(selectedDate + 'T12:00:00'), "EEEE, dd 'de' MMMM", { locale: ptBR })}
+              <br />
+              O que você deseja fazer com este horário?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="grid gap-2 sm:gap-3 my-2">
+            <Button
+              type="button"
+              onClick={handleStartAppointment}
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white justify-start gap-2 h-auto py-3"
+            >
+              <CalendarPlus className="h-4 w-4 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold text-sm">Agendar</div>
+                <div className="text-[11px] text-blue-100 font-normal">
+                  Criar agendamento neste horário
+                </div>
+              </div>
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmBlock}
+              className="w-full justify-start gap-2 h-auto py-3"
+            >
+              <Lock className="h-4 w-4 flex-shrink-0" />
+              <div className="text-left">
+                <div className="font-semibold text-sm">Bloquear horário</div>
+                <div className="text-[11px] text-red-100 font-normal">
+                  Marcar como indisponível
+                </div>
+              </div>
+            </Button>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel className="bg-transparent border-urbana-gold/30 text-urbana-light hover:bg-urbana-gold/10">
+              Cancelar
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Dialog de criação de agendamento (mesmo fluxo do admin/cliente) */}
+      {createDialogOpen && painelBarberId && prefillForCreate && (
+        <ClientAppointmentCreateDialog
+          isOpen={createDialogOpen}
+          onClose={() => {
+            setCreateDialogOpen(false);
+            setPrefillForCreate(null);
+          }}
+          onCreate={() => {
+            // Recarrega slots para refletir o novo agendamento (vira azul)
+            fetchData();
+          }}
+          prefilledBarberId={painelBarberId}
+          prefilledDate={prefillForCreate.date}
+          prefilledTime={prefillForCreate.time}
+          lockBarber
+        />
       )}
     </div>
   );
