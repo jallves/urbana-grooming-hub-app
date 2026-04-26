@@ -470,6 +470,16 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     setStep('barber');
   };
 
+  // Quando há barbeiro pré-selecionado e o usuário entra no step "barber",
+  // pula direto para "datetime".
+  useEffect(() => {
+    if (step === 'barber' && lockBarber && selectedBarber) {
+      setStep('datetime');
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, lockBarber, selectedBarber?.id]);
+  };
+
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
     setStep('datetime');
