@@ -2,9 +2,10 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
-import { Users, Calendar, Receipt, Target, Gift, TrendingUp, CheckCircle, DollarSign } from 'lucide-react';
+import { Users, Calendar, Receipt, Target, Gift, TrendingUp, CheckCircle, DollarSign, HeartHandshake, Info } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getTodayInBrazil } from '@/lib/utils/dateUtils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface OperationalMetricsCardsProps {
   month: number;
@@ -31,12 +32,14 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         gorjetasVendasResult,
         gorjetasComissoesResult,
         receitaAnualResult,
-        concluidosAnualResult
+        concluidosAnualResult,
+        cortesiasVendasResult,
+        servicosResult,
       ] = await Promise.all([
         supabase.from('painel_clientes').select('id', { count: 'exact', head: true }),
         supabase
           .from('vendas')
-          .select('cliente_id, valor_total, gorjeta')
+          .select('cliente_id, valor_total, gorjeta, forma_pagamento, observacoes')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
           .eq('status', 'pago'),
@@ -73,10 +76,17 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .lte('data_vencimento', lastDayOfYear),
         supabase
           .from('painel_agendamentos')
-          .select('id', { count: 'exact', head: true })
+          .select('id, servico_id, servicos_extras, painel_servicos:servico_id(preco)')
           .gte('data', firstDayOfMonth)
           .lte('data', lastDayOfMonth)
           .eq('status', 'concluido'),
+        supabase
+          .from('vendas')
+          .select('id, valor_total, observacoes, forma_pagamento')
+          .gte('created_at', firstDayOfMonth)
+          .lte('created_at', lastDayOfMonth + 'T23:59:59')
+          .eq('status', 'pago'),
+        supabase.from('painel_servicos').select('id, preco'),
       ]);
 
       const totalClientes = clientesResult.count || 0;
@@ -96,11 +106,39 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       const concluidos = agendamentosMes.filter(a => a.status === 'concluido').length;
       const taxaConversao = totalAgendamentos > 0 ? (concluidos / totalAgendamentos) * 100 : 0;
 
-      const concluidosMes = concluidosAnualResult.count || 0;
+      const concluidosData = concluidosAnualResult.data || [];
+      const concluidosMes = concluidosData.length;
 
       const receitaAnual = (receitaAnualResult.data || [])
         .filter(r => r.status === 'recebido' || r.status === 'pago')
         .reduce((sum, r) => sum + Number(r.valor), 0);
+
+      // ===== Cortesias =====
+      // Fonte 1: vendas com valor_total = 0 OU marcadas como cortesia (override admin)
+      const cortesiasVendas = (cortesiasVendasResult.data || []).filter(v => {
+        const obs = (v.observacoes || '').toLowerCase();
+        const fp = (v.forma_pagamento || '').toLowerCase();
+        return Number(v.valor_total) === 0
+          || obs.includes('cortesia')
+          || fp.includes('cortesia');
+      });
+
+      // Calcula valor "que teria sido cobrado" para cortesias com valor_total = 0
+      // Usa preço do serviço de referência quando disponível
+      const servicosMap = new Map<string, number>();
+      (servicosResult.data || []).forEach((s: any) => {
+        servicosMap.set(s.id, Number(s.preco || 0));
+      });
+
+      // Para vendas cortesia, se valor_total > 0 (override pago como cortesia) usar esse valor
+      // Se valor_total = 0, tentar estimar pelo agendamento concluído correspondente — fallback: 0
+      const cortesiasQtd = cortesiasVendas.length;
+      const cortesiasValorPotencial = cortesiasVendas.reduce((sum, v) => {
+        const valor = Number(v.valor_total || 0);
+        if (valor > 0) return sum + valor;
+        // Estimativa: usa ticket médio das vendas pagas do mês como referência mínima
+        return sum + (ticketMedio || 0);
+      }, 0);
 
       return {
         totalClientes,
@@ -112,6 +150,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         taxaConversao,
         concluidosMes,
         receitaAnual,
+        cortesiasQtd,
+        cortesiasValorPotencial,
       };
     },
     refetchInterval: 60000,
@@ -119,8 +159,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-8 gap-3 sm:gap-4">
-        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
+        {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(i => (
           <Card key={i} className="bg-white border-gray-200">
             <CardContent className="p-3 sm:p-4">
               <Skeleton className="h-4 w-16 mb-2" />
@@ -142,36 +182,105 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
   };
 
   const cards = [
-    { title: 'Clientes Total', value: metrics?.totalClientes || 0, icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-50', subtitle: `${metrics?.clientesAtivosMes || 0} ativos este mês` },
-    { title: 'Concluídos no Mês', value: metrics?.concluidosMes || 0, icon: CheckCircle, color: 'text-green-600', bgColor: 'bg-green-50', subtitle: `Taxa: ${(metrics?.taxaConversao || 0).toFixed(1)}%` },
-    { title: 'Ticket Médio', value: formatCurrency(metrics?.ticketMedio || 0), icon: Receipt, color: 'text-emerald-600', bgColor: 'bg-emerald-50', subtitle: 'Por venda' },
-    { title: 'Receita Bruta Anual', value: formatCurrency(metrics?.receitaAnual || 0), icon: DollarSign, color: 'text-violet-600', bgColor: 'bg-violet-50', subtitle: `Ano ${year}` },
-    { title: 'Gorjetas do Mês', value: formatCurrency(metrics?.totalGorjetas || 0), icon: Gift, color: 'text-pink-600', bgColor: 'bg-pink-50', subtitle: 'Total recebido' },
-    { title: 'Agendamentos Hoje', value: metrics?.agendamentosHoje || 0, icon: Calendar, color: 'text-amber-600', bgColor: 'bg-amber-50', subtitle: 'Para hoje' },
-    { title: 'Agenda Futura', value: metrics?.agendamentosFuturos || 0, icon: TrendingUp, color: 'text-cyan-600', bgColor: 'bg-cyan-50', subtitle: 'Próximos dias' },
-    { title: 'Taxa Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target, color: 'text-indigo-600', bgColor: 'bg-indigo-50', subtitle: 'Agendados → Concluídos' },
+    {
+      title: 'Clientes Total', value: metrics?.totalClientes || 0, icon: Users,
+      color: 'text-blue-600', bgColor: 'bg-blue-50',
+      subtitle: `${metrics?.clientesAtivosMes || 0} ativos este mês`,
+      explanation:
+        'Total: contagem de TODOS os clientes cadastrados na base (painel_clientes), independente de mês.\n\nAtivos este mês: clientes únicos que tiveram pelo menos 1 venda paga no mês selecionado (vendas.cliente_id DISTINCT).',
+    },
+    {
+      title: 'Concluídos no Mês', value: metrics?.concluidosMes || 0, icon: CheckCircle,
+      color: 'text-green-600', bgColor: 'bg-green-50',
+      subtitle: `Taxa: ${(metrics?.taxaConversao || 0).toFixed(1)}%`,
+      explanation:
+        'Quantidade de agendamentos com status "concluido" (atendimento realizado) no mês selecionado.\n\nFonte: painel_agendamentos\nFiltro: status = concluido AND data dentro do mês\nFórmula: COUNT(*)',
+    },
+    {
+      title: 'Ticket Médio', value: formatCurrency(metrics?.ticketMedio || 0), icon: Receipt,
+      color: 'text-emerald-600', bgColor: 'bg-emerald-50',
+      subtitle: 'Valor médio por venda',
+      explanation:
+        'Quanto cada cliente gasta em média por venda no mês.\n\nFórmula: SOMA(valor_total) ÷ QUANTIDADE de vendas pagas\n\nFonte: vendas (status = pago) no mês selecionado',
+    },
+    {
+      title: 'Receita Bruta Anual', value: formatCurrency(metrics?.receitaAnual || 0), icon: DollarSign,
+      color: 'text-violet-600', bgColor: 'bg-violet-50',
+      subtitle: `Ano ${year}`,
+      explanation:
+        'Total recebido em TODO o ano selecionado (jan a dez).\n\nFonte: contas_receber\nFiltro: status IN (pago, recebido) AND data_vencimento dentro do ano\nFórmula: SUM(valor)',
+    },
+    {
+      title: 'Gorjetas do Mês', value: formatCurrency(metrics?.totalGorjetas || 0), icon: Gift,
+      color: 'text-pink-600', bgColor: 'bg-pink-50',
+      subtitle: 'Repassadas aos barbeiros',
+      explanation:
+        'Total de gorjetas no mês.\n\nFonte 1: campo "gorjeta" das vendas pagas\nFonte 2: barber_commissions com tipo = "gorjeta"\n\nFórmula: SOMA das duas fontes (campo nas vendas é o registro principal; comissões garantem que o barbeiro receba o valor).',
+    },
+    {
+      title: 'Cortesias do Mês',
+      value: `${metrics?.cortesiasQtd || 0}`,
+      icon: HeartHandshake,
+      color: 'text-rose-600', bgColor: 'bg-rose-50',
+      subtitle: `~${formatCurrency(metrics?.cortesiasValorPotencial || 0)} se cobrado`,
+      explanation:
+        'Atendimentos OFERECIDOS GRATUITAMENTE no mês.\n\nFontes (tabela vendas, status = pago):\n• Vendas com valor_total = 0\n• Vendas marcadas como "cortesia" no campo observações ou forma de pagamento (override administrativo)\n\nValor potencial: estima quanto teria sido faturado se essas cortesias tivessem sido cobradas (usa o ticket médio do mês como referência para vendas zeradas).\n\nUse este card para identificar excesso de cortesias.',
+    },
+    {
+      title: 'Agendamentos Hoje', value: metrics?.agendamentosHoje || 0, icon: Calendar,
+      color: 'text-amber-600', bgColor: 'bg-amber-50',
+      subtitle: 'Para hoje',
+      explanation:
+        'Total de agendamentos marcados para HOJE (independente de status).\n\nFonte: painel_agendamentos\nFiltro: data = hoje (fuso de Brasília)\nFórmula: COUNT(*)\n\nObservação: este card sempre mostra "hoje" e ignora o filtro de mês.',
+    },
+    {
+      title: 'Agenda Futura', value: metrics?.agendamentosFuturos || 0, icon: TrendingUp,
+      color: 'text-cyan-600', bgColor: 'bg-cyan-50',
+      subtitle: 'Próximos dias (status agendado)',
+      explanation:
+        'Quantidade de agendamentos com status "agendado" para datas APÓS hoje.\n\nFonte: painel_agendamentos\nFiltro: data > hoje AND status = agendado\nFórmula: COUNT(*)\n\nObservação: este card sempre mostra "futuro" e ignora o filtro de mês.',
+    },
+    {
+      title: 'Taxa de Conversão', value: `${(metrics?.taxaConversao || 0).toFixed(1)}%`, icon: Target,
+      color: 'text-indigo-600', bgColor: 'bg-indigo-50',
+      subtitle: 'Agendados → Concluídos',
+      explanation:
+        'Percentual de agendamentos do mês que foram efetivamente concluídos (cliente compareceu e foi atendido).\n\nFórmula: (Agendamentos com status "concluido" ÷ TOTAL de agendamentos do mês) × 100\n\nFonte: painel_agendamentos no mês selecionado.\n\nUse para identificar faltas (no-show) e cancelamentos.',
+    },
   ];
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-4 gap-3 sm:gap-4">
-      {cards.map((card, index) => {
-        const Icon = card.icon;
-        return (
-          <Card key={index} className="bg-white border-gray-200 hover:shadow-md transition-shadow">
-            <CardContent className="p-3 sm:p-4">
-              <div className="flex items-center justify-between mb-2">
-                <div className={`w-8 h-8 rounded-lg ${card.bgColor} flex items-center justify-center`}>
-                  <Icon className={`h-4 w-4 ${card.color}`} />
+    <TooltipProvider delayDuration={150}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3 sm:gap-4">
+        {cards.map((card, index) => {
+          const Icon = card.icon;
+          return (
+            <Card key={index} className="bg-white border-gray-200 hover:shadow-md transition-shadow">
+              <CardContent className="p-3 sm:p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className={`w-8 h-8 rounded-lg ${card.bgColor} flex items-center justify-center`}>
+                    <Icon className={`h-4 w-4 ${card.color}`} />
+                  </div>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button type="button" className="text-gray-400 hover:text-gray-700 transition-colors">
+                        <Info className="h-3.5 w-3.5" />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs whitespace-pre-line text-xs">
+                      {card.explanation}
+                    </TooltipContent>
+                  </Tooltip>
                 </div>
-              </div>
-              <p className="text-lg sm:text-xl font-bold text-gray-900">{card.value}</p>
-              <p className="text-xs text-gray-600 font-medium truncate">{card.title}</p>
-              <p className="text-[10px] text-gray-500 truncate mt-0.5">{card.subtitle}</p>
-            </CardContent>
-          </Card>
-        );
-      })}
-    </div>
+                <p className="text-lg sm:text-xl font-bold text-gray-900">{card.value}</p>
+                <p className="text-xs text-gray-600 font-medium truncate">{card.title}</p>
+                <p className="text-[10px] text-gray-500 truncate mt-0.5">{card.subtitle}</p>
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+    </TooltipProvider>
   );
 };
 
