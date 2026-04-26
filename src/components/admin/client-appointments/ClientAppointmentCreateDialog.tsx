@@ -478,7 +478,6 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step, lockBarber, selectedBarber?.id]);
-  };
 
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
