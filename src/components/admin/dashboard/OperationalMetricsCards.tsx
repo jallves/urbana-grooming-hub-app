@@ -42,7 +42,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .select('cliente_id, valor_total, gorjeta, forma_pagamento, observacoes')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
-          .eq('status', 'pago'),
+          .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
         supabase
           .from('painel_agendamentos')
           .select('id', { count: 'exact', head: true })
@@ -62,7 +62,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .select('gorjeta')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
-          .eq('status', 'pago'),
+          .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
         supabase
           .from('barber_commissions')
           .select('valor')
@@ -85,7 +85,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDayOfMonth)
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
-          .eq('status', 'pago'),
+          .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
         supabase.from('painel_servicos').select('id, preco'),
       ]);
 
