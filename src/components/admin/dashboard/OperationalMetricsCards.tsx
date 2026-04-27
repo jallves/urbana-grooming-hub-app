@@ -35,6 +35,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         concluidosAnualResult,
         cortesiasVendasResult,
         servicosResult,
+        cortesiasAnoResult,
       ] = await Promise.all([
         supabase.from('painel_clientes').select('id', { count: 'exact', head: true }),
         supabase
@@ -87,6 +88,12 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
           .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
         supabase.from('painel_servicos').select('id, preco'),
+        supabase
+          .from('vendas')
+          .select('valor_total, observacoes, forma_pagamento')
+          .gte('created_at', firstDayOfYear)
+          .lte('created_at', lastDayOfYear + 'T23:59:59')
+          .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
       ]);
 
       const totalClientes = clientesResult.count || 0;
@@ -140,6 +147,18 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         return sum + (ticketMedio || 0);
       }, 0);
 
+      // Cortesias do ano (para card de Receita Bruta Anual)
+      const cortesiasAno = (cortesiasAnoResult.data || []).filter(v => {
+        const obs = (v.observacoes || '').toLowerCase();
+        const fp = (v.forma_pagamento || '').toLowerCase();
+        return Number(v.valor_total) === 0 || obs.includes('cortesia') || fp.includes('cortesia');
+      });
+      const cortesiasAnoQtd = cortesiasAno.length;
+      const cortesiasAnoValor = cortesiasAno.reduce((sum, v) => {
+        const valor = Number(v.valor_total || 0);
+        return sum + (valor > 0 ? valor : (ticketMedio || 0));
+      }, 0);
+
       return {
         totalClientes,
         clientesAtivosMes,
@@ -152,6 +171,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         receitaAnual,
         cortesiasQtd,
         cortesiasValorPotencial,
+        cortesiasAnoQtd,
+        cortesiasAnoValor,
       };
     },
     refetchInterval: 60000,
@@ -181,7 +202,16 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
     }).format(value);
   };
 
-  const cards = [
+  const cards: Array<{
+    title: string;
+    value: string | number;
+    icon: any;
+    color: string;
+    bgColor: string;
+    subtitle: string;
+    explanation: string;
+    extra?: React.ReactNode;
+  }> = [
     {
       title: 'Clientes Total', value: metrics?.totalClientes || 0, icon: Users,
       color: 'text-blue-600', bgColor: 'bg-blue-50',
@@ -208,7 +238,19 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       color: 'text-violet-600', bgColor: 'bg-violet-50',
       subtitle: `Ano ${year}`,
       explanation:
-        'Total recebido em TODO o ano selecionado (jan a dez).\n\nFonte: contas_receber\nFiltro: status IN (pago, recebido) AND data_vencimento dentro do ano\nFórmula: SUM(valor)',
+        'Total recebido em TODO o ano selecionado (jan a dez).\n\nFonte: contas_receber\nFiltro: status IN (pago, recebido) AND data_vencimento dentro do ano\nFórmula: SUM(valor)\n\nObs: cortesias NÃO entram aqui — são exibidas separadamente abaixo para você acompanhar o impacto no faturamento.',
+      extra: (
+        <div className="grid grid-cols-2 gap-1.5 mt-2">
+          <div className="rounded bg-violet-50 px-1.5 py-1 border border-violet-100">
+            <p className="text-[9px] text-violet-700 font-medium">Recebido</p>
+            <p className="text-[11px] sm:text-xs font-bold text-violet-700 truncate">{formatCurrency(metrics?.receitaAnual || 0)}</p>
+          </div>
+          <div className="rounded bg-rose-50 px-1.5 py-1 border border-rose-100">
+            <p className="text-[9px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasAnoQtd || 0})</p>
+            <p className="text-[11px] sm:text-xs font-bold text-rose-700 truncate">~{formatCurrency(metrics?.cortesiasAnoValor || 0)}</p>
+          </div>
+        </div>
+      ),
     },
     {
       title: 'Gorjetas do Mês', value: formatCurrency(metrics?.totalGorjetas || 0), icon: Gift,
@@ -275,6 +317,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
                 <p className="text-lg sm:text-xl font-bold text-gray-900">{card.value}</p>
                 <p className="text-xs text-gray-600 font-medium truncate">{card.title}</p>
                 <p className="text-[10px] text-gray-500 truncate mt-0.5">{card.subtitle}</p>
+                {card.extra}
               </CardContent>
             </Card>
           );
