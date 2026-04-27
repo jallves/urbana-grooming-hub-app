@@ -35,6 +35,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         concluidosAnualResult,
         cortesiasVendasResult,
         servicosResult,
+        cortesiasAnoResult,
       ] = await Promise.all([
         supabase.from('painel_clientes').select('id', { count: 'exact', head: true }),
         supabase
@@ -87,6 +88,12 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           .lte('created_at', lastDayOfMonth + 'T23:59:59')
           .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
         supabase.from('painel_servicos').select('id, preco'),
+        supabase
+          .from('vendas')
+          .select('valor_total, observacoes, forma_pagamento')
+          .gte('created_at', firstDayOfYear)
+          .lte('created_at', lastDayOfYear + 'T23:59:59')
+          .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
       ]);
 
       const totalClientes = clientesResult.count || 0;
@@ -140,6 +147,18 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         return sum + (ticketMedio || 0);
       }, 0);
 
+      // Cortesias do ano (para card de Receita Bruta Anual)
+      const cortesiasAno = (cortesiasAnoResult.data || []).filter(v => {
+        const obs = (v.observacoes || '').toLowerCase();
+        const fp = (v.forma_pagamento || '').toLowerCase();
+        return Number(v.valor_total) === 0 || obs.includes('cortesia') || fp.includes('cortesia');
+      });
+      const cortesiasAnoQtd = cortesiasAno.length;
+      const cortesiasAnoValor = cortesiasAno.reduce((sum, v) => {
+        const valor = Number(v.valor_total || 0);
+        return sum + (valor > 0 ? valor : (ticketMedio || 0));
+      }, 0);
+
       return {
         totalClientes,
         clientesAtivosMes,
@@ -152,6 +171,8 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         receitaAnual,
         cortesiasQtd,
         cortesiasValorPotencial,
+        cortesiasAnoQtd,
+        cortesiasAnoValor,
       };
     },
     refetchInterval: 60000,
