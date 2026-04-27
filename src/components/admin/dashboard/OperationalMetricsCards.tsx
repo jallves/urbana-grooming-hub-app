@@ -202,6 +202,15 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
     }).format(value);
   };
 
+  const formatCurrencyExact = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   const cards: Array<{
     title: string;
     value: string | number;
@@ -244,16 +253,16 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
           <div className="grid grid-cols-2 gap-1.5">
             <div className="rounded bg-violet-50 px-1.5 py-1 border border-violet-100">
               <p className="text-[9px] text-violet-700 font-medium">Recebido</p>
-              <p className="text-[11px] sm:text-xs font-bold text-violet-700 truncate">{formatCurrency(metrics?.receitaAnual || 0)}</p>
+              <p className="text-[11px] sm:text-xs font-bold text-violet-700 truncate">{formatCurrencyExact(metrics?.receitaAnual || 0)}</p>
             </div>
             <div className="rounded bg-rose-50 px-1.5 py-1 border border-rose-100">
               <p className="text-[9px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasAnoQtd || 0})</p>
-              <p className="text-[11px] sm:text-xs font-bold text-rose-700 truncate">~{formatCurrency(metrics?.cortesiasAnoValor || 0)}</p>
+              <p className="text-[11px] sm:text-xs font-bold text-rose-700 truncate">~{formatCurrencyExact(metrics?.cortesiasAnoValor || 0)}</p>
             </div>
           </div>
           <div className="rounded bg-slate-50 px-1.5 py-1 border border-slate-200 flex items-center justify-between">
             <p className="text-[9px] text-slate-600 font-medium">Total potencial</p>
-            <p className="text-[11px] sm:text-xs font-bold text-slate-800 truncate">{formatCurrency((metrics?.receitaAnual || 0) + (metrics?.cortesiasAnoValor || 0))}</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-800 truncate">{formatCurrencyExact((metrics?.receitaAnual || 0) + (metrics?.cortesiasAnoValor || 0))}</p>
           </div>
         </div>
       ),
