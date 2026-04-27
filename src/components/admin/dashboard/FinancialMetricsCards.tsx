@@ -40,11 +40,17 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
 
       const todayStr = getTodayInBrazil();
 
+      const firstDayYear = `${year}-01-01`;
+      const lastDayYear = `${year}-12-31`;
+
       const [
         contasReceberMes,
         contasPagarMes,
         contasReceberPrev,
         contasPagarPrev,
+        cortesiasMesResult,
+        cortesiasAnoResult,
+        vendasMesParaTicketResult,
       ] = await Promise.all([
         supabase.from('contas_receber').select('valor, status, data_vencimento')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
@@ -54,6 +60,21 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
           .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
         supabase.from('contas_pagar').select('valor, status, categoria')
           .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
+        supabase.from('vendas')
+          .select('valor_total, observacoes, forma_pagamento')
+          .gte('created_at', firstDay)
+          .lte('created_at', lastDay + 'T23:59:59')
+          .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
+        supabase.from('vendas')
+          .select('valor_total, observacoes, forma_pagamento')
+          .gte('created_at', firstDayYear)
+          .lte('created_at', lastDayYear + 'T23:59:59')
+          .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
+        supabase.from('vendas')
+          .select('valor_total')
+          .gte('created_at', firstDay)
+          .lte('created_at', lastDay + 'T23:59:59')
+          .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
       ]);
 
       const crMes = contasReceberMes.data || [];
@@ -87,11 +108,38 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const expenseTrend = prevExpenses ? ((expenses - prevExpenses) / prevExpenses) * 100 : 0;
       const profitTrend = prevProfit ? ((profit - prevProfit) / Math.abs(prevProfit)) * 100 : 0;
 
+      // ===== Cortesias (estimativa de valor potencial) =====
+      const isCortesia = (v: { valor_total: number | null; observacoes: string | null; forma_pagamento: string | null }) => {
+        const obs = (v.observacoes || '').toLowerCase();
+        const fp = (v.forma_pagamento || '').toLowerCase();
+        return Number(v.valor_total) === 0 || obs.includes('cortesia') || fp.includes('cortesia');
+      };
+
+      const vendasMesTicket = vendasMesParaTicketResult.data || [];
+      const ticketMedioMes = vendasMesTicket.length > 0
+        ? vendasMesTicket.reduce((s, v) => s + Number(v.valor_total || 0), 0) / vendasMesTicket.length
+        : 0;
+
+      const cortesiasMes = (cortesiasMesResult.data || []).filter(isCortesia);
+      const cortesiasAno = (cortesiasAnoResult.data || []).filter(isCortesia);
+
+      const sumCortesias = (arr: any[], fallback: number) => arr.reduce((s, v) => {
+        const valor = Number(v.valor_total || 0);
+        return s + (valor > 0 ? valor : fallback);
+      }, 0);
+
+      const cortesiasQtdMes = cortesiasMes.length;
+      const cortesiasValorMes = sumCortesias(cortesiasMes, ticketMedioMes);
+      const cortesiasQtdAno = cortesiasAno.length;
+      const cortesiasValorAno = sumCortesias(cortesiasAno, ticketMedioMes);
+
       return {
         revenue, expenses, commissionsPaid, totalCommissions, profit,
         revenueTrend, expenseTrend, profitTrend,
         pendingReceivables, pendingPayables, pendingCommissions,
         overdueReceivables, overduePayables,
+        cortesiasQtdMes, cortesiasValorMes,
+        cortesiasQtdAno, cortesiasValorAno,
       };
     },
     refetchInterval: 60000,
