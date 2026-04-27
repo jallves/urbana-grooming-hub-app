@@ -472,18 +472,17 @@ const BarberCommissionsComponent: React.FC = () => {
             color: 'text-green-400',
           },
           {
-            label: 'Vales (Adiantamentos)',
+            label: 'Vales Registrados',
             value: valesStats.total,
-            subtitle: `${valesStats.qtd} lançamento(s) · R$ ${valesStats.pago.toFixed(2)} quitado · R$ ${valesStats.pendente.toFixed(2)} pendente`,
+            subtitle: `${valesStats.qtd} lançamento(s) · R$ ${valesStats.pago.toFixed(2)} já pago/abatido · R$ ${valesStats.pendente.toFixed(2)} ainda a descontar`,
             IconComponent: Wallet,
             variant: 'warning' as const,
             color: 'text-orange-400',
-            prefix: '-',
           },
           {
             label: 'Líquido a Receber',
             value: liquidoAReceber,
-            subtitle: `Pendentes (R$ ${stats.pending.toFixed(2)}) − Vales pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
+            subtitle: `Pendentes (R$ ${stats.pending.toFixed(2)}) − só vales ainda pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
             IconComponent: Award,
             variant: 'success' as const,
             color: 'text-emerald-400',
@@ -593,12 +592,12 @@ const BarberCommissionsComponent: React.FC = () => {
               </PainelBarbeiroCardTitle>
             </div>
             <p className="text-[10px] sm:text-xs text-urbana-light/60 mt-1 ml-6">
-              Adiantamentos descontados das suas comissões — Total: <span className="font-bold text-orange-400">R$ {valesStats.total.toFixed(2)}</span>
+              Vales pagos aparecem como histórico; só vales pendentes reduzem o líquido atual — Total: <span className="font-bold text-orange-400">R$ {valesStats.total.toFixed(2)}</span>
               {valesStats.pendente > 0 && (
-                <> · Pendente: R$ {valesStats.pendente.toFixed(2)}</>
+                <> · Ainda a descontar: R$ {valesStats.pendente.toFixed(2)}</>
               )}
               {valesStats.pago > 0 && (
-                <> · Quitado: R$ {valesStats.pago.toFixed(2)}</>
+                <> · Já pago/abatido: R$ {valesStats.pago.toFixed(2)}</>
               )}
             </p>
           </PainelBarbeiroCardHeader>
@@ -634,8 +633,8 @@ const BarberCommissionsComponent: React.FC = () => {
                 );
               })}
             </div>
-            <div className="mt-3 pt-3 border-t border-orange-500/20 flex items-center justify-between">
-              <span className="text-xs sm:text-sm font-semibold text-urbana-light">Líquido a Receber (Comissões − Vales)</span>
+            <div className="mt-3 pt-3 border-t border-orange-500/20 flex items-center justify-between gap-3">
+              <span className="text-xs sm:text-sm font-semibold text-urbana-light">Líquido atual (comissões pendentes − vales ainda pendentes)</span>
               <span className="text-base sm:text-lg font-bold text-emerald-400">R$ {liquidoAReceber.toFixed(2)}</span>
             </div>
           </PainelBarbeiroCardContent>
