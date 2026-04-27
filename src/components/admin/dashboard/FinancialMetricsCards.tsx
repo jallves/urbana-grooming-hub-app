@@ -50,7 +50,6 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         contasPagarPrev,
         cortesiasMesResult,
         cortesiasAnoResult,
-        vendasMesParaTicketResult,
       ] = await Promise.all([
         supabase.from('contas_receber').select('valor, status, data_vencimento')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
@@ -61,19 +60,14 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         supabase.from('contas_pagar').select('valor, status, categoria')
           .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
         supabase.from('vendas')
-          .select('valor_total, observacoes, forma_pagamento')
+          .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDay)
           .lte('created_at', lastDay + 'T23:59:59')
           .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
         supabase.from('vendas')
-          .select('valor_total, observacoes, forma_pagamento')
+          .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDayYear)
           .lte('created_at', lastDayYear + 'T23:59:59')
-          .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
-        supabase.from('vendas')
-          .select('valor_total')
-          .gte('created_at', firstDay)
-          .lte('created_at', lastDay + 'T23:59:59')
           .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
       ]);
 
@@ -109,29 +103,62 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const profitTrend = prevProfit ? ((profit - prevProfit) / Math.abs(prevProfit)) * 100 : 0;
 
       // ===== Cortesias (estimativa de valor potencial) =====
+      // Cortesias = vendas com valor_total = 0 OU marcadas explicitamente como cortesia.
+      // Para CADA cortesia zerada buscamos o PREÇO REAL do serviço/produto em vendas_itens
+      // → painel_servicos / painel_produtos. Para cortesias com valor_total > 0 (override admin)
+      // mantemos o próprio valor da venda.
       const isCortesia = (v: { valor_total: number | null; observacoes: string | null; forma_pagamento: string | null }) => {
         const obs = (v.observacoes || '').toLowerCase();
         const fp = (v.forma_pagamento || '').toLowerCase();
         return Number(v.valor_total) === 0 || obs.includes('cortesia') || fp.includes('cortesia');
       };
 
-      const vendasMesTicket = vendasMesParaTicketResult.data || [];
-      const ticketMedioMes = vendasMesTicket.length > 0
-        ? vendasMesTicket.reduce((s, v) => s + Number(v.valor_total || 0), 0) / vendasMesTicket.length
-        : 0;
-
       const cortesiasMes = (cortesiasMesResult.data || []).filter(isCortesia);
       const cortesiasAno = (cortesiasAnoResult.data || []).filter(isCortesia);
 
-      const sumCortesias = (arr: any[], fallback: number) => arr.reduce((s, v) => {
+      // Buscar itens reais (preço original) para todas as cortesias zeradas do ano
+      const allCortesiaIds = Array.from(
+        new Set([...cortesiasMes, ...cortesiasAno].filter(v => Number(v.valor_total) === 0).map(v => v.id))
+      );
+
+      let itensByVenda = new Map<string, number>(); // venda_id -> soma de preços reais
+      if (allCortesiaIds.length > 0) {
+        const [itensResult, servicosResult, produtosResult] = await Promise.all([
+          supabase.from('vendas_itens')
+            .select('venda_id, tipo, item_id, quantidade, preco_unitario, subtotal')
+            .in('venda_id', allCortesiaIds),
+          supabase.from('painel_servicos').select('id, preco'),
+          supabase.from('painel_produtos').select('id, preco'),
+        ]);
+        const servicoPreco = new Map<string, number>();
+        (servicosResult.data || []).forEach((s: any) => servicoPreco.set(s.id, Number(s.preco || 0)));
+        const produtoPreco = new Map<string, number>();
+        (produtosResult.data || []).forEach((p: any) => produtoPreco.set(p.id, Number(p.preco || 0)));
+
+        (itensResult.data || []).forEach((it: any) => {
+          const tipo = String(it.tipo || '').toLowerCase();
+          const qtd = Number(it.quantidade || 1);
+          // Se o item já tem preço (ex: override pago), usa-o; senão busca catálogo
+          let unit = Number(it.preco_unitario || 0);
+          if (unit === 0) {
+            if (tipo.includes('produto')) unit = produtoPreco.get(it.item_id) || 0;
+            else unit = servicoPreco.get(it.item_id) || 0; // servico, servico_extra
+          }
+          const linha = unit * qtd;
+          itensByVenda.set(it.venda_id, (itensByVenda.get(it.venda_id) || 0) + linha);
+        });
+      }
+
+      const valorCortesia = (v: { id: string; valor_total: number | null }) => {
         const valor = Number(v.valor_total || 0);
-        return s + (valor > 0 ? valor : fallback);
-      }, 0);
+        if (valor > 0) return valor; // override admin já paga
+        return itensByVenda.get(v.id) || 0;
+      };
 
       const cortesiasQtdMes = cortesiasMes.length;
-      const cortesiasValorMes = sumCortesias(cortesiasMes, ticketMedioMes);
+      const cortesiasValorMes = cortesiasMes.reduce((s, v) => s + valorCortesia(v), 0);
       const cortesiasQtdAno = cortesiasAno.length;
-      const cortesiasValorAno = sumCortesias(cortesiasAno, ticketMedioMes);
+      const cortesiasValorAno = cortesiasAno.reduce((s, v) => s + valorCortesia(v), 0);
 
       return {
         revenue, expenses, commissionsPaid, totalCommissions, profit,
