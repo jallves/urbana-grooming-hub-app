@@ -61,12 +61,12 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         supabase.from('contas_pagar').select('valor, status, categoria')
           .gte('data_vencimento', prevFirstDay).lte('data_vencimento', prevLastDay),
         supabase.from('vendas')
-          .select('valor_total, observacoes, forma_pagamento')
+          .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDay)
           .lte('created_at', lastDay + 'T23:59:59')
           .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
         supabase.from('vendas')
-          .select('valor_total, observacoes, forma_pagamento')
+          .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDayYear)
           .lte('created_at', lastDayYear + 'T23:59:59')
           .in('status', ['pago', 'PAGO', 'paga', 'PAGA']),
