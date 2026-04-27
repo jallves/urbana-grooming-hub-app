@@ -452,18 +452,42 @@ const BarberCommissionsComponent: React.FC = () => {
         </PainelBarbeiroCardContent>
       </PainelBarbeiroCard>
 
-      {/* Summary Stats Cards - Comissões */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+      {/* Resumo Financeiro Geral (Total + Saldos) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
-          { label: "Total Comissões", value: `R$ ${stats.total.toFixed(2)}`, subtitle: "Ganhos totais", IconComponent: DollarSign, variant: 'highlight' as const, color: 'text-urbana-gold' },
-          { label: "Pendentes (Bruto)", value: `R$ ${stats.pending.toFixed(2)}`, subtitle: "Antes dos vales", IconComponent: Clock, variant: 'warning' as const, color: 'text-yellow-400' },
-          { label: "Pagas", value: `R$ ${stats.paid.toFixed(2)}`, subtitle: "Já recebidas", IconComponent: TrendingUp, variant: 'success' as const, color: 'text-green-400' },
-          { label: "Vales (Descontos)", value: `- R$ ${valesStats.total.toFixed(2)}`, subtitle: `${valesStats.qtd} lançamento(s)`, IconComponent: Minus, variant: 'warning' as const, color: 'text-orange-400' },
-          { label: "Líquido a Receber", value: `R$ ${liquidoAReceber.toFixed(2)}`, subtitle: "Pendente − Vales", IconComponent: Wallet, variant: 'success' as const, color: 'text-emerald-400' },
-          { label: "Serviços", value: `R$ ${stats.serviceCommissions.toFixed(2)}`, subtitle: "Atendimentos", IconComponent: Scissors, variant: 'info' as const, color: 'text-blue-400' },
-          { label: "Planos (Uso)", value: `R$ ${(stats.subscriptionUsageCommissions || 0).toFixed(2)}`, subtitle: "Créditos executados", IconComponent: CreditCard, variant: 'default' as const, color: 'text-emerald-400' },
-          { label: "Produtos", value: `R$ ${stats.productCommissions.toFixed(2)}`, subtitle: "Vendas", IconComponent: Package, variant: 'default' as const, color: 'text-purple-400' },
-          { label: "Gorjetas", value: `R$ ${(stats.tipCommissions || 0).toFixed(2)}`, subtitle: "100% suas", IconComponent: Heart, variant: 'default' as const, color: 'text-pink-400' },
+          {
+            label: 'Total de Comissões',
+            value: stats.total,
+            subtitle: `${stats.paid > 0 ? 'R$ ' + stats.paid.toFixed(2) + ' pago' : ''}${stats.paid > 0 && stats.pending > 0 ? ' · ' : ''}${stats.pending > 0 ? 'R$ ' + stats.pending.toFixed(2) + ' pendente' : ''}` || 'Sem lançamentos',
+            IconComponent: DollarSign,
+            variant: 'highlight' as const,
+            color: 'text-urbana-gold',
+          },
+          {
+            label: 'Já Pagas',
+            value: stats.paid,
+            subtitle: 'Comissões quitadas',
+            IconComponent: TrendingUp,
+            variant: 'success' as const,
+            color: 'text-green-400',
+          },
+          {
+            label: 'Vales (Adiantamentos)',
+            value: valesStats.total,
+            subtitle: `${valesStats.qtd} lançamento(s) · R$ ${valesStats.pago.toFixed(2)} quitado · R$ ${valesStats.pendente.toFixed(2)} pendente`,
+            IconComponent: Wallet,
+            variant: 'warning' as const,
+            color: 'text-orange-400',
+            prefix: '-',
+          },
+          {
+            label: 'Líquido a Receber',
+            value: liquidoAReceber,
+            subtitle: `Pendentes (R$ ${stats.pending.toFixed(2)}) − Vales pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
+            IconComponent: Award,
+            variant: 'success' as const,
+            color: 'text-emerald-400',
+          },
         ].map((stat, i) => {
           const IconComp = stat.IconComponent;
           return (
@@ -477,8 +501,8 @@ const BarberCommissionsComponent: React.FC = () => {
                 </div>
               </PainelBarbeiroCardHeader>
               <PainelBarbeiroCardContent className="px-3 sm:px-4 pb-3 sm:pb-4">
-                <div className="text-base sm:text-lg md:text-xl font-bold text-urbana-light leading-tight">
-                  {stat.value}
+                <div className={cn('text-base sm:text-lg md:text-xl font-bold leading-tight', stat.color)}>
+                  {(stat as any).prefix || ''}R$ {Number(stat.value).toFixed(2)}
                 </div>
                 <p className="text-[9px] sm:text-[10px] md:text-xs text-urbana-light/60 leading-tight mt-0.5">
                   {stat.subtitle}
@@ -488,6 +512,53 @@ const BarberCommissionsComponent: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Detalhamento por Segmento (Pago × Pendente) */}
+      <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
+        <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+          <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
+            <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
+            Comissões por Segmento — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })}
+          </PainelBarbeiroCardTitle>
+          <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-1">
+            Pago × Pendente em cada categoria
+          </p>
+        </PainelBarbeiroCardHeader>
+        <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {[
+              { label: 'Serviços', icon: <Scissors className="h-4 w-4 text-blue-400" />, color: 'text-blue-400', paid: stats.servicePaid, pending: stats.servicePending },
+              { label: 'Planos (Uso de Crédito)', icon: <CreditCard className="h-4 w-4 text-emerald-400" />, color: 'text-emerald-400', paid: stats.subPaid, pending: stats.subPending },
+              { label: 'Produtos', icon: <Package className="h-4 w-4 text-purple-400" />, color: 'text-purple-400', paid: stats.productPaid, pending: stats.productPending },
+              { label: 'Gorjetas', icon: <Heart className="h-4 w-4 text-pink-400" />, color: 'text-pink-400', paid: stats.tipPaid, pending: stats.tipPending },
+            ].map((seg, i) => {
+              const total = seg.paid + seg.pending;
+              if (total === 0) return null;
+              return (
+                <div key={i} className="rounded-lg bg-urbana-black/40 border border-urbana-gold/10 p-3">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      {seg.icon}
+                      <span className="text-xs sm:text-sm font-semibold text-urbana-light">{seg.label}</span>
+                    </div>
+                    <span className={cn('text-sm sm:text-base font-bold', seg.color)}>R$ {total.toFixed(2)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="rounded bg-green-500/10 border border-green-500/20 px-2 py-1.5">
+                      <p className="text-[10px] text-green-400 font-medium">Pago</p>
+                      <p className="text-xs sm:text-sm font-bold text-green-400">R$ {seg.paid.toFixed(2)}</p>
+                    </div>
+                    <div className="rounded bg-yellow-500/10 border border-yellow-500/20 px-2 py-1.5">
+                      <p className="text-[10px] text-yellow-400 font-medium">Pendente</p>
+                      <p className="text-xs sm:text-sm font-bold text-yellow-400">R$ {seg.pending.toFixed(2)}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </PainelBarbeiroCardContent>
+      </PainelBarbeiroCard>
 
       {/* Pending from Previous Months */}
       {pendingFromPrevious.length > 0 && (
