@@ -242,12 +242,28 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       color: 'text-red-600',
       bgColor: 'bg-red-50',
       trend: metrics?.expenseTrend || 0,
-      subtitle: metrics?.pendingPayables && metrics.pendingPayables > 0
-        ? `${formatCurrency(metrics.pendingPayables)} a pagar`
-        : '✓ Todas pagas',
+      subtitle: 'Total pago no mês',
       alert: (metrics?.overduePayables || 0) > 0 ? `${metrics?.overduePayables} vencida(s)` : null,
       explanation:
         'Soma das Contas a Pagar quitadas no mês, EXCLUINDO comissões (que têm card próprio).\n\nFonte: contas_pagar\nFiltros: status IN (pago, recebido) AND categoria NÃO contém "comiss" AND data_vencimento dentro do mês\nFórmula: SUM(valor)',
+      extra: (
+        <div className="mt-2 space-y-1.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded bg-green-50 px-2 py-1 border border-green-100">
+              <p className="text-[10px] text-green-700 font-medium">Pagas</p>
+              <p className="text-xs sm:text-sm font-bold text-green-700">{formatCurrency(metrics?.expenses || 0)}</p>
+            </div>
+            <div className="rounded bg-amber-50 px-2 py-1 border border-amber-100">
+              <p className="text-[10px] text-amber-700 font-medium">A pagar</p>
+              <p className="text-xs sm:text-sm font-bold text-amber-700">{formatCurrency(metrics?.pendingPayables || 0)}</p>
+            </div>
+          </div>
+          <div className="rounded bg-slate-50 px-2 py-1 border border-slate-200 flex items-center justify-between">
+            <p className="text-[10px] text-slate-600 font-medium">Total do mês</p>
+            <p className="text-xs sm:text-sm font-bold text-slate-800">{formatCurrency((metrics?.expenses || 0) + (metrics?.pendingPayables || 0))}</p>
+          </div>
+        </div>
+      ),
     },
     {
       title: 'Lucro Líquido',
