@@ -84,6 +84,15 @@ const calcStats = (commissions: any[]) => ({
   productCommissions: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + c.amount, 0),
   tipCommissions: commissions.filter((c: any) => c.commission_type === 'tip').reduce((acc: number, c: any) => acc + c.amount, 0),
   subscriptionUsageCommissions: commissions.filter((c: any) => c.commission_type === 'subscription_usage').reduce((acc: number, c: any) => acc + c.amount, 0),
+  // Por segmento × status
+  servicePaid: commissions.filter((c: any) => c.commission_type === 'service' && c.status === 'paid').reduce((a: number, c: any) => a + c.amount, 0),
+  servicePending: commissions.filter((c: any) => c.commission_type === 'service' && c.status === 'pending').reduce((a: number, c: any) => a + c.amount, 0),
+  productPaid: commissions.filter((c: any) => c.commission_type === 'product' && c.status === 'paid').reduce((a: number, c: any) => a + c.amount, 0),
+  productPending: commissions.filter((c: any) => c.commission_type === 'product' && c.status === 'pending').reduce((a: number, c: any) => a + c.amount, 0),
+  tipPaid: commissions.filter((c: any) => c.commission_type === 'tip' && c.status === 'paid').reduce((a: number, c: any) => a + c.amount, 0),
+  tipPending: commissions.filter((c: any) => c.commission_type === 'tip' && c.status === 'pending').reduce((a: number, c: any) => a + c.amount, 0),
+  subPaid: commissions.filter((c: any) => c.commission_type === 'subscription_usage' && c.status === 'paid').reduce((a: number, c: any) => a + c.amount, 0),
+  subPending: commissions.filter((c: any) => c.commission_type === 'subscription_usage' && c.status === 'pending').reduce((a: number, c: any) => a + c.amount, 0),
   // Receita bruta por segmento
   grossService: commissions.filter((c: any) => c.commission_type === 'service').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
   grossProduct: commissions.filter((c: any) => c.commission_type === 'product').reduce((acc: number, c: any) => acc + (c.gross_revenue || c.amount), 0),
