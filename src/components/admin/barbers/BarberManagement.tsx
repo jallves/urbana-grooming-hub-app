@@ -4,8 +4,9 @@ import { supabase } from '@/integrations/supabase/client';
 import BarberList from './BarberList';
 import BarberForm from './BarberForm';
 import AdminBarberBlockManager from './AdminBarberBlockManager';
+import BarbershopClosureManager from './BarbershopClosureManager';
 import ConfirmActionDialog, { ConfirmActionType } from '../shared/ConfirmActionDialog';
-import { Shield, Info, Users, Lock } from 'lucide-react';
+import { Shield, Info, Users, Lock, CalendarOff } from 'lucide-react';
 import {
   Card, CardContent, CardHeader, CardTitle, CardDescription
 } from '@/components/ui/card';
@@ -176,20 +177,30 @@ const BarberManagement: React.FC = () => {
       </div>
 
       <Tabs defaultValue="permissions" className="w-full">
-        <TabsList className="grid w-full grid-cols-2 bg-white border border-gray-200 rounded-lg p-1 h-auto gap-1">
+        <TabsList className="grid w-full grid-cols-3 bg-white border border-gray-200 rounded-lg p-1 h-auto gap-1">
           <TabsTrigger 
             value="permissions"
             className="bg-urbana-gold/20 text-urbana-gold data-[state=active]:bg-urbana-gold data-[state=active]:text-black text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all font-medium border border-urbana-gold/30"
           >
             <Shield className="h-4 w-4 mr-1.5" />
-            Permissões
+            <span className="hidden sm:inline">Permissões</span>
+            <span className="sm:hidden">Equipe</span>
           </TabsTrigger>
           <TabsTrigger 
             value="blocks"
             className="bg-red-100 text-red-600 data-[state=active]:bg-red-600 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all font-medium border border-red-200"
           >
             <Lock className="h-4 w-4 mr-1.5" />
-            Bloqueios de Horários
+            <span className="hidden sm:inline">Bloqueios de Horários</span>
+            <span className="sm:hidden">Bloqueios</span>
+          </TabsTrigger>
+          <TabsTrigger
+            value="closure"
+            className="bg-amber-100 text-amber-700 data-[state=active]:bg-amber-600 data-[state=active]:text-white text-xs sm:text-sm py-2 sm:py-2.5 rounded-md transition-all font-medium border border-amber-200"
+          >
+            <CalendarOff className="h-4 w-4 mr-1.5" />
+            <span className="hidden sm:inline">Fechar Barbearia</span>
+            <span className="sm:hidden">Fechar</span>
           </TabsTrigger>
         </TabsList>
 
@@ -249,6 +260,10 @@ const BarberManagement: React.FC = () => {
 
         <TabsContent value="blocks" className="mt-4" key="blocks-tab">
           <AdminBarberBlockManager />
+        </TabsContent>
+
+        <TabsContent value="closure" className="mt-4" key="closure-tab">
+          <BarbershopClosureManager />
         </TabsContent>
       </Tabs>
 
