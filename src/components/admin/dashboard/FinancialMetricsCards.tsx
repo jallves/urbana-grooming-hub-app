@@ -190,14 +190,20 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       explanation:
         'Soma de TODAS as Contas a Receber (tabela contas_receber) com status "pago" ou "recebido" e vencimento dentro do mês selecionado.\n\nFonte: contas_receber\nFiltros: status IN (pago, recebido) AND data_vencimento BETWEEN início e fim do mês\nFórmula: SUM(valor)\n\nObs: cortesias NÃO entram aqui (não geraram receita). O bloco "Cortesias" mostra quanto teria sido faturado se cobradas.',
       extra: (
-        <div className="grid grid-cols-2 gap-2 mt-2">
-          <div className="rounded bg-green-50 px-2 py-1 border border-green-100">
-            <p className="text-[10px] text-green-700 font-medium">Recebido</p>
-            <p className="text-xs sm:text-sm font-bold text-green-700">{formatCurrency(metrics?.revenue || 0)}</p>
+        <div className="mt-2 space-y-1.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded bg-green-50 px-2 py-1 border border-green-100">
+              <p className="text-[10px] text-green-700 font-medium">Recebido</p>
+              <p className="text-xs sm:text-sm font-bold text-green-700">{formatCurrency(metrics?.revenue || 0)}</p>
+            </div>
+            <div className="rounded bg-rose-50 px-2 py-1 border border-rose-100">
+              <p className="text-[10px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasQtdMes || 0})</p>
+              <p className="text-xs sm:text-sm font-bold text-rose-700">~{formatCurrency(metrics?.cortesiasValorMes || 0)}</p>
+            </div>
           </div>
-          <div className="rounded bg-rose-50 px-2 py-1 border border-rose-100">
-            <p className="text-[10px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasQtdMes || 0})</p>
-            <p className="text-xs sm:text-sm font-bold text-rose-700">~{formatCurrency(metrics?.cortesiasValorMes || 0)}</p>
+          <div className="rounded bg-slate-50 px-2 py-1 border border-slate-200 flex items-center justify-between">
+            <p className="text-[10px] text-slate-600 font-medium">Total potencial</p>
+            <p className="text-xs sm:text-sm font-bold text-slate-800">{formatCurrency((metrics?.revenue || 0) + (metrics?.cortesiasValorMes || 0))}</p>
           </div>
         </div>
       ),

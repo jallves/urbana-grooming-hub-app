@@ -240,14 +240,20 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
       explanation:
         'Total recebido em TODO o ano selecionado (jan a dez).\n\nFonte: contas_receber\nFiltro: status IN (pago, recebido) AND data_vencimento dentro do ano\nFórmula: SUM(valor)\n\nObs: cortesias NÃO entram aqui — são exibidas separadamente abaixo para você acompanhar o impacto no faturamento.',
       extra: (
-        <div className="grid grid-cols-2 gap-1.5 mt-2">
-          <div className="rounded bg-violet-50 px-1.5 py-1 border border-violet-100">
-            <p className="text-[9px] text-violet-700 font-medium">Recebido</p>
-            <p className="text-[11px] sm:text-xs font-bold text-violet-700 truncate">{formatCurrency(metrics?.receitaAnual || 0)}</p>
+        <div className="mt-2 space-y-1">
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="rounded bg-violet-50 px-1.5 py-1 border border-violet-100">
+              <p className="text-[9px] text-violet-700 font-medium">Recebido</p>
+              <p className="text-[11px] sm:text-xs font-bold text-violet-700 truncate">{formatCurrency(metrics?.receitaAnual || 0)}</p>
+            </div>
+            <div className="rounded bg-rose-50 px-1.5 py-1 border border-rose-100">
+              <p className="text-[9px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasAnoQtd || 0})</p>
+              <p className="text-[11px] sm:text-xs font-bold text-rose-700 truncate">~{formatCurrency(metrics?.cortesiasAnoValor || 0)}</p>
+            </div>
           </div>
-          <div className="rounded bg-rose-50 px-1.5 py-1 border border-rose-100">
-            <p className="text-[9px] text-rose-700 font-medium">Cortesias ({metrics?.cortesiasAnoQtd || 0})</p>
-            <p className="text-[11px] sm:text-xs font-bold text-rose-700 truncate">~{formatCurrency(metrics?.cortesiasAnoValor || 0)}</p>
+          <div className="rounded bg-slate-50 px-1.5 py-1 border border-slate-200 flex items-center justify-between">
+            <p className="text-[9px] text-slate-600 font-medium">Total potencial</p>
+            <p className="text-[11px] sm:text-xs font-bold text-slate-800 truncate">{formatCurrency((metrics?.receitaAnual || 0) + (metrics?.cortesiasAnoValor || 0))}</p>
           </div>
         </div>
       ),
