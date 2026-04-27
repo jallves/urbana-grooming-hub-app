@@ -90,7 +90,7 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         supabase.from('painel_servicos').select('id, preco'),
         supabase
           .from('vendas')
-          .select('valor_total, observacoes, forma_pagamento')
+          .select('id, valor_total, observacoes, forma_pagamento')
           .gte('created_at', firstDayOfYear)
           .lte('created_at', lastDayOfYear + 'T23:59:59')
           .in('status', ['pago', 'PAGA', 'paga', 'PAGO']),
@@ -120,44 +120,55 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
         .filter(r => r.status === 'recebido' || r.status === 'pago')
         .reduce((sum, r) => sum + Number(r.valor), 0);
 
-      // ===== Cortesias =====
-      // Fonte 1: vendas com valor_total = 0 OU marcadas como cortesia (override admin)
-      const cortesiasVendas = (cortesiasVendasResult.data || []).filter(v => {
-        const obs = (v.observacoes || '').toLowerCase();
-        const fp = (v.forma_pagamento || '').toLowerCase();
-        return Number(v.valor_total) === 0
-          || obs.includes('cortesia')
-          || fp.includes('cortesia');
-      });
-
-      // Calcula valor "que teria sido cobrado" para cortesias com valor_total = 0
-      // Usa preço do serviço de referência quando disponível
-      const servicosMap = new Map<string, number>();
-      (servicosResult.data || []).forEach((s: any) => {
-        servicosMap.set(s.id, Number(s.preco || 0));
-      });
-
-      // Para vendas cortesia, se valor_total > 0 (override pago como cortesia) usar esse valor
-      // Se valor_total = 0, tentar estimar pelo agendamento concluído correspondente — fallback: 0
-      const cortesiasQtd = cortesiasVendas.length;
-      const cortesiasValorPotencial = cortesiasVendas.reduce((sum, v) => {
-        const valor = Number(v.valor_total || 0);
-        if (valor > 0) return sum + valor;
-        // Estimativa: usa ticket médio das vendas pagas do mês como referência mínima
-        return sum + (ticketMedio || 0);
-      }, 0);
-
-      // Cortesias do ano (para card de Receita Bruta Anual)
-      const cortesiasAno = (cortesiasAnoResult.data || []).filter(v => {
+      // ===== Cortesias (valor REAL do serviço/produto) =====
+      const isCortesia = (v: { valor_total: number | null; observacoes: string | null; forma_pagamento: string | null }) => {
         const obs = (v.observacoes || '').toLowerCase();
         const fp = (v.forma_pagamento || '').toLowerCase();
         return Number(v.valor_total) === 0 || obs.includes('cortesia') || fp.includes('cortesia');
-      });
-      const cortesiasAnoQtd = cortesiasAno.length;
-      const cortesiasAnoValor = cortesiasAno.reduce((sum, v) => {
+      };
+
+      const cortesiasMes = (cortesiasVendasResult.data || []).filter(isCortesia);
+      const cortesiasAno = (cortesiasAnoResult.data || []).filter(isCortesia);
+
+      // Buscar itens reais para cortesias zeradas
+      const allCortesiaIds = Array.from(
+        new Set([...cortesiasMes, ...cortesiasAno].filter(v => Number(v.valor_total) === 0).map(v => v.id))
+      );
+      const itensByVenda = new Map<string, number>();
+      if (allCortesiaIds.length > 0) {
+        const [itensResult, produtosResult] = await Promise.all([
+          supabase.from('vendas_itens')
+            .select('venda_id, tipo, item_id, quantidade, preco_unitario')
+            .in('venda_id', allCortesiaIds),
+          supabase.from('painel_produtos').select('id, preco'),
+        ]);
+        const servicoPreco = new Map<string, number>();
+        (servicosResult.data || []).forEach((s: any) => servicoPreco.set(s.id, Number(s.preco || 0)));
+        const produtoPreco = new Map<string, number>();
+        (produtosResult.data || []).forEach((p: any) => produtoPreco.set(p.id, Number(p.preco || 0)));
+
+        (itensResult.data || []).forEach((it: any) => {
+          const tipo = String(it.tipo || '').toLowerCase();
+          const qtd = Number(it.quantidade || 1);
+          let unit = Number(it.preco_unitario || 0);
+          if (unit === 0) {
+            if (tipo.includes('produto')) unit = produtoPreco.get(it.item_id) || 0;
+            else unit = servicoPreco.get(it.item_id) || 0;
+          }
+          itensByVenda.set(it.venda_id, (itensByVenda.get(it.venda_id) || 0) + unit * qtd);
+        });
+      }
+
+      const valorCortesia = (v: { id: string; valor_total: number | null }) => {
         const valor = Number(v.valor_total || 0);
-        return sum + (valor > 0 ? valor : (ticketMedio || 0));
-      }, 0);
+        if (valor > 0) return valor;
+        return itensByVenda.get(v.id) || 0;
+      };
+
+      const cortesiasQtd = cortesiasMes.length;
+      const cortesiasValorPotencial = cortesiasMes.reduce((s, v) => s + valorCortesia(v), 0);
+      const cortesiasAnoQtd = cortesiasAno.length;
+      const cortesiasAnoValor = cortesiasAno.reduce((s, v) => s + valorCortesia(v), 0);
 
       return {
         totalClientes,
