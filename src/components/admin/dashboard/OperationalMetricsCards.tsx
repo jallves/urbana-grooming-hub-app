@@ -202,6 +202,15 @@ const OperationalMetricsCards: React.FC<OperationalMetricsCardsProps> = ({ month
     }).format(value);
   };
 
+  const formatCurrencyExact = (value: number) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
   const cards: Array<{
     title: string;
     value: string | number;
