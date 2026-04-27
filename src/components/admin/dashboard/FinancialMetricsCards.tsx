@@ -82,12 +82,47 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const overdueReceivables = crMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
 
       const paidExpensesAll = cpMes.filter(r => isStatusRecebido(r.status));
+      const pendingExpensesAll = cpMes.filter(r => r.status === 'pendente');
       const commissionsPaid = paidExpensesAll.filter(r => isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
-      const expenses = paidExpensesAll.filter(r => !isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
-      const pendingPayables = cpMes.filter(r => r.status === 'pendente' && !isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
-      const pendingCommissions = cpMes.filter(r => r.status === 'pendente' && isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
+      const pendingCommissions = pendingExpensesAll.filter(r => isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
       const totalCommissions = commissionsPaid + pendingCommissions;
+      // Despesas TOTAIS do mês (todas as categorias, incluindo comissões)
+      const expensesPaid = paidExpensesAll.reduce((s, r) => s + Number(r.valor), 0);
+      const expensesPending = pendingExpensesAll.reduce((s, r) => s + Number(r.valor), 0);
+      // expenses (exclui comissões) — usado no cálculo do lucro para evitar dupla contagem com commissionsPaid
+      const expenses = paidExpensesAll.filter(r => !isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
+      const pendingPayables = pendingExpensesAll.filter(r => !isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
       const overduePayables = cpMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
+
+      // Breakdown por categoria (todas as despesas pagas + pendentes)
+      const breakdownMap = new Map<string, { paid: number; pending: number }>();
+      const normalizeCat = (cat: string | null | undefined): string => {
+        const c = (cat || 'outros').toLowerCase();
+        if (c.includes('comiss')) {
+          if (c.includes('assinatura')) return 'Comissão (Assinatura)';
+          if (c.includes('produto')) return 'Comissão (Produto)';
+          return 'Comissão (Serviço)';
+        }
+        if (c === 'vale') return 'Vale';
+        if (c === 'gorjeta') return 'Gorjeta';
+        if (c === 'produto') return 'Produto';
+        if (c === 'aluguel') return 'Aluguel';
+        if (c === 'luz' || c === 'energia') return 'Energia';
+        if (c === 'agua') return 'Água';
+        if (c === 'internet') return 'Internet';
+        if (c === 'fornecedor') return 'Fornecedor';
+        return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : 'Outros';
+      };
+      cpMes.forEach(r => {
+        const key = normalizeCat(r.categoria);
+        const cur = breakdownMap.get(key) || { paid: 0, pending: 0 };
+        if (isStatusRecebido(r.status)) cur.paid += Number(r.valor);
+        else if (r.status === 'pendente') cur.pending += Number(r.valor);
+        breakdownMap.set(key, cur);
+      });
+      const expenseBreakdown = Array.from(breakdownMap.entries())
+        .map(([categoria, v]) => ({ categoria, total: v.paid + v.pending, paid: v.paid, pending: v.pending }))
+        .sort((a, b) => b.total - a.total);
 
       // Previous month
       const prevRevenue = crPrev.filter(r => isStatusRecebido(r.status)).reduce((s, r) => s + Number(r.valor), 0);
@@ -161,12 +196,13 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const cortesiasValorAno = cortesiasAno.reduce((s, v) => s + valorCortesia(v), 0);
 
       return {
-        revenue, expenses, commissionsPaid, totalCommissions, profit,
+        revenue, expenses, expensesPaid, expensesPending, commissionsPaid, totalCommissions, profit,
         revenueTrend, expenseTrend, profitTrend,
         pendingReceivables, pendingPayables, pendingCommissions,
         overdueReceivables, overduePayables,
         cortesiasQtdMes, cortesiasValorMes,
         cortesiasQtdAno, cortesiasValorAno,
+        expenseBreakdown,
       };
     },
     refetchInterval: 60000,
