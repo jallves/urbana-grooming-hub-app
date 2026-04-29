@@ -11,3 +11,5 @@ verify_jwt = false
 
 [functions.auto-mark-absent]
 verify_jwt = false
+[functions.client-update-appointment]
+verify_jwt = true
