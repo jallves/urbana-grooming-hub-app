@@ -215,13 +215,13 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
 
       setAvailableSlots(slotsWithAvailability);
 
-      // Se o horário selecionado não está mais disponível, limpar (exceto se for o mesmo do agendamento)
+      // Regra: na edição a disponibilidade segue exatamente a regra de
+      // um novo agendamento. Se o slot selecionado não estiver disponível
+      // (mesmo que seja o horário atual do agendamento), limpamos a seleção
+      // para o cliente escolher um horário realmente livre.
       if (selectedTime) {
-        const isCurrentSlot = agendamento?.data === selectedDate && 
-                             agendamento?.hora?.substring(0, 5) === selectedTime;
         const isAvailable = slotsWithAvailability.find(s => s.time === selectedTime && s.available);
-        
-        if (!isCurrentSlot && !isAvailable) {
+        if (!isAvailable) {
           setSelectedTime('');
         }
       }
