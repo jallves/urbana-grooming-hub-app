@@ -126,6 +126,7 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
               form={form}
               barberId={selectedStaffId}
               serviceDuration={selectedService?.duration}
+              appointmentId={agendamento?.id}
             />
 
             <StaffSelect
