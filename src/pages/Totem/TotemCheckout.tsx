@@ -148,18 +148,46 @@ const TotemCheckout: React.FC = () => {
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
 
-  // Verifica se o serviço do agendamento está coberto pelo plano de assinatura
-  const isServiceCoveredByPlan = useMemo(() => {
-    if (!activeSubscription || !appointment?.servico_id) return false;
-    if (activeSubscription.allowed_service_ids.length === 0) return false;
-    return activeSubscription.allowed_service_ids.includes(appointment.servico_id);
-  }, [activeSubscription, appointment?.servico_id]);
+  const selectedServiceCreditItems = useMemo(() => {
+    const items: Array<{ id: string; nome: string }> = [];
+    if (appointment?.servico_id) {
+      items.push({ id: appointment.servico_id, nome: originalService.nome });
+    }
+    extraServices.forEach((service) => {
+      if (service.id) items.push({ id: service.id, nome: service.nome });
+    });
+    return items;
+  }, [appointment?.servico_id, originalService.nome, extraServices]);
 
-  // Calcula quantos créditos o serviço agendado custa
+  // Verifica se todos os serviços do atendimento estão cobertos pelo plano
+  const isServiceCoveredByPlan = useMemo(() => {
+    if (!activeSubscription || selectedServiceCreditItems.length === 0) return false;
+    if (activeSubscription.allowed_service_ids.length === 0) return false;
+    return selectedServiceCreditItems.every((service) =>
+      activeSubscription.allowed_service_ids.includes(service.id)
+    );
+  }, [activeSubscription, selectedServiceCreditItems]);
+
+  // Calcula quantos créditos o atendimento inteiro custa (principal + extras)
   const serviceCreditsCost = useMemo(() => {
-    if (!activeSubscription || !appointment?.servico_id) return 1;
-    return activeSubscription.service_credits_map[appointment.servico_id] || 1;
-  }, [activeSubscription, appointment?.servico_id]);
+    if (!activeSubscription || selectedServiceCreditItems.length === 0) return 1;
+    return selectedServiceCreditItems.reduce((total, service) => {
+      const configuredCost = activeSubscription.service_credits_map[service.id];
+      if (configuredCost) return total + configuredCost;
+      const normalizedName = service.nome.toLowerCase();
+      const fallbackCost = normalizedName.includes('corte') && normalizedName.includes('barba') ? 2 : 1;
+      return total + fallbackCost;
+    }, 0);
+  }, [activeSubscription, selectedServiceCreditItems]);
+
+  const subscriptionServiceNames = useMemo(() => {
+    if (!activeSubscription) return [originalService.nome];
+    return selectedServiceCreditItems.flatMap((service) => {
+      const cost = activeSubscription.service_credits_map[service.id]
+        || (service.nome.toLowerCase().includes('corte') && service.nome.toLowerCase().includes('barba') ? 2 : 1);
+      return Array.from({ length: cost }, () => service.nome);
+    });
+  }, [activeSubscription, selectedServiceCreditItems, originalService.nome]);
 
   // Verifica se o cliente tem créditos suficientes para o serviço
   const hasEnoughCredits = useMemo(() => {
@@ -319,7 +347,7 @@ const TotemCheckout: React.FC = () => {
       const success = await useCredit(
         activeSubscription.id,
         appointment.id,
-        resumo.original_service.nome,
+        subscriptionServiceNames,
         serviceCreditsCost
       );
 
@@ -338,7 +366,7 @@ const TotemCheckout: React.FC = () => {
             action: 'start',
             agendamento_id: appointment.id,
             session_id: session.id,
-            extras: [],
+            extras: extraServices.map((s) => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
             products: [],
           }
         });
@@ -413,7 +441,7 @@ const TotemCheckout: React.FC = () => {
 
     try {
       const creditsRemaining = activeSubscription 
-        ? activeSubscription.credits_remaining - 1 
+        ? activeSubscription.credits_remaining - serviceCreditsCost 
         : 0;
       const nextBillingDate = activeSubscription?.next_billing_date
         ? format(new Date(activeSubscription.next_billing_date + 'T12:00:00'), 'dd/MM/yyyy')
@@ -431,6 +459,16 @@ const TotemCheckout: React.FC = () => {
           type: 'service' 
         });
       }
+
+      extraServices.forEach((service) => {
+        items.push({
+          name: `${service.nome} (Crédito Assinatura)`,
+          quantity: 1,
+          unitPrice: 0,
+          price: 0,
+          type: 'service'
+        });
+      });
 
       if (items.length === 0) {
         items.push({ name: 'Serviço (Crédito Assinatura)', price: 0, type: 'service' });
@@ -472,7 +510,7 @@ const TotemCheckout: React.FC = () => {
       console.error('[SUBSCRIPTION] Erro ao enviar e-mail:', error);
       return false;
     }
-  }, [client, resumo, appointment, activeSubscription]);
+  }, [client, resumo, appointment, activeSubscription, serviceCreditsCost, extraServices]);
 
   // Handler após comprovante processado (assinatura)
   const handleSubscriptionReceiptComplete = useCallback(() => {

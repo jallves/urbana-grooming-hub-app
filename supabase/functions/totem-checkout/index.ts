@@ -218,10 +218,9 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 2) Remover itens que não estão mais no carrinho (somente extras/produtos)
+      // 2) Remover itens que não estão mais no carrinho, incluindo serviço principal antigo
       const desiredKeys = new Set(desired.map((d) => `${d.tipo}:${d.item_id}`))
       const toDelete = (existingItems || [])
-        .filter((it: any) => (it.tipo === 'SERVICO_EXTRA' || it.tipo === 'PRODUTO'))
         .filter((it: any) => !desiredKeys.has(`${it.tipo}:${it.item_id}`))
 
       if (toDelete.length > 0) {

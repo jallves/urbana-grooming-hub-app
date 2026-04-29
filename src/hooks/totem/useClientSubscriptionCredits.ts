@@ -102,15 +102,16 @@ export const useClientSubscriptionCredits = () => {
   const useCredit = useCallback(async (
     subscriptionId: string,
     appointmentId: string,
-    serviceName: string,
+    serviceName: string | string[],
     creditsCost: number = 1
   ): Promise<boolean> => {
     try {
       // 1. Registrar uso do crédito (uma entrada por crédito consumido)
-      const usageInserts = Array.from({ length: creditsCost }, () => ({
+      const serviceNames = Array.isArray(serviceName) ? serviceName : [serviceName];
+      const usageInserts = Array.from({ length: creditsCost }, (_, index) => ({
         subscription_id: subscriptionId,
         appointment_id: appointmentId,
-        service_name: serviceName,
+        service_name: serviceNames[index] || serviceNames[serviceNames.length - 1] || 'Serviço',
       }));
 
       const { error: usageError } = await supabase
