@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
@@ -11,7 +11,6 @@ import AppointmentFormActions from '@/components/admin/appointments/form/Appoint
 import ClientDateTimePicker from '@/components/client/appointment/ClientDateTimePicker';
 
 import { useClientFormData } from '@/components/client/appointment/useClientFormData';
-import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 import { supabase } from '@/integrations/supabase/client';
 
 interface EditAgendamentoDialogProps {
@@ -39,6 +38,7 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
   onSaved,
   agendamento,
 }) => {
+  const [isSaving, setIsSaving] = useState(false);
   const defaultDate = useMemo(
     () => (agendamento ? parseDateOnly(agendamento.data) : new Date()),
     [agendamento?.id]
@@ -51,8 +51,6 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
     staffMembers,
     selectedService,
   } = useClientFormData(defaultDate, agendamento?.id);
-
-  const { validateAppointment, isValidating } = useAppointmentValidation();
 
   // Pre-popula o form quando abrir
   useEffect(() => {
@@ -97,38 +95,31 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
       return;
     }
 
-    const validation = await validateAppointment(
-      data.staff_id,
-      data.date,
-      data.time,
-      selectedService.duration,
-      agendamento.id
-    );
-    if (!validation.valid) return;
+    setIsSaving(true);
+    try {
+      const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
+        body: {
+          appointmentId: agendamento.id,
+          serviceId: data.service_id,
+          barberId: data.staff_id,
+          date: dataStr,
+          time: horaNova,
+          notes: data.notes || null,
+        },
+      });
 
-    const { error } = await supabase
-      .from('painel_agendamentos')
-      .update({
-        servico_id: data.service_id,
-        barbeiro_id: data.staff_id,
-        data: dataStr,
-        hora: data.time,
-        notas: data.notes || null,
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', agendamento.id)
-      .select()
-      .single();
+      if (error || !result?.success) {
+        console.error('Erro ao atualizar agendamento:', error || result);
+        toast.error(result?.error || 'Não foi possível atualizar o agendamento.');
+        return;
+      }
 
-    if (error) {
-      console.error('Erro ao atualizar agendamento:', error);
-      toast.error('Não foi possível atualizar o agendamento.');
-      return;
+      toast.success(result.message || `Agendamento atualizado para ${dataStr.split('-').reverse().join('/')} às ${horaNova}.`);
+      await onSaved();
+      onClose();
+    } finally {
+      setIsSaving(false);
     }
-
-    toast.success(`Agendamento atualizado para ${dataStr.split('-').reverse().join('/')} às ${horaNova}.`);
-    await onSaved();
-    onClose();
   };
 
   return (
@@ -160,7 +151,7 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
             <NotesField form={form} />
 
             <AppointmentFormActions
-              isLoading={isLoading || isValidating}
+              isLoading={isLoading || isSaving}
               onClose={onClose}
               isEditing={true}
             />

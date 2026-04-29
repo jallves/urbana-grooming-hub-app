@@ -301,12 +301,19 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         updateData.servico_id = selectedServicoId;
       }
 
-      const { error } = await supabase
-        .from('painel_agendamentos')
-        .update(updateData)
-        .eq('id', agendamento?.id);
+      const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
+        body: {
+          appointmentId: agendamento?.id,
+          serviceId: updateData.servico_id || currentServicoId,
+          barberId: updateData.barbeiro_id || currentBarbeiroId,
+          date: updateData.data,
+          time: selectedTime,
+        },
+      });
 
-      if (error) throw error;
+      if (error || !result?.success) {
+        throw new Error(result?.error || error?.message || 'Não foi possível atualizar o agendamento.');
+      }
 
       // Determinar tipo de atualização
       let updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general' = 'general';
@@ -343,7 +350,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível atualizar o agendamento.",
+        description: error instanceof Error ? error.message : "Não foi possível atualizar o agendamento.",
       });
     } finally {
       setLoading(false);

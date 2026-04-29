@@ -59,7 +59,7 @@ export const useClientAppointmentSubmit = ({
       const { data: staffData } = await supabase
         .from('painel_barbeiros')
         .select('id')
-        .eq('staff_id', data.staff_id)
+        .or(`id.eq.${data.staff_id},staff_id.eq.${data.staff_id}`)
         .single();
 
       if (!staffData) {
@@ -114,13 +114,20 @@ export const useClientAppointmentSubmit = ({
           .eq('id', appointmentId)
           .single();
 
-        const { error } = await supabase
-          .from('painel_agendamentos')
-          .update(painelData)
-          .eq('id', appointmentId)
-          .eq('cliente_id', clientId); // Ensure client can only update own appointments
+        const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
+          body: {
+            appointmentId,
+            serviceId: data.service_id,
+            barberId: staffData.id,
+            date: dataLocal,
+            time: format(startDate, 'HH:mm'),
+            notes: data.notes || null,
+          },
+        });
           
-        if (error) throw error;
+        if (error || !result?.success) {
+          throw new Error(result?.error || error?.message || 'Não foi possível atualizar o agendamento.');
+        }
 
         // Enviar e-mail de atualização
         console.log('📧 [Cliente] Enviando e-mail de atualização...');
