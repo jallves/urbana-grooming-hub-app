@@ -510,7 +510,7 @@ const TotemCheckout: React.FC = () => {
       console.error('[SUBSCRIPTION] Erro ao enviar e-mail:', error);
       return false;
     }
-  }, [client, resumo, appointment, activeSubscription]);
+  }, [client, resumo, appointment, activeSubscription, serviceCreditsCost, extraServices]);
 
   // Handler após comprovante processado (assinatura)
   const handleSubscriptionReceiptComplete = useCallback(() => {
