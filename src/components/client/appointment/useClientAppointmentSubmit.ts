@@ -59,7 +59,7 @@ export const useClientAppointmentSubmit = ({
       const { data: staffData } = await supabase
         .from('painel_barbeiros')
         .select('id')
-        .eq('staff_id', data.staff_id)
+        .or(`id.eq.${data.staff_id},staff_id.eq.${data.staff_id}`)
         .single();
 
       if (!staffData) {
