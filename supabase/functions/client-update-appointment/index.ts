@@ -198,7 +198,7 @@ Deno.serve(async (req) => {
       .select('id, hora, servicos_extras, painel_servicos(duracao)')
       .eq('barbeiro_id', barberId)
       .eq('data', date)
-      .in('status', ['agendado', 'confirmado', 'chegou'])
+      .neq('status', 'cancelado')
       .neq('id', appointmentId);
 
     if (appointmentsError) {
