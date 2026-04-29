@@ -333,6 +333,9 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       }
 
       if (!result?.success) {
+        if (result?.code === 'slot_unavailable' || result?.code === 'slot_blocked') {
+          setSelectedTime('');
+        }
         toast({
           variant: "destructive",
           title: "Horário indisponível",
