@@ -46,59 +46,111 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
     console.log('🕐 [Cliente] Buscando horários disponíveis:', {
       barbeiro: barberId,
       data: format(selectedDate, 'yyyy-MM-dd'),
-      duracao: serviceDuration
+      duracao: serviceDuration,
+      excluindoAgendamento: appointmentId || null,
     });
 
     try {
       const formattedDate = format(selectedDate, 'yyyy-MM-dd');
 
-      // Primeiro tentar verificar se barberId é um staff_id diretamente
-      // Se a busca como staff_id falhar, tentar buscar como painel_barbeiros.id
-      let staffIdToUse = barberId;
-      
-      // Verificar se existe na tabela working_hours com este ID como staff_id
-      const { data: workingHoursCheck } = await supabase
-        .from('working_hours')
-        .select('staff_id')
-        .eq('staff_id', barberId)
-        .limit(1);
-      
-      if (!workingHoursCheck || workingHoursCheck.length === 0) {
-        // Não é um staff_id válido, tentar buscar staff_id do painel_barbeiros
-        const { data: barbeiroData } = await supabase
-          .from('painel_barbeiros')
-          .select('staff_id')
-          .eq('id', barberId)
-          .maybeSingle();
+      // Buscar agendamentos existentes do barbeiro nesse dia (em painel_barbeiros.id),
+      // excluindo cancelados e o próprio agendamento (no caso de edição).
+      let appointmentsQuery = supabase
+        .from('painel_agendamentos')
+        .select('id, hora, servicos_extras, painel_servicos!inner(duracao)')
+        .eq('barbeiro_id', barberId)
+        .eq('data', formattedDate)
+        .neq('status', 'cancelado');
 
-        if (barbeiroData?.staff_id) {
-          staffIdToUse = barbeiroData.staff_id;
-          console.log('🔄 [Cliente] Convertido painel_barbeiros.id para staff_id:', staffIdToUse);
-        }
+      if (appointmentId) {
+        appointmentsQuery = appointmentsQuery.neq('id', appointmentId);
       }
 
-      console.log('🔍 [Cliente] Usando staff_id para RPC:', staffIdToUse);
+      const { data: existingAppointments, error: apptErr } = await appointmentsQuery;
+      if (apptErr) {
+        console.error('❌ [Cliente] Erro ao buscar agendamentos do dia:', apptErr);
+      }
 
-      // Buscar slots disponíveis usando a lógica padrão
-      // Gerar slots de 09:00 às 20:00 e verificar conflitos
+      // Buscar bloqueios de disponibilidade (folgas / fechamento de loja)
+      // tentando localizar barber_availability tanto pelo painel_barbeiros.id
+      // quanto pelo staff_id mapeado (compatível com fluxos existentes).
+      let staffIdMirror: string | null = null;
+      const { data: barbeiroData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barberId)
+        .maybeSingle();
+      if (barbeiroData?.staff_id) staffIdMirror = barbeiroData.staff_id;
+
+      const idsForAvailability = [barberId, staffIdMirror].filter(Boolean) as string[];
+      const { data: blocks } = await supabase
+        .from('barber_availability')
+        .select('start_time, end_time, is_available')
+        .in('barber_id', idsForAvailability)
+        .eq('date', formattedDate)
+        .eq('is_available', false);
+
+      const toMinutes = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      };
+
+      // Hoje? Para evitar horários passados
+      const now = new Date();
+      const todayStr = format(now, 'yyyy-MM-dd');
+      const isTodaySelected = formattedDate === todayStr;
+      const nowMinutes = now.getHours() * 60 + now.getMinutes();
+
+      // Gerar slots de 30 em 30 entre 09:00 e 20:00
       const slots: TimeSlot[] = [];
-      const startHour = 9;
-      const endHour = 20;
-      
-      for (let hour = startHour; hour < endHour; hour++) {
-        for (let minute = 0; minute < 60; minute += 30) {
-          const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          
-          // Verificar disponibilidade usando RPC existente
-          const { data: isAvailable } = await supabase.rpc('check_barber_slot_availability', {
-            p_barber_id: staffIdToUse,
-            p_date: formattedDate,
-            p_time: time + ':00',
-            p_duration: serviceDuration
-          });
-          
-          slots.push({ time, available: isAvailable === true });
+      const startMinutes = 9 * 60;
+      const endMinutes = 20 * 60;
+
+      for (let mins = startMinutes; mins + serviceDuration <= endMinutes; mins += 30) {
+        const hh = Math.floor(mins / 60);
+        const mm = mins % 60;
+        const time = `${hh.toString().padStart(2, '0')}:${mm.toString().padStart(2, '0')}`;
+        const slotEnd = mins + serviceDuration;
+
+        let available = true;
+
+        // Bloqueia horários passados (com 15 min de antecedência mínima)
+        if (isTodaySelected && mins <= nowMinutes + 15) {
+          available = false;
         }
+
+        // Verifica conflito com agendamentos existentes (sobreposição de duração)
+        if (available && existingAppointments) {
+          for (const appt of existingAppointments as any[]) {
+            const apptStart = toMinutes(appt.hora);
+            const baseDur = (appt.painel_servicos?.duracao as number) || 60;
+            const extras = Array.isArray(appt.servicos_extras)
+              ? appt.servicos_extras.reduce(
+                  (s: number, e: any) => s + (Number(e?.duracao) || 0),
+                  0
+                )
+              : 0;
+            const apptEnd = apptStart + baseDur + extras;
+            if (mins < apptEnd && slotEnd > apptStart) {
+              available = false;
+              break;
+            }
+          }
+        }
+
+        // Verifica bloqueios manuais (folga / fechamento de barbearia)
+        if (available && blocks?.length) {
+          for (const b of blocks) {
+            const bStart = toMinutes(b.start_time as string);
+            const bEnd = toMinutes(b.end_time as string);
+            if (mins < bEnd && slotEnd > bStart) {
+              available = false;
+              break;
+            }
+          }
+        }
+
+        slots.push({ time, available });
       }
 
       const availableCount = slots.filter(s => s.available).length;
