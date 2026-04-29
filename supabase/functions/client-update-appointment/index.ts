@@ -237,17 +237,21 @@ Deno.serve(async (req) => {
       }
     }
 
-    const normalizedNotes = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
+    const updatePayload: Record<string, unknown> = {
+      servico_id: serviceId,
+      barbeiro_id: barberId,
+      data: date,
+      hora: time,
+      updated_at: new Date().toISOString(),
+    };
+
+    if (Object.prototype.hasOwnProperty.call(body, 'notes')) {
+      updatePayload.notas = typeof body.notes === 'string' && body.notes.trim() ? body.notes.trim() : null;
+    }
+
     const { data: updated, error: updateError } = await supabaseAdmin
       .from('painel_agendamentos')
-      .update({
-        servico_id: serviceId,
-        barbeiro_id: barberId,
-        data: date,
-        hora: time,
-        notas: normalizedNotes,
-        updated_at: new Date().toISOString(),
-      })
+      .update(updatePayload)
       .eq('id', appointmentId)
       .eq('cliente_id', client.id)
       .select('id, data, hora, status, servico_id, barbeiro_id, notas')
