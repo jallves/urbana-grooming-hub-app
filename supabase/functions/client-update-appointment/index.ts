@@ -198,7 +198,8 @@ Deno.serve(async (req) => {
       .select('id, hora, servicos_extras, painel_servicos(duracao)')
       .eq('barbeiro_id', barberId)
       .eq('data', date)
-      .neq('status', 'cancelado');
+      .neq('status', 'cancelado')
+      .neq('id', appointmentId);
 
     if (appointmentsError) {
       return json({ success: false, error: 'Erro ao validar horários existentes.' }, 500);
