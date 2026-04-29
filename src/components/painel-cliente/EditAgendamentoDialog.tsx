@@ -77,6 +77,26 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
       return;
     }
 
+    const dataStr = format(data.date, 'yyyy-MM-dd');
+    const horaNova = data.time;
+    const horaOriginal = (agendamento.hora || '').slice(0, 5);
+    const dataOriginal = agendamento.data;
+    const servicoOriginal = agendamento.servico_id || '';
+    const barbeiroOriginal = agendamento.barbeiro_id || '';
+    const notasOriginais = agendamento.notas || '';
+
+    const semMudancas =
+      dataStr === dataOriginal &&
+      horaNova === horaOriginal &&
+      data.service_id === servicoOriginal &&
+      data.staff_id === barbeiroOriginal &&
+      (data.notes || '') === notasOriginais;
+
+    if (semMudancas) {
+      toast.info('Nenhuma alteração detectada. Selecione um novo horário, data, barbeiro ou serviço antes de salvar.');
+      return;
+    }
+
     const validation = await validateAppointment(
       data.staff_id,
       data.date,
@@ -85,8 +105,6 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
       agendamento.id
     );
     if (!validation.valid) return;
-
-    const dataStr = format(data.date, 'yyyy-MM-dd');
 
     const { error } = await supabase
       .from('painel_agendamentos')
@@ -98,7 +116,9 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
         notas: data.notes || null,
         updated_at: new Date().toISOString(),
       })
-      .eq('id', agendamento.id);
+      .eq('id', agendamento.id)
+      .select()
+      .single();
 
     if (error) {
       console.error('Erro ao atualizar agendamento:', error);
@@ -106,8 +126,8 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
       return;
     }
 
-    toast.success('Agendamento atualizado com sucesso!');
-    onSaved();
+    toast.success(`Agendamento atualizado para ${dataStr.split('-').reverse().join('/')} às ${horaNova}.`);
+    await onSaved();
     onClose();
   };
 

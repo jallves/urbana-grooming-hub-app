@@ -208,7 +208,7 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
   };
 
   const handleTimeSelect = (time: string) => {
-    form.setValue('time', time);
+    form.setValue('time', time, { shouldDirty: true, shouldValidate: true, shouldTouch: true });
   };
 
   const availableSlotsFiltered = availableSlots.filter(s => s.available);
