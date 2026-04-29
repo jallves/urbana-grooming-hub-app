@@ -546,7 +546,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
        }
 
@@ -851,6 +851,7 @@ Deno.serve(async (req) => {
            commission_rate: 100,
            status: 'pending',
            tipo: 'gorjeta',
+           unique_sub_ref: tipPayableSubRef,
          })
 
          await ensureContasPagar(supabase, {
@@ -864,7 +865,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })
