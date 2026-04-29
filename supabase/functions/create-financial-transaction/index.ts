@@ -79,11 +79,16 @@ async function ensureContasReceber(
 ) {
   const { data: existing } = await supabase
     .from('contas_receber')
-    .select('id')
+    .select('id, venda_id')
     .eq('observacoes', params.observacoes)
     .maybeSingle()
 
-  if (existing?.id) return existing.id
+  if (existing?.id) {
+    if (params.venda_id && !existing.venda_id) {
+      await supabase.from('contas_receber').update({ venda_id: params.venda_id }).eq('id', existing.id)
+    }
+    return existing.id
+  }
 
   const { data, error } = await supabase
     .from('contas_receber')
@@ -107,6 +112,18 @@ async function ensureContasReceber(
   return data.id
 }
 
+function resolveVendaIdForReference(referenceType: string | null, referenceId: string | null) {
+  if (!referenceId) return null
+  const typesThatUseVendaId = new Set([
+    'venda',
+    'totem_venda',
+    'totem_product_sale',
+    'totem_subscription',
+    'totem_subscription_usage',
+  ])
+  return referenceType && typesThatUseVendaId.has(referenceType) ? referenceId : null
+}
+
 async function ensureContasPagar(
   supabase: any,
   params: {
@@ -125,11 +142,16 @@ async function ensureContasPagar(
 ) {
   const { data: existing } = await supabase
     .from('contas_pagar')
-    .select('id')
+    .select('id, venda_id')
     .eq('observacoes', params.observacoes)
     .maybeSingle()
 
-  if (existing?.id) return existing.id
+  if (existing?.id) {
+    if (params.venda_id && !existing.venda_id) {
+      await supabase.from('contas_pagar').update({ venda_id: params.venda_id }).eq('id', existing.id)
+    }
+    return existing.id
+  }
 
   const { data, error } = await supabase
     .from('contas_pagar')
@@ -164,21 +186,51 @@ async function ensureBarberCommission(
     commission_rate: number
     status: string
     tipo: string
+    unique_sub_ref?: string | null
   }
 ) {
-  // Idempotência robusta: (barber_id + venda_id + tipo + valor)
-  // Não usar appointment_id na chave pois repair e finalize podem ter valores diferentes
+  // Idempotência robusta por serviço/sub-referência quando disponível.
+  // Essencial para dois serviços com mesmo valor (ex.: Corte + Barba via assinatura)
+  // não virarem apenas uma comissão no painel do barbeiro.
   if (params.venda_id) {
-    const { data: existing } = await supabase
+    let query = supabase
       .from('barber_commissions')
       .select('id')
       .eq('barber_id', params.barber_id)
       .eq('venda_id', params.venda_id)
       .eq('tipo', params.tipo)
-      .eq('valor', params.valor)
+
+    if (params.unique_sub_ref) {
+      query = query.eq('appointment_source', params.unique_sub_ref)
+    } else {
+      query = query.eq('valor', params.valor)
+    }
+
+    const { data: existing } = await query
       .maybeSingle()
 
     if (existing?.id) return existing.id
+
+    if (params.unique_sub_ref) {
+      const { data: legacyExisting } = await supabase
+        .from('barber_commissions')
+        .select('id')
+        .eq('barber_id', params.barber_id)
+        .eq('venda_id', params.venda_id)
+        .eq('tipo', params.tipo)
+        .eq('valor', params.valor)
+        .is('appointment_source', null)
+        .limit(1)
+        .maybeSingle()
+
+      if (legacyExisting?.id) {
+        await supabase
+          .from('barber_commissions')
+          .update({ appointment_source: params.unique_sub_ref })
+          .eq('id', legacyExisting.id)
+        return legacyExisting.id
+      }
+    }
   } else {
     // Fallback: usar appointment_id quando não há venda_id
     const { data: existing } = await supabase
@@ -205,6 +257,7 @@ async function ensureBarberCommission(
       commission_rate: params.commission_rate,
       status: params.status,
       tipo: params.tipo,
+      appointment_source: params.unique_sub_ref || null,
     })
     .select('id')
     .single()
@@ -524,7 +577,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
        }
 
@@ -620,6 +673,7 @@ Deno.serve(async (req) => {
              commission_rate: 0,
              status: 'paid',
              tipo: 'venda_combo',
+             unique_sub_ref: subRef,
            })
 
            await ensureContasPagar(supabase, {
@@ -633,7 +687,7 @@ Deno.serve(async (req) => {
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
              forma_pagamento: payment_method,
-             venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+              venda_id: resolveVendaIdForReference(reference_type, reference_id),
            })
          } else if (commissionAmount > 0) {
            // Uso de crédito ou serviço normal: comissão real
@@ -643,9 +697,10 @@ Deno.serve(async (req) => {
              appointment_id: body.appointment_id || null,
              venda_id: reference_id,
              valor: commissionAmount,
-             commission_rate: serviceCommissionRate,
-             status: 'pending',
-             tipo: commissionTipo,
+              commission_rate: serviceCommissionRate,
+              status: 'pending',
+              tipo: commissionTipo,
+              unique_sub_ref: subRef,
            })
 
            await ensureContasPagar(supabase, {
@@ -659,7 +714,7 @@ Deno.serve(async (req) => {
              observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
              transaction_id: transaction_id,
              forma_pagamento: payment_method,
-             venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+              venda_id: resolveVendaIdForReference(reference_type, reference_id),
            })
          }
 
@@ -727,6 +782,7 @@ Deno.serve(async (req) => {
             commission_rate: commissionRate,
             status: 'pending',
             tipo: 'produto',
+            unique_sub_ref: subRef,
           })
 
           await ensureContasPagar(supabase, {
@@ -740,7 +796,7 @@ Deno.serve(async (req) => {
             observacoes: `ref_financial_record_id=${commissionFinancialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
             transaction_id: transaction_id,
             forma_pagamento: payment_method,
-            venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
           })
 
           created.push({ kind: 'commission_product', financial_record_id: commissionFinancialId, amount: commissionAmount, obs })
@@ -785,7 +841,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
        }
 
@@ -826,6 +882,7 @@ Deno.serve(async (req) => {
            commission_rate: 100,
            status: 'pending',
            tipo: 'gorjeta',
+           unique_sub_ref: tipPayableSubRef,
          })
 
          await ensureContasPagar(supabase, {
@@ -839,7 +896,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${tipPayableId};ref=${reference_type};id=${reference_id};sub=${tipPayableSubRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
 
         created.push({ kind: 'tip_payable', financial_record_id: tipPayableId, amount: tip_amount })
