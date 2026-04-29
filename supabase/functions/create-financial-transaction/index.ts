@@ -79,11 +79,16 @@ async function ensureContasReceber(
 ) {
   const { data: existing } = await supabase
     .from('contas_receber')
-    .select('id')
+    .select('id, venda_id')
     .eq('observacoes', params.observacoes)
     .maybeSingle()
 
-  if (existing?.id) return existing.id
+  if (existing?.id) {
+    if (params.venda_id && !existing.venda_id) {
+      await supabase.from('contas_receber').update({ venda_id: params.venda_id }).eq('id', existing.id)
+    }
+    return existing.id
+  }
 
   const { data, error } = await supabase
     .from('contas_receber')
@@ -137,11 +142,16 @@ async function ensureContasPagar(
 ) {
   const { data: existing } = await supabase
     .from('contas_pagar')
-    .select('id')
+    .select('id, venda_id')
     .eq('observacoes', params.observacoes)
     .maybeSingle()
 
-  if (existing?.id) return existing.id
+  if (existing?.id) {
+    if (params.venda_id && !existing.venda_id) {
+      await supabase.from('contas_pagar').update({ venda_id: params.venda_id }).eq('id', existing.id)
+    }
+    return existing.id
+  }
 
   const { data, error } = await supabase
     .from('contas_pagar')
