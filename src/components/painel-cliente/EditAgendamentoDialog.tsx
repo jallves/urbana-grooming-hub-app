@@ -97,19 +97,40 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
 
     setIsSaving(true);
     try {
-      const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
-        body: {
-          appointmentId: agendamento.id,
-          serviceId: data.service_id,
-          barberId: data.staff_id,
-          date: dataStr,
-          time: horaNova,
-          notes: data.notes || null,
-        },
-      });
+      let result: any = null;
+      let invokeError: any = null;
+      try {
+        const resp = await supabase.functions.invoke('client-update-appointment', {
+          body: {
+            appointmentId: agendamento.id,
+            serviceId: data.service_id,
+            barberId: data.staff_id,
+            date: dataStr,
+            time: horaNova,
+            notes: data.notes || null,
+          },
+        });
+        result = resp.data;
+        invokeError = resp.error;
+      } catch (e: any) {
+        invokeError = e;
+      }
 
-      if (error || !result?.success) {
-        console.error('Erro ao atualizar agendamento:', error || result);
+      // Tenta extrair a mensagem real do corpo da resposta (ex: 409 com { error })
+      if (invokeError && !result) {
+        try {
+          const ctx = invokeError?.context;
+          if (ctx && typeof ctx.json === 'function') {
+            result = await ctx.json();
+          } else if (ctx && typeof ctx.text === 'function') {
+            const txt = await ctx.text();
+            try { result = JSON.parse(txt); } catch { result = { error: txt }; }
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!result?.success) {
+        console.error('Erro ao atualizar agendamento:', invokeError || result);
         toast.error(result?.error || 'Não foi possível atualizar o agendamento.');
         return;
       }
