@@ -347,7 +347,7 @@ const TotemCheckout: React.FC = () => {
       const success = await useCredit(
         activeSubscription.id,
         appointment.id,
-        resumo.original_service.nome,
+        subscriptionServiceNames,
         serviceCreditsCost
       );
 
@@ -366,7 +366,7 @@ const TotemCheckout: React.FC = () => {
             action: 'start',
             agendamento_id: appointment.id,
             session_id: session.id,
-            extras: [],
+            extras: extraServices.map((s) => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
             products: [],
           }
         });
@@ -441,7 +441,7 @@ const TotemCheckout: React.FC = () => {
 
     try {
       const creditsRemaining = activeSubscription 
-        ? activeSubscription.credits_remaining - 1 
+        ? activeSubscription.credits_remaining - serviceCreditsCost 
         : 0;
       const nextBillingDate = activeSubscription?.next_billing_date
         ? format(new Date(activeSubscription.next_billing_date + 'T12:00:00'), 'dd/MM/yyyy')
@@ -459,6 +459,16 @@ const TotemCheckout: React.FC = () => {
           type: 'service' 
         });
       }
+
+      extraServices.forEach((service) => {
+        items.push({
+          name: `${service.nome} (Crédito Assinatura)`,
+          quantity: 1,
+          unitPrice: 0,
+          price: 0,
+          type: 'service'
+        });
+      });
 
       if (items.length === 0) {
         items.push({ name: 'Serviço (Crédito Assinatura)', price: 0, type: 'service' });
