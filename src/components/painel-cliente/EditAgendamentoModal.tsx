@@ -333,7 +333,16 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       }
 
       if (!result?.success) {
-        throw new Error(result?.error || invokeError?.message || 'Não foi possível atualizar o agendamento.');
+        if (result?.code === 'slot_unavailable' || result?.code === 'slot_blocked') {
+          setSelectedTime('');
+        }
+        toast({
+          variant: "destructive",
+          title: "Horário indisponível",
+          description: result?.error || invokeError?.message || 'Não foi possível atualizar o agendamento.',
+        });
+        await fetchAvailableSlots();
+        return;
       }
 
       // Determinar tipo de atualização

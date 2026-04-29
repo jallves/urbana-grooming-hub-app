@@ -213,7 +213,11 @@ Deno.serve(async (req) => {
       const existingDuration = Number(serviceInfo?.duracao) || 30;
       const existingEnd = existingStart + existingDuration + getExtraDuration(existing.servicos_extras);
       if (slotStart < existingEnd && slotEnd > existingStart) {
-        return json({ success: false, error: `Horário ${time} já está ocupado para este barbeiro.` }, 409);
+        return json({
+          success: false,
+          code: 'slot_unavailable',
+          error: `Horário ${time} já está ocupado para este barbeiro.`,
+        });
       }
     }
 
@@ -233,7 +237,11 @@ Deno.serve(async (req) => {
       const blockStart = toMinutes(normalizeTime(block.start_time));
       const blockEnd = toMinutes(normalizeTime(block.end_time));
       if (slotStart < blockEnd && slotEnd > blockStart) {
-        return json({ success: false, error: 'Este horário está bloqueado para o barbeiro selecionado.' }, 409);
+        return json({
+          success: false,
+          code: 'slot_blocked',
+          error: 'Este horário está bloqueado para o barbeiro selecionado.',
+        });
       }
     }
 

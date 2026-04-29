@@ -114,19 +114,44 @@ export const useClientAppointmentSubmit = ({
           .eq('id', appointmentId)
           .single();
 
-        const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
-          body: {
-            appointmentId,
-            serviceId: data.service_id,
-            barberId: staffData.id,
-            date: dataLocal,
-            time: format(startDate, 'HH:mm'),
-            notes: data.notes || null,
-          },
-        });
+        let result: any = null;
+        let invokeError: any = null;
+        try {
+          const resp = await supabase.functions.invoke('client-update-appointment', {
+            body: {
+              appointmentId,
+              serviceId: data.service_id,
+              barberId: staffData.id,
+              date: dataLocal,
+              time: format(startDate, 'HH:mm'),
+              notes: data.notes || null,
+            },
+          });
+          result = resp.data;
+          invokeError = resp.error;
+        } catch (e: any) {
+          invokeError = e;
+        }
+
+        if (invokeError && !result) {
+          try {
+            const ctx = invokeError?.context;
+            if (ctx && typeof ctx.json === 'function') {
+              result = await ctx.json();
+            } else if (ctx && typeof ctx.text === 'function') {
+              const txt = await ctx.text();
+              try { result = JSON.parse(txt); } catch { result = { error: txt }; }
+            }
+          } catch { /* ignore */ }
+        }
           
-        if (error || !result?.success) {
-          throw new Error(result?.error || error?.message || 'Não foi possível atualizar o agendamento.');
+        if (!result?.success) {
+          toast({
+            variant: "destructive",
+            title: "Horário indisponível",
+            description: result?.error || invokeError?.message || 'Não foi possível atualizar o agendamento.',
+          });
+          return;
         }
 
         // Enviar e-mail de atualização
@@ -184,7 +209,7 @@ export const useClientAppointmentSubmit = ({
       toast({
         variant: "destructive",
         title: "Erro",
-        description: "Não foi possível salvar o agendamento.",
+        description: error instanceof Error ? error.message : "Não foi possível salvar o agendamento.",
       });
     } finally {
       setIsLoading(false);
