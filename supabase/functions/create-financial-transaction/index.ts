@@ -751,6 +751,7 @@ Deno.serve(async (req) => {
             commission_rate: commissionRate,
             status: 'pending',
             tipo: 'produto',
+            unique_sub_ref: subRef,
           })
 
           await ensureContasPagar(supabase, {
@@ -809,7 +810,7 @@ Deno.serve(async (req) => {
            observacoes: `ref_financial_record_id=${tipRevenueId};ref=${reference_type};id=${reference_id};sub=${tipRevenueSubRef}`,
            transaction_id: transaction_id,
            forma_pagamento: payment_method,
-           venda_id: (reference_type === 'venda' || reference_type === 'totem_venda') ? reference_id : null,
+            venda_id: resolveVendaIdForReference(reference_type, reference_id),
          })
        }
 
