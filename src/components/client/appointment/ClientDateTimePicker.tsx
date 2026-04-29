@@ -62,9 +62,10 @@ const ClientDateTimePicker: React.FC<ClientDateTimePickerProps> = ({
         .eq('data', formattedDate)
         .neq('status', 'cancelado');
 
-      if (appointmentId) {
-        appointmentsQuery = appointmentsQuery.neq('id', appointmentId);
-      }
+      // Regra: na edição os slots devem refletir exatamente a mesma
+      // disponibilidade de um agendamento novo. Por isso NÃO excluímos
+      // o próprio agendamento — o horário atual aparecerá como ocupado,
+      // assim como ocorreria para qualquer outro cliente.
 
       const { data: existingAppointments, error: apptErr } = await appointmentsQuery;
       if (apptErr) {
