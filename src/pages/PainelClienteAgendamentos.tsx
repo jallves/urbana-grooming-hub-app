@@ -13,6 +13,7 @@ import {
   CheckCircle,
   Filter,
   Plus,
+  Pencil,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,12 +21,16 @@ import { ClientPageContainer } from '@/components/painel-cliente/ClientPageConta
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useClientDashboardRealtime } from '@/hooks/useClientDashboardRealtime';
 import { supabase } from '@/integrations/supabase/client';
+import EditAgendamentoDialog from '@/components/painel-cliente/EditAgendamentoDialog';
 
 interface PainelAgendamento {
   id: string;
   data: string;
   hora: string;
   status: string;
+  servico_id: string | null;
+  barbeiro_id: string | null;
+  notas: string | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -55,6 +60,7 @@ export default function PainelClienteAgendamentos() {
   const [agendamentos, setAgendamentos] = useState<PainelAgendamento[]>([]);
   const [loading, setLoading] = useState(true);
   const [filtro, setFiltro] = useState<keyof typeof statusLabels>('todos');
+  const [editing, setEditing] = useState<PainelAgendamento | null>(null);
 
   const fetchAgendamentos = useCallback(async () => {
     if (!cliente?.id) return;
@@ -63,7 +69,9 @@ export default function PainelClienteAgendamentos() {
 
     const { data, error } = await supabase
       .from('painel_agendamentos')
-      .select(`*, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`)
+      .select(
+        `id, data, hora, status, servico_id, barbeiro_id, notas, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`
+      )
       .eq('cliente_id', cliente.id)
       .order('data', { ascending: false })
       .order('hora', { ascending: false });
@@ -100,6 +108,19 @@ export default function PainelClienteAgendamentos() {
     filtro === 'todos'
       ? agendamentos
       : agendamentos.filter((a) => a.status === filtro);
+
+  // Pode editar se agendado/confirmado e faltam ≥ 1h
+  const canEdit = (a: PainelAgendamento): boolean => {
+    if (!['agendado', 'confirmado'].includes(a.status)) return false;
+    try {
+      const [hh, mm] = a.hora.split(':').map(Number);
+      const [y, mo, d] = a.data.split('-').map(Number);
+      const dt = new Date(y, mo - 1, d, hh, mm, 0, 0);
+      return dt.getTime() - Date.now() >= 60 * 60 * 1000;
+    } catch {
+      return false;
+    }
+  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -214,18 +235,29 @@ export default function PainelClienteAgendamentos() {
                       <span className="text-urbana-gold font-semibold text-lg">
                         R$ {agendamento.painel_servicos.preco.toFixed(2)}
                       </span>
-                      {agendamento.status === 'concluido' ? (
-                        <span className="text-green-400 text-sm font-medium">
-                          ✨ Atendimento finalizado!
-                        </span>
-                      ) : agendamento.status === 'confirmado' ? (
-                        <button
-                          onClick={() => handleConcluirAgendamento(agendamento.id)}
-                          className="text-sm text-green-400 border border-green-400 px-3 py-1.5 rounded-lg hover:bg-green-400/10 transition font-medium"
-                        >
-                          Marcar como Concluído
-                        </button>
-                      ) : null}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {canEdit(agendamento) && (
+                          <button
+                            onClick={() => setEditing(agendamento)}
+                            className="text-sm text-urbana-gold border border-urbana-gold/60 px-3 py-1.5 rounded-lg hover:bg-urbana-gold/10 transition font-medium inline-flex items-center gap-1.5"
+                          >
+                            <Pencil className="w-3.5 h-3.5" />
+                            Editar
+                          </button>
+                        )}
+                        {agendamento.status === 'concluido' ? (
+                          <span className="text-green-400 text-sm font-medium">
+                            ✨ Atendimento finalizado!
+                          </span>
+                        ) : agendamento.status === 'confirmado' ? (
+                          <button
+                            onClick={() => handleConcluirAgendamento(agendamento.id)}
+                            className="text-sm text-green-400 border border-green-400 px-3 py-1.5 rounded-lg hover:bg-green-400/10 transition font-medium"
+                          >
+                            Marcar como Concluído
+                          </button>
+                        ) : null}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -234,6 +266,13 @@ export default function PainelClienteAgendamentos() {
           </div>
         )}
       </div>
+
+      <EditAgendamentoDialog
+        isOpen={!!editing}
+        onClose={() => setEditing(null)}
+        onSaved={fetchAgendamentos}
+        agendamento={editing}
+      />
     </ClientPageContainer>
   );
 }
