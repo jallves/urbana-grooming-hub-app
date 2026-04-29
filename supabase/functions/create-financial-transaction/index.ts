@@ -107,6 +107,18 @@ async function ensureContasReceber(
   return data.id
 }
 
+function resolveVendaIdForReference(referenceType: string | null, referenceId: string | null) {
+  if (!referenceId) return null
+  const typesThatUseVendaId = new Set([
+    'venda',
+    'totem_venda',
+    'totem_product_sale',
+    'totem_subscription',
+    'totem_subscription_usage',
+  ])
+  return referenceType && typesThatUseVendaId.has(referenceType) ? referenceId : null
+}
+
 async function ensureContasPagar(
   supabase: any,
   params: {
