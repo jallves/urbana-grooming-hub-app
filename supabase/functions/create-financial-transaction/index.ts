@@ -200,6 +200,27 @@ async function ensureBarberCommission(
       .maybeSingle()
 
     if (existing?.id) return existing.id
+
+    if (params.unique_sub_ref) {
+      const { data: legacyExisting } = await supabase
+        .from('barber_commissions')
+        .select('id')
+        .eq('barber_id', params.barber_id)
+        .eq('venda_id', params.venda_id)
+        .eq('tipo', params.tipo)
+        .eq('valor', params.valor)
+        .is('appointment_source', null)
+        .limit(1)
+        .maybeSingle()
+
+      if (legacyExisting?.id) {
+        await supabase
+          .from('barber_commissions')
+          .update({ appointment_source: params.unique_sub_ref })
+          .eq('id', legacyExisting.id)
+        return legacyExisting.id
+      }
+    }
   } else {
     // Fallback: usar appointment_id quando não há venda_id
     const { data: existing } = await supabase
