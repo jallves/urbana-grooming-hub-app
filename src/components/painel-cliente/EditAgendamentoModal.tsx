@@ -190,25 +190,81 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         }
       }
 
-      // Verificar disponibilidade usando check_barber_slot_availability
-      const slotsWithAvailability = await Promise.all(
-        allSlots.map(async (slot) => {
-          const { data, error } = await supabase
-            .rpc('check_barber_slot_availability', {
-              p_barber_id: barbeiroId,
-              p_date: selectedDate,
-              p_time: slot.time,
-              p_duration: duration
-            });
+      // Verificar disponibilidade calculando sobreposição real com a duração
+      // de cada agendamento existente + serviços extras (mesma regra do
+      // ClientDateTimePicker, igual a um novo agendamento).
+      const { data: existingAppointments, error: apptErr } = await supabase
+        .from('painel_agendamentos')
+        .select('id, hora, servicos_extras, painel_servicos!inner(duracao)')
+        .eq('barbeiro_id', barbeiroId)
+        .eq('data', selectedDate)
+        .neq('status', 'cancelado');
 
-          if (error) {
-            console.error('❌ Erro ao verificar slot:', slot.time, error);
-            return { ...slot, available: false };
+      if (apptErr) {
+        console.error('❌ Erro ao buscar agendamentos do dia:', apptErr);
+      }
+
+      // Bloqueios de disponibilidade (folgas / fechamento)
+      let staffIdMirror: string | null = null;
+      const { data: barbeiroData } = await supabase
+        .from('painel_barbeiros')
+        .select('staff_id')
+        .eq('id', barbeiroId)
+        .maybeSingle();
+      if (barbeiroData?.staff_id) staffIdMirror = barbeiroData.staff_id;
+
+      const idsForAvailability = [barbeiroId, staffIdMirror].filter(Boolean) as string[];
+      const { data: blocks } = await supabase
+        .from('barber_availability')
+        .select('start_time, end_time, is_available')
+        .in('barber_id', idsForAvailability)
+        .eq('date', selectedDate)
+        .eq('is_available', false);
+
+      const toMinutes = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + (m || 0);
+      };
+
+      const slotsWithAvailability = allSlots.map((slot) => {
+        const mins = toMinutes(slot.time);
+        const slotEnd = mins + duration;
+        let available = true;
+
+        if (existingAppointments) {
+          for (const appt of existingAppointments as any[]) {
+            // Excluir o próprio agendamento sendo editado para não
+            // bloquear seus próprios slots.
+            if (agendamento?.id && appt.id === agendamento.id) continue;
+            const apptStart = toMinutes(appt.hora);
+            const baseDur = (appt.painel_servicos?.duracao as number) || 60;
+            const extras = Array.isArray(appt.servicos_extras)
+              ? appt.servicos_extras.reduce(
+                  (s: number, e: any) => s + (Number(e?.duracao) || 0),
+                  0
+                )
+              : 0;
+            const apptEnd = apptStart + baseDur + extras;
+            if (mins < apptEnd && slotEnd > apptStart) {
+              available = false;
+              break;
+            }
           }
+        }
 
-          return { ...slot, available: data === true };
-        })
-      );
+        if (available && blocks?.length) {
+          for (const b of blocks) {
+            const bStart = toMinutes(b.start_time as string);
+            const bEnd = toMinutes(b.end_time as string);
+            if (mins < bEnd && slotEnd > bStart) {
+              available = false;
+              break;
+            }
+          }
+        }
+
+        return { ...slot, available };
+      });
 
       const availableCount = slotsWithAvailability.filter(s => s.available).length;
       console.log('✅ [EditAgendamentoModal] Slots disponíveis:', availableCount);
