@@ -176,18 +176,27 @@ async function ensureBarberCommission(
     commission_rate: number
     status: string
     tipo: string
+    unique_sub_ref?: string | null
   }
 ) {
-  // Idempotência robusta: (barber_id + venda_id + tipo + valor)
-  // Não usar appointment_id na chave pois repair e finalize podem ter valores diferentes
+  // Idempotência robusta por serviço/sub-referência quando disponível.
+  // Essencial para dois serviços com mesmo valor (ex.: Corte + Barba via assinatura)
+  // não virarem apenas uma comissão no painel do barbeiro.
   if (params.venda_id) {
-    const { data: existing } = await supabase
+    let query = supabase
       .from('barber_commissions')
       .select('id')
       .eq('barber_id', params.barber_id)
       .eq('venda_id', params.venda_id)
       .eq('tipo', params.tipo)
-      .eq('valor', params.valor)
+
+    if (params.unique_sub_ref) {
+      query = query.eq('appointment_source', params.unique_sub_ref)
+    } else {
+      query = query.eq('valor', params.valor)
+    }
+
+    const { data: existing } = await query
       .maybeSingle()
 
     if (existing?.id) return existing.id
@@ -217,6 +226,7 @@ async function ensureBarberCommission(
       commission_rate: params.commission_rate,
       status: params.status,
       tipo: params.tipo,
+      appointment_source: params.unique_sub_ref || null,
     })
     .select('id')
     .single()
