@@ -301,18 +301,39 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         updateData.servico_id = selectedServicoId;
       }
 
-      const { data: result, error } = await supabase.functions.invoke('client-update-appointment', {
-        body: {
-          appointmentId: agendamento?.id,
-          serviceId: updateData.servico_id || currentServicoId,
-          barberId: updateData.barbeiro_id || currentBarbeiroId,
-          date: updateData.data,
-          time: selectedTime,
-        },
-      });
+      let result: any = null;
+      let invokeError: any = null;
+      try {
+        const resp = await supabase.functions.invoke('client-update-appointment', {
+          body: {
+            appointmentId: agendamento?.id,
+            serviceId: updateData.servico_id || currentServicoId,
+            barberId: updateData.barbeiro_id || currentBarbeiroId,
+            date: updateData.data,
+            time: selectedTime,
+          },
+        });
+        result = resp.data;
+        invokeError = resp.error;
+      } catch (e: any) {
+        invokeError = e;
+      }
 
-      if (error || !result?.success) {
-        throw new Error(result?.error || error?.message || 'Não foi possível atualizar o agendamento.');
+      // Extrai mensagem real do corpo (ex: 409 com { error })
+      if (invokeError && !result) {
+        try {
+          const ctx = invokeError?.context;
+          if (ctx && typeof ctx.json === 'function') {
+            result = await ctx.json();
+          } else if (ctx && typeof ctx.text === 'function') {
+            const txt = await ctx.text();
+            try { result = JSON.parse(txt); } catch { result = { error: txt }; }
+          }
+        } catch { /* ignore */ }
+      }
+
+      if (!result?.success) {
+        throw new Error(result?.error || invokeError?.message || 'Não foi possível atualizar o agendamento.');
       }
 
       // Determinar tipo de atualização
