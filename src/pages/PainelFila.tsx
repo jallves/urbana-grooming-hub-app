@@ -311,7 +311,9 @@ const PainelFila: React.FC = () => {
                       <p className="text-zinc-600 italic text-[10px] sm:text-sm">Nenhum agendamento</p>
                     </div>
                   ) : (
-                    <ul className="h-full space-y-1 sm:space-y-2 overflow-y-auto pr-1">
+                    <ul
+                      className="h-full space-y-1 sm:space-y-2 overflow-y-auto pr-1 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+                    >
                       {list.map((item) => (
                         <li
                           key={item.id}
