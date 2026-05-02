@@ -297,42 +297,38 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
       const originalDate = appointment?.data;
       const isOriginalDateAndBarber = formattedDate === originalDate && selectedBarbeiroId === appointment?.barbeiro_id;
 
-      // Build occupied slots map with conflict info
-      const BUFFER_MINUTES = 10;
-      const occupiedSlots = new Map<string, { clientName?: string; serviceName?: string }>();
-      
+      // Construir intervalos reais ocupados (sem buffer expandido).
+      // Apenas slots que invadem [apt_start, apt_end) ficam bloqueados.
+      const occupiedRanges: { start: number; end: number; clientName?: string; serviceName?: string }[] = [];
       appointments?.forEach((apt: any) => {
         if (apt.id === appointmentId) return;
         const mainDuration = (apt.servico as any)?.duracao || 60;
         const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
         const [aH, aM] = apt.hora.split(':').map(Number);
         const aptStartMin = aH * 60 + aM;
-        const totalBlock = aptDuration + BUFFER_MINUTES;
-        
-        for (let i = 0; i < totalBlock; i += 30) {
-          const slotMin = aptStartMin + i;
-          const h = Math.floor(slotMin / 60);
-          const m = slotMin % 60;
-          occupiedSlots.set(
-            `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
-            { clientName: (apt.cliente as any)?.nome, serviceName: (apt.servico as any)?.nome }
-          );
-        }
+        occupiedRanges.push({
+          start: aptStartMin,
+          end: aptStartMin + aptDuration,
+          clientName: (apt.cliente as any)?.nome,
+          serviceName: (apt.servico as any)?.nome,
+        });
       });
 
-      // Check for conflicts with the selected time + total duration
+      // Conflitos do horário selecionado: overlap real do intervalo do novo serviço
       const conflicts: SlotConflict[] = [];
       if (selectedTime) {
         const [stH, stM] = selectedTime.split(':').map(Number);
         const selectedStartMin = stH * 60 + stM;
-        for (let i = 0; i < serviceDuration; i += 30) {
-          const checkMin = selectedStartMin + i;
-          const checkH = Math.floor(checkMin / 60);
-          const checkM = checkMin % 60;
-          const checkStr = `${checkH.toString().padStart(2, '0')}:${checkM.toString().padStart(2, '0')}`;
-          const conflict = occupiedSlots.get(checkStr);
-          if (conflict) {
-            conflicts.push({ time: checkStr, ...conflict });
+        const selectedEndMin = selectedStartMin + serviceDuration;
+        for (const r of occupiedRanges) {
+          if (selectedStartMin < r.end && selectedEndMin > r.start) {
+            const h = Math.floor(r.start / 60);
+            const m = r.start % 60;
+            conflicts.push({
+              time: `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`,
+              clientName: r.clientName,
+              serviceName: r.serviceName,
+            });
           }
         }
       }
