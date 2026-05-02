@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
-import { Scissors, Clock, CheckCircle2, XCircle, Activity, Delete } from 'lucide-react';
+import { Scissors, Clock, CheckCircle2, XCircle, Activity, Delete, Maximize2, Minimize2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import { cn } from '@/lib/utils';
@@ -177,6 +177,28 @@ const PainelFila: React.FC = () => {
     return sessionStorage.getItem(PAINEL_AUTH_KEY) === '1';
   });
   const [authLoading, setAuthLoading] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(() =>
+    typeof document !== 'undefined' && !!document.fullscreenElement,
+  );
+
+  useEffect(() => {
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  }, []);
+
+  const toggleFullscreen = async () => {
+    try {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+      toast.error('Não foi possível alternar tela cheia');
+    }
+  };
 
   // Tick do relógio + virada de dia (a cada 30s checa se mudou o dia em SP)
   useEffect(() => {
@@ -341,6 +363,18 @@ const PainelFila: React.FC = () => {
                 </div>
               </div>
             </div>
+            {/* Botão Tela Cheia */}
+            <button
+              onClick={toggleFullscreen}
+              title={isFullscreen ? 'Sair de tela cheia' : 'Tela cheia'}
+              className="rounded-xl sm:rounded-2xl border border-urbana-gold/30 bg-zinc-900/60 px-2.5 sm:px-3 lg:px-4 backdrop-blur text-urbana-gold hover:bg-urbana-gold/10 transition-colors flex items-center justify-center"
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+              ) : (
+                <Maximize2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+              )}
+            </button>
           </div>
         </header>
 
