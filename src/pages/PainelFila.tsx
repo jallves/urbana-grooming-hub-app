@@ -3,9 +3,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
-import { Scissors, Clock, CheckCircle2, XCircle, Activity } from 'lucide-react';
-import { TotemPinKeypad } from '@/components/totem/TotemPinKeypad';
+import { Scissors, Clock, CheckCircle2, XCircle, Activity, Delete } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const PAINEL_PIN = '7487';
@@ -87,6 +88,85 @@ const STATUS_META: Record<
 };
 
 const SECTION_ORDER: StatusKey[] = ['em_atendimento', 'agendado', 'concluido', 'cancelado'];
+
+// Keypad compacto e responsivo para o Painel — adapta-se a landscape sem cortar o logo
+const PainelAuthKeypad: React.FC<{ onSubmit: (pin: string) => void; loading: boolean }> = ({ onSubmit, loading }) => {
+  const [value, setValue] = useState('');
+  const press = (n: number) => setValue((v) => (v.length < 4 ? v + n : v));
+  const back = () => setValue((v) => v.slice(0, -1));
+  const clear = () => setValue('');
+  const submit = () => value.length === 4 && onSubmit(value);
+
+  return (
+    <div className="fixed inset-0 w-screen h-[100dvh] bg-gradient-to-br from-urbana-black via-zinc-950 to-urbana-brown/60 flex items-center justify-center p-3 overflow-hidden">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.12),_transparent_60%)]" />
+
+      <div className="relative z-10 w-full max-w-[920px] h-full max-h-[680px] flex flex-col landscape:flex-row items-center justify-center gap-4 sm:gap-6 lg:gap-10">
+        {/* Identidade */}
+        <div className="flex flex-col items-center justify-center gap-2 sm:gap-3 landscape:flex-1 shrink-0">
+          <div className="relative w-16 h-16 sm:w-20 sm:h-20 landscape:w-24 landscape:h-24 lg:w-28 lg:h-28 rounded-2xl bg-urbana-black-soft/80 border-2 border-urbana-gold/50 p-3 shadow-2xl">
+            <img src={costaUrbanaLogo} alt="Costa Urbana" className="w-full h-full object-contain" />
+          </div>
+          <div className="text-center">
+            <p className="text-[10px] sm:text-xs uppercase tracking-[0.3em] text-urbana-gold/80">Costa Urbana</p>
+            <h1 className="text-base sm:text-xl lg:text-2xl font-bold text-urbana-light mt-1">Painel da Fila</h1>
+            <p className="text-[11px] sm:text-sm text-urbana-light/60 mt-0.5">Digite o PIN para liberar</p>
+          </div>
+
+          {/* Display PIN */}
+          <div className="bg-urbana-black/60 border-2 border-urbana-gold/40 rounded-xl px-4 py-2.5 sm:py-3 flex items-center gap-2 sm:gap-3">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className={cn(
+                  'w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 transition-all',
+                  i < value.length ? 'bg-urbana-gold border-urbana-gold shadow-md shadow-urbana-gold/50' : 'border-urbana-gold/30',
+                )}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Teclado compacto */}
+        <div className="w-full max-w-[280px] sm:max-w-[320px] landscape:max-w-[300px] lg:max-w-[360px] landscape:flex-1 landscape:max-h-full">
+          <div className="grid grid-cols-3 gap-1.5 sm:gap-2">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => (
+              <button
+                key={n}
+                onClick={() => press(n)}
+                disabled={loading}
+                className="h-10 sm:h-12 landscape:h-11 lg:h-14 text-lg sm:text-xl lg:text-2xl font-bold text-urbana-gold bg-transparent border-2 border-urbana-gold/40 rounded-lg active:scale-95 active:bg-urbana-gold/30 transition-transform"
+              >
+                {n}
+              </button>
+            ))}
+            <button onClick={clear} disabled={loading} className="h-10 sm:h-12 landscape:h-11 lg:h-14 text-xs font-bold text-urbana-light bg-transparent border-2 border-urbana-gray/40 rounded-lg active:scale-95">
+              Limpar
+            </button>
+            <button onClick={() => press(0)} disabled={loading} className="h-10 sm:h-12 landscape:h-11 lg:h-14 text-lg sm:text-xl lg:text-2xl font-bold text-urbana-gold bg-transparent border-2 border-urbana-gold/40 rounded-lg active:scale-95 active:bg-urbana-gold/30">
+              0
+            </button>
+            <button onClick={back} disabled={loading} className="h-10 sm:h-12 landscape:h-11 lg:h-14 flex items-center justify-center text-urbana-light bg-transparent border-2 border-urbana-gray/40 rounded-lg active:scale-95">
+              <Delete className="w-5 h-5" />
+            </button>
+          </div>
+          <button
+            onClick={submit}
+            disabled={value.length < 4 || loading}
+            className={cn(
+              'mt-2 sm:mt-3 w-full h-11 sm:h-12 lg:h-14 text-sm sm:text-base lg:text-lg font-black rounded-lg transition-transform active:scale-[0.98] shadow-lg shadow-urbana-gold/30',
+              value.length === 4 && !loading
+                ? 'bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold text-urbana-black'
+                : 'bg-urbana-gray/40 text-urbana-light/40 cursor-not-allowed',
+            )}
+          >
+            {loading ? 'VALIDANDO...' : 'LIBERAR'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
 
 const PainelFila: React.FC = () => {
   const queryClient = useQueryClient();
@@ -201,17 +281,7 @@ const PainelFila: React.FC = () => {
       }
       setAuthLoading(false);
     };
-    return (
-      <TotemPinKeypad
-        title="Painel da Fila"
-        subtitle="Digite o PIN para liberar o painel"
-        pinLength={4}
-        onSubmit={handlePin}
-        loading={authLoading}
-        showDemoPin={false}
-        submitButtonText="LIBERAR"
-      />
-    );
+    return <PainelAuthKeypad onSubmit={handlePin} loading={authLoading} />;
   }
 
   return (
@@ -312,29 +382,36 @@ const PainelFila: React.FC = () => {
                     </div>
                   ) : (
                     <ul className="h-full grid grid-flow-row auto-rows-fr gap-1 sm:gap-1.5 overflow-hidden">
-                      {list.map((item) => (
-                        <li
-                          key={item.id}
-                          className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-all hover:border-white/10 ${
-                            meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
-                              {shortName(item.cliente_nome)}
-                            </p>
-                            <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
-                              <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                              <span className="truncate">{item.barbeiro_nome}</span>
-                            </p>
-                          </div>
-                          <div className={`text-right shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border}`}>
-                            <span className={`text-xs sm:text-base lg:text-xl font-bold tabular-nums ${meta.text} leading-none block`}>
-                              {item.hora?.slice(0, 5)}
-                            </span>
-                          </div>
-                        </li>
-                      ))}
+                      <AnimatePresence initial={false}>
+                        {list.map((item) => (
+                          <motion.li
+                            key={item.id}
+                            layout
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl pl-2 pr-1.5 sm:pl-3 sm:pr-2 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-2.5 hover:border-white/10 ${
+                              meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
+                                {shortName(item.cliente_nome)}
+                              </p>
+                              <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
+                                <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                                <span className="truncate">{item.barbeiro_nome}</span>
+                              </p>
+                            </div>
+                            <div className={`shrink-0 flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border} min-w-[44px] sm:min-w-[56px] lg:min-w-[68px]`}>
+                              <span className={`text-[11px] sm:text-sm lg:text-lg xl:text-xl font-bold tabular-nums ${meta.text} leading-none whitespace-nowrap`}>
+                                {item.hora?.slice(0, 5)}
+                              </span>
+                            </div>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
                     </ul>
                   )}
                 </div>
