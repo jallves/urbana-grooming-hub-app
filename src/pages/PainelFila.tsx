@@ -462,11 +462,18 @@ const PainelFila: React.FC = () => {
                                 {shortName(item.cliente_nome)}
                               </p>
                               <p
-                                className="text-zinc-500 truncate flex items-center gap-1 mt-0.5 leading-tight"
+                                className="truncate flex items-center gap-1.5 mt-0.5 leading-tight"
                                 style={{ fontSize: 'var(--row-sub)' }}
                               >
-                                <Scissors className="shrink-0" style={{ width: 'var(--row-sub)', height: 'var(--row-sub)' }} />
-                                <span className="truncate">{item.barbeiro_nome}</span>
+                                <Scissors className="shrink-0 text-zinc-500" style={{ width: 'var(--row-sub)', height: 'var(--row-sub)' }} />
+                                <span className="truncate text-zinc-400">{item.barbeiro_nome}</span>
+                                <span className="text-zinc-700">·</span>
+                                <span
+                                  className="truncate font-semibold text-urbana-gold"
+                                  title={item.servico_nome}
+                                >
+                                  {item.servico_nome}
+                                </span>
                               </p>
                             </div>
                             <div className={`shrink-0 flex items-center justify-center px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border}`}>
