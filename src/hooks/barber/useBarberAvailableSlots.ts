@@ -115,24 +115,21 @@ export const useBarberAvailableSlots = () => {
       }
       console.log('🚫 [BarberSlots] Bloqueios encontrados:', blockedPeriods.length);
 
-      const occupiedSlots = new Set<string>();
-      
-      // Marcar todos os slots ocupados considerando a duração e buffer
+      // Calcular intervalos ocupados por agendamentos existentes.
+      // Regra: bloquear apenas slots que REALMENTE colidem.
+      // Buffer (10min) é aplicado UMA vez entre o fim do anterior e o início do próximo,
+      // ou seja: o slot é livre se slot_start >= apt_end (sem buffer entre serviços do MESMO slot)
+      // mas o próximo agendamento precisa começar somente após apt_end + BUFFER.
+      // Implementação: o intervalo ocupado é [apt_start, apt_start + duracao). O buffer é
+      // somado apenas ao verificar se o NOVO serviço cabe sem invadir o próximo.
+      const occupiedRanges: { start: number; end: number }[] = [];
       appointments?.forEach((apt) => {
-        // Ignorar o agendamento sendo editado
         if (excludeAppointmentId && apt.id === excludeAppointmentId) return;
-        
         const mainDuration = (apt.servico as any)?.duracao || 60;
         const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
-        const aptStart = parse(apt.hora, 'HH:mm:ss', new Date());
-        
-        // Adicionar buffer de 10 minutos
-        const totalDuration = aptDuration + BUFFER_MINUTES;
-        
-        for (let i = 0; i < totalDuration; i += 30) {
-          const slot = format(addMinutes(aptStart, i), 'HH:mm');
-          occupiedSlots.add(slot);
-        }
+        const [hh, mm] = apt.hora.split(':').map(Number);
+        const start = hh * 60 + mm;
+        occupiedRanges.push({ start, end: start + aptDuration });
       });
 
       // Gerar slots
@@ -165,7 +162,18 @@ export const useBarberAvailableSlots = () => {
             }
           }
 
-          const isOccupied = occupiedSlots.has(timeString);
+          // Verificar overlap real com agendamentos existentes
+          const slotStartMin = hour * 60 + minute;
+          const slotEndMin = slotStartMin + serviceDuration;
+          const isOccupied = occupiedRanges.some((r) => {
+            // Bloqueia se o novo serviço invadir o intervalo ocupado
+            // OU se terminar a menos de BUFFER_MINUTES antes do próximo (transição)
+            // OU se começar a menos de BUFFER_MINUTES após o fim do anterior
+            const overlapsService = slotStartMin < r.end && slotEndMin > r.start;
+            const tooCloseAfter = slotStartMin >= r.end && slotStartMin < r.end + BUFFER_MINUTES;
+            const tooCloseBefore = slotEndMin > r.start - BUFFER_MINUTES && slotEndMin <= r.start;
+            return overlapsService || tooCloseAfter || tooCloseBefore;
+          });
 
           // Verificar se o slot está bloqueado
           const slotMinutes = hour * 60 + minute;
