@@ -19,6 +19,7 @@ type FilaItem = {
   hora: string;
   cliente_nome: string;
   barbeiro_nome: string;
+  servico_nome: string;
   status: string | null;
   status_totem: string | null;
 };
@@ -222,7 +223,8 @@ const PainelFila: React.FC = () => {
           status,
           status_totem,
           painel_clientes(nome),
-          painel_barbeiros(nome)
+          painel_barbeiros(nome),
+          painel_servicos(nome)
         `)
         .eq('data', today)
         .order('hora', { ascending: true });
@@ -235,6 +237,7 @@ const PainelFila: React.FC = () => {
         status_totem: row.status_totem,
         cliente_nome: row.painel_clientes?.nome ?? 'Cliente',
         barbeiro_nome: row.painel_barbeiros?.nome ?? '—',
+        servico_nome: row.painel_servicos?.nome ?? '—',
       }));
     },
     staleTime: 0,
