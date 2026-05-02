@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatInTimeZone } from 'date-fns-tz';
+import { ptBR } from 'date-fns/locale';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -144,70 +145,70 @@ const PainelFila: React.FC = () => {
   }, [items]);
 
   const totalAtivos = grouped.em_atendimento.length + grouped.agendado.length;
-  const dataDisplay = formatInTimeZone(now, TZ, "EEEE, dd 'de' MMMM");
+  const dataDisplay = formatInTimeZone(now, TZ, "EEEE, dd 'de' MMMM", { locale: ptBR });
   const horaDisplay = formatInTimeZone(now, TZ, 'HH:mm:ss');
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-black via-zinc-950 to-black text-white p-6 lg:p-10 font-raleway">
+    <div className="min-h-screen w-full bg-gradient-to-b from-black via-zinc-950 to-black text-white p-3 sm:p-6 lg:p-10 font-raleway">
       {/* Header */}
-      <header className="flex items-center justify-between border-b-2 border-urbana-gold/40 pb-5 mb-8">
-        <div>
-          <h1 className="text-4xl lg:text-6xl font-playfair font-bold text-urbana-gold tracking-wide">
-            Costa Urbana — Painel do Dia
+      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b-2 border-urbana-gold/40 pb-4 mb-5 sm:mb-8">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-playfair font-bold text-urbana-gold tracking-wide leading-tight">
+            Costa Urbana <span className="hidden sm:inline">—</span> <span className="block sm:inline">Painel do Dia</span>
           </h1>
-          <p className="text-lg lg:text-2xl text-zinc-300 mt-1 capitalize">{dataDisplay}</p>
+          <p className="text-sm sm:text-lg lg:text-2xl text-zinc-300 mt-1 capitalize">{dataDisplay}</p>
         </div>
-        <div className="text-right">
-          <div className="text-5xl lg:text-7xl font-mono font-bold text-white tabular-nums">{horaDisplay}</div>
-          <p className="text-sm lg:text-base text-zinc-400 mt-1">
+        <div className="text-left sm:text-right shrink-0">
+          <div className="text-3xl sm:text-5xl lg:text-7xl font-mono font-bold text-white tabular-nums">{horaDisplay}</div>
+          <p className="text-xs sm:text-sm lg:text-base text-zinc-400 mt-1">
             {totalAtivos} ativo(s) · {items.length} no total
           </p>
         </div>
       </header>
 
       {/* Grid de status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
         {SECTION_ORDER.map((key) => {
           const meta = STATUS_META[key];
           const list = grouped[key];
           return (
             <section
               key={key}
-              className={`rounded-2xl border-2 ${meta.border} ${meta.bg} p-5 flex flex-col min-h-[200px]`}
+              className={`rounded-2xl border-2 ${meta.border} ${meta.bg} p-3 sm:p-4 lg:p-5 flex flex-col min-h-[160px]`}
             >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className={`text-xl lg:text-2xl font-bold ${meta.text} flex items-center gap-2`}>
+              <div className="flex items-center justify-between mb-3 sm:mb-4">
+                <h2 className={`text-base sm:text-xl lg:text-2xl font-bold ${meta.text} flex items-center gap-2`}>
                   {meta.pulse && (
-                    <span className="inline-block w-3 h-3 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400 animate-pulse" />
                   )}
                   {meta.label}
                 </h2>
-                <span className={`text-3xl lg:text-4xl font-bold ${meta.text} tabular-nums`}>
+                <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${meta.text} tabular-nums`}>
                   {list.length}
                 </span>
               </div>
 
               {list.length === 0 ? (
-                <p className="text-zinc-500 italic text-sm mt-4">Nenhum agendamento</p>
+                <p className="text-zinc-500 italic text-xs sm:text-sm mt-2">Nenhum agendamento</p>
               ) : (
                 <ul className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: '70vh' }}>
                   {list.map((item) => (
                     <li
                       key={item.id}
-                      className={`bg-black/40 rounded-lg px-3 py-3 border border-white/5 flex items-center justify-between gap-3 ${
+                      className={`bg-black/40 rounded-lg px-2.5 sm:px-3 py-2.5 sm:py-3 border border-white/5 flex items-center justify-between gap-2 sm:gap-3 ${
                         meta.pulse ? 'ring-1 ring-emerald-400/40' : ''
                       }`}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-lg lg:text-xl font-semibold text-white truncate">
+                        <p className="text-sm sm:text-base lg:text-xl font-semibold text-white truncate">
                           {shortName(item.cliente_nome)}
                         </p>
-                        <p className="text-xs lg:text-sm text-zinc-400 truncate">
+                        <p className="text-[10px] sm:text-xs lg:text-sm text-zinc-400 truncate">
                           {item.barbeiro_nome}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <span className="text-2xl lg:text-3xl font-bold text-white tabular-nums">
+                      <div className="text-right shrink-0">
+                        <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-white tabular-nums">
                           {item.hora?.slice(0, 5)}
                         </span>
                       </div>
@@ -220,7 +221,7 @@ const PainelFila: React.FC = () => {
         })}
       </div>
 
-      <footer className="mt-8 text-center text-xs lg:text-sm text-zinc-500">
+      <footer className="mt-6 sm:mt-8 text-center text-[10px] sm:text-xs lg:text-sm text-zinc-500">
         Atualização automática em tempo real · {today}
       </footer>
     </div>
