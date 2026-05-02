@@ -31,6 +31,7 @@ interface TimeSlot {
   time: string;
   isBlocked: boolean;
   hasAppointment: boolean;
+  isCompleted: boolean;
   blockId?: string;
 }
 
@@ -195,7 +196,7 @@ const AdminBarberBlockManager: React.FC = () => {
         
         supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, servicos_extras, servico:servico_id(duracao, nome)')
+          .select('id, data, hora, status, servicos_extras, servico:servico_id(duracao, nome)')
           .eq('barbeiro_id', selectedBarber.id)
           .eq('data', selectedDate)
           .not('status', 'in', '("cancelado","ausente")')
@@ -239,7 +240,7 @@ const AdminBarberBlockManager: React.FC = () => {
       const [slotHour, slotMin] = time.split(':').map(Number);
       const slotTotalMinutes = slotHour * 60 + slotMin;
 
-      const hasAppointment = appointments.some(apt => {
+      const matchingAppointment = appointments.find(apt => {
         const aptTime = apt.hora?.substring(0, 5);
         if (!aptTime) return false;
         
@@ -253,12 +254,16 @@ const AdminBarberBlockManager: React.FC = () => {
         return slotTotalMinutes >= aptTotalMinutes && slotTotalMinutes < aptEndMinutes;
       });
 
+      const hasAppointment = !!matchingAppointment;
+      const isCompleted = !!matchingAppointment && matchingAppointment.status === 'concluido';
+
       const isPast = isSelectedDateToday && time < currentTime;
 
       return {
         time,
         isBlocked: !!block || isPast,
         hasAppointment,
+        isCompleted,
         blockId: block?.id,
       };
     });
@@ -347,6 +352,7 @@ const AdminBarberBlockManager: React.FC = () => {
   const quickDateButtons = getQuickDateButtons();
 
   const getSlotStatus = (slot: TimeSlot) => {
+    if (slot.isCompleted) return 'completed';
     if (slot.hasAppointment) return 'occupied';
     if (slot.isBlocked) return 'blocked';
     return 'available';
@@ -357,6 +363,8 @@ const AdminBarberBlockManager: React.FC = () => {
     const base = 'flex items-center justify-between p-2.5 sm:p-3 rounded-lg border-2 transition-all duration-150';
     
     switch (status) {
+      case 'completed':
+        return cn(base, 'bg-urbana-gold/15 border-urbana-gold text-urbana-gold');
       case 'occupied':
         return cn(base, 'bg-blue-50 border-blue-300 text-blue-700');
       case 'blocked':
@@ -538,6 +546,10 @@ const AdminBarberBlockManager: React.FC = () => {
                   <div className="w-4 h-4 rounded bg-blue-100 border-2 border-blue-400" />
                   <span className="text-gray-700">Agendado</span>
                 </div>
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 rounded bg-urbana-gold/20 border-2 border-urbana-gold" />
+                  <span className="text-gray-700">Concluído</span>
+                </div>
               </div>
 
               {/* Grade de Horários */}
@@ -550,7 +562,7 @@ const AdminBarberBlockManager: React.FC = () => {
                   {slots.map((slot) => {
                     const status = getSlotStatus(slot);
                     const isSaving = saving === slot.time;
-                    const canToggle = status !== 'occupied';
+                    const canToggle = status !== 'occupied' && status !== 'completed';
 
                     return (
                       <button
@@ -570,6 +582,10 @@ const AdminBarberBlockManager: React.FC = () => {
                         
                         {isSaving ? (
                           <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : status === 'completed' ? (
+                          <span className="text-[10px] bg-urbana-gold/30 text-urbana-gold px-1.5 py-0.5 rounded font-medium">
+                            Concl.
+                          </span>
                         ) : status === 'occupied' ? (
                           <span className="text-[10px] bg-blue-200 px-1.5 py-0.5 rounded font-medium">
                             Agend.
@@ -588,7 +604,7 @@ const AdminBarberBlockManager: React.FC = () => {
               {/* Resumo */}
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4">
                 <h4 className="text-sm font-semibold text-gray-900 mb-3">Resumo do Dia</h4>
-                <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
                     <p className="text-xl font-bold text-green-600">
                       {slots.filter(s => getSlotStatus(s) === 'available').length}
@@ -600,6 +616,12 @@ const AdminBarberBlockManager: React.FC = () => {
                       {slots.filter(s => getSlotStatus(s) === 'occupied').length}
                     </p>
                     <p className="text-[10px] sm:text-xs text-gray-600">Agendados</p>
+                  </div>
+                  <div className="bg-white rounded-lg p-3 border border-gray-200">
+                    <p className="text-xl font-bold text-urbana-gold">
+                      {slots.filter(s => getSlotStatus(s) === 'completed').length}
+                    </p>
+                    <p className="text-[10px] sm:text-xs text-gray-600">Concluídos</p>
                   </div>
                   <div className="bg-white rounded-lg p-3 border border-gray-200">
                     <p className="text-xl font-bold text-red-600">

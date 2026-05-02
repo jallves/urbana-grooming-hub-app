@@ -27,6 +27,7 @@ interface TimeSlot {
   time: string;
   isBlocked: boolean;
   hasAppointment: boolean;
+  isCompleted: boolean;
   blockId?: string;
 }
 
@@ -187,7 +188,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         // Buscar agendamentos do dia usando barbeiro_id do painel
         supabase
           .from('painel_agendamentos')
-          .select('id, data, hora, servicos_extras, servico:servico_id(duracao, nome)')
+          .select('id, data, hora, status, servicos_extras, servico:servico_id(duracao, nome)')
           .eq('barbeiro_id', barberRecord.id)
           .eq('data', selectedDate)
           .not('status', 'in', '("cancelado","ausente")')
@@ -260,7 +261,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
       const slotTotalMinutes = slotHour * 60 + slotMin;
 
       // Verificar se tem agendamento considerando a duração do serviço
-      const hasAppointment = appointments.some(apt => {
+      const matchingAppointment = appointments.find(apt => {
         const aptTime = apt.hora?.substring(0, 5);
         if (!aptTime) return false;
         
@@ -276,6 +277,9 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         return slotTotalMinutes >= aptTotalMinutes && slotTotalMinutes < aptEndMinutes;
       });
 
+      const hasAppointment = !!matchingAppointment;
+      const isCompleted = !!matchingAppointment && matchingAppointment.status === 'concluido';
+
       // Se for hoje e o horário já passou, marcar como não disponível
       const isPast = isSelectedDateToday && time < currentTime;
 
@@ -283,6 +287,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
         time,
         isBlocked: !!block || isPast,
         hasAppointment,
+        isCompleted,
         blockId: block?.id,
       };
     });
@@ -419,6 +424,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
   const quickDateButtons = getQuickDateButtons();
 
   const getSlotStatus = (slot: TimeSlot) => {
+    if (slot.isCompleted) return 'completed';
     if (slot.hasAppointment) return 'occupied';
     if (slot.isBlocked) return 'blocked';
     return 'available';
@@ -429,6 +435,8 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
     const base = 'flex items-center justify-between p-2 sm:p-3 rounded-lg border transition-all duration-150';
     
     switch (status) {
+      case 'completed':
+        return cn(base, 'bg-urbana-gold/20 border-urbana-gold/60 text-urbana-gold');
       case 'occupied':
         return cn(base, 'bg-blue-500/20 border-blue-500/40 text-blue-300');
       case 'blocked':
@@ -524,6 +532,10 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
               <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-blue-500/50 border border-blue-500/70" />
               <span className="text-urbana-light/70">Agendado</span>
             </div>
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <div className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded bg-urbana-gold/50 border border-urbana-gold" />
+              <span className="text-urbana-light/70">Concluído</span>
+            </div>
           </div>
 
           {/* Grade de Horários */}
@@ -536,7 +548,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
               {slots.map((slot) => {
                 const status = getSlotStatus(slot);
                 const isSaving = saving === slot.time;
-                const canToggle = status !== 'occupied';
+                const canToggle = status !== 'occupied' && status !== 'completed';
 
                 return (
                   <button
@@ -557,6 +569,8 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
                     
                     {isSaving ? (
                       <Loader2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 animate-spin" />
+                    ) : status === 'completed' ? (
+                      <span className="text-[10px] sm:text-xs bg-urbana-gold/30 text-urbana-gold px-1.5 sm:px-2 py-0.5 rounded">Concl.</span>
                     ) : status === 'occupied' ? (
                       <span className="text-[10px] sm:text-xs bg-blue-500/30 px-1.5 sm:px-2 py-0.5 rounded">Agend.</span>
                     ) : status === 'blocked' ? (
@@ -573,7 +587,7 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
           {/* Resumo */}
           <div className="backdrop-blur-sm bg-urbana-black/30 border border-urbana-gold/20 rounded-xl p-3 sm:p-4">
             <h4 className="text-xs sm:text-sm font-medium text-urbana-light mb-2">Resumo do Dia</h4>
-            <div className="grid grid-cols-3 gap-2 sm:gap-3 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 text-center">
               <div>
                 <p className="text-base sm:text-lg font-bold text-green-400">
                   {slots.filter(s => getSlotStatus(s) === 'available').length}
@@ -585,6 +599,12 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
                   {slots.filter(s => getSlotStatus(s) === 'occupied').length}
                 </p>
                 <p className="text-[10px] sm:text-xs text-urbana-light/60">Agendados</p>
+              </div>
+              <div>
+                <p className="text-base sm:text-lg font-bold text-urbana-gold">
+                  {slots.filter(s => getSlotStatus(s) === 'completed').length}
+                </p>
+                <p className="text-[10px] sm:text-xs text-urbana-light/60">Concluídos</p>
               </div>
               <div>
                 <p className="text-base sm:text-lg font-bold text-red-400">
