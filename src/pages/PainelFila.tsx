@@ -382,29 +382,36 @@ const PainelFila: React.FC = () => {
                     </div>
                   ) : (
                     <ul className="h-full grid grid-flow-row auto-rows-fr gap-1 sm:gap-1.5 overflow-hidden">
-                      {list.map((item) => (
-                        <li
-                          key={item.id}
-                          className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-all hover:border-white/10 ${
-                            meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
-                          }`}
-                        >
-                          <div className="min-w-0 flex-1">
-                            <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
-                              {shortName(item.cliente_nome)}
-                            </p>
-                            <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
-                              <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
-                              <span className="truncate">{item.barbeiro_nome}</span>
-                            </p>
-                          </div>
-                          <div className={`text-right shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border}`}>
-                            <span className={`text-xs sm:text-base lg:text-xl font-bold tabular-nums ${meta.text} leading-none block`}>
-                              {item.hora?.slice(0, 5)}
-                            </span>
-                          </div>
-                        </li>
-                      ))}
+                      <AnimatePresence initial={false}>
+                        {list.map((item) => (
+                          <motion.li
+                            key={item.id}
+                            layout
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                            className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl pl-2 pr-1.5 sm:pl-3 sm:pr-2 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-2.5 hover:border-white/10 ${
+                              meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
+                            }`}
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
+                                {shortName(item.cliente_nome)}
+                              </p>
+                              <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
+                                <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                                <span className="truncate">{item.barbeiro_nome}</span>
+                              </p>
+                            </div>
+                            <div className={`shrink-0 flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border} min-w-[44px] sm:min-w-[56px] lg:min-w-[68px]`}>
+                              <span className={`text-[11px] sm:text-sm lg:text-lg xl:text-xl font-bold tabular-nums ${meta.text} leading-none whitespace-nowrap`}>
+                                {item.hora?.slice(0, 5)}
+                              </span>
+                            </div>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
                     </ul>
                   )}
                 </div>
