@@ -362,7 +362,6 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
       });
 
       // 3. Processar localmente
-      const BUFFER = 10;
       const timeToMin = (t: string) => { const [h, m] = t.split(':').map(Number); return h * 60 + m; };
       const now = new Date();
       const dates: Date[] = [];
@@ -393,7 +392,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         const startMin = timeToMin(effectiveStart);
         const endMin = timeToMin(effectiveEnd);
         const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
-          start: timeToMin(apt.hora), end: timeToMin(apt.hora) + apt.duracao + BUFFER
+          start: timeToMin(apt.hora), end: timeToMin(apt.hora) + apt.duracao
         }));
 
         const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
@@ -401,7 +400,7 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
         for (let mins = startMin; mins + serviceDuration <= endMin; mins += 30) {
           const slotEnd = mins + serviceDuration;
           let conflict = false;
-          for (const p of occupied) { if (mins < p.end && slotEnd + BUFFER > p.start) { conflict = true; break; } }
+          for (const p of occupied) { if (mins < p.end && slotEnd > p.start) { conflict = true; break; } }
           if (!conflict) {
             for (const block of blockedPeriods) {
               if (mins < block.end && slotEnd > block.start) { conflict = true; break; }
