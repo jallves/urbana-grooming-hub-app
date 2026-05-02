@@ -111,6 +111,7 @@ import TotemTEFHomologacaoV2 from './pages/Totem/TotemTEFHomologacaoV2';
 import TotemTEFHomologacaoV3 from './pages/Totem/TotemTEFHomologacaoV3';
 import TotemTEFReportHomologacao from './pages/Totem/TotemTEFReportHomologacao';
 import TotemDebug from './pages/Totem/TotemDebug';
+import PainelFila from './pages/PainelFila';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -139,6 +140,7 @@ function App() {
             {/* Rotas públicas SEM AuthProvider */}
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/painel-fila" element={<PainelFila />} />
             
             {/* Todas as outras rotas COM AuthProvider */}
             <Route path="/*" element={
