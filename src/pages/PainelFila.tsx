@@ -105,7 +105,7 @@ const PainelFila: React.FC = () => {
       setNow(current);
       const todayBR = formatInTimeZone(current, TZ, 'yyyy-MM-dd');
       setToday((prev) => (prev !== todayBR ? todayBR : prev));
-    }, 30 * 1000);
+    }, 1000);
     return () => clearInterval(interval);
   }, []);
 
