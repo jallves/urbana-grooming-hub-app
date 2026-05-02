@@ -162,18 +162,14 @@ export const useBarberAvailableSlots = () => {
             }
           }
 
-          // Verificar overlap real com agendamentos existentes
+          // Verificar overlap REAL com agendamentos existentes
+          // Regra: slot é ocupado APENAS se o novo serviço invadir [apt_start, apt_end)
+          // Sem buffer artificial — slots livres entre agendamentos ficam disponíveis
           const slotStartMin = hour * 60 + minute;
           const slotEndMin = slotStartMin + serviceDuration;
-          const isOccupied = occupiedRanges.some((r) => {
-            // Bloqueia se o novo serviço invadir o intervalo ocupado
-            // OU se terminar a menos de BUFFER_MINUTES antes do próximo (transição)
-            // OU se começar a menos de BUFFER_MINUTES após o fim do anterior
-            const overlapsService = slotStartMin < r.end && slotEndMin > r.start;
-            const tooCloseAfter = slotStartMin >= r.end && slotStartMin < r.end + BUFFER_MINUTES;
-            const tooCloseBefore = slotEndMin > r.start - BUFFER_MINUTES && slotEndMin <= r.start;
-            return overlapsService || tooCloseAfter || tooCloseBefore;
-          });
+          const isOccupied = occupiedRanges.some(
+            (r) => slotStartMin < r.end && slotEndMin > r.start
+          );
 
           // Verificar se o slot está bloqueado
           const slotMinutes = hour * 60 + minute;
