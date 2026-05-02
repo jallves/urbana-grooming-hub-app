@@ -186,7 +186,7 @@ const TotemDataHora: React.FC = () => {
 
           const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
             start: timeToMin(apt.hora),
-            end: timeToMin(apt.hora) + apt.duracao + BUFFER
+            end: timeToMin(apt.hora) + apt.duracao
           }));
 
           const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
@@ -203,7 +203,7 @@ const TotemDataHora: React.FC = () => {
             
             // Verificar agendamentos existentes
             for (const period of occupied) {
-              if (mins < period.end && slotEnd + BUFFER > period.start) {
+              if (mins < period.end && slotEnd > period.start) {
                 conflict = true;
                 break;
               }
@@ -305,7 +305,7 @@ const TotemDataHora: React.FC = () => {
 
     const occupied = (bulkData.appointmentsByDate.get(dateStr) || []).map((apt: any) => ({
       start: timeToMin(apt.hora),
-      end: timeToMin(apt.hora) + apt.duracao + BUFFER
+      end: timeToMin(apt.hora) + apt.duracao
     }));
 
     const availableSlots: TimeSlot[] = [];
@@ -320,7 +320,7 @@ const TotemDataHora: React.FC = () => {
       
       // Verificar agendamentos
       for (const period of occupied) {
-        if (mins < period.end && slotEnd + BUFFER > period.start) {
+        if (mins < period.end && slotEnd > period.start) {
           conflict = true;
           break;
         }
