@@ -3,7 +3,6 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { 
   isPastTime,
-  BUFFER_MINUTES,
   BUSINESS_START_HOUR,
   BUSINESS_START_MINUTE,
   BUSINESS_END_HOUR,
