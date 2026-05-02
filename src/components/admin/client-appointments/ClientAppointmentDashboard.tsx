@@ -10,11 +10,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Plus, Zap, ChevronLeft, ChevronRight, CalendarIcon } from 'lucide-react';
+import { Plus, Zap, ChevronLeft, ChevronRight, CalendarIcon, Tv, Copy, ExternalLink } from 'lucide-react';
 import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { getNowInBrazil } from '@/lib/utils/dateUtils';
+import { toast } from 'sonner';
 
 const ClientAppointmentDashboard: React.FC = () => {
   const [selectedDate, setSelectedDate] = useState<Date>(getNowInBrazil());
@@ -24,6 +25,17 @@ const ClientAppointmentDashboard: React.FC = () => {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEncaixeDialogOpen, setIsEncaixeDialogOpen] = useState(false);
+
+  const filaUrl = typeof window !== 'undefined' ? `${window.location.origin}/painel-fila` : '/painel-fila';
+
+  const copyFilaUrl = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(filaUrl);
+      toast.success('URL copiada!', { description: filaUrl });
+    } catch {
+      toast.error('Não foi possível copiar a URL.');
+    }
+  }, [filaUrl]);
 
   const {
     appointments,
@@ -227,6 +239,48 @@ const ClientAppointmentDashboard: React.FC = () => {
 
       {/* Estatísticas do dia selecionado */}
       <ClientAppointmentStats appointments={filteredAppointments} />
+
+      {/* Painel da TV — Fila Virtual */}
+      <div className="bg-gradient-to-r from-urbana-black to-zinc-900 border-2 border-urbana-gold/40 rounded-xl sm:rounded-2xl p-4 sm:p-5 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-start gap-3 min-w-0">
+            <div className="w-11 h-11 rounded-lg bg-urbana-gold/15 border border-urbana-gold/40 flex items-center justify-center shrink-0">
+              <Tv className="w-5 h-5 text-urbana-gold" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-white font-playfair text-base sm:text-lg font-semibold">
+                Painel da TV — Fila Virtual
+              </h3>
+              <p className="text-zinc-300 text-xs sm:text-sm leading-relaxed">
+                Tela em tempo real para exibir em televisão/tablet na barbearia, com todos os agendamentos do dia
+                organizados por status.
+              </p>
+              <code className="block mt-2 text-[11px] sm:text-xs text-urbana-gold/90 break-all">
+                {filaUrl}
+              </code>
+            </div>
+          </div>
+          <div className="flex gap-2 sm:shrink-0">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyFilaUrl}
+              className="border-urbana-gold/40 text-urbana-gold bg-transparent hover:bg-urbana-gold/10"
+            >
+              <Copy className="w-4 h-4 mr-1.5" />
+              Copiar
+            </Button>
+            <Button
+              size="sm"
+              onClick={() => window.open(filaUrl, '_blank', 'noopener')}
+              className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
+            >
+              <ExternalLink className="w-4 h-4 mr-1.5" />
+              Abrir
+            </Button>
+          </div>
+        </div>
+      </div>
 
       {/* Card principal com filtro e tabela - 100% responsivo */}
       <Card className="flex-1 flex flex-col bg-white border-0 shadow-lg min-h-[400px] sm:min-h-[500px] rounded-xl sm:rounded-2xl overflow-hidden">
