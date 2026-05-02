@@ -354,18 +354,12 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
             continue;
           }
           
-          let isAvailable = true;
-          for (let i = 0; i < serviceDuration; i += 30) {
-            const checkMin = slotTotalMinutes + i;
-            const checkH = Math.floor(checkMin / 60);
-            const checkM = checkMin % 60;
-            const checkStr = `${checkH.toString().padStart(2, '0')}:${checkM.toString().padStart(2, '0')}`;
-            if (occupiedSlots.has(checkStr)) {
-              isAvailable = false;
-              break;
-            }
-          }
-          
+          // Overlap real: bloqueia apenas se o intervalo [slot, slot+duração) invadir um agendamento
+          const slotEndMinutes = slotTotalMinutes + serviceDuration;
+          const isAvailable = !occupiedRanges.some(
+            (r) => slotTotalMinutes < r.end && slotEndMinutes > r.start
+          );
+
           allSlots.push({ time: timeString, available: isAvailable });
         }
       }
