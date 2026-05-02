@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { format, isToday, addMinutes, parse } from 'date-fns';
-import { BUFFER_MINUTES, MINIMUM_ADVANCE_MINUTES } from '@/lib/utils/timeCalculations';
+import { MINIMUM_ADVANCE_MINUTES } from '@/lib/utils/timeCalculations';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 
 interface TimeSlot {
@@ -116,12 +116,8 @@ export const useBarberAvailableSlots = () => {
       console.log('🚫 [BarberSlots] Bloqueios encontrados:', blockedPeriods.length);
 
       // Calcular intervalos ocupados por agendamentos existentes.
-      // Regra: bloquear apenas slots que REALMENTE colidem.
-      // Buffer (10min) é aplicado UMA vez entre o fim do anterior e o início do próximo,
-      // ou seja: o slot é livre se slot_start >= apt_end (sem buffer entre serviços do MESMO slot)
-      // mas o próximo agendamento precisa começar somente após apt_end + BUFFER.
-      // Implementação: o intervalo ocupado é [apt_start, apt_start + duracao). O buffer é
-      // somado apenas ao verificar se o NOVO serviço cabe sem invadir o próximo.
+      // Regra: bloquear apenas slots que REALMENTE colidem com a duração ocupada.
+      // Sem buffer artificial — horários consecutivos ficam disponíveis quando não há sobreposição.
       const occupiedRanges: { start: number; end: number }[] = [];
       appointments?.forEach((apt) => {
         if (excludeAppointmentId && apt.id === excludeAppointmentId) return;
