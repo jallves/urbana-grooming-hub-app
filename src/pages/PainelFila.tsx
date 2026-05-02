@@ -311,25 +311,25 @@ const PainelFila: React.FC = () => {
                       <p className="text-zinc-600 italic text-[10px] sm:text-sm">Nenhum agendamento</p>
                     </div>
                   ) : (
-                    <ul className="h-full space-y-1 sm:space-y-2 overflow-y-auto pr-1">
+                    <ul className="h-full grid grid-flow-row auto-rows-fr gap-1 sm:gap-1.5 overflow-hidden">
                       {list.map((item) => (
                         <li
                           key={item.id}
-                          className={`relative bg-black/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1.5 sm:py-2.5 lg:py-3 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-all hover:border-white/10 ${
+                          className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl px-2 sm:px-3 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-3 transition-all hover:border-white/10 ${
                             meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
                           }`}
                         >
                           <div className="min-w-0 flex-1">
-                            <p className="text-[11px] sm:text-base lg:text-xl font-semibold text-white truncate leading-snug">
+                            <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
                               {shortName(item.cliente_nome)}
                             </p>
-                            <p className="text-[9px] sm:text-xs lg:text-sm text-zinc-500 truncate flex items-center gap-1 mt-0.5">
+                            <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
                               <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
                               <span className="truncate">{item.barbeiro_nome}</span>
                             </p>
                           </div>
                           <div className={`text-right shrink-0 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border}`}>
-                            <span className={`text-xs sm:text-xl lg:text-2xl font-bold tabular-nums ${meta.text} leading-none block`}>
+                            <span className={`text-xs sm:text-base lg:text-xl font-bold tabular-nums ${meta.text} leading-none block`}>
                               {item.hora?.slice(0, 5)}
                             </span>
                           </div>
