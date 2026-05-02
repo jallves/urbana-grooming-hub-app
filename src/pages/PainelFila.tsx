@@ -415,7 +415,18 @@ const PainelFila: React.FC = () => {
                       <p className="text-zinc-600 italic text-[10px] sm:text-sm">Nenhum agendamento</p>
                     </div>
                   ) : (
-                    <ul className="h-full grid grid-flow-row auto-rows-fr gap-1 sm:gap-1.5 overflow-hidden">
+                    <ul
+                      className="h-full grid grid-flow-row auto-rows-fr overflow-hidden"
+                      style={{
+                        // Densidade adaptativa: gap e fonte encolhem conforme a quantidade
+                        gap: `clamp(2px, ${Math.max(2, 10 - list.length)}px, 8px)`,
+                        ['--row-name' as any]: `clamp(9px, calc(100% / ${list.length} * 0.32), 22px)`,
+                        ['--row-sub' as any]: `clamp(8px, calc(100% / ${list.length} * 0.20), 14px)`,
+                        ['--row-time' as any]: `clamp(10px, calc(100% / ${list.length} * 0.34), 24px)`,
+                        ['--row-pad-y' as any]: list.length > 8 ? '2px' : list.length > 5 ? '4px' : '6px',
+                        ['--row-pad-x' as any]: list.length > 8 ? '6px' : '10px',
+                      }}
+                    >
                       <AnimatePresence initial={false}>
                         {list.map((item) => (
                           <motion.li
@@ -425,21 +436,36 @@ const PainelFila: React.FC = () => {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -4 }}
                             transition={{ duration: 0.25, ease: 'easeOut' }}
-                            className={`relative min-h-0 bg-black/50 rounded-lg sm:rounded-xl pl-2 pr-1.5 sm:pl-3 sm:pr-2 py-1 sm:py-1.5 border border-white/5 flex items-center justify-between gap-1.5 sm:gap-2.5 hover:border-white/10 ${
+                            style={{
+                              paddingTop: 'var(--row-pad-y)',
+                              paddingBottom: 'var(--row-pad-y)',
+                              paddingLeft: 'var(--row-pad-x)',
+                              paddingRight: 'calc(var(--row-pad-x) - 2px)',
+                            }}
+                            className={`relative min-h-0 overflow-hidden bg-black/50 rounded-lg sm:rounded-xl border border-white/5 flex items-center justify-between gap-2 hover:border-white/10 ${
                               meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
                             }`}
                           >
                             <div className="min-w-0 flex-1">
-                              <p className="text-[11px] sm:text-sm lg:text-lg xl:text-xl font-semibold text-white truncate leading-tight">
+                              <p
+                                className="font-semibold text-white truncate leading-tight"
+                                style={{ fontSize: 'var(--row-name)' }}
+                              >
                                 {shortName(item.cliente_nome)}
                               </p>
-                              <p className="text-[9px] sm:text-[11px] lg:text-xs text-zinc-500 truncate flex items-center gap-1 mt-0.5">
-                                <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                              <p
+                                className="text-zinc-500 truncate flex items-center gap-1 mt-0.5 leading-tight"
+                                style={{ fontSize: 'var(--row-sub)' }}
+                              >
+                                <Scissors className="shrink-0" style={{ width: 'var(--row-sub)', height: 'var(--row-sub)' }} />
                                 <span className="truncate">{item.barbeiro_nome}</span>
                               </p>
                             </div>
-                            <div className={`shrink-0 flex items-center justify-center px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border} min-w-[44px] sm:min-w-[56px] lg:min-w-[68px]`}>
-                              <span className={`text-[11px] sm:text-sm lg:text-lg xl:text-xl font-bold tabular-nums ${meta.text} leading-none whitespace-nowrap`}>
+                            <div className={`shrink-0 flex items-center justify-center px-1.5 sm:px-2 py-0.5 rounded-md sm:rounded-lg ${meta.headerBg} border ${meta.border}`}>
+                              <span
+                                className={`font-bold tabular-nums ${meta.text} leading-none whitespace-nowrap`}
+                                style={{ fontSize: 'var(--row-time)' }}
+                              >
                                 {item.hora?.slice(0, 5)}
                               </span>
                             </div>
