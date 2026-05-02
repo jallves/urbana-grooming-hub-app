@@ -418,13 +418,18 @@ const PainelFila: React.FC = () => {
                     <ul
                       className="h-full grid grid-flow-row auto-rows-fr overflow-hidden"
                       style={{
-                        // Densidade adaptativa: gap e fonte encolhem conforme a quantidade
-                        gap: `clamp(2px, ${Math.max(2, 10 - list.length)}px, 8px)`,
-                        ['--row-name' as any]: `clamp(9px, calc(100% / ${list.length} * 0.32), 22px)`,
-                        ['--row-sub' as any]: `clamp(8px, calc(100% / ${list.length} * 0.20), 14px)`,
-                        ['--row-time' as any]: `clamp(10px, calc(100% / ${list.length} * 0.34), 24px)`,
-                        ['--row-pad-y' as any]: list.length > 8 ? '2px' : list.length > 5 ? '4px' : '6px',
-                        ['--row-pad-x' as any]: list.length > 8 ? '6px' : '10px',
+                        // Densidade adaptativa suave: mantém tamanhos legíveis e só reduz
+                        // levemente quando a lista cresce muito.
+                        gap: list.length > 10 ? '4px' : list.length > 6 ? '6px' : '8px',
+                        ['--row-name' as any]:
+                          list.length > 12 ? '14px' : list.length > 8 ? '16px' : '18px',
+                        ['--row-sub' as any]:
+                          list.length > 12 ? '11px' : list.length > 8 ? '12px' : '13px',
+                        ['--row-time' as any]:
+                          list.length > 12 ? '16px' : list.length > 8 ? '18px' : '20px',
+                        ['--row-pad-y' as any]:
+                          list.length > 10 ? '4px' : list.length > 6 ? '6px' : '8px',
+                        ['--row-pad-x' as any]: list.length > 10 ? '8px' : '10px',
                       }}
                     >
                       <AnimatePresence initial={false}>
