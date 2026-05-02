@@ -272,7 +272,6 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       });
 
       // 3. Processar LOCALMENTE - sem queries adicionais
-      const BUFFER = 10; // minutos
       const timeToMin = (t: string) => {
         const [h, m] = t.split(':').map(Number);
         return h * 60 + m;
@@ -318,7 +317,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         // Períodos ocupados
         const occupied = (appointmentsByDate.get(dateStr) || []).map(apt => ({
           start: timeToMin(apt.hora),
-          end: timeToMin(apt.hora) + apt.duracao + BUFFER
+          end: timeToMin(apt.hora) + apt.duracao
         }));
 
         // Contar slots disponíveis
@@ -337,7 +336,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           const slotEnd = mins + serviceDuration;
           let conflict = false;
           for (const period of occupied) {
-            if (mins < period.end && slotEnd + BUFFER > period.start) {
+            if (mins < period.end && slotEnd > period.start) {
               conflict = true;
               break;
             }
