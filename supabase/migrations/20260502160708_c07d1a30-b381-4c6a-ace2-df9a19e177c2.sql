@@ -1,0 +1,1 @@
+ALTER TABLE public.painel_agendamentos REPLICA IDENTITY FULL;
