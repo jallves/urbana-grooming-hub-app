@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { formatInTimeZone } from 'date-fns-tz';
 import { ptBR } from 'date-fns/locale';
+import { Scissors, Clock, CheckCircle2, XCircle, Activity } from 'lucide-react';
 
 const TZ = 'America/Sao_Paulo';
 
@@ -32,31 +33,50 @@ const resolveStatus = (item: FilaItem): StatusKey => {
   return 'agendado';
 };
 
-const STATUS_META: Record<StatusKey, { label: string; bg: string; border: string; text: string; pulse?: boolean }> = {
-  agendado: {
-    label: 'AGENDADO',
-    bg: 'bg-blue-950/60',
-    border: 'border-blue-400/60',
-    text: 'text-blue-200',
-  },
+const STATUS_META: Record<
+  StatusKey,
+  {
+    label: string;
+    headerBg: string;
+    border: string;
+    text: string;
+    accentBar: string;
+    icon: React.ComponentType<{ className?: string }>;
+    pulse?: boolean;
+  }
+> = {
   em_atendimento: {
     label: 'EM ATENDIMENTO',
-    bg: 'bg-emerald-900/70',
-    border: 'border-emerald-400',
-    text: 'text-emerald-200',
+    headerBg: 'bg-emerald-500/15',
+    border: 'border-emerald-400/70',
+    text: 'text-emerald-300',
+    accentBar: 'bg-emerald-400',
+    icon: Activity,
     pulse: true,
+  },
+  agendado: {
+    label: 'AGENDADO',
+    headerBg: 'bg-sky-500/10',
+    border: 'border-sky-400/50',
+    text: 'text-sky-300',
+    accentBar: 'bg-sky-400',
+    icon: Clock,
   },
   concluido: {
     label: 'CONCLUÍDO',
-    bg: 'bg-urbana-gold/20',
-    border: 'border-urbana-gold',
+    headerBg: 'bg-urbana-gold/15',
+    border: 'border-urbana-gold/70',
     text: 'text-urbana-gold',
+    accentBar: 'bg-urbana-gold',
+    icon: CheckCircle2,
   },
   cancelado: {
     label: 'CANCELADO',
-    bg: 'bg-zinc-800/60',
-    border: 'border-zinc-600',
+    headerBg: 'bg-zinc-700/30',
+    border: 'border-zinc-600/60',
     text: 'text-zinc-400',
+    accentBar: 'bg-zinc-500',
+    icon: XCircle,
   },
 };
 
@@ -145,85 +165,147 @@ const PainelFila: React.FC = () => {
   }, [items]);
 
   const totalAtivos = grouped.em_atendimento.length + grouped.agendado.length;
-  const dataDisplay = formatInTimeZone(now, TZ, "EEEE, dd 'de' MMMM", { locale: ptBR });
-  const horaDisplay = formatInTimeZone(now, TZ, 'HH:mm:ss');
+  const dataDisplay = formatInTimeZone(now, TZ, "EEEE, dd 'de' MMMM 'de' yyyy", { locale: ptBR });
+  const horaDisplay = formatInTimeZone(now, TZ, 'HH:mm');
+  const segundosDisplay = formatInTimeZone(now, TZ, 'ss');
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-black via-zinc-950 to-black text-white p-3 sm:p-6 lg:p-10 font-raleway">
-      {/* Header */}
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b-2 border-urbana-gold/40 pb-4 mb-5 sm:mb-8">
-        <div className="min-w-0">
-          <h1 className="text-2xl sm:text-4xl lg:text-6xl font-playfair font-bold text-urbana-gold tracking-wide leading-tight">
-            Costa Urbana <span className="hidden sm:inline">—</span> <span className="block sm:inline">Painel do Dia</span>
-          </h1>
-          <p className="text-sm sm:text-lg lg:text-2xl text-zinc-300 mt-1 capitalize">{dataDisplay}</p>
-        </div>
-        <div className="text-left sm:text-right shrink-0">
-          <div className="text-3xl sm:text-5xl lg:text-7xl font-mono font-bold text-white tabular-nums">{horaDisplay}</div>
-          <p className="text-xs sm:text-sm lg:text-base text-zinc-400 mt-1">
-            {totalAtivos} ativo(s) · {items.length} no total
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen w-full bg-[radial-gradient(ellipse_at_top,_rgba(212,175,55,0.08),_transparent_60%)] bg-black text-white font-raleway">
+      {/* Faixa dourada superior */}
+      <div className="h-1 w-full bg-gradient-to-r from-transparent via-urbana-gold to-transparent" />
 
-      {/* Grid de status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
-        {SECTION_ORDER.map((key) => {
-          const meta = STATUS_META[key];
-          const list = grouped[key];
-          return (
-            <section
-              key={key}
-              className={`rounded-2xl border-2 ${meta.border} ${meta.bg} p-3 sm:p-4 lg:p-5 flex flex-col min-h-[160px]`}
-            >
-              <div className="flex items-center justify-between mb-3 sm:mb-4">
-                <h2 className={`text-base sm:text-xl lg:text-2xl font-bold ${meta.text} flex items-center gap-2`}>
-                  {meta.pulse && (
-                    <span className="inline-block w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-emerald-400 animate-pulse" />
-                  )}
-                  {meta.label}
-                </h2>
-                <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${meta.text} tabular-nums`}>
-                  {list.length}
+      <div className="p-3 sm:p-6 lg:p-10">
+        {/* Header */}
+        <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6 mb-6 lg:mb-10">
+          <div className="flex items-center gap-3 sm:gap-5 min-w-0">
+            <div className="w-12 h-12 sm:w-16 sm:h-16 lg:w-20 lg:h-20 rounded-2xl bg-urbana-gold/10 border-2 border-urbana-gold/40 flex items-center justify-center shrink-0">
+              <Scissors className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-urbana-gold" />
+            </div>
+            <div className="min-w-0">
+              <p className="text-[10px] sm:text-xs lg:text-sm uppercase tracking-[0.3em] text-urbana-gold/80">
+                Barbearia Costa Urbana
+              </p>
+              <h1 className="text-2xl sm:text-4xl lg:text-6xl font-playfair font-bold text-white leading-tight">
+                Painel do Dia
+              </h1>
+              <p className="text-xs sm:text-base lg:text-xl text-zinc-400 mt-0.5 capitalize">
+                {dataDisplay}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-stretch gap-3 sm:gap-4 shrink-0">
+            {/* Relógio */}
+            <div className="flex-1 lg:flex-none rounded-2xl border border-urbana-gold/30 bg-zinc-900/60 px-4 sm:px-6 py-3 sm:py-4 backdrop-blur">
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Horário</p>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl sm:text-5xl lg:text-7xl font-mono font-bold text-white tabular-nums leading-none">
+                  {horaDisplay}
+                </span>
+                <span className="text-base sm:text-2xl lg:text-3xl font-mono text-urbana-gold tabular-nums leading-none">
+                  :{segundosDisplay}
                 </span>
               </div>
+            </div>
+            {/* Resumo */}
+            <div className="flex-1 lg:flex-none rounded-2xl border border-zinc-700 bg-zinc-900/60 px-4 sm:px-6 py-3 sm:py-4 backdrop-blur">
+              <p className="text-[9px] sm:text-[10px] uppercase tracking-widest text-zinc-500 mb-1">Hoje</p>
+              <div className="flex items-baseline gap-2 lg:gap-3">
+                <div>
+                  <span className="text-2xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold tabular-nums leading-none">
+                    {totalAtivos}
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-zinc-400 ml-1">ativos</span>
+                </div>
+                <span className="text-zinc-700">/</span>
+                <div>
+                  <span className="text-xl sm:text-2xl lg:text-3xl font-semibold text-zinc-300 tabular-nums leading-none">
+                    {items.length}
+                  </span>
+                  <span className="text-[10px] sm:text-xs text-zinc-500 ml-1">total</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
 
-              {list.length === 0 ? (
-                <p className="text-zinc-500 italic text-xs sm:text-sm mt-2">Nenhum agendamento</p>
-              ) : (
-                <ul className="space-y-2 overflow-y-auto pr-1" style={{ maxHeight: '70vh' }}>
-                  {list.map((item) => (
-                    <li
-                      key={item.id}
-                      className={`bg-black/40 rounded-lg px-2.5 sm:px-3 py-2.5 sm:py-3 border border-white/5 flex items-center justify-between gap-2 sm:gap-3 ${
-                        meta.pulse ? 'ring-1 ring-emerald-400/40' : ''
-                      }`}
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm sm:text-base lg:text-xl font-semibold text-white truncate">
-                          {shortName(item.cliente_nome)}
-                        </p>
-                        <p className="text-[10px] sm:text-xs lg:text-sm text-zinc-400 truncate">
-                          {item.barbeiro_nome}
-                        </p>
+        {/* Grid de status */}
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-5 lg:gap-6">
+          {SECTION_ORDER.map((key) => {
+            const meta = STATUS_META[key];
+            const list = grouped[key];
+            const Icon = meta.icon;
+            return (
+              <section
+                key={key}
+                className={`group relative rounded-2xl border ${meta.border} bg-zinc-950/70 backdrop-blur overflow-hidden flex flex-col min-h-[200px] shadow-[0_4px_30px_rgba(0,0,0,0.5)]`}
+              >
+                {/* Barra lateral colorida */}
+                <div className={`absolute top-0 left-0 h-full w-1 ${meta.accentBar}`} />
+
+                {/* Header da coluna */}
+                <div className={`${meta.headerBg} px-4 sm:px-5 py-3 sm:py-4 flex items-center justify-between border-b ${meta.border}`}>
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <Icon className={`w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6 shrink-0 ${meta.text} ${meta.pulse ? 'animate-pulse' : ''}`} />
+                    <h2 className={`text-xs sm:text-sm lg:text-base font-bold tracking-wider ${meta.text} truncate`}>
+                      {meta.label}
+                    </h2>
+                  </div>
+                  <span className={`text-2xl sm:text-3xl lg:text-4xl font-bold ${meta.text} tabular-nums leading-none`}>
+                    {list.length}
+                  </span>
+                </div>
+
+                {/* Lista */}
+                <div className="flex-1 p-2 sm:p-3">
+                  {list.length === 0 ? (
+                    <div className="h-full min-h-[120px] flex flex-col items-center justify-center text-center px-3">
+                      <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full border border-zinc-800 flex items-center justify-center mb-2">
+                        <Icon className="w-4 h-4 sm:w-5 sm:h-5 text-zinc-700" />
                       </div>
-                      <div className="text-right shrink-0">
-                        <span className="text-lg sm:text-2xl lg:text-3xl font-bold text-white tabular-nums">
-                          {item.hora?.slice(0, 5)}
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </section>
-          );
-        })}
+                      <p className="text-zinc-600 italic text-xs sm:text-sm">Nenhum agendamento</p>
+                    </div>
+                  ) : (
+                    <ul className="space-y-1.5 sm:space-y-2 overflow-y-auto pr-1" style={{ maxHeight: '72vh' }}>
+                      {list.map((item) => (
+                        <li
+                          key={item.id}
+                          className={`relative bg-black/50 rounded-xl px-3 py-2.5 sm:py-3 border border-white/5 flex items-center justify-between gap-2 sm:gap-3 transition-all hover:border-white/10 ${
+                            meta.pulse ? 'ring-1 ring-emerald-400/30 shadow-[0_0_20px_rgba(52,211,153,0.15)]' : ''
+                          }`}
+                        >
+                          <div className="min-w-0 flex-1">
+                            <p className="text-sm sm:text-base lg:text-xl font-semibold text-white truncate leading-snug">
+                              {shortName(item.cliente_nome)}
+                            </p>
+                            <p className="text-[10px] sm:text-xs lg:text-sm text-zinc-500 truncate flex items-center gap-1 mt-0.5">
+                              <Scissors className="w-2.5 h-2.5 sm:w-3 sm:h-3 shrink-0" />
+                              <span className="truncate">{item.barbeiro_nome}</span>
+                            </p>
+                          </div>
+                          <div className={`text-right shrink-0 px-2 py-1 rounded-lg ${meta.headerBg} border ${meta.border}`}>
+                            <span className={`text-base sm:text-xl lg:text-2xl font-bold tabular-nums ${meta.text} leading-none block`}>
+                              {item.hora?.slice(0, 5)}
+                            </span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </section>
+            );
+          })}
+        </div>
+
+        <footer className="mt-6 sm:mt-10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[10px] sm:text-xs lg:text-sm text-zinc-600 border-t border-zinc-900 pt-4">
+          <div className="flex items-center gap-2">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Atualização automática em tempo real
+          </div>
+          <div className="text-zinc-700">Costa Urbana · {today}</div>
+        </footer>
       </div>
-
-      <footer className="mt-6 sm:mt-8 text-center text-[10px] sm:text-xs lg:text-sm text-zinc-500">
-        Atualização automática em tempo real · {today}
-      </footer>
     </div>
   );
 };
