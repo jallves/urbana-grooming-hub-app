@@ -140,6 +140,7 @@ function App() {
             {/* Rotas públicas SEM AuthProvider */}
             <Route path="/change-password" element={<ChangePassword />} />
             <Route path="/reset-password" element={<ResetPassword />} />
+            <Route path="/painel-fila" element={<PainelFila />} />
             
             {/* Todas as outras rotas COM AuthProvider */}
             <Route path="/*" element={
