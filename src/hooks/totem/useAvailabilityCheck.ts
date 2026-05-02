@@ -278,19 +278,17 @@ export const useAvailabilityCheck = () => {
         .eq('data', dateStr)
         .neq('status', 'cancelado');
 
-      const occupiedSlots = new Set<string>();
-      
-      // Marcar todos os slots ocupados considerando a duração total (principal + extras)
+      // Calcular intervalos ocupados (em minutos) considerando duração real (principal + extras)
+      const timeToMin = (t: string) => {
+        const [h, m] = t.split(':').map(Number);
+        return h * 60 + m;
+      };
+      const occupiedRanges: { start: number; end: number }[] = [];
       appointments?.forEach((apt) => {
         const mainDuration = (apt.servico as any)?.duracao || 60;
         const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
-        const aptStart = parse(apt.hora, 'HH:mm', new Date());
-        
-        // Marcar slot inicial e próximos baseado na duração
-        for (let i = 0; i < aptDuration; i += 30) {
-          const slot = format(addMinutes(aptStart, i), 'HH:mm');
-          occupiedSlots.add(slot);
-        }
+        const start = timeToMin(apt.hora);
+        occupiedRanges.push({ start, end: start + aptDuration });
       });
 
       // Gerar slots disponíveis
@@ -322,7 +320,11 @@ export const useAvailabilityCheck = () => {
             }
           }
 
-          const isOccupied = occupiedSlots.has(timeString);
+          const slotStartMin = timeToMin(timeString);
+          const slotEndMin = slotStartMin + duration;
+          const isOccupied = occupiedRanges.some(
+            (r) => slotStartMin < r.end && slotEndMin > r.start
+          );
           
           slots.push({
             time: timeString,
