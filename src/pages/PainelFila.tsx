@@ -136,7 +136,8 @@ const PainelFila: React.FC = () => {
       }));
     },
     staleTime: 0,
-    refetchInterval: 30 * 1000, // fallback: a cada 30s
+    refetchInterval: 5 * 1000, // fallback: a cada 5s
+    refetchOnWindowFocus: true,
   });
 
   // Realtime
@@ -145,16 +146,23 @@ const PainelFila: React.FC = () => {
       .channel(`painel-fila-${today}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'painel_agendamentos', filter: `data=eq.${today}` },
-        () => {
+        { event: '*', schema: 'public', table: 'painel_agendamentos' },
+        (payload) => {
+          console.log('🔔 [PainelFila] Realtime evento:', payload.eventType, payload);
           queryClient.invalidateQueries({ queryKey: ['painel-fila', today] });
+          refetch();
         },
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log('📡 [PainelFila] Status do canal realtime:', status);
+        if (status === 'SUBSCRIBED') {
+          refetch();
+        }
+      });
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [today, queryClient]);
+  }, [today, queryClient, refetch]);
 
   // Refetch quando o dia muda
   useEffect(() => {
