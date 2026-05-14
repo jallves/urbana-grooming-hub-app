@@ -66,17 +66,15 @@ export const useBarberCommissionsQuery = () => {
 
       console.log('✅ Barbeiro ID encontrado:', barberId);
 
-      // Buscar de AMBAS as tabelas para garantir dados completos:
-      // 1. barber_commissions (tabela principal de comissões)
-      // 2. financial_records (ERP - para comissões antigas ou não migradas)
-
-      // 1. Buscar de barber_commissions
+      // FONTE ÚNICA DE VERDADE: barber_commissions
+      // (financial_records é espelho via triggers — mesclar causa duplicação
+      // quando valores divergem por correções/abatimento de vale)
       const { data: barberCommissionsData, error: bcError } = await supabase
         .from('barber_commissions')
         .select('*')
         .eq('barber_id', barberId)
         .order('created_at', { ascending: false })
-        .limit(100);
+        .limit(200);
 
       if (bcError) {
         console.error('❌ Erro ao buscar barber_commissions:', bcError);
@@ -84,25 +82,8 @@ export const useBarberCommissionsQuery = () => {
 
       console.log('💰 barber_commissions encontradas:', barberCommissionsData?.length || 0);
 
-      // 2. Buscar de financial_records (backup/ERP)
-      const { data: financialRecordsData, error: frError } = await supabase
-        .from('financial_records')
-        .select('*')
-        .eq('transaction_type', 'commission')
-        .eq('barber_id', barberId)
-        .order('transaction_date', { ascending: false })
-        .limit(100);
-
-      if (frError) {
-        console.error('❌ Erro ao buscar financial_records:', frError);
-      }
-
-      console.log('💰 financial_records (commission) encontradas:', financialRecordsData?.length || 0);
-
-      // Combinar e deduplicar (priorizar barber_commissions)
       const commissionMap = new Map<string, Commission>();
 
-      // Primeiro, adicionar de barber_commissions
       barberCommissionsData?.forEach((record) => {
         const tipo = record.tipo || 'servico';
         let commissionType = 'service';
@@ -137,40 +118,6 @@ export const useBarberCommissionsQuery = () => {
           product_sale_id: record.venda_id,
           payment_date: record.payment_date || record.data_pagamento || null,
         });
-      });
-
-      // Depois, adicionar de financial_records (se não existir duplicata)
-      financialRecordsData?.forEach((record) => {
-        // Verificar se já existe uma comissão equivalente pelo reference_id
-        const existsKey = Array.from(commissionMap.values()).find(c => 
-          c.product_sale_id === record.reference_id && 
-          Math.abs(c.amount - Number(record.net_amount || record.amount)) < 0.01
-        );
-
-        if (!existsKey) {
-          const category = record.category || '';
-          const subcategory = record.subcategory || '';
-          
-          let commissionType = 'service';
-          if (category === 'products' || subcategory.includes('product')) commissionType = 'product';
-          if (category === 'tips' || subcategory.includes('tip')) commissionType = 'tip';
-
-          const key = `fr-${record.id}`;
-          const frAmount = Number(record.net_amount || record.amount || 0);
-          commissionMap.set(key, {
-            id: record.id,
-            amount: frAmount,
-            gross_revenue: frAmount,
-            commission_rate: 0,
-            status: record.status === 'completed' ? 'paid' : 'pending',
-            created_at: record.transaction_date || record.created_at || '',
-            commission_type: commissionType,
-            item_name: record.description || null,
-            appointment_id: record.reference_id,
-            product_sale_id: record.reference_id,
-            payment_date: record.payment_date || null,
-          });
-        }
       });
 
       const commissions = Array.from(commissionMap.values())
