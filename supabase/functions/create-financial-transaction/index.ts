@@ -652,9 +652,15 @@ Deno.serve(async (req) => {
           // USO DE CRÉDITO: comissão REAL para barbeiro atendente
           // Usar valor unitário do crédito (plan_price / credits_total)
           const creditValue = subscriptionCreditUnitValue > 0 ? subscriptionCreditUnitValue : net
-          commissionAmount = Number((creditValue * (serviceCommissionRate / 100)).toFixed(2))
+          // credits_cost: alguns serviços (ex: "Corte e Barba") consomem mais de 1 crédito.
+          // A comissão deve ser proporcional ao número de créditos consumidos.
+          const creditsCost = Math.max(1, Number(subscriptionCreditsCostMap[item.id] || 1))
+          const commissionBase = creditValue * creditsCost * qty
+          commissionAmount = Number((commissionBase * (serviceCommissionRate / 100)).toFixed(2))
           subcategory = 'uso_credito_comissao'
-          description = `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} - ${item.name || 'Serviço'} (uso crédito assinatura)`
+          description = creditsCost > 1
+            ? `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} x ${creditsCost} créditos - ${item.name || 'Serviço'} (uso crédito assinatura)`
+            : `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} - ${item.name || 'Serviço'} (uso crédito assinatura)`
           commissionStatus = 'pending'
           commissionTipo = 'uso_credito_assinatura'
         } else {
