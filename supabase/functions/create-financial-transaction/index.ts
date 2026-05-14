@@ -518,6 +518,34 @@ Deno.serve(async (req) => {
     const isSubscriptionSale = body.is_subscription_sale === true
     const subscriptionCreditUnitValue = Number(body.subscription_credit_unit_value || 0)
 
+    // Mapa service_id -> credits_cost (quantos créditos o serviço consome no plano ativo).
+    // Necessário para combos como "Corte e Barba" que custam 2 créditos: a comissão
+    // deve ser calculada sobre creditValue * credits_cost (não apenas 1 crédito).
+    const subscriptionCreditsCostMap: Record<string, number> = {}
+    if (isSubscriptionUsage && body.client_id) {
+      try {
+        const { data: activeSub } = await supabase
+          .from('client_subscriptions')
+          .select('plan_id')
+          .eq('client_id', body.client_id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+        if (activeSub?.plan_id) {
+          const { data: planSvcs } = await supabase
+            .from('subscription_plan_services')
+            .select('service_id, credits_cost')
+            .eq('plan_id', activeSub.plan_id)
+          for (const ps of planSvcs || []) {
+            subscriptionCreditsCostMap[ps.service_id] = Number(ps.credits_cost) || 1
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ Falha ao buscar credits_cost do plano:', e)
+      }
+    }
+
     // ===================== RECEITAS =====================
     for (const item of body.items) {
       const qty = Number(item.quantity || 1)
@@ -624,9 +652,15 @@ Deno.serve(async (req) => {
           // USO DE CRÉDITO: comissão REAL para barbeiro atendente
           // Usar valor unitário do crédito (plan_price / credits_total)
           const creditValue = subscriptionCreditUnitValue > 0 ? subscriptionCreditUnitValue : net
-          commissionAmount = Number((creditValue * (serviceCommissionRate / 100)).toFixed(2))
+          // credits_cost: alguns serviços (ex: "Corte e Barba") consomem mais de 1 crédito.
+          // A comissão deve ser proporcional ao número de créditos consumidos.
+          const creditsCost = Math.max(1, Number(subscriptionCreditsCostMap[item.id] || 1))
+          const commissionBase = creditValue * creditsCost * qty
+          commissionAmount = Number((commissionBase * (serviceCommissionRate / 100)).toFixed(2))
           subcategory = 'uso_credito_comissao'
-          description = `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} - ${item.name || 'Serviço'} (uso crédito assinatura)`
+          description = creditsCost > 1
+            ? `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} x ${creditsCost} créditos - ${item.name || 'Serviço'} (uso crédito assinatura)`
+            : `Comissão ${serviceCommissionRate}% de R$ ${creditValue.toFixed(2)} - ${item.name || 'Serviço'} (uso crédito assinatura)`
           commissionStatus = 'pending'
           commissionTipo = 'uso_credito_assinatura'
         } else {
