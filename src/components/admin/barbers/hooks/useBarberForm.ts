@@ -126,7 +126,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
       // Upload para o bucket
       const { data, error } = await supabase.storage
-        .from('barber-photos')
+        .from('staff-photos')
         .upload(filePath, file, {
           cacheControl: '3600',
           upsert: false
@@ -136,7 +136,7 @@ export function useBarberForm(barberId: string | null, onSuccess: () => void) {
 
       // Obter URL pública
       const { data: urlData } = supabase.storage
-        .from('barber-photos')
+        .from('staff-photos')
         .getPublicUrl(filePath);
 
       // Atualizar o formulário com a nova URL
