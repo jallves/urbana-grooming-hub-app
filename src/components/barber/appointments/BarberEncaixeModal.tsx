@@ -258,15 +258,6 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {step === 'form' && (
             <div className="px-4 py-3 space-y-3">
-              {/* Encaixe limit warning */}
-              {hasEncaixe && (
-                <div className="px-3 py-2 bg-red-950 border border-red-900 rounded-lg">
-                  <p className="text-red-400 text-xs font-medium">
-                    Limite atingido — já existe 1 encaixe neste slot
-                  </p>
-                </div>
-              )}
-
               {/* Date/Time */}
               {slotDate && slotTime ? (
                 <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-800 rounded-lg">
@@ -315,6 +306,57 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
                 </Select>
                 {selectedService && (
                   <p className="text-[10px] text-gray-500 mt-1">{selectedService.duracao}min · R$ {selectedService.preco.toFixed(2)}</p>
+                )}
+
+                {/* Serviços adicionais (encaixe múltiplo) */}
+                {selectedServiceId && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                        Serviços adicionais
+                      </label>
+                      <span className="text-[10px] text-purple-400 font-semibold">
+                        Total: {totalDuration}min · R$ {totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto">
+                      {services.map((s) => {
+                        const qty = extraQty(s.id);
+                        return (
+                          <div
+                            key={s.id}
+                            className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-gray-800 border border-gray-700 rounded-lg"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-white truncate">{s.nome}</p>
+                              <p className="text-[10px] text-gray-500">{s.duracao}min · R$ {s.preco.toFixed(2)}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => removeExtraService(s.id)}
+                                disabled={qty === 0}
+                                className="w-7 h-7 rounded-md bg-red-900/40 text-red-300 disabled:opacity-30 flex items-center justify-center touch-manipulation"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="w-5 text-center text-xs font-bold text-white">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => addExtraService(s.id)}
+                                className="w-7 h-7 rounded-md bg-purple-600 text-white flex items-center justify-center touch-manipulation"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-gray-500 italic">
+                      Encaixe livre — clique + para adicionar o mesmo serviço várias vezes
+                    </p>
+                  </div>
                 )}
               </div>
 
