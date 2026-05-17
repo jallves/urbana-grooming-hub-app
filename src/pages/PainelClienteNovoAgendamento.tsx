@@ -988,12 +988,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                               <Sparkles className="w-3 h-3 text-urbana-gold" /> Serviços Extras
                             </p>
                             <div className="space-y-1">
-                              {extraServices.map(s => (
-                                <div key={s.id} className="flex justify-between text-sm text-white">
-                                  <span className="truncate mr-2">{s.nome}</span>
-                                  <span className="text-urbana-gold shrink-0">R$ {s.preco.toFixed(2)}</span>
-                                </div>
-                              ))}
+                              {extraServices.map(s => {
+                                const qty = s.quantidade || 1;
+                                return (
+                                  <div key={s.id} className="flex justify-between text-sm text-white">
+                                    <span className="truncate mr-2">{s.nome}{qty > 1 ? ` x${qty}` : ''}</span>
+                                    <span className="text-urbana-gold shrink-0">R$ {(s.preco * qty).toFixed(2)}</span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
@@ -1021,7 +1024,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             <span className="text-xl font-bold text-urbana-gold">
                               R$ {(
                                 (selectedService?.preco || 0) +
-                                extraServices.reduce((s, x) => s + x.preco, 0) +
+                                extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) +
                                 selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
                               ).toFixed(2)}
                             </span>
@@ -1099,7 +1102,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             barberName: selectedBarber.nome,
             date: selectedDate,
             time: selectedTime,
-            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco, 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
+            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
           }}
         />
       )}
