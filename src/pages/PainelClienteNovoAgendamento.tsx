@@ -1024,7 +1024,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             <span className="text-xl font-bold text-urbana-gold">
                               R$ {(
                                 (selectedService?.preco || 0) +
-                                extraServices.reduce((s, x) => s + x.preco, 0) +
+                                extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) +
                                 selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
                               ).toFixed(2)}
                             </span>
@@ -1102,7 +1102,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             barberName: selectedBarber.nome,
             date: selectedDate,
             time: selectedTime,
-            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco, 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
+            price: (selectedService?.preco || 0) + extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) + selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
           }}
         />
       )}
