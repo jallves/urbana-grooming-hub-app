@@ -30,6 +30,14 @@ interface Agendamento {
   hora: string;
   status: string;
   created_at: string;
+  servicos_extras?: Array<{
+    id?: string;
+    nome?: string;
+    preco?: number;
+    duracao?: number;
+    quantidade?: number;
+    tipo?: string;
+  }> | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -39,6 +47,30 @@ interface Agendamento {
     duracao: number;
   };
 }
+
+const groupExtras = (extras?: Agendamento['servicos_extras']) => {
+  if (!Array.isArray(extras)) return [];
+
+  const grouped = extras.reduce<Record<string, { nome: string; preco: number; duracao: number; qty: number; tipo?: string }>>((acc, extra) => {
+    const nome = String(extra?.nome || 'Extra').trim();
+    const preco = Number(extra?.preco) || 0;
+    const duracao = Number(extra?.duracao) || 0;
+    const qty = Math.max(1, Number(extra?.quantidade) || 1);
+    const key = `${extra?.tipo || 'servico'}-${extra?.id || nome}-${preco}-${duracao}`;
+
+    if (!acc[key]) acc[key] = { nome, preco, duracao, qty: 0, tipo: extra?.tipo };
+    acc[key].qty += qty;
+    return acc;
+  }, {});
+
+  return Object.values(grouped);
+};
+
+const getExtrasTotal = (extras?: Agendamento['servicos_extras']) =>
+  groupExtras(extras).reduce((total, extra) => total + extra.preco * extra.qty, 0);
+
+const getExtrasDuration = (extras?: Agendamento['servicos_extras']) =>
+  groupExtras(extras).reduce((total, extra) => total + extra.duracao * extra.qty, 0);
 
 export default function PainelClienteMeusAgendamentos() {
   const navigate = useNavigate();
