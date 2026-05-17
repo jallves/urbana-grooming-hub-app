@@ -3,6 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Form } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { Sparkles } from 'lucide-react';
 
 import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
 import StaffSelect from '@/components/admin/appointments/form/StaffSelect';
@@ -12,6 +14,7 @@ import ClientDateTimePicker from '@/components/client/appointment/ClientDateTime
 
 import { useClientFormData } from '@/components/client/appointment/useClientFormData';
 import { supabase } from '@/integrations/supabase/client';
+import ClientBookingExtrasModal, { ClientExtraService } from '@/components/painel-cliente/ClientBookingExtrasModal';
 
 interface EditAgendamentoDialogProps {
   isOpen: boolean;
@@ -39,6 +42,8 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
   agendamento,
 }) => {
   const [isSaving, setIsSaving] = useState(false);
+  const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
   const defaultDate = useMemo(
     () => (agendamento ? parseDateOnly(agendamento.data) : new Date()),
     [agendamento?.id]
@@ -62,11 +67,47 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
       time: agendamento.hora?.slice(0, 5) || '',
       notes: agendamento.notas || '',
     });
+    // Carrega serviços extras existentes do agendamento e agrupa por id/nome com quantidade
+    (async () => {
+      const { data } = await supabase
+        .from('painel_agendamentos')
+        .select('servicos_extras')
+        .eq('id', agendamento.id)
+        .maybeSingle();
+      const raw = Array.isArray(data?.servicos_extras) ? (data!.servicos_extras as any[]) : [];
+      const grouped: Record<string, ClientExtraService> = {};
+      for (const e of raw) {
+        const key = e?.id || e?.nome;
+        if (!key) continue;
+        if (!grouped[key]) {
+          grouped[key] = {
+            id: e.id || key,
+            nome: e.nome,
+            preco: Number(e.preco) || 0,
+            duracao: Number(e.duracao) || 0,
+            quantidade: 0,
+          };
+        }
+        grouped[key].quantidade = (grouped[key].quantidade || 0) + 1;
+      }
+      setExtraServices(Object.values(grouped));
+    })();
   }, [isOpen, agendamento?.id]);
 
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
   const selectedStaffId = form.watch('staff_id');
+  const selectedServiceId = form.watch('service_id');
+
+  const extrasDuration = extraServices.reduce(
+    (s, e) => s + (Number(e.duracao) || 0) * (e.quantidade || 1),
+    0
+  );
+  const extrasTotal = extraServices.reduce(
+    (s, e) => s + (Number(e.preco) || 0) * (e.quantidade || 1),
+    0
+  );
+  const effectiveDuration = (selectedService?.duration || 0) + extrasDuration;
 
   const onSubmit = async (data: any) => {
     if (!agendamento) return;
@@ -83,17 +124,16 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
     const barbeiroOriginal = agendamento.barbeiro_id || '';
     const notasOriginais = agendamento.notas || '';
 
-    const semMudancas =
-      dataStr === dataOriginal &&
-      horaNova === horaOriginal &&
-      data.service_id === servicoOriginal &&
-      data.staff_id === barbeiroOriginal &&
-      (data.notes || '') === notasOriginais;
-
-    if (semMudancas) {
-      toast.info('Nenhuma alteração detectada. Selecione um novo horário, data, barbeiro ou serviço antes de salvar.');
-      return;
-    }
+    // Expande extras (qtd N => N entradas) para persistência igual ao novo agendamento
+    const expandedExtras = extraServices.flatMap((e) => {
+      const qty = Math.max(1, e.quantidade || 1);
+      return Array.from({ length: qty }, () => ({
+        id: e.id,
+        nome: e.nome,
+        preco: Number(e.preco) || 0,
+        duracao: Number(e.duracao) || 0,
+      }));
+    });
 
     setIsSaving(true);
     try {
@@ -108,6 +148,7 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
             date: dataStr,
             time: horaNova,
             notes: data.notes || null,
+            extras: expandedExtras,
           },
         });
         result = resp.data;
@@ -157,7 +198,7 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
             <ClientDateTimePicker
               form={form}
               barberId={selectedStaffId}
-              serviceDuration={selectedService?.duration}
+              serviceDuration={effectiveDuration || selectedService?.duration}
               appointmentId={agendamento?.id}
             />
 
@@ -166,10 +207,41 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
               form={form}
               selectedDate={selectedDate}
               selectedTime={selectedTime}
-              serviceDuration={selectedService?.duration}
+              serviceDuration={effectiveDuration || selectedService?.duration}
             />
 
             <NotesField form={form} />
+
+            {/* Serviços Extras */}
+            <div className="space-y-2">
+              {extraServices.length > 0 && (
+                <div className="rounded-lg border p-3 space-y-1">
+                  <p className="text-xs text-muted-foreground">Serviços extras</p>
+                  {extraServices.map((e) => {
+                    const qty = e.quantidade || 1;
+                    return (
+                      <div key={e.id} className="flex justify-between text-sm">
+                        <span className="truncate mr-2">{e.nome}{qty > 1 ? ` x${qty}` : ''}</span>
+                        <span>R$ {((Number(e.preco) || 0) * qty).toFixed(2)}</span>
+                      </div>
+                    );
+                  })}
+                  <div className="flex justify-between text-sm font-semibold pt-1 border-t">
+                    <span>Total extras</span>
+                    <span>R$ {extrasTotal.toFixed(2)}</span>
+                  </div>
+                </div>
+              )}
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                onClick={() => setShowExtrasModal(true)}
+              >
+                <Sparkles className="w-4 h-4 mr-2" />
+                {extraServices.length > 0 ? 'Editar serviços extras' : 'Adicionar serviços extras'}
+              </Button>
+            </div>
 
             <AppointmentFormActions
               isLoading={isLoading || isSaving}
@@ -178,6 +250,17 @@ const EditAgendamentoDialog: React.FC<EditAgendamentoDialogProps> = ({
             />
           </form>
         </Form>
+
+        {selectedServiceId && (
+          <ClientBookingExtrasModal
+            open={showExtrasModal}
+            onOpenChange={setShowExtrasModal}
+            mainServiceId={selectedServiceId}
+            initialExtraServices={extraServices}
+            initialProducts={[]}
+            onApply={({ extraServices: es }) => setExtraServices(es)}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );

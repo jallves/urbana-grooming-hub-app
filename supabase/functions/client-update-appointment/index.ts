@@ -8,6 +8,7 @@ type UpdateRequest = {
   date?: string;
   time?: string;
   notes?: string | null;
+  extras?: Array<{ id?: string; nome?: string; preco?: number; duracao?: number }>;
 };
 
 const TZ = 'America/Sao_Paulo';
@@ -165,7 +166,17 @@ Deno.serve(async (req) => {
     }
 
     const duration = Number(service.duracao) || 30;
-    const slotEnd = slotStart + duration;
+    const incomingExtras = Array.isArray(body.extras) ? body.extras : [];
+    const sanitizedExtras = incomingExtras
+      .filter((e) => e && (e.nome || e.id))
+      .map((e) => ({
+        id: e.id || null,
+        nome: String(e.nome || ''),
+        preco: Number(e.preco) || 0,
+        duracao: Number(e.duracao) || 0,
+      }));
+    const extrasTotalDuration = sanitizedExtras.reduce((s, e) => s + (Number(e.duracao) || 0), 0);
+    const slotEnd = slotStart + duration + extrasTotalDuration;
     if (slotStart < OPEN_MINUTES || slotEnd > CLOSE_MINUTES) {
       return json({ success: false, error: 'Horário fora do expediente disponível para clientes.' }, 400);
     }
@@ -250,6 +261,7 @@ Deno.serve(async (req) => {
       barbeiro_id: barberId,
       data: date,
       hora: time,
+      servicos_extras: sanitizedExtras.length > 0 ? sanitizedExtras : null,
       updated_at: new Date().toISOString(),
     };
 

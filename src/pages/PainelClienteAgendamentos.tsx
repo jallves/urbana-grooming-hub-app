@@ -31,6 +31,7 @@ interface PainelAgendamento {
   servico_id: string | null;
   barbeiro_id: string | null;
   notas: string | null;
+  servicos_extras: Array<{ id?: string; nome: string; preco: number; duracao?: number }> | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -70,13 +71,13 @@ export default function PainelClienteAgendamentos() {
     const { data, error } = await supabase
       .from('painel_agendamentos')
       .select(
-        `id, data, hora, status, servico_id, barbeiro_id, notas, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`
+        `id, data, hora, status, servico_id, barbeiro_id, notas, servicos_extras, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`
       )
       .eq('cliente_id', cliente.id)
       .order('data', { ascending: false })
       .order('hora', { ascending: false });
 
-    if (data) setAgendamentos(data);
+    if (data) setAgendamentos(data as any);
     if (error) console.error('Erro ao buscar agendamentos:', error);
 
     setLoading(false);
@@ -231,9 +232,36 @@ export default function PainelClienteAgendamentos() {
                       <User className="h-4 w-4 mr-2 text-urbana-gold" />
                       <span className="text-sm break-words">{agendamento.painel_barbeiros.nome}</span>
                     </div>
+                    {Array.isArray(agendamento.servicos_extras) && agendamento.servicos_extras.length > 0 && (() => {
+                      const grouped = agendamento.servicos_extras.reduce<Record<string, { nome: string; preco: number; qty: number }>>((acc, e) => {
+                        const key = (e as any).id || e.nome;
+                        if (!acc[key]) acc[key] = { nome: e.nome, preco: Number(e.preco) || 0, qty: 0 };
+                        acc[key].qty += 1;
+                        return acc;
+                      }, {});
+                      const items = Object.values(grouped);
+                      return (
+                        <div className="bg-urbana-black/30 p-3 rounded-lg border border-urbana-gold/20">
+                          <p className="text-xs text-white/60 mb-2">Serviços Extras</p>
+                          <div className="space-y-1">
+                            {items.map((it, idx) => (
+                              <div key={idx} className="flex justify-between text-sm text-white">
+                                <span className="truncate mr-2">{it.nome}{it.qty > 1 ? ` x${it.qty}` : ''}</span>
+                                <span className="text-urbana-gold shrink-0">R$ {(it.preco * it.qty).toFixed(2)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                       <span className="text-urbana-gold font-semibold text-lg">
-                        R$ {agendamento.painel_servicos.preco.toFixed(2)}
+                        R$ {(
+                          Number(agendamento.painel_servicos.preco || 0) +
+                          (Array.isArray(agendamento.servicos_extras)
+                            ? agendamento.servicos_extras.reduce((s, e: any) => s + (Number(e?.preco) || 0), 0)
+                            : 0)
+                        ).toFixed(2)}
                       </span>
                       <div className="flex flex-wrap items-center gap-2">
                         {canEdit(agendamento) && (
