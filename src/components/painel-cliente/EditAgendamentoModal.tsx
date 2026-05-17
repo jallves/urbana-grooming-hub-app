@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Save, X, Loader2, User, Scissors, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, Save, X, Loader2, User, Scissors, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 import { cn } from '@/lib/utils';
+import ClientBookingExtrasModal, { ClientExtraService } from '@/components/painel-cliente/ClientBookingExtrasModal';
 
 interface Agendamento {
   id: string;
@@ -18,6 +19,7 @@ interface Agendamento {
   status: string;
   barbeiro_id?: string;
   servico_id?: string;
+  servicos_extras?: Array<{ id?: string; nome?: string; preco?: number; duracao?: number; quantidade?: number }> | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -68,6 +70,8 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const [currentBarbeiroId, setCurrentBarbeiroId] = useState<string>('');
   const [currentServicoId, setCurrentServicoId] = useState<string>('');
   const [currentServiceDuration, setCurrentServiceDuration] = useState<number>(30);
+  const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
 
   // Carregar dados do agendamento quando abrir
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       if (agendamento && isOpen) {
         const { data } = await supabase
           .from('painel_agendamentos')
-          .select('barbeiro_id, servico_id, painel_servicos(duracao)')
+          .select('barbeiro_id, servico_id, servicos_extras, painel_servicos(duracao)')
           .eq('id', agendamento.id)
           .maybeSingle();
         
@@ -87,6 +91,24 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
           setSelectedTime(agendamento.hora?.substring(0, 5) || '');
           setSelectedBarbeiroId(''); // Vazio = manter atual
           setSelectedServicoId(''); // Vazio = manter atual
+
+          const grouped: Record<string, ClientExtraService> = {};
+          const rawExtras = Array.isArray((data as any).servicos_extras) ? (data as any).servicos_extras : [];
+          rawExtras.forEach((extra: any) => {
+            const key = extra?.id || extra?.nome;
+            if (!key) return;
+            if (!grouped[key]) {
+              grouped[key] = {
+                id: extra.id || key,
+                nome: extra.nome || 'Extra',
+                preco: Number(extra.preco) || 0,
+                duracao: Number(extra.duracao) || 0,
+                quantidade: 0,
+              };
+            }
+            grouped[key].quantidade = (grouped[key].quantidade || 0) + Math.max(1, Number(extra?.quantidade) || 1);
+          });
+          setExtraServices(Object.values(grouped));
         }
       }
     };
