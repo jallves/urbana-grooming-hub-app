@@ -7,7 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, UserPlus, Users, Search, Zap, X } from 'lucide-react';
+import { Loader2, UserPlus, Users, Search, Zap, X, Plus, Minus } from 'lucide-react';
 
 interface BarberEncaixeModalProps {
   isOpen: boolean;
@@ -55,11 +55,10 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
   const [newClientName, setNewClientName] = useState('');
   const [newClientWhatsapp, setNewClientWhatsapp] = useState('');
   const [selectedServiceId, setSelectedServiceId] = useState<string>('');
+  // Serviços adicionais do encaixe (quantidade por id). 1º item = principal.
+  const [extraServiceIds, setExtraServiceIds] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>(slotTime || '');
   const [selectedDate, setSelectedDate] = useState<string>(slotDate || '');
-
-  const [hasEncaixe, setHasEncaixe] = useState(false);
-  const [checkingEncaixe, setCheckingEncaixe] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -71,12 +70,6 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
       resetForm();
     }
   }, [isOpen, slotDate, slotTime]);
-
-  useEffect(() => {
-    if (selectedDate && selectedTime && barberId) {
-      checkEncaixeLimit();
-    }
-  }, [selectedDate, selectedTime, barberId]);
 
   useEffect(() => {
     if (!clientSearch.trim()) {
@@ -100,30 +93,10 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
     setNewClientName('');
     setNewClientWhatsapp('');
     setSelectedServiceId('');
+    setExtraServiceIds([]);
     setSelectedTime(slotTime || '');
     setSelectedDate(slotDate || '');
-    setHasEncaixe(false);
     setStep('form');
-  };
-
-  const checkEncaixeLimit = async () => {
-    setCheckingEncaixe(true);
-    try {
-      const { count, error } = await supabase
-        .from('painel_agendamentos')
-        .select('id', { count: 'exact', head: true })
-        .eq('barbeiro_id', barberId)
-        .eq('data', selectedDate)
-        .eq('hora', selectedTime)
-        .eq('is_encaixe', true)
-        .not('status', 'in', '(\\\"cancelado\\\")');
-      if (error) throw error;
-      setHasEncaixe((count || 0) >= 1);
-    } catch (error) {
-      console.error('Erro ao verificar encaixe:', error);
-    } finally {
-      setCheckingEncaixe(false);
-    }
   };
 
   const fetchServices = async () => {
@@ -158,15 +131,6 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
     }
   };
 
-  const isSlotInPast = (): boolean => {
-    if (!selectedDate || !selectedTime) return false;
-    const now = new Date();
-    const [year, month, day] = selectedDate.split('-').map(Number);
-    const [hours, minutes] = selectedTime.split(':').map(Number);
-    const slotDateTime = new Date(year, month - 1, day, hours, minutes, 0, 0);
-    return slotDateTime <= now;
-  };
-
   const handleNext = () => {
     if (!selectedDate || !selectedTime || !selectedServiceId) {
       toast.error('Preencha todos os campos obrigatórios');
@@ -178,14 +142,6 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
     }
     if (clientMode === 'new' && !newClientName.trim()) {
       toast.error('Informe o nome do cliente');
-      return;
-    }
-    if (hasEncaixe) {
-      toast.error('Limite de 1 encaixe por slot atingido');
-      return;
-    }
-    if (isSlotInPast()) {
-      toast.error('Horário retroativo não permitido');
       return;
     }
     setStep('confirm');
@@ -209,6 +165,12 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
         clienteId = newClient.id;
       }
 
+      // Monta servicos_extras a partir dos IDs adicionais
+      const extrasPayload = extraServiceIds
+        .map((id) => services.find((s) => s.id === id))
+        .filter(Boolean)
+        .map((s) => ({ id: s!.id, nome: s!.nome, preco: s!.preco, duracao: s!.duracao }));
+
       const { error } = await supabase
         .from('painel_agendamentos')
         .insert({
@@ -220,6 +182,7 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
           status: 'agendado',
           is_encaixe: true,
           notas: '⚡ Encaixe',
+          servicos_extras: extrasPayload.length > 0 ? extrasPayload : null,
         });
 
       if (error) throw error;
@@ -241,6 +204,25 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
 
   const selectedService = services.find(s => s.id === selectedServiceId);
   const selectedClient = clients.find(c => c.id === selectedClientId);
+
+  const addExtraService = (id: string) => setExtraServiceIds((prev) => [...prev, id]);
+  const removeExtraService = (id: string) => {
+    setExtraServiceIds((prev) => {
+      const idx = prev.indexOf(id);
+      if (idx === -1) return prev;
+      const next = [...prev];
+      next.splice(idx, 1);
+      return next;
+    });
+  };
+  const extraQty = (id: string) => extraServiceIds.filter((x) => x === id).length;
+
+  const totalDuration =
+    (selectedService?.duracao || 0) +
+    extraServiceIds.reduce((sum, id) => sum + (services.find((s) => s.id === id)?.duracao || 0), 0);
+  const totalPrice =
+    (selectedService?.preco || 0) +
+    extraServiceIds.reduce((sum, id) => sum + (services.find((s) => s.id === id)?.preco || 0), 0);
 
   if (!isOpen) return null;
 
@@ -275,15 +257,6 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
         <div className="flex-1 overflow-y-auto overscroll-contain">
           {step === 'form' && (
             <div className="px-4 py-3 space-y-3">
-              {/* Encaixe limit warning */}
-              {hasEncaixe && (
-                <div className="px-3 py-2 bg-red-950 border border-red-900 rounded-lg">
-                  <p className="text-red-400 text-xs font-medium">
-                    Limite atingido — já existe 1 encaixe neste slot
-                  </p>
-                </div>
-              )}
-
               {/* Date/Time */}
               {slotDate && slotTime ? (
                 <div className="flex items-center gap-3 px-3 py-2.5 bg-gray-800 rounded-lg">
@@ -332,6 +305,57 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
                 </Select>
                 {selectedService && (
                   <p className="text-[10px] text-gray-500 mt-1">{selectedService.duracao}min · R$ {selectedService.preco.toFixed(2)}</p>
+                )}
+
+                {/* Serviços adicionais (encaixe múltiplo) */}
+                {selectedServiceId && (
+                  <div className="mt-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-[10px] text-gray-500 uppercase tracking-wider font-medium">
+                        Serviços adicionais
+                      </label>
+                      <span className="text-[10px] text-purple-400 font-semibold">
+                        Total: {totalDuration}min · R$ {totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 gap-1.5 max-h-40 overflow-y-auto">
+                      {services.map((s) => {
+                        const qty = extraQty(s.id);
+                        return (
+                          <div
+                            key={s.id}
+                            className="flex items-center justify-between gap-2 px-2.5 py-1.5 bg-gray-800 border border-gray-700 rounded-lg"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <p className="text-xs text-white truncate">{s.nome}</p>
+                              <p className="text-[10px] text-gray-500">{s.duracao}min · R$ {s.preco.toFixed(2)}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => removeExtraService(s.id)}
+                                disabled={qty === 0}
+                                className="w-7 h-7 rounded-md bg-red-900/40 text-red-300 disabled:opacity-30 flex items-center justify-center touch-manipulation"
+                              >
+                                <Minus className="h-3 w-3" />
+                              </button>
+                              <span className="w-5 text-center text-xs font-bold text-white">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => addExtraService(s.id)}
+                                className="w-7 h-7 rounded-md bg-purple-600 text-white flex items-center justify-center touch-manipulation"
+                              >
+                                <Plus className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                    <p className="text-[10px] text-gray-500 italic">
+                      Encaixe livre — clique + para adicionar o mesmo serviço várias vezes
+                    </p>
+                  </div>
                 )}
               </div>
 
@@ -465,7 +489,7 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
           {step === 'form' ? (
             <Button
               onClick={handleNext}
-              disabled={hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || isSlotInPast()}
+              disabled={!selectedDate || !selectedTime || !selectedServiceId}
               className="w-full h-11 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold touch-manipulation disabled:opacity-40"
             >
               Continuar

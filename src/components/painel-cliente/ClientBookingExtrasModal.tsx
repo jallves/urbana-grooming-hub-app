@@ -13,6 +13,7 @@ export interface ClientExtraService {
   nome: string;
   preco: number;
   duracao?: number;
+  quantidade?: number;
 }
 
 export interface ClientProductCartItem {
@@ -55,12 +56,14 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
   const [loading, setLoading] = useState(false);
   const [availableServices, setAvailableServices] = useState<ClientExtraService[]>([]);
   const [availableProducts, setAvailableProducts] = useState<Product[]>([]);
-  const [selectedServices, setSelectedServices] = useState<ClientExtraService[]>(initialExtraServices);
+  const [selectedServices, setSelectedServices] = useState<ClientExtraService[]>(
+    initialExtraServices.map(s => ({ ...s, quantidade: s.quantidade || 1 }))
+  );
   const [productCart, setProductCart] = useState<ClientProductCartItem[]>(initialProducts);
 
   useEffect(() => {
     if (!open) return;
-    setSelectedServices(initialExtraServices);
+    setSelectedServices(initialExtraServices.map(s => ({ ...s, quantidade: s.quantidade || 1 })));
     setProductCart(initialProducts);
   }, [open, initialExtraServices, initialProducts]);
 
@@ -74,7 +77,6 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
             .from("painel_servicos")
             .select("id, nome, preco, duracao")
             .eq("ativo", true)
-            .neq("id", mainServiceId)
             .order("nome"),
           supabase
             .from("painel_produtos")
@@ -98,17 +100,31 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
     load();
   }, [open, mainServiceId]);
 
-  const isServiceSelected = useCallback(
-    (id: string) => selectedServices.some((s) => s.id === id),
+  const serviceQty = useCallback(
+    (id: string) => selectedServices.find((s) => s.id === id)?.quantidade || 0,
     [selectedServices]
   );
 
-  const toggleService = useCallback((service: ClientExtraService) => {
-    setSelectedServices((prev) =>
-      prev.some((s) => s.id === service.id)
-        ? prev.filter((s) => s.id !== service.id)
-        : [...prev, service]
-    );
+  const addService = useCallback((service: ClientExtraService) => {
+    setSelectedServices((prev) => {
+      const existing = prev.find((s) => s.id === service.id);
+      if (existing) {
+        return prev.map((s) =>
+          s.id === service.id ? { ...s, quantidade: (s.quantidade || 1) + 1 } : s
+        );
+      }
+      return [...prev, { ...service, quantidade: 1 }];
+    });
+  }, []);
+
+  const removeService = useCallback((id: string) => {
+    setSelectedServices((prev) => {
+      const existing = prev.find((s) => s.id === id);
+      if (!existing) return prev;
+      const q = existing.quantidade || 1;
+      if (q <= 1) return prev.filter((s) => s.id !== id);
+      return prev.map((s) => (s.id === id ? { ...s, quantidade: q - 1 } : s));
+    });
   }, []);
 
   const productQty = useCallback(
@@ -140,7 +156,10 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
   }, []);
 
   const totals = useMemo(() => {
-    const servicesTotal = selectedServices.reduce((s, x) => s + (Number(x.preco) || 0), 0);
+    const servicesTotal = selectedServices.reduce(
+      (s, x) => s + (Number(x.preco) || 0) * (x.quantidade || 1),
+      0
+    );
     const productsTotal = productCart.reduce((s, x) => s + (Number(x.preco) || 0) * x.quantidade, 0);
     return { servicesTotal, productsTotal, extrasTotal: servicesTotal + productsTotal };
   }, [selectedServices, productCart]);
@@ -180,7 +199,9 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
               <Sparkles className="w-4 h-4 mr-1" />
               Serviços
               {selectedServices.length > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 bg-urbana-black/30 rounded-full text-xs">{selectedServices.length}</span>
+                <span className="ml-1 px-1.5 py-0.5 bg-urbana-black/30 rounded-full text-xs">
+                  {selectedServices.reduce((s, x) => s + (x.quantidade || 1), 0)}
+                </span>
               )}
             </Button>
             <Button
@@ -213,31 +234,45 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                   <div className="col-span-full text-center py-10 text-urbana-light/60">Nenhum serviço extra disponível</div>
                 ) : (
                   availableServices.map((service) => {
-                    const selected = isServiceSelected(service.id);
+                    const qty = serviceQty(service.id);
                     return (
-                      <button
+                      <div
                         key={service.id}
-                        onClick={() => toggleService(service)}
                         className={cn(
-                          "relative p-3 rounded-xl border-2 transition-all text-left active:scale-95",
-                          selected
+                          "relative p-3 rounded-xl border-2 transition-all",
+                          qty > 0
                             ? "bg-urbana-gold/20 border-urbana-gold shadow-lg shadow-urbana-gold/20"
                             : "bg-urbana-black/50 border-urbana-gold/20"
                         )}
                       >
-                        {selected && (
-                          <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-urbana-gold flex items-center justify-center">
-                            <Check className="w-3 h-3 text-urbana-black" strokeWidth={3} />
+                        {qty > 0 && (
+                          <div className="absolute top-2 right-2 px-1.5 h-5 min-w-5 rounded-full bg-urbana-gold flex items-center justify-center text-[10px] font-bold text-urbana-black">
+                            {qty}x
                           </div>
                         )}
-                        <h4 className="text-sm font-semibold text-urbana-light mb-1 pr-6">{service.nome}</h4>
-                        <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-urbana-light mb-1 pr-10">{service.nome}</h4>
+                        <div className="flex items-center justify-between mb-2">
                           <span className="text-base font-bold text-urbana-gold">R$ {service.preco.toFixed(2)}</span>
                           {typeof service.duracao === "number" && (
                             <span className="text-xs text-urbana-light/60">{service.duracao} min</span>
                           )}
                         </div>
-                      </button>
+                        {qty > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <Button onClick={() => removeService(service.id)} size="sm" className="flex-1 h-8 bg-red-500/20 text-red-300 border border-red-500/40 text-xs">
+                              <Minus className="w-3 h-3" />
+                            </Button>
+                            <span className="text-base font-bold text-urbana-gold w-8 text-center">{qty}</span>
+                            <Button onClick={() => addService(service)} size="sm" className="flex-1 h-8 bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 text-xs">
+                              <Plus className="w-3 h-3" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button onClick={() => addService(service)} size="sm" className="w-full h-8 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs">
+                            <Plus className="w-3 h-3 mr-1" /> Adicionar
+                          </Button>
+                        )}
+                      </div>
                     );
                   })
                 )}

@@ -494,12 +494,18 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       // Mostrar toast de progresso
       progressToast = toast.loading('⏳ Validando disponibilidade...');
 
+      // Expande extras com quantidade para somar duração corretamente
+      const expandedExtrasForValidation = extraServices.flatMap(s => {
+        const qty = Math.max(1, (s as any).quantidade || 1);
+        return Array.from({ length: qty }, () => ({ duracao: s.duracao }));
+      });
+
       // 1. Validar disponibilidade final usando id do painel_barbeiros
       const validation = await validateAppointment(
         selectedBarber.id,
         selectedDate,
         selectedTime,
-        calculateTotalAppointmentDuration(selectedService.duracao, extraServices.length > 0 ? extraServices : null)
+        calculateTotalAppointmentDuration(selectedService.duracao, expandedExtrasForValidation.length > 0 ? expandedExtrasForValidation : null)
       );
 
       if (!validation.valid) {
@@ -526,9 +532,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
       // Build servicos_extras JSON
-      const extrasFromServices = extraServices.map(s => ({ 
-        id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao 
-      }));
+      // Expande quantidade em N entradas para somar slots/duracao corretamente
+      const extrasFromServices = extraServices.flatMap(s => {
+        const qty = Math.max(1, (s as any).quantidade || 1);
+        return Array.from({ length: qty }, () => ({
+          id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao
+        }));
+      });
       const extrasFromProducts = extraProducts.map(p => ({
         tipo: 'produto' as const,
         produto_id: p.id,
