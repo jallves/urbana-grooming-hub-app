@@ -156,12 +156,17 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     const barbeiroId = selectedBarbeiroId || currentBarbeiroId;
     if (!barbeiroId) return;
 
-    // Determinar duração do serviço
+    // Determinar duração do serviço considerando extras selecionados
     let duration = currentServiceDuration;
     if (selectedServicoId) {
       const service = servicos.find(s => s.id === selectedServicoId);
       if (service) duration = service.duracao;
     }
+    const extrasDuration = extraServices.reduce(
+      (total, extra) => total + (Number(extra.duracao) || 0) * Math.max(1, extra.quantidade || 1),
+      0
+    );
+    duration += extrasDuration;
 
     setLoadingSlots(true);
     console.log('🕐 [EditAgendamentoModal] Buscando horários:', {
@@ -309,7 +314,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServiceDuration, agendamento, servicos]);
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServiceDuration, agendamento, servicos, extraServices]);
 
   // Gerar datas disponíveis
   const gerarDatasDisponiveis = () => {
@@ -372,6 +377,16 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         hora: selectedTime + ':00'
       };
 
+      const expandedExtras = extraServices.flatMap((extra) => {
+        const qty = Math.max(1, extra.quantidade || 1);
+        return Array.from({ length: qty }, () => ({
+          id: extra.id,
+          nome: extra.nome,
+          preco: Number(extra.preco) || 0,
+          duracao: Number(extra.duracao) || 0,
+        }));
+      });
+
       if (selectedBarbeiroId) {
         updateData.barbeiro_id = selectedBarbeiroId;
       }
@@ -389,6 +404,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             barberId: updateData.barbeiro_id || currentBarbeiroId,
             date: updateData.data,
             time: selectedTime,
+            extras: expandedExtras,
           },
         });
         result = resp.data;
