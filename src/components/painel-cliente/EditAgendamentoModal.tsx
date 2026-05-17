@@ -577,7 +577,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
               type="button"
               variant="outline"
               onClick={() => setShowExtrasModal(true)}
-              className="w-full h-11 border-slate-600 bg-slate-800 text-white hover:bg-slate-700"
+              className="w-full h-11 border-slate-600 bg-slate-800 text-white"
             >
               <Sparkles className="h-4 w-4 mr-2" />
               {extraServices.length > 0 ? 'Editar serviços adicionais' : 'Adicionar serviços adicionais'}
