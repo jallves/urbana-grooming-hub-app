@@ -129,7 +129,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     if (selectedDate && (selectedBarbeiroId || currentBarbeiroId)) {
       fetchAvailableSlots();
     }
-  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServicoId, extraServices, fetchAvailableSlots]);
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServicoId, extraServices]);
 
   const fetchBarbeiros = async () => {
     const { data } = await supabase
