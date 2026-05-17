@@ -7,8 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { Loader2, UserPlus, Users, Search, Zap, X } from 'lucide-react';
-import { Plus, Minus } from 'lucide-react';
+import { Loader2, UserPlus, Users, Search, Zap, X, Plus, Minus } from 'lucide-react';
 
 interface BarberEncaixeModalProps {
   isOpen: boolean;
