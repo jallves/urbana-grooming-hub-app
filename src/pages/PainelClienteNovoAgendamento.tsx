@@ -526,9 +526,13 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       console.log('📅 Data sendo salva:', { selectedDate, dataLocal, hora: selectedTime });
 
       // Build servicos_extras JSON
-      const extrasFromServices = extraServices.map(s => ({ 
-        id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao 
-      }));
+      // Expande quantidade em N entradas para somar slots/duracao corretamente
+      const extrasFromServices = extraServices.flatMap(s => {
+        const qty = Math.max(1, (s as any).quantidade || 1);
+        return Array.from({ length: qty }, () => ({
+          id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao
+        }));
+      });
       const extrasFromProducts = extraProducts.map(p => ({
         tipo: 'produto' as const,
         produto_id: p.id,
