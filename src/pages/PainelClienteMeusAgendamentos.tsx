@@ -30,6 +30,14 @@ interface Agendamento {
   hora: string;
   status: string;
   created_at: string;
+  servicos_extras?: Array<{
+    id?: string;
+    nome?: string;
+    preco?: number;
+    duracao?: number;
+    quantidade?: number;
+    tipo?: string;
+  }> | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -39,6 +47,30 @@ interface Agendamento {
     duracao: number;
   };
 }
+
+const groupExtras = (extras?: Agendamento['servicos_extras']) => {
+  if (!Array.isArray(extras)) return [];
+
+  const grouped = extras.reduce<Record<string, { nome: string; preco: number; duracao: number; qty: number; tipo?: string }>>((acc, extra) => {
+    const nome = String(extra?.nome || 'Extra').trim();
+    const preco = Number(extra?.preco) || 0;
+    const duracao = Number(extra?.duracao) || 0;
+    const qty = Math.max(1, Number(extra?.quantidade) || 1);
+    const key = `${extra?.tipo || 'servico'}-${extra?.id || nome}-${preco}-${duracao}`;
+
+    if (!acc[key]) acc[key] = { nome, preco, duracao, qty: 0, tipo: extra?.tipo };
+    acc[key].qty += qty;
+    return acc;
+  }, {});
+
+  return Object.values(grouped);
+};
+
+const getExtrasTotal = (extras?: Agendamento['servicos_extras']) =>
+  groupExtras(extras).reduce((total, extra) => total + extra.preco * extra.qty, 0);
+
+const getExtrasDuration = (extras?: Agendamento['servicos_extras']) =>
+  groupExtras(extras).reduce((total, extra) => total + extra.duracao * extra.qty, 0);
 
 export default function PainelClienteMeusAgendamentos() {
   const navigate = useNavigate();
@@ -69,7 +101,7 @@ export default function PainelClienteMeusAgendamentos() {
       console.error('[MeusAgendamentos] Erro ao buscar:', error);
     }
     
-    setAgendamentos(data || []);
+    setAgendamentos((data || []) as unknown as Agendamento[]);
   }, [cliente]);
 
   useEffect(() => {
@@ -375,7 +407,12 @@ export default function PainelClienteMeusAgendamentos() {
             ) : (
               <div className="w-full grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 lg:gap-6">
                 <AnimatePresence>
-                  {agendamentosFiltrados.map((agendamento, index) => (
+                  {agendamentosFiltrados.map((agendamento, index) => {
+                    const extras = groupExtras(agendamento.servicos_extras);
+                    const extrasTotal = getExtrasTotal(agendamento.servicos_extras);
+                    const extrasDuration = getExtrasDuration(agendamento.servicos_extras);
+
+                    return (
                     <motion.div
                       key={agendamento.id}
                       layout
@@ -410,19 +447,34 @@ export default function PainelClienteMeusAgendamentos() {
                               <User className="h-5 w-5 mr-3 text-urbana-gold flex-shrink-0" />
                               <span className="text-base font-medium">{agendamento.painel_barbeiros.nome}</span>
                             </div>
+                            {extras.length > 0 && (
+                              <div className="rounded-xl border border-urbana-gold/20 bg-urbana-gold/5 p-3 space-y-2">
+                                <p className="text-xs font-medium text-urbana-gold">Serviços adicionais</p>
+                                {extras.map((extra, extraIndex) => (
+                                  <div key={`${extra.nome}-${extraIndex}`} className="flex items-center justify-between gap-3 text-sm">
+                                    <span className="text-gray-200 truncate">
+                                      {extra.nome}{extra.qty > 1 ? ` x${extra.qty}` : ''}
+                                    </span>
+                                    <span className="text-urbana-gold font-semibold shrink-0">
+                                      R$ {(extra.preco * extra.qty).toFixed(2)}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
                           </div>
                           
                           <div className="pt-5 border-t border-slate-700/50">
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-sm text-gray-400">Valor</span>
                               <span className="text-urbana-gold font-bold text-2xl">
-                                R$ {agendamento.painel_servicos.preco.toFixed(2)}
+                                R$ {(Number(agendamento.painel_servicos.preco || 0) + extrasTotal).toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-gray-400 text-base">Duração:</span>
                               <span className="text-gray-300 text-base font-medium">
-                                {agendamento.painel_servicos.duracao} min
+                                {Number(agendamento.painel_servicos.duracao || 0) + extrasDuration} min
                               </span>
                             </div>
                           </div>
@@ -475,7 +527,8 @@ export default function PainelClienteMeusAgendamentos() {
                         </CardContent>
                       </Card>
                     </motion.div>
-                  ))}
+                    );
+                  })}
                 </AnimatePresence>
               </div>
             )}

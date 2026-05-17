@@ -3,13 +3,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, Save, X, Loader2, User, Scissors, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Calendar, Clock, Save, X, Loader2, User, Scissors, AlertCircle, CheckCircle2, Sparkles } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addDays, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 import { cn } from '@/lib/utils';
+import ClientBookingExtrasModal, { ClientExtraService } from '@/components/painel-cliente/ClientBookingExtrasModal';
 
 interface Agendamento {
   id: string;
@@ -18,6 +19,7 @@ interface Agendamento {
   status: string;
   barbeiro_id?: string;
   servico_id?: string;
+  servicos_extras?: Array<{ id?: string; nome?: string; preco?: number; duracao?: number; quantidade?: number }> | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -68,6 +70,8 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const [currentBarbeiroId, setCurrentBarbeiroId] = useState<string>('');
   const [currentServicoId, setCurrentServicoId] = useState<string>('');
   const [currentServiceDuration, setCurrentServiceDuration] = useState<number>(30);
+  const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
+  const [showExtrasModal, setShowExtrasModal] = useState(false);
 
   // Carregar dados do agendamento quando abrir
   useEffect(() => {
@@ -75,7 +79,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
       if (agendamento && isOpen) {
         const { data } = await supabase
           .from('painel_agendamentos')
-          .select('barbeiro_id, servico_id, painel_servicos(duracao)')
+          .select('barbeiro_id, servico_id, servicos_extras, painel_servicos(duracao)')
           .eq('id', agendamento.id)
           .maybeSingle();
         
@@ -87,6 +91,24 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
           setSelectedTime(agendamento.hora?.substring(0, 5) || '');
           setSelectedBarbeiroId(''); // Vazio = manter atual
           setSelectedServicoId(''); // Vazio = manter atual
+
+          const grouped: Record<string, ClientExtraService> = {};
+          const rawExtras = Array.isArray((data as any).servicos_extras) ? (data as any).servicos_extras : [];
+          rawExtras.forEach((extra: any) => {
+            const key = extra?.id || extra?.nome;
+            if (!key) return;
+            if (!grouped[key]) {
+              grouped[key] = {
+                id: extra.id || key,
+                nome: extra.nome || 'Extra',
+                preco: Number(extra.preco) || 0,
+                duracao: Number(extra.duracao) || 0,
+                quantidade: 0,
+              };
+            }
+            grouped[key].quantidade = (grouped[key].quantidade || 0) + Math.max(1, Number(extra?.quantidade) || 1);
+          });
+          setExtraServices(Object.values(grouped));
         }
       }
     };
@@ -107,7 +129,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     if (selectedDate && (selectedBarbeiroId || currentBarbeiroId)) {
       fetchAvailableSlots();
     }
-  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServicoId]);
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServicoId, extraServices]);
 
   const fetchBarbeiros = async () => {
     const { data } = await supabase
@@ -134,12 +156,17 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     const barbeiroId = selectedBarbeiroId || currentBarbeiroId;
     if (!barbeiroId) return;
 
-    // Determinar duração do serviço
+    // Determinar duração do serviço considerando extras selecionados
     let duration = currentServiceDuration;
     if (selectedServicoId) {
       const service = servicos.find(s => s.id === selectedServicoId);
       if (service) duration = service.duracao;
     }
+    const extrasDuration = extraServices.reduce(
+      (total, extra) => total + (Number(extra.duracao) || 0) * Math.max(1, extra.quantidade || 1),
+      0
+    );
+    duration += extrasDuration;
 
     setLoadingSlots(true);
     console.log('🕐 [EditAgendamentoModal] Buscando horários:', {
@@ -287,7 +314,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
     } finally {
       setLoadingSlots(false);
     }
-  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServiceDuration, agendamento, servicos]);
+  }, [selectedDate, selectedBarbeiroId, selectedServicoId, currentBarbeiroId, currentServiceDuration, agendamento, servicos, extraServices]);
 
   // Gerar datas disponíveis
   const gerarDatasDisponiveis = () => {
@@ -350,6 +377,16 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
         hora: selectedTime + ':00'
       };
 
+      const expandedExtras = extraServices.flatMap((extra) => {
+        const qty = Math.max(1, extra.quantidade || 1);
+        return Array.from({ length: qty }, () => ({
+          id: extra.id,
+          nome: extra.nome,
+          preco: Number(extra.preco) || 0,
+          duracao: Number(extra.duracao) || 0,
+        }));
+      });
+
       if (selectedBarbeiroId) {
         updateData.barbeiro_id = selectedBarbeiroId;
       }
@@ -367,6 +404,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             barberId: updateData.barbeiro_id || currentBarbeiroId,
             date: updateData.data,
             time: selectedTime,
+            extras: expandedExtras,
           },
         });
         result = resp.data;
@@ -450,6 +488,15 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const effectiveBarbeiroId = selectedBarbeiroId || currentBarbeiroId;
   const selectedBarbeiro = barbeiros.find(b => b.id === effectiveBarbeiroId) || 
                           { nome: agendamento.painel_barbeiros.nome };
+  const effectiveServicoId = selectedServicoId || currentServicoId;
+  const extrasTotal = extraServices.reduce(
+    (total, extra) => total + (Number(extra.preco) || 0) * Math.max(1, extra.quantidade || 1),
+    0
+  );
+  const extrasDuration = extraServices.reduce(
+    (total, extra) => total + (Number(extra.duracao) || 0) * Math.max(1, extra.quantidade || 1),
+    0
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -501,6 +548,40 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Serviços extras */}
+          <div className="space-y-2">
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              Serviços adicionais
+            </Label>
+            {extraServices.length > 0 && (
+              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 space-y-2">
+                {extraServices.map((extra) => {
+                  const qty = Math.max(1, extra.quantidade || 1);
+                  return (
+                    <div key={extra.id} className="flex justify-between gap-3 text-sm">
+                      <span className="text-slate-200 truncate">{extra.nome}{qty > 1 ? ` x${qty}` : ''}</span>
+                      <span className="text-urbana-gold font-semibold shrink-0">R$ {((Number(extra.preco) || 0) * qty).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between border-t border-slate-700 pt-2 text-sm font-semibold">
+                  <span>Total extras</span>
+                  <span>R$ {extrasTotal.toFixed(2)} · {extrasDuration} min</span>
+                </div>
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowExtrasModal(true)}
+              className="w-full h-11 border-slate-600 bg-slate-800 text-white"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              {extraServices.length > 0 ? 'Editar serviços adicionais' : 'Adicionar serviços adicionais'}
+            </Button>
           </div>
 
           {/* Data */}
@@ -607,6 +688,20 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             </Button>
           </div>
         </form>
+
+        {effectiveServicoId && (
+          <ClientBookingExtrasModal
+            open={showExtrasModal}
+            onOpenChange={setShowExtrasModal}
+            mainServiceId={effectiveServicoId}
+            initialExtraServices={extraServices}
+            initialProducts={[]}
+            onApply={({ extraServices: services }) => {
+              setExtraServices(services);
+              setSelectedTime('');
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
