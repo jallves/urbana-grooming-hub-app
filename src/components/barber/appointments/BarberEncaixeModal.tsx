@@ -490,7 +490,7 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
           {step === 'form' ? (
             <Button
               onClick={handleNext}
-              disabled={hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || isSlotInPast()}
+              disabled={!selectedDate || !selectedTime || !selectedServiceId}
               className="w-full h-11 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold touch-manipulation disabled:opacity-40"
             >
               Continuar
