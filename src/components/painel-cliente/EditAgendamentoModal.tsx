@@ -488,6 +488,15 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const effectiveBarbeiroId = selectedBarbeiroId || currentBarbeiroId;
   const selectedBarbeiro = barbeiros.find(b => b.id === effectiveBarbeiroId) || 
                           { nome: agendamento.painel_barbeiros.nome };
+  const effectiveServicoId = selectedServicoId || currentServicoId;
+  const extrasTotal = extraServices.reduce(
+    (total, extra) => total + (Number(extra.preco) || 0) * Math.max(1, extra.quantidade || 1),
+    0
+  );
+  const extrasDuration = extraServices.reduce(
+    (total, extra) => total + (Number(extra.duracao) || 0) * Math.max(1, extra.quantidade || 1),
+    0
+  );
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -539,6 +548,40 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Serviços extras */}
+          <div className="space-y-2">
+            <Label className="text-white flex items-center gap-2 text-sm font-medium">
+              <Sparkles className="h-4 w-4 text-purple-400" />
+              Serviços adicionais
+            </Label>
+            {extraServices.length > 0 && (
+              <div className="rounded-xl border border-slate-700 bg-slate-800/60 p-3 space-y-2">
+                {extraServices.map((extra) => {
+                  const qty = Math.max(1, extra.quantidade || 1);
+                  return (
+                    <div key={extra.id} className="flex justify-between gap-3 text-sm">
+                      <span className="text-slate-200 truncate">{extra.nome}{qty > 1 ? ` x${qty}` : ''}</span>
+                      <span className="text-urbana-gold font-semibold shrink-0">R$ {((Number(extra.preco) || 0) * qty).toFixed(2)}</span>
+                    </div>
+                  );
+                })}
+                <div className="flex justify-between border-t border-slate-700 pt-2 text-sm font-semibold">
+                  <span>Total extras</span>
+                  <span>R$ {extrasTotal.toFixed(2)} · {extrasDuration} min</span>
+                </div>
+              </div>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setShowExtrasModal(true)}
+              className="w-full h-11 border-slate-600 bg-slate-800 text-white hover:bg-slate-700"
+            >
+              <Sparkles className="h-4 w-4 mr-2" />
+              {extraServices.length > 0 ? 'Editar serviços adicionais' : 'Adicionar serviços adicionais'}
+            </Button>
           </div>
 
           {/* Data */}
@@ -645,6 +688,20 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             </Button>
           </div>
         </form>
+
+        {effectiveServicoId && (
+          <ClientBookingExtrasModal
+            open={showExtrasModal}
+            onOpenChange={setShowExtrasModal}
+            mainServiceId={effectiveServicoId}
+            initialExtraServices={extraServices}
+            initialProducts={[]}
+            onApply={({ extraServices: services }) => {
+              setExtraServices(services);
+              setSelectedTime('');
+            }}
+          />
+        )}
       </DialogContent>
     </Dialog>
   );
