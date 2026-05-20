@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     const body = await req.json()
-    const { action, session_id, checkout_type, custom_value, pay_commission } = body
+    const { action, session_id, checkout_type, custom_value, pay_commission, extra_services, extra_products, payment_method } = body
 
     // ==================== ACTION: LIST ====================
     if (action === 'list') {
@@ -72,7 +72,10 @@ Deno.serve(async (req) => {
     if (action === 'force_checkout') {
       const type = checkout_type || 'full'
       const shouldPayCommission = pay_commission !== false // default true
-      console.log('🔧 Checkout admin:', { session_id, type, shouldPayCommission, custom_value })
+      const payMethod: string = payment_method || 'admin'
+      const addedServices: Array<{ id: string; quantidade: number }> = Array.isArray(extra_services) ? extra_services : []
+      const addedProducts: Array<{ id: string; quantidade: number }> = Array.isArray(extra_products) ? extra_products : []
+      console.log('🔧 Checkout admin:', { session_id, type, shouldPayCommission, custom_value, payMethod, addedServices, addedProducts })
 
       if (!session_id) throw new Error('session_id é obrigatório')
 
@@ -160,6 +163,38 @@ Deno.serve(async (req) => {
       }
       const extrasTotal = extraItems.reduce((sum, e) => sum + Number(e.preco), 0)
 
+      // Added services at checkout time
+      const addedServicesData: { id: string; nome: string; preco: number; quantidade: number }[] = []
+      for (const s of addedServices) {
+        if (!s?.id) continue
+        const qty = Math.max(1, Number(s.quantidade) || 1)
+        const { data: svc } = await supabase
+          .from('painel_servicos')
+          .select('id, nome, preco')
+          .eq('id', s.id)
+          .maybeSingle()
+        if (svc) addedServicesData.push({ id: svc.id, nome: svc.nome, preco: Number(svc.preco), quantidade: qty })
+      }
+      const addedServicesTotal = addedServicesData.reduce((sum, e) => sum + e.preco * e.quantidade, 0)
+
+      // Added products
+      const addedProductsData: { id: string; nome: string; preco: number; quantidade: number; commission_value: number; commission_percentage: number }[] = []
+      for (const p of addedProducts) {
+        if (!p?.id) continue
+        const qty = Math.max(1, Number(p.quantidade) || 1)
+        const { data: prd } = await supabase
+          .from('painel_produtos')
+          .select('id, nome, preco, commission_value, commission_percentage')
+          .eq('id', p.id)
+          .maybeSingle()
+        if (prd) addedProductsData.push({
+          id: prd.id, nome: prd.nome, preco: Number(prd.preco), quantidade: qty,
+          commission_value: Number(prd.commission_value || 0),
+          commission_percentage: Number(prd.commission_percentage || 0),
+        })
+      }
+      const addedProductsTotal = addedProductsData.reduce((sum, e) => sum + e.preco * e.quantidade, 0)
+
       // 3. Calculate prices (including extras)
       const fullServicePrice = originalPrice + extrasTotal
       let revenueAmount: number
@@ -169,21 +204,31 @@ Deno.serve(async (req) => {
       switch (type) {
         case 'courtesy':
           revenueAmount = 0
-          commissionBase = fullServicePrice // Commission on FULL price (main + extras)
+          commissionBase = fullServicePrice + addedServicesTotal // Commission on FULL price (main + extras + added)
           observacao = `Cortesia administrativa - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
           break
         case 'custom':
           revenueAmount = typeof custom_value === 'number' ? custom_value : fullServicePrice
-          commissionBase = revenueAmount
+          commissionBase = revenueAmount + addedServicesTotal
           observacao = `Checkout admin (R$ ${revenueAmount.toFixed(2)}) - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
           break
         default:
           revenueAmount = fullServicePrice
-          commissionBase = fullServicePrice
+          commissionBase = fullServicePrice + addedServicesTotal
           observacao = `Checkout administrativo - ${nomeServico}${extraItems.length > 0 ? ` + ${extraItems.length} extra(s)` : ''}`
       }
 
+      // Add added services + products into revenue total
+      revenueAmount = revenueAmount + addedServicesTotal + addedProductsTotal
       const commissionAmount = shouldPayCommission ? commissionBase * (COMMISSION_RATE / 100) : 0
+
+      // Product commissions (independent of barber service commission rate)
+      const productCommissions = addedProductsData.map(p => {
+        let amount = 0
+        if (p.commission_value > 0) amount = p.commission_value * p.quantidade
+        else if (p.commission_percentage > 0) amount = (p.preco * p.quantidade) * (p.commission_percentage / 100)
+        return { ...p, commission_amount: Number(amount.toFixed(2)) }
+      })
 
       console.log('💰 Cálculos:', {
         originalPrice,
@@ -201,7 +246,7 @@ Deno.serve(async (req) => {
           cliente_id: agendamento.cliente_id,
           barbeiro_id,
           valor_total: revenueAmount,
-          desconto: fullServicePrice - revenueAmount,
+          desconto: Math.max(0, (fullServicePrice + addedServicesTotal + addedProductsTotal) - revenueAmount),
           status: 'PAGA',
           observacoes: observacao
         })
@@ -237,7 +282,44 @@ Deno.serve(async (req) => {
         })
       }
 
+      // Added services (cobrados integralmente mesmo em cortesia do principal)
+      for (const svc of addedServicesData) {
+        vendaItems.push({
+          venda_id: novaVenda.id,
+          tipo: 'SERVICO_EXTRA',
+          item_id: svc.id,
+          nome: svc.nome,
+          quantidade: svc.quantidade,
+          preco_unitario: svc.preco,
+          subtotal: svc.preco * svc.quantidade,
+          barbeiro_id,
+        })
+      }
+
+      // Added products
+      for (const prd of addedProductsData) {
+        vendaItems.push({
+          venda_id: novaVenda.id,
+          tipo: 'PRODUTO',
+          item_id: prd.id,
+          nome: prd.nome,
+          quantidade: prd.quantidade,
+          preco_unitario: prd.preco,
+          subtotal: prd.preco * prd.quantidade,
+          barbeiro_id,
+        })
+      }
+
       await supabase.from('vendas_itens').insert(vendaItems)
+
+      // Decrement product stock
+      for (const prd of addedProductsData) {
+        try {
+          await supabase.rpc('decrease_product_stock', { p_product_id: prd.id, p_quantity: prd.quantidade })
+        } catch (e) {
+          console.error('❌ Falha ao baixar estoque do produto', prd.id, e)
+        }
+      }
 
       // 6. Contas a Receber (even if zero for courtesy - records the event)
       const today = new Date().toISOString().split('T')[0]
@@ -251,7 +333,7 @@ Deno.serve(async (req) => {
         data_recebimento: today,
         status: 'recebido',
         categoria: 'servico',
-        forma_pagamento: type === 'courtesy' ? 'cortesia' : 'admin',
+        forma_pagamento: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
         cliente_id: agendamento.cliente_id,
         observacoes: observacao,
         venda_id: novaVenda.id, // FK padronizada para vendas.id
@@ -291,7 +373,7 @@ Deno.serve(async (req) => {
           status: 'pendente',
           categoria: 'comissao',
           fornecedor: barberName,
-          forma_pagamento: 'admin',
+          forma_pagamento: payMethod,
           observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
           venda_id: novaVenda.id, // FK padronizada para vendas.id
         })
@@ -311,7 +393,49 @@ Deno.serve(async (req) => {
           service_name: nomeServico,
           reference_id: novaVenda.id,
           reference_type: 'venda',
-          payment_method: type === 'courtesy' ? 'cortesia' : 'admin'
+          payment_method: payMethod,
+        })
+      }
+
+      // Product commissions
+      for (const pc of productCommissions) {
+        if (pc.commission_amount <= 0) continue
+        await supabase.from('barber_commissions').insert({
+          barber_id: barbeiro_id,
+          appointment_id,
+          venda_id: novaVenda.id,
+          valor: pc.commission_amount,
+          amount: pc.commission_amount,
+          commission_rate: pc.commission_value > 0 ? 0 : pc.commission_percentage,
+          barber_name: barberName,
+          tipo: 'produto',
+          status: 'pending',
+          appointment_source: 'admin_checkout',
+        })
+        await supabase.from('contas_pagar').insert({
+          descricao: `Comissão produto ${pc.nome} - ${barberName}`,
+          valor: pc.commission_amount,
+          data_vencimento: today,
+          status: 'pendente',
+          categoria: 'comissao_produto',
+          fornecedor: barberName,
+          forma_pagamento: payMethod,
+          observacoes: `Comissão produto ${pc.nome} x${pc.quantidade}`,
+          venda_id: novaVenda.id,
+        })
+        await supabase.from('financial_records').insert({
+          transaction_type: 'commission',
+          amount: pc.commission_amount,
+          description: `Comissão produto ${pc.nome} - ${barberName}`,
+          category: 'produto',
+          subcategory: 'produto_comissao',
+          status: 'pending',
+          barber_id: barbeiro_id,
+          barber_name: barberName,
+          client_id: agendamento.cliente_id,
+          reference_id: novaVenda.id,
+          reference_type: 'venda',
+          payment_method: payMethod,
         })
       }
 
@@ -322,7 +446,7 @@ Deno.serve(async (req) => {
           amount: revenueAmount,
           description: `Checkout admin - ${nomeServico}`,
           category: 'servico',
-          payment_method: 'admin',
+          payment_method: payMethod,
           status: 'completed',
           barber_id: barbeiro_id,
           client_id: agendamento.cliente_id,
@@ -346,7 +470,7 @@ Deno.serve(async (req) => {
         service_name: nomeServico,
         reference_id: novaVenda.id,
         reference_type: 'venda',
-        payment_method: type === 'courtesy' ? 'cortesia' : 'admin'
+        payment_method: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
       })
 
       // 8b. Cash Flow - receita (sync)
@@ -357,7 +481,7 @@ Deno.serve(async (req) => {
           ? `Cortesia - ${nomeServico} (${barberName})`
           : `Checkout admin - ${nomeServico}`,
         category: 'servico',
-        payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
+        payment_method: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
         transaction_date: today,
         reference_id: novaVenda.id,
         notes: observacao
@@ -371,7 +495,7 @@ Deno.serve(async (req) => {
           amount: commissionAmount,
           description: `Comissão ${barberName} - ${nomeServico}${type === 'courtesy' ? ' (cortesia)' : ''}`,
           category: 'comissao',
-          payment_method: type === 'courtesy' ? 'cortesia' : 'admin',
+          payment_method: payMethod,
           transaction_date: today,
           reference_id: novaVenda.id,
           notes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)}`
