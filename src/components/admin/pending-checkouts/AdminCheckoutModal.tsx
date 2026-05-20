@@ -254,6 +254,88 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             )}
           </div>
 
+          {/* Serviços extras */}
+          <div className="space-y-2 border rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Scissors className="h-4 w-4 text-blue-600" />
+              <Label className="text-sm font-semibold">Serviços Extras</Label>
+            </div>
+            <div className="flex gap-2">
+              <Select value={serviceToAdd} onValueChange={setServiceToAdd}>
+                <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um serviço para adicionar" /></SelectTrigger>
+                <SelectContent>
+                  {services.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.nome} — R$ {Number(s.preco).toFixed(2)}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={addService} disabled={!serviceToAdd} size="sm"><Plus className="h-4 w-4" /></Button>
+            </div>
+            {addedServices.length > 0 && (
+              <div className="space-y-1">
+                {addedServices.map(i => (
+                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1">
+                    <span className="flex-1 truncate">{i.nome}</span>
+                    <Input type="number" min={1} value={i.qty} onChange={(e) => updateQty('svc', i.id, parseInt(e.target.value))} className="w-16 h-7" />
+                    <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('svc', i.id)}><Trash2 className="h-3 w-3" /></Button>
+                  </div>
+                ))}
+                <div className="text-right text-xs text-muted-foreground">Subtotal extras: <span className="font-bold text-foreground">R$ {extraServicesTotal.toFixed(2)}</span></div>
+              </div>
+            )}
+          </div>
+
+          {/* Produtos */}
+          <div className="space-y-2 border rounded-lg p-3">
+            <div className="flex items-center gap-2">
+              <Package className="h-4 w-4 text-amber-600" />
+              <Label className="text-sm font-semibold">Produtos</Label>
+            </div>
+            <div className="flex gap-2">
+              <Select value={productToAdd} onValueChange={setProductToAdd}>
+                <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um produto" /></SelectTrigger>
+                <SelectContent>
+                  {products.map(p => (
+                    <SelectItem key={p.id} value={p.id} disabled={p.estoque <= 0}>
+                      {p.nome} — R$ {Number(p.preco).toFixed(2)} {p.estoque <= 0 ? '(sem estoque)' : `(${p.estoque} em estoque)`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button type="button" onClick={addProduct} disabled={!productToAdd} size="sm"><Plus className="h-4 w-4" /></Button>
+            </div>
+            {addedProducts.length > 0 && (
+              <div className="space-y-1">
+                {addedProducts.map(i => (
+                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1">
+                    <span className="flex-1 truncate">{i.nome}</span>
+                    <Input type="number" min={1} value={i.qty} onChange={(e) => updateQty('prd', i.id, parseInt(e.target.value))} className="w-16 h-7" />
+                    <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('prd', i.id)}><Trash2 className="h-3 w-3" /></Button>
+                  </div>
+                ))}
+                <div className="text-right text-xs text-muted-foreground">Subtotal produtos: <span className="font-bold text-foreground">R$ {extraProductsTotal.toFixed(2)}</span></div>
+              </div>
+            )}
+          </div>
+
+          {/* Forma de pagamento */}
+          <div className="space-y-2">
+            <Label className="text-sm font-semibold">Forma de Pagamento</Label>
+            <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {PAYMENT_METHODS.map(m => (
+                  <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {paymentMethod === 'externo' && (
+              <p className="text-xs text-muted-foreground">Cliente pagou fora do sistema (dinheiro físico, transferência etc).</p>
+            )}
+          </div>
+
           {/* Comissão do barbeiro - aparece APENAS para cortesia */}
           {checkoutType === 'courtesy' && (
             <div className={`rounded-lg border-2 p-4 space-y-3 transition-colors ${payCommission ? 'border-purple-400 bg-purple-50' : 'border-orange-400 bg-orange-50'}`}>
