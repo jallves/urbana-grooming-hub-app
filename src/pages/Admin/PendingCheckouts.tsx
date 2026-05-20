@@ -115,7 +115,8 @@ const PendingCheckouts: React.FC = () => {
     sessionId: string,
     checkoutType: 'full' | 'courtesy' | 'custom',
     customValue?: number,
-    payCommission?: boolean
+    payCommission?: boolean,
+    extras?: { extra_services: Array<{ id: string; quantidade: number }>; extra_products: Array<{ id: string; quantidade: number }>; payment_method: string }
   ) => {
     setIsProcessing(true);
     try {
@@ -126,6 +127,9 @@ const PendingCheckouts: React.FC = () => {
           checkout_type: checkoutType,
           custom_value: customValue,
           pay_commission: payCommission ?? true,
+          extra_services: extras?.extra_services || [],
+          extra_products: extras?.extra_products || [],
+          payment_method: extras?.payment_method || 'admin',
         }
       });
 
