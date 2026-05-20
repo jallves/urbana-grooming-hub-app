@@ -321,24 +321,48 @@ Deno.serve(async (req) => {
         }
       }
 
-      // 6. Contas a Receber (even if zero for courtesy - records the event)
+      // 6. Contas a Receber — separar por categoria (serviço x produto)
       const today = new Date().toISOString().split('T')[0]
+      const servicesRevenue = type === 'courtesy' ? 0 : (originalPrice + extrasTotal + addedServicesTotal)
+      const productsRevenue = addedProductsTotal
 
-      await supabase.from('contas_receber').insert({
-        descricao: type === 'courtesy'
-          ? `Cortesia - ${nomeServico} (${barberName})`
-          : `${nomeServico} - Checkout admin`,
-        valor: revenueAmount,
-        data_vencimento: today,
-        data_recebimento: today,
-        status: 'recebido',
-        categoria: 'servico',
-        forma_pagamento: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
-        cliente_id: agendamento.cliente_id,
-        observacoes: observacao,
-        venda_id: novaVenda.id, // FK padronizada para vendas.id
-      })
-      console.log('✅ Contas a receber:', revenueAmount)
+      // 6a. Receita de SERVIÇOS (principal + extras agendados + extras adicionados no checkout)
+      if (servicesRevenue > 0 || type === 'courtesy') {
+        const extrasCount = extraItems.length + addedServicesData.reduce((s, x) => s + x.quantidade, 0)
+        await supabase.from('contas_receber').insert({
+          descricao: type === 'courtesy'
+            ? `Cortesia - ${nomeServico} (${barberName})`
+            : `${nomeServico}${extrasCount > 0 ? ` + ${extrasCount} extra(s)` : ''} - Checkout admin`,
+          valor: type === 'courtesy' ? 0 : servicesRevenue,
+          data_vencimento: today,
+          data_recebimento: today,
+          status: 'recebido',
+          categoria: 'servico',
+          forma_pagamento: type === 'courtesy' && servicesRevenue === 0 ? 'cortesia' : payMethod,
+          cliente_id: agendamento.cliente_id,
+          observacoes: observacao,
+          venda_id: novaVenda.id,
+        })
+        console.log('✅ Contas a receber (serviços):', servicesRevenue)
+      }
+
+      // 6b. Receita de PRODUTOS
+      if (productsRevenue > 0) {
+        const productsList = addedProductsData.map(p => `${p.nome} x${p.quantidade}`).join(', ')
+        await supabase.from('contas_receber').insert({
+          descricao: `Produtos: ${productsList}`,
+          valor: productsRevenue,
+          data_vencimento: today,
+          data_recebimento: today,
+          status: 'recebido',
+          categoria: 'produto',
+          forma_pagamento: payMethod,
+          cliente_id: agendamento.cliente_id,
+          observacoes: `Venda de produtos no checkout admin - ${barberName}`,
+          venda_id: novaVenda.id,
+        })
+        console.log('✅ Contas a receber (produtos):', productsRevenue)
+      }
 
       // 7. Comissão + Contas a Pagar (if commission should be paid)
       if (shouldPayCommission && commissionAmount > 0) {
@@ -439,11 +463,11 @@ Deno.serve(async (req) => {
         })
       }
 
-      // 8. Financial transaction (receita) - only if revenue > 0
-      if (revenueAmount > 0) {
+      // 8. Financial transaction (receita) - separar serviços x produtos
+      if (servicesRevenue > 0) {
         await supabase.from('financial_transactions').insert({
           transaction_type: 'income',
-          amount: revenueAmount,
+          amount: servicesRevenue,
           description: `Checkout admin - ${nomeServico}`,
           category: 'servico',
           payment_method: payMethod,
@@ -453,40 +477,89 @@ Deno.serve(async (req) => {
           reference_id: novaVenda.id
         })
       }
+      if (productsRevenue > 0) {
+        await supabase.from('financial_transactions').insert({
+          transaction_type: 'income',
+          amount: productsRevenue,
+          description: `Venda produtos - Checkout admin`,
+          category: 'produto',
+          payment_method: payMethod,
+          status: 'completed',
+          barber_id: barbeiro_id,
+          client_id: agendamento.cliente_id,
+          reference_id: novaVenda.id
+        })
+      }
 
-      // Financial record (receita)
-      await supabase.from('financial_records').insert({
-        transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
-        amount: revenueAmount,
-        description: type === 'courtesy'
-          ? `Cortesia - ${nomeServico} (${barberName})`
-          : `Checkout admin - ${nomeServico}`,
-        category: 'servico',
-        status: 'completed',
-        barber_id: barbeiro_id,
-        barber_name: barberName,
-        client_id: agendamento.cliente_id,
-        service_id: agendamento.servico_id,
-        service_name: nomeServico,
-        reference_id: novaVenda.id,
-        reference_type: 'venda',
-        payment_method: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
-      })
+      // Financial record (receita) - serviços
+      if (servicesRevenue > 0 || type === 'courtesy') {
+        await supabase.from('financial_records').insert({
+          transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
+          amount: type === 'courtesy' ? 0 : servicesRevenue,
+          description: type === 'courtesy'
+            ? `Cortesia - ${nomeServico} (${barberName})`
+            : `Checkout admin - ${nomeServico}`,
+          category: 'servico',
+          status: 'completed',
+          barber_id: barbeiro_id,
+          barber_name: barberName,
+          client_id: agendamento.cliente_id,
+          service_id: agendamento.servico_id,
+          service_name: nomeServico,
+          reference_id: novaVenda.id,
+          reference_type: 'venda',
+          payment_method: type === 'courtesy' && servicesRevenue === 0 ? 'cortesia' : payMethod,
+        })
+      }
 
-      // 8b. Cash Flow - receita (sync)
-      await supabase.from('cash_flow').insert({
-        transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
-        amount: revenueAmount,
-        description: type === 'courtesy'
-          ? `Cortesia - ${nomeServico} (${barberName})`
-          : `Checkout admin - ${nomeServico}`,
-        category: 'servico',
-        payment_method: type === 'courtesy' && revenueAmount === 0 ? 'cortesia' : payMethod,
-        transaction_date: today,
-        reference_id: novaVenda.id,
-        notes: observacao
-      })
-      console.log('✅ Cash flow (receita):', revenueAmount)
+      // Financial record (receita) - produtos
+      if (productsRevenue > 0) {
+        await supabase.from('financial_records').insert({
+          transaction_type: 'income',
+          amount: productsRevenue,
+          description: `Venda produtos - Checkout admin (${barberName})`,
+          category: 'produto',
+          status: 'completed',
+          barber_id: barbeiro_id,
+          barber_name: barberName,
+          client_id: agendamento.cliente_id,
+          reference_id: novaVenda.id,
+          reference_type: 'venda',
+          payment_method: payMethod,
+        })
+      }
+
+      // 8b. Cash Flow - serviços
+      if (servicesRevenue > 0 || type === 'courtesy') {
+        await supabase.from('cash_flow').insert({
+          transaction_type: type === 'courtesy' ? 'courtesy' : 'income',
+          amount: type === 'courtesy' ? 0 : servicesRevenue,
+          description: type === 'courtesy'
+            ? `Cortesia - ${nomeServico} (${barberName})`
+            : `Checkout admin - ${nomeServico}`,
+          category: 'servico',
+          payment_method: type === 'courtesy' && servicesRevenue === 0 ? 'cortesia' : payMethod,
+          transaction_date: today,
+          reference_id: novaVenda.id,
+          notes: observacao
+        })
+        console.log('✅ Cash flow (serviços):', servicesRevenue)
+      }
+
+      // Cash Flow - produtos
+      if (productsRevenue > 0) {
+        await supabase.from('cash_flow').insert({
+          transaction_type: 'income',
+          amount: productsRevenue,
+          description: `Venda produtos - Checkout admin (${barberName})`,
+          category: 'produto',
+          payment_method: payMethod,
+          transaction_date: today,
+          reference_id: novaVenda.id,
+          notes: addedProductsData.map(p => `${p.nome} x${p.quantidade}`).join(', ')
+        })
+        console.log('✅ Cash flow (produtos):', productsRevenue)
+      }
 
       // Cash Flow - comissão (despesa)
       if (shouldPayCommission && commissionAmount > 0) {
