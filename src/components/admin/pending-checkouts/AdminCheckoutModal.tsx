@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, Gift, Edit3, DollarSign, Users, Plus, Trash2, Package, Scissors } from 'lucide-react';
+import { CheckCircle, Gift, Edit3, DollarSign, Users, Plus, Minus, Trash2, Package, Scissors } from 'lucide-react';
 
 interface CheckoutData {
   appointmentId: string;
@@ -274,9 +274,17 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             {addedServices.length > 0 && (
               <div className="space-y-1">
                 {addedServices.map(i => (
-                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1">
+                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1.5">
                     <span className="flex-1 truncate">{i.nome}</span>
-                    <Input type="number" min={1} value={i.qty} onChange={(e) => updateQty('svc', i.id, parseInt(e.target.value))} className="w-16 h-7" />
+                    <div className="flex items-center gap-1 bg-background rounded-full border shadow-sm">
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => i.qty <= 1 ? removeItem('svc', i.id) : updateQty('svc', i.id, i.qty - 1)}>
+                        <Minus className="h-3.5 w-3.5" />
+                      </Button>
+                      <span className="min-w-[24px] text-center font-bold text-sm">{i.qty}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => updateQty('svc', i.id, i.qty + 1)}>
+                        <Plus className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
                     <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
                     <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('svc', i.id)}><Trash2 className="h-3 w-3" /></Button>
                   </div>
@@ -307,14 +315,26 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             </div>
             {addedProducts.length > 0 && (
               <div className="space-y-1">
-                {addedProducts.map(i => (
-                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1">
-                    <span className="flex-1 truncate">{i.nome}</span>
-                    <Input type="number" min={1} value={i.qty} onChange={(e) => updateQty('prd', i.id, parseInt(e.target.value))} className="w-16 h-7" />
-                    <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('prd', i.id)}><Trash2 className="h-3 w-3" /></Button>
-                  </div>
-                ))}
+                {addedProducts.map(i => {
+                  const stock = products.find(p => p.id === i.id)?.estoque ?? 99;
+                  const atMax = i.qty >= stock;
+                  return (
+                    <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1.5">
+                      <span className="flex-1 truncate">{i.nome}</span>
+                      <div className="flex items-center gap-1 bg-background rounded-full border shadow-sm">
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => i.qty <= 1 ? removeItem('prd', i.id) : updateQty('prd', i.id, i.qty - 1)}>
+                          <Minus className="h-3.5 w-3.5" />
+                        </Button>
+                        <span className="min-w-[24px] text-center font-bold text-sm">{i.qty}</span>
+                        <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" disabled={atMax} onClick={() => updateQty('prd', i.id, i.qty + 1)}>
+                          <Plus className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                      <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('prd', i.id)}><Trash2 className="h-3 w-3" /></Button>
+                    </div>
+                  );
+                })}
                 <div className="text-right text-xs text-muted-foreground">Subtotal produtos: <span className="font-bold text-foreground">R$ {extraProductsTotal.toFixed(2)}</span></div>
               </div>
             )}
