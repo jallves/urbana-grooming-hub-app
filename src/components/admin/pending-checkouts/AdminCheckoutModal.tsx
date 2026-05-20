@@ -96,8 +96,6 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
     }
   }, [open]);
 
-  if (!data) return null;
-
   const addService = () => {
     const s = services.find(x => x.id === serviceToAdd);
     if (!s) return;
@@ -131,6 +129,8 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
 
   const extraServicesTotal = useMemo(() => addedServices.reduce((s, i) => s + i.preco * i.qty, 0), [addedServices]);
   const extraProductsTotal = useMemo(() => addedProducts.reduce((s, i) => s + i.preco * i.qty, 0), [addedProducts]);
+
+  if (!data) return null;
 
   const getFinalValue = () => {
     let base = 0;
