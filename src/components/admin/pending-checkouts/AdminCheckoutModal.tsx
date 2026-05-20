@@ -170,15 +170,15 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-2xl max-h-[92vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-2xl w-[100vw] sm:w-auto max-w-[100vw] sm:max-w-2xl h-[100dvh] sm:h-auto max-h-[100dvh] sm:max-h-[92vh] rounded-none sm:rounded-lg p-0 sm:p-6 overflow-hidden flex flex-col gap-0">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2 text-lg">
-            <CheckCircle className="h-5 w-5 text-green-600" />
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg px-4 sm:px-0 pt-4 sm:pt-0 pb-3 sm:pb-2 border-b sm:border-0">
+            <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
             Realizar Checkout
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 overflow-y-auto px-4 sm:px-0 py-3 sm:py-0">
           {/* Resumo */}
           <div className="bg-muted/50 rounded-lg p-4 space-y-2 text-sm">
             <div className="flex justify-between">
@@ -272,21 +272,21 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
               <Button type="button" onClick={addService} disabled={!serviceToAdd} size="sm"><Plus className="h-4 w-4" /></Button>
             </div>
             {addedServices.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {addedServices.map(i => (
-                  <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1.5">
-                    <span className="flex-1 truncate">{i.nome}</span>
-                    <div className="flex items-center gap-1 bg-background rounded-full border shadow-sm">
+                  <div key={i.id} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm bg-muted/40 rounded px-2 py-1.5">
+                    <span className="flex-1 min-w-0 truncate">{i.nome}</span>
+                    <div className="flex items-center gap-0.5 sm:gap-1 bg-background rounded-full border shadow-sm shrink-0">
                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => i.qty <= 1 ? removeItem('svc', i.id) : updateQty('svc', i.id, i.qty - 1)}>
                         <Minus className="h-3.5 w-3.5" />
                       </Button>
-                      <span className="min-w-[24px] text-center font-bold text-sm">{i.qty}</span>
+                      <span className="min-w-[20px] text-center font-bold text-xs sm:text-sm">{i.qty}</span>
                       <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => updateQty('svc', i.id, i.qty + 1)}>
                         <Plus className="h-3.5 w-3.5" />
                       </Button>
                     </div>
-                    <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
-                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('svc', i.id)}><Trash2 className="h-3 w-3" /></Button>
+                    <span className="w-16 sm:w-20 text-right font-semibold shrink-0 tabular-nums">R$ {(i.preco * i.qty).toFixed(2)}</span>
+                    <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeItem('svc', i.id)}><Trash2 className="h-3 w-3" /></Button>
                   </div>
                 ))}
                 <div className="text-right text-xs text-muted-foreground">Subtotal extras: <span className="font-bold text-foreground">R$ {extraServicesTotal.toFixed(2)}</span></div>
@@ -314,24 +314,24 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
               <Button type="button" onClick={addProduct} disabled={!productToAdd} size="sm"><Plus className="h-4 w-4" /></Button>
             </div>
             {addedProducts.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {addedProducts.map(i => {
                   const stock = products.find(p => p.id === i.id)?.estoque ?? 99;
                   const atMax = i.qty >= stock;
                   return (
-                    <div key={i.id} className="flex items-center gap-2 text-sm bg-muted/40 rounded px-2 py-1.5">
-                      <span className="flex-1 truncate">{i.nome}</span>
-                      <div className="flex items-center gap-1 bg-background rounded-full border shadow-sm">
+                    <div key={i.id} className="flex items-center gap-1.5 sm:gap-2 text-xs sm:text-sm bg-muted/40 rounded px-2 py-1.5">
+                      <span className="flex-1 min-w-0 truncate">{i.nome}</span>
+                      <div className="flex items-center gap-0.5 sm:gap-1 bg-background rounded-full border shadow-sm shrink-0">
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" onClick={() => i.qty <= 1 ? removeItem('prd', i.id) : updateQty('prd', i.id, i.qty - 1)}>
                           <Minus className="h-3.5 w-3.5" />
                         </Button>
-                        <span className="min-w-[24px] text-center font-bold text-sm">{i.qty}</span>
+                        <span className="min-w-[20px] text-center font-bold text-xs sm:text-sm">{i.qty}</span>
                         <Button type="button" variant="ghost" size="icon" className="h-7 w-7 rounded-full" disabled={atMax} onClick={() => updateQty('prd', i.id, i.qty + 1)}>
                           <Plus className="h-3.5 w-3.5" />
                         </Button>
                       </div>
-                      <span className="w-20 text-right font-semibold">R$ {(i.preco * i.qty).toFixed(2)}</span>
-                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => removeItem('prd', i.id)}><Trash2 className="h-3 w-3" /></Button>
+                      <span className="w-16 sm:w-20 text-right font-semibold shrink-0 tabular-nums">R$ {(i.preco * i.qty).toFixed(2)}</span>
+                      <Button type="button" variant="ghost" size="icon" className="h-7 w-7 shrink-0" onClick={() => removeItem('prd', i.id)}><Trash2 className="h-3 w-3" /></Button>
                     </div>
                   );
                 })}
@@ -439,14 +439,14 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
           </div>
         </div>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing}>
+        <DialogFooter className="flex-row gap-2 sm:gap-0 px-4 sm:px-0 py-3 sm:py-0 border-t sm:border-0 shrink-0 bg-background">
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isProcessing} className="flex-1 sm:flex-initial">
             Cancelar
           </Button>
           <Button
             onClick={handleConfirm}
             disabled={isProcessing || (checkoutType === 'custom' && (!customValue || parseFloat(customValue) < 0))}
-            className="bg-green-600 hover:bg-green-700 text-white"
+            className="bg-green-600 hover:bg-green-700 text-white flex-[1.5] sm:flex-initial"
           >
             {isProcessing ? 'Processando...' : 'Confirmar Checkout'}
           </Button>
