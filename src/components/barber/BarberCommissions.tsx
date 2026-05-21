@@ -413,44 +413,122 @@ const BarberCommissionsComponent: React.FC = () => {
         )}
       </div>
 
-      {/* Receita Bruta por Segmento */}
-      <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
+      {/* Receita Geradora de Valor + Comissão 40% (destaque principal) */}
+      <PainelBarbeiroCard variant="highlight" className="mb-4 sm:mb-6 border-urbana-gold/40">
         <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
-          <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
+          <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-gold flex items-center gap-2">
             <Award className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
-            Receita Bruta — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })}
+            Receita Geradora de Valor — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })}
           </PainelBarbeiroCardTitle>
-          <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-1">
-            Valor total produzido por segmento (antes da comissão)
+          <p className="text-[10px] sm:text-xs text-urbana-light/70 mt-1 leading-snug">
+            Total faturado apenas em <strong>serviços com pagamento real</strong> (Dinheiro, PIX, Débito, Crédito).
+            <br />
+            <span className="text-urbana-light/50">Cortesia, uso de crédito de plano e gorjetas <strong>NÃO</strong> entram nesse cálculo.</span>
           </p>
         </PainelBarbeiroCardHeader>
         <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
           <div className="space-y-2 sm:space-y-3">
-            {[
-              { label: 'Receita Total', value: stats.grossTotal, color: 'text-urbana-gold', icon: <DollarSign className="h-4 w-4 text-urbana-gold" />, bold: true },
-              { label: 'Serviços', value: stats.grossService, color: 'text-blue-400', icon: <Scissors className="h-4 w-4 text-blue-400" /> },
-              { label: 'Planos (Uso de Crédito)', value: stats.grossSubscription, color: 'text-emerald-400', icon: <CreditCard className="h-4 w-4 text-emerald-400" /> },
-              { label: 'Produtos', value: stats.grossProduct, color: 'text-purple-400', icon: <Package className="h-4 w-4 text-purple-400" /> },
-              { label: 'Gorjetas', value: stats.grossTip, color: 'text-pink-400', icon: <Heart className="h-4 w-4 text-pink-400" /> },
-            ].filter(item => item.value > 0 || item.bold).map((item, i) => (
-              <div key={i} className={cn(
-                "flex items-center justify-between p-2.5 sm:p-3 rounded-lg",
-                item.bold ? "bg-urbana-gold/10 border border-urbana-gold/20" : "bg-urbana-black/40 border border-urbana-gold/10"
-              )}>
-                <div className="flex items-center gap-2">
-                  {item.icon}
-                  <span className={cn("text-xs sm:text-sm", item.bold ? "font-semibold text-urbana-gold" : "text-urbana-light/80")}>
-                    {item.label}
-                  </span>
+            {/* Receita Total (serviços apenas) */}
+            <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg bg-urbana-gold/10 border border-urbana-gold/30">
+              <div className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5 text-urbana-gold" />
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-urbana-gold">Receita Total (Serviços)</p>
+                  <p className="text-[10px] sm:text-xs text-urbana-light/60">Base de cálculo da sua comissão</p>
                 </div>
-                <span className={cn("text-sm sm:text-base font-bold", item.color)}>
-                  R$ {item.value.toFixed(2)}
-                </span>
               </div>
-            ))}
+              <span className="text-lg sm:text-xl font-bold text-urbana-gold">
+                R$ {stats.grossService.toFixed(2)}
+              </span>
+            </div>
+
+            {/* Comissão 40% sobre serviços */}
+            <div className="flex items-center justify-between p-3 sm:p-4 rounded-lg bg-blue-500/10 border border-blue-500/30">
+              <div className="flex items-center gap-2">
+                <Scissors className="h-5 w-5 text-blue-400" />
+                <div>
+                  <p className="text-xs sm:text-sm font-semibold text-blue-400">
+                    Sua Comissão — Serviços
+                  </p>
+                  <p className="text-[10px] sm:text-xs text-urbana-light/60">
+                    {stats.grossService > 0
+                      ? `${((stats.serviceCommissions / stats.grossService) * 100).toFixed(0)}% sobre a receita acima`
+                      : '40% sobre a receita de serviços'}
+                  </p>
+                </div>
+              </div>
+              <span className="text-lg sm:text-xl font-bold text-blue-400">
+                R$ {stats.serviceCommissions.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          {/* Bloco explicativo */}
+          <div className="mt-4 p-3 rounded-lg bg-urbana-black/40 border border-urbana-gold/10">
+            <p className="text-[10px] sm:text-xs text-urbana-light/70 leading-relaxed">
+              <strong className="text-urbana-gold">Como funciona:</strong> Sua comissão principal é calculada sobre a
+              receita de serviços que <strong>realmente entraram em caixa</strong>. Atendimentos pagos com crédito
+              de plano/assinatura aparecem separados abaixo, com uma comissão fixa por uso. Gorjetas são 100% suas.
+              Vendas de produto (quando houver) têm comissão própria.
+            </p>
           </div>
         </PainelBarbeiroCardContent>
       </PainelBarbeiroCard>
+
+      {/* Comissões Adicionais (Planos, Gorjetas, Produtos) */}
+      {(stats.subscriptionUsageCommissions > 0 || stats.tipCommissions > 0 || stats.productCommissions > 0) && (
+        <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
+          <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
+              <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-urbana-gold" />
+              Ganhos Adicionais (separados da comissão de serviços)
+            </PainelBarbeiroCardTitle>
+            <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-1">
+              Esses valores <strong>não</strong> são calculados sobre a Receita Total acima.
+            </p>
+          </PainelBarbeiroCardHeader>
+          <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {stats.subscriptionUsageCommissions > 0 && (
+                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <CreditCard className="h-4 w-4 text-emerald-400" />
+                    <span className="text-xs sm:text-sm font-semibold text-emerald-400">Planos (Uso de Crédito)</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-emerald-400">
+                    R$ {stats.subscriptionUsageCommissions.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-urbana-light/60 mt-1">Comissão fixa por crédito utilizado</p>
+                </div>
+              )}
+              {stats.tipCommissions > 0 && (
+                <div className="rounded-lg bg-pink-500/10 border border-pink-500/20 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Heart className="h-4 w-4 text-pink-400" />
+                    <span className="text-xs sm:text-sm font-semibold text-pink-400">Gorjetas</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-pink-400">
+                    R$ {stats.tipCommissions.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-urbana-light/60 mt-1">100% do valor para você</p>
+                </div>
+              )}
+              {stats.productCommissions > 0 && (
+                <div className="rounded-lg bg-purple-500/10 border border-purple-500/20 p-3">
+                  <div className="flex items-center gap-2 mb-1">
+                    <Package className="h-4 w-4 text-purple-400" />
+                    <span className="text-xs sm:text-sm font-semibold text-purple-400">Produtos</span>
+                  </div>
+                  <p className="text-lg sm:text-xl font-bold text-purple-400">
+                    R$ {stats.productCommissions.toFixed(2)}
+                  </p>
+                  <p className="text-[10px] text-urbana-light/60 mt-1">Comissão sobre vendas no checkout</p>
+                </div>
+              )}
+            </div>
+          </PainelBarbeiroCardContent>
+        </PainelBarbeiroCard>
+      )}
 
       {/* Resumo Financeiro Geral (Total + Saldos) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
