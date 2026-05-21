@@ -291,6 +291,31 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
               <p className="text-xs sm:text-sm font-bold text-rose-700">~{formatCurrency(metrics?.cortesiasValorMes || 0)}</p>
             </div>
           </div>
+          {metrics?.revenueBreakdown && metrics.revenueBreakdown.length > 0 && (
+            <div className="rounded bg-slate-50 px-2 py-1.5 border border-slate-200 space-y-1">
+              <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wide">Por categoria (recebido)</p>
+              {metrics.revenueBreakdown.map((b) => {
+                const total = metrics.revenue || 0;
+                const pctVal = total > 0 ? (b.paid / total) * 100 : 0;
+                return (
+                  <div key={b.categoria} className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-700 truncate pr-2">{b.categoria}</span>
+                      <span className="font-semibold text-slate-800 whitespace-nowrap">
+                        {formatCurrency(b.paid)} <span className="text-slate-500 font-normal">({pctVal.toFixed(1)}%)</span>
+                      </span>
+                    </div>
+                    {b.pending > 0 && (
+                      <div className="flex items-center justify-between text-[10px] text-amber-700">
+                        <span className="pl-2">↳ a receber</span>
+                        <span className="font-medium">{formatCurrency(b.pending)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div className="rounded bg-slate-50 px-2 py-1 border border-slate-200 flex items-center justify-between">
             <p className="text-[10px] text-slate-600 font-medium">Total potencial</p>
             <p className="text-xs sm:text-sm font-bold text-slate-800">{formatCurrency((metrics?.revenue || 0) + (metrics?.cortesiasValorMes || 0))}</p>
