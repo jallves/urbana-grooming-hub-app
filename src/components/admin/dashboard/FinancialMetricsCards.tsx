@@ -51,7 +51,7 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         cortesiasMesResult,
         cortesiasAnoResult,
       ] = await Promise.all([
-        supabase.from('contas_receber').select('valor, status, data_vencimento')
+        supabase.from('contas_receber').select('valor, status, data_vencimento, categoria, forma_pagamento')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
         supabase.from('contas_pagar').select('valor, status, data_vencimento, categoria')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
