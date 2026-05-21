@@ -51,7 +51,7 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         cortesiasMesResult,
         cortesiasAnoResult,
       ] = await Promise.all([
-        supabase.from('contas_receber').select('valor, status, data_vencimento')
+        supabase.from('contas_receber').select('valor, status, data_vencimento, categoria, forma_pagamento')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
         supabase.from('contas_pagar').select('valor, status, data_vencimento, categoria')
           .gte('data_vencimento', firstDay).lte('data_vencimento', lastDay),
@@ -80,6 +80,30 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const revenue = crMes.filter(r => isStatusRecebido(r.status)).reduce((s, r) => s + Number(r.valor), 0);
       const pendingReceivables = crMes.filter(r => r.status === 'pendente').reduce((s, r) => s + Number(r.valor), 0);
       const overdueReceivables = crMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
+
+      // Breakdown da Receita por categoria (recebido + pendente)
+      const normalizeRevenueCat = (cat: string | null | undefined): string => {
+        const c = (cat || 'outros').toLowerCase().trim();
+        if (c.includes('servico') || c.includes('serviço')) return 'Serviços';
+        if (c.includes('produto')) return 'Produtos';
+        if (c.includes('gorjeta') || c.includes('tip')) return 'Gorjetas';
+        if (c.includes('assinatura') || c.includes('plano')) return 'Assinaturas / Planos';
+        if (c.includes('combo')) return 'Combos';
+        if (c.includes('cortesia')) return 'Cortesias';
+        return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : 'Outros';
+      };
+      const revenueBreakdownMap = new Map<string, { paid: number; pending: number }>();
+      crMes.forEach(r => {
+        const key = normalizeRevenueCat((r as any).categoria);
+        const cur = revenueBreakdownMap.get(key) || { paid: 0, pending: 0 };
+        if (isStatusRecebido(r.status)) cur.paid += Number(r.valor);
+        else if (r.status === 'pendente') cur.pending += Number(r.valor);
+        revenueBreakdownMap.set(key, cur);
+      });
+      const revenueBreakdown = Array.from(revenueBreakdownMap.entries())
+        .map(([categoria, v]) => ({ categoria, total: v.paid + v.pending, paid: v.paid, pending: v.pending }))
+        .filter(b => b.total > 0)
+        .sort((a, b) => b.paid - a.paid);
 
       const paidExpensesAll = cpMes.filter(r => isStatusRecebido(r.status));
       const pendingExpensesAll = cpMes.filter(r => r.status === 'pendente');
@@ -203,6 +227,7 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         cortesiasQtdMes, cortesiasValorMes,
         cortesiasQtdAno, cortesiasValorAno,
         expenseBreakdown,
+        revenueBreakdown,
       };
     },
     refetchInterval: 60000,
@@ -264,6 +289,31 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
               <p className="text-xs sm:text-sm font-bold text-rose-700">~{formatCurrency(metrics?.cortesiasValorMes || 0)}</p>
             </div>
           </div>
+          {metrics?.revenueBreakdown && metrics.revenueBreakdown.length > 0 && (
+            <div className="rounded bg-slate-50 px-2 py-1.5 border border-slate-200 space-y-1">
+              <p className="text-[10px] text-slate-600 font-semibold uppercase tracking-wide">Por categoria (recebido)</p>
+              {metrics.revenueBreakdown.map((b) => {
+                const total = metrics.revenue || 0;
+                const pctVal = total > 0 ? (b.paid / total) * 100 : 0;
+                return (
+                  <div key={b.categoria} className="space-y-0.5">
+                    <div className="flex items-center justify-between text-[11px]">
+                      <span className="text-slate-700 truncate pr-2">{b.categoria}</span>
+                      <span className="font-semibold text-slate-800 whitespace-nowrap">
+                        {formatCurrency(b.paid)} <span className="text-slate-500 font-normal">({pctVal.toFixed(1)}%)</span>
+                      </span>
+                    </div>
+                    {b.pending > 0 && (
+                      <div className="flex items-center justify-between text-[10px] text-amber-700">
+                        <span className="pl-2">↳ a receber</span>
+                        <span className="font-medium">{formatCurrency(b.pending)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
           <div className="rounded bg-slate-50 px-2 py-1 border border-slate-200 flex items-center justify-between">
             <p className="text-[10px] text-slate-600 font-medium">Total potencial</p>
             <p className="text-xs sm:text-sm font-bold text-slate-800">{formatCurrency((metrics?.revenue || 0) + (metrics?.cortesiasValorMes || 0))}</p>
