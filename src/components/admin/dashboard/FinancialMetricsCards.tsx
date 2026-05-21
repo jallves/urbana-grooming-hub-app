@@ -229,6 +229,7 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         cortesiasQtdMes, cortesiasValorMes,
         cortesiasQtdAno, cortesiasValorAno,
         expenseBreakdown,
+        revenueBreakdown,
       };
     },
     refetchInterval: 60000,
