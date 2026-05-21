@@ -410,6 +410,9 @@ const FinancialDashboard: React.FC = () => {
         </Card>
       </div>
 
+      {/* Card mensal: Comissões por Barbeiro */}
+      <MonthlyBarberCommissionsCard />
+
       {/* Tabs Principais */}
       <Tabs defaultValue="receber" className="w-full">
         <TabsList className="grid w-full grid-cols-4 bg-gray-100 border border-gray-200 h-auto p-1 gap-1">
