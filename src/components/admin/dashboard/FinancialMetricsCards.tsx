@@ -104,8 +104,6 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
         .map(([categoria, v]) => ({ categoria, total: v.paid + v.pending, paid: v.paid, pending: v.pending }))
         .filter(b => b.total > 0)
         .sort((a, b) => b.paid - a.paid);
-      const revenueTotalReal = revenue; // alias semântico
-      const pct = (n: number) => revenueTotalReal > 0 ? (n / revenueTotalReal) * 100 : 0;
 
       const paidExpensesAll = cpMes.filter(r => isStatusRecebido(r.status));
       const pendingExpensesAll = cpMes.filter(r => r.status === 'pendente');
