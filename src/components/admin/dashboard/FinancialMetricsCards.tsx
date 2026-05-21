@@ -81,6 +81,32 @@ const FinancialMetricsCards: React.FC<FinancialMetricsCardsProps> = ({ month, ye
       const pendingReceivables = crMes.filter(r => r.status === 'pendente').reduce((s, r) => s + Number(r.valor), 0);
       const overdueReceivables = crMes.filter(r => r.status === 'pendente' && r.data_vencimento < todayStr).length;
 
+      // Breakdown da Receita por categoria (recebido + pendente)
+      const normalizeRevenueCat = (cat: string | null | undefined): string => {
+        const c = (cat || 'outros').toLowerCase().trim();
+        if (c.includes('servico') || c.includes('serviço')) return 'Serviços';
+        if (c.includes('produto')) return 'Produtos';
+        if (c.includes('gorjeta') || c.includes('tip')) return 'Gorjetas';
+        if (c.includes('assinatura') || c.includes('plano')) return 'Assinaturas / Planos';
+        if (c.includes('combo')) return 'Combos';
+        if (c.includes('cortesia')) return 'Cortesias';
+        return cat ? cat.charAt(0).toUpperCase() + cat.slice(1) : 'Outros';
+      };
+      const revenueBreakdownMap = new Map<string, { paid: number; pending: number }>();
+      crMes.forEach(r => {
+        const key = normalizeRevenueCat((r as any).categoria);
+        const cur = revenueBreakdownMap.get(key) || { paid: 0, pending: 0 };
+        if (isStatusRecebido(r.status)) cur.paid += Number(r.valor);
+        else if (r.status === 'pendente') cur.pending += Number(r.valor);
+        revenueBreakdownMap.set(key, cur);
+      });
+      const revenueBreakdown = Array.from(revenueBreakdownMap.entries())
+        .map(([categoria, v]) => ({ categoria, total: v.paid + v.pending, paid: v.paid, pending: v.pending }))
+        .filter(b => b.total > 0)
+        .sort((a, b) => b.paid - a.paid);
+      const revenueTotalReal = revenue; // alias semântico
+      const pct = (n: number) => revenueTotalReal > 0 ? (n / revenueTotalReal) * 100 : 0;
+
       const paidExpensesAll = cpMes.filter(r => isStatusRecebido(r.status));
       const pendingExpensesAll = cpMes.filter(r => r.status === 'pendente');
       const commissionsPaid = paidExpensesAll.filter(r => isCategoriaComissao(r.categoria)).reduce((s, r) => s + Number(r.valor), 0);
