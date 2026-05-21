@@ -20,6 +20,7 @@ import { ContasAReceber } from './ContasAReceber';
 import { ContasAPagar } from './ContasAPagar';
 import CashFlowManagement from '@/components/admin/cashflow/CashFlowManagement';
 import ComissoesManager from './ComissoesManager';
+import MonthlyBarberCommissionsCard from './MonthlyBarberCommissionsCard';
 
 const FinancialDashboard: React.FC = () => {
   const now = new Date();
