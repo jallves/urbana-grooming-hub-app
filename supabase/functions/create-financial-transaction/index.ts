@@ -617,11 +617,14 @@ Deno.serve(async (req) => {
       // Comissão de serviços: default 40% se não configurado
       const { data: barberCfg } = await supabase
         .from('painel_barbeiros')
-        .select('taxa_comissao')
+        .select('commission_rate, taxa_comissao')
         .eq('id', body.barber_id)
         .maybeSingle()
 
-      const serviceCommissionRate = Number(barberCfg?.taxa_comissao ?? 40)
+      // Prefer commission_rate (set via admin UI). Fallback to taxa_comissao, then 40%.
+      const serviceCommissionRate = Number(
+        barberCfg?.commission_rate ?? barberCfg?.taxa_comissao ?? 40
+      )
 
       for (const item of body.items.filter((i) => i.type === 'service')) {
         const qty = Number(item.quantity || 1)
