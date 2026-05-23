@@ -280,12 +280,11 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
       const hasAppointment = !!matchingAppointment;
       const isCompleted = !!matchingAppointment && matchingAppointment.status === 'concluido';
 
-      // Se for hoje e o horário já passou, marcar como não disponível
-      const isPast = isSelectedDateToday && time < currentTime;
-
       return {
         time,
-        isBlocked: !!block || isPast,
+        // Slot é "bloqueado" apenas quando houver registro real em barber_availability.
+        // Horários passados sem agendamento permanecem disponíveis para retroativo.
+        isBlocked: !!block,
         hasAppointment,
         isCompleted,
         blockId: block?.id,
@@ -300,14 +299,6 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
     if (!staffTableId) return;
     if (slot.hasAppointment) {
       toast.error('Este horário possui um agendamento');
-      return;
-    }
-
-    // Verificar se é um horário passado
-    const now = new Date();
-    const slotDateTime = new Date(`${selectedDate}T${slot.time}:00`);
-    if (isBefore(slotDateTime, now)) {
-      toast.error('Não é possível alterar horários passados');
       return;
     }
 
@@ -353,13 +344,6 @@ const SlotBlockManager: React.FC<SlotBlockManagerProps> = ({ overrideBarberId })
   // - Se está disponível → abre AlertDialog perguntando "Bloquear" ou "Agendar"
   const handleSlotClick = (slot: TimeSlot) => {
     if (slot.hasAppointment) return;
-
-    const now = new Date();
-    const slotDateTime = new Date(`${selectedDate}T${slot.time}:00`);
-    if (isBefore(slotDateTime, now)) {
-      toast.error('Não é possível alterar horários passados');
-      return;
-    }
 
     if (slot.isBlocked && slot.blockId) {
       // Já está bloqueado → desbloqueia direto
