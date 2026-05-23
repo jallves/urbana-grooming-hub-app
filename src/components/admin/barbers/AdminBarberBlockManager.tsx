@@ -257,11 +257,11 @@ const AdminBarberBlockManager: React.FC = () => {
       const hasAppointment = !!matchingAppointment;
       const isCompleted = !!matchingAppointment && matchingAppointment.status === 'concluido';
 
-      const isPast = isSelectedDateToday && time < currentTime;
-
       return {
         time,
-        isBlocked: !!block || isPast,
+        // Bloqueio só quando existir registro real em barber_availability.
+        // Slots passados sem agendamento ficam liberados para uso retroativo.
+        isBlocked: !!block,
         hasAppointment,
         isCompleted,
         blockId: block?.id,
