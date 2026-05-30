@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, DollarSign, Clock, CheckCircle, TrendingUp, ArrowRight, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, DollarSign, Clock, CheckCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
