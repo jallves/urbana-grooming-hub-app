@@ -417,9 +417,9 @@ const BarberCommissionsComponent: React.FC = () => {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
         {[
           {
-            label: 'Total de Comissões',
+            label: 'Total de Ganhos',
             value: stats.total,
-            subtitle: `${stats.paid > 0 ? 'R$ ' + stats.paid.toFixed(2) + ' pago' : ''}${stats.paid > 0 && stats.pending > 0 ? ' · ' : ''}${stats.pending > 0 ? 'R$ ' + stats.pending.toFixed(2) + ' pendente' : ''}` || 'Sem lançamentos',
+            subtitle: 'Serviços + gorjetas + planos + produtos (tudo incluso)',
             IconComponent: DollarSign,
             variant: 'highlight' as const,
             color: 'text-urbana-gold',
@@ -443,7 +443,7 @@ const BarberCommissionsComponent: React.FC = () => {
           {
             label: 'Líquido a Receber',
             value: liquidoAReceber,
-            subtitle: `Pendentes (R$ ${stats.pending.toFixed(2)}) − só vales ainda pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
+            subtitle: `Total de ganhos − já pagas (R$ ${stats.paid.toFixed(2)}) − vales pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
             IconComponent: Award,
             variant: 'success' as const,
             color: 'text-emerald-400',
