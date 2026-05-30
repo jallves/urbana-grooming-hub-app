@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, DollarSign, Clock, CheckCircle, TrendingUp, ArrowRight, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar, DollarSign, Clock, CheckCircle, LogOut, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useBarberDashboardMetrics } from '@/hooks/useBarberDashboardMetrics';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
@@ -208,28 +208,6 @@ const BarberDashboard: React.FC = () => {
         })}
       </div>
 
-      {/* Receita Total */}
-      <div className="mb-4 sm:mb-6 lg:mb-8">
-        <PainelBarbeiroCard variant="highlight">
-          <PainelBarbeiroCardContent className="px-4 sm:px-6 py-4 sm:py-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3 sm:gap-4">
-                <div className="p-3 sm:p-4 rounded-xl bg-urbana-gold/20">
-                  <TrendingUp className="h-8 w-8 sm:h-10 sm:w-10 text-urbana-gold" />
-                </div>
-                <div>
-                  <p className="text-sm sm:text-base text-urbana-light/70 capitalize">
-                    Receita Total — {format(new Date(selectedYear, selectedMonth, 1), "MMM/yyyy", { locale: ptBR })}
-                  </p>
-                  <p className="text-3xl sm:text-4xl lg:text-5xl font-bold text-urbana-gold font-playfair">
-                    R$ {metrics.totalRevenue.toFixed(2)}
-                  </p>
-                </div>
-              </div>
-            </div>
-          </PainelBarbeiroCardContent>
-        </PainelBarbeiroCard>
-      </div>
 
       {/* Ações Rápidas */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6 mb-6 sm:mb-8">
