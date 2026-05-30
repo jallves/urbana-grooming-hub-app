@@ -474,6 +474,60 @@ const BarberCommissionsComponent: React.FC = () => {
       </div>
 
       {/* Detalhamento por Segmento (Pago × Pendente) */}
+      {/* Vales — sempre listados, mesmo já pagos/abatidos */}
+      {monthVales.length > 0 && (
+        <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
+          <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
+            <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
+              <Wallet className="h-4 w-4 sm:h-5 sm:w-5 text-orange-400" />
+              Vales — {format(selectedMonth, "MMMM/yyyy", { locale: ptBR })}
+            </PainelBarbeiroCardTitle>
+            <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-1">
+              Lançamentos de vales (vales pagos já foram abatidos automaticamente das comissões)
+            </p>
+          </PainelBarbeiroCardHeader>
+          <PainelBarbeiroCardContent className="px-3 sm:px-4 md:px-6">
+            <div className="space-y-1.5 sm:space-y-2">
+              {monthVales.map((v: any) => {
+                const isPago = (v.status || '').toLowerCase() === 'pago';
+                const dataRef = v.data_pagamento || v.data_vencimento;
+                return (
+                  <div key={v.id} className="flex items-center justify-between gap-3 p-3 rounded-lg bg-urbana-black/40 border border-urbana-gold/10">
+                    <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                      <Minus className="h-3 w-3 sm:h-4 sm:w-4 text-orange-400 flex-shrink-0" />
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-xs sm:text-sm text-urbana-light leading-tight truncate">
+                          {v.descricao || 'Vale'}
+                        </p>
+                        <p className="text-[10px] sm:text-xs text-urbana-light/50 mt-0.5">
+                          {dataRef ? formatBrazilDateOnly(dataRef) : ''}
+                          {isPago ? ' · abatido das comissões' : ' · ainda a descontar'}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isPago ? (
+                        <Badge className="bg-green-500/20 text-green-400 border-green-500/30 text-[9px] sm:text-[10px]">Pago/Abatido</Badge>
+                      ) : (
+                        <Badge className="bg-yellow-500/20 text-yellow-400 border-yellow-500/30 text-[9px] sm:text-[10px]">Pendente</Badge>
+                      )}
+                      <span className="text-sm sm:text-base font-bold text-orange-400">
+                        − R$ {Number(v.valor || 0).toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+              <div className="flex items-center justify-between pt-2 mt-2 border-t border-urbana-gold/10 px-1">
+                <span className="text-xs sm:text-sm text-urbana-light/70">Total de vales no mês</span>
+                <span className="text-sm sm:text-base font-bold text-orange-400">− R$ {valesStats.total.toFixed(2)}</span>
+              </div>
+            </div>
+          </PainelBarbeiroCardContent>
+        </PainelBarbeiroCard>
+      )}
+
+      {/* Detalhamento por Segmento (Pago × Pendente) */}
       <PainelBarbeiroCard variant="default" className="mb-4 sm:mb-6">
         <PainelBarbeiroCardHeader className="px-3 sm:px-4 md:px-6 py-3 sm:py-4">
           <PainelBarbeiroCardTitle className="text-sm sm:text-base md:text-lg text-urbana-light flex items-center gap-2">
