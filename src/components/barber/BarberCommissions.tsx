@@ -258,6 +258,11 @@ const BarberCommissionsComponent: React.FC = () => {
   // então não devem ser descontados novamente.
   const liquidoAReceber = stats.pending - valesStats.pendente;
 
+  // "Já Pagas" didático: exclui as comissões que foram quitadas via abatimento de vale.
+  // O valor total de comissões marcadas como 'paid' pelo vale equivale ao valor do vale já pago.
+  // Assim o barbeiro vê: comissões pagas em dinheiro + vales (separado) = total descontado.
+  const paidReal = Math.max(0, stats.paid - valesStats.pago);
+
   // Group commissions by category for detailed view
   const groupedCommissions = useMemo(() => {
     const groups = {
@@ -426,8 +431,10 @@ const BarberCommissionsComponent: React.FC = () => {
           },
           {
             label: 'Já Pagas',
-            value: stats.paid,
-            subtitle: 'Comissões quitadas',
+            value: paidReal,
+            subtitle: valesStats.pago > 0
+              ? `Pagamentos diretos (vales abatidos contam separados)`
+              : 'Comissões quitadas',
             IconComponent: TrendingUp,
             variant: 'success' as const,
             color: 'text-green-400',
@@ -443,7 +450,7 @@ const BarberCommissionsComponent: React.FC = () => {
           {
             label: 'Líquido a Receber',
             value: liquidoAReceber,
-            subtitle: `Total de ganhos − já pagas (R$ ${stats.paid.toFixed(2)}) − vales pendentes (R$ ${valesStats.pendente.toFixed(2)})`,
+            subtitle: `Ganhos − já pagas (R$ ${paidReal.toFixed(2)}) − vales (R$ ${valesStats.total.toFixed(2)})`,
             IconComponent: Award,
             variant: 'success' as const,
             color: 'text-emerald-400',
