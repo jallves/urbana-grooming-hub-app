@@ -431,6 +431,8 @@ export type Database = {
           payment_date: string | null
           status: string | null
           tipo: string | null
+          vale_origin_id: string | null
+          vale_split_parent_id: string | null
           valor: number
           venda_id: string | null
         }
@@ -447,6 +449,8 @@ export type Database = {
           payment_date?: string | null
           status?: string | null
           tipo?: string | null
+          vale_origin_id?: string | null
+          vale_split_parent_id?: string | null
           valor: number
           venda_id?: string | null
         }
@@ -463,6 +467,8 @@ export type Database = {
           payment_date?: string | null
           status?: string | null
           tipo?: string | null
+          vale_origin_id?: string | null
+          vale_split_parent_id?: string | null
           valor?: number
           venda_id?: string | null
         }
@@ -916,6 +922,8 @@ export type Database = {
           status: string | null
           transaction_id: string | null
           updated_at: string | null
+          vale_origin_id: string | null
+          vale_split_parent_id: string | null
           valor: number
           venda_id: string | null
         }
@@ -932,6 +940,8 @@ export type Database = {
           status?: string | null
           transaction_id?: string | null
           updated_at?: string | null
+          vale_origin_id?: string | null
+          vale_split_parent_id?: string | null
           valor: number
           venda_id?: string | null
         }
@@ -948,6 +958,8 @@ export type Database = {
           status?: string | null
           transaction_id?: string | null
           updated_at?: string | null
+          vale_origin_id?: string | null
+          vale_split_parent_id?: string | null
           valor?: number
           venda_id?: string | null
         }
@@ -2508,6 +2520,10 @@ export type Database = {
           p_old_data?: Json
         }
         Returns: string
+      }
+      revert_vale_from_commissions: {
+        Args: { p_vale_id: string }
+        Returns: Json
       }
       totem_checkin: { Args: { p_agendamento_id: string }; Returns: Json }
       update_session_activity: {
