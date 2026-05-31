@@ -439,6 +439,31 @@ export const ContasAPagar: React.FC = () => {
 
   const handleSaveEdit = async () => {
     if (!editingConta) return;
+    const isVale = String(editingConta.categoria || '').toLowerCase().includes('vale');
+    const wasCancelled = editingConta.status === 'cancelado';
+    const willBeCancelled = editStatus === 'cancelado';
+
+    // Se cancelando um vale que estava ativo, reverte comissões abatidas
+    if (isVale && willBeCancelled && !wasCancelled) {
+      const { data: revResult, error: revErr } = await supabase
+        .rpc('revert_vale_from_commissions', { p_vale_id: editingConta.id });
+      if (revErr) {
+        toast.error('Erro ao reverter comissões do vale', { description: revErr.message });
+        return;
+      }
+      const r: any = revResult || {};
+      toast.success('Vale cancelado e comissões revertidas', {
+        description: `${r.commissions_reverted ?? 0} integrais • ${r.splits_merged ?? 0} parciais mescladas`,
+      });
+      queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['comissoes-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
+      setEditDialogOpen(false);
+      setEditingConta(null);
+      return;
+    }
+
     const { error } = await supabase
       .from('contas_pagar')
       .update({
@@ -466,11 +491,27 @@ export const ContasAPagar: React.FC = () => {
 
   const handleDeleteConfirm = async () => {
     if (!deletingContaId) return;
+    // Se for um vale ativo (não cancelado), reverter comissões antes de excluir
+    const target = (contasPagar || []).find(c => c.id === deletingContaId);
+    const isVale = target && String(target.categoria || '').toLowerCase().includes('vale');
+    if (isVale && target?.status !== 'cancelado') {
+      const { error: revErr } = await supabase
+        .rpc('revert_vale_from_commissions', { p_vale_id: deletingContaId });
+      if (revErr) {
+        toast.error('Falha ao reverter comissões do vale', { description: revErr.message });
+        setDeleteDialogOpen(false);
+        setDeletingContaId(null);
+        return;
+      }
+    }
     const { error } = await supabase.from('contas_pagar').delete().eq('id', deletingContaId);
     if (error) {
       toast.error('Erro ao excluir', { description: error.message });
     } else {
       queryClient.invalidateQueries({ queryKey: ['contas-pagar-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['comissoes-erp'] });
+      queryClient.invalidateQueries({ queryKey: ['barber-commissions'] });
+      queryClient.invalidateQueries({ queryKey: ['financial-dashboard-metrics'] });
       toast.success('Registro excluído!');
     }
     setDeleteDialogOpen(false);
