@@ -20,6 +20,8 @@ import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } f
 import { ShoppingBag, Sparkles } from 'lucide-react';
 import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
+import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
+import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
 
 interface Service {
   id: string;
@@ -73,6 +75,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [crossSellProducts, setCrossSellProducts] = useState<CrossSellProduct[]>([]);
 
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
+  const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
+  const [showPendingDialog, setShowPendingDialog] = useState(false);
 
   // Carregar serviços
   useEffect(() => {
@@ -461,6 +465,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     }
     if (!selectedService || !selectedBarber || !selectedDate || !selectedTime) {
       toast.error('Selecione todos os campos');
+      return;
+    }
+    // Bloqueio por checkout pendente há mais de 15 dias
+    if (pendingCheckout.blocked) {
+      setShowPendingDialog(true);
+      toast.error(
+        `Você tem atendimento sem checkout há mais de ${PENDING_CHECKOUT_BLOCK_DAYS} dias. Regularize para agendar novamente.`
+      );
       return;
     }
     // Abre o popup de produtos antes de criar o agendamento
@@ -1119,6 +1131,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           executeBooking(products);
         }}
         isSubmitting={creating}
+      />
+
+      <PendingCheckoutAlertDialog
+        open={showPendingDialog}
+        onClose={() => setShowPendingDialog(false)}
+        items={pendingCheckout.items}
+        oldestDays={pendingCheckout.oldestDays}
+        blocked={pendingCheckout.blocked}
       />
     </ClientPageContainer>
   );

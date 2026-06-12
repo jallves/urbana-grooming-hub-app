@@ -25,6 +25,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useClientDashboardRealtime } from "@/hooks/useClientDashboardRealtime";
 import { cn } from "@/lib/utils";
 import { EmailVerificationPopup } from "@/components/painel-cliente/EmailVerificationPopup";
+import { useClientPendingCheckoutBlock } from "@/hooks/useClientPendingCheckoutBlock";
+import { PendingCheckoutAlertDialog } from "@/components/painel-cliente/PendingCheckoutAlertDialog";
 
 interface AgendamentoStats {
   total: number;
@@ -57,6 +59,18 @@ export default function PainelClienteDashboard() {
   const [loading, setLoading] = useState(true);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
+  const [showPendingCheckout, setShowPendingCheckout] = useState(false);
+
+  // Mostrar popup uma vez por sessão quando houver pendência
+  useEffect(() => {
+    if (!cliente?.id || pendingCheckout.loading) return;
+    if (pendingCheckout.items.length === 0) return;
+    const key = `pending-checkout-shown-${cliente.id}-${new Date().toDateString()}`;
+    if (sessionStorage.getItem(key)) return;
+    setShowPendingCheckout(true);
+    sessionStorage.setItem(key, '1');
+  }, [cliente?.id, pendingCheckout.loading, pendingCheckout.items.length]);
 
   // Verificar se precisa confirmar e-mail (primeiro login)
   useEffect(() => {
@@ -358,6 +372,15 @@ export default function PainelClienteDashboard() {
           onConfirmed={() => setShowEmailVerification(false)}
         />
       )}
+
+      {/* Aviso de checkout pendente (15+ dias bloqueia novos agendamentos) */}
+      <PendingCheckoutAlertDialog
+        open={showPendingCheckout}
+        onClose={() => setShowPendingCheckout(false)}
+        items={pendingCheckout.items}
+        oldestDays={pendingCheckout.oldestDays}
+        blocked={pendingCheckout.blocked}
+      />
     </ClientPageContainer>
   );
 }
