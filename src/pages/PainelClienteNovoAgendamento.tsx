@@ -1132,6 +1132,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         }}
         isSubmitting={creating}
       />
+
+      <PendingCheckoutAlertDialog
+        open={showPendingDialog}
+        onClose={() => setShowPendingDialog(false)}
+        items={pendingCheckout.items}
+        oldestDays={pendingCheckout.oldestDays}
+        blocked={pendingCheckout.blocked}
+      />
     </ClientPageContainer>
   );
 };
