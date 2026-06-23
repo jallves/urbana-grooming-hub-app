@@ -26,7 +26,7 @@ const TotemRating: React.FC = () => {
 
   // Auto-redirect APENAS na tela inicial de avaliação e somente se o usuário NÃO interagiu
   const { countdown, stopCountdown } = useAutoRedirectHome({
-    seconds: 10,
+    seconds: 16,
     enabled: !!(appointment && client) && !userInteracted && !submitted && !showScheduleQuestion,
   });
 
