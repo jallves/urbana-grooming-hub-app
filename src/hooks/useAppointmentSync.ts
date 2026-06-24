@@ -113,7 +113,7 @@ export const useAppointmentSync = () => {
                 .eq('id', barberData.data.staff_id)
                 .maybeSingle();
 
-              const commissionRate = staffData?.commission_rate ?? barberData.data.commission_rate ?? barberData.data.taxa_comissao ?? 40;
+              const commissionRate = barberData.data.commission_rate ?? barberData.data.taxa_comissao ?? staffData?.commission_rate ?? 40;
               const commissionAmount = serviceData.data.preco * (commissionRate / 100);
 
               await supabase
