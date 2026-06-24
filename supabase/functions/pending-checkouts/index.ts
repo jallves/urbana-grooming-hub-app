@@ -403,7 +403,7 @@ Deno.serve(async (req) => {
           categoria: 'comissao',
           fornecedor: barberName,
           forma_pagamento: payMethod,
-          observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
+          observacoes: `Comissão ${barberCommissionRate}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
           venda_id: novaVenda.id, // FK padronizada para vendas.id
         })
         console.log('✅ Contas a pagar (comissão):', commissionAmount)
@@ -576,7 +576,7 @@ Deno.serve(async (req) => {
           payment_method: payMethod,
           transaction_date: today,
           reference_id: novaVenda.id,
-          notes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)}`
+          notes: `Comissão ${barberCommissionRate}% sobre R$ ${commissionBase.toFixed(2)}`
         })
         console.log('✅ Cash flow (comissão):', commissionAmount)
       }
