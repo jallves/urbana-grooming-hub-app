@@ -2,6 +2,8 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 import { getBrazilDateTime } from '../_shared/brazilDateTime.ts'
 
+const DEFAULT_COMMISSION_RATE = 40
+
 /**
  * Edge Function: create-financial-transaction
  *
@@ -59,6 +61,39 @@ function normalizePaymentMethod(raw: string | null | undefined) {
     ASSINATURA: 'subscription_credit',
   }
   return map[raw] || raw
+}
+
+function normalizeCommissionRate(...values: unknown[]) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue
+    const rate = Number(value)
+    if (Number.isFinite(rate) && rate >= 0) return rate
+  }
+  return DEFAULT_COMMISSION_RATE
+}
+
+async function resolveServiceCommissionRate(supabase: any, barberId: string | null | undefined) {
+  if (!barberId) return DEFAULT_COMMISSION_RATE
+
+  const { data: painelBarber, error: painelError } = await supabase
+    .from('painel_barbeiros')
+    .select('id, staff_id, commission_rate, taxa_comissao')
+    .or(`id.eq.${barberId},staff_id.eq.${barberId}`)
+    .limit(1)
+    .maybeSingle()
+
+  if (!painelError && painelBarber) {
+    return normalizeCommissionRate(painelBarber.commission_rate, painelBarber.taxa_comissao)
+  }
+
+  const { data: staff } = await supabase
+    .from('staff')
+    .select('id, staff_id, commission_rate')
+    .or(`id.eq.${barberId},staff_id.eq.${barberId}`)
+    .limit(1)
+    .maybeSingle()
+
+  return normalizeCommissionRate(staff?.commission_rate)
 }
 
 async function ensureContasReceber(
@@ -614,17 +649,7 @@ Deno.serve(async (req) => {
 
     // ===================== COMISSÕES (SERVIÇOS + PRODUTOS) =====================
     if (body.barber_id) {
-      // Comissão de serviços: default 40% se não configurado
-      const { data: barberCfg } = await supabase
-        .from('painel_barbeiros')
-        .select('commission_rate, taxa_comissao')
-        .eq('id', body.barber_id)
-        .maybeSingle()
-
-      // Prefer commission_rate (set via admin UI). Fallback to taxa_comissao, then 40%.
-      const serviceCommissionRate = Number(
-        barberCfg?.commission_rate ?? barberCfg?.taxa_comissao ?? 40
-      )
+      const serviceCommissionRate = await resolveServiceCommissionRate(supabase, body.barber_id)
 
       for (const item of body.items.filter((i) => i.type === 'service')) {
         const qty = Number(item.quantity || 1)
