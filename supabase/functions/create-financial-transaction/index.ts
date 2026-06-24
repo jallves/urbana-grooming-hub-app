@@ -177,14 +177,24 @@ async function ensureContasPagar(
 ) {
   const { data: existing } = await supabase
     .from('contas_pagar')
-    .select('id, venda_id')
+    .select('id, venda_id, status, data_pagamento')
     .eq('observacoes', params.observacoes)
     .maybeSingle()
 
   if (existing?.id) {
-    if (params.venda_id && !existing.venda_id) {
-      await supabase.from('contas_pagar').update({ venda_id: params.venda_id }).eq('id', existing.id)
-    }
+    await supabase.from('contas_pagar').update({
+      descricao: params.descricao,
+      valor: params.valor,
+      data_vencimento: params.data_vencimento,
+      data_pagamento: existing.data_pagamento || params.data_pagamento,
+      categoria: params.categoria || null,
+      fornecedor: params.fornecedor || null,
+      status: ['pago', 'paid'].includes(existing.status) ? existing.status : params.status,
+      transaction_id: params.transaction_id || null,
+      forma_pagamento: params.forma_pagamento || null,
+      venda_id: params.venda_id || existing.venda_id || null,
+      updated_at: new Date().toISOString(),
+    }).eq('id', existing.id)
     return existing.id
   }
 
@@ -224,13 +234,24 @@ async function ensureBarberCommission(
     unique_sub_ref?: string | null
   }
 ) {
+  const commissionUpdate = {
+    barber_name: params.barber_name,
+    appointment_id: params.appointment_id,
+    venda_id: params.venda_id,
+    valor: params.valor,
+    amount: params.valor,
+    commission_rate: params.commission_rate,
+    tipo: params.tipo,
+    appointment_source: params.unique_sub_ref || null,
+  }
+
   // Idempotência robusta por serviço/sub-referência quando disponível.
   // Essencial para dois serviços com mesmo valor (ex.: Corte + Barba via assinatura)
   // não virarem apenas uma comissão no painel do barbeiro.
   if (params.venda_id) {
     let query = supabase
       .from('barber_commissions')
-      .select('id')
+      .select('id, status')
       .eq('barber_id', params.barber_id)
       .eq('venda_id', params.venda_id)
       .eq('tipo', params.tipo)
@@ -244,16 +265,24 @@ async function ensureBarberCommission(
     const { data: existing } = await query
       .maybeSingle()
 
-    if (existing?.id) return existing.id
+    if (existing?.id) {
+      await supabase
+        .from('barber_commissions')
+        .update({
+          ...commissionUpdate,
+          status: ['paid', 'pago'].includes(existing.status) ? existing.status : params.status,
+        })
+        .eq('id', existing.id)
+      return existing.id
+    }
 
     if (params.unique_sub_ref) {
       const { data: legacyExisting } = await supabase
         .from('barber_commissions')
-        .select('id')
+        .select('id, status')
         .eq('barber_id', params.barber_id)
         .eq('venda_id', params.venda_id)
         .eq('tipo', params.tipo)
-        .eq('valor', params.valor)
         .is('appointment_source', null)
         .limit(1)
         .maybeSingle()
@@ -261,7 +290,10 @@ async function ensureBarberCommission(
       if (legacyExisting?.id) {
         await supabase
           .from('barber_commissions')
-          .update({ appointment_source: params.unique_sub_ref })
+          .update({
+            ...commissionUpdate,
+            status: ['paid', 'pago'].includes(legacyExisting.status) ? legacyExisting.status : params.status,
+          })
           .eq('id', legacyExisting.id)
         return legacyExisting.id
       }
@@ -270,14 +302,22 @@ async function ensureBarberCommission(
     // Fallback: usar appointment_id quando não há venda_id
     const { data: existing } = await supabase
       .from('barber_commissions')
-      .select('id')
+      .select('id, status')
       .eq('barber_id', params.barber_id)
       .eq('appointment_id', params.appointment_id)
       .eq('tipo', params.tipo)
-      .eq('valor', params.valor)
       .maybeSingle()
 
-    if (existing?.id) return existing.id
+    if (existing?.id) {
+      await supabase
+        .from('barber_commissions')
+        .update({
+          ...commissionUpdate,
+          status: ['paid', 'pago'].includes(existing.status) ? existing.status : params.status,
+        })
+        .eq('id', existing.id)
+      return existing.id
+    }
   }
 
   const { data, error } = await supabase
@@ -312,11 +352,23 @@ async function upsertFinancialRecord(
 
     const { data: existing } = await supabase
       .from('financial_records')
-      .select('id')
+      .select('id, status, payment_date')
       .eq('notes', obs)
       .maybeSingle()
 
-    if (existing?.id) return { id: existing.id, alreadyExisted: true, obs }
+    if (existing?.id) {
+      await supabase
+        .from('financial_records')
+        .update({
+          ...payload,
+          status: existing.status === 'completed' ? 'completed' : payload.status,
+          payment_date: existing.payment_date || payload.payment_date || null,
+          notes: obs,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+      return { id: existing.id, alreadyExisted: true, obs }
+    }
 
     const { data, error } = await supabase
       .from('financial_records')
