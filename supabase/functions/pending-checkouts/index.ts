@@ -1,7 +1,7 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
-const COMMISSION_RATE = 40 // 40% default
+const DEFAULT_COMMISSION_RATE = 40 // fallback when barbeiro has no rate configured
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -143,6 +143,11 @@ Deno.serve(async (req) => {
       const nomeServico = agendamento.painel_servicos?.nome || 'Serviço'
       const barbeiro_id = agendamento.barbeiro_id
       const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
+      const barberCommissionRate = Number(
+        agendamento.painel_barbeiros?.commission_rate
+          ?? agendamento.painel_barbeiros?.taxa_comissao
+          ?? DEFAULT_COMMISSION_RATE
+      )
 
       // Calculate extras from servicos_extras
       const appointmentExtras: any[] = agendamento.servicos_extras && Array.isArray(agendamento.servicos_extras) 
@@ -220,7 +225,7 @@ Deno.serve(async (req) => {
 
       // Add added services + products into revenue total
       revenueAmount = revenueAmount + addedServicesTotal + addedProductsTotal
-      const commissionAmount = shouldPayCommission ? commissionBase * (COMMISSION_RATE / 100) : 0
+      const commissionAmount = shouldPayCommission ? commissionBase * (barberCommissionRate / 100) : 0
 
       // Product commissions (independent of barber service commission rate)
       const productCommissions = addedProductsData.map(p => {
@@ -380,7 +385,7 @@ Deno.serve(async (req) => {
             venda_id: novaVenda.id,
             valor: commissionAmount,
             amount: commissionAmount,
-            commission_rate: COMMISSION_RATE,
+            commission_rate: barberCommissionRate,
             barber_name: barberName,
             tipo: type === 'courtesy' ? 'cortesia' : 'servico',
             status: 'pending',
@@ -398,7 +403,7 @@ Deno.serve(async (req) => {
           categoria: 'comissao',
           fornecedor: barberName,
           forma_pagamento: payMethod,
-          observacoes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
+          observacoes: `Comissão ${barberCommissionRate}% sobre R$ ${commissionBase.toFixed(2)} - ${observacao}`,
           venda_id: novaVenda.id, // FK padronizada para vendas.id
         })
         console.log('✅ Contas a pagar (comissão):', commissionAmount)
@@ -571,7 +576,7 @@ Deno.serve(async (req) => {
           payment_method: payMethod,
           transaction_date: today,
           reference_id: novaVenda.id,
-          notes: `Comissão ${COMMISSION_RATE}% sobre R$ ${commissionBase.toFixed(2)}`
+          notes: `Comissão ${barberCommissionRate}% sobre R$ ${commissionBase.toFixed(2)}`
         })
         console.log('✅ Cash flow (comissão):', commissionAmount)
       }
