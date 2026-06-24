@@ -1,6 +1,47 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 import { corsHeaders } from '../_shared/cors.ts'
 
+const DEFAULT_COMMISSION_RATE = 40
+
+function normalizeCommissionRate(...values: unknown[]) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue
+    const rate = Number(value)
+    if (Number.isFinite(rate) && rate >= 0) return rate
+  }
+  return DEFAULT_COMMISSION_RATE
+}
+
+async function resolveBarberCommissionRate(supabase: any, painelBarberId: string | null | undefined, staffId: string | null | undefined) {
+  const matchIds = [painelBarberId, staffId].filter(Boolean)
+
+  if (matchIds.length > 0) {
+    const filters = matchIds.flatMap((id) => [`id.eq.${id}`, `staff_id.eq.${id}`]).join(',')
+    const { data: painelBarber, error: painelError } = await supabase
+      .from('painel_barbeiros')
+      .select('commission_rate, taxa_comissao')
+      .or(filters)
+      .limit(1)
+      .maybeSingle()
+
+    if (!painelError && painelBarber) {
+      return normalizeCommissionRate(painelBarber.commission_rate, painelBarber.taxa_comissao)
+    }
+  }
+
+  if (staffId) {
+    const { data: staff } = await supabase
+      .from('staff')
+      .select('commission_rate')
+      .eq('id', staffId)
+      .maybeSingle()
+
+    return normalizeCommissionRate(staff?.commission_rate)
+  }
+
+  return DEFAULT_COMMISSION_RATE
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -115,19 +156,8 @@ Deno.serve(async (req) => {
       console.log('👤 Staff ID do barbeiro (tabela antiga):', staff_id)
     }
 
-    // 3. Buscar taxa de comissão do staff
-    const { data: staff, error: staffError } = await supabase
-      .from('staff')
-      .select('commission_rate')
-      .eq('id', staff_id)
-      .single()
-
-    if (staffError) {
-      console.error('❌ Erro ao buscar staff:', staffError)
-      throw new Error('Erro ao buscar dados do barbeiro')
-    }
-
-    const commission_rate = staff?.commission_rate || 40
+    // 3. Buscar taxa real de comissão do barbeiro (painel_barbeiros é a fonte principal)
+    const commission_rate = await resolveBarberCommissionRate(supabase, agendamento.barbeiro_id, staff_id)
     const service_price = agendamento.servico?.preco || 0
     const commission_amount = service_price * (commission_rate / 100)
 
@@ -205,8 +235,8 @@ Deno.serve(async (req) => {
     }
 
     // 6-7. Trigger automático já cria comissões e transações financeiras
-    // quando status é atualizado para 'concluido' - comissão fixa de 40%
-    console.log('✅ Trigger automático criará registros financeiros com comissão de 40%')
+    // quando status é atualizado para 'concluido' usando a taxa real do barbeiro.
+    console.log(`✅ Trigger automático criará registros financeiros com comissão de ${commission_rate}%`)
 
     // 9. Notificar barbeiro via Realtime
     const channel = supabase.channel(`barbearia:${agendamento.barbeiro_id}`)

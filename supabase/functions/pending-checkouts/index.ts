@@ -3,6 +3,44 @@ import { corsHeaders } from '../_shared/cors.ts'
 
 const DEFAULT_COMMISSION_RATE = 40 // fallback when barbeiro has no rate configured
 
+function normalizeCommissionRate(...values: unknown[]) {
+  for (const value of values) {
+    if (value === null || value === undefined || value === '') continue
+    const rate = Number(value)
+    if (Number.isFinite(rate) && rate >= 0) return rate
+  }
+  return DEFAULT_COMMISSION_RATE
+}
+
+async function resolveBarberCommissionRate(supabase: any, barberId: string | null | undefined, joinedBarber?: any) {
+  const joinedRate = normalizeCommissionRate(joinedBarber?.commission_rate, joinedBarber?.taxa_comissao, null)
+  if (joinedRate !== DEFAULT_COMMISSION_RATE || joinedBarber?.commission_rate != null || joinedBarber?.taxa_comissao != null) {
+    return joinedRate
+  }
+
+  if (!barberId) return DEFAULT_COMMISSION_RATE
+
+  const { data: painelBarber, error: painelError } = await supabase
+    .from('painel_barbeiros')
+    .select('id, staff_id, commission_rate, taxa_comissao')
+    .or(`id.eq.${barberId},staff_id.eq.${barberId}`)
+    .limit(1)
+    .maybeSingle()
+
+  if (!painelError && painelBarber) {
+    return normalizeCommissionRate(painelBarber.commission_rate, painelBarber.taxa_comissao)
+  }
+
+  const { data: staff } = await supabase
+    .from('staff')
+    .select('id, staff_id, commission_rate')
+    .or(`id.eq.${barberId},staff_id.eq.${barberId}`)
+    .limit(1)
+    .maybeSingle()
+
+  return normalizeCommissionRate(staff?.commission_rate)
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -143,10 +181,10 @@ Deno.serve(async (req) => {
       const nomeServico = agendamento.painel_servicos?.nome || 'Serviço'
       const barbeiro_id = agendamento.barbeiro_id
       const barberName = agendamento.painel_barbeiros?.nome || 'N/A'
-      const barberCommissionRate = Number(
-        agendamento.painel_barbeiros?.commission_rate
-          ?? agendamento.painel_barbeiros?.taxa_comissao
-          ?? DEFAULT_COMMISSION_RATE
+      const barberCommissionRate = await resolveBarberCommissionRate(
+        supabase,
+        barbeiro_id,
+        agendamento.painel_barbeiros,
       )
 
       // Calculate extras from servicos_extras
