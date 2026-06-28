@@ -13,8 +13,9 @@ const fmt = (v: number) =>
 interface BarberRow {
   id: string;
   nome: string;
+  commissionRate: number; // taxa real do barbeiro (do cadastro)
   receitaServicos: number; // base de cálculo (apenas serviços com valor real)
-  comissaoServicos: number; // 40% (ou taxa) sobre receita
+  comissaoServicos: number; // soma das comissões de serviço (taxa individual)
   comissaoPlanos: number;
   comissaoGorjetas: number;
   comissaoProdutos: number;
@@ -51,6 +52,7 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
         map[b.id] = {
           id: b.id,
           nome: b.nome,
+          commissionRate: Number((b as any).commission_rate) || 0,
           receitaServicos: 0,
           comissaoServicos: 0,
           comissaoPlanos: 0,
@@ -115,21 +117,21 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-sm sm:text-base font-semibold text-gray-800 flex items-center gap-2">
             <Users className="h-4 w-4 text-purple-600" />
-            Comissões por Barbeiro — Visão Mensal
+            <span className="truncate">Comissões por Barbeiro — Visão Mensal</span>
           </CardTitle>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={handlePrev} className="h-8 w-8">
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
+            <Button variant="outline" size="icon" onClick={handlePrev} className="h-8 w-8 shrink-0">
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-xs sm:text-sm font-semibold text-gray-700 capitalize min-w-[130px] sm:min-w-[160px] text-center">
+            <span className="text-xs sm:text-sm font-semibold text-gray-700 capitalize flex-1 sm:flex-none sm:min-w-[160px] text-center">
               {format(selectedMonth, "MMMM 'de' yyyy", { locale: ptBR })}
             </span>
-            <Button variant="outline" size="icon" onClick={handleNext} className="h-8 w-8">
+            <Button variant="outline" size="icon" onClick={handleNext} className="h-8 w-8 shrink-0">
               <ChevronRight className="h-4 w-4" />
             </Button>
             {!isCurrent && (
-              <Button variant="outline" size="sm" onClick={handleCurrent} className="h-8 text-xs">
-                Mês Atual
+              <Button variant="outline" size="sm" onClick={handleCurrent} className="h-8 text-xs shrink-0">
+                Hoje
               </Button>
             )}
           </div>
@@ -137,7 +139,7 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
         <p className="text-[11px] sm:text-xs text-gray-500 mt-2">
           A <strong>Receita Real (Serviços)</strong> considera apenas serviços com pagamento em caixa
           (Dinheiro/PIX/Débito/Crédito). Cortesia, uso de crédito de plano e produtos <strong>NÃO</strong> entram.
-          A coluna <strong>Comissão Serviços (40%)</strong> é calculada sobre essa receita.
+          A coluna <strong>Comissão Serviços</strong> usa a taxa individual cadastrada para cada barbeiro.
           Planos, gorjetas e produtos aparecem em colunas separadas.
         </p>
       </CardHeader>
@@ -159,7 +161,7 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
                 color="bg-amber-50 text-amber-800 border-amber-200"
               />
               <SummaryTile
-                label="Comissão Serviços (40%)"
+                label="Comissão Serviços"
                 value={totals.servicos}
                 icon={<Scissors className="h-3.5 w-3.5" />}
                 color="bg-blue-50 text-blue-800 border-blue-200"
@@ -190,14 +192,43 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
               />
             </div>
 
-            {/* Tabela por barbeiro */}
-            <div className="overflow-x-auto rounded-lg border border-gray-200">
+            {/* Mobile: cards empilhados por barbeiro */}
+            <div className="grid grid-cols-1 gap-2 md:hidden">
+              {data.map((r) => (
+                <div key={r.id} className="rounded-lg border border-gray-200 bg-white p-3">
+                  <div className="flex items-center justify-between mb-2 gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-semibold text-gray-900 text-sm truncate">{r.nome}</span>
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-semibold bg-blue-100 text-blue-700 shrink-0">
+                        {r.commissionRate}%
+                      </span>
+                    </div>
+                    <span className="font-bold text-slate-900 text-sm whitespace-nowrap">{fmt(r.total)}</span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                    <MobileRow label="Receita" value={fmt(r.receitaServicos)} color="text-amber-800" />
+                    <MobileRow label={`Comissão ${r.commissionRate}%`} value={fmt(r.comissaoServicos)} color="text-blue-800" bold />
+                    <MobileRow label="Planos" value={fmt(r.comissaoPlanos)} color="text-emerald-800" />
+                    <MobileRow label="Gorjetas" value={fmt(r.comissaoGorjetas)} color="text-pink-800" />
+                    <MobileRow label="Produtos" value={fmt(r.comissaoProdutos)} color="text-purple-800" />
+                  </div>
+                </div>
+              ))}
+              <div className="rounded-lg border-2 border-slate-300 bg-slate-100 p-3 flex items-center justify-between">
+                <span className="font-bold text-slate-900 text-sm">TOTAL GERAL</span>
+                <span className="font-bold text-slate-900 text-sm">{fmt(totals.total)}</span>
+              </div>
+            </div>
+
+            {/* Desktop/tablet: tabela */}
+            <div className="hidden md:block overflow-x-auto rounded-lg border border-gray-200">
               <table className="w-full text-xs sm:text-sm">
                 <thead className="bg-gray-50 text-gray-700">
                   <tr>
                     <th className="text-left p-2 font-semibold">Barbeiro</th>
-                    <th className="text-right p-2 font-semibold whitespace-nowrap">Receita Real (Serviços)</th>
-                    <th className="text-right p-2 font-semibold whitespace-nowrap">Comissão Serviços (40%)</th>
+                    <th className="text-center p-2 font-semibold whitespace-nowrap">Taxa</th>
+                    <th className="text-right p-2 font-semibold whitespace-nowrap">Receita Real</th>
+                    <th className="text-right p-2 font-semibold whitespace-nowrap">Comissão Serviços</th>
                     <th className="text-right p-2 font-semibold">Planos</th>
                     <th className="text-right p-2 font-semibold">Gorjetas</th>
                     <th className="text-right p-2 font-semibold">Produtos</th>
@@ -208,6 +239,11 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
                   {data.map((r) => (
                     <tr key={r.id} className="border-t border-gray-200 hover:bg-gray-50">
                       <td className="p-2 font-medium text-gray-800">{r.nome}</td>
+                      <td className="p-2 text-center">
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[11px] font-semibold bg-blue-100 text-blue-700">
+                          {r.commissionRate}%
+                        </span>
+                      </td>
                       <td className="p-2 text-right text-amber-800">{fmt(r.receitaServicos)}</td>
                       <td className="p-2 text-right text-blue-800 font-semibold">{fmt(r.comissaoServicos)}</td>
                       <td className="p-2 text-right text-emerald-800">{fmt(r.comissaoPlanos)}</td>
@@ -218,6 +254,7 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
                   ))}
                   <tr className="border-t-2 border-gray-300 bg-gray-100 font-bold">
                     <td className="p-2 text-gray-900">TOTAL GERAL</td>
+                    <td className="p-2"></td>
                     <td className="p-2 text-right text-amber-800">{fmt(totals.receita)}</td>
                     <td className="p-2 text-right text-blue-800">{fmt(totals.servicos)}</td>
                     <td className="p-2 text-right text-emerald-800">{fmt(totals.planos)}</td>
@@ -234,6 +271,18 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
     </Card>
   );
 };
+
+const MobileRow: React.FC<{ label: string; value: string; color: string; bold?: boolean }> = ({
+  label,
+  value,
+  color,
+  bold,
+}) => (
+  <div className="flex items-center justify-between gap-1 bg-gray-50 rounded px-2 py-1">
+    <span className="text-gray-600 truncate">{label}</span>
+    <span className={`${color} ${bold ? 'font-bold' : 'font-medium'} whitespace-nowrap`}>{value}</span>
+  </div>
+);
 
 const SummaryTile: React.FC<{ label: string; value: number; icon: React.ReactNode; color: string }> = ({
   label,
