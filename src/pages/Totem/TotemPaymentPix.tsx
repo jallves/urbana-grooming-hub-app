@@ -7,6 +7,7 @@ import { ArrowLeft, CheckCircle2, Loader2, QrCode, XCircle, RefreshCw } from 'lu
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useInternetHealth } from '@/hooks/useInternetHealth';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -252,6 +253,8 @@ const TotemPaymentPix: React.FC = () => {
     verificarConexao
   } = useTEFAndroid({});
 
+  const { online: internetOnline } = useInternetHealth();
+
   // Delay inicial para verificar conexão TEF
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -294,6 +297,13 @@ const TotemPaymentPix: React.FC = () => {
       setSimulationStatus('waiting');
       setSimulationTimeLeft(8);
       setProcessing(true);
+      return;
+    }
+
+    if (!internetOnline) {
+      toast.error('Sem internet no totem', {
+        description: 'Verifique o Wi-Fi do tablet e tente novamente em alguns segundos.'
+      });
       return;
     }
 

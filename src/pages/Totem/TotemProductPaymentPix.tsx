@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useInternetHealth } from '@/hooks/useInternetHealth';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
@@ -208,6 +209,8 @@ const TotemProductPaymentPix: React.FC = () => {
     verificarConexao
   } = useTEFAndroid({});
 
+  const { online: internetOnline } = useInternetHealth();
+
   // Hook para receber resultado do PayGo - IGUAL AO SERVIÇO
   useTEFPaymentResult({
     enabled: paymentStarted && isProcessing,
@@ -264,6 +267,13 @@ const TotemProductPaymentPix: React.FC = () => {
     if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
         description: 'O WebView não detectou a bridge TEF (window.TEF).'
+      });
+      return;
+    }
+
+    if (!internetOnline) {
+      toast.error('Sem internet no totem', {
+        description: 'Verifique o Wi-Fi do tablet e tente novamente em alguns segundos.'
       });
       return;
     }
