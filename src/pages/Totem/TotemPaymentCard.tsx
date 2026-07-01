@@ -8,6 +8,7 @@ import { fireAndForgetEdgeFunction } from '@/lib/fireAndForgetEdgeFunction';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { useInternetHealth } from '@/hooks/useInternetHealth';
 import { TEFResultado, confirmarTransacaoTEF, desfazerTransacaoTEF } from '@/lib/tef/tefAndroidBridge';
 import { logTEFTransaction } from '@/lib/tef/tefTransactionLogger';
 import { sendReceiptEmail } from '@/services/receiptEmailService';
@@ -310,6 +311,9 @@ const TotemPaymentCard: React.FC = () => {
     // O useTEFPaymentResult é o único responsável por receber e processar resultados
   });
 
+  // Verificação discreta de internet real do tablet (detecta wifi sem saída)
+  const { online: internetOnline } = useInternetHealth();
+
   // Delay inicial para verificar conexão TEF (evita flash da tela de erro)
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -358,6 +362,14 @@ const TotemPaymentCard: React.FC = () => {
     if (!hasNativeBridge) {
       toast.error('PayGo indisponível', {
         description: 'O WebView não detectou a bridge TEF (window.TEF). Verifique se está no APK do Totem.'
+      });
+      return;
+    }
+
+    // Se detectamos que o tablet está sem internet real, avisa antes de acionar o PayGo
+    if (!internetOnline) {
+      toast.error('Sem internet no totem', {
+        description: 'Verifique o Wi-Fi do tablet e tente novamente em alguns segundos.'
       });
       return;
     }
@@ -531,6 +543,10 @@ const TotemPaymentCard: React.FC = () => {
             <p className="text-xs sm:text-sm md:text-base text-green-400 mt-0.5 flex items-center justify-center gap-1">
               <CheckCircle2 className="w-3 h-3" />
               PayGo conectado
+              <span
+                title={internetOnline ? 'Internet OK' : 'Sem internet no tablet'}
+                className={`ml-1 inline-block w-1.5 h-1.5 rounded-full ${internetOnline ? 'bg-green-500' : 'bg-red-500 animate-pulse'}`}
+              />
             </p>
           ) : (
             <p className="text-xs sm:text-sm md:text-base text-red-400 mt-0.5 flex items-center justify-center gap-1">
