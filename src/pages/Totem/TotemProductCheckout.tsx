@@ -120,7 +120,7 @@ const TotemProductCheckout: React.FC = () => {
     });
   };
 
-  const handlePayment = async (paymentMethod: 'pix' | 'card' | 'cash') => {
+  const handlePayment = async (paymentMethod: 'pix' | 'card' | 'cash' | 'multiple') => {
     if (!isSubscriptionPurchase && cart.length === 0) {
       toast.error('Carrinho vazio');
       return;
