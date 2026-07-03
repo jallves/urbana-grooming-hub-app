@@ -171,13 +171,11 @@ const TotemSplitPayment: React.FC = () => {
         return;
       }
 
-      // Cartão / PIX: usa PayGo Android via bridge oficial (window.TEF).
+      // Cartão / PIX: SEMPRE chamar PayGo TEF nativo. Nunca simular
+      // pagamentos com cartão/PIX — cobrança real é obrigatória.
       const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
       if (!hasNativeBridge || !isAndroidAvailable) {
-        // Sem bridge → simulação (mantém paridade com os checkouts atuais)
-        await new Promise((r) => setTimeout(r, 1500));
-        markPaid(part.id, `SIM-${Date.now()}`);
-        return;
+        throw new Error('Terminal PayGo indisponível. Abra o app do Totem para pagar com cartão/PIX ou troque a parcela para Dinheiro.');
       }
 
       if (!internetOnline) {
