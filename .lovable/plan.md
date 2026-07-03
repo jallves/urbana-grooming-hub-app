@@ -1,152 +1,103 @@
+## Objetivo
 
-# Plano: WhatsApp, Agendar Agora, Logs de Segurança e Sessões
-
-## Resumo das Descobertas
-
-Após análise detalhada do código:
-
-1. **Botão WhatsApp**: O componente existe mas depende de configurações que não estão no banco
-2. **Botão "Agendar Agora"**: Já funciona corretamente - redireciona para o painel do cliente
-3. **Logs de Segurança**: O sistema foi criado mas NUNCA foi conectado aos módulos
-4. **Sessões**: O sistema existe mas só funciona para o Totem, não para Admin/Barbeiro/Cliente
+Adicionar **pagamento múltiplo (split)** nos dois checkouts do totem (serviços e produtos) e ajustar o fluxo de produtos para **só pedir barbeiro quando houver produto de cosmético** (produto que gera comissão). Integração completa e correta com o ERP financeiro.
 
 ---
 
-## Parte 1: Botão WhatsApp com Número Fixo
+## 1. Multi-pagamento (checkout de serviço e de produto)
 
-**Objetivo**: Exibir o botão flutuante do WhatsApp com o número `5527997780137`
+### UX (didática, mobile-first)
+Na tela de seleção de forma de pagamento, além dos botões atuais (Dinheiro, Débito, Crédito, PIX), adicionar um card **"Pagamento Múltiplo"**. Ao selecionar:
 
-**Alterações**:
-- Modificar `src/components/WhatsAppButton.tsx` para usar o número fixo `5527997780137` como fallback principal
-- Manter a busca de configurações para flexibilidade futura
-- Garantir que o botão sempre apareça na homepage
+1. Tela mostra o **Total** grande no topo e o **Saldo restante** em destaque (atualiza em tempo real).
+2. Lista de "parcelas" adicionadas (ex.: `R$ 50,00 — Dinheiro ✕`).
+3. Botão **"+ Adicionar forma de pagamento"** abre um seletor: método (Dinheiro/Débito/Crédito/PIX) + valor (teclado numérico grande, com atalhos "50%", "Restante").
+4. Validações: soma nunca ultrapassa o total; só permite finalizar quando `saldo restante = 0`; mínimo R$ 0,01 por parcela; permite remover parcela.
+5. Botão **"Finalizar pagamento"** executa cada parcela em sequência:
+   - Dinheiro → registra direto.
+   - Débito/Crédito → chama PayGo TEF com o valor da parcela.
+   - PIX → gera QR do valor da parcela (fluxo atual PayGo PIX).
+   - Se qualquer parcela falhar, mostra erro claro ("Parcela 2 de 3 recusada"), permite tentar de novo ou remover, sem perder as parcelas já aprovadas.
 
----
+Toda a UI segue o padrão urbana-black/urbana-gold, botões ≥ 56px de altura, texto ≥ 18px, layout `100dvh` no mobile.
 
-## Parte 2: Botão "Agendar Agora"
+### Dados / migração ERP
 
-**Status**: Já está funcionando corretamente!
+Novo shape de payment enviado ao backend:
 
-O botão no Hero já redireciona para `/painel-cliente/login`, que é exatamente o comportamento esperado para facilitar o acesso ao painel do cliente.
-
----
-
-## Parte 3: Logs de Segurança (Integração Completa)
-
-**Problema Identificado**: O hook `useActivityLogger` foi criado mas nunca foi importado ou usado em nenhum componente.
-
-**Arquivos que precisam integrar o logger**:
-
-| Módulo | Arquivo | Ações a Registrar |
-|--------|---------|-------------------|
-| Login Admin | `LoginForm.tsx` | login, logout |
-| Login Barbeiro | `BarberLoginForm.tsx`, `useBarberLogin.ts` | login, logout |
-| Login Cliente | `PainelClienteLogin.tsx` | login, logout |
-| Gestão Usuários | `UserManagement.tsx` | create, update, delete |
-| Gestão Clientes | `ClientManagement` | create, update, delete |
-| Agendamentos | `AppointmentManagement` | create, cancel, complete, absent |
-| Configurações | `Settings` components | update |
-
-**Implementação**:
-1. Importar `useActivityLogger` ou `logAdminActivity` nos componentes
-2. Chamar as funções de log após cada ação bem-sucedida
-3. Garantir que o `admin_id` seja capturado corretamente
-
----
-
-## Parte 4: Gestão de Sessões (Integração Completa)
-
-**Problema Identificado**: O `sessionManager.createSession()` só está sendo chamado no `TotemAuthContext`. Os outros contextos de autenticação não criam sessões.
-
-**Arquivos que precisam integrar sessões**:
-
-| Contexto | Arquivo | Status Atual |
-|----------|---------|--------------|
-| Admin | `LoginForm.tsx` | Sem sessão |
-| Barbeiro | `BarberLoginForm.tsx` | Sem sessão |
-| Cliente | `PainelClienteLogin.tsx` | Sem sessão |
-| Totem | `TotemAuthContext.tsx` | Funcionando |
-
-**Implementação**:
-1. Importar `sessionManager` nos componentes de login
-2. Chamar `createSession()` após login bem-sucedido
-3. Chamar `invalidateSession()` no logout
-4. Atualizar atividade durante a navegação
-
----
-
-## Arquivos a Modificar
-
-### WhatsApp
-- `src/components/WhatsAppButton.tsx`
-
-### Logs de Segurança
-- `src/components/auth/LoginForm.tsx`
-- `src/components/barber/auth/BarberLoginForm.tsx`
-- `src/pages/PainelClienteLogin.tsx`
-- Componentes de gestão (clientes, agendamentos, usuários)
-
-### Sessões
-- `src/components/auth/LoginForm.tsx`
-- `src/components/barber/auth/BarberLoginForm.tsx`
-- `src/pages/PainelClienteLogin.tsx`
-- `src/contexts/AuthContext.tsx` (logout)
-- `src/contexts/ClientAuthContext.tsx` (logout)
-
----
-
-## Seção Técnica
-
-### Exemplo de Integração de Log (LoginForm.tsx)
-
-```typescript
-import { logAdminActivity } from '@/hooks/useActivityLogger';
-
-// Após login bem-sucedido:
-await logAdminActivity({
-  action: 'login',
-  entityType: 'session',
-  entityId: user.id,
-  newData: { email: user.email, timestamp: new Date().toISOString() }
-});
+```ts
+payments: [
+  { method: 'cash' | 'debit' | 'credit' | 'pix', amount: number, transaction_data?: {...} }
+]
 ```
 
-### Exemplo de Integração de Sessão (LoginForm.tsx)
+- **Compatibilidade**: se `payments.length === 1`, backend continua se comportando como hoje (um único `payment_method`).
+- **Split**: para cada parcela, o backend cria **1 linha em `financial_records`** (transaction_type = `service_payment` ou `product_sale`) com `payment_method` e `amount` corretos, todas vinculadas ao mesmo `venda_id`. Isso garante que o ERP financeiro e os relatórios por forma de pagamento continuem exatos.
+- `vendas.payment_method` recebe `"split"` quando houver mais de uma forma, e um campo novo `vendas.payment_breakdown` (JSONB) guarda o detalhamento. Migração cria a coluna (nullable, default null) — mudança aditiva, não quebra nada.
+- Comissão do barbeiro (serviço/cosmético) segue calculada pelo **total da venda**, não pelas parcelas — a divisão é só financeira.
 
-```typescript
-import { sessionManager } from '@/hooks/useSessionManager';
-
-// Após login bem-sucedido:
-await sessionManager.createSession({
-  userId: user.id,
-  userType: 'admin',
-  userEmail: user.email,
-  userName: user.name,
-  expiresInHours: 24
-});
-```
-
-### Exemplo de Logout com Invalidação
-
-```typescript
-// No logout:
-await sessionManager.invalidateSession('admin');
-await logAdminActivity({
-  action: 'logout',
-  entityType: 'session',
-  entityId: userId,
-  oldData: { email, timestamp: new Date().toISOString() }
-});
-```
+Edge functions afetadas:
+- `totem-checkout` (finish) — aceita `payments[]`, itera e grava múltiplos `financial_records`.
+- `totem-direct-sale` — mesma coisa.
+- `create-financial-transaction` — aceita `payments[]` opcional; se vier, cria N registros.
 
 ---
 
-## Resultado Esperado
+## 2. Checkout de produto: barbeiro só p/ cosméticos
 
-Após implementação:
+### Regra
+- Categoria do produto (`painel_produtos.categoria`) define se é cosmético.
+- Cosmético = qualquer categoria que **não** esteja em `['bebida','bebidas','refrigerante','cerveja','agua','água','consumo','snack','lanche']` (lista configurável no código, `CONSUMABLE_CATEGORIES`).
+- Regra prática pedida pelo usuário: **cosmético → precisa barbeiro (gera comissão); consumo → não precisa barbeiro (não gera comissão)**.
 
-1. **WhatsApp**: Botão verde fixo no canto inferior direito da homepage, sempre visível, redirecionando para o WhatsApp com o número `5527997780137`
+### Fluxo ajustado (`TotemProductSale` → `TotemProductBarberSelect` → `TotemProductCheckout`)
+- Após montar o carrinho, calcular `requiresBarber = cartItems.some(item => isCosmetic(item.product))`.
+- Se `requiresBarber === false` → **pula** a tela `TotemProductBarberSelect` e vai direto para pagamento, com `barber_id = null`.
+- Se `requiresBarber === true` → mantém a tela atual de seleção de barbeiro. A comissão é aplicada só nos itens cosméticos do carrinho (itens de consumo entram como `commission = 0`).
+- No `totem-direct-sale`: por item, se produto é consumo → `barber_commissions` **não** é criado; se cosmético e há `barber_id` → cria comissão de 10% (regra atual). Se um pedido misto for feito, ainda pede barbeiro (pelos cosméticos) e os itens de consumo simplesmente não geram comissão.
 
-2. **Logs de Segurança**: Todas as ações administrativas (login, logout, criar, editar, excluir) serão registradas em tempo real na aba "Log de Segurança"
+### UI
+Mensagem clara na tela de carrinho quando não precisa barbeiro: *"Produtos de consumo — não é necessário selecionar barbeiro."*
 
-3. **Sessões**: Todas as sessões ativas serão exibidas na aba "Sessões", com possibilidade de forçar logout e monitorar atividade em tempo real
+---
+
+## 3. Detalhes técnicos
+
+- Novo componente compartilhado `src/components/totem/MultiPaymentPanel.tsx` usado pelos dois checkouts.
+- Novo hook `src/hooks/totem/useSplitPayment.ts` centraliza estado das parcelas, validações de soma, e a execução sequencial (com integração PayGo já existente em `tefDriver`).
+- Helper `src/lib/products/isConsumableProduct.ts` com a lista `CONSUMABLE_CATEGORIES` e função `isCosmetic(product)`.
+- Migração Supabase:
+  - `ALTER TABLE public.vendas ADD COLUMN IF NOT EXISTS payment_breakdown JSONB;`
+  - Sem novas policies — a coluna herda RLS existente da tabela.
+- Zero mudança em: layout dos totens fora dessas telas, cronjobs, comissões de serviço, PayGo driver, relatórios (eles leem `financial_records` que já será populado corretamente por parcela).
+
+---
+
+## 4. Testes manuais que vou rodar depois
+
+1. Serviço R$ 100 → 60 dinheiro + 40 débito → verifica que ERP mostra 2 lançamentos, venda total R$ 100, comissão do barbeiro correta sobre 100.
+2. Produto cosmético (Pomada) R$ 40 → pede barbeiro → paga 20 PIX + 20 crédito → comissão 10% de 40 gerada.
+3. Produto consumo (Coca) R$ 8 → **não** pede barbeiro → paga tudo dinheiro → sem comissão.
+4. Carrinho misto (Pomada + Coca) → pede barbeiro → comissão só sobre a pomada.
+5. Falha simulada em uma parcela do split → estado preservado, permite retentar.
+
+---
+
+## Arquivos que serão criados / editados
+
+**Novos**
+- `src/components/totem/MultiPaymentPanel.tsx`
+- `src/hooks/totem/useSplitPayment.ts`
+- `src/lib/products/isConsumableProduct.ts`
+- 1 migração Supabase (coluna `payment_breakdown`)
+
+**Editados**
+- `src/pages/Totem/TotemCheckout.tsx` (serviço — adiciona opção "Múltiplo")
+- `src/pages/Totem/TotemProductCheckout.tsx` (produto — adiciona opção "Múltiplo")
+- `src/pages/Totem/TotemProductSale.tsx` (skip barbeiro se não cosmético)
+- `src/pages/Totem/TotemProductBarberSelect.tsx` (idem, redirect)
+- `supabase/functions/totem-checkout/index.ts`
+- `supabase/functions/totem-direct-sale/index.ts`
+- `supabase/functions/create-financial-transaction/index.ts`
+
+Aprovando isso, executo tudo em uma sequência, com migração primeiro e código depois.

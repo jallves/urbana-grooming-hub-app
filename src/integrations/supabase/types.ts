@@ -2273,6 +2273,7 @@ export type Database = {
           gorjeta: number | null
           id: string
           observacoes: string | null
+          payment_breakdown: Json | null
           status: string | null
           updated_at: string | null
           valor_total: number
@@ -2286,6 +2287,7 @@ export type Database = {
           gorjeta?: number | null
           id?: string
           observacoes?: string | null
+          payment_breakdown?: Json | null
           status?: string | null
           updated_at?: string | null
           valor_total?: number
@@ -2299,6 +2301,7 @@ export type Database = {
           gorjeta?: number | null
           id?: string
           observacoes?: string | null
+          payment_breakdown?: Json | null
           status?: string | null
           updated_at?: string | null
           valor_total?: number
