@@ -532,6 +532,48 @@ const TotemCheckout: React.FC = () => {
     });
   }, [navigate, appointment, client, productCart, extraServices, resumo]);
 
+  const handleSplitPayment = () => {
+    if (!resumo) return;
+    const currentVendaId = vendaIdRef.current ?? vendaId;
+    if (!currentVendaId) {
+      toast.error('Aguarde a criação do checkout');
+      return;
+    }
+    // Update tip + total in background so backend has correct total
+    supabase
+      .from('vendas')
+      .update({ gorjeta: tipAmount, valor_total: totalComGorjeta })
+      .eq('id', currentVendaId)
+      .then(({ error }) => { if (error) console.warn('[Checkout] update venda:', error); });
+
+    if (wantsCoffee) {
+      supabase.from('coffee_records' as any).insert({
+        appointment_id: appointment?.id || null,
+        client_id: client?.id || null,
+        barber_id: appointment?.barbeiro_id || appointment?.barbeiro?.id || null,
+        quantity: 1,
+      }).then(() => {});
+      decrementCoffeeStock(1);
+    }
+
+    navigate('/totem/payment-split', {
+      state: {
+        mode: 'service',
+        venda_id: currentVendaId,
+        session_id: session.id,
+        appointment,
+        client,
+        total: totalComGorjeta,
+        tipAmount,
+        resumo,
+        extraServices,
+        selectedProducts: productCart,
+        comboDiscount: comboMatch?.savings || 0,
+        comboName: comboMatch?.combo_nome || null,
+      },
+    });
+  };
+
   const handlePayment = (method: 'pix' | 'card' | 'cash') => {
     if (!resumo) return;
     setProcessing(true);
