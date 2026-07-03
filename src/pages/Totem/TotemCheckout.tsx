@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote, Coffee } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, CheckCircle2, User, Award, Heart, Package, Plus, Crown, Sparkles, Tag, Banknote, Coffee, Layers } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -940,6 +940,19 @@ const TotemCheckout: React.FC = () => {
               Dinheiro
             </Button>
           </div>
+
+          {/* Pagamento Múltiplo */}
+          <Button
+            onClick={handleSplitPayment}
+            disabled={processing}
+            className="mt-3 w-full h-16 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 hover:from-purple-700 hover:via-fuchsia-700 hover:to-pink-700 text-white text-base font-black rounded-xl flex items-center justify-center gap-3 shadow-lg shadow-purple-500/30 border-2 border-purple-400/50"
+          >
+            <Layers className="w-6 h-6" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>Pagamento Múltiplo</span>
+              <span className="text-[10px] font-medium text-purple-100/90">Combine dinheiro + cartão + PIX</span>
+            </div>
+          </Button>
 
           {processing && (
             <div className="mt-4 text-center">
