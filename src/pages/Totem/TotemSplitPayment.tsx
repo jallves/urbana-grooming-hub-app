@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -7,6 +7,9 @@ import { ArrowLeft, Banknote, CreditCard, DollarSign, Plus, Trash2, CheckCircle2
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { useTEFAndroid } from '@/hooks/useTEFAndroid';
+import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { useInternetHealth } from '@/hooks/useInternetHealth';
 
 type SplitMethod = 'cash' | 'debit' | 'credit' | 'pix';
 type SplitStatus = 'pending' | 'processing' | 'paid' | 'failed';
@@ -72,6 +75,32 @@ const TotemSplitPayment: React.FC = () => {
   const [amountInput, setAmountInput] = useState('0,00');
   const [amountValue, setAmountValue] = useState(0);
   const [processing, setProcessing] = useState(false);
+
+  // Refs para orquestrar 1 parcela de cada vez com PayGo
+  const activePartRef = useRef<SplitPart | null>(null);
+  const partResolverRef = useRef<((res: any) => void) | null>(null);
+  const [tefEnabled, setTefEnabled] = useState(false);
+
+  const {
+    isAndroidAvailable,
+    isPinpadConnected,
+    iniciarPagamento: iniciarPagamentoTEF,
+    cancelarPagamento: cancelarPagamentoTEF,
+    verificarConexao,
+  } = useTEFAndroid({});
+  const { online: internetOnline } = useInternetHealth();
+
+  useTEFPaymentResult({
+    enabled: tefEnabled,
+    pollingInterval: 500,
+    maxWaitTime: 180000,
+    onResult: (r) => {
+      const resolver = partResolverRef.current;
+      partResolverRef.current = null;
+      setTefEnabled(false);
+      if (resolver) resolver(r);
+    },
+  });
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -142,52 +171,61 @@ const TotemSplitPayment: React.FC = () => {
         return;
       }
 
-      // Cartão / PIX: se rodando dentro do WebView Android com PayGo, usar bridge.
-      const bridge = (window as any).TEFAndroid;
-      if (bridge && typeof bridge.iniciarPagamento === 'function') {
-        const paymentType = part.method === 'credit' ? 'CREDITO' : part.method === 'debit' ? 'DEBITO' : 'PIX';
-        const reqId = `SPLIT-${part.id}`;
-        // A ponte é asyncrona; ela emite um resultado que a maioria dos fluxos captura
-        // via localStorage. Aqui usamos polling curto do sessionStorage.lastTefResult.
-        try { sessionStorage.removeItem('lastTefResult'); } catch { /* noop */ }
-        bridge.iniciarPagamento(JSON.stringify({
-          valor: part.amount,
-          tipo: paymentType,
-          parcelas: 1,
-          reference: reqId,
-          posName: 'TotemCostaUrbana',
-          posVersion: '1.0.0-CERT',
-          cardType: part.method === 'pix' ? 'CARTAO_CARTEIRA_VIRTUAL' : undefined,
-        }));
-
-        const start = Date.now();
-        const timeoutMs = 90_000;
-        let result: any = null;
-        while (Date.now() - start < timeoutMs) {
-          await new Promise((r) => setTimeout(r, 600));
-          try {
-            const raw = sessionStorage.getItem('lastTefResult');
-            if (raw) {
-              const parsed = JSON.parse(raw);
-              if (parsed?.reference === reqId || !parsed?.reference) {
-                result = parsed;
-                break;
-              }
-            }
-          } catch { /* noop */ }
-        }
-
-        if (!result) throw new Error('Tempo esgotado aguardando pagamento');
-        if (result.status === 'erro' || result.status === 'cancelado') {
-          throw new Error(result.mensagem || 'Pagamento recusado');
-        }
-        markPaid(part.id, result.nsu || result.autorizacao || `TEF-${Date.now()}`);
+      // Cartão / PIX: usa PayGo Android via bridge oficial (window.TEF).
+      const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
+      if (!hasNativeBridge || !isAndroidAvailable) {
+        // Sem bridge → simulação (mantém paridade com os checkouts atuais)
+        await new Promise((r) => setTimeout(r, 1500));
+        markPaid(part.id, `SIM-${Date.now()}`);
         return;
       }
 
-      // Sem PayGo → simulação (mesmo comportamento dos fluxos atuais quando bridge ausente)
-      await new Promise((r) => setTimeout(r, 2500));
-      markPaid(part.id, `SIM-${Date.now()}`);
+      if (!internetOnline) {
+        throw new Error('Sem internet no totem. Verifique o Wi-Fi.');
+      }
+
+      const status = verificarConexao();
+      if (!status?.conectado) {
+        throw new Error('Pinpad não conectado.');
+      }
+
+      // Prepara promessa que será resolvida por useTEFPaymentResult.onResult
+      activePartRef.current = part;
+      const resultPromise = new Promise<any>((resolve, reject) => {
+        partResolverRef.current = resolve;
+        // Timeout de segurança (3 min)
+        setTimeout(() => {
+          if (partResolverRef.current === resolve) {
+            partResolverRef.current = null;
+            setTefEnabled(false);
+            reject(new Error('Tempo esgotado aguardando pagamento'));
+          }
+        }, 180_000);
+      });
+
+      setTefEnabled(true);
+      const ordemId = `SPLIT_${part.id}`;
+      const ok = await iniciarPagamentoTEF({
+        ordemId,
+        valor: part.amount,
+        tipo: part.method as 'credit' | 'debit' | 'pix',
+        parcelas: 1,
+      });
+
+      if (!ok) {
+        setTefEnabled(false);
+        partResolverRef.current = null;
+        throw new Error('A bridge TEF retornou falha ao iniciar a transação.');
+      }
+
+      const result = await resultPromise;
+      if (result?.status === 'aprovado') {
+        markPaid(part.id, result.nsu || result.autorizacao || `TEF-${Date.now()}`);
+      } else if (result?.status === 'cancelado') {
+        throw new Error(result?.mensagem || 'Pagamento cancelado');
+      } else {
+        throw new Error(result?.mensagem || 'Pagamento recusado');
+      }
     } catch (err: any) {
       const msg = err?.message || 'Erro ao processar pagamento';
       setParts((prev) => prev.map((p) => (p.id === part.id ? { ...p, status: 'failed', error: msg } : p)));
