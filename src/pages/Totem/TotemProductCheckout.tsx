@@ -509,6 +509,19 @@ const TotemProductCheckout: React.FC = () => {
             </button>
           </div>
 
+          {/* Pagamento Múltiplo */}
+          <button
+            onClick={() => handlePayment('multiple')}
+            disabled={isProcessing || (!isSubscriptionPurchase && cart.length === 0)}
+            className="mt-2 sm:mt-3 w-full h-16 sm:h-20 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 active:from-purple-700 active:via-fuchsia-700 active:to-pink-700 border-2 border-purple-400/50 rounded-xl text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-500/30"
+          >
+            <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>Pagamento Múltiplo</span>
+              <span className="text-[10px] font-medium text-purple-100/90">Combine dinheiro + cartão + PIX</span>
+            </div>
+          </button>
+
           {isProcessing && (
             <div className="mt-3 flex items-center justify-center gap-2 text-urbana-gold">
               <Loader2 className="w-5 h-5 animate-spin" />
