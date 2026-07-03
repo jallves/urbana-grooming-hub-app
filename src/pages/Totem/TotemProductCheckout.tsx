@@ -267,7 +267,7 @@ const TotemProductCheckout: React.FC = () => {
       {/* Content - Grid layout */}
       <div className="flex-1 overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
         {/* Left Column - Barber Info */}
-        {barber && (
+        {barber && requiresBarber && (
           <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0 h-fit">
             <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
