@@ -663,6 +663,15 @@ Deno.serve(async (req) => {
     }
 
     // ===================== RECEITAS =====================
+    // Precompute totais para rateio de split (soma net dos itens = base do split)
+    const netByItemIdx: number[] = body.items.map((it) => {
+      const q = Number(it.quantity || 1)
+      const u = Number(it.price || 0)
+      const d = Number(it.discount || 0)
+      return Math.max(0, q * u - d)
+    })
+    const totalNet = netByItemIdx.reduce((s, v) => s + v, 0)
+
     for (const item of body.items) {
       const qty = Number(item.quantity || 1)
       const unit = Number(item.price || 0)
@@ -682,50 +691,71 @@ Deno.serve(async (req) => {
         ? `Uso crédito assinatura: ${item.name || 'Serviço'} (R$ 0,00 - já pago no combo)`
         : (isService ? `Serviço: ${item.name || 'Serviço'}` : `Produto: ${item.name || 'Produto'}`)
 
-      const subRef = `revenue:${item.type}:${item.id}:${subcategory}`
+      // Constrói a lista de "buckets" de forma de pagamento para este item.
+      // Sem split: 1 bucket com valor total do item.
+      // Com split: N buckets rateados proporcionalmente sobre `totalNet`.
+      const buckets: Array<{ method: string; amount: number; tx?: string | null; suffix: string }> = []
+      if (hasSplit && totalNet > 0 && net > 0 && !isSubscriptionUsage) {
+        let acc = 0
+        rawPayments.forEach((p, pi) => {
+          const isLast = pi === rawPayments.length - 1
+          // O último bucket recebe a sobra para bater exatamente `net`.
+          const share = isLast
+            ? Number((net - acc).toFixed(2))
+            : Number(((net * p.amount) / totalNet).toFixed(2))
+          acc += share
+          if (share > 0) {
+            buckets.push({ method: p.method, amount: share, tx: p.transaction_id, suffix: `split${pi}` })
+          }
+        })
+      } else {
+        buckets.push({ method: payment_method || 'cash', amount: net, tx: transaction_id, suffix: 'main' })
+      }
 
-      const { id: financialId, alreadyExisted, obs } = await upsertFinancialRecord(
-        supabase,
-        {
-          transaction_type: 'revenue',
-          category,
-          subcategory,
-          amount: net,
-          net_amount: net,
-          status: 'completed',
-          description,
-          transaction_date,
-          payment_date: transaction_datetime,
-          payment_method,
-          barber_id: body.barber_id,
-          barber_name: barberName,
-          client_id: body.client_id,
-          service_id: isService ? item.id : null,
-          service_name: isService ? item.name || null : null,
-          reference_id,
-          reference_type,
-        },
-        { reference_id, reference_type, sub_ref: subRef }
-      )
+      for (const bucket of buckets) {
+        const subRef = `revenue:${item.type}:${item.id}:${subcategory}:${bucket.suffix}`
+        const { id: financialId, alreadyExisted, obs } = await upsertFinancialRecord(
+          supabase,
+          {
+            transaction_type: 'revenue',
+            category,
+            subcategory,
+            amount: bucket.amount,
+            net_amount: bucket.amount,
+            status: 'completed',
+            description: hasSplit ? `${description} (${bucket.method})` : description,
+            transaction_date,
+            payment_date: transaction_datetime,
+            payment_method: bucket.method,
+            barber_id: body.barber_id,
+            barber_name: barberName,
+            client_id: body.client_id,
+            service_id: isService ? item.id : null,
+            service_name: isService ? item.name || null : null,
+            reference_id,
+            reference_type,
+          },
+          { reference_id, reference_type, sub_ref: subRef }
+        )
 
-       // Sempre garantir contas_receber (idempotente por observacoes)
-       if (reference_id) {
-         await ensureContasReceber(supabase, {
-           descricao: description,
-           valor: net, // R$ 0,00 para assinatura
-           data_vencimento: transaction_date,
-           data_recebimento: transaction_date,
-           cliente_id: body.client_id || null,
-           status: 'recebido',
-           categoria: category,
-           observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
-           transaction_id: transaction_id,
-           forma_pagamento: payment_method,
+        if (reference_id) {
+          await ensureContasReceber(supabase, {
+            descricao: hasSplit ? `${description} (${bucket.method})` : description,
+            valor: bucket.amount,
+            data_vencimento: transaction_date,
+            data_recebimento: transaction_date,
+            cliente_id: body.client_id || null,
+            status: 'recebido',
+            categoria: category,
+            observacoes: `ref_financial_record_id=${financialId};ref=${reference_type};id=${reference_id};sub=${subRef}`,
+            transaction_id: bucket.tx || transaction_id,
+            forma_pagamento: bucket.method,
             venda_id: resolveVendaIdForReference(reference_type, reference_id),
-         })
-       }
+          })
+        }
 
-      created.push({ kind: 'revenue', item_type: item.type, financial_record_id: financialId, amount: net, obs })
+        created.push({ kind: 'revenue', item_type: item.type, financial_record_id: financialId, amount: bucket.amount, payment_method: bucket.method, obs })
+      }
     }
 
     // ===================== COMISSÕES (SERVIÇOS + PRODUTOS) =====================
