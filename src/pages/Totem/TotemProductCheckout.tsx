@@ -132,7 +132,9 @@ const TotemProductCheckout: React.FC = () => {
       const totalValue = isSubscriptionPurchase ? subscriptionPlan!.price : cartTotal;
       
       console.log('🛒 Criando venda:', isSubscriptionPurchase ? 'ASSINATURA' : 'PRODUTOS');
-      console.log('🔍 Barbeiro selecionado:', { id: barber.id, staff_id: barber.staff_id, nome: barber.nome });
+      console.log('🔍 Barbeiro selecionado:', barber
+        ? { id: barber.id, staff_id: barber.staff_id, nome: barber.nome }
+        : 'SEM BARBEIRO (produtos de consumo)');
       
       const { data: saleData, error: saleError } = await supabase
         .from('vendas')
