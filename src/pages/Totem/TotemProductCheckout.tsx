@@ -138,7 +138,7 @@ const TotemProductCheckout: React.FC = () => {
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          barbeiro_id: barber.id,
+          barbeiro_id: barber?.id || null,
           valor_total: totalValue,
           desconto: 0,
           status: 'ABERTA',
@@ -193,6 +193,14 @@ const TotemProductCheckout: React.FC = () => {
         navigate('/totem/product-payment-pix', { state: navState });
       } else if (paymentMethod === 'cash') {
         navigate('/totem/product-payment-cash', { state: navState });
+      } else if (paymentMethod === 'multiple') {
+        navigate('/totem/payment-split', {
+          state: {
+            mode: 'product',
+            total: totalValue,
+            sale, client, cart, barber, subscriptionPlan,
+          },
+        });
       } else {
         navigate('/totem/product-payment-card', { state: navState });
       }
