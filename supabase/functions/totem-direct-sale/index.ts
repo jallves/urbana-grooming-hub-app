@@ -18,7 +18,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
 
-    const { action, venda_id, payment_id, payment_method, transaction_data, subscription_plan_id, client_id, barber_id } = await req.json()
+    const { action, venda_id, payment_id, payment_method, transaction_data, subscription_plan_id, client_id, barber_id, payments } = await req.json()
 
     // ========================================================================
     // ACTION: START - Criar registro de pagamento pendente
@@ -169,7 +169,8 @@ serve(async (req) => {
         .from('vendas')
         .update({ 
           status: 'PAGA',
-          forma_pagamento: payment_method || 'CARTAO',
+          forma_pagamento: (Array.isArray(payments) && payments.length > 1) ? 'MULTIPLO' : (payment_method || 'CARTAO'),
+          payment_breakdown: Array.isArray(payments) && payments.length > 0 ? payments : null,
           updated_at: toBrazilISOString()
         })
         .eq('id', venda_id)
@@ -238,7 +239,8 @@ serve(async (req) => {
                 notes: `Venda de Produtos - Totem - ID: ${venda_id}`,
                 transaction_id: transaction_data?.nsu || null,
                 transaction_date: brazilTime.date,
-                transaction_datetime: brazilTime.datetime
+                transaction_datetime: brazilTime.datetime,
+                payments: Array.isArray(payments) && payments.length > 0 ? payments : undefined,
               }
             }
           )

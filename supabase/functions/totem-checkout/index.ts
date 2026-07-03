@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseKey)
 
-    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount, transaction_data, combo_discount, combo_name } = await req.json()
+    const { agendamento_id, extras, products, action, venda_id, session_id, payment_method, tipAmount, transaction_data, combo_discount, combo_name, payments } = await req.json()
 
     // ==================== ACTION: START ====================
     if (action === 'start') {
@@ -460,7 +460,8 @@ Deno.serve(async (req) => {
             status: 'pago',
             valor_total: totalFinal,
             gorjeta: gorjeta,
-            forma_pagamento: payment_method || 'CARTAO',
+            forma_pagamento: (Array.isArray(payments) && payments.length > 1) ? 'MULTIPLO' : (payment_method || 'CARTAO'),
+            payment_breakdown: Array.isArray(payments) && payments.length > 0 ? payments : null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', venda_id)
@@ -577,6 +578,7 @@ Deno.serve(async (req) => {
             transaction_id: transactionId,
             is_subscription_usage: isSubscriptionCredit, // Comissão REAL para barbeiro atendente
             subscription_credit_unit_value: subscriptionCreditUnitValue, // Valor unitário para cálculo
+            payments: Array.isArray(payments) && payments.length > 0 ? payments : undefined,
           },
         }
       )

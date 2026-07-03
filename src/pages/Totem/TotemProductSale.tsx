@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { resolveProductImageUrl } from '@/utils/productImages';
+import { cartRequiresBarber } from '@/lib/products/isCosmeticProduct';
 
 interface Product {
   id: string;
@@ -17,6 +18,8 @@ interface Product {
   categoria?: string | null;
   descricao?: string | null;
   ativo: boolean;
+  commission_percentage?: number | null;
+  commission_value?: number | null;
 }
 
 interface CartItem {
@@ -138,22 +141,36 @@ const TotemProductSale: React.FC = () => {
       return;
     }
 
-    console.log('🛒 Redirecionando para seleção de barbeiro com carrinho:', cart);
-    
-    // Redirecionar para seleção de barbeiro
-    navigate('/totem/product-barber-select', {
-      state: {
-        client,
-        cart: cart.map(item => ({
-          product: {
-            id: item.product_id,
-            nome: item.nome,
-            preco: item.preco
-          },
-          quantity: item.quantidade
-        }))
-      }
+    // Carrega dados completos dos produtos no carrinho (incluindo comissão)
+    const cartWithFullProducts = cart.map((item) => {
+      const full = products.find((p) => p.id === item.product_id);
+      return {
+        product: {
+          id: item.product_id,
+          nome: item.nome,
+          preco: item.preco,
+          estoque: full?.estoque || 0,
+          imagem_url: full?.imagem_url ?? null,
+          categoria: full?.categoria ?? null,
+          ativo: true,
+          commission_percentage: full?.commission_percentage ?? 0,
+          commission_value: full?.commission_value ?? 0,
+        },
+        quantity: item.quantidade,
+      };
     });
+
+    const needsBarber = cartRequiresBarber(cartWithFullProducts.map((c) => c.product));
+
+    if (needsBarber) {
+      // Cosmético: precisa vincular barbeiro (recebe comissão)
+      navigate('/totem/product-barber-select', { state: { client, cart: cartWithFullProducts } });
+    } else {
+      // Somente consumo: vai direto ao checkout sem barbeiro
+      navigate('/totem/product-checkout', {
+        state: { client, cart: cartWithFullProducts, barber: null },
+      });
+    }
   };
 
 

@@ -2,11 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles, Banknote } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles, Banknote, Layers, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
 import { resolveProductImageUrl } from '@/utils/productImages';
+import { cartRequiresBarber } from '@/lib/products/isCosmeticProduct';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface SubscriptionPlanState {
@@ -33,6 +34,14 @@ const TotemProductCheckout: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>(initialCart || []);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // O barbeiro só é obrigatório quando o carrinho contém pelo menos 1
+  // produto cosmético (com comissão configurada). Refrigerantes/cervejas
+  // não pagam comissão, portanto não exigem vínculo com barbeiro.
+  const requiresBarber = useMemo(
+    () => isSubscriptionPurchase || cartRequiresBarber(cart.map((c) => c.product)),
+    [cart, isSubscriptionPurchase]
+  );
+
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
@@ -44,7 +53,7 @@ const TotemProductCheckout: React.FC = () => {
       return;
     }
 
-    if (!barber) {
+    if (requiresBarber && !barber) {
       console.warn('⚠️ Barbeiro não selecionado, redirecionando...');
       toast.error('Selecione um barbeiro');
       navigate('/totem/product-barber-select', { state: { client, cart, subscriptionPlan } });
@@ -54,7 +63,7 @@ const TotemProductCheckout: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, barber, navigate, isSubscriptionPurchase]);
+  }, [client, barber, navigate, isSubscriptionPurchase, requiresBarber]);
 
   // Cálculo do total em tempo real
   const cartTotal = useMemo(() => {
@@ -111,7 +120,7 @@ const TotemProductCheckout: React.FC = () => {
     });
   };
 
-  const handlePayment = async (paymentMethod: 'pix' | 'card' | 'cash') => {
+  const handlePayment = async (paymentMethod: 'pix' | 'card' | 'cash' | 'multiple') => {
     if (!isSubscriptionPurchase && cart.length === 0) {
       toast.error('Carrinho vazio');
       return;
@@ -129,7 +138,7 @@ const TotemProductCheckout: React.FC = () => {
         .from('vendas')
         .insert({
           cliente_id: client.id,
-          barbeiro_id: barber.id,
+          barbeiro_id: barber?.id || null,
           valor_total: totalValue,
           desconto: 0,
           status: 'ABERTA',
@@ -184,6 +193,14 @@ const TotemProductCheckout: React.FC = () => {
         navigate('/totem/product-payment-pix', { state: navState });
       } else if (paymentMethod === 'cash') {
         navigate('/totem/product-payment-cash', { state: navState });
+      } else if (paymentMethod === 'multiple') {
+        navigate('/totem/payment-split', {
+          state: {
+            mode: 'product',
+            total: totalValue,
+            sale, client, cart, barber, subscriptionPlan,
+          },
+        });
       } else {
         navigate('/totem/product-payment-card', { state: navState });
       }
@@ -250,7 +267,7 @@ const TotemProductCheckout: React.FC = () => {
       {/* Content - Grid layout */}
       <div className="flex-1 overflow-hidden z-10 grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3">
         {/* Left Column - Barber Info */}
-        {barber && (
+        {barber && requiresBarber && (
           <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0 h-fit">
             <h2 className="text-sm sm:text-base md:text-lg font-bold text-urbana-light mb-2 flex items-center gap-2">
               <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
@@ -280,6 +297,20 @@ const TotemProductCheckout: React.FC = () => {
                     <p className="text-[10px] sm:text-xs text-urbana-light/70 truncate">{barber.especialidade}</p>
                   </div>
                 )}
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {!requiresBarber && !isSubscriptionPurchase && (
+          <Card className="p-3 sm:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0 h-fit">
+            <div className="flex items-start gap-2">
+              <Info className="w-5 h-5 text-urbana-gold flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-urbana-light">Produtos de consumo</p>
+                <p className="text-xs text-urbana-light/70 leading-tight mt-1">
+                  Estes produtos não geram comissão, então não é necessário selecionar um barbeiro.
+                </p>
               </div>
             </div>
           </Card>
@@ -477,6 +508,19 @@ const TotemProductCheckout: React.FC = () => {
               </div>
             </button>
           </div>
+
+          {/* Pagamento Múltiplo */}
+          <button
+            onClick={() => handlePayment('multiple')}
+            disabled={isProcessing || (!isSubscriptionPurchase && cart.length === 0)}
+            className="mt-2 sm:mt-3 w-full h-16 sm:h-20 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-pink-600 active:from-purple-700 active:via-fuchsia-700 active:to-pink-700 border-2 border-purple-400/50 rounded-xl text-white font-black text-sm sm:text-base flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg shadow-purple-500/30"
+          >
+            <Layers className="w-5 h-5 sm:w-6 sm:h-6" />
+            <div className="flex flex-col items-start leading-tight">
+              <span>Pagamento Múltiplo</span>
+              <span className="text-[10px] font-medium text-purple-100/90">Combine dinheiro + cartão + PIX</span>
+            </div>
+          </button>
 
           {isProcessing && (
             <div className="mt-3 flex items-center justify-center gap-2 text-urbana-gold">

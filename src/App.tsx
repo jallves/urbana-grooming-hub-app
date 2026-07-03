@@ -89,6 +89,7 @@ import TotemError from './pages/Totem/TotemError';
 import TotemCoffee from './pages/Totem/TotemCoffee';
 import TotemPendingCheckouts from './pages/Totem/TotemPendingCheckouts';
 import TotemUpsell from './pages/Totem/TotemUpsell';
+import TotemSplitPayment from './pages/Totem/TotemSplitPayment';
 import AdminProductsManagement from './pages/AdminProductsManagement';
 import AdminSubscriptions from './pages/AdminSubscriptions';
 import AdminRelatorios from './pages/AdminRelatorios';
@@ -480,6 +481,11 @@ function App() {
                   <Route path="/totem/payment-cash" element={
                     <AdminRedirectGuard>
                       <TotemProtectedRoute><TotemPaymentCash /></TotemProtectedRoute>
+                    </AdminRedirectGuard>
+                  } />
+                  <Route path="/totem/payment-split" element={
+                    <AdminRedirectGuard>
+                      <TotemProtectedRoute><TotemSplitPayment /></TotemProtectedRoute>
                     </AdminRedirectGuard>
                   } />
                   <Route path="/totem/payment-success" element={
