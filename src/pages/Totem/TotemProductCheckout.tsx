@@ -2,11 +2,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles, Banknote } from 'lucide-react';
+import { ArrowLeft, CreditCard, DollarSign, Package, Loader2, User, Award, Plus, Minus, ShoppingBag, Trash2, Crown, Sparkles, Banknote, Layers, Info } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { CartItem } from '@/types/product';
 import { resolveProductImageUrl } from '@/utils/productImages';
+import { cartRequiresBarber } from '@/lib/products/isCosmeticProduct';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
 interface SubscriptionPlanState {
@@ -33,6 +34,14 @@ const TotemProductCheckout: React.FC = () => {
   const [cart, setCart] = useState<CartItem[]>(initialCart || []);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // O barbeiro só é obrigatório quando o carrinho contém pelo menos 1
+  // produto cosmético (com comissão configurada). Refrigerantes/cervejas
+  // não pagam comissão, portanto não exigem vínculo com barbeiro.
+  const requiresBarber = useMemo(
+    () => isSubscriptionPurchase || cartRequiresBarber(cart.map((c) => c.product)),
+    [cart, isSubscriptionPurchase]
+  );
+
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
     
@@ -44,7 +53,7 @@ const TotemProductCheckout: React.FC = () => {
       return;
     }
 
-    if (!barber) {
+    if (requiresBarber && !barber) {
       console.warn('⚠️ Barbeiro não selecionado, redirecionando...');
       toast.error('Selecione um barbeiro');
       navigate('/totem/product-barber-select', { state: { client, cart, subscriptionPlan } });
@@ -54,7 +63,7 @@ const TotemProductCheckout: React.FC = () => {
     return () => {
       document.documentElement.classList.remove('totem-mode');
     };
-  }, [client, barber, navigate, isSubscriptionPurchase]);
+  }, [client, barber, navigate, isSubscriptionPurchase, requiresBarber]);
 
   // Cálculo do total em tempo real
   const cartTotal = useMemo(() => {
