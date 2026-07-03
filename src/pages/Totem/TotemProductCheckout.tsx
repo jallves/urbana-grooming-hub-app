@@ -302,6 +302,20 @@ const TotemProductCheckout: React.FC = () => {
           </Card>
         )}
 
+        {!requiresBarber && !isSubscriptionPurchase && (
+          <Card className="p-3 sm:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex-shrink-0 h-fit">
+            <div className="flex items-start gap-2">
+              <Info className="w-5 h-5 text-urbana-gold flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-bold text-urbana-light">Produtos de consumo</p>
+                <p className="text-xs text-urbana-light/70 leading-tight mt-1">
+                  Estes produtos não geram comissão, então não é necessário selecionar um barbeiro.
+                </p>
+              </div>
+            </div>
+          </Card>
+        )}
+
         {/* Center Column - Order Summary */}
         <Card className="p-2 sm:p-3 md:p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
           {isSubscriptionPurchase ? (
