@@ -13,6 +13,7 @@
 export interface CommissionableProduct {
   commission_percentage?: number | null;
   commission_value?: number | null;
+  [key: string]: any;
 }
 
 export function isCosmeticProduct(product: CommissionableProduct | null | undefined): boolean {
@@ -23,7 +24,7 @@ export function isCosmeticProduct(product: CommissionableProduct | null | undefi
 }
 
 export function cartRequiresBarber(
-  items: Array<{ product?: CommissionableProduct | null } | CommissionableProduct>
+  items: Array<any>
 ): boolean {
   return items.some((item: any) => {
     const product = 'product' in item ? item.product : item;
