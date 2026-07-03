@@ -460,7 +460,8 @@ Deno.serve(async (req) => {
             status: 'pago',
             valor_total: totalFinal,
             gorjeta: gorjeta,
-            forma_pagamento: payment_method || 'CARTAO',
+            forma_pagamento: (Array.isArray(payments) && payments.length > 1) ? 'MULTIPLO' : (payment_method || 'CARTAO'),
+            payment_breakdown: Array.isArray(payments) && payments.length > 0 ? payments : null,
             updated_at: new Date().toISOString(),
           })
           .eq('id', venda_id)
