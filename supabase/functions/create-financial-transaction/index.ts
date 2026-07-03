@@ -45,6 +45,17 @@ type RequestBody = {
   is_subscription_usage?: boolean // Flag: uso de crédito de assinatura (comissão REAL para barbeiro atendente)
   is_subscription_sale?: boolean // Flag: venda de combo/assinatura (comissão ZERO para barbeiro vendedor)
   subscription_credit_unit_value?: number // Valor unitário do crédito (plan_price / credits_total)
+  /**
+   * Pagamento múltiplo: parcelas com forma+valor. Quando presente e com
+   * length > 1, a RECEITA (revenue) é dividida em N lançamentos (um por
+   * forma de pagamento), preservando o total. Comissão do barbeiro
+   * continua calculada sobre o valor total (não é afetada pelo split).
+   */
+  payments?: Array<{
+    method: string
+    amount: number
+    transaction_id?: string | null
+  }>
 }
 
 function normalizePaymentMethod(raw: string | null | undefined) {
@@ -59,6 +70,8 @@ function normalizePaymentMethod(raw: string | null | undefined) {
     debit_card: 'debit_card',
     subscription_credit: 'subscription_credit',
     ASSINATURA: 'subscription_credit',
+    multiple: 'multiple',
+    MULTIPLO: 'multiple',
   }
   return map[raw] || raw
 }
