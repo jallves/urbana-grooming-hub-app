@@ -546,15 +546,10 @@ Deno.serve(async (req) => {
   try {
     const body = (await req.json()) as RequestBody
 
-    const payment_method = normalizePaymentMethod(body.payment_method)
-    const tip_amount = Number(body.tip_amount || 0)
-
-    // ============= NORMALIZAÇÃO DO SPLIT (payments[]) =============
-    // - Se vier `payments[]` com mais de 1 forma, dividimos a receita em N
-    //   lançamentos (um por forma), rateando proporcionalmente a soma
-    //   `sum(items[].price * quantity - discount)` (excluindo gorjeta).
-    // - Se vier apenas 1 forma no `payments[]`, usamos como `payment_method`.
-    // - Se `payments[]` não vier, comportamento antigo (1 método).
+    // Normalização do SPLIT (payments[]):
+    // - Se vier `payments[]` com mais de 1 forma → hasSplit=true e cada item
+    //   de receita gera N lançamentos (um por forma), com amount rateado.
+    // - Se vier 1 só, comporta-se como single method.
     const rawPayments = Array.isArray(body.payments)
       ? body.payments.filter((p) => p && Number(p.amount) > 0).map((p) => ({
           method: normalizePaymentMethod(p.method) || 'cash',
@@ -564,9 +559,11 @@ Deno.serve(async (req) => {
       : []
     const hasSplit = rawPayments.length > 1
     if (rawPayments.length === 1 && !body.payment_method) {
-      // fallback: um único item no split vira o payment_method
-      ;(body as any).payment_method = rawPayments[0].method
+      body.payment_method = rawPayments[0].method
     }
+
+    const payment_method = normalizePaymentMethod(body.payment_method)
+    const tip_amount = Number(body.tip_amount || 0)
 
     if (!body.items || body.items.length === 0) {
       throw new Error('Nenhum item fornecido para a transação')
