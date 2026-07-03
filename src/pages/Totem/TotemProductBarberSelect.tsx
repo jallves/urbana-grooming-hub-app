@@ -6,6 +6,7 @@ import { ArrowLeft, User, Star, Award } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { cartRequiresBarber } from '@/lib/products/isCosmeticProduct';
 
 interface Barber {
   id: string;
@@ -33,6 +34,16 @@ const TotemProductBarberSelect: React.FC = () => {
       toast.error('Dados incompletos');
       navigate('/totem/products', { state: { client } });
       return;
+    }
+
+    // Se o carrinho é 100% consumo (sem cosmético que gere comissão), pula
+    // esta tela: barbeiro não é necessário.
+    if (!subscriptionPlan && cart && cart.length > 0) {
+      const needs = cartRequiresBarber(cart.map((c: any) => c.product));
+      if (!needs) {
+        navigate('/totem/product-checkout', { state: { client, cart, barber: null } });
+        return;
+      }
     }
 
     loadBarbers();
