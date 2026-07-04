@@ -285,6 +285,22 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
               <Scissors className="h-4 w-4 text-blue-600" />
               <Label className="text-sm font-semibold">Serviços Extras</Label>
             </div>
+            {appointmentExtras.length > 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-amber-800">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Já incluídos neste agendamento:
+                </div>
+                <ul className="ml-5 list-disc text-amber-900">
+                  {appointmentExtras.map((e, idx) => (
+                    <li key={`${e.id}-${idx}`}>{e.nome} — R$ {e.preco.toFixed(2)}</li>
+                  ))}
+                </ul>
+                <p className="text-amber-800 mt-1">
+                  Só adicione o mesmo serviço se for uma unidade extra (ex.: acompanhante).
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
               <Select value={serviceToAdd} onValueChange={setServiceToAdd}>
                 <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um serviço para adicionar" /></SelectTrigger>
