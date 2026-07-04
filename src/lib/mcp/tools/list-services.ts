@@ -17,8 +17,8 @@ export default defineTool({
     const { data, error } = await supabase
       .from("services")
       .select("id, name, description, duration, price, category")
-      .eq("active", true)
-      .order("name");
+      .eq("is_active", true)
+      .order("display_order", { ascending: true });
     if (error) {
       return { content: [{ type: "text", text: error.message }], isError: true };
     }
