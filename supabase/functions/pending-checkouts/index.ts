@@ -210,6 +210,13 @@ Deno.serve(async (req) => {
       const addedServicesData: { id: string; nome: string; preco: number; quantidade: number }[] = []
       for (const s of addedServices) {
         if (!s?.id) continue
+        // ⚠️ Proteção anti-duplicação: se este serviço JÁ está no agendamento
+        // como extra (servicos_extras), ignore — evita cobrar 2× o mesmo extra
+        // caso a recepção reenvie do modal os extras que já vieram do agendamento.
+        if (extraItems.some(e => e.id === s.id)) {
+          console.log('⏭️ Ignorando extra duplicado (já presente em servicos_extras):', s.id)
+          continue
+        }
         const qty = Math.max(1, Number(s.quantidade) || 1)
         const { data: svc } = await supabase
           .from('painel_servicos')
