@@ -39,6 +39,24 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
       if (error) throw error;
 
       if (data.user) {
+        // BLOQUEIO: Barbeiro inativo não pode acessar
+        const { data: barberRow } = await supabase
+          .from('painel_barbeiros')
+          .select('is_active')
+          .eq('email', data.user.email!)
+          .maybeSingle();
+
+        if (barberRow && barberRow.is_active === false) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Usuário inativo",
+            description: "Seu acesso foi desativado. Contate o administrador.",
+            variant: "destructive",
+          });
+          effectiveSetLoading(false);
+          return;
+        }
+
         // INTEGRAÇÃO: Registrar log de login
         await logAdminActivity({
           action: 'login',
