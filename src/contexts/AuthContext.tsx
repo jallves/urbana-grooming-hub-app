@@ -172,6 +172,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               try {
                 console.log('[AuthContext] 🔍 Buscando role para:', currentSession.user.id);
                 const role = await checkUserRoles(currentSession.user);
+
+                // BLOQUEIO: Verificar se o usuário está ativo (barbeiro/admin)
+                if (role === 'barber' || role === 'admin' || role === 'master' || role === 'manager') {
+                  const email = currentSession.user.email;
+                  if (email) {
+                    const [{ data: barberRow }, { data: adminRow }] = await Promise.all([
+                      supabase.from('painel_barbeiros').select('is_active').eq('email', email).maybeSingle(),
+                      supabase.from('admin_users').select('is_active').eq('email', email).maybeSingle(),
+                    ]);
+                    const barberInactive = barberRow && barberRow.is_active === false;
+                    const adminInactive = adminRow && adminRow.is_active === false;
+                    const hasAnyActive =
+                      (barberRow && barberRow.is_active === true) ||
+                      (adminRow && adminRow.is_active === true);
+                    if ((barberInactive || adminInactive) && !hasAnyActive) {
+                      console.warn('[AuthContext] ⛔ Usuário inativo - forçando logout');
+                      await supabase.auth.signOut();
+                      if (mounted) {
+                        applyRole(null);
+                        setUser(null);
+                        setLoading(false);
+                      }
+                      return;
+                    }
+                  }
+                }
+
                 console.log('[AuthContext] ✅ Role encontrada:', role);
                 if (mounted) {
                   applyRole(role);

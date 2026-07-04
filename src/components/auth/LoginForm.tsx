@@ -99,6 +99,30 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       if (error) throw error;
 
       if (data.user) {
+        // BLOQUEIO: Usuário inativo (barbeiro ou admin) não pode acessar
+        const [{ data: barberRow }, { data: adminRow }] = await Promise.all([
+          supabase.from('painel_barbeiros').select('is_active').eq('email', data.user.email!).maybeSingle(),
+          supabase.from('admin_users').select('is_active').eq('email', data.user.email!).maybeSingle(),
+        ]);
+
+        const barberInactive = barberRow && barberRow.is_active === false;
+        const adminInactive = adminRow && adminRow.is_active === false;
+        // Se está inativo em todos os perfis conhecidos, bloqueia
+        const hasAnyActive =
+          (barberRow && barberRow.is_active === true) ||
+          (adminRow && adminRow.is_active === true);
+
+        if ((barberInactive || adminInactive) && !hasAnyActive) {
+          await supabase.auth.signOut();
+          toast({
+            title: "Usuário inativo",
+            description: "Seu acesso foi desativado. Contate o administrador.",
+            variant: "destructive",
+          });
+          setLoading(false);
+          return;
+        }
+
         console.log('✅ [LoginForm] Login bem-sucedido!');
         // Limpar tentativas em caso de sucesso (específico do usuário)
         setLoginAttempts(0);
