@@ -14,7 +14,8 @@ import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { CheckCircle, Gift, Edit3, DollarSign, Users, Plus, Minus, Trash2, Package, Scissors } from 'lucide-react';
+import { CheckCircle, Gift, Edit3, DollarSign, Users, Plus, Minus, Trash2, Package, Scissors, AlertTriangle } from 'lucide-react';
+import { toast } from 'sonner';
 
 interface CheckoutData {
   appointmentId: string;
@@ -72,6 +73,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
   const [addedProducts, setAddedProducts] = useState<AddedItem[]>([]);
   const [serviceToAdd, setServiceToAdd] = useState<string>('');
   const [productToAdd, setProductToAdd] = useState<string>('');
+  const [appointmentExtras, setAppointmentExtras] = useState<Array<{ id: string; nome: string; preco: number }>>([]);
 
   // Reset state when modal opens with new data
   useEffect(() => {
@@ -84,6 +86,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
       setAddedProducts([]);
       setServiceToAdd('');
       setProductToAdd('');
+      setAppointmentExtras([]);
       // Load catalogs
       (async () => {
         const [{ data: svc }, { data: prd }] = await Promise.all([
@@ -93,12 +96,34 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
         setServices((svc || []) as CatalogService[]);
         setProducts((prd || []) as CatalogProduct[]);
       })();
+      // Load appointment's existing extras (from booking)
+      if (data?.appointmentId) {
+        (async () => {
+          const { data: apt } = await supabase
+            .from('painel_agendamentos')
+            .select('servicos_extras')
+            .eq('id', data.appointmentId)
+            .maybeSingle();
+          const raw = (apt?.servicos_extras as any[]) || [];
+          const mapped = Array.isArray(raw)
+            ? raw.map((e: any) => ({ id: e.id, nome: e.nome, preco: Number(e.preco) || 0 }))
+            : [];
+          setAppointmentExtras(mapped);
+        })();
+      }
     }
-  }, [open]);
+  }, [open, data?.appointmentId]);
 
   const addService = () => {
     const s = services.find(x => x.id === serviceToAdd);
     if (!s) return;
+    // Aviso: serviço já incluído no agendamento (pode ser intencional, ex.: 2° pezinho para acompanhante)
+    if (appointmentExtras.some(e => e.id === s.id)) {
+      toast.warning(`"${s.nome}" já está incluído neste agendamento`, {
+        description: 'Confirme se deseja realmente cobrar uma unidade a mais (ex.: acompanhante).',
+        duration: 6000,
+      });
+    }
     setAddedServices(prev => {
       const existing = prev.find(p => p.id === s.id);
       if (existing) return prev.map(p => p.id === s.id ? { ...p, qty: p.qty + 1 } : p);
@@ -260,6 +285,22 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
               <Scissors className="h-4 w-4 text-blue-600" />
               <Label className="text-sm font-semibold">Serviços Extras</Label>
             </div>
+            {appointmentExtras.length > 0 && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 p-2.5 text-xs space-y-1">
+                <div className="flex items-center gap-1.5 font-semibold text-amber-800">
+                  <AlertTriangle className="h-3.5 w-3.5" />
+                  Já incluídos neste agendamento:
+                </div>
+                <ul className="ml-5 list-disc text-amber-900">
+                  {appointmentExtras.map((e, idx) => (
+                    <li key={`${e.id}-${idx}`}>{e.nome} — R$ {e.preco.toFixed(2)}</li>
+                  ))}
+                </ul>
+                <p className="text-amber-800 mt-1">
+                  Só adicione o mesmo serviço se for uma unidade extra (ex.: acompanhante).
+                </p>
+              </div>
+            )}
             <div className="flex gap-2">
               <Select value={serviceToAdd} onValueChange={setServiceToAdd}>
                 <SelectTrigger className="flex-1"><SelectValue placeholder="Selecione um serviço para adicionar" /></SelectTrigger>
