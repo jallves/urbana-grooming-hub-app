@@ -57,7 +57,7 @@ const BirthdayList: React.FC<BirthdayListProps> = ({ clients, isLoading, filter,
     }
     
     const message = encodeURIComponent(
-      `Olá ${client.name}! 🎉 Feliz aniversário da equipe Urbana Barbearia! 🎂✨ Desejamos um dia repleto de alegria e realizações!`
+      `Olá ${client.name}! A equipe da Barbearia Costa Urbana deseja a você um novo ciclo de muito sucesso, saúde e felicidade ✨🎉🎈🎂`
     );
     const whatsappUrl = `https://wa.me/${cleanPhoneNumber}?text=${message}`;
     window.open(whatsappUrl, '_blank');
