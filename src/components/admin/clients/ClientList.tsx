@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import ClientCard from './components/ClientCard';
 import ClientTable from './components/ClientTable';
 import ExportButton from './components/ExportButton';
@@ -10,10 +10,14 @@ import { useClientDelete } from './hooks/useClientDelete';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, X, MessageCircle } from 'lucide-react';
+import { Search, X, MessageCircle, Save, Trash2, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import ConfirmActionDialog from '@/components/admin/shared/ConfirmActionDialog';
+
+const WHATSAPP_MESSAGE_STORAGE_KEY = 'admin:clients:whatsappCustomMessage';
 
 interface PainelClient {
   id: string;
@@ -49,6 +53,43 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [whatsappMessage, setWhatsappMessage] = useState('');
+  const [savedMessage, setSavedMessage] = useState('');
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem(WHATSAPP_MESSAGE_STORAGE_KEY) ?? '';
+      setSavedMessage(stored);
+      setWhatsappMessage(stored);
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  const isDirty = whatsappMessage !== savedMessage;
+
+  const handleSaveMessage = () => {
+    try {
+      localStorage.setItem(WHATSAPP_MESSAGE_STORAGE_KEY, whatsappMessage);
+      setSavedMessage(whatsappMessage);
+      toast.success('Mensagem salva com sucesso');
+    } catch {
+      toast.error('Não foi possível salvar a mensagem');
+    }
+  };
+
+  const handleDeleteMessage = () => {
+    try {
+      localStorage.removeItem(WHATSAPP_MESSAGE_STORAGE_KEY);
+      setSavedMessage('');
+      setWhatsappMessage('');
+      toast.success('Mensagem excluída');
+    } catch {
+      toast.error('Não foi possível excluir a mensagem');
+    } finally {
+      setConfirmDeleteOpen(false);
+    }
+  };
 
   const {
     deleteDialogOpen,
@@ -115,20 +156,55 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
             rows={4}
             className="resize-none text-sm"
           />
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <span>{whatsappMessage.length}/500 caracteres</span>
-            {whatsappMessage && (
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-xs">
+            <span className="text-muted-foreground">
+              {whatsappMessage.length}/500 caracteres
+              {savedMessage && !isDirty && (
+                <span className="ml-2 inline-flex items-center gap-1 text-green-600">
+                  <Check className="h-3 w-3" /> Salva
+                </span>
+              )}
+              {isDirty && (
+                <span className="ml-2 text-amber-600">Alterações não salvas</span>
+              )}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {whatsappMessage && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 gap-1"
+                  onClick={() => setWhatsappMessage(savedMessage)}
+                  disabled={!isDirty}
+                >
+                  <X className="h-3 w-3" />
+                  Descartar
+                </Button>
+              )}
+              {savedMessage && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-8 gap-1 text-destructive hover:text-destructive"
+                  onClick={() => setConfirmDeleteOpen(true)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                  Excluir
+                </Button>
+              )}
               <Button
                 type="button"
-                variant="ghost"
                 size="sm"
-                className="h-7 gap-1"
-                onClick={() => setWhatsappMessage('')}
+                className="h-8 gap-1 bg-green-600 hover:bg-green-700 text-white"
+                onClick={handleSaveMessage}
+                disabled={!isDirty}
               >
-                <X className="h-3 w-3" />
-                Limpar
+                <Save className="h-3 w-3" />
+                Salvar
               </Button>
-            )}
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -206,7 +282,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
                 client={client}
                 onEdit={onEdit}
                 onDelete={confirmDelete}
-                customWhatsappMessage={whatsappMessage}
+                customWhatsappMessage={savedMessage}
               />
             ))}
           </div>
@@ -216,7 +292,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
             onEdit={onEdit}
             onDelete={confirmDelete}
             compact={isTablet}
-            customWhatsappMessage={whatsappMessage}
+            customWhatsappMessage={savedMessage}
           />
         )}
       </CardContent>
@@ -227,6 +303,15 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
         client={clientToDelete}
         onConfirm={handleDelete}
         isDeleting={isDeleting}
+      />
+
+      <ConfirmActionDialog
+        open={confirmDeleteOpen}
+        onOpenChange={setConfirmDeleteOpen}
+        onConfirm={handleDeleteMessage}
+        type="delete"
+        title="Excluir mensagem salva?"
+        description="A mensagem personalizada do WhatsApp será removida. Os botões voltarão a usar a mensagem padrão de reengajamento."
       />
     </Card>
     </div>
