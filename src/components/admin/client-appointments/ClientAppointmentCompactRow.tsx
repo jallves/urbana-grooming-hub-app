@@ -6,6 +6,7 @@ import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
 import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { Ticket } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -292,9 +293,31 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
           <div className="text-sm font-medium text-gray-900">
             {appointment.painel_servicos?.nome || 'N/A'}
           </div>
-          <div className="text-xs font-semibold text-green-600">
-            R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-          </div>
+          {(() => {
+            const base = Number(appointment.painel_servicos?.preco || 0);
+            const discount = Number((appointment as any).desconto_valor || 0);
+            const cupom = (appointment as any).cupom_codigo as string | null;
+            const final = Math.max(base - discount, 0);
+            if (cupom && discount > 0) {
+              return (
+                <>
+                  <div className="text-xs font-semibold text-green-600 flex items-center gap-1.5">
+                    <span>R$ {final.toFixed(2)}</span>
+                    <span className="text-[10px] text-gray-400 line-through">R$ {base.toFixed(2)}</span>
+                  </div>
+                  <div className="inline-flex items-center gap-1 text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5 w-fit">
+                    <Ticket className="w-3 h-3" />
+                    {cupom} · -R$ {discount.toFixed(2)}
+                  </div>
+                </>
+              );
+            }
+            return (
+              <div className="text-xs font-semibold text-green-600">
+                R$ {base.toFixed(2)}
+              </div>
+            );
+          })()}
           <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" compact />
         </div>
       </TableCell>

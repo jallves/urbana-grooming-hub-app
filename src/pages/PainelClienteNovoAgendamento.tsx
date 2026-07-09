@@ -18,6 +18,7 @@ import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmai
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
 import { ShoppingBag, Sparkles } from 'lucide-react';
+import CouponInput, { AppliedCoupon } from '@/components/painel-cliente/CouponInput';
 import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
@@ -69,6 +70,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+
+  // Cupom de desconto
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   
   // Cross-sell popup
   const [showCrossSell, setShowCrossSell] = useState(false);
@@ -561,6 +565,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const allExtras = [...extrasFromServices, ...extrasFromProducts];
       const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
 
+      const mainPrice = Number(selectedService.preco || 0);
+
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
         .insert({
@@ -570,7 +576,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           data: dataLocal,
           hora: selectedTime,
           status: 'agendado',
-          servicos_extras: servicosExtrasPayload
+          servicos_extras: servicosExtrasPayload,
+          cupom_id: appliedCoupon?.coupon_id ?? null,
+          cupom_codigo: appliedCoupon?.code ?? null,
+          desconto_valor: appliedCoupon?.discount_amount ?? 0,
+          valor_original: mainPrice,
+          valor_final: appliedCoupon ? Math.max(mainPrice - appliedCoupon.discount_amount, 0) : mainPrice,
         })
         .select()
         .single();
@@ -1030,18 +1041,26 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         )}
 
                         {/* Total */}
-                        {(extraServices.length > 0 || selectedProducts.length > 0) && (
+                        {(extraServices.length > 0 || selectedProducts.length > 0 || appliedCoupon) && (
                           <div className="flex justify-between items-center bg-urbana-gold/10 p-3 rounded-lg border border-urbana-gold/30">
                             <span className="text-sm font-semibold text-white">Total Estimado</span>
                             <span className="text-xl font-bold text-urbana-gold">
                               R$ {(
-                                (selectedService?.preco || 0) +
+                                Math.max((selectedService?.preco || 0) - (appliedCoupon?.discount_amount || 0), 0) +
                                 extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) +
                                 selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
                               ).toFixed(2)}
                             </span>
                           </div>
                         )}
+
+                        {/* Cupom de desconto */}
+                        <CouponInput
+                          servicePrice={selectedService?.preco || 0}
+                          applied={appliedCoupon}
+                          onApplied={setAppliedCoupon}
+                          onRemoved={() => setAppliedCoupon(null)}
+                        />
 
                         {/* Add Extras Button */}
                         <Button
@@ -1108,6 +1127,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             setSelectedTime(null);
             setExtraServices([]);
             setSelectedProducts([]);
+            setAppliedCoupon(null);
           }}
           appointmentDetails={{
             serviceName: selectedService.nome,

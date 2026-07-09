@@ -1425,7 +1425,10 @@ export type Database = {
           barbeiro_id: string | null
           cliente_id: string | null
           created_at: string | null
+          cupom_codigo: string | null
+          cupom_id: string | null
           data: string
+          desconto_valor: number
           hora: string
           id: string
           is_encaixe: boolean
@@ -1438,13 +1441,18 @@ export type Database = {
           status: string | null
           status_totem: string | null
           updated_at: string | null
+          valor_final: number | null
+          valor_original: number | null
           venda_id: string | null
         }
         Insert: {
           barbeiro_id?: string | null
           cliente_id?: string | null
           created_at?: string | null
+          cupom_codigo?: string | null
+          cupom_id?: string | null
           data: string
+          desconto_valor?: number
           hora: string
           id?: string
           is_encaixe?: boolean
@@ -1457,13 +1465,18 @@ export type Database = {
           status?: string | null
           status_totem?: string | null
           updated_at?: string | null
+          valor_final?: number | null
+          valor_original?: number | null
           venda_id?: string | null
         }
         Update: {
           barbeiro_id?: string | null
           cliente_id?: string | null
           created_at?: string | null
+          cupom_codigo?: string | null
+          cupom_id?: string | null
           data?: string
+          desconto_valor?: number
           hora?: string
           id?: string
           is_encaixe?: boolean
@@ -1476,6 +1489,8 @@ export type Database = {
           status?: string | null
           status_totem?: string | null
           updated_at?: string | null
+          valor_final?: number | null
+          valor_original?: number | null
           venda_id?: string | null
         }
         Relationships: [
@@ -1491,6 +1506,13 @@ export type Database = {
             columns: ["cliente_id"]
             isOneToOne: false
             referencedRelation: "painel_clientes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "painel_agendamentos_cupom_id_fkey"
+            columns: ["cupom_id"]
+            isOneToOne: false
+            referencedRelation: "discount_coupons"
             referencedColumns: ["id"]
           },
           {
@@ -2536,6 +2558,10 @@ export type Database = {
       update_staff_module_access: {
         Args: { module_ids_param: string[]; staff_id_param: string }
         Returns: undefined
+      }
+      validate_coupon: {
+        Args: { p_code: string; p_service_price: number }
+        Returns: Json
       }
     }
     Enums: {
