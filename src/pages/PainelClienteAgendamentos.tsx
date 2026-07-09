@@ -259,14 +259,34 @@ export default function PainelClienteAgendamentos() {
                       );
                     })()}
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-                      <span className="text-urbana-gold font-semibold text-lg">
-                        R$ {(
-                          Number(agendamento.painel_servicos.preco || 0) +
-                          (Array.isArray(agendamento.servicos_extras)
+                      <div className="flex flex-col">
+                        {(() => {
+                          const basePrice = Number(agendamento.painel_servicos.preco || 0);
+                          const extrasSum = Array.isArray(agendamento.servicos_extras)
                             ? agendamento.servicos_extras.reduce((s, e: any) => s + (Number(e?.preco) || 0), 0)
-                            : 0)
-                        ).toFixed(2)}
-                      </span>
+                            : 0;
+                          const discount = Number(agendamento.desconto_valor || 0);
+                          const total = Math.max(basePrice - discount, 0) + extrasSum;
+                          return (
+                            <>
+                              {agendamento.cupom_codigo && discount > 0 && (
+                                <span className="text-xs text-white/60 line-through">
+                                  R$ {(basePrice + extrasSum).toFixed(2)}
+                                </span>
+                              )}
+                              <span className="text-urbana-gold font-semibold text-lg">
+                                R$ {total.toFixed(2)}
+                              </span>
+                              {agendamento.cupom_codigo && discount > 0 && (
+                                <span className="inline-flex items-center gap-1 text-[11px] text-green-400 mt-0.5">
+                                  <Ticket className="w-3 h-3" />
+                                  Cupom {agendamento.cupom_codigo} (- R$ {discount.toFixed(2)})
+                                </span>
+                              )}
+                            </>
+                          );
+                        })()}
+                      </div>
                       <div className="flex flex-wrap items-center gap-2">
                         {canEdit(agendamento) && (
                           <button
