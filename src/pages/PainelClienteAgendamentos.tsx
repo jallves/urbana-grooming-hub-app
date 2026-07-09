@@ -14,6 +14,7 @@ import {
   Filter,
   Plus,
   Pencil,
+  Ticket,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -32,6 +33,9 @@ interface PainelAgendamento {
   barbeiro_id: string | null;
   notas: string | null;
   servicos_extras: Array<{ id?: string; nome: string; preco: number; duracao?: number }> | null;
+  cupom_codigo?: string | null;
+  desconto_valor?: number | null;
+  valor_final?: number | null;
   painel_barbeiros: {
     nome: string;
   };
@@ -71,7 +75,7 @@ export default function PainelClienteAgendamentos() {
     const { data, error } = await supabase
       .from('painel_agendamentos')
       .select(
-        `id, data, hora, status, servico_id, barbeiro_id, notas, servicos_extras, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`
+        `id, data, hora, status, servico_id, barbeiro_id, notas, servicos_extras, cupom_codigo, desconto_valor, valor_final, painel_barbeiros!inner(nome), painel_servicos!inner(nome, preco)`
       )
       .eq('cliente_id', cliente.id)
       .order('data', { ascending: false })
