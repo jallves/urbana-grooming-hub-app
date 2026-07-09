@@ -18,6 +18,7 @@ import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmai
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
 import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
 import { ShoppingBag, Sparkles } from 'lucide-react';
+import CouponInput, { AppliedCoupon } from '@/components/painel-cliente/CouponInput';
 import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
@@ -69,6 +70,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [extraServices, setExtraServices] = useState<ClientExtraService[]>([]);
   const [selectedProducts, setSelectedProducts] = useState<ClientProductCartItem[]>([]);
   const [showExtrasModal, setShowExtrasModal] = useState(false);
+
+  // Cupom de desconto
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(null);
   
   // Cross-sell popup
   const [showCrossSell, setShowCrossSell] = useState(false);
@@ -561,6 +565,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const allExtras = [...extrasFromServices, ...extrasFromProducts];
       const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
 
+      const mainPrice = Number(selectedService.preco || 0);
+
       const { data: appointmentData, error: insertError } = await supabase
         .from('painel_agendamentos')
         .insert({
@@ -570,7 +576,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           data: dataLocal,
           hora: selectedTime,
           status: 'agendado',
-          servicos_extras: servicosExtrasPayload
+          servicos_extras: servicosExtrasPayload,
+          cupom_id: appliedCoupon?.coupon_id ?? null,
+          cupom_codigo: appliedCoupon?.code ?? null,
+          desconto_valor: appliedCoupon?.discount_amount ?? 0,
+          valor_original: mainPrice,
+          valor_final: appliedCoupon ? Math.max(mainPrice - appliedCoupon.discount_amount, 0) : mainPrice,
         })
         .select()
         .single();
