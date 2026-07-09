@@ -1041,18 +1041,26 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         )}
 
                         {/* Total */}
-                        {(extraServices.length > 0 || selectedProducts.length > 0) && (
+                        {(extraServices.length > 0 || selectedProducts.length > 0 || appliedCoupon) && (
                           <div className="flex justify-between items-center bg-urbana-gold/10 p-3 rounded-lg border border-urbana-gold/30">
                             <span className="text-sm font-semibold text-white">Total Estimado</span>
                             <span className="text-xl font-bold text-urbana-gold">
                               R$ {(
-                                (selectedService?.preco || 0) +
+                                Math.max((selectedService?.preco || 0) - (appliedCoupon?.discount_amount || 0), 0) +
                                 extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) +
                                 selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
                               ).toFixed(2)}
                             </span>
                           </div>
                         )}
+
+                        {/* Cupom de desconto */}
+                        <CouponInput
+                          servicePrice={selectedService?.preco || 0}
+                          applied={appliedCoupon}
+                          onApplied={setAppliedCoupon}
+                          onRemoved={() => setAppliedCoupon(null)}
+                        />
 
                         {/* Add Extras Button */}
                         <Button
