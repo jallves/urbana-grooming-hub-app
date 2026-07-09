@@ -23,9 +23,10 @@ interface ClientCardProps {
   client: PainelClient;
   onEdit: (id: string) => void;
   onDelete: (client: PainelClient) => void;
+  customWhatsappMessage?: string;
 }
 
-const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => {
+const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete, customWhatsappMessage }) => {
   const formatDate = (dateString: string | null, isDateOnly = false) => {
     if (!dateString) return '-';
     try {
@@ -44,7 +45,7 @@ const ClientCard: React.FC<ClientCardProps> = ({ client, onEdit, onDelete }) => 
 
   const handleOpenWhatsapp = (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = buildClientReengagementWhatsappUrl(client.whatsapp, client.nome);
+    const url = buildClientReengagementWhatsappUrl(client.whatsapp, client.nome, customWhatsappMessage);
     if (!url) {
       toast.error('Cliente sem WhatsApp cadastrado');
       return;

@@ -5,6 +5,7 @@ import { Edit, Trash2, Mail, MessageCircle, Calendar, Clock } from 'lucide-react
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
+import { buildClientReengagementWhatsappUrl } from '@/lib/whatsappGreeting';
 
 interface PainelClient {
   id: string;
@@ -22,9 +23,10 @@ interface ClientTableProps {
   onEdit: (id: string) => void;
   onDelete: (client: PainelClient) => void;
   compact?: boolean;
+  customWhatsappMessage?: string;
 }
 
-const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, compact = false }) => {
+const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, compact = false, customWhatsappMessage }) => {
   const formatDate = (dateString: string | null, isDateOnly = false) => {
     if (!dateString) return '-';
     try {
@@ -139,10 +141,11 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
                     "text-green-600 flex-shrink-0",
                     compact ? "h-3.5 w-3.5" : "h-4 w-4"
                   )} />
-                  <a 
-                    href={`https://wa.me/55${client.whatsapp.replace(/\D/g, '')}`}
+                  <a
+                    href={buildClientReengagementWhatsappUrl(client.whatsapp, client.nome, customWhatsappMessage) || '#'}
                     target="_blank"
                     rel="noopener noreferrer"
+                    title="Enviar mensagem no WhatsApp"
                     className={cn(
                       "font-mono hover:text-green-600 hover:underline transition-colors truncate",
                       compact ? "text-xs" : "text-sm"

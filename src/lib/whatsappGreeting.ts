@@ -42,6 +42,7 @@ export const normalizeBrazilWhatsapp = (raw: string | null | undefined): string 
 export const buildClientReengagementWhatsappUrl = (
   phone: string | null | undefined,
   clientName: string,
+  customMessage?: string | null,
 ): string | null => {
   const normalized = normalizeBrazilWhatsapp(phone);
   if (!normalized) return null;
@@ -50,11 +51,13 @@ export const buildClientReengagementWhatsappUrl = (
   const firstName = (clientName || '').trim().split(/\s+/)[0] || '';
   const saudacao = firstName ? `${greeting}, ${firstName}!` : `${greeting}!`;
 
-  const message =
-    `${saudacao} Aqui é da *Barbearia Costa Urbana* ✂️\n\n` +
-    `Estamos sentindo a sua falta por aqui! Que tal agendar seu próximo horário ` +
-    `e renovar o visual com a gente?\n\n` +
-    `Será um prazer te receber novamente. 🖤`;
+  const trimmedCustom = (customMessage || '').trim().slice(0, 500);
+  const body = trimmedCustom
+    ? trimmedCustom.replace(/\{nome\}/gi, firstName)
+    : `Estamos sentindo a sua falta por aqui! Que tal agendar seu próximo horário ` +
+      `e renovar o visual com a gente?\n\nSerá um prazer te receber novamente. 🖤`;
+
+  const message = `${saudacao} Aqui é da *Barbearia Costa Urbana* ✂️\n\n${body}`;
 
   return `https://api.whatsapp.com/send?phone=${normalized}&text=${encodeURIComponent(message)}`;
 };

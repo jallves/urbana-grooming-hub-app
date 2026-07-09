@@ -10,8 +10,10 @@ import { useClientDelete } from './hooks/useClientDelete';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Search, X } from 'lucide-react';
+import { Search, X, MessageCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface PainelClient {
   id: string;
@@ -46,6 +48,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   const useCardLayout = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
+  const [whatsappMessage, setWhatsappMessage] = useState('');
 
   const {
     deleteDialogOpen,
@@ -87,6 +90,49 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
   if (clients.length === 0) return <EmptyClientState />;
 
   return (
+    <div className="space-y-4">
+      <Card className="panel-card-responsive border-green-500/30">
+        <CardHeader className="pb-3 px-4 md:px-6">
+          <div className="flex items-center gap-2">
+            <MessageCircle className="h-5 w-5 text-green-600" />
+            <CardTitle className="text-base sm:text-lg font-semibold">
+              Mensagem personalizada de WhatsApp
+            </CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="px-4 md:px-6 space-y-2">
+          <Label htmlFor="whatsapp-custom-message" className="text-xs text-muted-foreground">
+            Escreva aqui o texto que será enviado ao clicar no botão do WhatsApp de cada cliente.
+            Use <code className="px-1 rounded bg-muted">{'{nome}'}</code> para incluir automaticamente o primeiro nome.
+            Deixe em branco para usar a mensagem padrão de reengajamento.
+          </Label>
+          <Textarea
+            id="whatsapp-custom-message"
+            value={whatsappMessage}
+            onChange={(e) => setWhatsappMessage(e.target.value.slice(0, 500))}
+            placeholder="Ex.: Olá {nome}! Temos uma promoção especial esta semana..."
+            maxLength={500}
+            rows={4}
+            className="resize-none text-sm"
+          />
+          <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <span>{whatsappMessage.length}/500 caracteres</span>
+            {whatsappMessage && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1"
+                onClick={() => setWhatsappMessage('')}
+              >
+                <X className="h-3 w-3" />
+                Limpar
+              </Button>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
     <Card className="panel-card-responsive">
       <CardHeader className="pb-4 px-4 md:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -160,6 +206,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
                 client={client}
                 onEdit={onEdit}
                 onDelete={confirmDelete}
+                customWhatsappMessage={whatsappMessage}
               />
             ))}
           </div>
@@ -169,6 +216,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
             onEdit={onEdit}
             onDelete={confirmDelete}
             compact={isTablet}
+            customWhatsappMessage={whatsappMessage}
           />
         )}
       </CardContent>
@@ -181,6 +229,7 @@ const ClientList: React.FC<ClientListProps> = ({ clients, isLoading, onEdit, onD
         isDeleting={isDeleting}
       />
     </Card>
+    </div>
   );
 };
 
