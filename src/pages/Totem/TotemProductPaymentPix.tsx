@@ -354,8 +354,8 @@ const TotemProductPaymentPix: React.FC = () => {
 
   // Verificar dados ao montar
   useEffect(() => {
-    if (!sale || !client || !barber) {
-      console.warn('[PRODUCT-PIX] Dados incompletos, redirecionando...');
+    if (!sale || !client) {
+      console.warn('[PRODUCT-PIX] Dados incompletos (sale/client), redirecionando...');
       navigate('/totem/home');
     }
   }, []);
