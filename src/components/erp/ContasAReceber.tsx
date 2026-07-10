@@ -8,10 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import RevenueRecordForm from './RevenueRecordForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -142,6 +150,8 @@ const MONTHS = [
 export const ContasAReceber: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editPaymentRow, setEditPaymentRow] = useState<ContaReceber | null>(null);
+  const [editPaymentValue, setEditPaymentValue] = useState<string>('');
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -261,6 +271,36 @@ export const ContasAReceber: React.FC = () => {
   const handleCloseForm = () => {
     setFormOpen(false);
     setEditingRecord(null);
+  };
+
+  const updatePaymentMethodMutation = useMutation({
+    mutationFn: async ({ id, forma_pagamento }: { id: string; forma_pagamento: string }) => {
+      const { error } = await supabase
+        .from('contas_receber')
+        .update({ forma_pagamento, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
+      toast.success('Forma de pagamento atualizada!');
+      setEditPaymentRow(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao atualizar forma de pagamento', { description: error.message });
+    },
+  });
+
+  const openEditPayment = (conta: ContaReceber) => {
+    setEditPaymentRow(conta);
+    const label = getPaymentMethodLabel(conta.forma_pagamento);
+    const initial = ['PIX', 'Débito', 'Crédito', 'Dinheiro'].includes(label) ? label : '';
+    setEditPaymentValue(initial);
+  };
+
+  const savePaymentMethod = () => {
+    if (!editPaymentRow || !editPaymentValue) return;
+    updatePaymentMethodMutation.mutate({ id: editPaymentRow.id, forma_pagamento: editPaymentValue });
   };
 
   // Calcular totais (trata 'pago' e 'recebido' como o mesmo status)
@@ -535,9 +575,20 @@ export const ContasAReceber: React.FC = () => {
                       <div className="flex items-center justify-between pt-3 border-t border-gray-200">
                         <div>
                           <span className="text-xs text-gray-500 block mb-0.5">Pagamento</span>
-                          <Badge variant="outline" className={`text-xs py-0.5 px-2 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
-                            {getPaymentMethodLabel(conta.forma_pagamento)}
-                          </Badge>
+                          <div className="flex items-center gap-1.5">
+                            <Badge variant="outline" className={`text-xs py-0.5 px-2 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
+                              {getPaymentMethodLabel(conta.forma_pagamento)}
+                            </Badge>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-gray-500 hover:text-gray-900"
+                              onClick={() => openEditPayment(conta)}
+                              title="Editar forma de pagamento"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
                         </div>
                         <div className="text-right">
                           <span className="text-xs text-gray-500 block mb-0.5">Valor</span>
@@ -595,9 +646,20 @@ export const ContasAReceber: React.FC = () => {
                             </Badge>
                           </TableCell>
                           <TableCell className="px-2 py-2">
-                            <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
-                              {getPaymentMethodLabel(conta.forma_pagamento)}
-                            </Badge>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="outline" className={`text-[10px] py-0 px-1.5 ${getPaymentMethodColors(conta.forma_pagamento)}`}>
+                                {getPaymentMethodLabel(conta.forma_pagamento)}
+                              </Badge>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-6 w-6 text-gray-500 hover:text-gray-900"
+                                onClick={() => openEditPayment(conta)}
+                                title="Editar forma de pagamento"
+                              >
+                                <Pencil className="h-3 w-3" />
+                              </Button>
+                            </div>
                           </TableCell>
                           <TableCell className="px-2 py-2 text-xs text-right font-semibold text-green-600 whitespace-nowrap">
                             R$ {Number(conta.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
@@ -628,6 +690,54 @@ export const ContasAReceber: React.FC = () => {
         initialData={editingRecord}
         isLoading={createMutation.isPending}
       />
+
+      {/* Dialog para editar forma de pagamento */}
+      <Dialog open={!!editPaymentRow} onOpenChange={(open) => { if (!open) setEditPaymentRow(null); }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Editar forma de pagamento</DialogTitle>
+            <DialogDescription>
+              Altere apenas a forma de pagamento deste lançamento.
+            </DialogDescription>
+          </DialogHeader>
+
+          {editPaymentRow && (
+            <div className="space-y-3 py-2">
+              <div className="text-sm text-gray-600">
+                <div><span className="font-medium text-gray-800">Descrição:</span> {editPaymentRow.descricao || '-'}</div>
+                <div><span className="font-medium text-gray-800">Valor:</span> R$ {Number(editPaymentRow.valor).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</div>
+                <div><span className="font-medium text-gray-800">Atual:</span> {getPaymentMethodLabel(editPaymentRow.forma_pagamento)}</div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Nova forma de pagamento</label>
+                <Select value={editPaymentValue} onValueChange={setEditPaymentValue}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Débito">Débito</SelectItem>
+                    <SelectItem value="Crédito">Crédito</SelectItem>
+                    <SelectItem value="PIX">PIX</SelectItem>
+                    <SelectItem value="Dinheiro">Dinheiro</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditPaymentRow(null)} disabled={updatePaymentMethodMutation.isPending}>
+              Cancelar
+            </Button>
+            <Button onClick={savePaymentMethod} disabled={!editPaymentValue || updatePaymentMethodMutation.isPending}>
+              {updatePaymentMethodMutation.isPending ? (
+                <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> Salvando...</>
+              ) : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
