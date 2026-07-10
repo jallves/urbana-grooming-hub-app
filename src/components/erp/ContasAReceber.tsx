@@ -8,10 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
-import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays } from 'lucide-react';
+import { ArrowUpCircle, Loader2, DollarSign, Plus, CheckCircle2, Clock, Download, CalendarDays, Pencil } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import RevenueRecordForm from './RevenueRecordForm';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -142,6 +150,8 @@ const MONTHS = [
 export const ContasAReceber: React.FC = () => {
   const [formOpen, setFormOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<any>(null);
+  const [editPaymentRow, setEditPaymentRow] = useState<ContaReceber | null>(null);
+  const [editPaymentValue, setEditPaymentValue] = useState<string>('');
   const queryClient = useQueryClient();
   const currentYear = new Date().getFullYear();
   const currentMonth = new Date().getMonth() + 1;
@@ -261,6 +271,36 @@ export const ContasAReceber: React.FC = () => {
   const handleCloseForm = () => {
     setFormOpen(false);
     setEditingRecord(null);
+  };
+
+  const updatePaymentMethodMutation = useMutation({
+    mutationFn: async ({ id, forma_pagamento }: { id: string; forma_pagamento: string }) => {
+      const { error } = await supabase
+        .from('contas_receber')
+        .update({ forma_pagamento, updated_at: new Date().toISOString() })
+        .eq('id', id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['contas-receber-erp'] });
+      toast.success('Forma de pagamento atualizada!');
+      setEditPaymentRow(null);
+    },
+    onError: (error: any) => {
+      toast.error('Erro ao atualizar forma de pagamento', { description: error.message });
+    },
+  });
+
+  const openEditPayment = (conta: ContaReceber) => {
+    setEditPaymentRow(conta);
+    const label = getPaymentMethodLabel(conta.forma_pagamento);
+    const initial = ['PIX', 'Débito', 'Crédito', 'Dinheiro'].includes(label) ? label : '';
+    setEditPaymentValue(initial);
+  };
+
+  const savePaymentMethod = () => {
+    if (!editPaymentRow || !editPaymentValue) return;
+    updatePaymentMethodMutation.mutate({ id: editPaymentRow.id, forma_pagamento: editPaymentValue });
   };
 
   // Calcular totais (trata 'pago' e 'recebido' como o mesmo status)
