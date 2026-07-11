@@ -13,6 +13,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { CalendarIcon, Clock, User, Users, Scissors, Loader2, AlertCircle, CheckCircle2, Plus, X, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
+import { useComboDetection } from '@/hooks/totem/useComboDetection';
 
 interface ClientAppointmentEditDialogProps {
   isOpen: boolean;
@@ -92,6 +93,14 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const [showExtraServiceSelect, setShowExtraServiceSelect] = useState(false);
   const [slotConflicts, setSlotConflicts] = useState<SlotConflict[]>([]);
 
+  // Combo auto-detection (mesma lógica do checkout do totem)
+  const { detectCombo } = useComboDetection();
+  const [comboMatch, setComboMatch] = useState<{
+    combo_nome: string;
+    combo_preco: number;
+    savings: number;
+  } | null>(null);
+
   // Total duration including extras
   const totalDuration = useMemo(() => {
     const selectedServico = servicos.find(s => s.id === selectedServicoId);
@@ -113,6 +122,38 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
   const availableExtraServices = useMemo(() => {
     return servicos;
   }, [servicos]);
+
+  // Detectar combo automaticamente sempre que serviço principal ou extras mudarem
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!selectedServicoId || extraServices.length === 0) {
+        setComboMatch(null);
+        return;
+      }
+      const main = servicos.find(s => s.id === selectedServicoId);
+      const mainPreco = Number(main?.preco) || 0;
+      const extraIds = extraServices.map(s => s.id);
+      const extraPrices: Record<string, number> = {};
+      extraServices.forEach(s => { extraPrices[s.id] = Number(s.preco) || 0; });
+      const result = await detectCombo(selectedServicoId, mainPreco, extraIds, extraPrices);
+      if (cancelled) return;
+      if (result.found && result.combo) {
+        setComboMatch({
+          combo_nome: result.combo.combo_nome,
+          combo_preco: result.combo.combo_preco,
+          savings: result.combo.savings,
+        });
+      } else {
+        setComboMatch(null);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [selectedServicoId, extraServices, servicos, detectCombo]);
+
+  const comboDiscount = comboMatch?.savings || 0;
+  const finalTotalPrice = Math.max(0, totalPrice - comboDiscount);
 
   // Carregar dados iniciais quando o dialog abrir
   useEffect(() => {
@@ -635,13 +676,29 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
 
             {/* Resumo de duração e preço total */}
             {(selectedServico || extraServices.length > 0) && (
-              <div className="flex items-center justify-between pt-2 border-t border-border text-sm">
-                <span className="text-muted-foreground">
-                  Duração total: <span className="font-medium text-foreground">{totalDuration}min</span>
-                </span>
-                <span className="text-muted-foreground">
-                  Total: <span className="font-semibold text-primary">R$ {totalPrice.toFixed(2)}</span>
-                </span>
+              <div className="pt-2 border-t border-border space-y-2">
+                {comboMatch && (
+                  <div className="p-2.5 rounded-md bg-emerald-500/10 border border-emerald-500/30 text-xs space-y-1">
+                    <p className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                      🎉 Combo detectado: {comboMatch.combo_nome}
+                    </p>
+                    <div className="flex items-center justify-between text-emerald-700 dark:text-emerald-300">
+                      <span>Desconto aplicado automaticamente</span>
+                      <span className="font-semibold">− R$ {comboMatch.savings.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    Duração total: <span className="font-medium text-foreground">{totalDuration}min</span>
+                  </span>
+                  <span className="text-muted-foreground">
+                    {comboMatch && (
+                      <span className="line-through text-muted-foreground/60 mr-2">R$ {totalPrice.toFixed(2)}</span>
+                    )}
+                    Total: <span className="font-semibold text-primary">R$ {finalTotalPrice.toFixed(2)}</span>
+                  </span>
+                </div>
               </div>
             )}
           </div>

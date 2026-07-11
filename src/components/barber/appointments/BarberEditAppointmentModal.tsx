@@ -22,6 +22,7 @@ import { ptBR } from 'date-fns/locale';
 import { useBarberAvailableSlots } from '@/hooks/barber/useBarberAvailableSlots';
 import { Loader2, Clock, Plus, X, AlertTriangle } from 'lucide-react';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+import { useComboDetection } from '@/hooks/totem/useComboDetection';
 
 interface BarberEditAppointmentModalProps {
   isOpen: boolean;
@@ -66,6 +67,14 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   // Extra services state (barber admin only)
   const [extraServices, setExtraServices] = useState<ExtraService[]>([]);
   const [showExtraServiceSelect, setShowExtraServiceSelect] = useState(false);
+
+  // Combo auto-detection (mesma lógica do checkout do totem)
+  const { detectCombo } = useComboDetection();
+  const [comboMatch, setComboMatch] = useState<{
+    combo_nome: string;
+    combo_preco: number;
+    savings: number;
+  } | null>(null);
   
   // Armazena dados originais do agendamento
   const [originalDate, setOriginalDate] = useState<Date | null>(null);
@@ -95,6 +104,37 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
   const availableExtraServices = useMemo(() => {
     return services;
   }, [services]);
+
+  // Detectar combo automaticamente sempre que serviço principal ou extras mudarem
+  useEffect(() => {
+    let cancelled = false;
+    const run = async () => {
+      if (!selectedService?.id || extraServices.length === 0) {
+        setComboMatch(null);
+        return;
+      }
+      const mainPreco = Number(selectedService.preco) || 0;
+      const extraIds = extraServices.map(s => s.id);
+      const extraPrices: Record<string, number> = {};
+      extraServices.forEach(s => { extraPrices[s.id] = Number(s.preco) || 0; });
+      const result = await detectCombo(selectedService.id, mainPreco, extraIds, extraPrices);
+      if (cancelled) return;
+      if (result.found && result.combo) {
+        setComboMatch({
+          combo_nome: result.combo.combo_nome,
+          combo_preco: result.combo.combo_preco,
+          savings: result.combo.savings,
+        });
+      } else {
+        setComboMatch(null);
+      }
+    };
+    run();
+    return () => { cancelled = true; };
+  }, [selectedService, extraServices, detectCombo]);
+
+  const comboDiscount = comboMatch?.savings || 0;
+  const finalTotalPrice = Math.max(0, totalPrice - comboDiscount);
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -514,13 +554,29 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 {/* Resumo de duração e preço total */}
                 {extraServices.length > 0 && (
                   <div className="p-3 bg-urbana-black/60 rounded-lg border border-urbana-gold/10 space-y-1.5">
+                    {comboMatch && (
+                      <div className="p-2 rounded-md bg-emerald-500/10 border border-emerald-500/30 mb-1.5">
+                        <p className="text-emerald-300 text-xs font-semibold">
+                          🎉 Combo detectado: {comboMatch.combo_nome}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-emerald-200/90 mt-0.5">
+                          <span>Desconto automático</span>
+                          <span className="font-semibold">− R$ {comboMatch.savings.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    )}
                     <div className="flex justify-between text-sm">
                       <span className="text-urbana-light/60">Duração total:</span>
                       <span className="text-urbana-light font-medium">{totalDuration}min</span>
                     </div>
                     <div className="flex justify-between text-sm">
                       <span className="text-urbana-light/60">Valor total:</span>
-                      <span className="text-urbana-gold font-semibold">R$ {totalPrice.toFixed(2)}</span>
+                      <span className="text-urbana-gold font-semibold">
+                        {comboMatch && (
+                          <span className="line-through text-urbana-light/40 mr-2 font-normal">R$ {totalPrice.toFixed(2)}</span>
+                        )}
+                        R$ {finalTotalPrice.toFixed(2)}
+                      </span>
                     </div>
                     {extraSlotsConsumed > 0 && (
                       <div className={`flex items-start gap-2 mt-2 p-2 rounded border ${nextSlotsConflict ? 'bg-red-500/10 border-red-500/20' : 'bg-amber-500/10 border-amber-500/20'}`}>
@@ -682,14 +738,19 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                   <>
                     <div className="border-t border-urbana-gold/10 my-1 pt-1">
                       <p className="text-purple-400 text-xs font-medium mb-1">Serviços extras:</p>
-                      {extraServices.map(e => (
-                        <p key={e.id} className="text-urbana-light/80 text-xs">
+                      {extraServices.map((e, i) => (
+                        <p key={`${e.id}-${i}`} className="text-urbana-light/80 text-xs">
                           + {e.nome} (R$ {e.preco.toFixed(2)})
                         </p>
                       ))}
                     </div>
+                    {comboMatch && (
+                      <p className="text-emerald-400 text-xs pt-1">
+                        🎉 Combo {comboMatch.combo_nome} — economia R$ {comboMatch.savings.toFixed(2)}
+                      </p>
+                    )}
                     <p className="text-urbana-gold text-sm font-semibold pt-1">
-                      💰 Total: R$ {totalPrice.toFixed(2)} · {totalDuration}min
+                      💰 Total: R$ {finalTotalPrice.toFixed(2)} · {totalDuration}min
                     </p>
                   </>
                 )}
