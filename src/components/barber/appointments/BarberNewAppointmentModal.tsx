@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, Minus, X, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Plus, X, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAppointmentFormData } from '@/components/admin/appointments/form/useAppointmentFormData';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
