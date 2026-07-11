@@ -463,9 +463,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 {/* Lista de extras adicionados */}
                 {extraServices.length > 0 && (
                   <div className="space-y-1.5">
-                    {extraServices.map((extra) => (
+                    {extraServices.map((extra, index) => (
                       <div
-                        key={extra.id}
+                        key={`${extra.id}-${index}`}
                         className="flex items-center justify-between p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20"
                       >
                         <div className="flex-1 min-w-0">
@@ -476,7 +476,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleRemoveExtraService(extra.id)}
+                          onClick={() => handleRemoveExtraService(index)}
                           className="ml-2 p-1 text-red-400 cursor-pointer flex-shrink-0"
                         >
                           <X className="h-4 w-4" />
