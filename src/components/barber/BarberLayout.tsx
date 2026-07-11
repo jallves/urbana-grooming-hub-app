@@ -66,6 +66,30 @@ const BarberLayout: React.FC = () => {
     };
   }, []);
 
+  React.useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    const previousBodyHeight = body.style.height;
+
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    body.style.height = '100dvh';
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+      body.style.height = previousBodyHeight;
+    };
+  }, []);
+
   const handleLogout = () => {
     setIsLoggingOut(true);
     console.log('🚪 [BarberLayout] Iniciando processo de logout...');
@@ -113,7 +137,7 @@ const BarberLayout: React.FC = () => {
       <header 
         ref={headerRef}
         className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)', WebkitTransform: 'translateZ(0)' }}
+        style={{ paddingTop: 'env(safe-area-inset-top)', WebkitTransform: 'translateZ(0)', touchAction: 'none' }}
       >
         <div className="w-full px-3 md:px-6 lg:px-8 py-1.5 sm:py-3">
           <div className="flex items-center justify-between">
@@ -178,7 +202,8 @@ const BarberLayout: React.FC = () => {
         style={{ 
           paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
           paddingTop: '6px',
-          WebkitTransform: 'translateZ(0)'
+          WebkitTransform: 'translateZ(0)',
+          touchAction: 'none'
         }}
       >
         <div className="w-full px-2">
@@ -342,6 +367,7 @@ const BarberLayout: React.FC = () => {
           right: 0,
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
