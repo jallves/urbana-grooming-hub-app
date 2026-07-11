@@ -79,8 +79,19 @@ const BarberLayout: React.FC = () => {
   return (
     // Container principal - viewport fixo
     <div
-      className="fixed inset-0 z-0 w-screen font-poppins overflow-hidden flex flex-col"
-      style={{ height: '100dvh', maxHeight: '100dvh', overscrollBehavior: 'none' }}
+      className="barber-mobile-shell font-poppins"
+      style={{
+        position: 'fixed',
+        inset: 0,
+        width: '100vw',
+        height: '100dvh',
+        maxHeight: '100dvh',
+        overflow: 'hidden',
+        display: 'grid',
+        gridTemplateRows: 'auto minmax(0, 1fr) auto',
+        isolation: 'isolate',
+        overscrollBehavior: 'none',
+      }}
     >
       <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
@@ -105,8 +116,14 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="relative z-50 shrink-0 min-h-[calc(56px+env(safe-area-inset-top,0px))] backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)', touchAction: 'none' }}
+        className="barber-shell-header bg-urbana-black border-b border-urbana-gold/20 shadow-2xl"
+        style={{
+          position: 'relative',
+          zIndex: 100,
+          minHeight: 'calc(58px + env(safe-area-inset-top, 0px))',
+          paddingTop: 'env(safe-area-inset-top, 0px)',
+          touchAction: 'none',
+        }}
       >
         <div className="w-full px-3 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex items-center justify-between">
@@ -164,7 +181,7 @@ const BarberLayout: React.FC = () => {
       </header>
 
       {/* Desktop Navigation Sidebar */}
-      <nav className="hidden md:flex absolute left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+      <nav className="barber-desktop-sidebar hidden md:flex absolute left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
         <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
@@ -274,8 +291,13 @@ const BarberLayout: React.FC = () => {
       {/* Main Content - Área com scroll próprio */}
       {/* iOS PWA: bottom maior para não esconder conteúdo atrás do rodapé */}
       <main 
-        className="relative z-10 flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-left safe-right"
+        className="barber-shell-main safe-left safe-right"
         style={{
+          position: 'relative',
+          zIndex: 20,
+          minHeight: 0,
+          overflowY: 'auto',
+          overflowX: 'hidden',
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
           touchAction: 'pan-y',
@@ -291,8 +313,11 @@ const BarberLayout: React.FC = () => {
 
       {/* Mobile Navigation FIXO dentro do layout - fora da área de scroll */}
       <nav 
-        className="md:hidden relative z-50 shrink-0 min-h-[calc(64px+env(safe-area-inset-bottom,0px))] backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        className="barber-mobile-nav bg-urbana-black border-t border-urbana-gold/20 shadow-2xl"
         style={{ 
+          position: 'relative',
+          zIndex: 100,
+          minHeight: 'calc(66px + env(safe-area-inset-bottom, 0px))',
           paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
           paddingTop: '6px',
           touchAction: 'none'
@@ -342,7 +367,42 @@ const BarberLayout: React.FC = () => {
 
       {/* Desktop: ajusta bottom do main */}
       <style>{`
+        .barber-mobile-shell,
+        .barber-shell-header,
+        .barber-shell-main,
+        .barber-mobile-nav {
+          opacity: 1 !important;
+          visibility: visible !important;
+        }
+
+        .barber-mobile-nav {
+          display: block !important;
+        }
+
         @media (min-width: 768px) {
+          .barber-mobile-shell {
+            display: block !important;
+          }
+
+          .barber-shell-header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+          }
+
+          .barber-shell-main {
+            position: fixed !important;
+            top: 72px !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+          }
+
+          .barber-mobile-nav {
+            display: none !important;
+          }
+
           main {
             min-height: 0 !important;
           }
