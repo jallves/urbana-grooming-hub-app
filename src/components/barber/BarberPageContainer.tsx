@@ -39,15 +39,15 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
   className,
   hideHeader = false,
 }) => {
-  const { displayName: barberDisplayName, barber } = useBarberAuth();
+  const { barber } = useBarberAuth();
   const { displayName: employeeDisplayName } = useEmployeeProfile();
   const { user } = useAuth();
 
+  const emailPrefix = user?.email ? user.email.split('@')[0] : '';
   const resolvedName =
     barber?.nome ||
-    barberDisplayName ||
-    employeeDisplayName ||
-    (user?.email ? user.email.split('@')[0] : '') ||
+    (employeeDisplayName && employeeDisplayName !== user?.email ? employeeDisplayName : '') ||
+    emailPrefix ||
     'Barbeiro';
   const firstName = resolvedName.split(' ')[0] || 'Barbeiro';
 
