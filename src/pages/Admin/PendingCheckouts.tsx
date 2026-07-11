@@ -15,6 +15,7 @@ interface PendingCheckout {
   data: string;
   hora: string;
   status: string;
+  barbeiro_id?: string | null;
   painel_clientes: {
     nome: string;
     whatsapp: string;
@@ -44,7 +45,7 @@ const PendingCheckouts: React.FC = () => {
       const { data: agendamentos, error } = await supabase
         .from('painel_agendamentos')
         .select(`
-          id, data, hora, status, status_totem, updated_at,
+          id, data, hora, status, status_totem, updated_at, barbeiro_id,
           painel_clientes(nome, whatsapp),
           painel_barbeiros(nome),
           painel_servicos(nome, preco)
@@ -332,6 +333,7 @@ const PendingCheckouts: React.FC = () => {
               sessionId: selectedAppointment.session_id,
               clientName: selectedAppointment.painel_clientes?.nome || 'N/A',
               barberName: selectedAppointment.painel_barbeiros?.nome || 'N/A',
+              barberId: selectedAppointment.barbeiro_id || null,
               serviceName: selectedAppointment.painel_servicos?.nome || 'N/A',
               servicePrice: selectedAppointment.painel_servicos?.preco || 0,
             } : null}

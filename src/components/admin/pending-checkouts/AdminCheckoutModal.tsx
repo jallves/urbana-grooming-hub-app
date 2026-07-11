@@ -22,6 +22,7 @@ interface CheckoutData {
   sessionId: string;
   clientName: string;
   barberName: string;
+  barberId?: string | null;
   serviceName: string;
   servicePrice: number;
 }
@@ -40,7 +41,7 @@ interface AdminCheckoutModalProps {
   ) => void;
 }
 
-const COMMISSION_RATE = 40;
+const DEFAULT_COMMISSION_RATE = 40;
 
 type CatalogService = { id: string; nome: string; preco: number };
 type CatalogProduct = { id: string; nome: string; preco: number; estoque: number };
@@ -74,6 +75,8 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
   const [serviceToAdd, setServiceToAdd] = useState<string>('');
   const [productToAdd, setProductToAdd] = useState<string>('');
   const [appointmentExtras, setAppointmentExtras] = useState<Array<{ id: string; nome: string; preco: number }>>([]);
+  const [barberCommissionRate, setBarberCommissionRate] = useState<number>(DEFAULT_COMMISSION_RATE);
+  const [loadingRate, setLoadingRate] = useState(false);
 
   // Reset state when modal opens with new data
   useEffect(() => {
@@ -87,6 +90,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
       setServiceToAdd('');
       setProductToAdd('');
       setAppointmentExtras([]);
+      setBarberCommissionRate(DEFAULT_COMMISSION_RATE);
       // Load catalogs
       (async () => {
         const [{ data: svc }, { data: prd }] = await Promise.all([
@@ -109,6 +113,20 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
             ? raw.map((e: any) => ({ id: e.id, nome: e.nome, preco: Number(e.preco) || 0 }))
             : [];
           setAppointmentExtras(mapped);
+        })();
+      }
+      // Load barber commission rate from cadastro
+      if (data?.barberId) {
+        setLoadingRate(true);
+        (async () => {
+          const { data: b } = await supabase
+            .from('painel_barbeiros')
+            .select('commission_rate, taxa_comissao')
+            .eq('id', data.barberId!)
+            .maybeSingle();
+          const rate = Number(b?.commission_rate ?? b?.taxa_comissao ?? DEFAULT_COMMISSION_RATE);
+          setBarberCommissionRate(Number.isFinite(rate) && rate > 0 ? rate : DEFAULT_COMMISSION_RATE);
+          setLoadingRate(false);
         })();
       }
     }
@@ -175,7 +193,7 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
     return base + extraServicesTotal;
   };
 
-  const commissionValue = payCommission ? getCommissionBase() * (COMMISSION_RATE / 100) : 0;
+  const commissionValue = payCommission ? getCommissionBase() * (barberCommissionRate / 100) : 0;
 
   const handleConfirm = () => {
     onConfirm(
@@ -430,7 +448,10 @@ const AdminCheckoutModal: React.FC<AdminCheckoutModalProps> = ({
                   </div>
                   <div className="flex justify-between">
                     <span className="text-purple-700">Taxa</span>
-                    <span className="font-bold text-purple-800">{COMMISSION_RATE}%</span>
+                <span className="font-bold text-purple-800">
+                  {loadingRate ? '...' : `${barberCommissionRate}%`}
+                  <span className="ml-1 text-[10px] font-normal text-purple-600">(cadastro do barbeiro)</span>
+                </span>
                   </div>
                   <div className="flex justify-between border-t border-purple-300 pt-1 text-sm">
                     <span className="font-semibold text-purple-800">Comissão a pagar</span>
