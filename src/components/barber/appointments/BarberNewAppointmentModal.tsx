@@ -662,9 +662,9 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                     <FormItem>
                       <FormLabel className="text-urbana-light text-xs flex items-center gap-2">
                         Horários disponíveis
-                        {selectedService && (
+                        {pickedServices.length > 0 && (
                           <span className="text-urbana-gold/70 font-normal">
-                            ({selectedService.duration} min)
+                            ({totalDuration} min • {pickedServices.length} serviço{pickedServices.length > 1 ? 's' : ''})
                           </span>
                         )}
                       </FormLabel>
@@ -747,10 +747,21 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                   <div className="flex items-start gap-3">
                     <Scissors className="h-4 w-4 text-urbana-gold mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">Serviço</p>
-                      <p className="text-sm font-medium text-urbana-light">{selectedServiceData?.name || '—'}</p>
-                      <p className="text-xs text-urbana-light/50">
-                        R$ {selectedServiceData?.price.toFixed(2)} • {selectedServiceData?.duration} min
+                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">
+                        Serviço{pickedServices.length > 1 ? 's' : ''} ({pickedServices.length})
+                      </p>
+                      <div className="space-y-0.5 mt-0.5">
+                        {pickedServices.map((s, i) => (
+                          <p key={`${s.id}-conf-${i}`} className="text-sm text-urbana-light">
+                            • {s.name}
+                            <span className="text-xs text-urbana-light/50 ml-2">
+                              R$ {s.price.toFixed(2)}
+                            </span>
+                          </p>
+                        ))}
+                      </div>
+                      <p className="text-xs text-urbana-gold mt-1">
+                        Total: R$ {totalPrice.toFixed(2)} • {totalDuration} min
                       </p>
                     </div>
                   </div>
