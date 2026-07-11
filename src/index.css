@@ -144,12 +144,6 @@
     overflow: visible;
   }
   
-  /* Garante que o background cubra toda a área incluindo scroll */
-  .barber-panel > *[class*="fixed"],
-  .client-panel > *[class*="fixed"] {
-    position: fixed !important;
-  }
-
   /* Custom scrollbar for mobile navigation */
   .scrollbar-hide {
     -ms-overflow-style: none;
