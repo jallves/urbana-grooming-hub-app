@@ -90,11 +90,11 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     return basePrice + extraPrice;
   }, [selectedService, extraServices]);
 
-  // Services available to add as extra (exclude main + already added)
+  // Services available to add as extra — allow repeating the main service
+  // and duplicates (ex.: pai + filho no mesmo horário com o mesmo corte).
   const availableExtraServices = useMemo(() => {
-    const usedIds = new Set([selectedService?.id, ...extraServices.map(s => s.id)].filter(Boolean));
-    return services.filter(s => !usedIds.has(s.id));
-  }, [services, selectedService, extraServices]);
+    return services;
+  }, [services]);
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -208,8 +208,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     }
   };
 
-  const handleRemoveExtraService = (serviceId: string) => {
-    setExtraServices(prev => prev.filter(s => s.id !== serviceId));
+  const handleRemoveExtraService = (index: number) => {
+    setExtraServices(prev => prev.filter((_, i) => i !== index));
     if (!isCheckedIn) {
       setSelectedTime('');
     }
@@ -463,9 +463,9 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                 {/* Lista de extras adicionados */}
                 {extraServices.length > 0 && (
                   <div className="space-y-1.5">
-                    {extraServices.map((extra) => (
+                    {extraServices.map((extra, index) => (
                       <div
-                        key={extra.id}
+                        key={`${extra.id}-${index}`}
                         className="flex items-center justify-between p-2.5 bg-purple-500/10 rounded-lg border border-purple-500/20"
                       >
                         <div className="flex-1 min-w-0">
@@ -476,7 +476,7 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
                         </div>
                         <button
                           type="button"
-                          onClick={() => handleRemoveExtraService(extra.id)}
+                          onClick={() => handleRemoveExtraService(index)}
                           className="ml-2 p-1 text-red-400 cursor-pointer flex-shrink-0"
                         >
                           <X className="h-4 w-4" />

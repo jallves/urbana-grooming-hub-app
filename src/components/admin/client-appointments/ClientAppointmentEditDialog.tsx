@@ -108,11 +108,11 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     return basePrice + extraPrice;
   }, [servicos, selectedServicoId, extraServices]);
 
-  // Available extra services (exclude main + already added)
+  // Available extra services — allow repeating the main service and duplicates
+  // (ex.: pai + filho no mesmo horário, ambos com o mesmo corte).
   const availableExtraServices = useMemo(() => {
-    const usedIds = new Set([selectedServicoId, ...extraServices.map(s => s.id)].filter(Boolean));
-    return servicos.filter(s => !usedIds.has(s.id));
-  }, [servicos, selectedServicoId, extraServices]);
+    return servicos;
+  }, [servicos]);
 
   // Carregar dados iniciais quando o dialog abrir
   useEffect(() => {
@@ -240,8 +240,8 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
     }
   };
 
-  const handleRemoveExtraService = (serviceId: string) => {
-    setExtraServices(prev => prev.filter(s => s.id !== serviceId));
+  const handleRemoveExtraService = (index: number) => {
+    setExtraServices(prev => prev.filter((_, i) => i !== index));
   };
 
   const fetchAvailableSlots = useCallback(async () => {
@@ -609,8 +609,8 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
             {/* Lista de extras adicionados */}
             {extraServices.length > 0 ? (
               <div className="space-y-2">
-                {extraServices.map((service) => (
-                  <div key={service.id} className="flex items-center justify-between p-2.5 rounded-md bg-background border border-border">
+                {extraServices.map((service, index) => (
+                  <div key={`${service.id}-${index}`} className="flex items-center justify-between p-2.5 rounded-md bg-background border border-border">
                     <div>
                       <p className="text-sm font-medium">{service.nome}</p>
                       <p className="text-xs text-muted-foreground">
@@ -621,7 +621,7 @@ const ClientAppointmentEditDialog: React.FC<ClientAppointmentEditDialogProps> = 
                       type="button"
                       variant="ghost"
                       size="sm"
-                      onClick={() => handleRemoveExtraService(service.id)}
+                      onClick={() => handleRemoveExtraService(index)}
                       className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
                     >
                       <X className="h-4 w-4" />
