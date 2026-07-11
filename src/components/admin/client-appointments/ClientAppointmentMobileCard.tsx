@@ -316,9 +316,37 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
             <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
               <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
-              <span className="ml-2 font-bold text-green-600">
-                R$ {appointment.painel_servicos?.preco?.toFixed(2) || '0,00'}
-              </span>
+              {(() => {
+                const base = Number(appointment.painel_servicos?.preco || 0);
+                const discount = Number((appointment as any).desconto_valor || 0);
+                const cupom = (appointment as any).cupom_codigo as string | null;
+                const final = Math.max(base - discount, 0);
+                if (cupom && discount > 0) {
+                  return (
+                    <span className="ml-2 inline-flex items-center gap-1.5">
+                      <span className="font-bold text-green-600">R$ {final.toFixed(2)}</span>
+                      <span className="text-[10px] text-gray-400 line-through">R$ {base.toFixed(2)}</span>
+                    </span>
+                  );
+                }
+                return (
+                  <span className="ml-2 font-bold text-green-600">
+                    R$ {base.toFixed(2)}
+                  </span>
+                );
+              })()}
+              {(() => {
+                const discount = Number((appointment as any).desconto_valor || 0);
+                const cupom = (appointment as any).cupom_codigo as string | null;
+                if (cupom && discount > 0) {
+                  return (
+                    <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5 w-fit">
+                      🎟️ {cupom} · -R$ {discount.toFixed(2)}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
           <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
