@@ -141,9 +141,16 @@ const TotemCheckout: React.FC = () => {
 
   const comboDiscount = comboMatch?.savings || 0;
 
+  // Cupom de desconto aplicado no agendamento (painel cliente / admin)
+  const couponDiscount = useMemo(
+    () => Math.max(0, Number((appointment as any)?.desconto_valor) || 0),
+    [appointment?.desconto_valor]
+  );
+  const couponCode: string | null = (appointment as any)?.cupom_codigo || null;
+
   const subtotal = useMemo(
-    () => originalService.preco + extraServicesTotal + productsTotal - comboDiscount,
-    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount]
+    () => Math.max(0, originalService.preco + extraServicesTotal + productsTotal - comboDiscount - couponDiscount),
+    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount, couponDiscount]
   );
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
