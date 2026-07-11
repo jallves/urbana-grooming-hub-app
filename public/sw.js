@@ -1,182 +1,21 @@
-const CACHE_NAME = 'totem-v5-' + new Date().getTime(); // Cache único por deploy
-const QUEUE_NAME = 'totem-requests-queue';
-
-// Instalar e ativar
-self.addEventListener('install', (event) => {
-  console.log('%c[SW] 🚀 Instalando service worker v2...', 'background: #4CAF50; color: white; font-size: 14px; padding: 4px;');
-  // Força atualização imediata
-  self.skipWaiting();
-  
-  // Limpa caches antigos
-  event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME && cacheName !== QUEUE_NAME) {
-            console.log('[SW] Removendo cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
-  );
-});
-
-self.addEventListener('activate', (event) => {
-  console.log('%c[SW] ✅ Service Worker ATIVADO!', 'background: #2196F3; color: white; font-size: 14px; padding: 4px;');
-  event.waitUntil(self.clients.claim());
-});
-
-// Interceptar requisições
-self.addEventListener('fetch', (event) => {
-  const { request } = event;
-  
-  // URLs que devem ser enfileiradas (apenas totem)
-  const queueableUrls = [
-    '/functions/v1/totem-checkin',
-    '/functions/v1/totem-checkout',
-    '/functions/v1/payments-pix',
-    '/functions/v1/payments-card'
-  ];
-
-  const shouldQueue = queueableUrls.some(url => request.url.includes(url));
-
-  // Apenas interceptar POST requests para URLs específicas do totem
-  // Deixa todas as outras requisições (incluindo Supabase) passarem normalmente
-  if (request.method !== 'POST' || !shouldQueue) {
-    return; // Não intercepta - deixa o Workbox ou navegador gerenciar
-  }
-
-  event.respondWith(
-    (async () => {
-      try {
-        // Tentar fazer a requisição
-        const response = await fetch(request.clone());
-        
-        if (response.ok) {
-          return response;
-        }
-        
-        throw new Error('Network error');
-      } catch (error) {
-        // Se falhar, adicionar à fila offline
-        console.log('[SW] Sem conexão, enfileirando requisição...');
-        
-        try {
-          const body = await request.clone().text();
-          const entry = {
-            url: request.url,
-            method: request.method,
-            headers: Array.from(request.headers.entries()),
-            body: body,
-            timestamp: Date.now()
-          };
-
-          // Salvar na fila
-          const cache = await caches.open(QUEUE_NAME);
-          const queueKey = new Request(`${request.url}?ts=${entry.timestamp}`);
-          await cache.put(queueKey, new Response(JSON.stringify(entry)));
-
-          // Retornar resposta indicando que foi enfileirado
-          return new Response(
-            JSON.stringify({ 
-              queued: true, 
-              message: 'Requisição enfileirada. Será processada quando houver conexão.',
-              timestamp: entry.timestamp 
-            }), 
-            { 
-              status: 202,
-              headers: { 'Content-Type': 'application/json' }
-            }
-          );
-        } catch (queueError) {
-          console.error('[SW] Erro ao enfileirar:', queueError);
-          return new Response(
-            JSON.stringify({ error: 'Erro ao processar offline' }), 
-            { status: 500 }
-          );
-        }
-      }
-    })()
-  );
-});
-
-// Background Sync - processar fila quando conexão voltar
-self.addEventListener('sync', (event) => {
-  console.log('[SW] Evento sync:', event.tag);
-  
-  if (event.tag === 'retry-queued-requests') {
-    event.waitUntil(processQueue());
-  }
-});
-
-// Processar fila
-async function processQueue() {
-  console.log('[SW] Processando fila...');
-  
-  try {
-    const cache = await caches.open(QUEUE_NAME);
-    const requests = await cache.keys();
-    
-    console.log(`[SW] ${requests.length} requisições na fila`);
-    
-    for (const request of requests) {
-      try {
-        const response = await cache.match(request);
-        const entry = await response.json();
-        
-        // Recriar requisição
-        const headers = new Headers(entry.headers);
-        const fetchRequest = new Request(entry.url, {
-          method: entry.method,
-          headers: headers,
-          body: entry.body
-        });
-        
-        // Tentar enviar
-        const fetchResponse = await fetch(fetchRequest);
-        
-        if (fetchResponse.ok) {
-          console.log('[SW] Requisição processada com sucesso:', entry.url);
-          await cache.delete(request);
-          
-          // Notificar clientes
-          const clients = await self.clients.matchAll();
-          clients.forEach(client => {
-            client.postMessage({
-              type: 'QUEUE_PROCESSED',
-              url: entry.url,
-              timestamp: entry.timestamp
-            });
-          });
-        } else {
-          console.warn('[SW] Requisição falhou, mantendo na fila:', entry.url);
-        }
-      } catch (error) {
-        console.error('[SW] Erro ao processar requisição:', error);
-        // Manter na fila para tentar novamente
-      }
-    }
-  } catch (error) {
-    console.error('[SW] Erro ao processar fila:', error);
-  }
+function isAppCache(name) {
+  return /(^|-)precache-v\d+-|(^|-)runtime-|(^|-)googleAnalytics-|^workbox-|^totem-|^api-cache$|^images-cache$/.test(name);
 }
 
-// Mensagens do cliente
-self.addEventListener('message', (event) => {
-  console.log('[SW] Mensagem recebida:', event.data);
-  
-  if (event.data.type === 'RETRY_QUEUE') {
-    processQueue();
-  }
-  
-  if (event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-});
+self.addEventListener('install', () => self.skipWaiting());
 
-// Notificar quando estiver online novamente
-self.addEventListener('online', () => {
-  console.log('[SW] Conexão restaurada, processando fila...');
-  processQueue();
-});
+self.addEventListener('activate', (event) =>
+  event.waitUntil(
+    (async () => {
+      try {
+        const cacheNames = await caches.keys();
+        await Promise.allSettled(cacheNames.filter(isAppCache).map((name) => caches.delete(name)));
+        await self.clients.claim();
+        const windowClients = await self.clients.matchAll({ type: 'window' });
+        await Promise.allSettled(windowClients.map((client) => client.navigate(client.url)));
+      } finally {
+        await self.registration.unregister();
+      }
+    })(),
+  ),
+);
