@@ -90,11 +90,11 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     return basePrice + extraPrice;
   }, [selectedService, extraServices]);
 
-  // Services available to add as extra (exclude main + already added)
+  // Services available to add as extra — allow repeating the main service
+  // and duplicates (ex.: pai + filho no mesmo horário com o mesmo corte).
   const availableExtraServices = useMemo(() => {
-    const usedIds = new Set([selectedService?.id, ...extraServices.map(s => s.id)].filter(Boolean));
-    return services.filter(s => !usedIds.has(s.id));
-  }, [services, selectedService, extraServices]);
+    return services;
+  }, [services]);
 
   useEffect(() => {
     if (isOpen && appointmentId) {
@@ -208,8 +208,8 @@ const BarberEditAppointmentModal: React.FC<BarberEditAppointmentModalProps> = ({
     }
   };
 
-  const handleRemoveExtraService = (serviceId: string) => {
-    setExtraServices(prev => prev.filter(s => s.id !== serviceId));
+  const handleRemoveExtraService = (index: number) => {
+    setExtraServices(prev => prev.filter((_, i) => i !== index));
     if (!isCheckedIn) {
       setSelectedTime('');
     }
