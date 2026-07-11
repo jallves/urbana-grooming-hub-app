@@ -479,10 +479,54 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
             {/* STEP 2: Service */}
             {currentStep === 'service' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
-                  <Scissors className="h-4 w-4" />
-                  Selecione o serviço
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
+                    <Scissors className="h-4 w-4" />
+                    Selecione os serviços
+                  </h3>
+                  <span className="text-[10px] text-urbana-light/50">
+                    Você pode adicionar o mesmo serviço mais de uma vez (ex.: pai + filho).
+                  </span>
+                </div>
+
+                {/* Serviços já escolhidos */}
+                {pickedServices.length > 0 && (
+                  <div className="rounded-lg border border-urbana-gold/30 bg-urbana-gold/5 p-2 space-y-1.5">
+                    {pickedServices.map((s, idx) => (
+                      <div
+                        key={`${s.id}-${idx}`}
+                        className="flex items-center justify-between gap-2 rounded-md bg-urbana-black/40 px-2 py-1.5"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-urbana-light truncate">
+                            {idx === 0 && <span className="text-urbana-gold mr-1">★</span>}
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-urbana-light/50">
+                            R$ {s.price.toFixed(2)} • {s.duration} min
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePickedServiceAt(idx)}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400"
+                          aria-label="Remover serviço"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-urbana-gold/20 mt-1">
+                      <span className="text-[11px] text-urbana-light/60">
+                        Total: {totalDuration} min
+                      </span>
+                      <span className="text-xs font-bold text-urbana-gold">
+                        R$ {totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-urbana-light/50" />
                   <Input
@@ -495,7 +539,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                 <FormField
                   control={form.control}
                   name="service_id"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
                       <div className="max-h-[250px] overflow-y-auto space-y-1.5 pr-1">
                         {filteredServices.length === 0 ? (
@@ -504,26 +548,27 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                           </div>
                         ) : (
                           filteredServices.map((service) => (
-                            <button
+                            <div
                               key={service.id}
-                              type="button"
-                              onClick={() => field.onChange(service.id)}
-                              className={cn(
-                                'w-full text-left p-3 rounded-lg border transition-all',
-                                field.value === service.id
-                                  ? 'border-urbana-gold bg-urbana-gold/10'
-                                  : 'border-urbana-light/10 hover:border-urbana-gold/30 hover:bg-urbana-gold/5'
-                              )}
+                              className="flex items-center gap-2 p-3 rounded-lg border border-urbana-light/10 hover:border-urbana-gold/30 hover:bg-urbana-gold/5 transition-all"
                             >
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-urbana-light">{service.name}</p>
-                                <span className="text-xs font-bold text-urbana-gold">R$ {service.price.toFixed(2)}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-urbana-light truncate">{service.name}</p>
+                                <p className="text-xs text-urbana-light/50 mt-0.5">
+                                  <Clock className="inline h-3 w-3 mr-1" />
+                                  {service.duration} min • <span className="text-urbana-gold">R$ {service.price.toFixed(2)}</span>
+                                </p>
                               </div>
-                              <p className="text-xs text-urbana-light/50 mt-0.5">
-                                <Clock className="inline h-3 w-3 mr-1" />
-                                {service.duration} min
-                              </p>
-                            </button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => addPickedService(service)}
+                                className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold hover:opacity-90 font-semibold h-8 px-2"
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Adicionar
+                              </Button>
+                            </div>
                           ))
                         )}
                       </div>
