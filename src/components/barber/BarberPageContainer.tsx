@@ -66,10 +66,7 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
     )}>
       {/* Cabeçalho Unificado - Saudação sticky no topo do scroll */}
       {!hideHeader && (
-        <div
-          className="sticky top-0 z-30 -mx-6 md:-mx-8 lg:-mx-12 px-6 md:px-8 lg:px-12 py-3 sm:py-4 mb-5 sm:mb-8 border-b border-urbana-gold/20 backdrop-blur-xl bg-urbana-black/70"
-          style={{ WebkitBackdropFilter: 'blur(16px)' }}
-        >
+        <div className="mb-5 sm:mb-8 border-b border-urbana-gold/20 pb-3 sm:pb-4">
           <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg leading-tight">
             Olá, {firstName}!
           </h1>
