@@ -23,6 +23,14 @@ const BarberLayout: React.FC = () => {
   const isBarberAdmin = barberData?.is_barber_admin || false;
   useBarberAppointmentNotifier();
 
+  // Nome exibido: prioriza painel_barbeiros → employees → prefixo do e-mail
+  const barberName = (barberData as any)?.nome as string | undefined;
+  const resolvedName =
+    barberName ||
+    displayName ||
+    (user?.email ? user.email.split('@')[0] : '') ||
+    'Barbeiro';
+  const firstName = resolvedName.split(' ')[0] || 'Barbeiro';
 
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
@@ -46,7 +54,7 @@ const BarberLayout: React.FC = () => {
 
   return (
     // Container principal - viewport fixo
-    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
+    <div className="fixed inset-0 w-screen font-poppins overflow-hidden" style={{ height: '100dvh' }}>
       <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
@@ -70,7 +78,7 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/90 border-b border-urbana-gold/20 shadow-2xl"
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
@@ -105,7 +113,7 @@ const BarberLayout: React.FC = () => {
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
                 <div className="w-2 h-2 bg-urbana-gold rounded-full animate-pulse" />
                 <span className="text-xs sm:text-sm text-urbana-light font-medium">
-                  {displayName?.split(' ')[0] || 'Barbeiro'}
+                  {firstName}
                 </span>
                 {isBarberAdmin && (
                   <ShieldCheck className="h-4 w-4 text-purple-400" />
@@ -131,7 +139,7 @@ const BarberLayout: React.FC = () => {
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       {/* iOS PWA: altura maior para acomodar safe-area do iPhone */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
         style={{ 
           paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
           paddingTop: '8px'
@@ -180,7 +188,7 @@ const BarberLayout: React.FC = () => {
       </nav>
 
       {/* Desktop Navigation Sidebar */}
-      <nav className="hidden md:flex absolute left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
+      <nav className="hidden md:flex fixed left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
         <div className="px-4 py-8 border-b border-urbana-gold/10">
           <div className="relative">
             <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/5 to-transparent rounded-xl blur-xl" />
@@ -290,12 +298,14 @@ const BarberLayout: React.FC = () => {
       {/* Main Content - Área com scroll próprio */}
       {/* iOS PWA: bottom maior para não esconder conteúdo atrás do rodapé */}
       <main 
-        className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
+        className="fixed z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
-          top: '72px',
-          bottom: 'calc(100px + env(safe-area-inset-bottom, 0px))',
+          top: 'calc(72px + env(safe-area-inset-top, 0px))',
+          bottom: 'calc(88px + env(safe-area-inset-bottom, 0px))',
           left: 0,
           right: 0,
+          WebkitOverflowScrolling: 'touch',
+          overscrollBehavior: 'contain',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
