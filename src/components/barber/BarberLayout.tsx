@@ -8,7 +8,6 @@ import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
 import { useBarberAppointmentNotifier } from '@/hooks/useBarberAppointmentNotifier';
 import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 
-import PWAInstallBanner from '@/components/pwa/PWAInstallBanner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import WeeklyBirthdayPopup from '@/components/birthday/WeeklyBirthdayPopup';
@@ -93,7 +92,6 @@ const BarberLayout: React.FC = () => {
         overscrollBehavior: 'none',
       }}
     >
-      <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
         <img 
