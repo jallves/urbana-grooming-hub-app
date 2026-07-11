@@ -79,7 +79,7 @@ const BarberLayout: React.FC = () => {
   return (
     // Container principal - viewport fixo
     <div
-      className="fixed inset-0 w-screen font-poppins overflow-hidden"
+      className="fixed inset-0 z-0 w-screen font-poppins overflow-hidden flex flex-col"
       style={{ height: '100dvh', maxHeight: '100dvh', overscrollBehavior: 'none' }}
     >
       <PWAInstallBanner context="barbeiro" />
@@ -105,8 +105,8 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="fixed top-0 left-0 right-0 z-50 min-h-[calc(52px+env(safe-area-inset-top,0px))] backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)', WebkitTransform: 'translateZ(0)', touchAction: 'none' }}
+        className="relative z-50 shrink-0 min-h-[calc(56px+env(safe-area-inset-top,0px))] backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
+        style={{ paddingTop: 'env(safe-area-inset-top)', touchAction: 'none' }}
       >
         <div className="w-full px-3 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex items-center justify-between">
@@ -162,59 +162,6 @@ const BarberLayout: React.FC = () => {
           </div>
         </div>
       </header>
-
-      {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
-      {/* iOS PWA: altura maior para acomodar safe-area do iPhone */}
-      <nav 
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 min-h-[calc(62px+env(safe-area-inset-bottom,0px))] backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
-        style={{ 
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
-          paddingTop: '6px',
-          WebkitTransform: 'translateZ(0)',
-          touchAction: 'none'
-        }}
-      >
-        <div className="w-full px-2">
-          <div className="grid grid-cols-4 gap-1.5">
-            {navigationItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = location.pathname === item.path;
-              
-              return (
-                <Button
-                  key={item.path}
-                  variant="ghost"
-                  onClick={() => navigate(item.path)}
-                  className={`
-                    w-full h-auto flex flex-col items-center justify-center 
-                    py-1.5 px-1 rounded-xl transition-all duration-300 
-                    relative overflow-hidden min-h-[48px]
-                    ${isActive 
-                      ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
-                      : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
-                    }
-                  `}
-                >
-                  {isActive && (
-                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl" />
-                  )}
-                  
-                  <div className="relative z-10 flex flex-col items-center gap-1">
-                    <Icon className="h-4 w-4" />
-                    <span className="text-[10px] font-medium leading-tight text-center">
-                      {item.label}
-                    </span>
-                  </div>
-                  
-                  {isActive && (
-                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
-                  )}
-                </Button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
 
       {/* Desktop Navigation Sidebar */}
       <nav className="hidden md:flex absolute left-0 top-[72px] bottom-0 z-40 w-64 lg:w-72 xl:w-80 backdrop-blur-2xl bg-gradient-to-b from-urbana-black/95 via-urbana-black/90 to-urbana-black/95 border-r border-urbana-gold/20 shadow-2xl flex-col overflow-y-auto">
@@ -327,12 +274,8 @@ const BarberLayout: React.FC = () => {
       {/* Main Content - Área com scroll próprio */}
       {/* iOS PWA: bottom maior para não esconder conteúdo atrás do rodapé */}
       <main 
-        className="fixed z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
+        className="relative z-10 flex-1 min-h-0 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
-          top: 'calc(56px + env(safe-area-inset-top, 0px))',
-          bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))',
-          left: 0,
-          right: 0,
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
           touchAction: 'pan-y',
@@ -346,11 +289,62 @@ const BarberLayout: React.FC = () => {
         </div>
       </main>
 
+      {/* Mobile Navigation FIXO dentro do layout - fora da área de scroll */}
+      <nav 
+        className="md:hidden relative z-50 shrink-0 min-h-[calc(64px+env(safe-area-inset-bottom,0px))] backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        style={{ 
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
+          paddingTop: '6px',
+          touchAction: 'none'
+        }}
+      >
+        <div className="w-full px-2">
+          <div className="grid grid-cols-4 gap-1.5">
+            {navigationItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = location.pathname === item.path;
+              
+              return (
+                <Button
+                  key={item.path}
+                  variant="ghost"
+                  onClick={() => navigate(item.path)}
+                  className={`
+                    w-full h-auto flex flex-col items-center justify-center 
+                    py-1.5 px-1 rounded-xl transition-all duration-300 
+                    relative overflow-hidden min-h-[48px]
+                    ${isActive 
+                      ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
+                      : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
+                    }
+                  `}
+                >
+                  {isActive && (
+                    <div className="absolute inset-0 bg-gradient-to-r from-urbana-gold/10 to-urbana-gold/5 rounded-xl" />
+                  )}
+                  
+                  <div className="relative z-10 flex flex-col items-center gap-1">
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-medium leading-tight text-center">
+                      {item.label}
+                    </span>
+                  </div>
+                  
+                  {isActive && (
+                    <div className="absolute -top-0.5 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-urbana-gold rounded-full" />
+                  )}
+                </Button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
       {/* Desktop: ajusta bottom do main */}
       <style>{`
         @media (min-width: 768px) {
           main {
-            bottom: 0 !important;
+            min-height: 0 !important;
           }
         }
       `}</style>
