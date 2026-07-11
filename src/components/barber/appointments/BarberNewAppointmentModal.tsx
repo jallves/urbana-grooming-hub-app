@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Plus, Minus, X, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAppointmentFormData } from '@/components/admin/appointments/form/useAppointmentFormData';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -53,6 +53,10 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const [availableSlots, setAvailableSlots] = useState<{ time: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const { getAvailableTimeSlots } = useUnifiedAppointmentValidation();
+
+  // Serviços selecionados (permite duplicatas — ex.: pai + filho no mesmo corte)
+  type PickedService = { id: string; name: string; price: number; duration: number };
+  const [pickedServices, setPickedServices] = useState<PickedService[]>([]);
 
   const {
     form,
@@ -107,6 +111,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
     setClientSearch('');
     setServiceSearch('');
     setAvailableSlots([]);
+    setPickedServices([]);
   }, []);
 
   // Watch form values
@@ -121,9 +126,49 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const selectedServiceData = useMemo(() => services.find(s => s.id === selectedServiceId), [services, selectedServiceId]);
   const selectedStaff = useMemo(() => staffMembers.find(s => s.id === selectedStaffId), [staffMembers, selectedStaffId]);
 
+  // Totais dos serviços escolhidos
+  const totalDuration = useMemo(
+    () => pickedServices.reduce((sum, s) => sum + (s.duration || 0), 0),
+    [pickedServices]
+  );
+  const totalPrice = useMemo(
+    () => pickedServices.reduce((sum, s) => sum + (s.price || 0), 0),
+    [pickedServices]
+  );
+
+  const addPickedService = useCallback((svc: any) => {
+    const pick: PickedService = {
+      id: svc.id,
+      name: svc.name,
+      price: Number(svc.price) || 0,
+      duration: Number(svc.duration) || 0,
+    };
+    setPickedServices((prev) => {
+      const next = [...prev, pick];
+      // Primeiro serviço define o service_id "principal" do formulário
+      if (prev.length === 0) {
+        form.setValue('service_id', pick.id, { shouldValidate: true });
+      }
+      return next;
+    });
+  }, [form]);
+
+  const removePickedServiceAt = useCallback((index: number) => {
+    setPickedServices((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        form.setValue('service_id', '', { shouldValidate: true });
+      } else {
+        // Mantém o primeiro como principal
+        form.setValue('service_id', next[0].id, { shouldValidate: true });
+      }
+      return next;
+    });
+  }, [form]);
+
   // Load available time slots when date or staff changes
   useEffect(() => {
-    if (currentStep !== 'datetime' || !selectedDate || !selectedStaffId || !selectedService) return;
+    if (currentStep !== 'datetime' || !selectedDate || !selectedStaffId || pickedServices.length === 0) return;
 
     const loadSlots = async () => {
       setLoadingSlots(true);
@@ -131,7 +176,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
         const slots = await getAvailableTimeSlots(
           selectedStaffId,
           selectedDate,
-          selectedService.duration,
+          totalDuration || 30,
           { skipPastValidation: true }
         );
         setAvailableSlots(slots);
@@ -149,7 +194,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
     };
 
     loadSlots();
-  }, [currentStep, selectedDate, selectedStaffId, selectedService, getAvailableTimeSlots, form]);
+  }, [currentStep, selectedDate, selectedStaffId, pickedServices.length, totalDuration, getAvailableTimeSlots, form]);
 
   // Filtered lists
   const filteredClients = useMemo(() => {
@@ -170,7 +215,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const canProceed = (step: Step): boolean => {
     switch (step) {
       case 'client': return !!selectedClientId;
-      case 'service': return !!selectedServiceId;
+      case 'service': return pickedServices.length > 0;
       case 'datetime': return !!selectedDate && !!selectedTime && !!selectedStaffId;
       case 'confirm': return true;
       default: return false;
@@ -192,7 +237,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   };
 
   const onSubmit = async (data: any) => {
-    if (!selectedService) {
+    if (pickedServices.length === 0) {
       toast({ variant: "destructive", title: "Erro", description: "Selecione um serviço válido." });
       return;
     }
@@ -209,15 +254,25 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
       const day = String(startDate.getDate()).padStart(2, '0');
       const dataLocal = `${year}-${month}-${day}`;
 
+      const mainService = pickedServices[0];
+      const extras = pickedServices.slice(1).map((s) => ({
+        id: s.id,
+        nome: s.name,
+        preco: s.price,
+        duracao: s.duration,
+        quantidade: 1,
+      }));
+
       // staff_id from form is painel_barbeiros.id (correct for painel_agendamentos)
       const painelData = {
         cliente_id: data.client_id,
         barbeiro_id: data.staff_id,
-        servico_id: data.service_id,
+        servico_id: mainService.id,
         data: dataLocal,
         hora: format(startDate, 'HH:mm'),
         status: 'agendado',
         notas: data.notes || null,
+        servicos_extras: extras.length > 0 ? extras : null,
       };
 
       console.log('📋 [BarberAdmin] Inserindo agendamento em painel_agendamentos:', painelData);
@@ -254,7 +309,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
 
       toast({
         title: "🎉 Agendamento Criado!",
-        description: `${selectedService.name} - ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+        description: `${pickedServices.length} serviço(s) • ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
         duration: 5000,
       });
 
