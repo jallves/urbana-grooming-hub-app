@@ -141,9 +141,16 @@ const TotemCheckout: React.FC = () => {
 
   const comboDiscount = comboMatch?.savings || 0;
 
+  // Cupom de desconto aplicado no agendamento (painel cliente / admin)
+  const couponDiscount = useMemo(
+    () => Math.max(0, Number((appointment as any)?.desconto_valor) || 0),
+    [appointment?.desconto_valor]
+  );
+  const couponCode: string | null = (appointment as any)?.cupom_codigo || null;
+
   const subtotal = useMemo(
-    () => originalService.preco + extraServicesTotal + productsTotal - comboDiscount,
-    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount]
+    () => Math.max(0, originalService.preco + extraServicesTotal + productsTotal - comboDiscount - couponDiscount),
+    [originalService.preco, extraServicesTotal, productsTotal, comboDiscount, couponDiscount]
   );
 
   const totalComGorjeta = useMemo(() => subtotal + tipAmount, [subtotal, tipAmount]);
@@ -201,9 +208,9 @@ const TotemCheckout: React.FC = () => {
     extra_services: extraServices.map((s) => ({ nome: s.nome, preco: s.preco })),
     products: productCart.map((p) => ({ nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
     subtotal,
-    discount: comboDiscount,
+    discount: comboDiscount + couponDiscount,
     total: subtotal,
-  }), [originalService, extraServices, productCart, subtotal, comboDiscount]);
+  }), [originalService, extraServices, productCart, subtotal, comboDiscount, couponDiscount]);
 
   useEffect(() => {
     document.documentElement.classList.add('totem-mode');
@@ -802,6 +809,22 @@ const TotemCheckout: React.FC = () => {
                     <div className="flex justify-between items-center">
                       <span className="text-xs text-emerald-300/60">Desconto combo</span>
                       <span className="text-emerald-400 font-bold text-sm">- R$ {comboMatch.savings.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Coupon Discount */}
+                {couponDiscount > 0 && (
+                  <div className="p-3 bg-fuchsia-500/10 rounded-xl border border-fuchsia-500/30 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tag className="w-4 h-4 text-fuchsia-400" />
+                      <span className="text-fuchsia-300 text-sm font-bold">
+                        Cupom aplicado{couponCode ? `: ${couponCode}` : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-fuchsia-300/60">Desconto do cupom</span>
+                      <span className="text-fuchsia-400 font-bold text-sm">- R$ {couponDiscount.toFixed(2)}</span>
                     </div>
                   </div>
                 )}

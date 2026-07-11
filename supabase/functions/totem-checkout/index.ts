@@ -233,16 +233,21 @@ Deno.serve(async (req) => {
       // Calcular total (com desconto de combo se aplicável)
       const rawTotal = desired.reduce((sum, item) => sum + Number(item.subtotal), 0)
       const comboDiscountAmount = Number(combo_discount) || 0
-      const total = Math.max(0, rawTotal - comboDiscountAmount)
+      const couponDiscountAmount = Math.max(0, Number((agendamento as any)?.desconto_valor) || 0)
+      const totalDiscount = comboDiscountAmount + couponDiscountAmount
+      const total = Math.max(0, rawTotal - totalDiscount)
 
       if (comboDiscountAmount > 0) {
         console.log(`🏷️ Combo detectado: "${combo_name}" - Desconto: R$ ${comboDiscountAmount.toFixed(2)}`)
+      }
+      if (couponDiscountAmount > 0) {
+        console.log(`🎟️ Cupom aplicado: "${(agendamento as any)?.cupom_codigo || ''}" - Desconto: R$ ${couponDiscountAmount.toFixed(2)}`)
       }
 
       // Atualizar venda com total e desconto
       await supabase
         .from('vendas')
-        .update({ valor_total: total, desconto: comboDiscountAmount })
+        .update({ valor_total: total, desconto: totalDiscount })
         .eq('id', venda.id)
 
       console.log('✅ Checkout iniciado - Venda:', venda.id, 'Total: R$', total, comboDiscountAmount > 0 ? `(Combo: -R$ ${comboDiscountAmount})` : '')
@@ -446,11 +451,16 @@ Deno.serve(async (req) => {
 
       // Calcular total com gorjeta e desconto de combo
       const subtotal = vendaItens?.reduce((sum, item) => sum + Number(item.subtotal), 0) || 0
-      const comboDiscountAmount = Number(combo_discount) || Number(venda.desconto) || 0
+      const comboDiscountAmount = Number(combo_discount) || 0
+      const couponDiscountAmount = Math.max(0, Number((agendamento as any)?.desconto_valor) || 0)
+      const storedDiscount = Number(venda.desconto) || 0
+      const totalDiscount = (comboDiscountAmount + couponDiscountAmount) > 0
+        ? (comboDiscountAmount + couponDiscountAmount)
+        : storedDiscount
       const gorjeta = tipAmount || 0
-      const totalFinal = Math.max(0, subtotal - comboDiscountAmount) + gorjeta
+      const totalFinal = Math.max(0, subtotal - totalDiscount) + gorjeta
 
-      console.log('💰 Subtotal:', subtotal, 'Combo desconto:', comboDiscountAmount, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
+      console.log('💰 Subtotal:', subtotal, 'Combo:', comboDiscountAmount, 'Cupom:', couponDiscountAmount, 'Gorjeta:', gorjeta, 'Total:', totalFinal)
 
       // Atualizar venda para PAGA (somente se ainda não estiver paga)
       if (!alreadyPaid) {
@@ -462,6 +472,7 @@ Deno.serve(async (req) => {
             gorjeta: gorjeta,
             forma_pagamento: (Array.isArray(payments) && payments.length > 1) ? 'MULTIPLO' : (payment_method || 'CARTAO'),
             payment_breakdown: Array.isArray(payments) && payments.length > 0 ? payments : null,
+            desconto: totalDiscount,
             updated_at: new Date().toISOString(),
           })
           .eq('id', venda_id)
@@ -572,7 +583,7 @@ Deno.serve(async (req) => {
             reference_type: isSubscriptionCredit ? 'totem_subscription_usage' : 'totem_venda',
             items: erpItems,
             payment_method: isSubscriptionCredit ? 'subscription_credit' : (payment_method || 'credit_card'),
-            discount_amount: comboDiscountAmount || Number(venda.desconto) || 0,
+            discount_amount: totalDiscount,
             notes: erpNotes,
             tip_amount: isSubscriptionCredit ? 0 : gorjeta,
             transaction_id: transactionId,
