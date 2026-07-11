@@ -534,6 +534,54 @@ function applyComboDiscountToItems(
   })
 }
 
+/**
+ * Aplica um desconto global (ex: cupom) proporcionalmente aos serviços,
+ * somando ao campo `discount` já existente. Se não houver serviço com
+ * valor bruto, tenta ratear em produtos.
+ */
+function applyGlobalDiscountToItems(
+  items: CheckoutItem[],
+  totalDiscount: number
+): CheckoutItem[] {
+  if (!totalDiscount || totalDiscount <= 0) return items
+
+  const targetType: 'service' | 'product' =
+    items.some((i) => i.type === 'service' && Number(i.price || 0) * Number(i.quantity || 1) > 0)
+      ? 'service'
+      : 'product'
+
+  const targets = items.filter(
+    (i) => i.type === targetType && Number(i.price || 0) * Number(i.quantity || 1) > 0
+  )
+  const totalGross = targets.reduce(
+    (s, i) => s + Number(i.price || 0) * Number(i.quantity || 1),
+    0
+  )
+  if (totalGross <= 0) return items
+
+  const cap = Math.min(totalDiscount, totalGross)
+  let acumulado = 0
+  let processed = 0
+  return items.map((it) => {
+    if (it.type !== targetType) return it
+    const gross = Number(it.price || 0) * Number(it.quantity || 1)
+    if (gross <= 0) return it
+    processed += 1
+    const isLast = processed === targets.length
+    let share: number
+    if (isLast) {
+      share = Number((cap - acumulado).toFixed(2))
+    } else {
+      share = Number(((gross / totalGross) * cap).toFixed(2))
+      acumulado += share
+    }
+    const currentDiscount = Number(it.discount || 0)
+    const maxAllowed = Math.max(0, gross - currentDiscount)
+    const finalShare = Math.min(share, maxAllowed)
+    return { ...it, discount: currentDiscount + finalShare }
+  })
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
