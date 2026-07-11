@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Form } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, Plus, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
+import { Search, Plus, X, User, Scissors, CalendarDays, Clock, UserCheck, CheckCircle2, AlertTriangle, ShieldCheck, Loader2 } from 'lucide-react';
 import { useAppointmentFormData } from '@/components/admin/appointments/form/useAppointmentFormData';
 import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -53,6 +53,10 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const [availableSlots, setAvailableSlots] = useState<{ time: string; available: boolean }[]>([]);
   const [loadingSlots, setLoadingSlots] = useState(false);
   const { getAvailableTimeSlots } = useUnifiedAppointmentValidation();
+
+  // Serviços selecionados (permite duplicatas — ex.: pai + filho no mesmo corte)
+  type PickedService = { id: string; name: string; price: number; duration: number };
+  const [pickedServices, setPickedServices] = useState<PickedService[]>([]);
 
   const {
     form,
@@ -107,6 +111,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
     setClientSearch('');
     setServiceSearch('');
     setAvailableSlots([]);
+    setPickedServices([]);
   }, []);
 
   // Watch form values
@@ -121,9 +126,49 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const selectedServiceData = useMemo(() => services.find(s => s.id === selectedServiceId), [services, selectedServiceId]);
   const selectedStaff = useMemo(() => staffMembers.find(s => s.id === selectedStaffId), [staffMembers, selectedStaffId]);
 
+  // Totais dos serviços escolhidos
+  const totalDuration = useMemo(
+    () => pickedServices.reduce((sum, s) => sum + (s.duration || 0), 0),
+    [pickedServices]
+  );
+  const totalPrice = useMemo(
+    () => pickedServices.reduce((sum, s) => sum + (s.price || 0), 0),
+    [pickedServices]
+  );
+
+  const addPickedService = useCallback((svc: any) => {
+    const pick: PickedService = {
+      id: svc.id,
+      name: svc.name,
+      price: Number(svc.price) || 0,
+      duration: Number(svc.duration) || 0,
+    };
+    setPickedServices((prev) => {
+      const next = [...prev, pick];
+      // Primeiro serviço define o service_id "principal" do formulário
+      if (prev.length === 0) {
+        form.setValue('service_id', pick.id, { shouldValidate: true });
+      }
+      return next;
+    });
+  }, [form]);
+
+  const removePickedServiceAt = useCallback((index: number) => {
+    setPickedServices((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      if (next.length === 0) {
+        form.setValue('service_id', '', { shouldValidate: true });
+      } else {
+        // Mantém o primeiro como principal
+        form.setValue('service_id', next[0].id, { shouldValidate: true });
+      }
+      return next;
+    });
+  }, [form]);
+
   // Load available time slots when date or staff changes
   useEffect(() => {
-    if (currentStep !== 'datetime' || !selectedDate || !selectedStaffId || !selectedService) return;
+    if (currentStep !== 'datetime' || !selectedDate || !selectedStaffId || pickedServices.length === 0) return;
 
     const loadSlots = async () => {
       setLoadingSlots(true);
@@ -131,7 +176,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
         const slots = await getAvailableTimeSlots(
           selectedStaffId,
           selectedDate,
-          selectedService.duration,
+          totalDuration || 30,
           { skipPastValidation: true }
         );
         setAvailableSlots(slots);
@@ -149,7 +194,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
     };
 
     loadSlots();
-  }, [currentStep, selectedDate, selectedStaffId, selectedService, getAvailableTimeSlots, form]);
+  }, [currentStep, selectedDate, selectedStaffId, pickedServices.length, totalDuration, getAvailableTimeSlots, form]);
 
   // Filtered lists
   const filteredClients = useMemo(() => {
@@ -170,7 +215,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   const canProceed = (step: Step): boolean => {
     switch (step) {
       case 'client': return !!selectedClientId;
-      case 'service': return !!selectedServiceId;
+      case 'service': return pickedServices.length > 0;
       case 'datetime': return !!selectedDate && !!selectedTime && !!selectedStaffId;
       case 'confirm': return true;
       default: return false;
@@ -192,7 +237,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
   };
 
   const onSubmit = async (data: any) => {
-    if (!selectedService) {
+    if (pickedServices.length === 0) {
       toast({ variant: "destructive", title: "Erro", description: "Selecione um serviço válido." });
       return;
     }
@@ -209,15 +254,25 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
       const day = String(startDate.getDate()).padStart(2, '0');
       const dataLocal = `${year}-${month}-${day}`;
 
+      const mainService = pickedServices[0];
+      const extras = pickedServices.slice(1).map((s) => ({
+        id: s.id,
+        nome: s.name,
+        preco: s.price,
+        duracao: s.duration,
+        quantidade: 1,
+      }));
+
       // staff_id from form is painel_barbeiros.id (correct for painel_agendamentos)
       const painelData = {
         cliente_id: data.client_id,
         barbeiro_id: data.staff_id,
-        servico_id: data.service_id,
+        servico_id: mainService.id,
         data: dataLocal,
         hora: format(startDate, 'HH:mm'),
         status: 'agendado',
         notas: data.notes || null,
+        servicos_extras: extras.length > 0 ? extras : null,
       };
 
       console.log('📋 [BarberAdmin] Inserindo agendamento em painel_agendamentos:', painelData);
@@ -254,7 +309,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
 
       toast({
         title: "🎉 Agendamento Criado!",
-        description: `${selectedService.name} - ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
+        description: `${pickedServices.length} serviço(s) • ${format(startDate, "dd/MM/yyyy 'às' HH:mm", { locale: ptBR })}`,
         duration: 5000,
       });
 
@@ -424,10 +479,54 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
             {/* STEP 2: Service */}
             {currentStep === 'service' && (
               <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
-                  <Scissors className="h-4 w-4" />
-                  Selecione o serviço
-                </h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-urbana-gold flex items-center gap-2">
+                    <Scissors className="h-4 w-4" />
+                    Selecione os serviços
+                  </h3>
+                  <span className="text-[10px] text-urbana-light/50">
+                    Você pode adicionar o mesmo serviço mais de uma vez (ex.: pai + filho).
+                  </span>
+                </div>
+
+                {/* Serviços já escolhidos */}
+                {pickedServices.length > 0 && (
+                  <div className="rounded-lg border border-urbana-gold/30 bg-urbana-gold/5 p-2 space-y-1.5">
+                    {pickedServices.map((s, idx) => (
+                      <div
+                        key={`${s.id}-${idx}`}
+                        className="flex items-center justify-between gap-2 rounded-md bg-urbana-black/40 px-2 py-1.5"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-medium text-urbana-light truncate">
+                            {idx === 0 && <span className="text-urbana-gold mr-1">★</span>}
+                            {s.name}
+                          </p>
+                          <p className="text-[10px] text-urbana-light/50">
+                            R$ {s.price.toFixed(2)} • {s.duration} min
+                          </p>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removePickedServiceAt(idx)}
+                          className="p-1 rounded hover:bg-red-500/20 text-red-400"
+                          aria-label="Remover serviço"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                    <div className="flex items-center justify-between pt-1.5 border-t border-urbana-gold/20 mt-1">
+                      <span className="text-[11px] text-urbana-light/60">
+                        Total: {totalDuration} min
+                      </span>
+                      <span className="text-xs font-bold text-urbana-gold">
+                        R$ {totalPrice.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative">
                   <Search className="absolute left-3 top-2.5 h-4 w-4 text-urbana-light/50" />
                   <Input
@@ -440,7 +539,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                 <FormField
                   control={form.control}
                   name="service_id"
-                  render={({ field }) => (
+                  render={() => (
                     <FormItem>
                       <div className="max-h-[250px] overflow-y-auto space-y-1.5 pr-1">
                         {filteredServices.length === 0 ? (
@@ -449,26 +548,27 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                           </div>
                         ) : (
                           filteredServices.map((service) => (
-                            <button
+                            <div
                               key={service.id}
-                              type="button"
-                              onClick={() => field.onChange(service.id)}
-                              className={cn(
-                                'w-full text-left p-3 rounded-lg border transition-all',
-                                field.value === service.id
-                                  ? 'border-urbana-gold bg-urbana-gold/10'
-                                  : 'border-urbana-light/10 hover:border-urbana-gold/30 hover:bg-urbana-gold/5'
-                              )}
+                              className="flex items-center gap-2 p-3 rounded-lg border border-urbana-light/10 hover:border-urbana-gold/30 hover:bg-urbana-gold/5 transition-all"
                             >
-                              <div className="flex items-center justify-between">
-                                <p className="text-sm font-medium text-urbana-light">{service.name}</p>
-                                <span className="text-xs font-bold text-urbana-gold">R$ {service.price.toFixed(2)}</span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-urbana-light truncate">{service.name}</p>
+                                <p className="text-xs text-urbana-light/50 mt-0.5">
+                                  <Clock className="inline h-3 w-3 mr-1" />
+                                  {service.duration} min • <span className="text-urbana-gold">R$ {service.price.toFixed(2)}</span>
+                                </p>
                               </div>
-                              <p className="text-xs text-urbana-light/50 mt-0.5">
-                                <Clock className="inline h-3 w-3 mr-1" />
-                                {service.duration} min
-                              </p>
-                            </button>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => addPickedService(service)}
+                                className="bg-urbana-gold text-urbana-black hover:bg-urbana-gold hover:opacity-90 font-semibold h-8 px-2"
+                              >
+                                <Plus className="h-3.5 w-3.5 mr-1" />
+                                Adicionar
+                              </Button>
+                            </div>
                           ))
                         )}
                       </div>
@@ -562,9 +662,9 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                     <FormItem>
                       <FormLabel className="text-urbana-light text-xs flex items-center gap-2">
                         Horários disponíveis
-                        {selectedService && (
+                        {pickedServices.length > 0 && (
                           <span className="text-urbana-gold/70 font-normal">
-                            ({selectedService.duration} min)
+                            ({totalDuration} min • {pickedServices.length} serviço{pickedServices.length > 1 ? 's' : ''})
                           </span>
                         )}
                       </FormLabel>
@@ -647,10 +747,21 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
                   <div className="flex items-start gap-3">
                     <Scissors className="h-4 w-4 text-urbana-gold mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">Serviço</p>
-                      <p className="text-sm font-medium text-urbana-light">{selectedServiceData?.name || '—'}</p>
-                      <p className="text-xs text-urbana-light/50">
-                        R$ {selectedServiceData?.price.toFixed(2)} • {selectedServiceData?.duration} min
+                      <p className="text-[10px] text-urbana-light/50 uppercase tracking-wider">
+                        Serviço{pickedServices.length > 1 ? 's' : ''} ({pickedServices.length})
+                      </p>
+                      <div className="space-y-0.5 mt-0.5">
+                        {pickedServices.map((s, i) => (
+                          <p key={`${s.id}-conf-${i}`} className="text-sm text-urbana-light">
+                            • {s.name}
+                            <span className="text-xs text-urbana-light/50 ml-2">
+                              R$ {s.price.toFixed(2)}
+                            </span>
+                          </p>
+                        ))}
+                      </div>
+                      <p className="text-xs text-urbana-gold mt-1">
+                        Total: R$ {totalPrice.toFixed(2)} • {totalDuration} min
                       </p>
                     </div>
                   </div>
