@@ -1,6 +1,8 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
 import { useBarberAuth } from '@/hooks/useBarberAuth';
+import { useEmployeeProfile } from '@/hooks/useEmployeeProfile';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BarberPageContainerProps {
   children: React.ReactNode;
@@ -37,10 +39,17 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
   className,
   hideHeader = false,
 }) => {
-  const { displayName } = useBarberAuth();
+  const { displayName: barberDisplayName, barber } = useBarberAuth();
+  const { displayName: employeeDisplayName } = useEmployeeProfile();
+  const { user } = useAuth();
 
-  // Debug: verificar se o header está sendo renderizado
-  console.log('🔍 BarberPageContainer - hideHeader:', hideHeader, 'displayName:', displayName);
+  const resolvedName =
+    barber?.nome ||
+    barberDisplayName ||
+    employeeDisplayName ||
+    (user?.email ? user.email.split('@')[0] : '') ||
+    'Barbeiro';
+  const firstName = resolvedName.split(' ')[0] || 'Barbeiro';
 
   return (
     <div className={cn(
@@ -48,24 +57,25 @@ export const BarberPageContainer: React.FC<BarberPageContainerProps> = ({
       'w-full',
       'max-w-7xl',
       'mx-auto',
-      // Padding vertical - aumentado para PWA desktop
-      'pt-6 sm:pt-8 lg:pt-12',
+      // Padding vertical
+      'pt-3 sm:pt-6 lg:pt-10',
       'pb-6 sm:pb-8 lg:pb-12',
       // Padding horizontal - aumentado para PWA desktop
       'px-6 md:px-8 lg:px-12',
       className
     )}>
-      {/* Cabeçalho Unificado - Sem logo, apenas saudação */}
+      {/* Cabeçalho Unificado - Saudação sticky no topo do scroll */}
       {!hideHeader && (
-        <div className="mb-8 sm:mb-10 lg:mb-12 pb-6 sm:pb-8 border-b border-urbana-gold/20">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-urbana-gold font-playfair drop-shadow-lg">
-              Olá, {displayName?.split(' ')[0] || 'Barbeiro'}!
-            </h1>
-            <p className="text-urbana-light/70 text-sm sm:text-base lg:text-lg drop-shadow-md mt-1 sm:mt-2">
-              Bem-vindo ao seu painel profissional
-            </p>
-          </div>
+        <div
+          className="sticky top-0 z-30 -mx-6 md:-mx-8 lg:-mx-12 px-6 md:px-8 lg:px-12 py-3 sm:py-4 mb-5 sm:mb-8 border-b border-urbana-gold/20 backdrop-blur-xl bg-urbana-black/70"
+          style={{ WebkitBackdropFilter: 'blur(16px)' }}
+        >
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-urbana-gold font-playfair drop-shadow-lg leading-tight">
+            Olá, {firstName}!
+          </h1>
+          <p className="text-urbana-light/70 text-xs sm:text-sm lg:text-base drop-shadow-md mt-0.5 sm:mt-1">
+            Bem-vindo ao seu painel profissional
+          </p>
         </div>
       )}
       
