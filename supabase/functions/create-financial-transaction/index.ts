@@ -642,6 +642,25 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ============= DESCONTO GLOBAL (CUPOM) =============
+    // Aplica desconto adicional (ex: cupom aplicado no agendamento) rateado
+    // proporcionalmente entre os serviços, para que receita/comissão sejam
+    // calculadas sobre o valor efetivamente pago.
+    const globalDiscountAmount = Math.max(0, Number(body.discount_amount || 0))
+    if (globalDiscountAmount > 0 && !isSubscriptionFlow) {
+      const alreadyDiscounted = body.items.reduce(
+        (s, i) => s + Number(i.discount || 0),
+        0
+      )
+      const remaining = Math.max(0, globalDiscountAmount - alreadyDiscounted)
+      if (remaining > 0) {
+        console.log(
+          `🎟️ Aplicando desconto global (cupom) rateado: R$ ${remaining.toFixed(2)}`
+        )
+        body.items = applyGlobalDiscountToItems(body.items, remaining)
+      }
+    }
+
     const brazilNow = getBrazilDateTime()
     const transaction_date = body.transaction_date || brazilNow.date
     const transaction_datetime = body.transaction_datetime || brazilNow.datetime
