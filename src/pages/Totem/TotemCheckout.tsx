@@ -813,6 +813,22 @@ const TotemCheckout: React.FC = () => {
                   </div>
                 )}
 
+                {/* Coupon Discount */}
+                {couponDiscount > 0 && (
+                  <div className="p-3 bg-fuchsia-500/10 rounded-xl border border-fuchsia-500/30 mb-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Tag className="w-4 h-4 text-fuchsia-400" />
+                      <span className="text-fuchsia-300 text-sm font-bold">
+                        Cupom aplicado{couponCode ? `: ${couponCode}` : ''}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-fuchsia-300/60">Desconto do cupom</span>
+                      <span className="text-fuchsia-400 font-bold text-sm">- R$ {couponDiscount.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Subtotal */}
                 <div className="flex justify-between items-center text-sm border-b border-dashed border-urbana-gold/20 pb-2">
                   <span className="text-urbana-light/70">SUBTOTAL</span>
