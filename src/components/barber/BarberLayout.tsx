@@ -19,9 +19,6 @@ const BarberLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
-  const [chromeSize, setChromeSize] = React.useState({ header: 88, nav: 76 });
-  const headerRef = React.useRef<HTMLElement>(null);
-  const mobileNavRef = React.useRef<HTMLElement>(null);
   const { data: barberData } = useBarberDataQuery();
   const isBarberAdmin = barberData?.is_barber_admin || false;
   useBarberAppointmentNotifier();
@@ -37,33 +34,6 @@ const BarberLayout: React.FC = () => {
 
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
-  }, []);
-
-  React.useLayoutEffect(() => {
-    const updateChromeSize = () => {
-      const header = Math.ceil(headerRef.current?.getBoundingClientRect().height || 0);
-      const nav = Math.ceil(mobileNavRef.current?.getBoundingClientRect().height || 0);
-
-      setChromeSize((current) => {
-        if (current.header === header && current.nav === nav) return current;
-        return { header, nav };
-      });
-    };
-
-    updateChromeSize();
-
-    const resizeObserver = new ResizeObserver(updateChromeSize);
-    if (headerRef.current) resizeObserver.observe(headerRef.current);
-    if (mobileNavRef.current) resizeObserver.observe(mobileNavRef.current);
-
-    window.addEventListener('resize', updateChromeSize);
-    window.visualViewport?.addEventListener('resize', updateChromeSize);
-
-    return () => {
-      resizeObserver.disconnect();
-      window.removeEventListener('resize', updateChromeSize);
-      window.visualViewport?.removeEventListener('resize', updateChromeSize);
-    };
   }, []);
 
   React.useEffect(() => {
@@ -135,11 +105,10 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        ref={headerRef}
-        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
+        className="fixed top-0 left-0 right-0 z-50 min-h-[calc(52px+env(safe-area-inset-top,0px))] backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
         style={{ paddingTop: 'env(safe-area-inset-top)', WebkitTransform: 'translateZ(0)', touchAction: 'none' }}
       >
-        <div className="w-full px-3 md:px-6 lg:px-8 py-1.5 sm:py-3">
+        <div className="w-full px-3 md:px-6 lg:px-8 py-2 sm:py-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
               <div className="relative">
@@ -147,12 +116,12 @@ const BarberLayout: React.FC = () => {
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-8 w-8 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                    className="h-9 w-9 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
               <div className="min-w-0">
-                <h1 className="text-sm sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg truncate">
+                <h1 className="text-[13px] min-[375px]:text-sm sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg truncate">
                   Barbearia Costa Urbana
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
@@ -197,10 +166,9 @@ const BarberLayout: React.FC = () => {
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       {/* iOS PWA: altura maior para acomodar safe-area do iPhone */}
       <nav 
-        ref={mobileNavRef}
-        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 min-h-[calc(62px+env(safe-area-inset-bottom,0px))] backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
         style={{ 
-          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 10px)',
           paddingTop: '6px',
           WebkitTransform: 'translateZ(0)',
           touchAction: 'none'
@@ -361,8 +329,8 @@ const BarberLayout: React.FC = () => {
       <main 
         className="fixed z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
-          top: `${chromeSize.header}px`,
-          bottom: `${chromeSize.nav}px`,
+          top: 'calc(56px + env(safe-area-inset-top, 0px))',
+          bottom: 'calc(68px + env(safe-area-inset-bottom, 0px))',
           left: 0,
           right: 0,
           WebkitOverflowScrolling: 'touch',
