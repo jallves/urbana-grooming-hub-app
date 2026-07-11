@@ -19,6 +19,9 @@ const BarberLayout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [chromeSize, setChromeSize] = React.useState({ header: 88, nav: 76 });
+  const headerRef = React.useRef<HTMLElement>(null);
+  const mobileNavRef = React.useRef<HTMLElement>(null);
   const { data: barberData } = useBarberDataQuery();
   const isBarberAdmin = barberData?.is_barber_admin || false;
   useBarberAppointmentNotifier();
@@ -34,6 +37,57 @@ const BarberLayout: React.FC = () => {
 
   React.useEffect(() => {
     console.log('✅ BarberLayout carregado com background da barbearia');
+  }, []);
+
+  React.useLayoutEffect(() => {
+    const updateChromeSize = () => {
+      const header = Math.ceil(headerRef.current?.getBoundingClientRect().height || 0);
+      const nav = Math.ceil(mobileNavRef.current?.getBoundingClientRect().height || 0);
+
+      setChromeSize((current) => {
+        if (current.header === header && current.nav === nav) return current;
+        return { header, nav };
+      });
+    };
+
+    updateChromeSize();
+
+    const resizeObserver = new ResizeObserver(updateChromeSize);
+    if (headerRef.current) resizeObserver.observe(headerRef.current);
+    if (mobileNavRef.current) resizeObserver.observe(mobileNavRef.current);
+
+    window.addEventListener('resize', updateChromeSize);
+    window.visualViewport?.addEventListener('resize', updateChromeSize);
+
+    return () => {
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', updateChromeSize);
+      window.visualViewport?.removeEventListener('resize', updateChromeSize);
+    };
+  }, []);
+
+  React.useEffect(() => {
+    const html = document.documentElement;
+    const body = document.body;
+    const previousHtmlOverflow = html.style.overflow;
+    const previousHtmlOverscroll = html.style.overscrollBehavior;
+    const previousBodyOverflow = body.style.overflow;
+    const previousBodyOverscroll = body.style.overscrollBehavior;
+    const previousBodyHeight = body.style.height;
+
+    html.style.overflow = 'hidden';
+    html.style.overscrollBehavior = 'none';
+    body.style.overflow = 'hidden';
+    body.style.overscrollBehavior = 'none';
+    body.style.height = '100dvh';
+
+    return () => {
+      html.style.overflow = previousHtmlOverflow;
+      html.style.overscrollBehavior = previousHtmlOverscroll;
+      body.style.overflow = previousBodyOverflow;
+      body.style.overscrollBehavior = previousBodyOverscroll;
+      body.style.height = previousBodyHeight;
+    };
   }, []);
 
   const handleLogout = () => {
@@ -56,7 +110,7 @@ const BarberLayout: React.FC = () => {
     // Container principal - viewport fixo
     <div
       className="fixed inset-0 w-screen font-poppins overflow-hidden"
-      style={{ height: '100dvh' }}
+      style={{ height: '100dvh', maxHeight: '100dvh', overscrollBehavior: 'none' }}
     >
       <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
@@ -81,23 +135,24 @@ const BarberLayout: React.FC = () => {
       
       {/* Header FIXO - Absoluto dentro do container fixo */}
       <header 
-        className="absolute top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
-        style={{ paddingTop: 'env(safe-area-inset-top)' }}
+        ref={headerRef}
+        className="fixed top-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-b border-urbana-gold/20 shadow-2xl"
+        style={{ paddingTop: 'env(safe-area-inset-top)', WebkitTransform: 'translateZ(0)', touchAction: 'none' }}
       >
-        <div className="w-full px-2 md:px-6 lg:px-8 py-2 sm:py-3">
+        <div className="w-full px-3 md:px-6 lg:px-8 py-1.5 sm:py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
+            <div className="flex items-center gap-2 sm:gap-3 md:gap-4 min-w-0">
               <div className="relative">
                 <div className="relative p-1 sm:p-1.5 bg-urbana-black/30 backdrop-blur-sm rounded-xl sm:rounded-2xl border border-urbana-gold/20">
                   <img 
                     src={costaUrbanaLogo} 
                     alt="Costa Urbana" 
-                    className="h-12 w-12 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
+                    className="h-8 w-8 sm:h-14 sm:w-14 md:h-16 md:w-16 object-contain drop-shadow-2xl"
                   />
                 </div>
               </div>
-              <div>
-                <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg">
+              <div className="min-w-0">
+                <h1 className="text-sm sm:text-xl md:text-2xl font-bold text-urbana-light drop-shadow-lg truncate">
                   Barbearia Costa Urbana
                 </h1>
                 <p className="text-xs sm:text-sm text-urbana-light/70 hidden sm:block">Painel do Barbeiro</p>
@@ -110,7 +165,7 @@ const BarberLayout: React.FC = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
               <BarberNotificationBell />
               
               <div className="hidden md:flex items-center gap-3 px-3 sm:px-4 py-1.5 sm:py-2 bg-urbana-black/30 rounded-xl sm:rounded-2xl backdrop-blur-sm border border-urbana-gold/20">
@@ -142,10 +197,13 @@ const BarberLayout: React.FC = () => {
       {/* Mobile Navigation FIXO - Absoluto dentro do container fixo */}
       {/* iOS PWA: altura maior para acomodar safe-area do iPhone */}
       <nav 
-        className="md:hidden absolute bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
+        ref={mobileNavRef}
+        className="md:hidden fixed bottom-0 left-0 right-0 z-50 backdrop-blur-2xl bg-urbana-black/95 border-t border-urbana-gold/20 shadow-2xl"
         style={{ 
-          paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
-          paddingTop: '8px'
+          paddingBottom: 'max(env(safe-area-inset-bottom, 0px), 8px)',
+          paddingTop: '6px',
+          WebkitTransform: 'translateZ(0)',
+          touchAction: 'none'
         }}
       >
         <div className="w-full px-2">
@@ -161,8 +219,8 @@ const BarberLayout: React.FC = () => {
                   onClick={() => navigate(item.path)}
                   className={`
                     w-full h-auto flex flex-col items-center justify-center 
-                    py-2.5 px-1 rounded-xl transition-all duration-300 
-                    relative overflow-hidden min-h-[56px]
+                    py-1.5 px-1 rounded-xl transition-all duration-300 
+                    relative overflow-hidden min-h-[48px]
                     ${isActive 
                       ? 'bg-urbana-gold/20 text-urbana-gold shadow-lg shadow-urbana-gold/20 border border-urbana-gold/30 backdrop-blur-sm' 
                       : 'text-urbana-light/70 hover:text-urbana-light hover:bg-urbana-gold/10 border border-transparent hover:border-urbana-gold/20'
@@ -174,8 +232,8 @@ const BarberLayout: React.FC = () => {
                   )}
                   
                   <div className="relative z-10 flex flex-col items-center gap-1">
-                    <Icon className="h-5 w-5" />
-                    <span className="text-[11px] font-medium leading-tight text-center">
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[10px] font-medium leading-tight text-center">
                       {item.label}
                     </span>
                   </div>
@@ -301,14 +359,15 @@ const BarberLayout: React.FC = () => {
       {/* Main Content - Área com scroll próprio */}
       {/* iOS PWA: bottom maior para não esconder conteúdo atrás do rodapé */}
       <main 
-        className="absolute z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
+        className="fixed z-10 overflow-y-auto overflow-x-hidden safe-left safe-right"
         style={{
-          top: 'calc(72px + env(safe-area-inset-top, 0px))',
-          bottom: 'calc(88px + env(safe-area-inset-bottom, 0px))',
+          top: `${chromeSize.header}px`,
+          bottom: `${chromeSize.nav}px`,
           left: 0,
           right: 0,
           WebkitOverflowScrolling: 'touch',
           overscrollBehavior: 'contain',
+          touchAction: 'pan-y',
         }}
       >
         {/* Desktop: ajusta para sidebar */}
