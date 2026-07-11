@@ -54,7 +54,10 @@ const BarberLayout: React.FC = () => {
 
   return (
     // Container principal - viewport fixo
-    <div className="fixed inset-0 w-screen h-screen font-poppins overflow-hidden">
+    <div
+      className="fixed inset-0 w-screen font-poppins overflow-hidden"
+      style={{ height: '100dvh' }}
+    >
       <PWAInstallBanner context="barbeiro" />
       {/* Background fixo da barbearia */}
       <div className="absolute inset-0 z-0">
