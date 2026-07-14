@@ -946,10 +946,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
-                    <div className="col-span-full text-center text-white py-8 sm:py-12 px-2">
-                      <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                      Carregando profissionais...
-                    </div>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={`bskel-${i}`}
+                        className="min-h-[140px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex flex-col items-center justify-center gap-3 p-4"
+                      >
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10" />
+                        <div className="h-3 w-24 rounded bg-white/10" />
+                      </div>
+                    ))
                   ) : barbers.length === 0 ? (
                     <div className="col-span-full text-center text-white/60 py-8 sm:py-12 px-2">
                       Nenhum profissional disponível
@@ -1009,10 +1014,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {loading ? (
-                      <div className="col-span-full text-center text-white py-6 sm:py-8">
-                        <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                        Carregando datas...
-                      </div>
+                      Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={`dskel-${i}`}
+                          className="min-h-[80px] sm:min-h-[100px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex flex-col items-center justify-center gap-2"
+                        >
+                          <div className="h-2.5 w-8 rounded bg-white/10" />
+                          <div className="h-5 w-6 rounded bg-white/10" />
+                          <div className="h-2.5 w-8 rounded bg-white/10" />
+                        </div>
+                      ))
                     ) : availableDates.length === 0 ? (
                       <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                         Nenhuma data disponível
@@ -1053,10 +1064,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {loading ? (
-                        <div className="col-span-full text-center text-white py-6 sm:py-8">
-                          <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                          Carregando horários...
-                        </div>
+                        Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={`tskel-${i}`}
+                            className="min-h-[60px] sm:min-h-[70px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex items-center justify-center"
+                          >
+                            <div className="h-4 w-12 rounded bg-white/10" />
+                          </div>
+                        ))
                       ) : timeSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                           Nenhum horário disponível
