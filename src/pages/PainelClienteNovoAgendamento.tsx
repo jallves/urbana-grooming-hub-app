@@ -481,19 +481,63 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    // Antes de avançar, verifica se este serviço faz parte de algum combo
+    // e sugere completar. O popup segue com step='barber' independente do resultado.
+    setPendingComboServiceId(service.id);
+    setPendingComboServicePrice(Number(service.preco) || 0);
+    setShowComboSuggestion(true);
+  };
+
+  const handleComboSuggestionClose = () => {
+    setShowComboSuggestion(false);
+    setPendingComboServiceId(null);
+    setPendingComboServicePrice(0);
     setStep('barber');
+  };
+
+  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number }>) => {
+    // Injeta serviços faltantes como extras — o combo é detectado no checkout.
+    setExtraServices(prev => {
+      const next = [...prev];
+      for (const svc of added) {
+        if (!next.some(e => e.id === svc.id)) {
+          next.push({
+            id: svc.id,
+            nome: svc.nome,
+            preco: svc.preco,
+            duracao: svc.duracao,
+            quantidade: 1,
+          });
+        }
+      }
+      return next;
+    });
+    setShowComboSuggestion(false);
+    setPendingComboServiceId(null);
+    setPendingComboServicePrice(0);
+    setStep('barber');
+    toast.success('Combo montado! O desconto será aplicado no checkout.');
   };
 
   // Handler para selecionar barbeiro - avança automaticamente
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
     setStep('datetime');
+    setDateTimeView('date');
+    setSelectedDate(null);
+    setSelectedTime(null);
   };
 
   // Handler para selecionar data
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setSelectedTime(null);
+    setDateTimeView('time');
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setDateTimeView('summary');
   };
 
   // Handler para confirmar agendamento
