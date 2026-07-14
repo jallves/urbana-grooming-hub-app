@@ -87,7 +87,9 @@ export async function preloadComboSuggestions() {
         component_ids,
       });
     });
-    // Ranking de serviços mais executados (últimos 90 dias)
+    // Ranking de serviços mais executados (últimos 90 dias).
+    // Excluímos apenas os próprios combos (serviços "pai"); componentes individuais
+    // como "Barba" permanecem no ranking mesmo fazendo parte de um combo.
     const comboIds = new Set(combos.map(c => c.combo_service_id));
     const counts = new Map<string, number>();
     (ranking || []).forEach((r: any) => {
