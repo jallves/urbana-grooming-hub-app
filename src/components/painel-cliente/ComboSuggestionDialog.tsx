@@ -123,6 +123,8 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
   const [selectedComboId, setSelectedComboId] = useState<string | null>(null);
+  const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number }>>([]);
+  const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isOpen || !mainServiceId) return;
@@ -130,6 +132,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     (async () => {
       setLoading(true);
       setSelectedComboId(null);
+      setSelectedExtraIds(new Set());
       try {
         const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
@@ -157,13 +160,39 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         // Ordenar por maior economia
         result.sort((a, b) => b.savings - a.savings);
 
+        // Top serviços populares (excluindo o principal e os do combo selecionado)
+        const cache = combosCache;
+        const excluded = new Set<string>([mainServiceId]);
+        if (result[0]) result[0].missing.forEach(m => excluded.add(m.id));
+        const limit = result.length > 0 ? 2 : 3;
+        const tops: Array<{ id: string; nome: string; preco: number; duracao: number }> = [];
+        if (cache) {
+          for (const id of cache.topServiceIds) {
+            if (excluded.has(id)) continue;
+            const s = cache.services.get(id);
+            if (!s) continue;
+            tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+            if (tops.length >= limit) break;
+          }
+          // Fallback: se não houver ranking suficiente, completa com serviços ativos aleatórios
+          if (tops.length < limit) {
+            for (const s of cache.services.values()) {
+              if (tops.length >= limit) break;
+              if (excluded.has(s.id) || !s.active) continue;
+              if (tops.some(t => t.id === s.id)) continue;
+              tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+            }
+          }
+        }
+
         if (!cancelled) {
           setCandidates(result);
           if (result.length > 0) setSelectedComboId(result[0].combo_service_id);
+          setTopExtras(tops);
         }
       } catch (err) {
         console.error('[ComboSuggestionDialog] erro:', err);
-        if (!cancelled) setCandidates([]);
+        if (!cancelled) { setCandidates([]); setTopExtras([]); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -171,12 +200,12 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     return () => { cancelled = true; };
   }, [isOpen, mainServiceId, mainServicePrice]);
 
-  // Se não achou nada, fecha automaticamente sem incomodar
+  // Se realmente não há nada a sugerir, fecha automaticamente
   useEffect(() => {
-    if (isOpen && !loading && candidates.length === 0) {
+    if (isOpen && !loading && candidates.length === 0 && topExtras.length === 0) {
       onClose();
     }
-  }, [isOpen, loading, candidates.length, onClose]);
+  }, [isOpen, loading, candidates.length, topExtras.length, onClose]);
 
   const selected = candidates.find(c => c.combo_service_id === selectedComboId) || null;
 
@@ -185,7 +214,21 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     onAccept(selected.missing);
   };
 
-  if (!isOpen || (candidates.length === 0 && !loading)) return null;
+  const toggleExtra = (id: string) => {
+    setSelectedExtraIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleAddSelectedExtras = () => {
+    const picked = topExtras.filter(t => selectedExtraIds.has(t.id));
+    if (picked.length === 0) return;
+    onAccept(picked);
+  };
+
+  if (!isOpen || (candidates.length === 0 && topExtras.length === 0 && !loading)) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
