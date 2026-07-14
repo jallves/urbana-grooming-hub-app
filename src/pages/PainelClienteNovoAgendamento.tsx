@@ -64,6 +64,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  // Cache de slots por barbeiro+data para navegação instantânea
+  const [slotsCache, setSlotsCache] = useState<Map<string, TimeSlot[]>>(new Map());
   
   // State para loading
   const [loading, setLoading] = useState(false);
@@ -155,13 +157,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Carregar barbeiros quando avançar para step de barbeiro
   useEffect(() => {
-    if (step === 'barber' && selectedService) {
-      loadBarbers();
+    if (step === 'barber' && selectedService && barbers.length === 0 && !loading) {
+      loadBarbers(selectedService);
     }
-  }, [step, selectedService]);
+  }, [step, selectedService, barbers.length]);
 
-  const loadBarbers = async () => {
-    if (!selectedService) return;
+  const loadBarbers = async (serviceArg?: Service) => {
+    const service = serviceArg || selectedService;
+    if (!service) return;
     
     setLoading(true);
     try {
@@ -169,7 +172,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const { data: serviceStaff, error: staffError } = await supabase
         .from('service_staff')
         .select('staff_id')
-        .eq('service_id', selectedService.id);
+        .eq('service_id', service.id);
 
       let query = supabase
         .from('painel_barbeiros')
@@ -208,10 +211,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Carregar datas disponíveis quando avançar para step de data/hora
   useEffect(() => {
-    if (step === 'datetime' && selectedBarber && selectedService) {
+    if (step === 'datetime' && selectedBarber && selectedService && availableDates.length === 0 && !loading) {
       loadAvailableDates();
     }
-  }, [step, selectedBarber, selectedService]);
+  }, [step, selectedBarber, selectedService, availableDates.length]);
 
   const loadAvailableDates = async () => {
     setLoading(true);
@@ -411,6 +414,23 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       
       console.log(`✅ [PainelCliente] Total de datas disponíveis: ${dates.length} (bulk fetch otimizado)`);
       setAvailableDates(dates);
+
+      // Prefetch dos horários da primeira data disponível para clique instantâneo
+      if (dates.length > 0 && selectedBarber && selectedService) {
+        const firstDate = dates[0];
+        const cacheKey = `${selectedBarber.id}|${format(firstDate, 'yyyy-MM-dd')}`;
+        if (!slotsCache.has(cacheKey)) {
+          getAvailableTimeSlots(selectedBarber.id, firstDate, selectedService.duracao)
+            .then(slots => {
+              setSlotsCache(prev => {
+                const next = new Map(prev);
+                next.set(cacheKey, slots);
+                return next;
+              });
+            })
+            .catch(() => {});
+        }
+      }
       
       if (dates.length === 0) {
         toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
@@ -433,7 +453,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadTimeSlots = async () => {
     if (!selectedDate || !selectedBarber || !selectedService) return;
 
-    setLoading(true);
+    const cacheKey = `${selectedBarber.id}|${format(selectedDate, 'yyyy-MM-dd')}`;
+    const cached = slotsCache.get(cacheKey);
+    if (cached) {
+      // Instantâneo — usa cache e revalida em background silenciosamente
+      setTimeSlots(cached);
+    } else {
+      setLoading(true);
+    }
     try {
       console.log('🕐 Carregando horários disponíveis:', {
         barbeiro: selectedBarber.nome,
@@ -472,9 +499,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       }
 
       setTimeSlots(slots);
+      setSlotsCache(prev => {
+        const next = new Map(prev);
+        next.set(cacheKey, slots);
+        return next;
+      });
     } catch (error) {
       console.error('❌ Erro ao carregar horários:', error);
-      toast.error('Erro ao carregar horários disponíveis');
+      if (!cached) toast.error('Erro ao carregar horários disponíveis');
     } finally {
       setLoading(false);
     }
@@ -483,6 +515,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    // Prefetch de barbeiros em paralelo enquanto o popup de combo é exibido
+    setBarbers([]);
+    loadBarbers(service);
     // Antes de avançar, verifica se este serviço faz parte de algum combo
     // e sugere completar. O popup segue com step='barber' independente do resultado.
     setPendingComboServiceId(service.id);
@@ -524,6 +559,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar barbeiro - avança automaticamente
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
+    // Reset de datas/horários e cache do barbeiro anterior
+    setAvailableDates([]);
+    setSlotsCache(new Map());
     setStep('datetime');
     setDateTimeView('date');
     setSelectedDate(null);
@@ -908,10 +946,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                   {loading ? (
-                    <div className="col-span-full text-center text-white py-8 sm:py-12 px-2">
-                      <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                      Carregando profissionais...
-                    </div>
+                    Array.from({ length: 6 }).map((_, i) => (
+                      <div
+                        key={`bskel-${i}`}
+                        className="min-h-[140px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex flex-col items-center justify-center gap-3 p-4"
+                      >
+                        <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-white/10" />
+                        <div className="h-3 w-24 rounded bg-white/10" />
+                      </div>
+                    ))
                   ) : barbers.length === 0 ? (
                     <div className="col-span-full text-center text-white/60 py-8 sm:py-12 px-2">
                       Nenhum profissional disponível
@@ -971,10 +1014,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   </h3>
                   <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-2 sm:gap-3">
                     {loading ? (
-                      <div className="col-span-full text-center text-white py-6 sm:py-8">
-                        <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                        Carregando datas...
-                      </div>
+                      Array.from({ length: 8 }).map((_, i) => (
+                        <div
+                          key={`dskel-${i}`}
+                          className="min-h-[80px] sm:min-h-[100px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex flex-col items-center justify-center gap-2"
+                        >
+                          <div className="h-2.5 w-8 rounded bg-white/10" />
+                          <div className="h-5 w-6 rounded bg-white/10" />
+                          <div className="h-2.5 w-8 rounded bg-white/10" />
+                        </div>
+                      ))
                     ) : availableDates.length === 0 ? (
                       <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                         Nenhuma data disponível
@@ -1015,10 +1064,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     </h3>
                     <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
                       {loading ? (
-                        <div className="col-span-full text-center text-white py-6 sm:py-8">
-                          <div className="w-8 h-8 border-3 border-white/30 border-t-urbana-gold rounded-full animate-spin mx-auto mb-4" />
-                          Carregando horários...
-                        </div>
+                        Array.from({ length: 10 }).map((_, i) => (
+                          <div
+                            key={`tskel-${i}`}
+                            className="min-h-[60px] sm:min-h-[70px] rounded-2xl border border-white/10 bg-white/5 animate-pulse flex items-center justify-center"
+                          >
+                            <div className="h-4 w-12 rounded bg-white/10" />
+                          </div>
+                        ))
                       ) : timeSlots.filter(slot => slot.available).length === 0 ? (
                         <div className="col-span-full text-center text-white/60 py-6 sm:py-8">
                           Nenhum horário disponível
