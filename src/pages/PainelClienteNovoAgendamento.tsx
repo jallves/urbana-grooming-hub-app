@@ -1223,6 +1223,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           onClose={() => {
             setShowSuccessDialog(false);
             setStep('service');
+            setDateTimeView('date');
             setSelectedService(null);
             setSelectedBarber(null);
             setSelectedDate(null);
@@ -1261,6 +1262,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         items={pendingCheckout.items}
         oldestDays={pendingCheckout.oldestDays}
         blocked={pendingCheckout.blocked}
+      />
+
+      <ComboSuggestionDialog
+        isOpen={showComboSuggestion}
+        onClose={handleComboSuggestionClose}
+        mainServiceId={pendingComboServiceId}
+        mainServicePrice={pendingComboServicePrice}
+        onAccept={handleComboSuggestionAccept}
       />
     </ClientPageContainer>
   );
