@@ -64,6 +64,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [barbers, setBarbers] = useState<Barber[]>([]);
   const [availableDates, setAvailableDates] = useState<Date[]>([]);
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([]);
+  // Cache de slots por barbeiro+data para navegação instantânea
+  const [slotsCache, setSlotsCache] = useState<Map<string, TimeSlot[]>>(new Map());
   
   // State para loading
   const [loading, setLoading] = useState(false);
@@ -155,13 +157,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Carregar barbeiros quando avançar para step de barbeiro
   useEffect(() => {
-    if (step === 'barber' && selectedService) {
-      loadBarbers();
+    if (step === 'barber' && selectedService && barbers.length === 0 && !loading) {
+      loadBarbers(selectedService);
     }
-  }, [step, selectedService]);
+  }, [step, selectedService, barbers.length]);
 
-  const loadBarbers = async () => {
-    if (!selectedService) return;
+  const loadBarbers = async (serviceArg?: Service) => {
+    const service = serviceArg || selectedService;
+    if (!service) return;
     
     setLoading(true);
     try {
@@ -169,7 +172,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const { data: serviceStaff, error: staffError } = await supabase
         .from('service_staff')
         .select('staff_id')
-        .eq('service_id', selectedService.id);
+        .eq('service_id', service.id);
 
       let query = supabase
         .from('painel_barbeiros')
@@ -208,10 +211,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Carregar datas disponíveis quando avançar para step de data/hora
   useEffect(() => {
-    if (step === 'datetime' && selectedBarber && selectedService) {
+    if (step === 'datetime' && selectedBarber && selectedService && availableDates.length === 0 && !loading) {
       loadAvailableDates();
     }
-  }, [step, selectedBarber, selectedService]);
+  }, [step, selectedBarber, selectedService, availableDates.length]);
 
   const loadAvailableDates = async () => {
     setLoading(true);
@@ -411,6 +414,23 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       
       console.log(`✅ [PainelCliente] Total de datas disponíveis: ${dates.length} (bulk fetch otimizado)`);
       setAvailableDates(dates);
+
+      // Prefetch dos horários da primeira data disponível para clique instantâneo
+      if (dates.length > 0 && selectedBarber && selectedService) {
+        const firstDate = dates[0];
+        const cacheKey = `${selectedBarber.id}|${format(firstDate, 'yyyy-MM-dd')}`;
+        if (!slotsCache.has(cacheKey)) {
+          getAvailableTimeSlots(selectedBarber.id, firstDate, selectedService.duracao)
+            .then(slots => {
+              setSlotsCache(prev => {
+                const next = new Map(prev);
+                next.set(cacheKey, slots);
+                return next;
+              });
+            })
+            .catch(() => {});
+        }
+      }
       
       if (dates.length === 0) {
         toast.warning(`Não há horários disponíveis para ${selectedBarber!.nome} nos próximos 30 dias`);
@@ -433,7 +453,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadTimeSlots = async () => {
     if (!selectedDate || !selectedBarber || !selectedService) return;
 
-    setLoading(true);
+    const cacheKey = `${selectedBarber.id}|${format(selectedDate, 'yyyy-MM-dd')}`;
+    const cached = slotsCache.get(cacheKey);
+    if (cached) {
+      // Instantâneo — usa cache e revalida em background silenciosamente
+      setTimeSlots(cached);
+    } else {
+      setLoading(true);
+    }
     try {
       console.log('🕐 Carregando horários disponíveis:', {
         barbeiro: selectedBarber.nome,
@@ -472,9 +499,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       }
 
       setTimeSlots(slots);
+      setSlotsCache(prev => {
+        const next = new Map(prev);
+        next.set(cacheKey, slots);
+        return next;
+      });
     } catch (error) {
       console.error('❌ Erro ao carregar horários:', error);
-      toast.error('Erro ao carregar horários disponíveis');
+      if (!cached) toast.error('Erro ao carregar horários disponíveis');
     } finally {
       setLoading(false);
     }
@@ -483,6 +515,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    // Prefetch de barbeiros em paralelo enquanto o popup de combo é exibido
+    setBarbers([]);
+    loadBarbers(service);
     // Antes de avançar, verifica se este serviço faz parte de algum combo
     // e sugere completar. O popup segue com step='barber' independente do resultado.
     setPendingComboServiceId(service.id);
@@ -524,6 +559,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar barbeiro - avança automaticamente
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
+    // Reset de datas/horários e cache do barbeiro anterior
+    setAvailableDates([]);
+    setSlotsCache(new Map());
     setStep('datetime');
     setDateTimeView('date');
     setSelectedDate(null);
