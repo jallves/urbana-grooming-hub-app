@@ -23,7 +23,7 @@ import ProductCrossSellDialog from '@/components/client/appointment/ProductCross
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
 import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
-import ComboSuggestionDialog from '@/components/painel-cliente/ComboSuggestionDialog';
+import ComboSuggestionDialog, { preloadComboSuggestions } from '@/components/painel-cliente/ComboSuggestionDialog';
 
 interface Service {
   id: string;
@@ -94,6 +94,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Carregar serviços
   useEffect(() => {
     loadServices();
+    // Pré-carrega combos em paralelo para o popup abrir instantâneo
+    preloadComboSuggestions().catch(() => {});
   }, []);
 
   const loadServices = async () => {
