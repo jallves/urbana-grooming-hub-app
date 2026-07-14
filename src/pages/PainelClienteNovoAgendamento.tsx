@@ -1270,6 +1270,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         mainServiceId={pendingComboServiceId}
         mainServicePrice={pendingComboServicePrice}
         onAccept={handleComboSuggestionAccept}
+        onAddOther={() => {
+          setShowComboSuggestion(false);
+          setPendingComboServiceId(null);
+          setPendingComboServicePrice(0);
+          setStep('barber');
+          // Abre picker de extras (serviços/produtos) logo em seguida
+          setTimeout(() => setShowExtrasModal(true), 150);
+        }}
       />
     </ClientPageContainer>
   );
