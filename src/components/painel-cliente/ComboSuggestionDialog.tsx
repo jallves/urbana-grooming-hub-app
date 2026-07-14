@@ -41,16 +41,24 @@ interface ComboMeta {
 }
 interface ServiceMeta { id: string; nome: string; preco: number; duracao: number; active: boolean }
 
-let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta> } | null = null;
-let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta> }> | null = null;
+let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] } | null = null;
+let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] }> | null = null;
 
 export async function preloadComboSuggestions() {
   if (combosCache) return combosCache;
   if (combosCachePromise) return combosCachePromise;
   combosCachePromise = (async () => {
-    const [{ data: items }, { data: services }] = await Promise.all([
+    const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const [{ data: items }, { data: services }, { data: ranking }] = await Promise.all([
       supabase.from('combo_service_items').select('combo_service_id, component_service_id'),
       supabase.from('painel_servicos').select('id, nome, preco, duracao, is_active, ativo'),
+      supabase
+        .from('painel_agendamentos')
+        .select('servico_id')
+        .eq('status', 'concluido')
+        .gte('data', sinceIso)
+        .not('servico_id', 'is', null)
+        .limit(5000),
     ]);
     const svcMap = new Map<string, ServiceMeta>();
     (services || []).forEach((s: any) => {
@@ -79,7 +87,22 @@ export async function preloadComboSuggestions() {
         component_ids,
       });
     });
-    combosCache = { combos, services: svcMap };
+    // Ranking de serviços mais executados (últimos 90 dias)
+    const comboIds = new Set(combos.map(c => c.combo_service_id));
+    const counts = new Map<string, number>();
+    (ranking || []).forEach((r: any) => {
+      const id = r.servico_id;
+      if (!id) return;
+      counts.set(id, (counts.get(id) || 0) + 1);
+    });
+    const topServiceIds = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id)
+      .filter(id => {
+        const s = svcMap.get(id);
+        return !!s && s.active && !comboIds.has(id);
+      });
+    combosCache = { combos, services: svcMap, topServiceIds };
     return combosCache;
   })();
   try {
