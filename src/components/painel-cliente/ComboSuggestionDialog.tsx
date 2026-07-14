@@ -87,7 +87,9 @@ export async function preloadComboSuggestions() {
         component_ids,
       });
     });
-    // Ranking de serviços mais executados (últimos 90 dias)
+    // Ranking de serviços mais executados (últimos 90 dias).
+    // Excluímos apenas os próprios combos (serviços "pai"); componentes individuais
+    // como "Barba" permanecem no ranking mesmo fazendo parte de um combo.
     const comboIds = new Set(combos.map(c => c.combo_service_id));
     const counts = new Map<string, number>();
     (ranking || []).forEach((r: any) => {
@@ -160,10 +162,11 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         // Ordenar por maior economia
         result.sort((a, b) => b.savings - a.savings);
 
-        // Top serviços populares (excluindo o principal e os do combo selecionado)
+        // Top serviços populares (excluindo apenas o serviço principal).
+        // Mesmo quando há combo, mostramos serviços avulsos populares (ex.: Barba)
+        // — o cliente pode preferir adicionar só um deles em vez do combo inteiro.
         const cache = combosCache;
         const excluded = new Set<string>([mainServiceId]);
-        if (result[0]) result[0].missing.forEach(m => excluded.add(m.id));
         const limit = result.length > 0 ? 2 : 3;
         const tops: Array<{ id: string; nome: string; preco: number; duracao: number }> = [];
         if (cache) {
