@@ -254,15 +254,19 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
           <div className="flex items-center gap-1.5 mb-0.5">
             <Sparkles className="h-4 w-4" />
             <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
-              Combo disponível
+              {candidates.length > 0 ? 'Combo disponível' : 'Combine e aproveite'}
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold leading-tight">
-            Que tal completar seu combo?
+            {candidates.length > 0 ? 'Que tal completar seu combo?' : 'Quer adicionar mais um serviço?'}
           </h2>
-          {selected && (
+          {selected ? (
             <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
               Adicione e economize <b>{formatBRL(selected.savings)}</b>
+            </p>
+          ) : (
+            <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
+              Sugestões populares para complementar seu atendimento
             </p>
           )}
         </div>
@@ -330,21 +334,68 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   </div>
                 </div>
               )}
+
+              {topExtras.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    {candidates.length > 0 ? 'Ou adicione um popular' : 'Mais executados'}
+                  </p>
+                  {topExtras.map((t) => {
+                    const active = selectedExtraIds.has(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => toggleExtra(t.id)}
+                        className={cn(
+                          'w-full flex items-center justify-between rounded-xl border-2 p-3 transition-all text-left',
+                          active
+                            ? 'border-amber-500 bg-amber-50/70'
+                            : 'border-gray-200 bg-white'
+                        )}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span className={cn(
+                            'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                            active ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 text-transparent'
+                          )}>
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          </span>
+                          {t.nome}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-700">{formatBRL(t.preco)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>
 
         {/* Footer */}
-        {!loading && selected && (
+        {!loading && (selected || topExtras.length > 0) && (
           <div className="shrink-0 border-t border-amber-200/60 bg-white/90 backdrop-blur-sm p-3 sm:p-4 space-y-2">
-            <Button
-              type="button"
-              onClick={handleAccept}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
-            >
-              <Check className="w-4 h-4 mr-1.5" />
-              Adicionar combo e economizar
-            </Button>
+            {selected && (
+              <Button
+                type="button"
+                onClick={handleAccept}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+              >
+                <Check className="w-4 h-4 mr-1.5" />
+                Adicionar combo e economizar
+              </Button>
+            )}
+            {selectedExtraIds.size > 0 && (
+              <Button
+                type="button"
+                onClick={handleAddSelectedExtras}
+                className="w-full bg-urbana-black hover:bg-urbana-black/90 text-white font-semibold h-11 text-xs sm:text-sm"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Adicionar selecionado{selectedExtraIds.size > 1 ? 's' : ''} ({selectedExtraIds.size})
+              </Button>
+            )}
             {onAddOther && (
               <Button
                 type="button"
@@ -353,7 +404,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                 className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 h-11 text-xs sm:text-sm"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
-                Adicionar outro serviço
+                Ver todos os serviços e produtos
               </Button>
             )}
             <Button
@@ -362,7 +413,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               onClick={onClose}
               className="w-full text-gray-600 hover:bg-gray-100 h-10 text-xs sm:text-sm"
             >
-              Continuar sem combo
+              Continuar sem adicionar
             </Button>
           </div>
         )}
