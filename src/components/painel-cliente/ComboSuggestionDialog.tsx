@@ -236,7 +236,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent
-        className="max-w-[94vw] sm:max-w-[460px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[95dvh] flex flex-col rounded-2xl [&>button[type='button']:last-child]:hidden"
+        className="max-w-[94vw] sm:max-w-[460px] p-0 overflow-hidden border border-urbana-gold/30 bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black max-h-[95dvh] flex flex-col rounded-2xl shadow-2xl shadow-urbana-gold/20 [&>button[type='button']:last-child]:hidden"
       >
         <div className="sr-only">
           <DialogTitle>Combo disponível</DialogTitle>
@@ -247,28 +247,29 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
           type="button"
           onClick={onClose}
           aria-label="Fechar"
-          className="absolute top-2.5 right-2.5 z-30 h-9 w-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center active:scale-95 transition"
+          className="absolute top-2.5 right-2.5 z-30 h-9 w-9 rounded-full bg-urbana-black-soft/95 shadow-lg border border-urbana-gold/40 flex items-center justify-center active:scale-95 transition"
         >
-          <X className="h-5 w-5 text-amber-700" />
+          <X className="h-5 w-5 text-urbana-gold" />
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-white pr-14 shrink-0">
+        <div className="relative bg-gradient-to-r from-urbana-black-soft via-urbana-black to-urbana-black-soft border-b border-urbana-gold/30 px-4 py-3 pr-14 shrink-0 overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.08] pointer-events-none bg-[radial-gradient(circle_at_top_right,_hsl(43_65%_60%),_transparent_60%)]" />
           <div className="flex items-center gap-1.5 mb-0.5">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
+            <Sparkles className="h-4 w-4 text-urbana-gold" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-gold">
               {candidates.length > 0 ? 'Combo disponível' : 'Combine e aproveite'}
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-bold leading-tight">
+          <h2 className="text-lg sm:text-xl font-bold leading-tight text-urbana-light">
             {candidates.length > 0 ? 'Que tal completar seu combo?' : 'Quer adicionar mais um serviço?'}
           </h2>
           {selected ? (
-            <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
-              Adicione e economize <b>{formatBRL(selected.savings)}</b>
+            <p className="text-[12px] sm:text-sm text-urbana-light/70 mt-0.5">
+              Adicione e economize <b className="text-urbana-gold">{formatBRL(selected.savings)}</b>
             </p>
           ) : (
-            <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
+            <p className="text-[12px] sm:text-sm text-urbana-light/70 mt-0.5">
               Sugestões populares para complementar seu atendimento
             </p>
           )}
@@ -277,7 +278,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         {/* Body */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-3">
           {loading ? (
-            <div className="py-6 text-center text-sm text-gray-500">
+            <div className="py-6 text-center text-sm text-urbana-light/50">
               Verificando combos disponíveis...
             </div>
           ) : (
@@ -291,20 +292,20 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                       type="button"
                       onClick={() => setSelectedComboId(c.combo_service_id)}
                       className={cn(
-                        'w-full text-left rounded-xl border-2 p-3 transition-all bg-white',
+                        'w-full text-left rounded-xl border-2 p-3 transition-all',
                         selectedComboId === c.combo_service_id
-                          ? 'border-amber-500 shadow-sm bg-amber-50/60'
-                          : 'border-gray-200'
+                          ? 'border-urbana-gold bg-urbana-gold/10 shadow-[0_0_0_1px_hsl(43_65%_60%/0.3)]'
+                          : 'border-urbana-gold/20 bg-urbana-black-soft/60'
                       )}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-900 text-sm">{c.combo_nome}</span>
-                        <span className="text-xs font-bold text-emerald-700">
+                        <span className="font-semibold text-urbana-light text-sm">{c.combo_nome}</span>
+                        <span className="text-xs font-bold text-urbana-gold">
                           -{formatBRL(c.savings)}
                         </span>
                       </div>
-                      <p className="text-[11px] text-gray-600 mt-0.5">
-                        Combo por <b>{formatBRL(c.combo_preco)}</b> · {c.missing.length} serviço{c.missing.length > 1 ? 's' : ''} a adicionar
+                      <p className="text-[11px] text-urbana-light/60 mt-0.5">
+                        Combo por <b className="text-urbana-light/90">{formatBRL(c.combo_preco)}</b> · {c.missing.length} serviço{c.missing.length > 1 ? 's' : ''} a adicionar
                       </p>
                     </button>
                   ))}
@@ -312,25 +313,25 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               )}
 
               {selected && (
-                <div className="rounded-xl border-2 border-amber-300 bg-white p-3 space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-amber-700">
+                <div className="rounded-xl border-2 border-urbana-gold/50 bg-urbana-black-soft/70 p-3 space-y-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-gold">
                     Serviços que serão adicionados
                   </p>
                   {selected.missing.map((m) => (
                     <div key={m.id} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-gray-900">
-                        <Plus className="h-3.5 w-3.5 text-amber-600" strokeWidth={3} />
+                      <span className="flex items-center gap-2 text-urbana-light">
+                        <Plus className="h-3.5 w-3.5 text-urbana-gold" strokeWidth={3} />
                         {m.nome}
                       </span>
-                      <span className="text-gray-600">{formatBRL(m.preco)}</span>
+                      <span className="text-urbana-light/70">{formatBRL(m.preco)}</span>
                     </div>
                   ))}
-                  <div className="border-t border-gray-200 pt-2 mt-2 space-y-1">
-                    <div className="flex justify-between text-xs text-gray-500">
+                  <div className="border-t border-urbana-gold/20 pt-2 mt-2 space-y-1">
+                    <div className="flex justify-between text-xs text-urbana-light/50">
                       <span>Total avulso</span>
                       <span className="line-through">{formatBRL(selected.individual_total)}</span>
                     </div>
-                    <div className="flex justify-between text-sm font-bold text-amber-700">
+                    <div className="flex justify-between text-sm font-bold text-urbana-gold">
                       <span>Total no combo</span>
                       <span>{formatBRL(selected.combo_preco)}</span>
                     </div>
@@ -340,7 +341,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
 
               {topExtras.length > 0 && (
                 <div className="space-y-2">
-                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-light/50 pt-1">
                     {candidates.length > 0 ? 'Ou adicione um popular' : 'Mais executados'}
                   </p>
                   {topExtras.map((t) => {
@@ -353,20 +354,20 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                         className={cn(
                           'w-full flex items-center justify-between rounded-xl border-2 p-3 transition-all text-left',
                           active
-                            ? 'border-amber-500 bg-amber-50/70'
-                            : 'border-gray-200 bg-white'
+                            ? 'border-urbana-gold bg-urbana-gold/10'
+                            : 'border-urbana-gold/15 bg-urbana-black-soft/60'
                         )}
                       >
-                        <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                        <span className="flex items-center gap-2 text-sm font-medium text-urbana-light">
                           <span className={cn(
                             'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                            active ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 text-transparent'
+                            active ? 'bg-urbana-gold border-urbana-gold text-urbana-black' : 'border-urbana-gold/40 text-transparent'
                           )}>
                             <Check className="h-3 w-3" strokeWidth={3} />
                           </span>
                           {t.nome}
                         </span>
-                        <span className="text-sm font-semibold text-gray-700">{formatBRL(t.preco)}</span>
+                        <span className="text-sm font-semibold text-urbana-light/80">{formatBRL(t.preco)}</span>
                       </button>
                     );
                   })}
@@ -378,12 +379,12 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
 
         {/* Footer */}
         {!loading && (selected || topExtras.length > 0) && (
-          <div className="shrink-0 border-t border-amber-200/60 bg-white/90 backdrop-blur-sm p-3 sm:p-4 space-y-2">
+          <div className="shrink-0 border-t border-urbana-gold/25 bg-urbana-black/95 backdrop-blur-sm p-3 sm:p-4 space-y-2">
             {selected && (
               <Button
                 type="button"
                 onClick={handleAccept}
-                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+                className="w-full bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-11 text-xs sm:text-sm shadow-lg shadow-urbana-gold/20"
               >
                 <Check className="w-4 h-4 mr-1.5" />
                 Adicionar combo e economizar
@@ -393,7 +394,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               <Button
                 type="button"
                 onClick={handleAddSelectedExtras}
-                className="w-full bg-urbana-black hover:bg-urbana-black/90 text-white font-semibold h-11 text-xs sm:text-sm"
+                className="w-full bg-urbana-brown-light hover:bg-urbana-brown text-urbana-light font-semibold h-11 text-xs sm:text-sm border border-urbana-gold/30"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 Adicionar selecionado{selectedExtraIds.size > 1 ? 's' : ''} ({selectedExtraIds.size})
@@ -404,7 +405,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                 type="button"
                 variant="outline"
                 onClick={onAddOther}
-                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 h-11 text-xs sm:text-sm"
+                className="w-full border-urbana-gold/40 bg-transparent text-urbana-gold hover:bg-urbana-gold/10 hover:text-urbana-gold-light h-11 text-xs sm:text-sm"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
                 Ver todos os serviços e produtos
@@ -414,7 +415,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               type="button"
               variant="ghost"
               onClick={onClose}
-              className="w-full text-gray-600 hover:bg-gray-100 h-10 text-xs sm:text-sm"
+              className="w-full text-urbana-light/60 hover:bg-urbana-light/5 hover:text-urbana-light h-10 text-xs sm:text-sm"
             >
               Continuar sem adicionar
             </Button>
