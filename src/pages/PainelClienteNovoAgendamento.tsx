@@ -948,11 +948,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             {step === 'datetime' && (
               <div>
                 <div className="mb-4 sm:mb-6">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Escolha Data e Horário</h2>
-                  <p className="text-white/60 text-sm sm:text-base">Selecione a melhor data e horário para você</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">
+                    {dateTimeView === 'date' && 'Escolha a Data'}
+                    {dateTimeView === 'time' && 'Escolha o Horário'}
+                    {dateTimeView === 'summary' && 'Confirme seu Agendamento'}
+                  </h2>
+                  <p className="text-white/60 text-sm sm:text-base">
+                    {dateTimeView === 'date' && 'Selecione o melhor dia para o seu agendamento'}
+                    {dateTimeView === 'time' && `Horários disponíveis para ${selectedDate ? format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR }) : ''}`}
+                    {dateTimeView === 'summary' && 'Revise os detalhes e adicione produtos se quiser'}
+                  </p>
                 </div>
 
                 {/* Date Selection */}
+                {dateTimeView === 'date' && (
                 <div className="mb-6 sm:mb-8">
                   <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
@@ -993,9 +1002,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     )}
                     </div>
                   </div>
+                )}
 
                 {/* Time Selection */}
-                {selectedDate && (
+                {dateTimeView === 'time' && selectedDate && (
                   <div className="mb-6 sm:mb-8">
                     <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                       <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
@@ -1017,7 +1027,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           .map((slot, index) => (
                             <TotemCard
                               key={slot.time}
-                              onClick={() => setSelectedTime(slot.time)}
+                              onClick={() => handleTimeSelect(slot.time)}
                               variant={selectedTime === slot.time ? 'selected' : 'default'}
                               animationDelay={`${index * 0.02}s`}
                               className="!min-h-[60px] sm:!min-h-[70px] !p-3 sm:!p-4"
@@ -1035,7 +1045,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   )}
 
                 {/* Summary & Confirm */}
-                {selectedDate && selectedTime && (
+                {dateTimeView === 'summary' && selectedDate && selectedTime && (
                   <div className="mt-6 sm:mt-8">
                     <Card className="bg-urbana-black/40 border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20">
                       <CardHeader className="bg-urbana-gold/20 border-b border-urbana-gold/30 p-3 sm:p-4">
