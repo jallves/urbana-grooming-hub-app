@@ -72,24 +72,74 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
     const load = async () => {
       setLoading(true);
       try {
-        const [servicesRes, productsRes] = await Promise.all([
+        // Ranking: serviços mais executados e produtos mais vendidos (últimos 90 dias)
+        const since = new Date();
+        since.setDate(since.getDate() - 90);
+        const sinceStr = since.toISOString().slice(0, 10);
+
+        const [servicesRes, productsRes, servicesRankRes, productsRankRes] = await Promise.all([
           supabase
             .from("painel_servicos")
             .select("id, nome, preco, duracao")
-            .eq("ativo", true)
-            .order("nome"),
+            .eq("ativo", true),
           supabase
             .from("painel_produtos")
             .select("id, nome, preco, estoque, imagem_url, categoria")
             .eq("ativo", true)
-            .gt("estoque", 0)
-            .order("nome")
-            .limit(20),
+            .gt("estoque", 0),
+          supabase
+            .from("painel_agendamentos")
+            .select("servico_id")
+            .eq("status", "concluido")
+            .gte("data", sinceStr)
+            .limit(5000),
+          supabase
+            .from("vendas_itens")
+            .select("item_id, quantidade")
+            .eq("tipo", "produto")
+            .limit(2000),
         ]);
         if (servicesRes.error) throw servicesRes.error;
         if (productsRes.error) throw productsRes.error;
-        setAvailableServices((servicesRes.data || []) as ClientExtraService[]);
-        setAvailableProducts((productsRes.data || []) as Product[]);
+
+        // Ranking de serviços por execuções
+        const svcRank = new Map<string, number>();
+        (servicesRankRes.data || []).forEach((row: any) => {
+          if (!row.servico_id) return;
+          svcRank.set(row.servico_id, (svcRank.get(row.servico_id) || 0) + 1);
+        });
+
+        // Ranking de produtos por unidades vendidas
+        const prodRank = new Map<string, number>();
+        (productsRankRes.data || []).forEach((row: any) => {
+          if (!row.item_id) return;
+          prodRank.set(
+            row.item_id,
+            (prodRank.get(row.item_id) || 0) + (Number(row.quantidade) || 1)
+          );
+        });
+
+        const orderedServices = ((servicesRes.data || []) as ClientExtraService[])
+          .slice()
+          .sort((a, b) => {
+            const ra = svcRank.get(a.id) || 0;
+            const rb = svcRank.get(b.id) || 0;
+            if (rb !== ra) return rb - ra;
+            return a.nome.localeCompare(b.nome, "pt-BR");
+          });
+
+        const orderedProducts = ((productsRes.data || []) as Product[])
+          .slice()
+          .sort((a, b) => {
+            const ra = prodRank.get(a.id) || 0;
+            const rb = prodRank.get(b.id) || 0;
+            if (rb !== ra) return rb - ra;
+            return a.nome.localeCompare(b.nome, "pt-BR");
+          })
+          .slice(0, 20);
+
+        setAvailableServices(orderedServices);
+        setAvailableProducts(orderedProducts);
       } catch (e) {
         console.error("[ClientBookingExtrasModal] Erro:", e);
         toast.error("Erro ao carregar opções");
