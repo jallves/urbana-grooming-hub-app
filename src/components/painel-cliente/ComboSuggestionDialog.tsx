@@ -384,9 +384,9 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               <Button
                 type="button"
                 onClick={handleAccept}
-                className="w-full bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-11 text-xs sm:text-sm shadow-lg shadow-urbana-gold/20"
+                className="w-full bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-12 text-sm sm:text-base shadow-lg shadow-urbana-gold/30 border border-urbana-gold-light"
               >
-                <Check className="w-4 h-4 mr-1.5" />
+                <Check className="w-5 h-5 mr-2" strokeWidth={3} />
                 Adicionar combo e economizar
               </Button>
             )}
@@ -403,19 +403,17 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
             {onAddOther && (
               <Button
                 type="button"
-                variant="outline"
                 onClick={onAddOther}
-                className="w-full border-urbana-gold/40 bg-transparent text-urbana-gold hover:bg-urbana-gold/10 hover:text-urbana-gold-light h-11 text-xs sm:text-sm"
+                className="w-full bg-urbana-black-soft hover:bg-urbana-brown-light text-urbana-gold hover:text-urbana-gold-light font-semibold h-12 text-sm sm:text-base border-2 border-urbana-gold/60 shadow-md shadow-black/40"
               >
-                <Plus className="w-4 h-4 mr-1.5" />
+                <Plus className="w-5 h-5 mr-2" strokeWidth={3} />
                 Ver todos os serviços e produtos
               </Button>
             )}
             <Button
               type="button"
-              variant="ghost"
               onClick={onClose}
-              className="w-full text-urbana-light/60 hover:bg-urbana-light/5 hover:text-urbana-light h-10 text-xs sm:text-sm"
+              className="w-full bg-urbana-gray/40 hover:bg-urbana-gray/60 text-urbana-light font-semibold h-12 text-sm sm:text-base border border-urbana-light/20"
             >
               Continuar sem adicionar
             </Button>
