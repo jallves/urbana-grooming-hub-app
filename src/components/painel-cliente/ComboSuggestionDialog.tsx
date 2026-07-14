@@ -41,16 +41,24 @@ interface ComboMeta {
 }
 interface ServiceMeta { id: string; nome: string; preco: number; duracao: number; active: boolean }
 
-let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta> } | null = null;
-let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta> }> | null = null;
+let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] } | null = null;
+let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] }> | null = null;
 
 export async function preloadComboSuggestions() {
   if (combosCache) return combosCache;
   if (combosCachePromise) return combosCachePromise;
   combosCachePromise = (async () => {
-    const [{ data: items }, { data: services }] = await Promise.all([
+    const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    const [{ data: items }, { data: services }, { data: ranking }] = await Promise.all([
       supabase.from('combo_service_items').select('combo_service_id, component_service_id'),
       supabase.from('painel_servicos').select('id, nome, preco, duracao, is_active, ativo'),
+      supabase
+        .from('painel_agendamentos')
+        .select('servico_id')
+        .eq('status', 'concluido')
+        .gte('data', sinceIso)
+        .not('servico_id', 'is', null)
+        .limit(5000),
     ]);
     const svcMap = new Map<string, ServiceMeta>();
     (services || []).forEach((s: any) => {
@@ -79,7 +87,22 @@ export async function preloadComboSuggestions() {
         component_ids,
       });
     });
-    combosCache = { combos, services: svcMap };
+    // Ranking de serviços mais executados (últimos 90 dias)
+    const comboIds = new Set(combos.map(c => c.combo_service_id));
+    const counts = new Map<string, number>();
+    (ranking || []).forEach((r: any) => {
+      const id = r.servico_id;
+      if (!id) return;
+      counts.set(id, (counts.get(id) || 0) + 1);
+    });
+    const topServiceIds = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .map(([id]) => id)
+      .filter(id => {
+        const s = svcMap.get(id);
+        return !!s && s.active && !comboIds.has(id);
+      });
+    combosCache = { combos, services: svcMap, topServiceIds };
     return combosCache;
   })();
   try {
@@ -100,6 +123,8 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
   const [selectedComboId, setSelectedComboId] = useState<string | null>(null);
+  const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number }>>([]);
+  const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (!isOpen || !mainServiceId) return;
@@ -107,6 +132,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     (async () => {
       setLoading(true);
       setSelectedComboId(null);
+      setSelectedExtraIds(new Set());
       try {
         const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
@@ -134,13 +160,39 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         // Ordenar por maior economia
         result.sort((a, b) => b.savings - a.savings);
 
+        // Top serviços populares (excluindo o principal e os do combo selecionado)
+        const cache = combosCache;
+        const excluded = new Set<string>([mainServiceId]);
+        if (result[0]) result[0].missing.forEach(m => excluded.add(m.id));
+        const limit = result.length > 0 ? 2 : 3;
+        const tops: Array<{ id: string; nome: string; preco: number; duracao: number }> = [];
+        if (cache) {
+          for (const id of cache.topServiceIds) {
+            if (excluded.has(id)) continue;
+            const s = cache.services.get(id);
+            if (!s) continue;
+            tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+            if (tops.length >= limit) break;
+          }
+          // Fallback: se não houver ranking suficiente, completa com serviços ativos aleatórios
+          if (tops.length < limit) {
+            for (const s of cache.services.values()) {
+              if (tops.length >= limit) break;
+              if (excluded.has(s.id) || !s.active) continue;
+              if (tops.some(t => t.id === s.id)) continue;
+              tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+            }
+          }
+        }
+
         if (!cancelled) {
           setCandidates(result);
           if (result.length > 0) setSelectedComboId(result[0].combo_service_id);
+          setTopExtras(tops);
         }
       } catch (err) {
         console.error('[ComboSuggestionDialog] erro:', err);
-        if (!cancelled) setCandidates([]);
+        if (!cancelled) { setCandidates([]); setTopExtras([]); }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -148,12 +200,12 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     return () => { cancelled = true; };
   }, [isOpen, mainServiceId, mainServicePrice]);
 
-  // Se não achou nada, fecha automaticamente sem incomodar
+  // Se realmente não há nada a sugerir, fecha automaticamente
   useEffect(() => {
-    if (isOpen && !loading && candidates.length === 0) {
+    if (isOpen && !loading && candidates.length === 0 && topExtras.length === 0) {
       onClose();
     }
-  }, [isOpen, loading, candidates.length, onClose]);
+  }, [isOpen, loading, candidates.length, topExtras.length, onClose]);
 
   const selected = candidates.find(c => c.combo_service_id === selectedComboId) || null;
 
@@ -162,7 +214,21 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     onAccept(selected.missing);
   };
 
-  if (!isOpen || (candidates.length === 0 && !loading)) return null;
+  const toggleExtra = (id: string) => {
+    setSelectedExtraIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleAddSelectedExtras = () => {
+    const picked = topExtras.filter(t => selectedExtraIds.has(t.id));
+    if (picked.length === 0) return;
+    onAccept(picked);
+  };
+
+  if (!isOpen || (candidates.length === 0 && topExtras.length === 0 && !loading)) return null;
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
@@ -188,15 +254,19 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
           <div className="flex items-center gap-1.5 mb-0.5">
             <Sparkles className="h-4 w-4" />
             <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
-              Combo disponível
+              {candidates.length > 0 ? 'Combo disponível' : 'Combine e aproveite'}
             </span>
           </div>
           <h2 className="text-lg sm:text-xl font-bold leading-tight">
-            Que tal completar seu combo?
+            {candidates.length > 0 ? 'Que tal completar seu combo?' : 'Quer adicionar mais um serviço?'}
           </h2>
-          {selected && (
+          {selected ? (
             <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
               Adicione e economize <b>{formatBRL(selected.savings)}</b>
+            </p>
+          ) : (
+            <p className="text-[12px] sm:text-sm text-white/90 mt-0.5">
+              Sugestões populares para complementar seu atendimento
             </p>
           )}
         </div>
@@ -264,21 +334,68 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   </div>
                 </div>
               )}
+
+              {topExtras.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-gray-600">
+                    {candidates.length > 0 ? 'Ou adicione um popular' : 'Mais executados'}
+                  </p>
+                  {topExtras.map((t) => {
+                    const active = selectedExtraIds.has(t.id);
+                    return (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => toggleExtra(t.id)}
+                        className={cn(
+                          'w-full flex items-center justify-between rounded-xl border-2 p-3 transition-all text-left',
+                          active
+                            ? 'border-amber-500 bg-amber-50/70'
+                            : 'border-gray-200 bg-white'
+                        )}
+                      >
+                        <span className="flex items-center gap-2 text-sm font-medium text-gray-900">
+                          <span className={cn(
+                            'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
+                            active ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300 text-transparent'
+                          )}>
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          </span>
+                          {t.nome}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-700">{formatBRL(t.preco)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </>
           )}
         </div>
 
         {/* Footer */}
-        {!loading && selected && (
+        {!loading && (selected || topExtras.length > 0) && (
           <div className="shrink-0 border-t border-amber-200/60 bg-white/90 backdrop-blur-sm p-3 sm:p-4 space-y-2">
-            <Button
-              type="button"
-              onClick={handleAccept}
-              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
-            >
-              <Check className="w-4 h-4 mr-1.5" />
-              Adicionar combo e economizar
-            </Button>
+            {selected && (
+              <Button
+                type="button"
+                onClick={handleAccept}
+                className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+              >
+                <Check className="w-4 h-4 mr-1.5" />
+                Adicionar combo e economizar
+              </Button>
+            )}
+            {selectedExtraIds.size > 0 && (
+              <Button
+                type="button"
+                onClick={handleAddSelectedExtras}
+                className="w-full bg-urbana-black hover:bg-urbana-black/90 text-white font-semibold h-11 text-xs sm:text-sm"
+              >
+                <Plus className="w-4 h-4 mr-1.5" />
+                Adicionar selecionado{selectedExtraIds.size > 1 ? 's' : ''} ({selectedExtraIds.size})
+              </Button>
+            )}
             {onAddOther && (
               <Button
                 type="button"
@@ -287,7 +404,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                 className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 h-11 text-xs sm:text-sm"
               >
                 <Plus className="w-4 h-4 mr-1.5" />
-                Adicionar outro serviço
+                Ver todos os serviços e produtos
               </Button>
             )}
             <Button
@@ -296,7 +413,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               onClick={onClose}
               className="w-full text-gray-600 hover:bg-gray-100 h-10 text-xs sm:text-sm"
             >
-              Continuar sem combo
+              Continuar sem adicionar
             </Button>
           </div>
         )}
