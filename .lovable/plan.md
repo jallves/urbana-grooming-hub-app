@@ -1,60 +1,112 @@
-## Cupom de desconto no agendamento do cliente
 
-Objetivo: permitir que o cliente aplique um cupom de desconto na tela de agendamento (após escolher serviço/barbeiro/horário, antes de confirmar). O valor descontado fica gravado no agendamento e aparece no check-in/checkout do totem e no painel admin. Admin gerencia os cupons na aba de Agendamentos de Clientes.
+# Plano: Novo Fluxo de Agendamento do Cliente (Wizard Dinâmico)
 
-### 1. Banco de dados (migration)
-Adicionar em `painel_agendamentos`:
-- `cupom_codigo text` — código aplicado
-- `cupom_id uuid` — FK opcional para `discount_coupons.id`
-- `desconto_valor numeric default 0` — valor absoluto em R$ descontado
-- `valor_original numeric` — preço antes do desconto (auditoria)
-- `valor_final numeric` — preço cobrado
+## Objetivo
+Substituir o formulário único atual (`NewClientAppointmentForm`) por um **wizard em etapas**, mais rápido, com sugestões inteligentes, sem quebrar as integrações existentes (Admin, Totem check-in, Painel Barbeiro, comissões).
 
-Nova RPC `validate_and_apply_coupon(p_code text, p_service_price numeric)`:
-- Verifica `is_active`, `valid_from/until`, `max_uses`
-- Retorna `{success, coupon_id, discount_amount, final_amount, error}`
-- Não incrementa `current_uses` (só incrementa quando o agendamento é confirmado — trigger)
+## Fluxo alvo (5 etapas)
 
-Trigger em `painel_agendamentos`:
-- Ao INSERT com `cupom_id`, incrementa `current_uses`
-- Ao UPDATE de status para `cancelado`, decrementa
-- Ao DELETE com `cupom_id`, decrementa
+```text
+[1] Escolher SERVIÇOS    →  ordenados pelos mais executados
+         ↓                    (após 1º corte → popup Combo)
+[2] Escolher BARBEIRO    →  cards com foto
+         ↓
+[3] Escolher DIA         →  scroll horizontal de datas
+         ↓
+[4] Escolher HORÁRIO     →  subtela dedicada + botão Voltar
+         ↓                    (voltar = etapa 3 novamente)
+[5] RESUMO + extras      →  serviços extras + popup produtos
+         ↓
+    Confirmar → grava em painel_agendamentos (fluxo atual)
+```
 
-Ajustar RLS em `discount_coupons`: permitir `SELECT` para `authenticated` (clientes logados precisam validar cupons pelo código).
+## Regras por etapa
 
-### 2. Painel do cliente (agendamento)
-Arquivo: `src/pages/PainelClienteAgendamentos.tsx` e componentes filhos do fluxo de novo agendamento.
+### 1. Serviços — ordenação inteligente
+- Nova view/consulta agregando execuções dos últimos **90 dias** em `painel_agendamentos` (status `concluido`) por `servico_id`, retornando ranking.
+- Ordem final: serviços com ranking primeiro (desc), demais em ordem alfabética como fallback.
+- Cache React Query 10 min.
 
-- Nova etapa/campo "Cupom de desconto" logo antes do botão "Confirmar agendamento"
-- Input de código + botão "Aplicar"
-- Chama RPC `validate_and_apply_coupon` com o código e o preço do serviço selecionado
-- Mostra: preço original, desconto (R$ e %), preço final, badge verde do cupom
-- Botão "Remover cupom" para trocar
-- Ao confirmar, envia `cupom_codigo`, `cupom_id`, `desconto_valor`, `valor_original`, `valor_final` para o INSERT
+### 2. Popup Combo (após seleção)
+- Ao selecionar um serviço que participa de algum combo (`combo_service_items`), abrir modal rápido sugerindo os serviços complementares do(s) combo(s).
+- Se o cliente aceitar, adiciona o(s) serviço(s) extra(s) e aplica o **preço do combo** (mesmo desconto já usado no Totem — reaproveitar `detectMatchingCombo` já existente).
+- Se recusar, mantém apenas o serviço original.
 
-### 3. Painel admin — gestão de cupons dentro de Agendamentos de Clientes
-Arquivo: `src/pages/AdminClientAppointments.tsx` (nova aba "Cupons de Desconto").
+### 3. Data
+- Scroll horizontal (chips) com próximos 30 dias, respeitando `barber_availability` e regra de "dia vazio" oculto (memória já existente).
+- Seleção da data **abre subtela** de horários (não força scroll).
 
-Nova aba usando componentes já existentes do módulo Marketing como base (`CouponForm`, `CouponList`) mas reaproveitados/adaptados:
-- Listagem com colunas: código, tipo (%, R$), valor, validade, usos (atual/máx), status ativo
-- Botão criar cupom: código, tipo (percentual/fixo), valor, valid_from, valid_until, max_uses, is_active
-- Toggle ativar/inativar (switch no card/linha)
-- Editar e excluir cupom
-- Todas operações usam a tabela `discount_coupons` já existente
+### 4. Horários (subtela)
+- Lista de slots disponíveis do barbeiro naquele dia (reaproveitar `useBarberAppointmentFetch` + validação unificada — memória `unified-appointment-validation`).
+- Botão **Voltar** retorna à etapa 3 (mantém barbeiro/serviços).
 
-### 4. Exibição do desconto no fluxo pós-agendamento
-- **Lista admin de agendamentos** (`ClientAppointmentDashboard` e cards do agendamento): mostrar badge do cupom + desconto ao lado do valor
-- **Totem check-in/checkout** (`TotemCheckoutSearch`, `TotemPaymentCash`, `TotemProductCardType`): quando o agendamento tem `cupom_codigo`, exibir "Cupom X — desconto R$ Y" e cobrar `valor_final` em vez do preço do serviço
-- **Painel do cliente** (lista de próximos agendamentos): mostrar o cupom aplicado e valor final
+### 5. Resumo + extras + produtos
+- Resumo: barbeiro, data, horário, lista de serviços com preços, total (já com desconto de combo se aplicável).
+- Botão **+ Adicionar serviço extra** (mesmo componente já reutilizado no admin/barbeiro, com detecção automática de combo).
+- Antes de confirmar, popup dos **produtos mais vendidos** (reaproveitar `ProductCrossSellDialog` — trocar ordenação de "cross-sell" para "mais vendidos" via `vendas_itens`).
+- Confirmar → grava normalmente via `useClientAppointmentSubmit` (integrações intactas).
 
-### Detalhes técnicos
-- RPC `SECURITY DEFINER` com `SET search_path = public` para permitir cliente autenticado validar sem acessar tabela diretamente
-- Trigger de decremento no cancelamento evita "gastar" cupom em agendamento cancelado
-- `valor_original` e `valor_final` gravados para preservar valor mesmo se o preço do serviço mudar depois
-- Reutilizar `discount_coupons` (já existe) — não criar tabela nova
-- Componente `CouponBadge` reutilizável para admin/totem/cliente
+## Integrações preservadas
+- Persistência continua em `painel_agendamentos` (sem alterar schema principal).
+- Admin (`AdminAppointments`), Painel Barbeiro (`BarberAppointments`) e Totem (`TotemSearch`) continuam lendo/escrevendo nas mesmas tabelas.
+- Sem mudanças em comissões, ERP, ou fluxo de check-in.
 
-### Pontos a confirmar
-1. Cupom deve poder ter **valor mínimo do serviço** (`min_amount` já existe na tabela) — quer usar?
-2. Um cupom pode ser usado **múltiplas vezes pelo mesmo cliente** ou só uma vez por cliente? (hoje só há limite global `max_uses`)
-3. Quer restringir cupom a serviços/barbeiros específicos ou vale para todos?
+---
+
+## Detalhes técnicos
+
+### Novos arquivos
+- `src/components/client/appointment/wizard/ClientAppointmentWizard.tsx` — orquestrador (state machine simples com `step: 1..5`).
+- `src/components/client/appointment/wizard/StepServices.tsx`
+- `src/components/client/appointment/wizard/StepBarber.tsx`
+- `src/components/client/appointment/wizard/StepDate.tsx`
+- `src/components/client/appointment/wizard/StepTime.tsx`
+- `src/components/client/appointment/wizard/StepSummary.tsx`
+- `src/components/client/appointment/wizard/ComboSuggestionDialog.tsx`
+- `src/hooks/useTopServices.ts` — ranking de serviços mais executados (90 dias).
+- `src/hooks/useTopProducts.ts` — ranking de produtos mais vendidos (para o popup final).
+- `src/hooks/useComboSuggestions.ts` — dado um `service_id`, retorna combos elegíveis a partir de `combo_service_items` + `painel_servicos`.
+
+### Reaproveitamento
+- `detectMatchingCombo` (já usado no Totem/Admin/Barbeiro) para cálculo do desconto.
+- `useClientAppointmentSubmit` para gravação final.
+- `ProductCrossSellDialog` existente (adaptar fonte de dados para "mais vendidos").
+- Validação unificada de slots (memória existente).
+
+### Substituição
+- `NewClientAppointmentForm.tsx` passa a renderizar o novo `ClientAppointmentWizard` mantendo a mesma prop API (`isOpen`, `onClose`, `defaultDate`) — nenhum call-site precisa mudar.
+
+### Consulta de ranking (SQL client-side)
+```ts
+supabase
+  .from('painel_agendamentos')
+  .select('servico_id')
+  .eq('status', 'concluido')
+  .gte('data', <hoje - 90d>);
+// agrupa por servico_id no cliente
+```
+(Sem migração de schema; leitura simples.)
+
+### Estado do Wizard
+```ts
+{
+  step: 1|2|3|4|5,
+  services: Service[],       // suporta múltiplos (combos/extras)
+  barberId: string | null,
+  date: Date | null,
+  time: string | null,
+  extraProducts: Product[],
+  appliedComboId: string | null,
+  totalPrice: number,
+}
+```
+
+## Fora de escopo
+- Alterações em Admin/Totem/Barbeiro (integrações permanecem lendo `painel_agendamentos`).
+- Alterações no cálculo de comissões.
+- Migrações de banco.
+
+## Riscos e mitigação
+- **DOM/translation extensions**: seguir memória (`key` dinâmico em containers de step, `suppressHydrationWarning`).
+- **Mobile 100dvh**: sheet fullscreen conforme padrão Urbana.
+- **Combo duplicado**: usar mesma função `detectMatchingCombo` já validada no Totem.

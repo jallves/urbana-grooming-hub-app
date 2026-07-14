@@ -23,6 +23,7 @@ import ProductCrossSellDialog from '@/components/client/appointment/ProductCross
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
 import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
+import ComboSuggestionDialog from '@/components/painel-cliente/ComboSuggestionDialog';
 
 interface Service {
   id: string;
@@ -48,6 +49,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
   const [step, setStep] = useState<'service' | 'barber' | 'datetime'>('service');
+  // Subview dentro do step 'datetime': começa selecionando a data,
+  // depois abre subtela de horários, depois resumo.
+  const [dateTimeView, setDateTimeView] = useState<'date' | 'time' | 'summary'>('date');
   
   // State para os dados do agendamento
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -78,6 +82,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [showCrossSell, setShowCrossSell] = useState(false);
   const [crossSellProducts, setCrossSellProducts] = useState<CrossSellProduct[]>([]);
 
+  // Popup de sugestão de combo (após selecionar serviço)
+  const [showComboSuggestion, setShowComboSuggestion] = useState(false);
+  const [pendingComboServiceId, setPendingComboServiceId] = useState<string | null>(null);
+  const [pendingComboServicePrice, setPendingComboServicePrice] = useState<number>(0);
+
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
   const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
@@ -90,22 +99,49 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadServices = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('painel_servicos')
-        .select('id, nome, preco, duracao')
-        .eq('is_active', true)
-        .gt('preco', 0)
-        .order('nome');
+      // Busca serviços + ranking de execução dos últimos 90 dias em paralelo
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const sinceStr = format(since, 'yyyy-MM-dd');
 
-      if (error) throw error;
-      
-      const uniqueServices: Service[] = (data || []).map(s => ({
+      const [servicesRes, rankRes] = await Promise.all([
+        supabase
+          .from('painel_servicos')
+          .select('id, nome, preco, duracao')
+          .eq('is_active', true)
+          .gt('preco', 0),
+        supabase
+          .from('painel_agendamentos')
+          .select('servico_id')
+          .eq('status', 'concluido')
+          .gte('data', sinceStr)
+          .limit(5000),
+      ]);
+
+      if (servicesRes.error) throw servicesRes.error;
+
+      // Ranking: contagem de execuções por servico_id
+      const rank = new Map<string, number>();
+      (rankRes.data || []).forEach((row: any) => {
+        if (!row.servico_id) return;
+        rank.set(row.servico_id, (rank.get(row.servico_id) || 0) + 1);
+      });
+
+      const uniqueServices: Service[] = (servicesRes.data || []).map(s => ({
         id: s.id,
         nome: s.nome,
         preco: s.preco,
-        duracao: s.duracao
+        duracao: s.duracao,
       }));
-      
+
+      // Ordena por: mais executados desc, depois alfabético como fallback
+      uniqueServices.sort((a, b) => {
+        const ra = rank.get(a.id) || 0;
+        const rb = rank.get(b.id) || 0;
+        if (rb !== ra) return rb - ra;
+        return a.nome.localeCompare(b.nome, 'pt-BR');
+      });
+
       setServices(uniqueServices);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
@@ -445,19 +481,63 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
     setSelectedService(service);
+    // Antes de avançar, verifica se este serviço faz parte de algum combo
+    // e sugere completar. O popup segue com step='barber' independente do resultado.
+    setPendingComboServiceId(service.id);
+    setPendingComboServicePrice(Number(service.preco) || 0);
+    setShowComboSuggestion(true);
+  };
+
+  const handleComboSuggestionClose = () => {
+    setShowComboSuggestion(false);
+    setPendingComboServiceId(null);
+    setPendingComboServicePrice(0);
     setStep('barber');
+  };
+
+  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number }>) => {
+    // Injeta serviços faltantes como extras — o combo é detectado no checkout.
+    setExtraServices(prev => {
+      const next = [...prev];
+      for (const svc of added) {
+        if (!next.some(e => e.id === svc.id)) {
+          next.push({
+            id: svc.id,
+            nome: svc.nome,
+            preco: svc.preco,
+            duracao: svc.duracao,
+            quantidade: 1,
+          });
+        }
+      }
+      return next;
+    });
+    setShowComboSuggestion(false);
+    setPendingComboServiceId(null);
+    setPendingComboServicePrice(0);
+    setStep('barber');
+    toast.success('Combo montado! O desconto será aplicado no checkout.');
   };
 
   // Handler para selecionar barbeiro - avança automaticamente
   const handleBarberSelect = (barber: Barber) => {
     setSelectedBarber(barber);
     setStep('datetime');
+    setDateTimeView('date');
+    setSelectedDate(null);
+    setSelectedTime(null);
   };
 
   // Handler para selecionar data
   const handleDateSelect = (date: Date) => {
     setSelectedDate(date);
     setSelectedTime(null);
+    setDateTimeView('time');
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setDateTimeView('summary');
   };
 
   // Handler para confirmar agendamento
@@ -662,9 +742,21 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       setExtraServices([]);
       setSelectedProducts([]);
     } else if (step === 'datetime') {
-      setStep('barber');
-      setSelectedDate(null);
-      setSelectedTime(null);
+      // Dentro do step 'datetime' há 3 subtelas: data, horário, resumo.
+      // O botão Voltar respeita esse fluxo interno antes de sair do step.
+      if (dateTimeView === 'summary') {
+        setSelectedTime(null);
+        setDateTimeView('time');
+      } else if (dateTimeView === 'time') {
+        setSelectedTime(null);
+        setSelectedDate(null);
+        setDateTimeView('date');
+      } else {
+        setStep('barber');
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setDateTimeView('date');
+      }
     } else {
       navigate('/painel-cliente/dashboard');
     }
@@ -856,11 +948,20 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             {step === 'datetime' && (
               <div>
                 <div className="mb-4 sm:mb-6">
-                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">Escolha Data e Horário</h2>
-                  <p className="text-white/60 text-sm sm:text-base">Selecione a melhor data e horário para você</p>
+                  <h2 className="text-xl sm:text-2xl font-bold text-white mb-1 sm:mb-2">
+                    {dateTimeView === 'date' && 'Escolha a Data'}
+                    {dateTimeView === 'time' && 'Escolha o Horário'}
+                    {dateTimeView === 'summary' && 'Confirme seu Agendamento'}
+                  </h2>
+                  <p className="text-white/60 text-sm sm:text-base">
+                    {dateTimeView === 'date' && 'Selecione o melhor dia para o seu agendamento'}
+                    {dateTimeView === 'time' && `Horários disponíveis para ${selectedDate ? format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR }) : ''}`}
+                    {dateTimeView === 'summary' && 'Revise os detalhes e adicione produtos se quiser'}
+                  </p>
                 </div>
 
                 {/* Date Selection */}
+                {dateTimeView === 'date' && (
                 <div className="mb-6 sm:mb-8">
                   <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                     <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
@@ -901,9 +1002,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     )}
                     </div>
                   </div>
+                )}
 
                 {/* Time Selection */}
-                {selectedDate && (
+                {dateTimeView === 'time' && selectedDate && (
                   <div className="mb-6 sm:mb-8">
                     <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4 flex items-center gap-2">
                       <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
@@ -925,7 +1027,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           .map((slot, index) => (
                             <TotemCard
                               key={slot.time}
-                              onClick={() => setSelectedTime(slot.time)}
+                              onClick={() => handleTimeSelect(slot.time)}
                               variant={selectedTime === slot.time ? 'selected' : 'default'}
                               animationDelay={`${index * 0.02}s`}
                               className="!min-h-[60px] sm:!min-h-[70px] !p-3 sm:!p-4"
@@ -943,7 +1045,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   )}
 
                 {/* Summary & Confirm */}
-                {selectedDate && selectedTime && (
+                {dateTimeView === 'summary' && selectedDate && selectedTime && (
                   <div className="mt-6 sm:mt-8">
                     <Card className="bg-urbana-black/40 border-2 border-urbana-gold/50 shadow-2xl shadow-urbana-gold/20">
                       <CardHeader className="bg-urbana-gold/20 border-b border-urbana-gold/30 p-3 sm:p-4">
@@ -1121,6 +1223,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           onClose={() => {
             setShowSuccessDialog(false);
             setStep('service');
+            setDateTimeView('date');
             setSelectedService(null);
             setSelectedBarber(null);
             setSelectedDate(null);
@@ -1159,6 +1262,14 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         items={pendingCheckout.items}
         oldestDays={pendingCheckout.oldestDays}
         blocked={pendingCheckout.blocked}
+      />
+
+      <ComboSuggestionDialog
+        isOpen={showComboSuggestion}
+        onClose={handleComboSuggestionClose}
+        mainServiceId={pendingComboServiceId}
+        mainServicePrice={pendingComboServicePrice}
+        onAccept={handleComboSuggestionAccept}
       />
     </ClientPageContainer>
   );
