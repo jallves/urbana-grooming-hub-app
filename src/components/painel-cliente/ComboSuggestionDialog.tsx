@@ -167,7 +167,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         // — o cliente pode preferir adicionar só um deles em vez do combo inteiro.
         const cache = combosCache;
         const excluded = new Set<string>([mainServiceId]);
-        const limit = 2;
+        const limit = result.length > 0 ? 2 : 3;
         const tops: Array<{ id: string; nome: string; preco: number; duracao: number }> = [];
         if (cache) {
           for (const id of cache.topServiceIds) {
