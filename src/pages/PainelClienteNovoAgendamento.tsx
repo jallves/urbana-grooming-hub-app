@@ -23,6 +23,7 @@ import ProductCrossSellDialog from '@/components/client/appointment/ProductCross
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
 import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
+import ComboSuggestionDialog from '@/components/painel-cliente/ComboSuggestionDialog';
 
 interface Service {
   id: string;
@@ -48,6 +49,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const navigate = useNavigate();
   const { cliente } = usePainelClienteAuth();
   const [step, setStep] = useState<'service' | 'barber' | 'datetime'>('service');
+  // Subview dentro do step 'datetime': começa selecionando a data,
+  // depois abre subtela de horários, depois resumo.
+  const [dateTimeView, setDateTimeView] = useState<'date' | 'time' | 'summary'>('date');
   
   // State para os dados do agendamento
   const [selectedService, setSelectedService] = useState<Service | null>(null);
@@ -78,6 +82,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [showCrossSell, setShowCrossSell] = useState(false);
   const [crossSellProducts, setCrossSellProducts] = useState<CrossSellProduct[]>([]);
 
+  // Popup de sugestão de combo (após selecionar serviço)
+  const [showComboSuggestion, setShowComboSuggestion] = useState(false);
+  const [pendingComboServiceId, setPendingComboServiceId] = useState<string | null>(null);
+  const [pendingComboServicePrice, setPendingComboServicePrice] = useState<number>(0);
+
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
   const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
@@ -90,22 +99,49 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const loadServices = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from('painel_servicos')
-        .select('id, nome, preco, duracao')
-        .eq('is_active', true)
-        .gt('preco', 0)
-        .order('nome');
+      // Busca serviços + ranking de execução dos últimos 90 dias em paralelo
+      const since = new Date();
+      since.setDate(since.getDate() - 90);
+      const sinceStr = format(since, 'yyyy-MM-dd');
 
-      if (error) throw error;
-      
-      const uniqueServices: Service[] = (data || []).map(s => ({
+      const [servicesRes, rankRes] = await Promise.all([
+        supabase
+          .from('painel_servicos')
+          .select('id, nome, preco, duracao')
+          .eq('is_active', true)
+          .gt('preco', 0),
+        supabase
+          .from('painel_agendamentos')
+          .select('servico_id')
+          .eq('status', 'concluido')
+          .gte('data', sinceStr)
+          .limit(5000),
+      ]);
+
+      if (servicesRes.error) throw servicesRes.error;
+
+      // Ranking: contagem de execuções por servico_id
+      const rank = new Map<string, number>();
+      (rankRes.data || []).forEach((row: any) => {
+        if (!row.servico_id) return;
+        rank.set(row.servico_id, (rank.get(row.servico_id) || 0) + 1);
+      });
+
+      const uniqueServices: Service[] = (servicesRes.data || []).map(s => ({
         id: s.id,
         nome: s.nome,
         preco: s.preco,
-        duracao: s.duracao
+        duracao: s.duracao,
       }));
-      
+
+      // Ordena por: mais executados desc, depois alfabético como fallback
+      uniqueServices.sort((a, b) => {
+        const ra = rank.get(a.id) || 0;
+        const rb = rank.get(b.id) || 0;
+        if (rb !== ra) return rb - ra;
+        return a.nome.localeCompare(b.nome, 'pt-BR');
+      });
+
       setServices(uniqueServices);
     } catch (error) {
       console.error('Erro ao carregar serviços:', error);
