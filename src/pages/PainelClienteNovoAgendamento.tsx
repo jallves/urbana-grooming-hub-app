@@ -742,9 +742,21 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       setExtraServices([]);
       setSelectedProducts([]);
     } else if (step === 'datetime') {
-      setStep('barber');
-      setSelectedDate(null);
-      setSelectedTime(null);
+      // Dentro do step 'datetime' há 3 subtelas: data, horário, resumo.
+      // O botão Voltar respeita esse fluxo interno antes de sair do step.
+      if (dateTimeView === 'summary') {
+        setSelectedTime(null);
+        setDateTimeView('time');
+      } else if (dateTimeView === 'time') {
+        setSelectedTime(null);
+        setSelectedDate(null);
+        setDateTimeView('date');
+      } else {
+        setStep('barber');
+        setSelectedDate(null);
+        setSelectedTime(null);
+        setDateTimeView('date');
+      }
     } else {
       navigate('/painel-cliente/dashboard');
     }
