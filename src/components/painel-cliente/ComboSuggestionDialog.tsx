@@ -31,6 +31,64 @@ interface ComboSuggestionDialogProps {
 const formatBRL = (v: number) =>
   v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
 
+// Cache module-level: carrega todos os combos + serviços uma única vez
+// e reutiliza entre aberturas do popup.
+interface ComboMeta {
+  combo_service_id: string;
+  combo_nome: string;
+  combo_preco: number;
+  component_ids: string[];
+}
+interface ServiceMeta { id: string; nome: string; preco: number; duracao: number; active: boolean }
+
+let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta> } | null = null;
+let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta> }> | null = null;
+
+export async function preloadComboSuggestions() {
+  if (combosCache) return combosCache;
+  if (combosCachePromise) return combosCachePromise;
+  combosCachePromise = (async () => {
+    const [{ data: items }, { data: services }] = await Promise.all([
+      supabase.from('combo_service_items').select('combo_service_id, component_service_id'),
+      supabase.from('painel_servicos').select('id, nome, preco, duracao, is_active, ativo'),
+    ]);
+    const svcMap = new Map<string, ServiceMeta>();
+    (services || []).forEach((s: any) => {
+      svcMap.set(s.id, {
+        id: s.id,
+        nome: s.nome,
+        preco: Number(s.preco) || 0,
+        duracao: Number(s.duracao) || 0,
+        active: s.is_active !== false && s.ativo !== false,
+      });
+    });
+    const grouped = new Map<string, string[]>();
+    (items || []).forEach((it: any) => {
+      const arr = grouped.get(it.combo_service_id) || [];
+      arr.push(it.component_service_id);
+      grouped.set(it.combo_service_id, arr);
+    });
+    const combos: ComboMeta[] = [];
+    grouped.forEach((component_ids, combo_service_id) => {
+      const svc = svcMap.get(combo_service_id);
+      if (!svc) return;
+      combos.push({
+        combo_service_id,
+        combo_nome: svc.nome,
+        combo_preco: svc.preco,
+        component_ids,
+      });
+    });
+    combosCache = { combos, services: svcMap };
+    return combosCache;
+  })();
+  try {
+    return await combosCachePromise;
+  } finally {
+    combosCachePromise = null;
+  }
+}
+
 const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   isOpen,
   onClose,
@@ -50,82 +108,23 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
       setLoading(true);
       setSelectedComboId(null);
       try {
-        // 1. Buscar todos os combos que contêm este serviço
-        const { data: comboRefs } = await supabase
-          .from('combo_service_items')
-          .select('combo_service_id')
-          .eq('component_service_id', mainServiceId);
-
-        const comboIds = Array.from(new Set((comboRefs || []).map(r => r.combo_service_id)));
-        if (comboIds.length === 0) {
-          if (!cancelled) setCandidates([]);
-          return;
-        }
-
-        // 2. Buscar TODOS os componentes destes combos + dados dos combos
-        const [{ data: allItems }, { data: combosData }] = await Promise.all([
-          supabase
-            .from('combo_service_items')
-            .select('combo_service_id, component_service_id')
-            .in('combo_service_id', comboIds),
-          supabase
-            .from('painel_servicos')
-            .select('id, nome, preco')
-            .in('id', comboIds),
-        ]);
-
-        // 3. Buscar dados dos componentes (todos exceto o main)
-        const missingIds = Array.from(new Set(
-          (allItems || [])
-            .filter(r => r.component_service_id !== mainServiceId)
-            .map(r => r.component_service_id)
-        ));
-
-        const { data: missingData } = missingIds.length > 0
-          ? await supabase
-              .from('painel_servicos')
-              .select('id, nome, preco, duracao, is_active, ativo')
-              .in('id', missingIds)
-          : { data: [] as any[] };
-
-        // 4. Montar candidatos
+        const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
-        for (const comboId of comboIds) {
-          const comboInfo = combosData?.find(c => c.id === comboId);
-          if (!comboInfo) continue;
-          const components = (allItems || [])
-            .filter(r => r.combo_service_id === comboId)
-            .map(r => r.component_service_id);
-
-          const missing = components
+        for (const combo of combos) {
+          if (!combo.component_ids.includes(mainServiceId)) continue;
+          const missing = combo.component_ids
             .filter(id => id !== mainServiceId)
-            .map(id => {
-              const svc = missingData?.find((m: any) => m.id === id);
-              if (!svc) return null;
-              if ((svc as any).is_active === false || (svc as any).ativo === false) return null;
-              return {
-                id: svc.id,
-                nome: svc.nome,
-                preco: Number(svc.preco) || 0,
-                duracao: Number(svc.duracao) || 0,
-              };
-            })
-            .filter(Boolean) as ComboCandidate['missing'];
-
-          // Combo com 0 faltantes (o próprio main já cobre tudo) — ignorar
+            .map(id => services.get(id))
+            .filter((s): s is ServiceMeta => !!s && s.active)
+            .map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }));
           if (missing.length === 0) continue;
-
           const individualTotal = mainServicePrice + missing.reduce((s, m) => s + m.preco, 0);
-          const comboPreco = Number(comboInfo.preco) || 0;
-          const savings = individualTotal - comboPreco;
-
-          // Só sugerir se houver economia real
+          const savings = individualTotal - combo.combo_preco;
           if (savings <= 0) continue;
-
           result.push({
-            combo_service_id: comboId,
-            combo_nome: comboInfo.nome,
-            combo_preco: comboPreco,
+            combo_service_id: combo.combo_service_id,
+            combo_nome: combo.combo_nome,
+            combo_preco: combo.combo_preco,
             missing,
             individual_total: individualTotal,
             savings,
