@@ -24,6 +24,8 @@ interface ComboSuggestionDialogProps {
   mainServicePrice: number;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
   onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number }>) => void;
+  /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
+  onAddOther?: () => void;
 }
 
 const formatBRL = (v: number) =>
@@ -35,6 +37,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   mainServiceId,
   mainServicePrice,
   onAccept,
+  onAddOther,
 }) => {
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
@@ -269,24 +272,33 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         {/* Footer */}
         {!loading && selected && (
           <div className="shrink-0 border-t border-amber-200/60 bg-white/90 backdrop-blur-sm p-3 sm:p-4 space-y-2">
-            <div className="flex flex-row gap-2">
+            <Button
+              type="button"
+              onClick={handleAccept}
+              className="w-full bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+            >
+              <Check className="w-4 h-4 mr-1.5" />
+              Adicionar combo e economizar
+            </Button>
+            {onAddOther && (
               <Button
                 type="button"
                 variant="outline"
-                onClick={onClose}
-                className="flex-1 border-gray-300 h-11 text-xs sm:text-sm"
+                onClick={onAddOther}
+                className="w-full border-amber-300 text-amber-700 hover:bg-amber-50 h-11 text-xs sm:text-sm"
               >
-                Não, obrigado
+                <Plus className="w-4 h-4 mr-1.5" />
+                Adicionar outro serviço
               </Button>
-              <Button
-                type="button"
-                onClick={handleAccept}
-                className="flex-[1.5] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
-              >
-                <Check className="w-4 h-4 mr-1.5" />
-                Adicionar e economizar
-              </Button>
-            </div>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              className="w-full text-gray-600 hover:bg-gray-100 h-10 text-xs sm:text-sm"
+            >
+              Continuar sem combo
+            </Button>
           </div>
         )}
       </DialogContent>
