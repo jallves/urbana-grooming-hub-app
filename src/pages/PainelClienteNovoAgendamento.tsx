@@ -30,6 +30,7 @@ interface Service {
   nome: string;
   preco: number;
   duracao: number;
+  imagens?: string[];
 }
 
 interface Barber {
@@ -111,7 +112,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const [servicesRes, rankRes] = await Promise.all([
         supabase
           .from('painel_servicos')
-          .select('id, nome, preco, duracao')
+          .select('id, nome, preco, duracao, imagens')
           .eq('is_active', true)
           .gt('preco', 0),
         supabase
@@ -136,6 +137,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         nome: s.nome,
         preco: s.preco,
         duracao: s.duracao,
+        imagens: Array.isArray((s as any).imagens)
+          ? ((s as any).imagens as string[]).filter(Boolean)
+          : [],
       }));
 
       // Ordena por: mais executados desc, depois alfabético como fallback
@@ -923,6 +927,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         variant="default"
                         animationDelay={`${index * 0.1}s`}
                       >
+                        {service.imagens && service.imagens.length > 0 && (
+                          <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 sm:mb-3 border border-urbana-gold/30 bg-urbana-black-soft">
+                            <img
+                              src={service.imagens[0]}
+                              alt={service.nome}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
                         <TotemCardTitle>{service.nome}</TotemCardTitle>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold mt-2 sm:mt-3">
                           R$ {service.preco.toFixed(2)}
