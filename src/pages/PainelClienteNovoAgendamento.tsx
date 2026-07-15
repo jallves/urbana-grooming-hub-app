@@ -983,28 +983,31 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     </div>
                   ) : (
                   barbers.map((barber, index) => (
-                      <TotemCard
+                      <button
                         key={barber.id}
-                        icon={User}
+                        type="button"
                         onClick={() => handleBarberSelect(barber)}
-                        variant="default"
-                        animationDelay={`${index * 0.1}s`}
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                        className="group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-urbana-gold/40 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] hover:border-urbana-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.35)] transition-all text-left"
                       >
-                        <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full mx-auto mb-2 sm:mb-3 overflow-hidden border-2 sm:border-3 border-urbana-gold/60 bg-gradient-to-br from-urbana-black-soft to-urbana-black shadow-lg">
-                          {barber.image_url ? (
-                            <img
-                              src={barber.image_url}
-                              alt={barber.nome}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <User className="w-8 h-8 sm:w-10 sm:h-10 md:w-12 md:h-12 text-urbana-gold/60" />
-                            </div>
-                          )}
+                        {barber.image_url ? (
+                          <img
+                            src={barber.image_url}
+                            alt={barber.nome}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
+                            <User className="w-16 h-16 text-urbana-gold/60" />
+                          </div>
+                        )}
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
+                          <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow text-center">
+                            {barber.nome}
+                          </h3>
                         </div>
-                        <TotemCardTitle className="text-center">{barber.nome}</TotemCardTitle>
-                      </TotemCard>
+                      </button>
                     ))
                   )}
                 </div>
