@@ -407,6 +407,60 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                 />
               </div>
 
+              {/* Imagens do Serviço (até 3) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-700 font-semibold flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-amber-600" />
+                    Fotos do Serviço
+                  </Label>
+                  <span className="text-xs text-slate-500">{formData.imagens.length}/3</span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Até 3 fotos exibidas como carrossel no painel do cliente.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {formData.imagens.map((url, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-slate-200 bg-slate-50">
+                      <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700"
+                        aria-label="Remover foto"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {formData.imagens.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="aspect-square rounded-md border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-1 text-slate-500 disabled:opacity-60"
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5" />
+                          <span className="text-[10px]">Enviar foto</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageFilesChange}
+                />
+              </div>
+
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="preco" className="text-slate-700 font-semibold">Preço (R$) *</Label>
