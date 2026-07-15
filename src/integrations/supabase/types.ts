@@ -1694,6 +1694,7 @@ export type Database = {
           duration: number | null
           exibir_home: boolean | null
           id: string
+          imagens: Json
           is_active: boolean | null
           name: string | null
           nome: string
@@ -1710,6 +1711,7 @@ export type Database = {
           duration?: number | null
           exibir_home?: boolean | null
           id?: string
+          imagens?: Json
           is_active?: boolean | null
           name?: string | null
           nome: string
@@ -1726,6 +1728,7 @@ export type Database = {
           duration?: number | null
           exibir_home?: boolean | null
           id?: string
+          imagens?: Json
           is_active?: boolean | null
           name?: string | null
           nome?: string
