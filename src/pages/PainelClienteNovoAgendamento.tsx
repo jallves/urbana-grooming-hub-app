@@ -920,31 +920,39 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                     </div>
                   ) : (
                     services.map((service, index) => (
-                      <TotemCard
+                      <button
                         key={service.id}
-                        icon={Scissors}
+                        type="button"
                         onClick={() => handleServiceSelect(service)}
-                        variant="default"
-                        animationDelay={`${index * 0.1}s`}
+                        style={{ animationDelay: `${index * 0.1}s` }}
+                        className="group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-urbana-gold/40 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] hover:border-urbana-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.35)] transition-all text-left"
                       >
-                        {service.imagens && service.imagens.length > 0 && (
-                          <div className="w-full h-48 sm:h-56 md:h-64 rounded-xl overflow-hidden mb-2 sm:mb-3 border border-urbana-gold/30 bg-urbana-black-soft">
-                            <img
-                              src={service.imagens[0]}
-                              alt={service.nome}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
+                        {service.imagens && service.imagens.length > 0 ? (
+                          <img
+                            src={service.imagens[0]}
+                            alt={service.nome}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
+                            <Scissors className="w-16 h-16 text-urbana-gold/60" />
                           </div>
                         )}
-                        <TotemCardTitle>{service.nome}</TotemCardTitle>
-                        <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold mt-2 sm:mt-3">
-                          R$ {service.preco.toFixed(2)}
-                        </p>
-                        <p className="text-sm sm:text-base text-white/60 mt-1 sm:mt-2">
-                          {service.duracao} minutos
-                        </p>
-                      </TotemCard>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
+                          <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
+                            {service.nome}
+                          </h3>
+                          <div className="flex items-baseline justify-between mt-1">
+                            <span className="text-urbana-gold font-bold text-lg sm:text-xl">
+                              R$ {service.preco.toFixed(2)}
+                            </span>
+                            <span className="text-white/80 text-xs sm:text-sm">
+                              {service.duracao} min
+                            </span>
+                          </div>
+                        </div>
+                      </button>
                     ))
                   )}
                 </div>
