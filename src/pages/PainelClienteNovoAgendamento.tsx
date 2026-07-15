@@ -928,7 +928,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         animationDelay={`${index * 0.1}s`}
                       >
                         {service.imagens && service.imagens.length > 0 && (
-                          <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 sm:mb-3 border border-urbana-gold/30 bg-urbana-black-soft">
+                          <div className="w-full h-48 sm:h-56 md:h-64 rounded-xl overflow-hidden mb-2 sm:mb-3 border border-urbana-gold/30 bg-urbana-black-soft">
                             <img
                               src={service.imagens[0]}
                               alt={service.nome}
