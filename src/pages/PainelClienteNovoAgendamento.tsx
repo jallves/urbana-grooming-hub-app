@@ -30,6 +30,7 @@ interface Service {
   nome: string;
   preco: number;
   duracao: number;
+  imagens?: string[];
 }
 
 interface Barber {
@@ -111,7 +112,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       const [servicesRes, rankRes] = await Promise.all([
         supabase
           .from('painel_servicos')
-          .select('id, nome, preco, duracao')
+          .select('id, nome, preco, duracao, imagens')
           .eq('is_active', true)
           .gt('preco', 0),
         supabase
@@ -136,6 +137,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         nome: s.nome,
         preco: s.preco,
         duracao: s.duracao,
+        imagens: Array.isArray((s as any).imagens)
+          ? ((s as any).imagens as string[]).filter(Boolean)
+          : [],
       }));
 
       // Ordena por: mais executados desc, depois alfabético como fallback
