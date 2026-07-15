@@ -9,7 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Users, Home, CheckCircle, Layers } from 'lucide-react';
+import { Loader2, Users, Home, CheckCircle, Layers, Upload, X, ImageIcon } from 'lucide-react';
+import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
 
 interface ServiceFormProps {
   serviceId: string | null;
@@ -25,6 +26,7 @@ interface ServiceFormData {
   duracao: number;
   is_active: boolean;
   exibir_home: boolean;
+  imagens: string[];
 }
 
 interface StaffMember {
@@ -49,8 +51,11 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     preco: 0,
     duracao: 30,
     is_active: true,
-    exibir_home: false
+    exibir_home: false,
+    imagens: []
   });
+  const { uploadFile, uploading } = useImageUpload();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
@@ -119,7 +124,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       preco: 0,
       duracao: 30,
       is_active: true,
-      exibir_home: false
+      exibir_home: false,
+      imagens: []
     });
     setSelectedStaffIds([]);
     setIsCombo(false);
@@ -144,7 +150,10 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           preco: data.preco || 0,
           duracao: data.duracao || 30,
           is_active: data.is_active ?? data.ativo ?? true,
-          exibir_home: data.exibir_home ?? false
+          exibir_home: data.exibir_home ?? false,
+          imagens: Array.isArray((data as any).imagens)
+            ? ((data as any).imagens as string[]).filter(Boolean)
+            : []
         });
 
         // Carregar barbeiros vinculados ao serviço
@@ -226,6 +235,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             is_active: formData.is_active,
             ativo: formData.is_active,
             exibir_home: formData.exibir_home,
+            imagens: formData.imagens as any,
             updated_at: new Date().toISOString()
           })
           .eq('id', serviceId);
@@ -242,7 +252,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             duracao: formData.duracao,
             is_active: formData.is_active,
             ativo: formData.is_active,
-            exibir_home: formData.exibir_home
+            exibir_home: formData.exibir_home,
+            imagens: formData.imagens as any
           })
           .select()
           .single();
