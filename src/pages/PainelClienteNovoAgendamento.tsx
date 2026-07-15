@@ -927,6 +927,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                         variant="default"
                         animationDelay={`${index * 0.1}s`}
                       >
+                        {service.imagens && service.imagens.length > 0 && (
+                          <div className="w-full aspect-[4/3] rounded-xl overflow-hidden mb-2 sm:mb-3 border border-urbana-gold/30 bg-urbana-black-soft">
+                            <img
+                              src={service.imagens[0]}
+                              alt={service.nome}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        )}
                         <TotemCardTitle>{service.nome}</TotemCardTitle>
                         <p className="text-xl sm:text-2xl md:text-3xl font-bold text-urbana-gold mt-2 sm:mt-3">
                           R$ {service.preco.toFixed(2)}
