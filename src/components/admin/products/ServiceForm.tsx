@@ -333,6 +333,37 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     onClose();
   };
 
+  const handleImageFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = 3 - formData.imagens.length;
+    if (remaining <= 0) {
+      toast.error('Limite de 3 imagens por serviço');
+      return;
+    }
+    const toUpload = files.slice(0, remaining);
+    try {
+      const uploaded: string[] = [];
+      for (const f of toUpload) {
+        const url = await uploadFile(f, 'services', 'images');
+        uploaded.push(url);
+      }
+      setFormData((prev) => ({ ...prev, imagens: [...prev.imagens, ...uploaded] }));
+      toast.success(`${uploaded.length} imagem(ns) enviada(s)`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao enviar imagem');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      imagens: prev.imagens.filter((_, i) => i !== idx),
+    }));
+  };
+
   // Filtrar serviços disponíveis para combo (excluir o próprio serviço em edição)
   const comboAvailableServices = availableServices.filter(s => s.id !== serviceId);
 
