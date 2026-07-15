@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Form } from "@/components/ui/form";
 import { useClientAppointmentForm } from './useClientAppointmentForm';
 import { useClientAppointmentSubmit } from './useClientAppointmentSubmit';
-import ServiceSelect from '@/components/admin/appointments/form/ServiceSelect';
+import ServiceCardSelect from './ServiceCardSelect';
 import ClientStaffSelect from './ClientStaffSelect';
 import ClientDateTimePicker from './ClientDateTimePicker';
 import NotesField from '@/components/admin/appointments/form/NotesField';
@@ -95,7 +95,7 @@ const NewClientAppointmentForm: React.FC<NewClientAppointmentFormProps> = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <ServiceSelect services={services} form={form} />
+            <ServiceCardSelect services={services} form={form} />
             
             <ClientDateTimePicker 
               form={form}
