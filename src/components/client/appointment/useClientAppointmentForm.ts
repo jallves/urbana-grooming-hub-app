@@ -86,7 +86,10 @@ export const useClientAppointmentForm = (defaultDate: Date = new Date(), appoint
         price: Number(s.preco),
         duration: s.duracao,
         description: s.descricao,
-        is_active: s.is_active
+        is_active: s.is_active,
+        imagens: Array.isArray((s as any).imagens)
+          ? ((s as any).imagens as string[]).filter(Boolean)
+          : [],
       })) as Service[];
     },
   });
