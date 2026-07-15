@@ -113,6 +113,7 @@ export type Service = {
   duration: number;
   description?: string | null;
   is_active?: boolean | null;
+  imagens?: string[] | null;
 };
 
 // Define um tipo para barbeiros (painel)

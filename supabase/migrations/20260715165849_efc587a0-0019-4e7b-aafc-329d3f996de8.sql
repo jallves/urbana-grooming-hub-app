@@ -1,0 +1,1 @@
+ALTER TABLE public.painel_servicos ADD COLUMN IF NOT EXISTS imagens jsonb NOT NULL DEFAULT '[]'::jsonb;

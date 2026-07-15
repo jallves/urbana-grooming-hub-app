@@ -9,7 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Users, Home, CheckCircle, Layers } from 'lucide-react';
+import { Loader2, Users, Home, CheckCircle, Layers, Upload, X, ImageIcon } from 'lucide-react';
+import { useImageUpload } from '@/components/admin/settings/media/useImageUpload';
 
 interface ServiceFormProps {
   serviceId: string | null;
@@ -25,6 +26,7 @@ interface ServiceFormData {
   duracao: number;
   is_active: boolean;
   exibir_home: boolean;
+  imagens: string[];
 }
 
 interface StaffMember {
@@ -49,8 +51,11 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     preco: 0,
     duracao: 30,
     is_active: true,
-    exibir_home: false
+    exibir_home: false,
+    imagens: []
   });
+  const { uploadFile, uploading } = useImageUpload();
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [allStaff, setAllStaff] = useState<StaffMember[]>([]);
   const [selectedStaffIds, setSelectedStaffIds] = useState<string[]>([]);
 
@@ -119,7 +124,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
       preco: 0,
       duracao: 30,
       is_active: true,
-      exibir_home: false
+      exibir_home: false,
+      imagens: []
     });
     setSelectedStaffIds([]);
     setIsCombo(false);
@@ -144,7 +150,10 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
           preco: data.preco || 0,
           duracao: data.duracao || 30,
           is_active: data.is_active ?? data.ativo ?? true,
-          exibir_home: data.exibir_home ?? false
+          exibir_home: data.exibir_home ?? false,
+          imagens: Array.isArray((data as any).imagens)
+            ? ((data as any).imagens as string[]).filter(Boolean)
+            : []
         });
 
         // Carregar barbeiros vinculados ao serviço
@@ -226,6 +235,7 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             is_active: formData.is_active,
             ativo: formData.is_active,
             exibir_home: formData.exibir_home,
+            imagens: formData.imagens as any,
             updated_at: new Date().toISOString()
           })
           .eq('id', serviceId);
@@ -242,7 +252,8 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
             duracao: formData.duracao,
             is_active: formData.is_active,
             ativo: formData.is_active,
-            exibir_home: formData.exibir_home
+            exibir_home: formData.exibir_home,
+            imagens: formData.imagens as any
           })
           .select()
           .single();
@@ -322,6 +333,37 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
     onClose();
   };
 
+  const handleImageFilesChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    const remaining = 3 - formData.imagens.length;
+    if (remaining <= 0) {
+      toast.error('Limite de 3 imagens por serviço');
+      return;
+    }
+    const toUpload = files.slice(0, remaining);
+    try {
+      const uploaded: string[] = [];
+      for (const f of toUpload) {
+        const url = await uploadFile(f, 'services', 'images');
+        uploaded.push(url);
+      }
+      setFormData((prev) => ({ ...prev, imagens: [...prev.imagens, ...uploaded] }));
+      toast.success(`${uploaded.length} imagem(ns) enviada(s)`);
+    } catch (err: any) {
+      toast.error(err?.message || 'Erro ao enviar imagem');
+    } finally {
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeImage = (idx: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      imagens: prev.imagens.filter((_, i) => i !== idx),
+    }));
+  };
+
   // Filtrar serviços disponíveis para combo (excluir o próprio serviço em edição)
   const comboAvailableServices = availableServices.filter(s => s.id !== serviceId);
 
@@ -362,6 +404,60 @@ const ServiceForm: React.FC<ServiceFormProps> = ({ serviceId, isOpen, onClose, o
                   placeholder="Descreva o serviço..."
                   rows={3}
                   className="bg-white border-slate-300 text-slate-800"
+                />
+              </div>
+
+              {/* Imagens do Serviço (até 3) */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label className="text-slate-700 font-semibold flex items-center gap-2">
+                    <ImageIcon className="h-4 w-4 text-amber-600" />
+                    Fotos do Serviço
+                  </Label>
+                  <span className="text-xs text-slate-500">{formData.imagens.length}/3</span>
+                </div>
+                <p className="text-xs text-slate-500">
+                  Até 3 fotos exibidas como carrossel no painel do cliente.
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {formData.imagens.map((url, idx) => (
+                    <div key={idx} className="relative aspect-square rounded-md overflow-hidden border border-slate-200 bg-slate-50">
+                      <img src={url} alt={`Foto ${idx + 1}`} className="w-full h-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(idx)}
+                        className="absolute top-1 right-1 h-6 w-6 rounded-full bg-red-600 text-white flex items-center justify-center hover:bg-red-700"
+                        aria-label="Remover foto"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                  {formData.imagens.length < 3 && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="aspect-square rounded-md border-2 border-dashed border-slate-300 bg-slate-50 hover:bg-slate-100 flex flex-col items-center justify-center gap-1 text-slate-500 disabled:opacity-60"
+                    >
+                      {uploading ? (
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                      ) : (
+                        <>
+                          <Upload className="h-5 w-5" />
+                          <span className="text-[10px]">Enviar foto</span>
+                        </>
+                      )}
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  onChange={handleImageFilesChange}
                 />
               </div>
 
