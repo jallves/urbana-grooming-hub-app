@@ -758,14 +758,33 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao
         }));
       });
-      const extrasFromProducts = extraProducts.map(p => ({
+      // Produtos vêm de duas fontes: modal de Extras (selectedProducts)
+      // e popup de cross-sell (extraProducts). Precisamos unir os dois,
+      // somando quantidade quando o mesmo produto aparecer nas duas listas.
+      const productMap = new Map<string, { produto_id: string; nome: string; preco: number; quantidade: number }>();
+      for (const p of selectedProducts) {
+        const key = String(p.id);
+        const cur = productMap.get(key);
+        const qty = (p as any).quantidade || 1;
+        if (cur) cur.quantidade += qty;
+        else productMap.set(key, { produto_id: p.id, nome: p.nome, preco: p.preco, quantidade: qty });
+      }
+      for (const p of extraProducts) {
+        const key = String(p.id);
+        const cur = productMap.get(key);
+        const qty = (p as any).quantidade || 1;
+        if (cur) cur.quantidade += qty;
+        else productMap.set(key, { produto_id: p.id, nome: p.nome, preco: p.preco, quantidade: qty });
+      }
+      const extrasFromProducts = Array.from(productMap.values()).map(p => ({
         tipo: 'produto' as const,
-        produto_id: p.id,
+        produto_id: p.produto_id,
         nome: p.nome,
         preco: p.preco,
-        quantidade: (p as any).quantidade || 1,
+        quantidade: p.quantidade,
       }));
       const allExtras = [...extrasFromServices, ...extrasFromProducts];
+      console.log('📦 Produtos gravados no agendamento:', extrasFromProducts);
       const servicosExtrasPayload = allExtras.length > 0 ? allExtras : null;
 
       const mainPrice = Number(selectedService.preco || 0);
