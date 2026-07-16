@@ -481,6 +481,10 @@ const SessionsManagement: React.FC = () => {
             <Download className="mr-1.5 h-4 w-4" />
             Exportar
           </Button>
+          <Button onClick={handleCleanupLocked} disabled={cleaningLocked || stats.veryIdle === 0} size="sm" variant="outline" className="text-red-600 border-red-200 hover:bg-red-50">
+            <Lock className={`mr-1.5 h-4 w-4 ${cleaningLocked ? 'animate-spin' : ''}`} />
+            Encerrar em Lock ({stats.veryIdle})
+          </Button>
           <Button onClick={handleCleanupAllSessions} disabled={cleaningAll || sessions.length === 0} variant="destructive" size="sm">
             <Trash2 className={`mr-1.5 h-4 w-4 ${cleaningAll ? 'animate-spin' : ''}`} />
             Derrubar Todas ({stats.total})
@@ -498,7 +502,7 @@ const SessionsManagement: React.FC = () => {
           { label: 'Online Agora', value: stats.online, icon: Zap, bg: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
           { label: 'Ativos Recente', value: stats.active, icon: CheckCircle, bg: 'bg-sky-50', border: 'border-sky-200', text: 'text-sky-700' },
           { label: 'Inativos', value: stats.idle, icon: AlertCircle, bg: 'bg-amber-50', border: 'border-amber-200', text: 'text-amber-700' },
-          { label: 'Muito Inativos', value: stats.veryIdle, icon: XCircle, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
+          { label: 'Em Lock (>30min)', value: stats.veryIdle, icon: Lock, bg: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
         ].map(stat => {
           const Icon = stat.icon;
           return (
@@ -518,6 +522,43 @@ const SessionsManagement: React.FC = () => {
           );
         })}
       </div>
+
+      {/* KPIs Mensais — Logins por painel */}
+      <Card className="border border-indigo-200 bg-indigo-50/30 shadow-sm">
+        <CardHeader className="pb-2 pt-3 px-4">
+          <CardTitle className="text-sm font-semibold text-indigo-800 flex items-center gap-2">
+            <TrendingUp className="h-4 w-4" />
+            Logins do mês por painel
+            <Badge variant="outline" className="text-[10px] font-normal ml-1">tempo real</Badge>
+          </CardTitle>
+          <CardDescription className="text-xs text-indigo-700/70">
+            Contagem de logins únicos e totais desde o início do mês corrente
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="px-4 pb-3">
+          <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+            {['admin', 'barber', 'painel_cliente', 'totem'].map(t => {
+              const stat = monthlyStats.find(s => s.user_type === t) || { unique_users: 0, total_logins: 0 };
+              const conf = getUserTypeConfig(t);
+              return (
+                <div key={t} className={`rounded-lg border ${conf.border} ${conf.bg} p-3`}>
+                  <div className={`flex items-center gap-1.5 text-xs font-medium ${conf.text}`}>
+                    {conf.icon}
+                    {conf.label}
+                  </div>
+                  <div className="mt-1.5 flex items-baseline gap-2">
+                    <span className={`text-2xl font-bold ${conf.text}`}>{stat.total_logins}</span>
+                    <span className="text-xs text-gray-600">logins</span>
+                  </div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">
+                    <strong>{stat.unique_users}</strong> usuário(s) único(s)
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Stats Row 2 — Donut Charts */}
       <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
