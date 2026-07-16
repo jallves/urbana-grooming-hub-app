@@ -16,7 +16,7 @@ import barbershopBg from '@/assets/barbershop-background.jpg';
 import { ClientPageContainer } from "@/components/painel-cliente/ClientPageContainer";
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
-import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem } from '@/components/painel-cliente/ClientBookingExtrasModal';
+import ClientBookingExtrasModal, { ClientExtraService, ClientProductCartItem, preloadClientBookingExtras } from '@/components/painel-cliente/ClientBookingExtrasModal';
 import { ShoppingBag, Sparkles } from 'lucide-react';
 import CouponInput, { AppliedCoupon } from '@/components/painel-cliente/CouponInput';
 import ProductCrossSellDialog from '@/components/client/appointment/ProductCrossSellDialog';
@@ -97,8 +97,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   // Carregar serviços
   useEffect(() => {
     loadServices();
-    // Pré-carrega combos em paralelo para o popup abrir instantâneo
+    // Pré-carrega combos e extras em paralelo para popups abrirem instantâneo
     preloadComboSuggestions().catch(() => {});
+    preloadClientBookingExtras().catch(() => {});
   }, []);
 
   const loadServices = async () => {
@@ -536,7 +537,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     setStep('barber');
   };
 
-  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number }>) => {
+  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>) => {
     // Injeta serviços faltantes como extras — o combo é detectado no checkout.
     setExtraServices(prev => {
       const next = [...prev];
@@ -547,6 +548,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             nome: svc.nome,
             preco: svc.preco,
             duracao: svc.duracao,
+            imagem: svc.imagem,
             quantidade: 1,
           });
         }
