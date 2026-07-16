@@ -997,43 +997,107 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       Nenhum serviço disponível
                     </div>
                   ) : (
-                    services.map((service, index) => (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => handleServiceSelect(service)}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                        className="group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-urbana-gold/40 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] hover:border-urbana-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.35)] transition-all text-left"
-                      >
-                        {service.imagens && service.imagens.length > 0 ? (
-                          <img
-                            src={service.imagens[0]}
-                            alt={service.nome}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
-                            <Scissors className="w-16 h-16 text-urbana-gold/60" />
+                    services.map((service, index) => {
+                      const qty = serviceQuantities[service.id] || 0;
+                      const selected = qty > 0;
+                      return (
+                        <div
+                          key={service.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleServiceSelect(service)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleServiceSelect(service); }}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                          className={`group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] transition-all text-left cursor-pointer ${
+                            selected
+                              ? 'border-urbana-gold ring-2 ring-urbana-gold shadow-[0_12px_40px_rgba(212,175,55,0.45)]'
+                              : 'border-urbana-gold/40 hover:border-urbana-gold'
+                          }`}
+                        >
+                          {service.imagens && service.imagens.length > 0 ? (
+                            <img
+                              src={service.imagens[0]}
+                              alt={service.nome}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
+                              <Scissors className="w-16 h-16 text-urbana-gold/60" />
+                            </div>
+                          )}
+
+                          {/* Badge de quantidade selecionada */}
+                          {selected && (
+                            <div className="absolute top-2 left-2 bg-urbana-gold text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                              {qty}x
+                            </div>
+                          )}
+
+                          {/* Controles de quantidade +/- */}
+                          <div
+                            className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full p-1 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); decrementServiceQty(service.id); }}
+                              disabled={qty <= 0}
+                              aria-label="Remover"
+                              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-white font-bold text-sm w-5 text-center">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); incrementServiceQty(service.id); }}
+                              aria-label="Adicionar"
+                              className="w-7 h-7 rounded-full bg-urbana-gold hover:bg-urbana-gold/90 flex items-center justify-center text-black transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
-                          <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
-                            {service.nome}
-                          </h3>
-                          <div className="flex items-baseline justify-between mt-1">
-                            <span className="text-urbana-gold font-bold text-lg sm:text-xl">
-                              R$ {service.preco.toFixed(2)}
-                            </span>
-                            <span className="text-white/80 text-xs sm:text-sm">
-                              {service.duracao} min
-                            </span>
+
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
+                            <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
+                              {service.nome}
+                            </h3>
+                            <div className="flex items-baseline justify-between mt-1">
+                              <span className="text-urbana-gold font-bold text-lg sm:text-xl">
+                                R$ {service.preco.toFixed(2)}
+                              </span>
+                              <span className="text-white/80 text-xs sm:text-sm">
+                                {service.duracao} min
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </button>
-                    ))
+                      );
+                    })
                   )}
                 </div>
+
+                {/* Botão Agendar / Barra fixa inferior */}
+                {Object.values(serviceQuantities).some(q => q > 0) && (
+                  <div className="sticky bottom-0 left-0 right-0 mt-4 pt-3 pb-2 bg-gradient-to-t from-black via-black/95 to-transparent z-20">
+                    <div className="flex items-center justify-between gap-3 max-w-2xl mx-auto">
+                      <div className="text-white text-sm sm:text-base">
+                        <span className="text-white/60">Selecionados: </span>
+                        <span className="font-bold text-urbana-gold">
+                          {Object.values(serviceQuantities).reduce((a, b) => a + b, 0)}
+                        </span>
+                      </div>
+                      <Button
+                        onClick={handleServicesConfirm}
+                        className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold px-6 py-5 sm:py-6 text-base sm:text-lg shadow-lg shadow-urbana-gold/30 touch-manipulation"
+                      >
+                        Agendar
+                        <Check className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
