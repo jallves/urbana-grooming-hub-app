@@ -1434,6 +1434,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           onApply={({ extraServices: es, products: ps }) => {
             setExtraServices(es);
             setSelectedProducts(ps);
+            // Se o modal foi aberto a partir da sugestão de combo,
+            // avança automaticamente para a etapa de barbeiro após aplicar.
+            if (advanceAfterExtras) {
+              setAdvanceAfterExtras(false);
+              setStep('barber');
+            }
           }}
         />
       )}
@@ -1499,9 +1505,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           setShowComboSuggestion(false);
           setPendingComboServiceId(null);
           setPendingComboServicePrice(0);
-          setStep('barber');
-          // Abre picker de extras (serviços/produtos) logo em seguida
-          setTimeout(() => setShowExtrasModal(true), 150);
+          // NÃO troca para step='barber' aqui — evita "flash" da tela de
+          // barbeiro antes do modal abrir. Apenas abre o picker de extras
+          // e marca para avançar depois do aplicar.
+          setAdvanceAfterExtras(true);
+          setShowExtrasModal(true);
         }}
       />
     </ClientPageContainer>
