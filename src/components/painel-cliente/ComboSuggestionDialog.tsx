@@ -322,6 +322,69 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
             </div>
           ) : (
             <>
+              {/* Serviço já selecionado — permite adicionar duplicatas (ex.: 2x corte) */}
+              {mainServiceId && mainServiceName && (
+                <div className="rounded-xl border-2 border-urbana-gold/40 bg-urbana-black-soft/70 p-2 flex gap-2 items-center">
+                  <div className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden bg-urbana-black">
+                    {mainServiceImage ? (
+                      <img src={mainServiceImage} alt={mainServiceName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black to-urbana-brown/60">
+                        <Scissors className="w-6 h-6 text-urbana-gold/60" />
+                      </div>
+                    )}
+                    <div className="absolute top-0.5 left-0.5 text-[9px] font-bold px-1 rounded bg-urbana-gold text-urbana-black shadow">
+                      SELECIONADO
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2">
+                      {mainServiceName}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-bold text-urbana-gold">{formatBRL(mainServicePrice)}</span>
+                      {mainServiceDuration ? (
+                        <span className="text-[10px] text-urbana-light/60 flex items-center gap-0.5">
+                          <Clock className="h-3 w-3" />{mainServiceDuration}min
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[10px] text-urbana-light/50 mt-0.5">
+                      Quer repetir esse serviço? Some quantas vezes precisar.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-1 bg-urbana-black rounded-lg border border-urbana-gold/40 px-1 py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setMainExtraQty(q => Math.max(0, q - 1))}
+                        className="h-7 w-7 flex items-center justify-center text-urbana-gold disabled:opacity-30"
+                        disabled={mainExtraQty === 0}
+                        aria-label="Diminuir"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="text-sm font-bold text-urbana-light w-6 text-center">
+                        {1 + mainExtraQty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMainExtraQty(q => q + 1)}
+                        className="h-7 w-7 flex items-center justify-center text-urbana-gold"
+                        aria-label="Aumentar"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {mainExtraQty > 0 && (
+                      <span className="text-[9px] text-urbana-gold/80 font-semibold uppercase">
+                        +{mainExtraQty} extra{mainExtraQty > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Seletor de combo (só aparece se houver 2+ candidatos) */}
               {candidates.length > 1 && (
                 <div className="space-y-2">
