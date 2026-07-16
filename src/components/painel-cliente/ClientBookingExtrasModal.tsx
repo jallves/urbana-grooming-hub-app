@@ -357,18 +357,8 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                     return (
                       <div
                         key={service.id}
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => addService(service)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            addService(service);
-                          }
-                        }}
-                        aria-label={`Adicionar ${service.nome}`}
                         className={cn(
-                          "group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] touch-manipulation active:scale-[0.98] transition-all text-left",
+                          "group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] transition-all text-left",
                           selected
                             ? "border-urbana-gold ring-2 ring-urbana-gold/40 shadow-urbana-gold/25"
                             : "border-urbana-gold/35 hover:border-urbana-gold"
@@ -389,56 +379,9 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
 
                         <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/5" />
 
-                        <div className="absolute top-2 left-2 h-7 w-7 rounded-full bg-urbana-black/75 border border-urbana-gold/50 text-urbana-gold flex items-center justify-center shadow-lg">
-                          {selected ? <Check className="h-4 w-4" strokeWidth={3} /> : <Plus className="h-4 w-4" strokeWidth={3} />}
-                        </div>
-
                         {selected && (
-                          <div className="absolute top-2 right-2 min-w-7 h-7 px-2 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center text-xs font-black shadow-lg">
+                          <div className="absolute top-2 left-2 min-w-7 h-7 px-2 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center text-xs font-black shadow-lg">
                             {qty}x
-                          </div>
-                        )}
-
-                        {selected && (
-                          <div className="absolute left-2 right-2 top-11 flex items-center justify-end gap-1.5">
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                removeService(service.id);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  removeService(service.id);
-                                }
-                              }}
-                              aria-label="Diminuir"
-                              className="h-8 w-8 rounded-lg bg-red-500/25 text-red-200 border border-red-400/40 flex items-center justify-center active:scale-95"
-                            >
-                              <Minus className="w-3.5 h-3.5" strokeWidth={3} />
-                            </span>
-                            <span
-                              role="button"
-                              tabIndex={0}
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                addService(service);
-                              }}
-                              onKeyDown={(e) => {
-                                if (e.key === "Enter" || e.key === " ") {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  addService(service);
-                                }
-                              }}
-                              aria-label="Aumentar"
-                              className="h-8 w-8 rounded-lg bg-urbana-gold/35 text-urbana-gold border border-urbana-gold/60 flex items-center justify-center active:scale-95"
-                            >
-                              <Plus className="w-3.5 h-3.5" strokeWidth={3} />
-                            </span>
                           </div>
                         )}
 
@@ -455,6 +398,39 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                                 <Clock className="w-3 h-3" />
                                 {service.duracao}min
                               </span>
+                            )}
+                          </div>
+                          {/* Botão Adicionar / controles +/- (padrão totem) */}
+                          <div className="mt-2">
+                            {qty > 0 ? (
+                              <div className="flex items-center gap-1">
+                                <Button
+                                  type="button"
+                                  onClick={() => removeService(service.id)}
+                                  size="sm"
+                                  className="flex-1 h-8 bg-red-500/20 text-red-300 border border-red-500/40 text-xs hover:bg-red-500/30"
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </Button>
+                                <span className="text-base font-bold text-urbana-gold w-6 text-center">{qty}</span>
+                                <Button
+                                  type="button"
+                                  onClick={() => addService(service)}
+                                  size="sm"
+                                  className="flex-1 h-8 bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 text-xs hover:bg-urbana-gold/40"
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </Button>
+                              </div>
+                            ) : (
+                              <Button
+                                type="button"
+                                onClick={() => addService(service)}
+                                size="sm"
+                                className="w-full h-8 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs"
+                              >
+                                <Plus className="w-3 h-3 mr-1" /> Adicionar
+                              </Button>
                             )}
                           </div>
                         </div>
