@@ -347,6 +347,25 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
                 }
                 return null;
               })()}
+              {(() => {
+                const base = Number(appointment.painel_servicos?.preco || 0);
+                const discount = Number((appointment as any).desconto_valor || 0);
+                const final = Math.max(base - discount, 0);
+                const extrasArr = (appointment as any).servicos_extras as any[] | null;
+                const extrasTotal = Array.isArray(extrasArr)
+                  ? extrasArr.reduce((sum, item) => {
+                      const preco = Number(item?.preco) || 0;
+                      const qty = item?.tipo === 'produto' ? (Number(item?.quantidade) || 1) : 1;
+                      return sum + preco * qty;
+                    }, 0)
+                  : 0;
+                if (extrasTotal <= 0) return null;
+                return (
+                  <div className="mt-1 text-[11px] font-bold text-emerald-700">
+                    Total: R$ {(final + extrasTotal).toFixed(2)}
+                  </div>
+                );
+              })()}
             </div>
           </div>
           <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />

@@ -298,6 +298,15 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
             const discount = Number((appointment as any).desconto_valor || 0);
             const cupom = (appointment as any).cupom_codigo as string | null;
             const final = Math.max(base - discount, 0);
+            const extrasArr = (appointment as any).servicos_extras as any[] | null;
+            const extrasTotal = Array.isArray(extrasArr)
+              ? extrasArr.reduce((sum, item) => {
+                  const preco = Number(item?.preco) || 0;
+                  const qty = item?.tipo === 'produto' ? (Number(item?.quantidade) || 1) : 1;
+                  return sum + preco * qty;
+                }, 0)
+              : 0;
+            const totalGeral = final + extrasTotal;
             if (cupom && discount > 0) {
               return (
                 <>
@@ -309,13 +318,25 @@ const ClientAppointmentCompactRow: React.FC<ClientAppointmentCompactRowProps> = 
                     <Ticket className="w-3 h-3" />
                     {cupom} · -R$ {discount.toFixed(2)}
                   </div>
+                  {extrasTotal > 0 && (
+                    <div className="text-[11px] font-bold text-emerald-700">
+                      Total: R$ {totalGeral.toFixed(2)}
+                    </div>
+                  )}
                 </>
               );
             }
             return (
-              <div className="text-xs font-semibold text-green-600">
-                R$ {base.toFixed(2)}
-              </div>
+              <>
+                <div className="text-xs font-semibold text-green-600">
+                  R$ {base.toFixed(2)}
+                </div>
+                {extrasTotal > 0 && (
+                  <div className="text-[11px] font-bold text-emerald-700">
+                    Total: R$ {totalGeral.toFixed(2)}
+                  </div>
+                )}
+              </>
             );
           })()}
           <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" compact />

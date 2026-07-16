@@ -76,17 +76,34 @@ const TotemCheckout: React.FC = () => {
     if (location.state?.extraServices?.length) return location.state.extraServices;
     const appointmentExtras = appointment?.servicos_extras;
     if (appointmentExtras && Array.isArray(appointmentExtras)) {
-      return appointmentExtras.map((s: any) => ({
-        id: s.id,
-        nome: s.nome,
-        preco: s.preco,
-        duracao: s.duracao || 30,
-      }));
+      return appointmentExtras
+        .filter((s: any) => s?.tipo !== 'produto')
+        .map((s: any) => ({
+          id: s.id,
+          nome: s.nome,
+          preco: s.preco,
+          duracao: s.duracao || 30,
+        }));
     }
     return [];
   }, []);
   const [extraServices, setExtraServices] = useState<CheckoutExtraService[]>(initialExtras);
-  const [productCart, setProductCart] = useState<CheckoutProductCartItem[]>(location.state?.productCart || []);
+  const initialProducts = useMemo<CheckoutProductCartItem[]>(() => {
+    if (location.state?.productCart?.length) return location.state.productCart;
+    const appointmentExtras = appointment?.servicos_extras;
+    if (appointmentExtras && Array.isArray(appointmentExtras)) {
+      return appointmentExtras
+        .filter((s: any) => s?.tipo === 'produto')
+        .map((p: any) => ({
+          id: p.produto_id || p.id,
+          nome: p.nome,
+          preco: Number(p.preco) || 0,
+          quantidade: Number(p.quantidade) || 1,
+        }));
+    }
+    return [];
+  }, []);
+  const [productCart, setProductCart] = useState<CheckoutProductCartItem[]>(initialProducts);
   const [extrasModalOpen, setExtrasModalOpen] = useState(false);
 
   const [barber, setBarber] = useState<BarberInfo | null>(() => {
