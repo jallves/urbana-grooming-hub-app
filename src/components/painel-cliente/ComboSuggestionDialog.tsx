@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Check, X, Plus, Scissors, Clock } from 'lucide-react';
+import { Sparkles, Check, X, Plus, Minus, Scissors, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ComboCandidate {
@@ -22,8 +22,11 @@ interface ComboSuggestionDialogProps {
   onClose: () => void;
   mainServiceId: string | null;
   mainServicePrice: number;
+  mainServiceName?: string | null;
+  mainServiceDuration?: number | null;
+  mainServiceImage?: string | null;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
-  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>) => void;
+  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => void;
   /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
   onAddOther?: () => void;
 }
