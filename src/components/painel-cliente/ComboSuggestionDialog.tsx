@@ -472,17 +472,16 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {topExtras.map((t) => {
-                      const active = selectedExtraIds.has(t.id);
+                      const qty = extraQtyMap[t.id] || 0;
+                      const active = qty > 0;
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          type="button"
-                          onClick={() => toggleExtra(t.id)}
                           className={cn(
                             'text-left rounded-xl overflow-hidden border-2 transition-all shadow-md',
                             active
                               ? 'border-urbana-gold bg-urbana-gold/10 ring-2 ring-urbana-gold/40'
-                              : 'border-urbana-gold/20 bg-white/5 hover:border-urbana-gold/50'
+                              : 'border-urbana-gold/20 bg-white/5'
                           )}
                         >
                           <div className="relative aspect-[4/3] bg-urbana-black overflow-hidden">
@@ -493,14 +492,11 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                                 <Scissors className="w-8 h-8 text-urbana-gold/50" />
                               </div>
                             )}
-                            <div className={cn(
-                              'absolute top-1.5 right-1.5 h-6 w-6 rounded-full border-2 flex items-center justify-center shadow',
-                              active
-                                ? 'bg-urbana-gold border-urbana-gold text-urbana-black'
-                                : 'bg-urbana-black/70 border-urbana-gold/50 text-transparent'
-                            )}>
-                              <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                            </div>
+                            {active && (
+                              <div className="absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-urbana-gold text-urbana-black shadow">
+                                x{qty}
+                              </div>
+                            )}
                           </div>
                           <div className="p-2 space-y-0.5">
                             <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2 min-h-[2.2em]">
@@ -513,8 +509,28 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                                 {t.duracao}min
                               </span>
                             </div>
+                            <div className="flex items-center justify-center gap-1 mt-1 bg-urbana-black rounded-md border border-urbana-gold/30 px-1 py-0.5">
+                              <button
+                                type="button"
+                                onClick={() => decExtra(t.id)}
+                                disabled={!active}
+                                aria-label="Diminuir"
+                                className="h-6 w-6 flex items-center justify-center text-urbana-gold disabled:opacity-30"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="text-xs font-bold text-urbana-light w-5 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => incExtra(t.id)}
+                                aria-label="Aumentar"
+                                className="h-6 w-6 flex items-center justify-center text-urbana-gold"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -525,26 +541,18 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         </div>
 
         {/* Footer */}
-        {!loading && (selected || topExtras.length > 0) && (
+        {!loading && (selected || topExtras.length > 0 || (mainServiceId && !!mainServiceName)) && (
           <div className="shrink-0 border-t border-urbana-gold/25 bg-urbana-black/95 backdrop-blur-sm p-3 sm:p-4 space-y-2">
-            {selected && (
+            {(selected || mainExtraQty > 0 || Object.values(extraQtyMap).some(v => v > 0)) && (
               <Button
                 type="button"
                 onClick={handleAccept}
                 className="w-full bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-12 text-sm sm:text-base shadow-lg shadow-urbana-gold/30 border border-urbana-gold-light"
               >
                 <Check className="w-5 h-5 mr-2" strokeWidth={3} />
-                Adicionar combo e economizar
-              </Button>
-            )}
-            {selectedExtraIds.size > 0 && (
-              <Button
-                type="button"
-                onClick={handleAddSelectedExtras}
-                className="w-full bg-urbana-brown-light hover:bg-urbana-brown text-urbana-light font-semibold h-11 text-xs sm:text-sm border border-urbana-gold/30"
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                Adicionar selecionado{selectedExtraIds.size > 1 ? 's' : ''} ({selectedExtraIds.size})
+                {selected
+                  ? 'Adicionar combo e economizar'
+                  : `Adicionar ${totalExtraCount} serviço${totalExtraCount > 1 ? 's' : ''}`}
               </Button>
             )}
             {onAddOther && (
