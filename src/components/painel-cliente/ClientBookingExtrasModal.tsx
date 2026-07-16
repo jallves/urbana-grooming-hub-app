@@ -355,10 +355,17 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                     const qty = serviceQty(service.id);
                     const selected = qty > 0;
                     return (
-                      <button
+                      <div
                         key={service.id}
-                        type="button"
+                        role="button"
+                        tabIndex={0}
                         onClick={() => addService(service)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            addService(service);
+                          }
+                        }}
                         aria-label={`Adicionar ${service.nome}`}
                         className={cn(
                           "group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] touch-manipulation active:scale-[0.98] transition-all text-left",
@@ -451,7 +458,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                             )}
                           </div>
                         </div>
-                      </button>
+                      </div>
                     );
                   })
                 )}
