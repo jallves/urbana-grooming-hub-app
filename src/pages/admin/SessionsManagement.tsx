@@ -81,6 +81,33 @@ const SessionsManagement: React.FC = () => {
     return () => { supabase.removeChannel(channel); };
   }, [loadSessions]);
 
+  // Monthly login stats (per user_type) — realtime via admin_activity_log
+  const loadMonthlyStats = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.rpc('get_monthly_login_stats');
+      if (error) throw error;
+      setMonthlyStats((data || []).map((r: any) => ({
+        user_type: r.user_type,
+        unique_users: Number(r.unique_users) || 0,
+        total_logins: Number(r.total_logins) || 0,
+      })));
+    } catch (e) {
+      console.error('Erro ao carregar KPIs mensais:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadMonthlyStats();
+    const channel = supabase
+      .channel('login-stats-realtime')
+      .on('postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'admin_activity_log', filter: 'action=eq.login' },
+        () => loadMonthlyStats(),
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [loadMonthlyStats]);
+
   // Helpers
   const getDiffMins = useCallback((dateStr: string) => Math.floor((now.getTime() - new Date(dateStr).getTime()) / 60000), [now]);
 
