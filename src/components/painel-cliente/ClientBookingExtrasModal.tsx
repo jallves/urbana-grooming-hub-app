@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Check, Minus, Package, Plus, ShoppingBag, Sparkles, Scissors } from "lucide-react";
+import { ArrowLeft, Check, Clock, Minus, Package, Plus, ShoppingBag, Sparkles, Scissors } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -33,6 +33,14 @@ interface Product {
   categoria?: string;
 }
 
+interface ExtrasCatalog {
+  services: ClientExtraService[];
+  products: Product[];
+}
+
+let extrasCatalogCache: ExtrasCatalog | null = null;
+let extrasCatalogPromise: Promise<ExtrasCatalog> | null = null;
+
 const parseServiceImage = (raw: any): string | null => {
   if (!raw) return null;
   if (Array.isArray(raw)) return raw[0] || null;
@@ -51,6 +59,90 @@ const parseServiceImage = (raw: any): string | null => {
   }
   return null;
 };
+
+export async function preloadClientBookingExtras(): Promise<ExtrasCatalog> {
+  if (extrasCatalogCache) return extrasCatalogCache;
+  if (extrasCatalogPromise) return extrasCatalogPromise;
+
+  extrasCatalogPromise = (async () => {
+    const since = new Date();
+    since.setDate(since.getDate() - 90);
+    const sinceStr = since.toISOString().slice(0, 10);
+
+    const [servicesRes, productsRes, servicesRankRes, productsRankRes] = await Promise.all([
+      supabase
+        .from("painel_servicos")
+        .select("id, nome, preco, duracao, imagens, ativo, is_active")
+        .gt("preco", 0),
+      supabase
+        .from("painel_produtos")
+        .select("id, nome, preco, estoque, imagem_url, categoria")
+        .eq("ativo", true)
+        .gt("estoque", 0),
+      supabase
+        .from("painel_agendamentos")
+        .select("servico_id")
+        .eq("status", "concluido")
+        .gte("data", sinceStr)
+        .limit(3000),
+      supabase
+        .from("vendas_itens")
+        .select("item_id, quantidade")
+        .eq("tipo", "produto")
+        .limit(1500),
+    ]);
+
+    if (servicesRes.error) throw servicesRes.error;
+    if (productsRes.error) throw productsRes.error;
+
+    const svcRank = new Map<string, number>();
+    (servicesRankRes.data || []).forEach((row: any) => {
+      if (!row.servico_id) return;
+      svcRank.set(row.servico_id, (svcRank.get(row.servico_id) || 0) + 1);
+    });
+
+    const prodRank = new Map<string, number>();
+    (productsRankRes.data || []).forEach((row: any) => {
+      if (!row.item_id) return;
+      prodRank.set(row.item_id, (prodRank.get(row.item_id) || 0) + (Number(row.quantidade) || 1));
+    });
+
+    const services = ((servicesRes.data || []) as any[])
+      .filter((s) => s.ativo !== false && s.is_active !== false)
+      .map((s) => ({
+        id: s.id,
+        nome: s.nome,
+        preco: Number(s.preco) || 0,
+        duracao: Number(s.duracao) || 0,
+        imagem: parseServiceImage(s.imagens),
+      }) as ClientExtraService)
+      .sort((a, b) => {
+        const ra = svcRank.get(a.id) || 0;
+        const rb = svcRank.get(b.id) || 0;
+        if (rb !== ra) return rb - ra;
+        return a.nome.localeCompare(b.nome, "pt-BR");
+      });
+
+    const products = ((productsRes.data || []) as Product[])
+      .slice()
+      .sort((a, b) => {
+        const ra = prodRank.get(a.id) || 0;
+        const rb = prodRank.get(b.id) || 0;
+        if (rb !== ra) return rb - ra;
+        return a.nome.localeCompare(b.nome, "pt-BR");
+      })
+      .slice(0, 20);
+
+    extrasCatalogCache = { services, products };
+    return extrasCatalogCache;
+  })();
+
+  try {
+    return await extrasCatalogPromise;
+  } finally {
+    extrasCatalogPromise = null;
+  }
+}
 
 interface ClientBookingExtrasModalProps {
   open: boolean;
@@ -90,82 +182,18 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
   useEffect(() => {
     if (!open) return;
     const load = async () => {
+      if (extrasCatalogCache) {
+        setAvailableServices(extrasCatalogCache.services.filter((s) => s.id !== mainServiceId));
+        setAvailableProducts(extrasCatalogCache.products);
+        setLoading(false);
+        return;
+      }
+
       setLoading(true);
       try {
-        // Ranking: serviços mais executados e produtos mais vendidos (últimos 90 dias)
-        const since = new Date();
-        since.setDate(since.getDate() - 90);
-        const sinceStr = since.toISOString().slice(0, 10);
-
-        const [servicesRes, productsRes, servicesRankRes, productsRankRes] = await Promise.all([
-          supabase
-            .from("painel_servicos")
-            .select("id, nome, preco, duracao, imagens")
-            .eq("ativo", true),
-          supabase
-            .from("painel_produtos")
-            .select("id, nome, preco, estoque, imagem_url, categoria")
-            .eq("ativo", true)
-            .gt("estoque", 0),
-          supabase
-            .from("painel_agendamentos")
-            .select("servico_id")
-            .eq("status", "concluido")
-            .gte("data", sinceStr)
-            .limit(5000),
-          supabase
-            .from("vendas_itens")
-            .select("item_id, quantidade")
-            .eq("tipo", "produto")
-            .limit(2000),
-        ]);
-        if (servicesRes.error) throw servicesRes.error;
-        if (productsRes.error) throw productsRes.error;
-
-        // Ranking de serviços por execuções
-        const svcRank = new Map<string, number>();
-        (servicesRankRes.data || []).forEach((row: any) => {
-          if (!row.servico_id) return;
-          svcRank.set(row.servico_id, (svcRank.get(row.servico_id) || 0) + 1);
-        });
-
-        // Ranking de produtos por unidades vendidas
-        const prodRank = new Map<string, number>();
-        (productsRankRes.data || []).forEach((row: any) => {
-          if (!row.item_id) return;
-          prodRank.set(
-            row.item_id,
-            (prodRank.get(row.item_id) || 0) + (Number(row.quantidade) || 1)
-          );
-        });
-
-        const orderedServices = ((servicesRes.data || []) as any[])
-          .map((s) => ({
-            id: s.id,
-            nome: s.nome,
-            preco: Number(s.preco) || 0,
-            duracao: Number(s.duracao) || 0,
-            imagem: parseServiceImage(s.imagens),
-          }) as ClientExtraService)
-          .sort((a, b) => {
-            const ra = svcRank.get(a.id) || 0;
-            const rb = svcRank.get(b.id) || 0;
-            if (rb !== ra) return rb - ra;
-            return a.nome.localeCompare(b.nome, "pt-BR");
-          });
-
-        const orderedProducts = ((productsRes.data || []) as Product[])
-          .slice()
-          .sort((a, b) => {
-            const ra = prodRank.get(a.id) || 0;
-            const rb = prodRank.get(b.id) || 0;
-            if (rb !== ra) return rb - ra;
-            return a.nome.localeCompare(b.nome, "pt-BR");
-          })
-          .slice(0, 20);
-
-        setAvailableServices(orderedServices);
-        setAvailableProducts(orderedProducts);
+        const catalog = await preloadClientBookingExtras();
+        setAvailableServices(catalog.services.filter((s) => s.id !== mainServiceId));
+        setAvailableProducts(catalog.products);
       } catch (e) {
         console.error("[ClientBookingExtrasModal] Erro:", e);
         toast.error("Erro ao carregar opções");
@@ -303,63 +331,134 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
           {/* Content */}
           <div className="flex-1 overflow-y-auto px-4 pb-20">
             {loading ? (
-              <div className="py-10 text-center text-urbana-light/70">Carregando...</div>
+              <div className="grid grid-cols-2 gap-3 pt-1">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <div
+                    key={`extras-skeleton-${i}`}
+                    className="aspect-[3/4] rounded-2xl border border-urbana-gold/15 bg-white/5 animate-pulse overflow-hidden"
+                  >
+                    <div className="h-3/5 bg-white/10" />
+                    <div className="p-3 space-y-2">
+                      <div className="h-3 rounded bg-white/10" />
+                      <div className="h-3 w-2/3 rounded bg-white/10" />
+                      <div className="h-4 w-1/2 rounded bg-urbana-gold/20" />
+                    </div>
+                  </div>
+                ))}
+              </div>
             ) : activeTab === "services" ? (
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                 {availableServices.length === 0 ? (
                   <div className="col-span-full text-center py-10 text-urbana-light/60">Nenhum serviço extra disponível</div>
                 ) : (
-                  availableServices.map((service) => {
+                  availableServices.map((service, index) => {
                     const qty = serviceQty(service.id);
+                    const selected = qty > 0;
                     return (
-                      <Card
+                      <div
                         key={service.id}
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => addService(service)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            addService(service);
+                          }
+                        }}
+                        aria-label={`Adicionar ${service.nome}`}
                         className={cn(
-                          "overflow-hidden border-2 bg-urbana-black/50 transition-all",
-                          qty > 0
-                            ? "border-urbana-gold ring-2 ring-urbana-gold/40 shadow-lg shadow-urbana-gold/20"
-                            : "border-urbana-gold/20"
+                          "group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] touch-manipulation active:scale-[0.98] transition-all text-left",
+                          selected
+                            ? "border-urbana-gold ring-2 ring-urbana-gold/40 shadow-urbana-gold/25"
+                            : "border-urbana-gold/35 hover:border-urbana-gold"
                         )}
                       >
-                        <div className="aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 relative">
-                          {service.imagem ? (
-                            <img src={service.imagem} alt={service.nome} className="w-full h-full object-cover" loading="lazy" />
-                          ) : (
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Scissors className="w-10 h-10 text-urbana-gold/40" />
-                            </div>
-                          )}
-                          {typeof service.duracao === "number" && service.duracao > 0 && (
-                            <div className="absolute bottom-1 right-1 bg-urbana-black/80 text-urbana-light px-1.5 py-0.5 rounded text-[10px]">
-                              {service.duracao} min
-                            </div>
-                          )}
-                          {qty > 0 && (
-                            <div className="absolute top-1 right-1 px-1.5 h-5 min-w-5 rounded-full bg-urbana-gold flex items-center justify-center text-[10px] font-bold text-urbana-black">
-                              {qty}x
-                            </div>
-                          )}
+                        {service.imagem ? (
+                          <img
+                            src={service.imagem}
+                            alt={service.nome}
+                            className="absolute inset-0 w-full h-full object-cover"
+                            loading={index < 4 ? "eager" : "lazy"}
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
+                            <Scissors className="w-14 h-14 text-urbana-gold/60" />
+                          </div>
+                        )}
+
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/35 to-black/5" />
+
+                        <div className="absolute top-2 left-2 h-7 w-7 rounded-full bg-urbana-black/75 border border-urbana-gold/50 text-urbana-gold flex items-center justify-center shadow-lg">
+                          {selected ? <Check className="h-4 w-4" strokeWidth={3} /> : <Plus className="h-4 w-4" strokeWidth={3} />}
                         </div>
-                        <div className="p-2 space-y-1.5">
-                          <h4 className="font-bold text-xs text-urbana-light line-clamp-2 min-h-[2rem]">{service.nome}</h4>
-                          <p className="text-lg font-bold text-urbana-gold">R$ {service.preco.toFixed(2)}</p>
-                          {qty > 0 ? (
-                            <div className="flex items-center gap-1">
-                              <Button onClick={() => removeService(service.id)} size="sm" className="flex-1 h-8 bg-red-500/20 text-red-300 border border-red-500/40 text-xs">
-                                <Minus className="w-3 h-3" />
-                              </Button>
-                              <span className="text-base font-bold text-urbana-gold w-6 text-center">{qty}</span>
-                              <Button onClick={() => addService(service)} size="sm" className="flex-1 h-8 bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 text-xs">
-                                <Plus className="w-3 h-3" />
-                              </Button>
-                            </div>
-                          ) : (
-                            <Button onClick={() => addService(service)} size="sm" className="w-full h-8 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs">
-                              <Plus className="w-3 h-3 mr-1" /> Adicionar
-                            </Button>
-                          )}
+
+                        {selected && (
+                          <div className="absolute top-2 right-2 min-w-7 h-7 px-2 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center text-xs font-black shadow-lg">
+                            {qty}x
+                          </div>
+                        )}
+
+                        {selected && (
+                          <div className="absolute left-2 right-2 top-11 flex items-center justify-end gap-1.5">
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                removeService(service.id);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  removeService(service.id);
+                                }
+                              }}
+                              aria-label="Diminuir"
+                              className="h-8 w-8 rounded-lg bg-red-500/25 text-red-200 border border-red-400/40 flex items-center justify-center active:scale-95"
+                            >
+                              <Minus className="w-3.5 h-3.5" strokeWidth={3} />
+                            </span>
+                            <span
+                              role="button"
+                              tabIndex={0}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                addService(service);
+                              }}
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === " ") {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  addService(service);
+                                }
+                              }}
+                              aria-label="Aumentar"
+                              className="h-8 w-8 rounded-lg bg-urbana-gold/35 text-urbana-gold border border-urbana-gold/60 flex items-center justify-center active:scale-95"
+                            >
+                              <Plus className="w-3.5 h-3.5" strokeWidth={3} />
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="absolute inset-x-0 bottom-0 p-2.5 sm:p-3">
+                          <h4 className="text-urbana-light font-bold text-sm sm:text-base leading-tight line-clamp-2 drop-shadow min-h-[2.25rem]">
+                            {service.nome}
+                          </h4>
+                          <div className="flex items-center justify-between gap-2 mt-1">
+                            <span className="text-urbana-gold font-black text-base sm:text-lg">
+                              R$ {service.preco.toFixed(2)}
+                            </span>
+                            {typeof service.duracao === "number" && service.duracao > 0 && (
+                              <span className="text-urbana-light/85 text-[10px] sm:text-xs flex items-center gap-1 whitespace-nowrap">
+                                <Clock className="w-3 h-3" />
+                                {service.duracao}min
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </Card>
+                      </div>
                     );
                   })
                 )}
