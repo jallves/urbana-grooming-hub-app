@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { 
   RefreshCw, LogOut, Users, Monitor, Search, Filter, AlertCircle, CheckCircle, XCircle,
   Clock, Globe, Smartphone, Shield, Activity, Timer, Zap, Eye, Trash2, Download,
-  ArrowUpDown, LayoutGrid, List, UserCheck
+  ArrowUpDown, LayoutGrid, List, UserCheck, Lock, TrendingUp
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
@@ -37,6 +37,8 @@ const SessionsManagement: React.FC = () => {
   const [now, setNow] = useState(new Date());
   const [refreshCountdown, setRefreshCountdown] = useState(REFRESH_INTERVAL);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [monthlyStats, setMonthlyStats] = useState<Array<{ user_type: string; unique_users: number; total_logins: number }>>([]);
+  const [cleaningLocked, setCleaningLocked] = useState(false);
   const { toast } = useToast();
 
   // Get current user
