@@ -739,7 +739,8 @@ Deno.serve(async (req) => {
     })
     const totalNet = netByItemIdx.reduce((s, v) => s + v, 0)
 
-    for (const item of body.items) {
+    for (let itemIdx = 0; itemIdx < body.items.length; itemIdx++) {
+      const item = body.items[itemIdx]
       const qty = Number(item.quantity || 1)
       const unit = Number(item.price || 0)
       const discount = Number(item.discount || 0)
@@ -780,7 +781,9 @@ Deno.serve(async (req) => {
       }
 
       for (const bucket of buckets) {
-        const subRef = `revenue:${item.type}:${item.id}:${subcategory}:${bucket.suffix}`
+        // Inclui itemIdx para não colidir quando o mesmo serviço/produto aparece
+        // várias vezes na venda (ex.: 2 cortes extras iguais).
+        const subRef = `revenue:${item.type}:${item.id}:${subcategory}:idx${itemIdx}:${bucket.suffix}`
         const { id: financialId, alreadyExisted, obs } = await upsertFinancialRecord(
           supabase,
           {
