@@ -6,6 +6,7 @@ import { Client, ClientLoginData, ClientFormData } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
+import { useForceLogoutWatcher } from '@/hooks/useForceLogoutWatcher';
 
 interface ClientAuthContextType {
   client: Client | null;

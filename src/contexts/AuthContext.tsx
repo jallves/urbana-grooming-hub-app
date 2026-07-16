@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
+import { useForceLogoutWatcher } from '@/hooks/useForceLogoutWatcher';
 import { logAdminActivity } from '@/hooks/useActivityLogger';
 import { sessionManager } from '@/hooks/useSessionManager';
 
@@ -49,6 +50,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   // Listener para logout forçado (para admins, barbeiros, etc)
   useForceLogoutListener(user?.id);
+  // Watcher em tempo real via active_sessions
+  useForceLogoutWatcher(
+    user?.id,
+    userRole === 'barber' ? 'barber' : 'admin',
+    userRole === 'barber' ? '/barber/auth' : '/auth',
+  );
 
   const applyRole = (role: 'master' | 'admin' | 'manager' | 'barber' | 'client' | null) => {
     console.log('[AuthContext] 🎯 Aplicando role:', role);
