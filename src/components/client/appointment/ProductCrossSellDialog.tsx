@@ -67,7 +67,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && !isSubmitting && onClose()}>
       <DialogContent
-        className="max-w-[94vw] sm:max-w-[440px] p-0 overflow-hidden border-0 bg-gradient-to-br from-amber-50 via-white to-amber-50 max-h-[95dvh] flex flex-col rounded-2xl [&>button[type='button']:last-child]:hidden"
+        className="max-w-[94vw] sm:max-w-[520px] p-0 overflow-hidden border border-urbana-gold/30 bg-gradient-to-br from-urbana-black via-urbana-black-soft to-urbana-black max-h-[95dvh] flex flex-col rounded-2xl shadow-2xl shadow-urbana-gold/20 [&>button[type='button']:last-child]:hidden"
       >
         <div className="sr-only">
           <DialogTitle>Que tal levar um produto?</DialogTitle>
@@ -80,39 +80,40 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
           onClick={onClose}
           disabled={isSubmitting}
           aria-label="Fechar e continuar sem produtos"
-          className="absolute top-2.5 right-2.5 z-30 h-9 w-9 rounded-full bg-white/95 shadow-lg border border-amber-200 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
+          className="absolute top-2.5 right-2.5 z-30 h-9 w-9 rounded-full bg-urbana-black-soft/95 shadow-lg border border-urbana-gold/40 flex items-center justify-center active:scale-95 transition disabled:opacity-50"
         >
-          <X className="h-5 w-5 text-amber-700" />
+          <X className="h-5 w-5 text-urbana-gold" />
         </button>
 
         {/* Header */}
-        <div className="bg-gradient-to-r from-amber-500 to-amber-600 px-4 py-3 text-white pr-14 shrink-0">
+        <div className="relative bg-gradient-to-r from-urbana-black-soft via-urbana-black to-urbana-black-soft border-b border-urbana-gold/30 px-4 py-3 pr-14 shrink-0 overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.08] pointer-events-none bg-[radial-gradient(circle_at_top_right,_hsl(43_65%_60%),_transparent_60%)]" />
           <div className="flex items-center gap-1.5 mb-0.5">
-            <Sparkles className="h-4 w-4" />
-            <span className="text-[10px] font-semibold uppercase tracking-wider opacity-90">
+            <Sparkles className="h-4 w-4 text-urbana-gold" />
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-gold">
               Sugestões para você
             </span>
           </div>
-          <h2 className="text-lg sm:text-xl font-bold leading-tight">
+          <h2 className="text-lg sm:text-xl font-bold leading-tight text-urbana-light">
             Quer levar algum produto?
           </h2>
-          <p className="text-[11px] sm:text-xs text-white/90 mt-0.5">
+          <p className="text-[12px] sm:text-sm text-urbana-light/70 mt-0.5">
             Adicione e pague tudo junto no checkout.
           </p>
         </div>
 
-        {/* Body — lista vertical scrollável */}
+        {/* Body — grid de cards no estilo Totem */}
         <div className="flex-1 overflow-y-auto p-3 sm:p-4">
           {loading ? (
-            <div className="py-8 text-center text-sm text-gray-500">
+            <div className="py-8 text-center text-sm text-urbana-light/50">
               Carregando sugestões...
             </div>
           ) : products.length === 0 ? (
-            <div className="py-8 text-center text-sm text-gray-500">
+            <div className="py-8 text-center text-sm text-urbana-light/50">
               Nenhum produto disponível no momento.
             </div>
           ) : (
-            <div className="space-y-2">
+            <div className="grid grid-cols-2 gap-3">
               {products.map((p) => {
                 const qty = quantities[p.id] || 0;
                 const isSelected = qty > 0;
@@ -121,14 +122,14 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                   <div
                     key={p.id}
                     className={cn(
-                      'flex items-center gap-3 p-2 rounded-xl border-2 bg-white transition-all',
+                      'relative overflow-hidden rounded-2xl border-2 bg-white/10 backdrop-blur-xl transition-all shadow-lg',
                       isSelected
-                        ? 'border-amber-500 shadow-sm bg-amber-50/40'
-                        : 'border-gray-200'
+                        ? 'border-urbana-gold ring-2 ring-urbana-gold/40 shadow-urbana-gold/30'
+                        : 'border-white/20 hover:border-urbana-gold/60'
                     )}
                   >
                     {/* Imagem */}
-                    <div className="w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-lg bg-gray-100 overflow-hidden flex items-center justify-center">
+                    <div className="relative aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 overflow-hidden">
                       {p.imagem_url ? (
                         <img
                           src={p.imagem_url}
@@ -137,55 +138,60 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                           loading="lazy"
                         />
                       ) : (
-                        <Package className="h-7 w-7 text-gray-300" />
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Package className="h-12 w-12 text-urbana-gold/40" />
+                        </div>
                       )}
+                      <div className="absolute bottom-1.5 right-1.5 bg-urbana-black/90 backdrop-blur-sm text-urbana-light px-2 py-0.5 rounded-md text-[10px] font-bold border border-urbana-gold/50">
+                        <Package className="w-2.5 h-2.5 inline-block mr-0.5" />
+                        {p.estoque}
+                      </div>
                     </div>
 
                     {/* Info */}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 line-clamp-2 leading-tight">
+                    <div className="p-2.5 space-y-1.5 bg-gradient-to-b from-white/5 to-transparent">
+                      <p className="text-[13px] font-bold text-urbana-light line-clamp-2 leading-tight min-h-[2.2em]">
                         {p.nome}
                       </p>
-                      <p className="text-base font-bold text-amber-600 mt-0.5">
+                      <p className="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold-vibrant via-urbana-gold to-urbana-gold-light">
                         {formatBRL(p.preco)}
                       </p>
-                    </div>
-
-                    {/* Controle de quantidade / Adicionar */}
-                    {isSelected ? (
-                      <div className="flex items-center gap-1 shrink-0 bg-amber-500 rounded-full p-1 shadow-sm">
-                        <button
-                          type="button"
-                          onClick={() => setQty(p.id, maxStock, -1)}
-                          disabled={isSubmitting}
-                          aria-label="Diminuir"
-                          className="h-7 w-7 rounded-full bg-white text-amber-700 flex items-center justify-center active:scale-90 transition shadow-sm"
-                        >
-                          <Minus className="h-3.5 w-3.5" strokeWidth={3} />
-                        </button>
-                        <span className="min-w-[20px] text-center text-sm font-bold text-white px-1">
-                          {qty}
-                        </span>
+                      {/* Controle de quantidade / Adicionar */}
+                      {isSelected ? (
+                        <div className="flex items-center gap-1.5 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => setQty(p.id, maxStock, -1)}
+                            disabled={isSubmitting}
+                            aria-label="Diminuir"
+                            className="flex-1 h-9 rounded-lg bg-red-500/20 text-red-300 border-2 border-red-500/40 active:scale-95 transition flex items-center justify-center"
+                          >
+                            <Minus className="h-3.5 w-3.5" strokeWidth={3} />
+                          </button>
+                          <div className="min-w-[36px] text-center">
+                            <span className="text-lg font-black text-urbana-gold">{qty}</span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setQty(p.id, maxStock, 1)}
+                            disabled={isSubmitting || qty >= maxStock}
+                            aria-label="Aumentar"
+                            className="flex-1 h-9 rounded-lg bg-urbana-gold/30 text-urbana-gold border-2 border-urbana-gold/50 active:scale-95 transition flex items-center justify-center disabled:opacity-50"
+                          >
+                            <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                          </button>
+                        </div>
+                      ) : (
                         <button
                           type="button"
                           onClick={() => setQty(p.id, maxStock, 1)}
-                          disabled={isSubmitting || qty >= maxStock}
-                          aria-label="Aumentar"
-                          className="h-7 w-7 rounded-full bg-white text-amber-700 flex items-center justify-center active:scale-90 transition shadow-sm disabled:opacity-50"
+                          disabled={isSubmitting}
+                          className="w-full h-9 rounded-lg bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs active:scale-95 transition shadow flex items-center justify-center gap-1"
                         >
-                          <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                          <Plus className="h-3.5 w-3.5" strokeWidth={3} /> Incluir
                         </button>
-                      </div>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={() => setQty(p.id, maxStock, 1)}
-                        disabled={isSubmitting}
-                        className="shrink-0 h-9 px-3 rounded-full bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold flex items-center gap-1 active:scale-95 transition shadow-sm"
-                      >
-                        <Plus className="h-3.5 w-3.5" strokeWidth={3} /> Incluir
-                      </button>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -195,14 +201,14 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
 
         {/* Footer fixo */}
         {!loading && products.length > 0 && (
-          <div className="shrink-0 border-t border-amber-200/60 bg-white/80 backdrop-blur-sm p-3 sm:p-4 space-y-2">
+          <div className="shrink-0 border-t border-urbana-gold/25 bg-urbana-black/95 backdrop-blur-sm p-3 sm:p-4 space-y-2">
             {totalItems > 0 && (
               <div className="flex items-center justify-between px-1">
-                <span className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-amber-900">
+                <span className="flex items-center gap-1.5 text-xs sm:text-sm font-medium text-urbana-light">
                   <ShoppingBag className="h-4 w-4" />
                   {totalItems} {totalItems === 1 ? 'item' : 'itens'}
                 </span>
-                <span className="text-base sm:text-lg font-bold text-amber-700">
+                <span className="text-base sm:text-lg font-bold text-urbana-gold">
                   {formatBRL(total)}
                 </span>
               </div>
@@ -214,7 +220,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                 variant="outline"
                 onClick={handleSkip}
                 disabled={isSubmitting}
-                className="flex-1 border-gray-300 h-11 text-xs sm:text-sm"
+                className="flex-1 h-11 text-xs sm:text-sm bg-urbana-gray/40 hover:bg-urbana-gray/60 text-urbana-light border border-urbana-light/20"
               >
                 Não, obrigado
               </Button>
@@ -222,7 +228,7 @@ const ProductCrossSellDialog: React.FC<ProductCrossSellDialogProps> = ({
                 type="button"
                 onClick={handleConfirm}
                 disabled={isSubmitting}
-                className="flex-[1.5] bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold h-11 text-xs sm:text-sm"
+                className="flex-[1.5] bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-11 text-xs sm:text-sm shadow-lg shadow-urbana-gold/30 border border-urbana-gold-light"
               >
                 {isSubmitting
                   ? 'Confirmando...'
