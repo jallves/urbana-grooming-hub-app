@@ -1467,6 +1467,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             setExtraServices([]);
             setSelectedProducts([]);
             setAppliedCoupon(null);
+            setServiceQuantities({});
           }}
           appointmentDetails={{
             serviceName: selectedService.nome,
