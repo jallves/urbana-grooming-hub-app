@@ -609,15 +609,16 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   };
 
   const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => {
-    // Injeta serviços faltantes como extras — o combo é detectado no checkout.
+    // Injeta/atualiza serviços — quando o id já existe nos extras, REPLACE
+    // a quantidade pelo valor final vindo do diálogo (evita duplicar o que
+    // o cliente já tinha somado na tela anterior).
     setExtraServices(prev => {
       const next = [...prev];
       for (const svc of added) {
         const qty = Math.max(1, svc.quantidade || 1);
         const idx = next.findIndex(e => e.id === svc.id);
         if (idx >= 0) {
-          const cur = (next[idx] as any).quantidade || 1;
-          (next[idx] as any).quantidade = cur + qty;
+          (next[idx] as any).quantidade = qty;
         } else {
           next.push({
             id: svc.id,
@@ -1508,6 +1509,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         mainServiceName={selectedService?.nome ?? null}
         mainServiceDuration={selectedService?.duracao ?? null}
         mainServiceImage={selectedService?.imagens?.[0] ?? null}
+        mainServiceQty={selectedService ? (serviceQuantities[selectedService.id] || 1) : 1}
+        initialExtraQuantities={serviceQuantities}
         onAccept={handleComboSuggestionAccept}
         onAddOther={() => {
           setShowComboSuggestion(false);

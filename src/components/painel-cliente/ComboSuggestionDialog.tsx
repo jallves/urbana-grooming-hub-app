@@ -25,6 +25,10 @@ interface ComboSuggestionDialogProps {
   mainServiceName?: string | null;
   mainServiceDuration?: number | null;
   mainServiceImage?: string | null;
+  /** Quantidade já selecionada do serviço principal (default: 1) */
+  mainServiceQty?: number;
+  /** Quantidades já selecionadas de outros serviços (map id → qty) */
+  initialExtraQuantities?: Record<string, number>;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
   onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => void;
   /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
@@ -135,6 +139,8 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   mainServiceName,
   mainServiceDuration,
   mainServiceImage,
+  mainServiceQty = 1,
+  initialExtraQuantities,
   onAccept,
   onAddOther,
 }) => {
@@ -152,8 +158,19 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     (async () => {
       setLoading(true);
       setSelectedComboId(null);
-      setExtraQtyMap({});
-      setMainExtraQty(0);
+      // Preserva a quantidade extra do principal escolhida na tela anterior.
+      setMainExtraQty(Math.max(0, (mainServiceQty || 1) - 1));
+      // Semeia quantidades de outros serviços já pré-selecionados.
+      setExtraQtyMap(() => {
+        const seed: Record<string, number> = {};
+        if (initialExtraQuantities) {
+          for (const [id, q] of Object.entries(initialExtraQuantities)) {
+            if (id === mainServiceId) continue;
+            if (q && q > 0) seed[id] = q;
+          }
+        }
+        return seed;
+      });
       try {
         const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
