@@ -25,6 +25,10 @@ interface AppointmentHistory {
   status: string;
   servico_nome: string;
   servico_preco: number;
+  servicos_extras?: any[] | null;
+  extras_total?: number;
+  extras_summary?: string;
+  total_geral?: number;
 }
 
 const BarberClients: React.FC = () => {
@@ -90,13 +94,42 @@ const BarberClients: React.FC = () => {
               historyMap[client.id] = [];
             }
 
+            const extrasArr = Array.isArray((appointment as any).servicos_extras)
+              ? ((appointment as any).servicos_extras as any[])
+              : [];
+            const svcMap = new Map<string, { nome: string; preco: number; qty: number }>();
+            const prodList: { nome: string; preco: number; qty: number }[] = [];
+            for (const it of extrasArr) {
+              const preco = Number(it?.preco) || 0;
+              if (it?.tipo === 'produto') {
+                prodList.push({ nome: it.nome, preco, qty: Number(it.quantidade) || 1 });
+              } else {
+                const key = (it?.id || it?.nome || '') + '';
+                const prev = svcMap.get(key);
+                if (prev) prev.qty += 1;
+                else svcMap.set(key, { nome: it?.nome || 'Serviço', preco, qty: 1 });
+              }
+            }
+            const svcList = Array.from(svcMap.values());
+            const extrasTotal =
+              svcList.reduce((s, i) => s + i.preco * i.qty, 0) +
+              prodList.reduce((s, i) => s + i.preco * i.qty, 0);
+            const summaryParts = [
+              ...svcList.map((s) => (s.qty > 1 ? `${s.qty}× ${s.nome}` : s.nome)),
+              ...prodList.map((p) => (p.qty > 1 ? `${p.qty}× ${p.nome}` : p.nome)),
+            ];
+
             historyMap[client.id].push({
               id: appointment.id,
               data: appointment.data,
               hora: appointment.hora,
               status: appointment.status,
               servico_nome: service.nome,
-              servico_preco: service.preco
+              servico_preco: service.preco,
+              servicos_extras: extrasArr,
+              extras_total: extrasTotal,
+              extras_summary: summaryParts.join(', '),
+              total_geral: Number(service.preco || 0) + extrasTotal,
             });
           }
         });
@@ -194,7 +227,7 @@ const BarberClients: React.FC = () => {
               const completedAppointments = history.filter(h => h.status === 'concluido').length;
               const totalSpent = history
                 .filter(h => h.status === 'concluido')
-                .reduce((sum, h) => sum + h.servico_preco, 0);
+                .reduce((sum, h) => sum + (h.total_geral ?? h.servico_preco), 0);
 
               return (
                 <StandardCard key={client.id}>
@@ -256,6 +289,11 @@ const BarberClients: React.FC = () => {
                                   <Clock className="h-3 w-3 text-gray-400 flex-shrink-0" />
                                   <span className="text-white truncate">{appointment.servico_nome}</span>
                                 </div>
+                                {appointment.extras_summary && (
+                                  <div className="text-emerald-300/90 mt-1 truncate">
+                                    + {appointment.extras_summary}
+                                  </div>
+                                )}
                                 <div className="text-gray-400 mt-1">
                                   {format(parseISO(appointment.data), 'dd/MM/yyyy', { locale: ptBR })} às {appointment.hora}
                                 </div>
@@ -263,7 +301,7 @@ const BarberClients: React.FC = () => {
                               <div className="flex flex-col items-end gap-1 ml-2">
                                 {getStatusBadge(appointment.status)}
                                 <span className="text-urbana-gold font-medium">
-                                  R$ {appointment.servico_preco.toFixed(0)}
+                                  R$ {(appointment.total_geral ?? appointment.servico_preco).toFixed(2)}
                                 </span>
                               </div>
                             </div>
