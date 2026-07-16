@@ -537,20 +537,25 @@ const PainelClienteNovoAgendamento: React.FC = () => {
     setStep('barber');
   };
 
-  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>) => {
+  const handleComboSuggestionAccept = (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => {
     // Injeta serviços faltantes como extras — o combo é detectado no checkout.
     setExtraServices(prev => {
       const next = [...prev];
       for (const svc of added) {
-        if (!next.some(e => e.id === svc.id)) {
+        const qty = Math.max(1, svc.quantidade || 1);
+        const idx = next.findIndex(e => e.id === svc.id);
+        if (idx >= 0) {
+          const cur = (next[idx] as any).quantidade || 1;
+          (next[idx] as any).quantidade = cur + qty;
+        } else {
           next.push({
             id: svc.id,
             nome: svc.nome,
             preco: svc.preco,
             duracao: svc.duracao,
             imagem: svc.imagem,
-            quantidade: 1,
-          });
+            quantidade: qty,
+          } as any);
         }
       }
       return next;
