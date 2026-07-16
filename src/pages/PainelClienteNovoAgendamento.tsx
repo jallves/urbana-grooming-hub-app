@@ -1509,6 +1509,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         mainServiceName={selectedService?.nome ?? null}
         mainServiceDuration={selectedService?.duracao ?? null}
         mainServiceImage={selectedService?.imagens?.[0] ?? null}
+        mainServiceQty={selectedService ? (serviceQuantities[selectedService.id] || 1) : 1}
+        initialExtraQuantities={serviceQuantities}
         onAccept={handleComboSuggestionAccept}
         onAddOther={() => {
           setShowComboSuggestion(false);
