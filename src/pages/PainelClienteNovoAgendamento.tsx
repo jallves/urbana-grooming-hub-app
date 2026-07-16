@@ -1004,12 +1004,8 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       return (
                         <div
                           key={service.id}
-                          role="button"
-                          tabIndex={0}
-                          onClick={() => handleServiceSelect(service)}
-                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleServiceSelect(service); }}
                           style={{ animationDelay: `${index * 0.05}s` }}
-                          className={`group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] transition-all text-left cursor-pointer ${
+                          className={`group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in transition-all text-left ${
                             selected
                               ? 'border-urbana-gold ring-2 ring-urbana-gold shadow-[0_12px_40px_rgba(212,175,55,0.45)]'
                               : 'border-urbana-gold/40 hover:border-urbana-gold'
@@ -1039,37 +1035,45 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
                               {service.nome}
                             </h3>
-                            {/* Controles de quantidade +/- centralizados ao lado do nome */}
-                            <div
-                              className="flex items-center justify-center gap-2 mt-2 bg-black/60 backdrop-blur-sm rounded-full py-1 px-2 w-fit mx-auto shadow-lg"
-                              onClick={(e) => e.stopPropagation()}
-                            >
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); decrementServiceQty(service.id); }}
-                                disabled={qty <= 0}
-                                aria-label="Remover"
-                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
-                              >
-                                <Minus className="w-4 h-4" />
-                              </button>
-                              <span className="text-white font-bold text-base w-6 text-center">{qty}</span>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); incrementServiceQty(service.id); }}
-                                aria-label="Adicionar"
-                                className="w-8 h-8 rounded-full bg-urbana-gold hover:bg-urbana-gold/90 flex items-center justify-center text-black transition-colors"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            </div>
-                            <div className="flex items-baseline justify-between mt-2">
+                            <div className="flex items-baseline justify-between mt-1">
                               <span className="text-urbana-gold font-bold text-lg sm:text-xl">
                                 R$ {service.preco.toFixed(2)}
                               </span>
                               <span className="text-white/80 text-xs sm:text-sm">
                                 {service.duracao} min
                               </span>
+                            </div>
+                            {/* Botão Adicionar / controles +/- (padrão totem) */}
+                            <div className="mt-2">
+                              {qty > 0 ? (
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => decrementServiceQty(service.id)}
+                                    aria-label="Diminuir"
+                                    className="flex-1 h-9 rounded-md bg-red-500/25 text-red-200 border border-red-400/40 flex items-center justify-center active:scale-95"
+                                  >
+                                    <Minus className="w-4 h-4" strokeWidth={3} />
+                                  </button>
+                                  <span className="text-base font-bold text-urbana-gold w-8 text-center">{qty}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => incrementServiceQty(service.id)}
+                                    aria-label="Aumentar"
+                                    className="flex-1 h-9 rounded-md bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 flex items-center justify-center active:scale-95"
+                                  >
+                                    <Plus className="w-4 h-4" strokeWidth={3} />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleServiceSelect(service)}
+                                  className="w-full h-9 rounded-md bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs flex items-center justify-center gap-1 active:scale-95"
+                                >
+                                  <Plus className="w-3.5 h-3.5" strokeWidth={3} /> Adicionar
+                                </button>
+                              )}
                             </div>
                           </div>
                         </div>
