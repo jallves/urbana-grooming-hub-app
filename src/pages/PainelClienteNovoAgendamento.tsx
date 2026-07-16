@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Scissors, User, ArrowLeft, Check } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+  // Quantidades selecionadas por serviço na tela inicial (multi-seleção)
+  const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
+  // Sinaliza que o próximo "aplicar" do modal de extras deve avançar para barbeiro
+  const [advanceAfterExtras, setAdvanceAfterExtras] = useState(false);
   
   // State para listas
   const [services, setServices] = useState<Service[]>([]);
@@ -519,14 +525,79 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
-    setSelectedService(service);
-    // Prefetch de barbeiros em paralelo enquanto o popup de combo é exibido
+    // Incrementa a quantidade selecionada desse serviço (multi-seleção com +/-).
+    setServiceQuantities(prev => ({
+      ...prev,
+      [service.id]: Math.min(9, (prev[service.id] || 0) + 1),
+    }));
+  };
+
+  const incrementServiceQty = (serviceId: string) => {
+    setServiceQuantities(prev => ({
+      ...prev,
+      [serviceId]: Math.min(9, (prev[serviceId] || 0) + 1),
+    }));
+  };
+
+  const decrementServiceQty = (serviceId: string) => {
+    setServiceQuantities(prev => {
+      const cur = prev[serviceId] || 0;
+      const next = Math.max(0, cur - 1);
+      const clone = { ...prev };
+      if (next <= 0) delete clone[serviceId];
+      else clone[serviceId] = next;
+      return clone;
+    });
+  };
+
+  // Confirma a seleção da 1ª etapa: define o serviço principal + extras,
+  // dispara sugestão de combo e vai para a próxima etapa.
+  const handleServicesConfirm = () => {
+    const picked: Array<{ service: Service; qty: number }> = [];
+    for (const s of services) {
+      const qty = serviceQuantities[s.id] || 0;
+      if (qty > 0) picked.push({ service: s, qty });
+    }
+    if (picked.length === 0) {
+      toast.error('Selecione ao menos um serviço para continuar');
+      return;
+    }
+
+    // Primeiro item é o principal; se qty>1, o excedente vira extra do mesmo tipo.
+    const [head, ...rest] = picked;
+    const main = head.service;
+
+    const extras: ClientExtraService[] = [];
+    if (head.qty > 1) {
+      extras.push({
+        id: main.id,
+        nome: main.nome,
+        preco: main.preco,
+        duracao: main.duracao,
+        imagem: main.imagens?.[0] || null,
+        quantidade: head.qty - 1,
+      });
+    }
+    for (const item of rest) {
+      extras.push({
+        id: item.service.id,
+        nome: item.service.nome,
+        preco: item.service.preco,
+        duracao: item.service.duracao,
+        imagem: item.service.imagens?.[0] || null,
+        quantidade: item.qty,
+      });
+    }
+
+    setSelectedService(main);
+    setExtraServices(extras);
+
+    // Prefetch barbeiros em paralelo
     setBarbers([]);
-    loadBarbers(service);
-    // Antes de avançar, verifica se este serviço faz parte de algum combo
-    // e sugere completar. O popup segue com step='barber' independente do resultado.
-    setPendingComboServiceId(service.id);
-    setPendingComboServicePrice(Number(service.preco) || 0);
+    loadBarbers(main);
+
+    setPendingComboServiceId(main.id);
+    setPendingComboServicePrice(Number(main.preco) || 0);
     setShowComboSuggestion(true);
   };
 
@@ -926,43 +997,107 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                       Nenhum serviço disponível
                     </div>
                   ) : (
-                    services.map((service, index) => (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => handleServiceSelect(service)}
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                        className="group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 border-urbana-gold/40 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] hover:border-urbana-gold hover:shadow-[0_12px_40px_rgba(212,175,55,0.35)] transition-all text-left"
-                      >
-                        {service.imagens && service.imagens.length > 0 ? (
-                          <img
-                            src={service.imagens[0]}
-                            alt={service.nome}
-                            className="absolute inset-0 w-full h-full object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
-                            <Scissors className="w-16 h-16 text-urbana-gold/60" />
+                    services.map((service, index) => {
+                      const qty = serviceQuantities[service.id] || 0;
+                      const selected = qty > 0;
+                      return (
+                        <div
+                          key={service.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleServiceSelect(service)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleServiceSelect(service); }}
+                          style={{ animationDelay: `${index * 0.05}s` }}
+                          className={`group relative w-full aspect-[3/4] rounded-2xl overflow-hidden border-2 bg-urbana-black-soft shadow-[0_8px_32px_rgba(0,0,0,0.4)] animate-scale-in touch-manipulation active:scale-[0.98] transition-all text-left cursor-pointer ${
+                            selected
+                              ? 'border-urbana-gold ring-2 ring-urbana-gold shadow-[0_12px_40px_rgba(212,175,55,0.45)]'
+                              : 'border-urbana-gold/40 hover:border-urbana-gold'
+                          }`}
+                        >
+                          {service.imagens && service.imagens.length > 0 ? (
+                            <img
+                              src={service.imagens[0]}
+                              alt={service.nome}
+                              className="absolute inset-0 w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-urbana-black-soft to-urbana-black">
+                              <Scissors className="w-16 h-16 text-urbana-gold/60" />
+                            </div>
+                          )}
+
+                          {/* Badge de quantidade selecionada */}
+                          {selected && (
+                            <div className="absolute top-2 left-2 bg-urbana-gold text-black text-xs font-bold px-2 py-0.5 rounded-full shadow-lg">
+                              {qty}x
+                            </div>
+                          )}
+
+                          {/* Controles de quantidade +/- */}
+                          <div
+                            className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full p-1 shadow-lg"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); decrementServiceQty(service.id); }}
+                              disabled={qty <= 0}
+                              aria-label="Remover"
+                              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                            >
+                              <Minus className="w-3.5 h-3.5" />
+                            </button>
+                            <span className="text-white font-bold text-sm w-5 text-center">{qty}</span>
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); incrementServiceQty(service.id); }}
+                              aria-label="Adicionar"
+                              className="w-7 h-7 rounded-full bg-urbana-gold hover:bg-urbana-gold/90 flex items-center justify-center text-black transition-colors"
+                            >
+                              <Plus className="w-3.5 h-3.5" />
+                            </button>
                           </div>
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
-                          <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
-                            {service.nome}
-                          </h3>
-                          <div className="flex items-baseline justify-between mt-1">
-                            <span className="text-urbana-gold font-bold text-lg sm:text-xl">
-                              R$ {service.preco.toFixed(2)}
-                            </span>
-                            <span className="text-white/80 text-xs sm:text-sm">
-                              {service.duracao} min
-                            </span>
+
+                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
+                            <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
+                              {service.nome}
+                            </h3>
+                            <div className="flex items-baseline justify-between mt-1">
+                              <span className="text-urbana-gold font-bold text-lg sm:text-xl">
+                                R$ {service.preco.toFixed(2)}
+                              </span>
+                              <span className="text-white/80 text-xs sm:text-sm">
+                                {service.duracao} min
+                              </span>
+                            </div>
                           </div>
                         </div>
-                      </button>
-                    ))
+                      );
+                    })
                   )}
                 </div>
+
+                {/* Botão Agendar / Barra fixa inferior */}
+                {Object.values(serviceQuantities).some(q => q > 0) && (
+                  <div className="sticky bottom-0 left-0 right-0 mt-4 pt-3 pb-2 bg-gradient-to-t from-black via-black/95 to-transparent z-20">
+                    <div className="flex items-center justify-between gap-3 max-w-2xl mx-auto">
+                      <div className="text-white text-sm sm:text-base">
+                        <span className="text-white/60">Selecionados: </span>
+                        <span className="font-bold text-urbana-gold">
+                          {Object.values(serviceQuantities).reduce((a, b) => a + b, 0)}
+                        </span>
+                      </div>
+                      <Button
+                        onClick={handleServicesConfirm}
+                        className="bg-urbana-gold text-black hover:bg-urbana-gold/90 font-bold px-6 py-5 sm:py-6 text-base sm:text-lg shadow-lg shadow-urbana-gold/30 touch-manipulation"
+                      >
+                        Agendar
+                        <Check className="w-5 h-5 ml-2" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -1292,13 +1427,27 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       {selectedService && (
         <ClientBookingExtrasModal
           open={showExtrasModal}
-          onOpenChange={setShowExtrasModal}
+          onOpenChange={(open) => {
+            setShowExtrasModal(open);
+            // Se fechou o modal sem aplicar mas viemos do combo,
+            // ainda assim avança para a etapa de barbeiro.
+            if (!open && advanceAfterExtras) {
+              setAdvanceAfterExtras(false);
+              setStep('barber');
+            }
+          }}
           mainServiceId={selectedService.id}
           initialExtraServices={extraServices}
           initialProducts={selectedProducts}
           onApply={({ extraServices: es, products: ps }) => {
             setExtraServices(es);
             setSelectedProducts(ps);
+            // Se o modal foi aberto a partir da sugestão de combo,
+            // avança automaticamente para a etapa de barbeiro após aplicar.
+            if (advanceAfterExtras) {
+              setAdvanceAfterExtras(false);
+              setStep('barber');
+            }
           }}
         />
       )}
@@ -1318,6 +1467,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
             setExtraServices([]);
             setSelectedProducts([]);
             setAppliedCoupon(null);
+            setServiceQuantities({});
           }}
           appointmentDetails={{
             serviceName: selectedService.nome,
@@ -1364,9 +1514,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           setShowComboSuggestion(false);
           setPendingComboServiceId(null);
           setPendingComboServicePrice(0);
-          setStep('barber');
-          // Abre picker de extras (serviços/produtos) logo em seguida
-          setTimeout(() => setShowExtrasModal(true), 150);
+          // NÃO troca para step='barber' aqui — evita "flash" da tela de
+          // barbeiro antes do modal abrir. Apenas abre o picker de extras
+          // e marca para avançar depois do aplicar.
+          setAdvanceAfterExtras(true);
+          setShowExtrasModal(true);
         }}
       />
     </ClientPageContainer>
