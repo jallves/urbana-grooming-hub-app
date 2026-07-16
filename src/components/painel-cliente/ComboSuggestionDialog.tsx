@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Check, X, Plus, Scissors, Clock } from 'lucide-react';
+import { Sparkles, Check, X, Plus, Minus, Scissors, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ComboCandidate {
@@ -22,8 +22,11 @@ interface ComboSuggestionDialogProps {
   onClose: () => void;
   mainServiceId: string | null;
   mainServicePrice: number;
+  mainServiceName?: string | null;
+  mainServiceDuration?: number | null;
+  mainServiceImage?: string | null;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
-  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>) => void;
+  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => void;
   /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
   onAddOther?: () => void;
 }
@@ -129,6 +132,9 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   onClose,
   mainServiceId,
   mainServicePrice,
+  mainServiceName,
+  mainServiceDuration,
+  mainServiceImage,
   onAccept,
   onAddOther,
 }) => {
@@ -136,7 +142,9 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
   const [selectedComboId, setSelectedComboId] = useState<string | null>(null);
   const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>>([]);
-  const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
+  const [extraQtyMap, setExtraQtyMap] = useState<Record<string, number>>({});
+  /** Quantidade extra do serviço principal (0 = apenas o já selecionado; 1 = +1 duplicata, etc.) */
+  const [mainExtraQty, setMainExtraQty] = useState<number>(0);
 
   useEffect(() => {
     if (!isOpen || !mainServiceId) return;
@@ -144,7 +152,8 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     (async () => {
       setLoading(true);
       setSelectedComboId(null);
-      setSelectedExtraIds(new Set());
+      setExtraQtyMap({});
+      setMainExtraQty(0);
       try {
         const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
@@ -223,23 +232,43 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const selected = candidates.find(c => c.combo_service_id === selectedComboId) || null;
 
   const handleAccept = () => {
-    if (!selected) return;
-    onAccept(selected.missing);
+    const items: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }> = [];
+    if (selected) {
+      for (const m of selected.missing) items.push({ ...m, quantidade: 1 });
+    }
+    if (mainExtraQty > 0 && mainServiceId) {
+      items.push({
+        id: mainServiceId,
+        nome: mainServiceName || 'Serviço',
+        preco: mainServicePrice,
+        duracao: mainServiceDuration || 0,
+        imagem: mainServiceImage || null,
+        quantidade: mainExtraQty,
+      });
+    }
+    for (const [id, qty] of Object.entries(extraQtyMap)) {
+      if (!qty) continue;
+      const t = topExtras.find(x => x.id === id);
+      if (!t) continue;
+      items.push({ ...t, quantidade: qty });
+    }
+    if (items.length === 0) return;
+    onAccept(items);
   };
 
-  const toggleExtra = (id: string) => {
-    setSelectedExtraIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+  const incExtra = (id: string) =>
+    setExtraQtyMap(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const decExtra = (id: string) =>
+    setExtraQtyMap(prev => {
+      const next = { ...prev };
+      const v = (next[id] || 0) - 1;
+      if (v <= 0) delete next[id]; else next[id] = v;
       return next;
     });
-  };
 
-  const handleAddSelectedExtras = () => {
-    const picked = topExtras.filter(t => selectedExtraIds.has(t.id));
-    if (picked.length === 0) return;
-    onAccept(picked);
-  };
+  const totalExtraCount = mainExtraQty
+    + Object.values(extraQtyMap).reduce((a, b) => a + b, 0)
+    + (selected ? selected.missing.length : 0);
 
   if (!isOpen || (candidates.length === 0 && topExtras.length === 0 && !loading)) return null;
 
@@ -293,6 +322,69 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
             </div>
           ) : (
             <>
+              {/* Serviço já selecionado — permite adicionar duplicatas (ex.: 2x corte) */}
+              {mainServiceId && mainServiceName && (
+                <div className="rounded-xl border-2 border-urbana-gold/40 bg-urbana-black-soft/70 p-2 flex gap-2 items-center">
+                  <div className="relative h-16 w-16 shrink-0 rounded-lg overflow-hidden bg-urbana-black">
+                    {mainServiceImage ? (
+                      <img src={mainServiceImage} alt={mainServiceName} className="w-full h-full object-cover" />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black to-urbana-brown/60">
+                        <Scissors className="w-6 h-6 text-urbana-gold/60" />
+                      </div>
+                    )}
+                    <div className="absolute top-0.5 left-0.5 text-[9px] font-bold px-1 rounded bg-urbana-gold text-urbana-black shadow">
+                      SELECIONADO
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2">
+                      {mainServiceName}
+                    </p>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-sm font-bold text-urbana-gold">{formatBRL(mainServicePrice)}</span>
+                      {mainServiceDuration ? (
+                        <span className="text-[10px] text-urbana-light/60 flex items-center gap-0.5">
+                          <Clock className="h-3 w-3" />{mainServiceDuration}min
+                        </span>
+                      ) : null}
+                    </div>
+                    <p className="text-[10px] text-urbana-light/50 mt-0.5">
+                      Quer repetir esse serviço? Some quantas vezes precisar.
+                    </p>
+                  </div>
+                  <div className="flex flex-col items-center gap-1">
+                    <div className="flex items-center gap-1 bg-urbana-black rounded-lg border border-urbana-gold/40 px-1 py-0.5">
+                      <button
+                        type="button"
+                        onClick={() => setMainExtraQty(q => Math.max(0, q - 1))}
+                        className="h-7 w-7 flex items-center justify-center text-urbana-gold disabled:opacity-30"
+                        disabled={mainExtraQty === 0}
+                        aria-label="Diminuir"
+                      >
+                        <Minus className="h-4 w-4" />
+                      </button>
+                      <span className="text-sm font-bold text-urbana-light w-6 text-center">
+                        {1 + mainExtraQty}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setMainExtraQty(q => q + 1)}
+                        className="h-7 w-7 flex items-center justify-center text-urbana-gold"
+                        aria-label="Aumentar"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </button>
+                    </div>
+                    {mainExtraQty > 0 && (
+                      <span className="text-[9px] text-urbana-gold/80 font-semibold uppercase">
+                        +{mainExtraQty} extra{mainExtraQty > 1 ? 's' : ''}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Seletor de combo (só aparece se houver 2+ candidatos) */}
               {candidates.length > 1 && (
                 <div className="space-y-2">
@@ -380,17 +472,16 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     {topExtras.map((t) => {
-                      const active = selectedExtraIds.has(t.id);
+                      const qty = extraQtyMap[t.id] || 0;
+                      const active = qty > 0;
                       return (
-                        <button
+                        <div
                           key={t.id}
-                          type="button"
-                          onClick={() => toggleExtra(t.id)}
                           className={cn(
                             'text-left rounded-xl overflow-hidden border-2 transition-all shadow-md',
                             active
                               ? 'border-urbana-gold bg-urbana-gold/10 ring-2 ring-urbana-gold/40'
-                              : 'border-urbana-gold/20 bg-white/5 hover:border-urbana-gold/50'
+                              : 'border-urbana-gold/20 bg-white/5'
                           )}
                         >
                           <div className="relative aspect-[4/3] bg-urbana-black overflow-hidden">
@@ -401,14 +492,11 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                                 <Scissors className="w-8 h-8 text-urbana-gold/50" />
                               </div>
                             )}
-                            <div className={cn(
-                              'absolute top-1.5 right-1.5 h-6 w-6 rounded-full border-2 flex items-center justify-center shadow',
-                              active
-                                ? 'bg-urbana-gold border-urbana-gold text-urbana-black'
-                                : 'bg-urbana-black/70 border-urbana-gold/50 text-transparent'
-                            )}>
-                              <Check className="h-3.5 w-3.5" strokeWidth={3} />
-                            </div>
+                            {active && (
+                              <div className="absolute top-1.5 left-1.5 text-[10px] font-bold px-1.5 py-0.5 rounded bg-urbana-gold text-urbana-black shadow">
+                                x{qty}
+                              </div>
+                            )}
                           </div>
                           <div className="p-2 space-y-0.5">
                             <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2 min-h-[2.2em]">
@@ -421,8 +509,28 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                                 {t.duracao}min
                               </span>
                             </div>
+                            <div className="flex items-center justify-center gap-1 mt-1 bg-urbana-black rounded-md border border-urbana-gold/30 px-1 py-0.5">
+                              <button
+                                type="button"
+                                onClick={() => decExtra(t.id)}
+                                disabled={!active}
+                                aria-label="Diminuir"
+                                className="h-6 w-6 flex items-center justify-center text-urbana-gold disabled:opacity-30"
+                              >
+                                <Minus className="h-3.5 w-3.5" />
+                              </button>
+                              <span className="text-xs font-bold text-urbana-light w-5 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={() => incExtra(t.id)}
+                                aria-label="Aumentar"
+                                className="h-6 w-6 flex items-center justify-center text-urbana-gold"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
                           </div>
-                        </button>
+                        </div>
                       );
                     })}
                   </div>
@@ -433,26 +541,18 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         </div>
 
         {/* Footer */}
-        {!loading && (selected || topExtras.length > 0) && (
+        {!loading && (selected || topExtras.length > 0 || (mainServiceId && !!mainServiceName)) && (
           <div className="shrink-0 border-t border-urbana-gold/25 bg-urbana-black/95 backdrop-blur-sm p-3 sm:p-4 space-y-2">
-            {selected && (
+            {(selected || mainExtraQty > 0 || Object.values(extraQtyMap).some(v => v > 0)) && (
               <Button
                 type="button"
                 onClick={handleAccept}
                 className="w-full bg-gradient-to-r from-urbana-gold via-urbana-gold-vibrant to-urbana-gold hover:from-urbana-gold-dark hover:to-urbana-gold-dark text-urbana-black font-bold h-12 text-sm sm:text-base shadow-lg shadow-urbana-gold/30 border border-urbana-gold-light"
               >
                 <Check className="w-5 h-5 mr-2" strokeWidth={3} />
-                Adicionar combo e economizar
-              </Button>
-            )}
-            {selectedExtraIds.size > 0 && (
-              <Button
-                type="button"
-                onClick={handleAddSelectedExtras}
-                className="w-full bg-urbana-brown-light hover:bg-urbana-brown text-urbana-light font-semibold h-11 text-xs sm:text-sm border border-urbana-gold/30"
-              >
-                <Plus className="w-4 h-4 mr-1.5" />
-                Adicionar selecionado{selectedExtraIds.size > 1 ? 's' : ''} ({selectedExtraIds.size})
+                {selected
+                  ? 'Adicionar combo e economizar'
+                  : `Adicionar ${totalExtraCount} serviço${totalExtraCount > 1 ? 's' : ''}`}
               </Button>
             )}
             {onAddOther && (
