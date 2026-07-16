@@ -93,6 +93,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   // Usar hook para escutar logout forçado
   useForceLogoutListener(client?.id);
+  useForceLogoutWatcher(client?.id, 'painel_cliente', '/painel-cliente/login');
 
   // Sincronizar com Supabase Auth
   useEffect(() => {

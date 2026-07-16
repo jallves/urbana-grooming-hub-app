@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
+import { useForceLogoutWatcher } from '@/hooks/useForceLogoutWatcher';
 
 interface TotemAuthContextType {
   isAuthenticated: boolean;
@@ -33,6 +34,7 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
 
   // Listener para logout forçado
   useForceLogoutListener(totemUserId || undefined);
+  useForceLogoutWatcher(totemUserId, 'totem', '/totem/login');
 
   useEffect(() => {
     checkAuth();
