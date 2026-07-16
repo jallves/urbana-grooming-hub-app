@@ -1280,107 +1280,155 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                           Confirme seu Agendamento
                         </CardTitle>
                       </CardHeader>
-                      <CardContent className="space-y-3 sm:space-y-4 p-3 sm:p-6 pt-4 sm:pt-6">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            <Scissors className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Serviço Principal</p>
-                              <p className="font-semibold text-sm sm:text-base truncate">{selectedService?.nome}</p>
-                              <p className="text-xs sm:text-sm text-urbana-gold mt-0.5 sm:mt-1">R$ {selectedService?.preco.toFixed(2)}</p>
+                      <CardContent className="space-y-4 p-3 sm:p-6 pt-4 sm:pt-6">
+                        {/* Agendamento: Profissional / Data / Horário */}
+                        <div className="bg-urbana-black/30 rounded-lg border border-urbana-gold/20 divide-y divide-urbana-gold/10">
+                          {/* Profissional */}
+                          <div className="flex items-center gap-3 p-3 sm:p-4">
+                            <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden border-2 border-urbana-gold/50 bg-urbana-black shrink-0 flex items-center justify-center">
+                              {selectedBarber?.image_url ? (
+                                <img
+                                  src={selectedBarber.image_url}
+                                  alt={selectedBarber.nome}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                />
+                              ) : (
+                                <User className="w-6 h-6 text-urbana-gold" />
+                              )}
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] uppercase tracking-wide text-white/60">Profissional</p>
+                              <p className="font-semibold text-sm sm:text-base text-white truncate">{selectedBarber?.nome}</p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            {selectedBarber?.image_url ? (
-                              <img 
-                                src={selectedBarber.image_url} 
-                                alt={selectedBarber.nome}
-                                className="w-8 h-8 sm:w-12 sm:h-12 rounded-full object-cover border-2 border-urbana-gold/50 shrink-0"
-                                onError={(e) => {
-                                  e.currentTarget.style.display = 'none';
-                                }}
-                              />
-                            ) : (
-                              <User className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Profissional</p>
-                              <p className="font-semibold text-sm sm:text-base truncate">{selectedBarber?.nome}</p>
+                          {/* Data */}
+                          <div className="flex items-center gap-3 p-3 sm:p-4">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-urbana-gold/15 border border-urbana-gold/30 flex items-center justify-center shrink-0">
+                              <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
                             </div>
-                          </div>
-                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Data</p>
-                              <p className="font-semibold text-sm sm:text-base capitalize">
-                                {format(selectedDate, "EEE, dd 'de' MMM", { locale: ptBR })}
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] uppercase tracking-wide text-white/60">Data</p>
+                              <p className="font-semibold text-sm sm:text-base text-white capitalize">
+                                {format(selectedDate, "EEEE, dd 'de' MMMM", { locale: ptBR })}
                               </p>
                             </div>
                           </div>
-                          <div className="flex items-start gap-2 sm:gap-3 text-white bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold mt-0.5 shrink-0" />
-                            <div className="min-w-0">
-                              <p className="text-xs text-white/60 mb-0.5 sm:mb-1">Horário</p>
-                              <p className="font-semibold text-sm sm:text-lg">{selectedTime}</p>
-                              <p className="text-xs text-white/60 mt-0.5 sm:mt-1">
-                                {selectedService ? calculateTotalAppointmentDuration(
-                                  selectedService.duracao,
-                                  extraServices.length > 0 ? extraServices : null
-                                ) : selectedService?.duracao} min
+                          {/* Horário */}
+                          <div className="flex items-center gap-3 p-3 sm:p-4">
+                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-urbana-gold/15 border border-urbana-gold/30 flex items-center justify-center shrink-0">
+                              <Clock className="w-4 h-4 sm:w-5 sm:h-5 text-urbana-gold" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <p className="text-[11px] uppercase tracking-wide text-white/60">Horário</p>
+                              <p className="font-semibold text-sm sm:text-base text-white">
+                                {selectedTime}
+                                <span className="text-xs text-white/60 font-normal ml-2">
+                                  · {selectedService ? calculateTotalAppointmentDuration(
+                                    selectedService.duracao,
+                                    extraServices.length > 0 ? extraServices : null
+                                  ) : selectedService?.duracao} min
+                                </span>
                               </p>
                             </div>
                           </div>
                         </div>
 
-                        {/* Extras Summary */}
-                        {extraServices.length > 0 && (
-                          <div className="bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            <p className="text-xs text-white/60 mb-2 flex items-center gap-1">
-                              <Sparkles className="w-3 h-3 text-urbana-gold" /> Serviços Extras
-                            </p>
-                            <div className="space-y-1">
-                              {extraServices.map(s => {
-                                const qty = s.quantidade || 1;
-                                return (
-                                  <div key={s.id} className="flex justify-between text-sm text-white">
-                                    <span className="truncate mr-2">{s.nome}{qty > 1 ? ` x${qty}` : ''}</span>
-                                    <span className="text-urbana-gold shrink-0">R$ {(s.preco * qty).toFixed(2)}</span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-
-                        {selectedProducts.length > 0 && (
-                          <div className="bg-urbana-black/30 p-3 sm:p-4 rounded-lg border border-urbana-gold/20">
-                            <p className="text-xs text-white/60 mb-2 flex items-center gap-1">
-                              <ShoppingBag className="w-3 h-3 text-urbana-gold" /> Produtos
-                            </p>
-                            <div className="space-y-1">
-                              {selectedProducts.map(p => (
-                                <div key={p.id} className="flex justify-between text-sm text-white">
-                                  <span className="truncate mr-2">{p.nome} x{p.quantidade}</span>
-                                  <span className="text-urbana-gold shrink-0">R$ {(p.preco * p.quantidade).toFixed(2)}</span>
+                        {/* Itens do pedido */}
+                        {(() => {
+                          const mainQty = (selectedService && serviceQuantities[selectedService.id]) || 1;
+                          const mainUnit = selectedService?.preco || 0;
+                          const mainSubtotal = mainUnit * mainQty;
+                          const extrasSubtotal = extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0);
+                          const productsSubtotal = selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0);
+                          const discount = appliedCoupon?.discount_amount || 0;
+                          const total = Math.max(mainSubtotal + extrasSubtotal + productsSubtotal - discount, 0);
+                          return (
+                            <div className="rounded-lg border border-urbana-gold/20 overflow-hidden">
+                              {/* Serviço Principal */}
+                              <div className="bg-urbana-gold/10 px-3 sm:px-4 py-2 flex items-center gap-2 border-b border-urbana-gold/20">
+                                <Scissors className="w-3.5 h-3.5 text-urbana-gold" />
+                                <span className="text-[11px] uppercase tracking-wide text-urbana-gold font-semibold">Serviço Principal</span>
+                              </div>
+                              <div className="bg-urbana-black/30 px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3">
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-sm sm:text-base font-semibold text-white truncate">{selectedService?.nome}</p>
+                                  <p className="text-xs text-white/60">
+                                    {mainQty} × R$ {mainUnit.toFixed(2)}
+                                  </p>
                                 </div>
-                              ))}
-                            </div>
-                          </div>
-                        )}
+                                <span className="text-sm sm:text-base font-bold text-urbana-gold shrink-0">
+                                  R$ {mainSubtotal.toFixed(2)}
+                                </span>
+                              </div>
 
-                        {/* Total */}
-                        {(extraServices.length > 0 || selectedProducts.length > 0 || appliedCoupon) && (
-                          <div className="flex justify-between items-center bg-urbana-gold/10 p-3 rounded-lg border border-urbana-gold/30">
-                            <span className="text-sm font-semibold text-white">Total Estimado</span>
-                            <span className="text-xl font-bold text-urbana-gold">
-                              R$ {(
-                                Math.max((selectedService?.preco || 0) - (appliedCoupon?.discount_amount || 0), 0) +
-                                extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0) +
-                                selectedProducts.reduce((s, x) => s + x.preco * x.quantidade, 0)
-                              ).toFixed(2)}
-                            </span>
-                          </div>
-                        )}
+                              {/* Serviços Extras */}
+                              {extraServices.length > 0 && (
+                                <>
+                                  <div className="bg-urbana-gold/10 px-3 sm:px-4 py-2 flex items-center gap-2 border-y border-urbana-gold/20">
+                                    <Sparkles className="w-3.5 h-3.5 text-urbana-gold" />
+                                    <span className="text-[11px] uppercase tracking-wide text-urbana-gold font-semibold">Serviços Extras</span>
+                                  </div>
+                                  <div className="bg-urbana-black/30 divide-y divide-urbana-gold/10">
+                                    {extraServices.map(s => {
+                                      const qty = s.quantidade || 1;
+                                      return (
+                                        <div key={s.id} className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3">
+                                          <div className="min-w-0 flex-1">
+                                            <p className="text-sm font-medium text-white truncate">{s.nome}</p>
+                                            <p className="text-xs text-white/60">{qty} × R$ {s.preco.toFixed(2)}</p>
+                                          </div>
+                                          <span className="text-sm font-bold text-urbana-gold shrink-0">
+                                            R$ {(s.preco * qty).toFixed(2)}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Produtos */}
+                              {selectedProducts.length > 0 && (
+                                <>
+                                  <div className="bg-urbana-gold/10 px-3 sm:px-4 py-2 flex items-center gap-2 border-y border-urbana-gold/20">
+                                    <ShoppingBag className="w-3.5 h-3.5 text-urbana-gold" />
+                                    <span className="text-[11px] uppercase tracking-wide text-urbana-gold font-semibold">Produtos</span>
+                                  </div>
+                                  <div className="bg-urbana-black/30 divide-y divide-urbana-gold/10">
+                                    {selectedProducts.map(p => (
+                                      <div key={p.id} className="px-3 sm:px-4 py-2.5 flex items-center justify-between gap-3">
+                                        <div className="min-w-0 flex-1">
+                                          <p className="text-sm font-medium text-white truncate">{p.nome}</p>
+                                          <p className="text-xs text-white/60">{p.quantidade} × R$ {p.preco.toFixed(2)}</p>
+                                        </div>
+                                        <span className="text-sm font-bold text-urbana-gold shrink-0">
+                                          R$ {(p.preco * p.quantidade).toFixed(2)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
+
+                              {/* Desconto */}
+                              {discount > 0 && (
+                                <div className="bg-urbana-black/30 border-t border-urbana-gold/10 px-3 sm:px-4 py-2 flex items-center justify-between">
+                                  <span className="text-xs text-white/70">Cupom aplicado</span>
+                                  <span className="text-sm font-semibold text-green-400">- R$ {discount.toFixed(2)}</span>
+                                </div>
+                              )}
+
+                              {/* Total Geral */}
+                              <div className="bg-gradient-to-r from-urbana-gold/25 to-urbana-gold/10 px-3 sm:px-4 py-3 flex items-center justify-between border-t border-urbana-gold/30">
+                                <span className="text-sm sm:text-base font-bold text-white uppercase tracking-wide">Total Geral</span>
+                                <span className="text-xl sm:text-2xl font-extrabold text-urbana-gold">
+                                  R$ {total.toFixed(2)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })()}
 
                         {/* Cupom de desconto */}
                         <CouponInput
