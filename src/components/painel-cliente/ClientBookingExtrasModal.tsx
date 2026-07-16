@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ArrowLeft, Check, Minus, Package, Plus, ShoppingBag, Sparkles } from "lucide-react";
+import { ArrowLeft, Check, Minus, Package, Plus, ShoppingBag, Sparkles, Scissors } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -14,6 +14,7 @@ export interface ClientExtraService {
   preco: number;
   duracao?: number;
   quantidade?: number;
+  imagem?: string | null;
 }
 
 export interface ClientProductCartItem {
@@ -31,6 +32,25 @@ interface Product {
   imagem_url?: string;
   categoria?: string;
 }
+
+const parseServiceImage = (raw: any): string | null => {
+  if (!raw) return null;
+  if (Array.isArray(raw)) return raw[0] || null;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return null;
+    if (t.startsWith("[")) {
+      try {
+        const arr = JSON.parse(t);
+        return Array.isArray(arr) ? arr[0] || null : t;
+      } catch {
+        return t;
+      }
+    }
+    return t;
+  }
+  return null;
+};
 
 interface ClientBookingExtrasModalProps {
   open: boolean;
@@ -80,7 +100,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
         const [servicesRes, productsRes, servicesRankRes, productsRankRes] = await Promise.all([
           supabase
             .from("painel_servicos")
-            .select("id, nome, preco, duracao")
+            .select("id, nome, preco, duracao, imagens")
             .eq("ativo", true),
           supabase
             .from("painel_produtos")
@@ -119,8 +139,14 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
           );
         });
 
-        const orderedServices = ((servicesRes.data || []) as ClientExtraService[])
-          .slice()
+        const orderedServices = ((servicesRes.data || []) as any[])
+          .map((s) => ({
+            id: s.id,
+            nome: s.nome,
+            preco: Number(s.preco) || 0,
+            duracao: Number(s.duracao) || 0,
+            imagem: parseServiceImage(s.imagens),
+          }) as ClientExtraService)
           .sort((a, b) => {
             const ra = svcRank.get(a.id) || 0;
             const rb = svcRank.get(b.id) || 0;
@@ -279,50 +305,61 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
             {loading ? (
               <div className="py-10 text-center text-urbana-light/70">Carregando...</div>
             ) : activeTab === "services" ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 {availableServices.length === 0 ? (
                   <div className="col-span-full text-center py-10 text-urbana-light/60">Nenhum serviço extra disponível</div>
                 ) : (
                   availableServices.map((service) => {
                     const qty = serviceQty(service.id);
                     return (
-                      <div
+                      <Card
                         key={service.id}
                         className={cn(
-                          "relative p-3 rounded-xl border-2 transition-all",
+                          "overflow-hidden border-2 bg-urbana-black/50 transition-all",
                           qty > 0
-                            ? "bg-urbana-gold/20 border-urbana-gold shadow-lg shadow-urbana-gold/20"
-                            : "bg-urbana-black/50 border-urbana-gold/20"
+                            ? "border-urbana-gold ring-2 ring-urbana-gold/40 shadow-lg shadow-urbana-gold/20"
+                            : "border-urbana-gold/20"
                         )}
                       >
-                        {qty > 0 && (
-                          <div className="absolute top-2 right-2 px-1.5 h-5 min-w-5 rounded-full bg-urbana-gold flex items-center justify-center text-[10px] font-bold text-urbana-black">
-                            {qty}x
-                          </div>
-                        )}
-                        <h4 className="text-sm font-semibold text-urbana-light mb-1 pr-10">{service.nome}</h4>
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="text-base font-bold text-urbana-gold">R$ {service.preco.toFixed(2)}</span>
-                          {typeof service.duracao === "number" && (
-                            <span className="text-xs text-urbana-light/60">{service.duracao} min</span>
+                        <div className="aspect-square bg-gradient-to-br from-urbana-black/60 to-urbana-brown/40 relative">
+                          {service.imagem ? (
+                            <img src={service.imagem} alt={service.nome} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Scissors className="w-10 h-10 text-urbana-gold/40" />
+                            </div>
+                          )}
+                          {typeof service.duracao === "number" && service.duracao > 0 && (
+                            <div className="absolute bottom-1 right-1 bg-urbana-black/80 text-urbana-light px-1.5 py-0.5 rounded text-[10px]">
+                              {service.duracao} min
+                            </div>
+                          )}
+                          {qty > 0 && (
+                            <div className="absolute top-1 right-1 px-1.5 h-5 min-w-5 rounded-full bg-urbana-gold flex items-center justify-center text-[10px] font-bold text-urbana-black">
+                              {qty}x
+                            </div>
                           )}
                         </div>
-                        {qty > 0 ? (
-                          <div className="flex items-center gap-1">
-                            <Button onClick={() => removeService(service.id)} size="sm" className="flex-1 h-8 bg-red-500/20 text-red-300 border border-red-500/40 text-xs">
-                              <Minus className="w-3 h-3" />
+                        <div className="p-2 space-y-1.5">
+                          <h4 className="font-bold text-xs text-urbana-light line-clamp-2 min-h-[2rem]">{service.nome}</h4>
+                          <p className="text-lg font-bold text-urbana-gold">R$ {service.preco.toFixed(2)}</p>
+                          {qty > 0 ? (
+                            <div className="flex items-center gap-1">
+                              <Button onClick={() => removeService(service.id)} size="sm" className="flex-1 h-8 bg-red-500/20 text-red-300 border border-red-500/40 text-xs">
+                                <Minus className="w-3 h-3" />
+                              </Button>
+                              <span className="text-base font-bold text-urbana-gold w-6 text-center">{qty}</span>
+                              <Button onClick={() => addService(service)} size="sm" className="flex-1 h-8 bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 text-xs">
+                                <Plus className="w-3 h-3" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button onClick={() => addService(service)} size="sm" className="w-full h-8 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs">
+                              <Plus className="w-3 h-3 mr-1" /> Adicionar
                             </Button>
-                            <span className="text-base font-bold text-urbana-gold w-8 text-center">{qty}</span>
-                            <Button onClick={() => addService(service)} size="sm" className="flex-1 h-8 bg-urbana-gold/30 text-urbana-gold border border-urbana-gold/50 text-xs">
-                              <Plus className="w-3 h-3" />
-                            </Button>
-                          </div>
-                        ) : (
-                          <Button onClick={() => addService(service)} size="sm" className="w-full h-8 bg-gradient-to-r from-urbana-gold-vibrant to-urbana-gold text-urbana-black font-bold text-xs">
-                            <Plus className="w-3 h-3 mr-1" /> Adicionar
-                          </Button>
-                        )}
-                      </div>
+                          )}
+                        </div>
+                      </Card>
                     );
                   })
                 )}
