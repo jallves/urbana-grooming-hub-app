@@ -116,7 +116,7 @@ const SessionsManagement: React.FC = () => {
     if (diffMins < 2) return { key: 'online', label: 'Online agora', color: 'text-green-600', dotColor: 'bg-green-500', ringColor: 'ring-green-300', cardBorder: 'border-green-300', cardBg: 'bg-green-50/60' };
     if (diffMins < 10) return { key: 'active', label: 'Ativo recentemente', color: 'text-sky-600', dotColor: 'bg-sky-500', ringColor: 'ring-sky-300', cardBorder: 'border-sky-200', cardBg: 'bg-sky-50/40' };
     if (diffMins < 30) return { key: 'idle', label: 'Inativo', color: 'text-amber-600', dotColor: 'bg-amber-500', ringColor: 'ring-amber-300', cardBorder: 'border-amber-200', cardBg: 'bg-amber-50/40' };
-    return { key: 'offline', label: 'Muito inativo', color: 'text-red-600', dotColor: 'bg-red-500', ringColor: 'ring-red-300', cardBorder: 'border-red-200', cardBg: 'bg-red-50/40' };
+    return { key: 'locked', label: 'Em lock', color: 'text-red-600', dotColor: 'bg-red-500', ringColor: 'ring-red-300', cardBorder: 'border-red-300', cardBg: 'bg-red-50/50' };
   }, [getDiffMins]);
 
   const getUserTypeConfig = (userType: string) => {
@@ -237,6 +237,20 @@ const SessionsManagement: React.FC = () => {
       toast({ title: 'Erro ao limpar sessões', variant: 'destructive' });
     } finally {
       setCleaningAll(false);
+    }
+  };
+
+  const handleCleanupLocked = async () => {
+    setCleaningLocked(true);
+    try {
+      const { data, error } = await supabase.rpc('cleanup_locked_sessions');
+      if (error) throw error;
+      toast({ title: `${data ?? 0} sessão(ões) em lock encerradas` });
+      await loadSessions();
+    } catch {
+      toast({ title: 'Erro ao encerrar sessões em lock', variant: 'destructive' });
+    } finally {
+      setCleaningLocked(false);
     }
   };
 
@@ -551,7 +565,7 @@ const SessionsManagement: React.FC = () => {
                 <SelectItem value="online">🟢 Online agora</SelectItem>
                 <SelectItem value="active">🔵 Ativo recentemente</SelectItem>
                 <SelectItem value="idle">🟡 Inativo</SelectItem>
-                <SelectItem value="offline">🔴 Muito inativo</SelectItem>
+                <SelectItem value="locked">🔒 Em lock (&gt;30min)</SelectItem>
               </SelectContent>
             </Select>
             <Select value={sortBy} onValueChange={setSortBy}>
