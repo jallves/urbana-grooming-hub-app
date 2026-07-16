@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { format, parseISO } from 'date-fns';
 import { MoreHorizontal, Edit, Trash2, CheckCircle, Calendar, Clock, X, UserX, RotateCcw } from 'lucide-react';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
+import AppointmentOrderBreakdown from './AppointmentOrderBreakdown';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -312,63 +313,13 @@ const ClientAppointmentMobileCard: React.FC<ClientAppointmentMobileCardProps> = 
             <Clock className="h-4 w-4 text-gray-400 ml-2 flex-shrink-0" />
             <span className="font-medium text-gray-900">{appointment.hora}</span>
           </div>
-          <div className="flex items-start gap-2 text-sm">
-            <CheckCircle className="h-4 w-4 text-gray-400 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <span className="font-medium text-gray-900">{appointment.painel_servicos?.nome || 'N/A'}</span>
-              {(() => {
-                const base = Number(appointment.painel_servicos?.preco || 0);
-                const discount = Number((appointment as any).desconto_valor || 0);
-                const cupom = (appointment as any).cupom_codigo as string | null;
-                const final = Math.max(base - discount, 0);
-                if (cupom && discount > 0) {
-                  return (
-                    <span className="ml-2 inline-flex items-center gap-1.5">
-                      <span className="font-bold text-green-600">R$ {final.toFixed(2)}</span>
-                      <span className="text-[10px] text-gray-400 line-through">R$ {base.toFixed(2)}</span>
-                    </span>
-                  );
-                }
-                return (
-                  <span className="ml-2 font-bold text-green-600">
-                    R$ {base.toFixed(2)}
-                  </span>
-                );
-              })()}
-              {(() => {
-                const discount = Number((appointment as any).desconto_valor || 0);
-                const cupom = (appointment as any).cupom_codigo as string | null;
-                if (cupom && discount > 0) {
-                  return (
-                    <div className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-green-700 bg-green-50 border border-green-200 rounded px-1.5 py-0.5 w-fit">
-                      🎟️ {cupom} · -R$ {discount.toFixed(2)}
-                    </div>
-                  );
-                }
-                return null;
-              })()}
-              {(() => {
-                const base = Number(appointment.painel_servicos?.preco || 0);
-                const discount = Number((appointment as any).desconto_valor || 0);
-                const final = Math.max(base - discount, 0);
-                const extrasArr = (appointment as any).servicos_extras as any[] | null;
-                const extrasTotal = Array.isArray(extrasArr)
-                  ? extrasArr.reduce((sum, item) => {
-                      const preco = Number(item?.preco) || 0;
-                      const qty = item?.tipo === 'produto' ? (Number(item?.quantidade) || 1) : 1;
-                      return sum + preco * qty;
-                    }, 0)
-                  : 0;
-                if (extrasTotal <= 0) return null;
-                return (
-                  <div className="mt-1 text-[11px] font-bold text-emerald-700">
-                    Total: R$ {(final + extrasTotal).toFixed(2)}
-                  </div>
-                );
-              })()}
-            </div>
-          </div>
-          <ExtraServicesBadge extras={appointment.servicos_extras} variant="light" />
+          <AppointmentOrderBreakdown
+            mainServiceName={appointment.painel_servicos?.nome}
+            mainServicePrice={appointment.painel_servicos?.preco}
+            extras={appointment.servicos_extras}
+            couponCode={(appointment as any).cupom_codigo}
+            discount={(appointment as any).desconto_valor}
+          />
         </div>
 
         <div className="flex items-center justify-between pt-3 border-t border-gray-200">
