@@ -1427,7 +1427,15 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       {selectedService && (
         <ClientBookingExtrasModal
           open={showExtrasModal}
-          onOpenChange={setShowExtrasModal}
+          onOpenChange={(open) => {
+            setShowExtrasModal(open);
+            // Se fechou o modal sem aplicar mas viemos do combo,
+            // ainda assim avança para a etapa de barbeiro.
+            if (!open && advanceAfterExtras) {
+              setAdvanceAfterExtras(false);
+              setStep('barber');
+            }
+          }}
           mainServiceId={selectedService.id}
           initialExtraServices={extraServices}
           initialProducts={selectedProducts}
