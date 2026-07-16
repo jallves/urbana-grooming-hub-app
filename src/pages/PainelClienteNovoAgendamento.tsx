@@ -1034,36 +1034,35 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                             </div>
                           )}
 
-                          {/* Controles de quantidade +/- */}
-                          <div
-                            className="absolute top-2 right-2 flex items-center gap-1 bg-black/70 backdrop-blur-sm rounded-full p-1 shadow-lg"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); decrementServiceQty(service.id); }}
-                              disabled={qty <= 0}
-                              aria-label="Remover"
-                              className="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
-                            >
-                              <Minus className="w-3.5 h-3.5" />
-                            </button>
-                            <span className="text-white font-bold text-sm w-5 text-center">{qty}</span>
-                            <button
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); incrementServiceQty(service.id); }}
-                              aria-label="Adicionar"
-                              className="w-7 h-7 rounded-full bg-urbana-gold hover:bg-urbana-gold/90 flex items-center justify-center text-black transition-colors"
-                            >
-                              <Plus className="w-3.5 h-3.5" />
-                            </button>
-                          </div>
-
                           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/95 via-black/70 to-transparent p-3 sm:p-4">
                             <h3 className="text-white font-bold text-base sm:text-lg leading-tight drop-shadow">
                               {service.nome}
                             </h3>
-                            <div className="flex items-baseline justify-between mt-1">
+                            {/* Controles de quantidade +/- centralizados ao lado do nome */}
+                            <div
+                              className="flex items-center justify-center gap-2 mt-2 bg-black/60 backdrop-blur-sm rounded-full py-1 px-2 w-fit mx-auto shadow-lg"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); decrementServiceQty(service.id); }}
+                                disabled={qty <= 0}
+                                aria-label="Remover"
+                                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 disabled:opacity-30 disabled:cursor-not-allowed flex items-center justify-center text-white transition-colors"
+                              >
+                                <Minus className="w-4 h-4" />
+                              </button>
+                              <span className="text-white font-bold text-base w-6 text-center">{qty}</span>
+                              <button
+                                type="button"
+                                onClick={(e) => { e.stopPropagation(); incrementServiceQty(service.id); }}
+                                aria-label="Adicionar"
+                                className="w-8 h-8 rounded-full bg-urbana-gold hover:bg-urbana-gold/90 flex items-center justify-center text-black transition-colors"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            </div>
+                            <div className="flex items-baseline justify-between mt-2">
                               <span className="text-urbana-gold font-bold text-lg sm:text-xl">
                                 R$ {service.preco.toFixed(2)}
                               </span>
