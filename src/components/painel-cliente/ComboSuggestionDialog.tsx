@@ -327,15 +327,39 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-gold">
                     Serviços que serão adicionados
                   </p>
-                  {selected.missing.map((m) => (
-                    <div key={m.id} className="flex items-center justify-between text-sm">
-                      <span className="flex items-center gap-2 text-urbana-light">
-                        <Plus className="h-3.5 w-3.5 text-urbana-gold" strokeWidth={3} />
-                        {m.nome}
-                      </span>
-                      <span className="text-urbana-light/70">{formatBRL(m.preco)}</span>
-                    </div>
-                  ))}
+                  <div className="grid grid-cols-2 gap-2">
+                    {selected.missing.map((m) => (
+                      <div
+                        key={m.id}
+                        className="rounded-xl overflow-hidden border-2 border-urbana-gold/40 bg-gradient-to-b from-white/5 to-transparent shadow-md"
+                      >
+                        <div className="relative aspect-[4/3] bg-urbana-black overflow-hidden">
+                          {m.imagem ? (
+                            <img src={m.imagem} alt={m.nome} className="w-full h-full object-cover" loading="lazy" />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black to-urbana-brown/60">
+                              <Scissors className="w-8 h-8 text-urbana-gold/50" />
+                            </div>
+                          )}
+                          <div className="absolute top-1.5 left-1.5 h-6 w-6 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center shadow">
+                            <Plus className="h-3.5 w-3.5" strokeWidth={3} />
+                          </div>
+                        </div>
+                        <div className="p-2 space-y-0.5">
+                          <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2 min-h-[2.2em]">
+                            {m.nome}
+                          </p>
+                          <div className="flex items-center justify-between pt-0.5">
+                            <span className="text-sm font-bold text-urbana-gold">{formatBRL(m.preco)}</span>
+                            <span className="text-[10px] text-urbana-light/60 flex items-center gap-0.5">
+                              <Clock className="h-3 w-3" />
+                              {m.duracao}min
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                   <div className="border-t border-urbana-gold/20 pt-2 mt-2 space-y-1">
                     <div className="flex justify-between text-xs text-urbana-light/50">
                       <span>Total avulso</span>
@@ -354,33 +378,54 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
                   <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-urbana-light/50 pt-1">
                     {candidates.length > 0 ? 'Ou adicione um popular' : 'Mais executados'}
                   </p>
-                  {topExtras.map((t) => {
-                    const active = selectedExtraIds.has(t.id);
-                    return (
-                      <button
-                        key={t.id}
-                        type="button"
-                        onClick={() => toggleExtra(t.id)}
-                        className={cn(
-                          'w-full flex items-center justify-between rounded-xl border-2 p-3 transition-all text-left',
-                          active
-                            ? 'border-urbana-gold bg-urbana-gold/10'
-                            : 'border-urbana-gold/15 bg-urbana-black-soft/60'
-                        )}
-                      >
-                        <span className="flex items-center gap-2 text-sm font-medium text-urbana-light">
-                          <span className={cn(
-                            'h-5 w-5 rounded-full border-2 flex items-center justify-center shrink-0',
-                            active ? 'bg-urbana-gold border-urbana-gold text-urbana-black' : 'border-urbana-gold/40 text-transparent'
-                          )}>
-                            <Check className="h-3 w-3" strokeWidth={3} />
-                          </span>
-                          {t.nome}
-                        </span>
-                        <span className="text-sm font-semibold text-urbana-light/80">{formatBRL(t.preco)}</span>
-                      </button>
-                    );
-                  })}
+                  <div className="grid grid-cols-2 gap-2">
+                    {topExtras.map((t) => {
+                      const active = selectedExtraIds.has(t.id);
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => toggleExtra(t.id)}
+                          className={cn(
+                            'text-left rounded-xl overflow-hidden border-2 transition-all shadow-md',
+                            active
+                              ? 'border-urbana-gold bg-urbana-gold/10 ring-2 ring-urbana-gold/40'
+                              : 'border-urbana-gold/20 bg-white/5 hover:border-urbana-gold/50'
+                          )}
+                        >
+                          <div className="relative aspect-[4/3] bg-urbana-black overflow-hidden">
+                            {t.imagem ? (
+                              <img src={t.imagem} alt={t.nome} className="w-full h-full object-cover" loading="lazy" />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-urbana-black to-urbana-brown/60">
+                                <Scissors className="w-8 h-8 text-urbana-gold/50" />
+                              </div>
+                            )}
+                            <div className={cn(
+                              'absolute top-1.5 right-1.5 h-6 w-6 rounded-full border-2 flex items-center justify-center shadow',
+                              active
+                                ? 'bg-urbana-gold border-urbana-gold text-urbana-black'
+                                : 'bg-urbana-black/70 border-urbana-gold/50 text-transparent'
+                            )}>
+                              <Check className="h-3.5 w-3.5" strokeWidth={3} />
+                            </div>
+                          </div>
+                          <div className="p-2 space-y-0.5">
+                            <p className="text-[13px] font-semibold text-urbana-light leading-tight line-clamp-2 min-h-[2.2em]">
+                              {t.nome}
+                            </p>
+                            <div className="flex items-center justify-between pt-0.5">
+                              <span className="text-sm font-bold text-urbana-gold">{formatBRL(t.preco)}</span>
+                              <span className="text-[10px] text-urbana-light/60 flex items-center gap-0.5">
+                                <Clock className="h-3 w-3" />
+                                {t.duracao}min
+                              </span>
+                            </div>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </>
