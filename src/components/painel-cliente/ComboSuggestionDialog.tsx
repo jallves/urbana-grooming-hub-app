@@ -135,7 +135,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const [loading, setLoading] = useState(true);
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
   const [selectedComboId, setSelectedComboId] = useState<string | null>(null);
-  const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number }>>([]);
+  const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>>([]);
   const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -154,7 +154,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
             .filter(id => id !== mainServiceId)
             .map(id => services.get(id))
             .filter((s): s is ServiceMeta => !!s && s.active)
-            .map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao }));
+            .map(s => ({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao, imagem: s.imagem }));
           if (missing.length === 0) continue;
           const individualTotal = mainServicePrice + missing.reduce((s, m) => s + m.preco, 0);
           const savings = individualTotal - combo.combo_preco;
@@ -178,13 +178,13 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
         const cache = combosCache;
         const excluded = new Set<string>([mainServiceId]);
         const limit = result.length > 0 ? 2 : 3;
-        const tops: Array<{ id: string; nome: string; preco: number; duracao: number }> = [];
+        const tops: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }> = [];
         if (cache) {
           for (const id of cache.topServiceIds) {
             if (excluded.has(id)) continue;
             const s = cache.services.get(id);
             if (!s) continue;
-            tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+            tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao, imagem: s.imagem });
             if (tops.length >= limit) break;
           }
           // Fallback: se não houver ranking suficiente, completa com serviços ativos aleatórios
@@ -193,7 +193,7 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
               if (tops.length >= limit) break;
               if (excluded.has(s.id) || !s.active) continue;
               if (tops.some(t => t.id === s.id)) continue;
-              tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao });
+              tops.push({ id: s.id, nome: s.nome, preco: s.preco, duracao: s.duracao, imagem: s.imagem });
             }
           }
         }
