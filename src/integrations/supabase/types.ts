@@ -2472,6 +2472,7 @@ export type Database = {
         Returns: boolean
       }
       cleanup_expired_sessions: { Args: never; Returns: number }
+      cleanup_locked_sessions: { Args: never; Returns: number }
       create_public_appointment: {
         Args: {
           p_client_id: string
@@ -2525,6 +2526,14 @@ export type Database = {
         }[]
       }
       get_birthday_clients: { Args: never; Returns: Json }
+      get_monthly_login_stats: {
+        Args: never
+        Returns: {
+          total_logins: number
+          unique_users: number
+          user_type: string
+        }[]
+      }
       get_staff_module_access: {
         Args: { staff_id_param: string }
         Returns: string[]
@@ -2549,6 +2558,7 @@ export type Database = {
         }
         Returns: string
       }
+      retention_cleanup_30_days: { Args: never; Returns: undefined }
       revert_vale_from_commissions: {
         Args: { p_vale_id: string }
         Returns: Json

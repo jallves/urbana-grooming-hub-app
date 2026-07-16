@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Shield, RefreshCw, Trash2, Radio, Download } from 'lucide-react';
+import { Shield, RefreshCw, Radio, Download, Clock } from 'lucide-react';
 import { SecurityLog } from './securityLogTypes';
 import * as XLSX from 'xlsx';
 import { format, parseISO } from 'date-fns';
@@ -72,10 +72,10 @@ const SecurityLogHeader: React.FC<Props> = ({ isRealtimeConnected, loading, onRe
               <Download className="h-4 w-4 mr-1.5" />
               Exportar
             </Button>
-            <Button variant="outline" size="sm" onClick={onCleanup} className="text-red-600 border-red-200 hover:bg-red-50">
-              <Trash2 className="h-4 w-4 mr-1.5" />
-              Limpar +30d
-            </Button>
+            <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 text-[11px] gap-1 h-8 px-2.5" title="Job diário limpa registros com mais de 30 dias">
+              <Clock className="h-3 w-3" />
+              Retenção auto 30d
+            </Badge>
             <Button variant="outline" size="sm" onClick={onRefresh} className="border-gray-200">
               <RefreshCw className={`h-4 w-4 mr-1.5 ${loading ? 'animate-spin' : ''}`} />
               Atualizar

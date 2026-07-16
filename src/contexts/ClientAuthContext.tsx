@@ -6,6 +6,7 @@ import { Client, ClientLoginData, ClientFormData } from '@/types/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
+import { useForceLogoutWatcher } from '@/hooks/useForceLogoutWatcher';
 
 interface ClientAuthContextType {
   client: Client | null;
@@ -92,6 +93,7 @@ export function ClientAuthProvider({ children }: ClientAuthProviderProps) {
 
   // Usar hook para escutar logout forçado
   useForceLogoutListener(client?.id);
+  useForceLogoutWatcher(client?.id, 'painel_cliente', '/painel-cliente/login');
 
   // Sincronizar com Supabase Auth
   useEffect(() => {
