@@ -1356,6 +1356,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
         onClose={handleComboSuggestionClose}
         mainServiceId={pendingComboServiceId}
         mainServicePrice={pendingComboServicePrice}
+        mainServiceName={selectedService?.nome ?? null}
+        mainServiceDuration={selectedService?.duracao ?? null}
+        mainServiceImage={selectedService?.imagens?.[0] ?? null}
         onAccept={handleComboSuggestionAccept}
         onAddOther={() => {
           setShowComboSuggestion(false);
