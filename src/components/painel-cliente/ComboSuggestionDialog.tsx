@@ -132,6 +132,9 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   onClose,
   mainServiceId,
   mainServicePrice,
+  mainServiceName,
+  mainServiceDuration,
+  mainServiceImage,
   onAccept,
   onAddOther,
 }) => {
@@ -139,7 +142,9 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const [candidates, setCandidates] = useState<ComboCandidate[]>([]);
   const [selectedComboId, setSelectedComboId] = useState<string | null>(null);
   const [topExtras, setTopExtras] = useState<Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>>([]);
-  const [selectedExtraIds, setSelectedExtraIds] = useState<Set<string>>(new Set());
+  const [extraQtyMap, setExtraQtyMap] = useState<Record<string, number>>({});
+  /** Quantidade extra do serviço principal (0 = apenas o já selecionado; 1 = +1 duplicata, etc.) */
+  const [mainExtraQty, setMainExtraQty] = useState<number>(0);
 
   useEffect(() => {
     if (!isOpen || !mainServiceId) return;
@@ -147,7 +152,8 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
     (async () => {
       setLoading(true);
       setSelectedComboId(null);
-      setSelectedExtraIds(new Set());
+      setExtraQtyMap({});
+      setMainExtraQty(0);
       try {
         const { combos, services } = await preloadComboSuggestions();
         const result: ComboCandidate[] = [];
@@ -226,23 +232,43 @@ const ComboSuggestionDialog: React.FC<ComboSuggestionDialogProps> = ({
   const selected = candidates.find(c => c.combo_service_id === selectedComboId) || null;
 
   const handleAccept = () => {
-    if (!selected) return;
-    onAccept(selected.missing);
+    const items: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }> = [];
+    if (selected) {
+      for (const m of selected.missing) items.push({ ...m, quantidade: 1 });
+    }
+    if (mainExtraQty > 0 && mainServiceId) {
+      items.push({
+        id: mainServiceId,
+        nome: mainServiceName || 'Serviço',
+        preco: mainServicePrice,
+        duracao: mainServiceDuration || 0,
+        imagem: mainServiceImage || null,
+        quantidade: mainExtraQty,
+      });
+    }
+    for (const [id, qty] of Object.entries(extraQtyMap)) {
+      if (!qty) continue;
+      const t = topExtras.find(x => x.id === id);
+      if (!t) continue;
+      items.push({ ...t, quantidade: qty });
+    }
+    if (items.length === 0) return;
+    onAccept(items);
   };
 
-  const toggleExtra = (id: string) => {
-    setSelectedExtraIds(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
+  const incExtra = (id: string) =>
+    setExtraQtyMap(prev => ({ ...prev, [id]: (prev[id] || 0) + 1 }));
+  const decExtra = (id: string) =>
+    setExtraQtyMap(prev => {
+      const next = { ...prev };
+      const v = (next[id] || 0) - 1;
+      if (v <= 0) delete next[id]; else next[id] = v;
       return next;
     });
-  };
 
-  const handleAddSelectedExtras = () => {
-    const picked = topExtras.filter(t => selectedExtraIds.has(t.id));
-    if (picked.length === 0) return;
-    onAccept(picked);
-  };
+  const totalExtraCount = mainExtraQty
+    + Object.values(extraQtyMap).reduce((a, b) => a + b, 0)
+    + (selected ? selected.missing.length : 0);
 
   if (!isOpen || (candidates.length === 0 && topExtras.length === 0 && !loading)) return null;
 
