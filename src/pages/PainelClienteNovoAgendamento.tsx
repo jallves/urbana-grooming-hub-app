@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Calendar as CalendarIcon, Clock, Scissors, User, ArrowLeft, Check } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
 import { format, addDays, startOfToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -59,6 +60,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const [selectedBarber, setSelectedBarber] = useState<Barber | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedTime, setSelectedTime] = useState<string | null>(null);
+
+  // Quantidades selecionadas por serviço na tela inicial (multi-seleção)
+  const [serviceQuantities, setServiceQuantities] = useState<Record<string, number>>({});
+  // Sinaliza que o próximo "aplicar" do modal de extras deve avançar para barbeiro
+  const [advanceAfterExtras, setAdvanceAfterExtras] = useState(false);
   
   // State para listas
   const [services, setServices] = useState<Service[]>([]);
@@ -519,14 +525,79 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
   // Handler para selecionar serviço - avança automaticamente
   const handleServiceSelect = (service: Service) => {
-    setSelectedService(service);
-    // Prefetch de barbeiros em paralelo enquanto o popup de combo é exibido
+    // Incrementa a quantidade selecionada desse serviço (multi-seleção com +/-).
+    setServiceQuantities(prev => ({
+      ...prev,
+      [service.id]: Math.min(9, (prev[service.id] || 0) + 1),
+    }));
+  };
+
+  const incrementServiceQty = (serviceId: string) => {
+    setServiceQuantities(prev => ({
+      ...prev,
+      [serviceId]: Math.min(9, (prev[serviceId] || 0) + 1),
+    }));
+  };
+
+  const decrementServiceQty = (serviceId: string) => {
+    setServiceQuantities(prev => {
+      const cur = prev[serviceId] || 0;
+      const next = Math.max(0, cur - 1);
+      const clone = { ...prev };
+      if (next <= 0) delete clone[serviceId];
+      else clone[serviceId] = next;
+      return clone;
+    });
+  };
+
+  // Confirma a seleção da 1ª etapa: define o serviço principal + extras,
+  // dispara sugestão de combo e vai para a próxima etapa.
+  const handleServicesConfirm = () => {
+    const picked: Array<{ service: Service; qty: number }> = [];
+    for (const s of services) {
+      const qty = serviceQuantities[s.id] || 0;
+      if (qty > 0) picked.push({ service: s, qty });
+    }
+    if (picked.length === 0) {
+      toast.error('Selecione ao menos um serviço para continuar');
+      return;
+    }
+
+    // Primeiro item é o principal; se qty>1, o excedente vira extra do mesmo tipo.
+    const [head, ...rest] = picked;
+    const main = head.service;
+
+    const extras: ClientExtraService[] = [];
+    if (head.qty > 1) {
+      extras.push({
+        id: main.id,
+        nome: main.nome,
+        preco: main.preco,
+        duracao: main.duracao,
+        imagem: main.imagens?.[0] || null,
+        quantidade: head.qty - 1,
+      });
+    }
+    for (const item of rest) {
+      extras.push({
+        id: item.service.id,
+        nome: item.service.nome,
+        preco: item.service.preco,
+        duracao: item.service.duracao,
+        imagem: item.service.imagens?.[0] || null,
+        quantidade: item.qty,
+      });
+    }
+
+    setSelectedService(main);
+    setExtraServices(extras);
+
+    // Prefetch barbeiros em paralelo
     setBarbers([]);
-    loadBarbers(service);
-    // Antes de avançar, verifica se este serviço faz parte de algum combo
-    // e sugere completar. O popup segue com step='barber' independente do resultado.
-    setPendingComboServiceId(service.id);
-    setPendingComboServicePrice(Number(service.preco) || 0);
+    loadBarbers(main);
+
+    setPendingComboServiceId(main.id);
+    setPendingComboServicePrice(Number(main.preco) || 0);
     setShowComboSuggestion(true);
   };
 
