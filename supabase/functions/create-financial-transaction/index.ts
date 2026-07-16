@@ -832,7 +832,10 @@ Deno.serve(async (req) => {
     if (body.barber_id) {
       const serviceCommissionRate = await resolveServiceCommissionRate(supabase, body.barber_id)
 
-      for (const item of body.items.filter((i) => i.type === 'service')) {
+      const serviceItemsList = body.items
+        .map((it, idx) => ({ it, idx }))
+        .filter(({ it }) => it.type === 'service')
+      for (const { it: item, idx: itemIdx } of serviceItemsList) {
         const qty = Number(item.quantity || 1)
         const unit = Number(item.price || 0)
         const discount = Number(item.discount || 0)
@@ -881,7 +884,7 @@ Deno.serve(async (req) => {
           commissionTipo = item.isExtra ? 'servico_extra' : 'servico'
         }
         
-        const subRef = `commission:service:${item.id}:${subcategory}`
+        const subRef = `commission:service:${item.id}:${subcategory}:idx${itemIdx}`
 
         const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
           supabase,
@@ -965,7 +968,10 @@ Deno.serve(async (req) => {
       }
 
       // Comissão de produtos (se configurada)
-      for (const item of body.items.filter((i) => i.type === 'product')) {
+      const productItemsList = body.items
+        .map((it, idx) => ({ it, idx }))
+        .filter(({ it }) => it.type === 'product')
+      for (const { it: item, idx: itemIdx } of productItemsList) {
         const qty = Number(item.quantity || 1)
         const unit = Number(item.price || 0)
         const discount = Number(item.discount || 0)
@@ -992,7 +998,7 @@ Deno.serve(async (req) => {
         // Só cria registros financeiros se houver comissão configurada
         if (commissionAmount > 0) {
           const description = `Comissão produto - ${item.name || 'Produto'}`
-          const subRef = `commission:product:${item.id}:produto_comissao`
+          const subRef = `commission:product:${item.id}:produto_comissao:idx${itemIdx}`
 
           const { id: commissionFinancialId, alreadyExisted, obs } = await upsertFinancialRecord(
             supabase,
