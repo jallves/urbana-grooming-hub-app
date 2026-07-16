@@ -25,6 +25,10 @@ interface ComboSuggestionDialogProps {
   mainServiceName?: string | null;
   mainServiceDuration?: number | null;
   mainServiceImage?: string | null;
+  /** Quantidade já selecionada do serviço principal (default: 1) */
+  mainServiceQty?: number;
+  /** Quantidades já selecionadas de outros serviços (map id → qty) */
+  initialExtraQuantities?: Record<string, number>;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
   onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null; quantidade?: number }>) => void;
   /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
