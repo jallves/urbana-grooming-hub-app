@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
-import { Sparkles, Check, X, Plus } from 'lucide-react';
+import { Sparkles, Check, X, Plus, Scissors, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export interface ComboCandidate {
@@ -10,7 +10,7 @@ export interface ComboCandidate {
   combo_nome: string;
   combo_preco: number;
   /** Serviços que faltam ser adicionados para completar o combo */
-  missing: Array<{ id: string; nome: string; preco: number; duracao: number }>;
+  missing: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>;
   /** Soma individual (main + missing) */
   individual_total: number;
   /** Economia */
@@ -23,7 +23,7 @@ interface ComboSuggestionDialogProps {
   mainServiceId: string | null;
   mainServicePrice: number;
   /** Chamado quando cliente aceita adicionar os serviços faltantes */
-  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number }>) => void;
+  onAccept: (added: Array<{ id: string; nome: string; preco: number; duracao: number; imagem?: string | null }>) => void;
   /** Chamado quando o cliente prefere adicionar um serviço avulso (fora do combo) */
   onAddOther?: () => void;
 }
@@ -39,7 +39,7 @@ interface ComboMeta {
   combo_preco: number;
   component_ids: string[];
 }
-interface ServiceMeta { id: string; nome: string; preco: number; duracao: number; active: boolean }
+interface ServiceMeta { id: string; nome: string; preco: number; duracao: number; active: boolean; imagem?: string | null }
 
 let combosCache: { combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] } | null = null;
 let combosCachePromise: Promise<{ combos: ComboMeta[]; services: Map<string, ServiceMeta>; topServiceIds: string[] }> | null = null;
@@ -51,7 +51,7 @@ export async function preloadComboSuggestions() {
     const sinceIso = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
     const [{ data: items }, { data: services }, { data: ranking }] = await Promise.all([
       supabase.from('combo_service_items').select('combo_service_id, component_service_id'),
-      supabase.from('painel_servicos').select('id, nome, preco, duracao, is_active, ativo'),
+      supabase.from('painel_servicos').select('id, nome, preco, duracao, is_active, ativo, imagens'),
       supabase
         .from('painel_agendamentos')
         .select('servico_id')
@@ -62,12 +62,22 @@ export async function preloadComboSuggestions() {
     ]);
     const svcMap = new Map<string, ServiceMeta>();
     (services || []).forEach((s: any) => {
+      let imagem: string | null = null;
+      const raw = s.imagens;
+      if (Array.isArray(raw)) imagem = raw[0] || null;
+      else if (typeof raw === 'string' && raw.trim()) {
+        const t = raw.trim();
+        if (t.startsWith('[')) {
+          try { const arr = JSON.parse(t); imagem = Array.isArray(arr) ? arr[0] || null : t; } catch { imagem = t; }
+        } else imagem = t;
+      }
       svcMap.set(s.id, {
         id: s.id,
         nome: s.nome,
         preco: Number(s.preco) || 0,
         duracao: Number(s.duracao) || 0,
         active: s.is_active !== false && s.ativo !== false,
+        imagem,
       });
     });
     const grouped = new Map<string, string[]>();
