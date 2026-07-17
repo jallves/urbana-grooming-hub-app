@@ -401,63 +401,69 @@ Deno.serve(async (req) => {
             barbeiro_id: agendamento.barbeiro_id,
           }]
 
-          // Extras: merge frontend + appointment DB extras
-          let rebuildExtras = [...(extras || [])]
-          const appointmentExtrasFinish = agendamento.servicos_extras
-          if (appointmentExtrasFinish && Array.isArray(appointmentExtrasFinish)) {
-            const frontendIds = new Set(rebuildExtras.map((e: any) => e.id))
-            for (const dbExtra of appointmentExtrasFinish) {
-              if (!frontendIds.has(dbExtra.id)) {
-                rebuildExtras.push({ id: dbExtra.id })
-              }
+          // Consolida serviços extras + produtos vindos do frontend e do painel_agendamentos.servicos_extras
+          const dbExtrasFinish = Array.isArray(agendamento.servicos_extras) ? agendamento.servicos_extras : []
+          const rebuildServiceMap = new Map<string, number>()
+          const rebuildProductMap = new Map<string, number>()
+
+          for (const e of (extras || [])) {
+            if (!e?.id) continue
+            rebuildServiceMap.set(e.id, (rebuildServiceMap.get(e.id) || 0) + 1)
+          }
+          for (const p of (products || [])) {
+            if (!p?.id) continue
+            const qty = Number(p.quantidade || 1)
+            rebuildProductMap.set(p.id, (rebuildProductMap.get(p.id) || 0) + qty)
+          }
+          for (const dbExtra of dbExtrasFinish) {
+            if (!dbExtra) continue
+            const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+            if (isProduct) {
+              const pid = dbExtra.produto_id || dbExtra.id
+              if (!pid) continue
+              const qty = Number(dbExtra.quantidade || 1)
+              rebuildProductMap.set(pid, (rebuildProductMap.get(pid) || 0) + qty)
+            } else if (dbExtra.id) {
+              rebuildServiceMap.set(dbExtra.id, (rebuildServiceMap.get(dbExtra.id) || 0) + 1)
             }
           }
 
-          if (rebuildExtras.length > 0) {
-            for (const extra of rebuildExtras) {
-              const { data: servicoExtra } = await supabase
-                .from('painel_servicos')
-                .select('id, nome, preco')
-                .eq('id', extra.id)
-                .maybeSingle()
-
-              if (servicoExtra) {
-                rebuild.push({
-                  venda_id,
-                  tipo: 'SERVICO_EXTRA',
-                  item_id: servicoExtra.id,
-                  nome: servicoExtra.nome,
-                  quantidade: 1,
-                  preco_unitario: servicoExtra.preco,
-                  subtotal: servicoExtra.preco,
-                  barbeiro_id: agendamento.barbeiro_id,
-                })
-              }
+          for (const [servicoId, qty] of rebuildServiceMap.entries()) {
+            const { data: servicoExtra } = await supabase
+              .from('painel_servicos')
+              .select('id, nome, preco')
+              .eq('id', servicoId)
+              .maybeSingle()
+            if (servicoExtra) {
+              rebuild.push({
+                venda_id,
+                tipo: 'SERVICO_EXTRA',
+                item_id: servicoExtra.id,
+                nome: servicoExtra.nome,
+                quantidade: qty,
+                preco_unitario: servicoExtra.preco,
+                subtotal: Number(servicoExtra.preco) * qty,
+                barbeiro_id: agendamento.barbeiro_id,
+              })
             }
           }
-
-          // Produtos (snapshot do frontend, se vier)
-          if (products && products.length > 0) {
-            for (const product of products) {
-              const { data: produto } = await supabase
-                .from('painel_produtos')
-                .select('id, nome, preco')
-                .eq('id', product.id)
-                .maybeSingle()
-
-              if (produto) {
-                const qty = product.quantidade || 1
-                rebuild.push({
-                  venda_id,
-                  tipo: 'PRODUTO',
-                  item_id: produto.id,
-                  nome: produto.nome,
-                  quantidade: qty,
-                  preco_unitario: produto.preco,
-                  subtotal: produto.preco * qty,
-                  barbeiro_id: agendamento.barbeiro_id,
-                })
-              }
+          for (const [produtoId, qty] of rebuildProductMap.entries()) {
+            const { data: produto } = await supabase
+              .from('painel_produtos')
+              .select('id, nome, preco')
+              .eq('id', produtoId)
+              .maybeSingle()
+            if (produto) {
+              rebuild.push({
+                venda_id,
+                tipo: 'PRODUTO',
+                item_id: produto.id,
+                nome: produto.nome,
+                quantidade: qty,
+                preco_unitario: produto.preco,
+                subtotal: Number(produto.preco) * qty,
+                barbeiro_id: agendamento.barbeiro_id,
+              })
             }
           }
 
