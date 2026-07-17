@@ -375,6 +375,18 @@ const TotemAppointmentsList: React.FC = () => {
                   </div>
                 </div>
 
+                {/* Resumo detalhado do pedido (serviços + produtos + quantidades) */}
+                <div className="mt-4 sm:mt-5">
+                  <TotemOrderBreakdown
+                    mainServiceName={appointment.servico?.nome}
+                    mainServicePrice={appointment.servico?.preco}
+                    mainQuantity={1}
+                    extras={appointment.servicos_extras as any}
+                    discount={appointment.discount_amount as any}
+                    compact
+                  />
+                </div>
+
                 {!hasCheckIn && allowCheckIn && (
                   <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t-2 border-urbana-gold/20">
                     <div className="flex items-center justify-center gap-2 sm:gap-3 text-urbana-gold">
