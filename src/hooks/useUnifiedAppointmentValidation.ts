@@ -201,11 +201,10 @@ export const useUnifiedAppointmentValidation = () => {
     const whStart = timeToMinutes(workingHours.start_time);
     const whEnd = timeToMinutes(workingHours.end_time);
 
-    // Regra: o INÍCIO do atendimento precisa estar dentro do expediente do barbeiro.
-    // O término pode ultrapassar o fim do expediente do barbeiro desde que respeite o
-    // horário de funcionamento da barbearia (validado em validateBusinessHours).
-    // Isso evita que a adição de serviços extras invalide horários já selecionados.
-    if (startMinutes < whStart || startMinutes >= whEnd) {
+    // Regra: o atendimento INTEIRO precisa caber dentro do expediente do barbeiro.
+    // Se o serviço ultrapassar o fim do expediente (fechamento), o slot é inválido.
+    // Ex.: barbeiro fecha 19h, slot 18:30, serviço de 60min => bloqueado.
+    if (startMinutes < whStart || endMinutes > whEnd) {
       return {
         valid: false,
         error: `Horário do barbeiro: ${workingHours.start_time} às ${workingHours.end_time}`
