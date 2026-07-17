@@ -673,7 +673,7 @@ const TotemCheckout: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 sm:p-6 font-poppins relative overflow-hidden">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 sm:p-6 font-poppins relative overflow-y-auto">
       {/* Background */}
       <div className="absolute inset-0 z-0">
         <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
@@ -691,41 +691,35 @@ const TotemCheckout: React.FC = () => {
       </div>
 
       {/* Content Grid */}
-      <div className="flex-1 z-10 grid grid-cols-1 lg:grid-cols-3 gap-4 max-w-7xl mx-auto w-full overflow-hidden">
-        {/* Barber Info Card */}
+      <div className="flex-1 z-10 grid grid-cols-1 lg:grid-cols-[280px_1fr_1fr] gap-4 max-w-7xl mx-auto w-full items-start">
+        {/* Barber Info Card - Square */}
         {barber && (
-          <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 h-fit">
-            <h2 className="text-base font-bold text-urbana-light mb-3 flex items-center gap-2">
-              <User className="w-5 h-5 text-urbana-gold" />
-              Seu Barbeiro
-            </h2>
-
-            <div className="flex items-center gap-4 p-3 bg-urbana-gold/10 backdrop-blur-sm rounded-xl border border-urbana-gold/30">
-              <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-urbana-gold flex-shrink-0">
-                {barber.foto_url || barber.image_url ? (
-                  <img src={barber.foto_url || barber.image_url} alt={barber.nome} className="w-full h-full object-cover" />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center bg-urbana-gold/20">
-                    <User className="w-8 h-8 text-urbana-gold" />
-                  </div>
-                )}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <p className="text-lg font-bold text-urbana-light truncate">{barber.nome}</p>
-                {barber.especialidade && (
-                  <div className="flex items-center gap-1 mt-1">
-                    <Award className="w-4 h-4 text-urbana-gold flex-shrink-0" />
-                    <p className="text-sm text-urbana-light/70 truncate">{barber.especialidade}</p>
-                  </div>
-                )}
-              </div>
+          <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 aspect-square max-w-[280px] w-full mx-auto flex flex-col items-center justify-center text-center gap-3 lg:sticky lg:top-4">
+            <div className="flex items-center gap-2 text-urbana-gold">
+              <User className="w-4 h-4" />
+              <span className="text-xs font-bold uppercase tracking-wider">Seu Barbeiro</span>
             </div>
+            <div className="w-28 h-28 rounded-2xl overflow-hidden border-2 border-urbana-gold shadow-lg shadow-urbana-gold/20">
+              {barber.foto_url || barber.image_url ? (
+                <img src={barber.foto_url || barber.image_url} alt={barber.nome} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-urbana-gold/20">
+                  <User className="w-12 h-12 text-urbana-gold" />
+                </div>
+              )}
+            </div>
+            <p className="text-lg font-bold text-urbana-light leading-tight">{barber.nome}</p>
+            {barber.especialidade && (
+              <div className="flex items-center justify-center gap-1">
+                <Award className="w-4 h-4 text-urbana-gold flex-shrink-0" />
+                <p className="text-xs text-urbana-light/70 line-clamp-2">{barber.especialidade}</p>
+              </div>
+            )}
           </Card>
         )}
 
         {/* Order Summary */}
-        <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 overflow-hidden flex flex-col">
+        <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 flex flex-col">
           <div className="text-center mb-4">
             <CheckCircle2 className="w-12 h-12 text-urbana-gold mx-auto mb-2" />
             <h2 className="text-xl font-bold text-urbana-light">Olá, {client?.nome?.split(' ')[0]}!</h2>
@@ -743,7 +737,7 @@ const TotemCheckout: React.FC = () => {
 
           {/* Service Summary - Nota Fiscal Style */}
           {resumo && (
-            <div className="flex-1 overflow-y-auto mb-4">
+            <div className="mb-4">
               {/* Receipt Header */}
               <div className="bg-urbana-black/40 rounded-t-xl border-2 border-b-0 border-urbana-gold/30 p-3">
                 <div className="text-center border-b border-dashed border-urbana-gold/30 pb-2 mb-2">
