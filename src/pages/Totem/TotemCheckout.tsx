@@ -694,7 +694,7 @@ const TotemCheckout: React.FC = () => {
       <div className="flex-1 z-10 grid grid-cols-1 lg:grid-cols-[280px_1fr_1fr] gap-4 max-w-7xl mx-auto w-full items-start">
         {/* Barber Info Card - Square */}
         {barber && (
-          <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 aspect-square flex flex-col items-center justify-center text-center gap-3 lg:sticky lg:top-4">
+          <Card className="p-4 bg-urbana-black-soft/40 backdrop-blur-xl border-2 border-urbana-gold/30 aspect-square max-w-[280px] w-full mx-auto flex flex-col items-center justify-center text-center gap-3 lg:sticky lg:top-4">
             <div className="flex items-center gap-2 text-urbana-gold">
               <User className="w-4 h-4" />
               <span className="text-xs font-bold uppercase tracking-wider">Seu Barbeiro</span>
