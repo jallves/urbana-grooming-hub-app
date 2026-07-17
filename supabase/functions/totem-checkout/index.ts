@@ -133,67 +133,86 @@ Deno.serve(async (req) => {
         barbeiro_id: agendamento.barbeiro_id,
       }]
 
-      // Merge servicos_extras from appointment (added by barber admin) with frontend extras
-      const appointmentExtras = agendamento.servicos_extras
-      let mergedExtras = [...(extras || [])]
-      if (appointmentExtras && Array.isArray(appointmentExtras)) {
-        const frontendExtraIds = new Set(mergedExtras.map((e: any) => e.id))
-        for (const dbExtra of appointmentExtras) {
-          if (!frontendExtraIds.has(dbExtra.id)) {
-            mergedExtras.push({ id: dbExtra.id, nome: dbExtra.nome, preco: dbExtra.preco })
-            console.log('📦 Extra do agendamento (barber admin):', dbExtra.nome)
-          }
+      // Consolidar extras (serviços) e produtos vindos do frontend + servicos_extras (persistidos no agendamento).
+      // Regras:
+      // - Um mesmo serviço agendado N vezes vira 1 vendas_itens com quantidade=N (subtotal=preco*N).
+      // - Produtos com quantidade preservam sua quantidade e são somados quando repetidos.
+      // - Extras do DB com tipo='produto' (ou produto_id) são roteados como produtos, não como serviços.
+      const appointmentExtras = Array.isArray(agendamento.servicos_extras) ? agendamento.servicos_extras : []
+
+      const serviceQtyMap = new Map<string, number>()
+      const productQtyMap = new Map<string, number>()
+
+      // Frontend: extras são sempre serviços; products sempre produtos.
+      for (const e of (extras || [])) {
+        if (!e?.id) continue
+        serviceQtyMap.set(e.id, (serviceQtyMap.get(e.id) || 0) + 1)
+      }
+      for (const p of (products || [])) {
+        if (!p?.id) continue
+        const qty = Number(p.quantidade || 1)
+        productQtyMap.set(p.id, (productQtyMap.get(p.id) || 0) + qty)
+      }
+
+      // DB (servicos_extras persistido no agendamento): pode conter serviços e produtos.
+      for (const dbExtra of appointmentExtras) {
+        if (!dbExtra) continue
+        const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+        if (isProduct) {
+          const pid = dbExtra.produto_id || dbExtra.id
+          if (!pid) continue
+          const qty = Number(dbExtra.quantidade || 1)
+          productQtyMap.set(pid, (productQtyMap.get(pid) || 0) + qty)
+        } else if (dbExtra.id) {
+          // Cada entrada = 1 unidade (o painel expande quantidade em N entradas).
+          serviceQtyMap.set(dbExtra.id, (serviceQtyMap.get(dbExtra.id) || 0) + 1)
         }
       }
 
-      // Serviços extras (merged: frontend + appointment DB)
-      if (mergedExtras && mergedExtras.length > 0) {
-        console.log('📦 Processando serviços extras (merged):', mergedExtras.length)
-        for (const extra of mergedExtras) {
-          const { data: servicoExtra } = await supabase
-            .from('painel_servicos')
-            .select('id, nome, preco')
-            .eq('id', extra.id)
-            .single()
+      console.log('📦 Consolidação:', {
+        serviços: Array.from(serviceQtyMap.entries()),
+        produtos: Array.from(productQtyMap.entries()),
+      })
 
-          if (servicoExtra) {
-            desired.push({
-              venda_id: venda.id,
-              tipo: 'SERVICO_EXTRA',
-              item_id: servicoExtra.id,
-              nome: servicoExtra.nome,
-              quantidade: 1,
-              preco_unitario: servicoExtra.preco,
-              subtotal: servicoExtra.preco,
-              barbeiro_id: agendamento.barbeiro_id,
-            })
-          }
+      // Serviços extras consolidados
+      for (const [servicoId, qty] of serviceQtyMap.entries()) {
+        const { data: servicoExtra } = await supabase
+          .from('painel_servicos')
+          .select('id, nome, preco')
+          .eq('id', servicoId)
+          .maybeSingle()
+        if (servicoExtra) {
+          desired.push({
+            venda_id: venda.id,
+            tipo: 'SERVICO_EXTRA',
+            item_id: servicoExtra.id,
+            nome: servicoExtra.nome,
+            quantidade: qty,
+            preco_unitario: servicoExtra.preco,
+            subtotal: Number(servicoExtra.preco) * qty,
+            barbeiro_id: agendamento.barbeiro_id,
+          })
         }
       }
 
-      // Produtos
-      if (products && products.length > 0) {
-        console.log('📦 Processando produtos do frontend:', products.length)
-        for (const product of products) {
-          const { data: produto } = await supabase
-            .from('painel_produtos')
-            .select('id, nome, preco')
-            .eq('id', product.id)
-            .single()
-
-          if (produto) {
-            const qty = product.quantidade || 1
-            desired.push({
-              venda_id: venda.id,
-              tipo: 'PRODUTO',
-              item_id: produto.id,
-              nome: produto.nome,
-              quantidade: qty,
-              preco_unitario: produto.preco,
-              subtotal: produto.preco * qty,
-              barbeiro_id: agendamento.barbeiro_id,
-            })
-          }
+      // Produtos consolidados
+      for (const [produtoId, qty] of productQtyMap.entries()) {
+        const { data: produto } = await supabase
+          .from('painel_produtos')
+          .select('id, nome, preco')
+          .eq('id', produtoId)
+          .maybeSingle()
+        if (produto) {
+          desired.push({
+            venda_id: venda.id,
+            tipo: 'PRODUTO',
+            item_id: produto.id,
+            nome: produto.nome,
+            quantidade: qty,
+            preco_unitario: produto.preco,
+            subtotal: Number(produto.preco) * qty,
+            barbeiro_id: agendamento.barbeiro_id,
+          })
         }
       }
 
@@ -270,6 +289,11 @@ Deno.serve(async (req) => {
               nome: i.nome,
               quantidade: i.quantidade,
               preco: i.preco_unitario
+            })),
+            services_extra_detail: desired.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => ({
+              nome: i.nome,
+              quantidade: i.quantidade,
+              preco: i.preco_unitario,
             })),
             subtotal: total,
             discount: 0,
@@ -377,63 +401,69 @@ Deno.serve(async (req) => {
             barbeiro_id: agendamento.barbeiro_id,
           }]
 
-          // Extras: merge frontend + appointment DB extras
-          let rebuildExtras = [...(extras || [])]
-          const appointmentExtrasFinish = agendamento.servicos_extras
-          if (appointmentExtrasFinish && Array.isArray(appointmentExtrasFinish)) {
-            const frontendIds = new Set(rebuildExtras.map((e: any) => e.id))
-            for (const dbExtra of appointmentExtrasFinish) {
-              if (!frontendIds.has(dbExtra.id)) {
-                rebuildExtras.push({ id: dbExtra.id })
-              }
+          // Consolida serviços extras + produtos vindos do frontend e do painel_agendamentos.servicos_extras
+          const dbExtrasFinish = Array.isArray(agendamento.servicos_extras) ? agendamento.servicos_extras : []
+          const rebuildServiceMap = new Map<string, number>()
+          const rebuildProductMap = new Map<string, number>()
+
+          for (const e of (extras || [])) {
+            if (!e?.id) continue
+            rebuildServiceMap.set(e.id, (rebuildServiceMap.get(e.id) || 0) + 1)
+          }
+          for (const p of (products || [])) {
+            if (!p?.id) continue
+            const qty = Number(p.quantidade || 1)
+            rebuildProductMap.set(p.id, (rebuildProductMap.get(p.id) || 0) + qty)
+          }
+          for (const dbExtra of dbExtrasFinish) {
+            if (!dbExtra) continue
+            const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+            if (isProduct) {
+              const pid = dbExtra.produto_id || dbExtra.id
+              if (!pid) continue
+              const qty = Number(dbExtra.quantidade || 1)
+              rebuildProductMap.set(pid, (rebuildProductMap.get(pid) || 0) + qty)
+            } else if (dbExtra.id) {
+              rebuildServiceMap.set(dbExtra.id, (rebuildServiceMap.get(dbExtra.id) || 0) + 1)
             }
           }
 
-          if (rebuildExtras.length > 0) {
-            for (const extra of rebuildExtras) {
-              const { data: servicoExtra } = await supabase
-                .from('painel_servicos')
-                .select('id, nome, preco')
-                .eq('id', extra.id)
-                .maybeSingle()
-
-              if (servicoExtra) {
-                rebuild.push({
-                  venda_id,
-                  tipo: 'SERVICO_EXTRA',
-                  item_id: servicoExtra.id,
-                  nome: servicoExtra.nome,
-                  quantidade: 1,
-                  preco_unitario: servicoExtra.preco,
-                  subtotal: servicoExtra.preco,
-                  barbeiro_id: agendamento.barbeiro_id,
-                })
-              }
+          for (const [servicoId, qty] of rebuildServiceMap.entries()) {
+            const { data: servicoExtra } = await supabase
+              .from('painel_servicos')
+              .select('id, nome, preco')
+              .eq('id', servicoId)
+              .maybeSingle()
+            if (servicoExtra) {
+              rebuild.push({
+                venda_id,
+                tipo: 'SERVICO_EXTRA',
+                item_id: servicoExtra.id,
+                nome: servicoExtra.nome,
+                quantidade: qty,
+                preco_unitario: servicoExtra.preco,
+                subtotal: Number(servicoExtra.preco) * qty,
+                barbeiro_id: agendamento.barbeiro_id,
+              })
             }
           }
-
-          // Produtos (snapshot do frontend, se vier)
-          if (products && products.length > 0) {
-            for (const product of products) {
-              const { data: produto } = await supabase
-                .from('painel_produtos')
-                .select('id, nome, preco')
-                .eq('id', product.id)
-                .maybeSingle()
-
-              if (produto) {
-                const qty = product.quantidade || 1
-                rebuild.push({
-                  venda_id,
-                  tipo: 'PRODUTO',
-                  item_id: produto.id,
-                  nome: produto.nome,
-                  quantidade: qty,
-                  preco_unitario: produto.preco,
-                  subtotal: produto.preco * qty,
-                  barbeiro_id: agendamento.barbeiro_id,
-                })
-              }
+          for (const [produtoId, qty] of rebuildProductMap.entries()) {
+            const { data: produto } = await supabase
+              .from('painel_produtos')
+              .select('id, nome, preco')
+              .eq('id', produtoId)
+              .maybeSingle()
+            if (produto) {
+              rebuild.push({
+                venda_id,
+                tipo: 'PRODUTO',
+                item_id: produto.id,
+                nome: produto.nome,
+                quantidade: qty,
+                preco_unitario: produto.preco,
+                subtotal: Number(produto.preco) * qty,
+                barbeiro_id: agendamento.barbeiro_id,
+              })
             }
           }
 
@@ -544,17 +574,41 @@ Deno.serve(async (req) => {
       }
 
       // Preparar itens para ERP
-      // Se for crédito de assinatura: preço zerado na receita (já foi pago na aquisição do combo)
-      // mas a comissão será calculada sobre o valor unitário do crédito
-      const erpItems = (vendaItens || []).map((item: any) => ({
-        type: item.tipo === 'PRODUTO' ? 'product' : 'service',
-        id: item.item_id,
-        name: item.nome,
-        quantity: Number(item.quantidade || 1),
-        price: isSubscriptionCredit ? 0 : Number(item.preco_unitario || 0),
-        discount: 0,
-        isExtra: item.tipo === 'SERVICO_EXTRA',
-      }))
+      // - Produtos: 1 item com quantity = N (uma linha ERP com valor total).
+      // - Serviços: expandir em N entradas de quantity=1 para gerar 1 receita + 1 comissão POR ATENDIMENTO,
+      //   garantindo lançamentos consistentes quando o cliente agenda o mesmo serviço várias vezes.
+      // - Se for crédito de assinatura: preço zerado na receita (já foi pago no combo);
+      //   a comissão é calculada sobre o valor unitário do crédito.
+      const erpItems: any[] = []
+      for (const item of (vendaItens || [])) {
+        const isProduct = String(item.tipo || '').toUpperCase() === 'PRODUTO'
+        const qty = Math.max(1, Number(item.quantidade || 1))
+        const unitPrice = isSubscriptionCredit ? 0 : Number(item.preco_unitario || 0)
+        if (isProduct) {
+          erpItems.push({
+            type: 'product',
+            id: item.item_id,
+            name: item.nome,
+            quantity: qty,
+            price: unitPrice,
+            discount: 0,
+            isExtra: false,
+          })
+        } else {
+          const isExtra = String(item.tipo || '').toUpperCase() === 'SERVICO_EXTRA'
+          for (let i = 0; i < qty; i++) {
+            erpItems.push({
+              type: 'service',
+              id: item.item_id,
+              name: item.nome,
+              quantity: 1,
+              price: unitPrice,
+              discount: 0,
+              isExtra,
+            })
+          }
+        }
+      }
 
       // Extrair transaction_id do PayGo (NSU ou confirmationId)
       let transactionId: string | null = null
