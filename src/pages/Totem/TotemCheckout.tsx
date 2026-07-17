@@ -673,9 +673,9 @@ const TotemCheckout: React.FC = () => {
   }
 
   return (
-    <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 sm:p-6 font-poppins relative overflow-y-auto">
-      {/* Background */}
-      <div className="absolute inset-0 z-0">
+    <div className="fixed inset-0 w-screen h-screen flex flex-col p-4 sm:p-6 font-poppins overflow-y-auto bg-urbana-black">
+      {/* Background - fixed so it cobre toda a viewport mesmo com scroll */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
         <img src={barbershopBg} alt="Barbearia" className="w-full h-full object-cover" />
         <div className="absolute inset-0 bg-gradient-to-br from-urbana-black/85 via-urbana-black/80 to-urbana-brown/75" />
       </div>
