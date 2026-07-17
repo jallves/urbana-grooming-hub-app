@@ -133,67 +133,86 @@ Deno.serve(async (req) => {
         barbeiro_id: agendamento.barbeiro_id,
       }]
 
-      // Merge servicos_extras from appointment (added by barber admin) with frontend extras
-      const appointmentExtras = agendamento.servicos_extras
-      let mergedExtras = [...(extras || [])]
-      if (appointmentExtras && Array.isArray(appointmentExtras)) {
-        const frontendExtraIds = new Set(mergedExtras.map((e: any) => e.id))
-        for (const dbExtra of appointmentExtras) {
-          if (!frontendExtraIds.has(dbExtra.id)) {
-            mergedExtras.push({ id: dbExtra.id, nome: dbExtra.nome, preco: dbExtra.preco })
-            console.log('📦 Extra do agendamento (barber admin):', dbExtra.nome)
-          }
+      // Consolidar extras (serviços) e produtos vindos do frontend + servicos_extras (persistidos no agendamento).
+      // Regras:
+      // - Um mesmo serviço agendado N vezes vira 1 vendas_itens com quantidade=N (subtotal=preco*N).
+      // - Produtos com quantidade preservam sua quantidade e são somados quando repetidos.
+      // - Extras do DB com tipo='produto' (ou produto_id) são roteados como produtos, não como serviços.
+      const appointmentExtras = Array.isArray(agendamento.servicos_extras) ? agendamento.servicos_extras : []
+
+      const serviceQtyMap = new Map<string, number>()
+      const productQtyMap = new Map<string, number>()
+
+      // Frontend: extras são sempre serviços; products sempre produtos.
+      for (const e of (extras || [])) {
+        if (!e?.id) continue
+        serviceQtyMap.set(e.id, (serviceQtyMap.get(e.id) || 0) + 1)
+      }
+      for (const p of (products || [])) {
+        if (!p?.id) continue
+        const qty = Number(p.quantidade || 1)
+        productQtyMap.set(p.id, (productQtyMap.get(p.id) || 0) + qty)
+      }
+
+      // DB (servicos_extras persistido no agendamento): pode conter serviços e produtos.
+      for (const dbExtra of appointmentExtras) {
+        if (!dbExtra) continue
+        const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+        if (isProduct) {
+          const pid = dbExtra.produto_id || dbExtra.id
+          if (!pid) continue
+          const qty = Number(dbExtra.quantidade || 1)
+          productQtyMap.set(pid, (productQtyMap.get(pid) || 0) + qty)
+        } else if (dbExtra.id) {
+          // Cada entrada = 1 unidade (o painel expande quantidade em N entradas).
+          serviceQtyMap.set(dbExtra.id, (serviceQtyMap.get(dbExtra.id) || 0) + 1)
         }
       }
 
-      // Serviços extras (merged: frontend + appointment DB)
-      if (mergedExtras && mergedExtras.length > 0) {
-        console.log('📦 Processando serviços extras (merged):', mergedExtras.length)
-        for (const extra of mergedExtras) {
-          const { data: servicoExtra } = await supabase
-            .from('painel_servicos')
-            .select('id, nome, preco')
-            .eq('id', extra.id)
-            .single()
+      console.log('📦 Consolidação:', {
+        serviços: Array.from(serviceQtyMap.entries()),
+        produtos: Array.from(productQtyMap.entries()),
+      })
 
-          if (servicoExtra) {
-            desired.push({
-              venda_id: venda.id,
-              tipo: 'SERVICO_EXTRA',
-              item_id: servicoExtra.id,
-              nome: servicoExtra.nome,
-              quantidade: 1,
-              preco_unitario: servicoExtra.preco,
-              subtotal: servicoExtra.preco,
-              barbeiro_id: agendamento.barbeiro_id,
-            })
-          }
+      // Serviços extras consolidados
+      for (const [servicoId, qty] of serviceQtyMap.entries()) {
+        const { data: servicoExtra } = await supabase
+          .from('painel_servicos')
+          .select('id, nome, preco')
+          .eq('id', servicoId)
+          .maybeSingle()
+        if (servicoExtra) {
+          desired.push({
+            venda_id: venda.id,
+            tipo: 'SERVICO_EXTRA',
+            item_id: servicoExtra.id,
+            nome: servicoExtra.nome,
+            quantidade: qty,
+            preco_unitario: servicoExtra.preco,
+            subtotal: Number(servicoExtra.preco) * qty,
+            barbeiro_id: agendamento.barbeiro_id,
+          })
         }
       }
 
-      // Produtos
-      if (products && products.length > 0) {
-        console.log('📦 Processando produtos do frontend:', products.length)
-        for (const product of products) {
-          const { data: produto } = await supabase
-            .from('painel_produtos')
-            .select('id, nome, preco')
-            .eq('id', product.id)
-            .single()
-
-          if (produto) {
-            const qty = product.quantidade || 1
-            desired.push({
-              venda_id: venda.id,
-              tipo: 'PRODUTO',
-              item_id: produto.id,
-              nome: produto.nome,
-              quantidade: qty,
-              preco_unitario: produto.preco,
-              subtotal: produto.preco * qty,
-              barbeiro_id: agendamento.barbeiro_id,
-            })
-          }
+      // Produtos consolidados
+      for (const [produtoId, qty] of productQtyMap.entries()) {
+        const { data: produto } = await supabase
+          .from('painel_produtos')
+          .select('id, nome, preco')
+          .eq('id', produtoId)
+          .maybeSingle()
+        if (produto) {
+          desired.push({
+            venda_id: venda.id,
+            tipo: 'PRODUTO',
+            item_id: produto.id,
+            nome: produto.nome,
+            quantidade: qty,
+            preco_unitario: produto.preco,
+            subtotal: Number(produto.preco) * qty,
+            barbeiro_id: agendamento.barbeiro_id,
+          })
         }
       }
 
