@@ -290,6 +290,11 @@ Deno.serve(async (req) => {
               quantidade: i.quantidade,
               preco: i.preco_unitario
             })),
+            services_extra_detail: desired.filter(i => i.tipo === 'SERVICO_EXTRA').map(i => ({
+              nome: i.nome,
+              quantidade: i.quantidade,
+              preco: i.preco_unitario,
+            })),
             subtotal: total,
             discount: 0,
             total: total
