@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, CheckCircle, User, Scissors, Clock, Calendar, Sparkles } from 'lucide-react';
 import ExtraServicesBadge from '@/components/ui/ExtraServicesBadge';
+import TotemOrderBreakdown from '@/components/totem/TotemOrderBreakdown';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { supabase } from '@/integrations/supabase/client';
@@ -227,6 +228,17 @@ const TotemConfirmation: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Resumo completo do pedido: serviços, extras, produtos e total */}
+          <div>
+            <TotemOrderBreakdown
+              mainServiceName={appointment.servico?.nome}
+              mainServicePrice={appointment.servico?.preco}
+              mainQuantity={1}
+              extras={appointment.servicos_extras}
+              discount={appointment.discount_amount}
+            />
           </div>
 
           {/* Confirm Button */}
