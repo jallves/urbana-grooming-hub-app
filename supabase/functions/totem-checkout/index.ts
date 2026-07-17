@@ -574,17 +574,41 @@ Deno.serve(async (req) => {
       }
 
       // Preparar itens para ERP
-      // Se for crédito de assinatura: preço zerado na receita (já foi pago na aquisição do combo)
-      // mas a comissão será calculada sobre o valor unitário do crédito
-      const erpItems = (vendaItens || []).map((item: any) => ({
-        type: item.tipo === 'PRODUTO' ? 'product' : 'service',
-        id: item.item_id,
-        name: item.nome,
-        quantity: Number(item.quantidade || 1),
-        price: isSubscriptionCredit ? 0 : Number(item.preco_unitario || 0),
-        discount: 0,
-        isExtra: item.tipo === 'SERVICO_EXTRA',
-      }))
+      // - Produtos: 1 item com quantity = N (uma linha ERP com valor total).
+      // - Serviços: expandir em N entradas de quantity=1 para gerar 1 receita + 1 comissão POR ATENDIMENTO,
+      //   garantindo lançamentos consistentes quando o cliente agenda o mesmo serviço várias vezes.
+      // - Se for crédito de assinatura: preço zerado na receita (já foi pago no combo);
+      //   a comissão é calculada sobre o valor unitário do crédito.
+      const erpItems: any[] = []
+      for (const item of (vendaItens || [])) {
+        const isProduct = String(item.tipo || '').toUpperCase() === 'PRODUTO'
+        const qty = Math.max(1, Number(item.quantidade || 1))
+        const unitPrice = isSubscriptionCredit ? 0 : Number(item.preco_unitario || 0)
+        if (isProduct) {
+          erpItems.push({
+            type: 'product',
+            id: item.item_id,
+            name: item.nome,
+            quantity: qty,
+            price: unitPrice,
+            discount: 0,
+            isExtra: false,
+          })
+        } else {
+          const isExtra = String(item.tipo || '').toUpperCase() === 'SERVICO_EXTRA'
+          for (let i = 0; i < qty; i++) {
+            erpItems.push({
+              type: 'service',
+              id: item.item_id,
+              name: item.nome,
+              quantity: 1,
+              price: unitPrice,
+              discount: 0,
+              isExtra,
+            })
+          }
+        }
+      }
 
       // Extrair transaction_id do PayGo (NSU ou confirmationId)
       let transactionId: string | null = null
