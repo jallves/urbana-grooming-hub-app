@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { useCheckinHomologationMode } from '@/hooks/useCheckinHomologationMode';
+import TotemOrderBreakdown from '@/components/totem/TotemOrderBreakdown';
 
 interface Appointment {
   id: string;
@@ -22,6 +23,8 @@ interface Appointment {
   barbeiro: {
     nome: string;
   };
+  servicos_extras?: any[] | null;
+  discount_amount?: number | null;
 }
 
 interface CheckInInfo {
@@ -370,6 +373,18 @@ const TotemAppointmentsList: React.FC = () => {
                       </p>
                     </div>
                   </div>
+                </div>
+
+                {/* Resumo detalhado do pedido (serviços + produtos + quantidades) */}
+                <div className="mt-4 sm:mt-5">
+                  <TotemOrderBreakdown
+                    mainServiceName={appointment.servico?.nome}
+                    mainServicePrice={appointment.servico?.preco}
+                    mainQuantity={1}
+                    extras={appointment.servicos_extras as any}
+                    discount={appointment.discount_amount as any}
+                    compact
+                  />
                 </div>
 
                 {!hasCheckIn && allowCheckIn && (
