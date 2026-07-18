@@ -1,0 +1,1 @@
+update public.banner_images set button_link = '/painel-cliente/login' where button_link in ('/cliente/login','cliente/login','') or button_link is null;

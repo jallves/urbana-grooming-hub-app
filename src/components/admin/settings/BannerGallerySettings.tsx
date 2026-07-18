@@ -21,7 +21,7 @@ const BannerGallerySettings: React.FC = () => {
       subtitle: 'em Barbearia',
       description: 'A arte da barbearia tradicional com sofisticação moderna',
       button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
+      button_link: '/painel-cliente/login',
       is_active: true,
       display_order: 1
     },
@@ -32,7 +32,7 @@ const BannerGallerySettings: React.FC = () => {
       subtitle: 'para Cavalheiros',
       description: 'Cortes clássicos com um toque contemporâneo',
       button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
+      button_link: '/painel-cliente/login',
       is_active: true,
       display_order: 2
     },
@@ -43,7 +43,7 @@ const BannerGallerySettings: React.FC = () => {
       subtitle: 'para Relaxar',
       description: 'Um espaço onde tradição e conforto se encontram',
       button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
+      button_link: '/painel-cliente/login',
       is_active: true,
       display_order: 3
     }
