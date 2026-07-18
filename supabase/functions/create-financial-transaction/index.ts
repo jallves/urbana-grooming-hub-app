@@ -695,6 +695,26 @@ Deno.serve(async (req) => {
       barberName = b?.nome || null
     }
 
+    // Buscar nome do cliente (para exibir em Contas a Pagar/comissões)
+    let clientName: string | null = null
+    if (body.client_id) {
+      const { data: c } = await supabase
+        .from('painel_clientes')
+        .select('nome')
+        .eq('id', body.client_id)
+        .maybeSingle()
+      clientName = c?.nome || null
+      if (!clientName) {
+        const { data: c2 } = await supabase
+          .from('clients')
+          .select('name')
+          .eq('id', body.client_id)
+          .maybeSingle()
+        clientName = c2?.name || null
+      }
+    }
+    const clientSuffix = clientName ? ` — Cliente: ${clientName}` : ''
+
     const created: any[] = []
 
     const isSubscriptionUsage = body.is_subscription_usage === true
@@ -923,7 +943,7 @@ Deno.serve(async (req) => {
            })
 
            await ensureContasPagar(supabase, {
-             descricao: description,
+              descricao: `${description}${clientSuffix}`,
              valor: 0,
              data_vencimento: transaction_date,
              data_pagamento: transaction_date,
@@ -950,7 +970,7 @@ Deno.serve(async (req) => {
            })
 
            await ensureContasPagar(supabase, {
-             descricao: description,
+              descricao: `${description}${clientSuffix}`,
              valor: commissionAmount,
              data_vencimento: transaction_date,
              data_pagamento: null,
@@ -1035,7 +1055,7 @@ Deno.serve(async (req) => {
           })
 
           await ensureContasPagar(supabase, {
-            descricao: description,
+            descricao: `${description}${clientSuffix}`,
             valor: commissionAmount,
             data_vencimento: transaction_date,
             data_pagamento: null,
@@ -1135,7 +1155,7 @@ Deno.serve(async (req) => {
          })
 
          await ensureContasPagar(supabase, {
-           descricao: 'Gorjeta a pagar ao barbeiro',
+            descricao: `Gorjeta a pagar ao barbeiro${clientSuffix}`,
            valor: tip_amount,
            data_vencimento: transaction_date,
            data_pagamento: null,
