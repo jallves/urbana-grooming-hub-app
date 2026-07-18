@@ -943,7 +943,7 @@ Deno.serve(async (req) => {
            })
 
            await ensureContasPagar(supabase, {
-             descricao: description,
+              descricao: `${description}${clientSuffix}`,
              valor: 0,
              data_vencimento: transaction_date,
              data_pagamento: transaction_date,
@@ -970,7 +970,7 @@ Deno.serve(async (req) => {
            })
 
            await ensureContasPagar(supabase, {
-             descricao: description,
+              descricao: `${description}${clientSuffix}`,
              valor: commissionAmount,
              data_vencimento: transaction_date,
              data_pagamento: null,
@@ -1055,7 +1055,7 @@ Deno.serve(async (req) => {
           })
 
           await ensureContasPagar(supabase, {
-            descricao: description,
+            descricao: `${description}${clientSuffix}`,
             valor: commissionAmount,
             data_vencimento: transaction_date,
             data_pagamento: null,
@@ -1155,7 +1155,7 @@ Deno.serve(async (req) => {
          })
 
          await ensureContasPagar(supabase, {
-           descricao: 'Gorjeta a pagar ao barbeiro',
+            descricao: `Gorjeta a pagar ao barbeiro${clientSuffix}`,
            valor: tip_amount,
            data_vencimento: transaction_date,
            data_pagamento: null,
