@@ -143,29 +143,33 @@ Deno.serve(async (req) => {
       const serviceQtyMap = new Map<string, number>()
       const productQtyMap = new Map<string, number>()
 
-      // Frontend: extras são sempre serviços; products sempre produtos.
-      for (const e of (extras || [])) {
-        if (!e?.id) continue
-        serviceQtyMap.set(e.id, (serviceQtyMap.get(e.id) || 0) + 1)
-      }
-      for (const p of (products || [])) {
-        if (!p?.id) continue
-        const qty = Number(p.quantidade || 1)
-        productQtyMap.set(p.id, (productQtyMap.get(p.id) || 0) + qty)
-      }
+      // AUTORIDADE: se o frontend enviou extras/products (mesmo que vazios),
+      // ele é a fonte da verdade (carrinho atual do totem já reflete o DB + edições).
+      // Só usamos servicos_extras do agendamento como fallback quando NADA veio do frontend.
+      const frontendProvided = Array.isArray(extras) || Array.isArray(products)
 
-      // DB (servicos_extras persistido no agendamento): pode conter serviços e produtos.
-      for (const dbExtra of appointmentExtras) {
-        if (!dbExtra) continue
-        const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
-        if (isProduct) {
-          const pid = dbExtra.produto_id || dbExtra.id
-          if (!pid) continue
-          const qty = Number(dbExtra.quantidade || 1)
-          productQtyMap.set(pid, (productQtyMap.get(pid) || 0) + qty)
-        } else if (dbExtra.id) {
-          // Cada entrada = 1 unidade (o painel expande quantidade em N entradas).
-          serviceQtyMap.set(dbExtra.id, (serviceQtyMap.get(dbExtra.id) || 0) + 1)
+      if (frontendProvided) {
+        for (const e of (extras || [])) {
+          if (!e?.id) continue
+          serviceQtyMap.set(e.id, (serviceQtyMap.get(e.id) || 0) + 1)
+        }
+        for (const p of (products || [])) {
+          if (!p?.id) continue
+          const qty = Number(p.quantidade || 1)
+          productQtyMap.set(p.id, (productQtyMap.get(p.id) || 0) + qty)
+        }
+      } else {
+        for (const dbExtra of appointmentExtras) {
+          if (!dbExtra) continue
+          const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+          if (isProduct) {
+            const pid = dbExtra.produto_id || dbExtra.id
+            if (!pid) continue
+            const qty = Number(dbExtra.quantidade || 1)
+            productQtyMap.set(pid, (productQtyMap.get(pid) || 0) + qty)
+          } else if (dbExtra.id) {
+            serviceQtyMap.set(dbExtra.id, (serviceQtyMap.get(dbExtra.id) || 0) + 1)
+          }
         }
       }
 
@@ -406,25 +410,29 @@ Deno.serve(async (req) => {
           const rebuildServiceMap = new Map<string, number>()
           const rebuildProductMap = new Map<string, number>()
 
-          for (const e of (extras || [])) {
-            if (!e?.id) continue
-            rebuildServiceMap.set(e.id, (rebuildServiceMap.get(e.id) || 0) + 1)
-          }
-          for (const p of (products || [])) {
-            if (!p?.id) continue
-            const qty = Number(p.quantidade || 1)
-            rebuildProductMap.set(p.id, (rebuildProductMap.get(p.id) || 0) + qty)
-          }
-          for (const dbExtra of dbExtrasFinish) {
-            if (!dbExtra) continue
-            const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
-            if (isProduct) {
-              const pid = dbExtra.produto_id || dbExtra.id
-              if (!pid) continue
-              const qty = Number(dbExtra.quantidade || 1)
-              rebuildProductMap.set(pid, (rebuildProductMap.get(pid) || 0) + qty)
-            } else if (dbExtra.id) {
-              rebuildServiceMap.set(dbExtra.id, (rebuildServiceMap.get(dbExtra.id) || 0) + 1)
+          const frontendProvidedFinish = Array.isArray(extras) || Array.isArray(products)
+          if (frontendProvidedFinish) {
+            for (const e of (extras || [])) {
+              if (!e?.id) continue
+              rebuildServiceMap.set(e.id, (rebuildServiceMap.get(e.id) || 0) + 1)
+            }
+            for (const p of (products || [])) {
+              if (!p?.id) continue
+              const qty = Number(p.quantidade || 1)
+              rebuildProductMap.set(p.id, (rebuildProductMap.get(p.id) || 0) + qty)
+            }
+          } else {
+            for (const dbExtra of dbExtrasFinish) {
+              if (!dbExtra) continue
+              const isProduct = dbExtra.tipo === 'produto' || !!dbExtra.produto_id
+              if (isProduct) {
+                const pid = dbExtra.produto_id || dbExtra.id
+                if (!pid) continue
+                const qty = Number(dbExtra.quantidade || 1)
+                rebuildProductMap.set(pid, (rebuildProductMap.get(pid) || 0) + qty)
+              } else if (dbExtra.id) {
+                rebuildServiceMap.set(dbExtra.id, (rebuildServiceMap.get(dbExtra.id) || 0) + 1)
+              }
             }
           }
 
