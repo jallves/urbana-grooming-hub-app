@@ -27,7 +27,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
     subtitle: '',
     description: '',
     button_text: 'Agendar Agora',
-    button_link: '/cliente/login',
+    button_link: '/painel-cliente/login',
     is_active: true,
     display_order: 0,
   });
@@ -39,7 +39,7 @@ const BannerManager: React.FC<BannerFormProps> = ({ bannerImages, setBannerImage
       subtitle: '',
       description: '',
       button_text: 'Agendar Agora',
-      button_link: '/cliente/login',
+      button_link: '/painel-cliente/login',
       is_active: true,
       display_order: 0,
     });
