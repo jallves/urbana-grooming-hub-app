@@ -85,7 +85,7 @@ const Hero: React.FC = () => {
         style={{ opacity }}
         className="relative z-20 min-h-screen flex items-center justify-center px-4 pt-16 sm:pt-0"
       >
-        <div className="text-center text-white max-w-4xl mx-auto">
+        <div className="text-center text-white max-w-4xl mx-auto bg-black/40 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-0 rounded-2xl px-4 py-6 sm:px-0 sm:py-0">
           <motion.h1 
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
