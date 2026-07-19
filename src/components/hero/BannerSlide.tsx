@@ -55,7 +55,7 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
           style={{
             backgroundImage: `url('${slide.image_url}')`,
             backgroundSize: 'cover',
-            backgroundPosition: 'center',
+            backgroundPosition: 'center center',
           }}
         />
       )}
