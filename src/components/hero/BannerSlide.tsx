@@ -48,15 +48,14 @@ const BannerSlide: React.FC<BannerSlideProps> = ({ slide, isActive }) => {
           <span className="text-urbana-gold">Erro ao carregar imagem: {slide.image_url}</span>
         </div>
       ) : (
-        <div 
-          className={`absolute inset-0 bg-cover bg-center bg-no-repeat transition-opacity duration-1000 ${
+        <img
+          src={slide.image_url}
+          alt={slide.title || 'Banner'}
+          className={`absolute inset-0 w-full h-full object-cover object-center transition-opacity duration-1000 ${
             isLoaded ? 'opacity-100' : 'opacity-0'
           }`}
-          style={{
-            backgroundImage: `url('${slide.image_url}')`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
+          loading="eager"
+          decoding="async"
         />
       )}
     </motion.div>

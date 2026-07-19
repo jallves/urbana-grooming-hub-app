@@ -79,13 +79,13 @@ const Hero: React.FC = () => {
         </AnimatePresence>
       </motion.div>
 
-      <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/30 to-black/60 z-10" />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/50 to-black/80 sm:from-black/40 sm:via-black/30 sm:to-black/60 z-10" />
 
       <motion.div 
         style={{ opacity }}
-        className="relative z-20 min-h-screen flex items-center justify-center px-4"
+        className="relative z-20 min-h-screen flex items-center justify-center px-4 pt-16 sm:pt-0"
       >
-        <div className="text-center text-white max-w-4xl mx-auto">
+        <div className="text-center text-white max-w-4xl mx-auto bg-black/40 sm:bg-transparent backdrop-blur-sm sm:backdrop-blur-0 rounded-2xl px-4 py-6 sm:px-0 sm:py-0">
           <motion.h1 
             initial={{ opacity: 0, y: 50, scale: 0.9 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
