@@ -1103,7 +1103,10 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
                 {/* Botão Agendar / Barra fixa inferior */}
                 {Object.values(serviceQuantities).some(q => q > 0) && (
-                  <div className="sticky bottom-0 left-0 right-0 mt-4 pt-3 pb-2 bg-gradient-to-t from-black via-black/95 to-transparent z-20">
+                  <div
+                    className="sticky left-0 right-0 mt-4 pt-3 bg-gradient-to-t from-black via-black/95 to-transparent z-20 bottom-[calc(env(safe-area-inset-bottom,0px)+76px)] md:bottom-0"
+                    style={{ paddingBottom: '8px' }}
+                  >
                     <div className="flex items-center justify-between gap-3 max-w-2xl mx-auto">
                       <div className="text-white text-sm sm:text-base">
                         <span className="text-white/60">Selecionados: </span>
