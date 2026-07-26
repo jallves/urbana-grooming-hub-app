@@ -8,6 +8,8 @@ import { Search, UserPlus, CheckCircle2, XCircle } from 'lucide-react';
 import { format, formatDistanceToNow, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useMediaQuery } from '@/hooks/use-media-query';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 
 interface RecentClient {
   id: string;
@@ -23,6 +25,7 @@ interface RecentClient {
 const ClientRecent: React.FC = () => {
   const [search, setSearch] = useState('');
   const [limit, setLimit] = useState<'20' | '50' | '100' | '200'>('50');
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   const { data, isLoading } = useQuery({
     queryKey: ['clientes-recentes', limit],
@@ -148,8 +151,80 @@ const ClientRecent: React.FC = () => {
         <div className="text-center py-10 text-muted-foreground">Carregando...</div>
       ) : filtered.length === 0 ? (
         <div className="text-center py-10 text-muted-foreground">Nenhum cliente encontrado.</div>
+      ) : isDesktop ? (
+        <div className="rounded-md border overflow-x-auto bg-background">
+          <Table>
+            <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
+              <TableRow className="hover:bg-[#0d0d0d]">
+                <TableHead className="text-[#f0d78c] font-semibold">Cliente</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold">Contato</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold">E-mail</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold">Cadastrado em</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold text-center">Status</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold">Primeiro agendamento</TableHead>
+                <TableHead className="text-[#f0d78c] font-semibold text-center">Total</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filtered.map((c, idx) => {
+                const jaAgendou = c.totalAgendamentos > 0;
+                let cadastro = '—';
+                let cadastroRel = '';
+                try {
+                  cadastro = format(parseISO(c.created_at), "dd/MM/yyyy HH:mm", { locale: ptBR });
+                  cadastroRel = formatDistanceToNow(parseISO(c.created_at), { addSuffix: true, locale: ptBR });
+                } catch {}
+                let primeiro = '—';
+                if (c.primeiroAgendamento) {
+                  try {
+                    primeiro = `${format(parseISO(c.primeiroAgendamento.data), 'dd/MM/yyyy', { locale: ptBR })} às ${c.primeiroAgendamento.hora?.slice(0, 5)}`;
+                  } catch {
+                    primeiro = `${c.primeiroAgendamento.data} ${c.primeiroAgendamento.hora}`;
+                  }
+                }
+                return (
+                  <TableRow key={c.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                    <TableCell className="font-medium">{c.nome}</TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {c.whatsapp || c.telefone || '—'}
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground truncate max-w-[220px]">
+                      {c.email || '—'}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div>{cadastro}</div>
+                      {cadastroRel && (
+                        <div className="text-[11px] text-muted-foreground">{cadastroRel}</div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      {jaAgendou ? (
+                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Ativo</Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-orange-600 border-orange-300">Sem agenda</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-sm">
+                      <div>{primeiro}</div>
+                      {c.primeiroAgendamento?.servico && (
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.primeiroAgendamento.servico}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-center">
+                      <span className="inline-flex items-center justify-center min-w-[32px] px-2 py-0.5 rounded-full bg-[#c9a84c]/20 text-[#0d0d0d] font-bold text-sm">
+                        {c.totalAgendamentos}
+                      </span>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 gap-3">
           {filtered.map((c) => {
             const jaAgendou = c.totalAgendamentos > 0;
             let cadastro = '—';

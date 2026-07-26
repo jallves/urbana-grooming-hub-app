@@ -116,16 +116,25 @@ const ClientManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Tabs: Lista / Recorrência / Recentes */}
+      {/* Tabs: Lista / Recorrência / Recentes — cores fixas Costa Urbana (preto/dourado) */}
       <Tabs defaultValue="lista" className="w-full">
-        <TabsList className="w-full flex flex-wrap gap-1 h-auto sm:h-10 bg-muted p-1">
-          <TabsTrigger value="lista" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+        <TabsList className="w-full grid grid-cols-3 gap-2 h-auto bg-transparent p-0">
+          <TabsTrigger
+            value="lista"
+            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#0d0d0d] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#c9a84c] data-[state=active]:text-[#0d0d0d] data-[state=active]:shadow-md"
+          >
             Lista de Clientes
           </TabsTrigger>
-          <TabsTrigger value="recorrencia" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+          <TabsTrigger
+            value="recorrencia"
+            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#c9a84c] text-[#0d0d0d] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#0d0d0d] data-[state=active]:text-[#f0d78c] data-[state=active]:shadow-md"
+          >
             Recorrência
           </TabsTrigger>
-          <TabsTrigger value="recentes" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+          <TabsTrigger
+            value="recentes"
+            className="h-11 rounded-md border-2 border-[#0d0d0d] bg-[#1a1a1a] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#f0d78c] data-[state=active]:text-[#0d0d0d] data-[state=active]:shadow-md"
+          >
             Recém-cadastrados
           </TabsTrigger>
         </TabsList>
