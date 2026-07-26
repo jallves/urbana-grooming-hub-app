@@ -9,7 +9,7 @@ import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 
 const COMPLETED_STATUSES = new Set(['concluido', 'concluído', 'confirmado', 'chegou', 'finalizado']);
@@ -425,18 +425,18 @@ const ClientServiceHistoryDialog: React.FC<{
 
   return (
     <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-3xl h-[92vh] sm:h-auto sm:max-h-[85vh] p-0 flex flex-col gap-0 overflow-hidden">
-        <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-2 border-b">
-          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
-            <History className="h-5 w-5 text-[#c9a84c]" />
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-3xl h-[92vh] sm:h-auto sm:max-h-[85vh] p-0 flex flex-col gap-0 overflow-hidden border-2 border-[#c9a84c]/40 [&>button]:hidden">
+        <DialogHeader className="px-4 sm:px-6 py-4 bg-[#0d0d0d] border-b-2 border-[#c9a84c] space-y-1 text-left">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg text-[#f0d78c] pr-2">
+            <History className="h-5 w-5 text-[#c9a84c] shrink-0" />
             <span className="truncate">Histórico — {client?.nome}</span>
           </DialogTitle>
-          <DialogDescription className="text-xs sm:text-sm">
+          <DialogDescription className="text-xs sm:text-sm text-[#f0d78c]/70">
             Todos os agendamentos já realizados por este cliente na barbearia.
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto p-4 sm:p-6 pt-3">
+        <div className="flex-1 overflow-auto p-4 sm:p-6 pt-3 bg-background">
           {isLoading ? (
             <div className="text-center py-10 text-muted-foreground">Carregando histórico...</div>
           ) : !data || data.length === 0 ? (
@@ -570,6 +570,17 @@ const ClientServiceHistoryDialog: React.FC<{
             </>
           )}
         </div>
+
+        <DialogFooter className="px-4 sm:px-6 py-3 border-t bg-[#0d0d0d]/95 sm:justify-end">
+          <DialogClose asChild>
+            <Button
+              type="button"
+              className="w-full sm:w-auto bg-[#c9a84c] text-[#0d0d0d] hover:bg-[#f0d78c] font-semibold"
+            >
+              Fechar
+            </Button>
+          </DialogClose>
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
