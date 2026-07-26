@@ -699,8 +699,36 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       );
       return;
     }
+    // Aviso de duplicidade: cliente já possui agendamento do mesmo serviço não executado
+    const duplicates = await checkDuplicateService();
+    if (duplicates.length > 0) {
+      setDuplicateAlert({ open: true, existing: duplicates });
+      return;
+    }
     // Abre o popup de produtos antes de criar o agendamento
     setShowCrossSell(true);
+  };
+
+  // Consulta se o cliente já possui agendamento pendente com o mesmo serviço principal
+  const checkDuplicateService = async (): Promise<Array<{ data: string; hora: string }>> => {
+    if (!cliente || !selectedService) return [];
+    try {
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .select('data, hora, status')
+        .eq('cliente_id', cliente.id)
+        .eq('servico_id', selectedService.id)
+        .in('status', ['agendado', 'confirmado', 'pendente', 'chegou'])
+        .order('data', { ascending: true });
+      if (error) {
+        console.warn('Falha ao verificar duplicidade de serviço', error);
+        return [];
+      }
+      return (data || []).map((r: any) => ({ data: r.data, hora: r.hora }));
+    } catch (e) {
+      console.warn('Erro em checkDuplicateService', e);
+      return [];
+    }
   };
 
   const executeBooking = async (extraProducts: CrossSellProduct[] = []) => {
