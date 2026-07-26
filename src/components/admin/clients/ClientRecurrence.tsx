@@ -42,7 +42,7 @@ const ClientRecurrence: React.FC = () => {
 
       const { data: ags, error: aErr } = await supabase
         .from('painel_agendamentos')
-        .select('cliente_id, servico_id, data, hora, status, painel_servicos')
+        .select('cliente_id, servico_id, data, hora, status, painel_servicos, servico:painel_servicos!painel_agendamentos_servico_id_fkey(nome)')
         .in('cliente_id', clientes.map((c) => c.id))
         .order('data', { ascending: false });
       if (aErr) throw aErr;
@@ -75,6 +75,7 @@ const ClientRecurrence: React.FC = () => {
         if (!row.primeiraVisita || a.data < row.primeiraVisita) row.primeiraVisita = a.data;
 
         const svcNome =
+          (a as any).servico?.nome ||
           (a.painel_servicos as any)?.nome ||
           (a.painel_servicos as any)?.name ||
           'Serviço';
