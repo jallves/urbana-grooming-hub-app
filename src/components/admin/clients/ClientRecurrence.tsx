@@ -42,7 +42,7 @@ const ClientRecurrence: React.FC = () => {
 
       const { data: ags, error: aErr } = await supabase
         .from('painel_agendamentos')
-        .select('cliente_id, servico_id, data, hora, status, painel_servicos')
+        .select('cliente_id, servico_id, data, hora, status, painel_servicos, servico:painel_servicos!painel_agendamentos_servico_id_fkey(nome)')
         .in('cliente_id', clientes.map((c) => c.id))
         .order('data', { ascending: false });
       if (aErr) throw aErr;
@@ -75,6 +75,7 @@ const ClientRecurrence: React.FC = () => {
         if (!row.primeiraVisita || a.data < row.primeiraVisita) row.primeiraVisita = a.data;
 
         const svcNome =
+          (a as any).servico?.nome ||
           (a.painel_servicos as any)?.nome ||
           (a.painel_servicos as any)?.name ||
           'Serviço';
@@ -352,7 +353,12 @@ const ClientServiceHistoryDialog: React.FC<{
     queryFn: async (): Promise<HistoryRow[]> => {
       const { data: ags, error } = await supabase
         .from('painel_agendamentos')
-        .select('id, data, hora, status, painel_servicos, painel_barbeiros, servicos_extras')
+        .select(`
+          id, data, hora, status, servicos_extras, valor_final, valor_original,
+          painel_servicos, painel_barbeiros,
+          servico:painel_servicos!painel_agendamentos_servico_id_fkey(nome, preco),
+          barbeiro:painel_barbeiros!painel_agendamentos_barbeiro_id_fkey(nome)
+        `)
         .eq('cliente_id', client!.id)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
@@ -366,19 +372,29 @@ const ClientServiceHistoryDialog: React.FC<{
           if (!n) continue;
           const qtd = Number(e?.quantidade || e?.qtd || 1);
           extrasMap.set(n, (extrasMap.get(n) || 0) + qtd);
-          const preco = Number(e?.preco ?? e?.price ?? 0);
+          const preco = Number(e?.preco ?? e?.price ?? e?.valor ?? e?.preco_unitario ?? 0);
           extrasValor += preco * qtd;
         }
-        const svc = a.painel_servicos || {};
-        const principalValor = Number(svc.preco ?? svc.price ?? 0);
+        const svcSnap = a.painel_servicos || {};
+        const svcRel = a.servico || {};
+        const barbSnap = a.painel_barbeiros || {};
+        const barbRel = a.barbeiro || {};
+        const principalValor = Number(
+          svcSnap.preco ?? svcSnap.price ?? svcRel.preco ?? 0,
+        );
+        const computed = principalValor + extrasValor;
+        const valorFinal =
+          a.valor_final != null ? Number(a.valor_final) :
+          a.valor_original != null ? Number(a.valor_original) :
+          computed || null;
         return {
           id: a.id,
           data: a.data,
           hora: a.hora,
           status: a.status,
-          servico: svc.nome || svc.name || null,
-          barbeiro: a.painel_barbeiros?.nome || a.painel_barbeiros?.name || null,
-          valor: principalValor + extrasValor || null,
+          servico: svcRel.nome || svcSnap.nome || svcSnap.name || null,
+          barbeiro: barbRel.nome || barbSnap.nome || barbSnap.name || null,
+          valor: valorFinal,
           extras: Array.from(extrasMap.entries()).map(([nome, qtd]) => ({ nome, qtd })),
         };
       });
