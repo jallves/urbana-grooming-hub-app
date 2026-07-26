@@ -1740,27 +1740,54 @@ export type Database = {
       }
       push_subscriptions: {
         Row: {
+          active: boolean
           auth: string
+          barbeiro_id: string | null
+          cliente_id: string | null
           created_at: string | null
           endpoint: string
+          failure_count: number
           id: string
+          last_success_at: string | null
           p256dh: string
+          role: string | null
+          staff_id: string | null
+          updated_at: string
+          user_agent: string | null
           user_id: string | null
         }
         Insert: {
+          active?: boolean
           auth: string
+          barbeiro_id?: string | null
+          cliente_id?: string | null
           created_at?: string | null
           endpoint: string
+          failure_count?: number
           id?: string
+          last_success_at?: string | null
           p256dh: string
+          role?: string | null
+          staff_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Update: {
+          active?: boolean
           auth?: string
+          barbeiro_id?: string | null
+          cliente_id?: string | null
           created_at?: string | null
           endpoint?: string
+          failure_count?: number
           id?: string
+          last_success_at?: string | null
           p256dh?: string
+          role?: string | null
+          staff_id?: string | null
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string | null
         }
         Relationships: []
