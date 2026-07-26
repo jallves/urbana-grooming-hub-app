@@ -345,6 +345,7 @@ const ClientServiceHistoryDialog: React.FC<{
   client: { id: string; nome: string } | null;
   onClose: () => void;
 }> = ({ client, onClose }) => {
+  const isDesktop = useMediaQuery('(min-width: 768px)');
   const { data, isLoading } = useQuery({
     queryKey: ['client-service-history', client?.id],
     enabled: !!client?.id,
@@ -408,69 +409,124 @@ const ClientServiceHistoryDialog: React.FC<{
 
   return (
     <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+      <DialogContent className="w-[calc(100vw-1rem)] sm:w-full max-w-3xl h-[92vh] sm:h-auto sm:max-h-[85vh] p-0 flex flex-col gap-0 overflow-hidden">
+        <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-2 border-b">
+          <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <History className="h-5 w-5 text-[#c9a84c]" />
-            Histórico de serviços — {client?.nome}
+            <span className="truncate">Histórico — {client?.nome}</span>
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-xs sm:text-sm">
             Todos os agendamentos já realizados por este cliente na barbearia.
           </DialogDescription>
         </DialogHeader>
 
-        {isLoading ? (
-          <div className="text-center py-10 text-muted-foreground">Carregando histórico...</div>
-        ) : !data || data.length === 0 ? (
-          <div className="text-center py-10 text-muted-foreground">
-            Nenhum agendamento encontrado.
-          </div>
-        ) : (
-          <>
-            <div className="grid grid-cols-3 gap-2 py-2">
-              <div className="rounded-md border p-2 text-center">
-                <div className="text-[11px] text-muted-foreground uppercase">Total</div>
-                <div className="text-lg font-bold">{totais.total}</div>
-              </div>
-              <div className="rounded-md border p-2 text-center">
-                <div className="text-[11px] text-muted-foreground uppercase">Realizados</div>
-                <div className="text-lg font-bold text-green-700">{totais.validas}</div>
-              </div>
-              <div className="rounded-md border p-2 text-center">
-                <div className="text-[11px] text-muted-foreground uppercase">Total gasto</div>
-                <div className="text-lg font-bold text-[#0d0d0d]">{fmtMoney(totais.totalGasto)}</div>
-              </div>
+        <div className="flex-1 overflow-auto p-4 sm:p-6 pt-3">
+          {isLoading ? (
+            <div className="text-center py-10 text-muted-foreground">Carregando histórico...</div>
+          ) : !data || data.length === 0 ? (
+            <div className="text-center py-10 text-muted-foreground">
+              Nenhum agendamento encontrado.
             </div>
+          ) : (
+            <>
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="rounded-md border p-2 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase">Total</div>
+                  <div className="text-base sm:text-lg font-bold">{totais.total}</div>
+                </div>
+                <div className="rounded-md border p-2 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase">Realizados</div>
+                  <div className="text-base sm:text-lg font-bold text-green-700">{totais.validas}</div>
+                </div>
+                <div className="rounded-md border p-2 text-center">
+                  <div className="text-[10px] sm:text-[11px] text-muted-foreground uppercase">Gasto</div>
+                  <div className="text-sm sm:text-lg font-bold text-[#0d0d0d]">{fmtMoney(totais.totalGasto)}</div>
+                </div>
+              </div>
 
-            <div className="flex-1 overflow-auto rounded-md border">
-              <Table>
-                <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
-                  <TableRow className="hover:bg-[#0d0d0d] border-b-0">
-                    <TableHead className="text-[#f0d78c] font-semibold">Data</TableHead>
-                    <TableHead className="text-[#f0d78c] font-semibold">Serviço</TableHead>
-                    <TableHead className="text-[#f0d78c] font-semibold">Extras</TableHead>
-                    <TableHead className="text-[#f0d78c] font-semibold">Barbeiro</TableHead>
-                    <TableHead className="text-[#f0d78c] font-semibold text-center">Status</TableHead>
-                    <TableHead className="text-[#f0d78c] font-semibold text-right">Valor</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {data.map((r, idx) => {
+              {isDesktop ? (
+                <div className="rounded-md border overflow-x-auto">
+                  <Table>
+                    <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
+                      <TableRow className="hover:bg-[#0d0d0d] border-b-0">
+                        <TableHead className="text-[#f0d78c] font-semibold">Data</TableHead>
+                        <TableHead className="text-[#f0d78c] font-semibold">Serviço</TableHead>
+                        <TableHead className="text-[#f0d78c] font-semibold">Extras</TableHead>
+                        <TableHead className="text-[#f0d78c] font-semibold">Barbeiro</TableHead>
+                        <TableHead className="text-[#f0d78c] font-semibold text-center">Status</TableHead>
+                        <TableHead className="text-[#f0d78c] font-semibold text-right">Valor</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {data.map((r, idx) => {
+                        const st = STATUS_LABEL[(r.status || '').toLowerCase()] || {
+                          label: r.status || '—',
+                          className: 'bg-muted text-foreground border-border',
+                        };
+                        return (
+                          <TableRow key={r.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                            <TableCell className="text-sm whitespace-nowrap">
+                              <div className="font-medium">{fmtDate(r.data)}</div>
+                              <div className="text-[11px] text-muted-foreground">{r.hora?.slice(0, 5)}</div>
+                            </TableCell>
+                            <TableCell className="text-sm font-medium">{r.servico || '—'}</TableCell>
+                            <TableCell className="text-xs">
+                              {r.extras.length === 0 ? (
+                                <span className="text-muted-foreground">—</span>
+                              ) : (
+                                <div className="flex flex-wrap gap-1">
+                                  {r.extras.map((e) => (
+                                    <Badge key={e.nome} variant="outline" className="text-[10px]">
+                                      {e.nome}
+                                      {e.qtd > 1 ? ` × ${e.qtd}` : ''}
+                                    </Badge>
+                                  ))}
+                                </div>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-sm text-muted-foreground">
+                              {r.barbeiro || '—'}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge variant="outline" className={`text-[10px] ${st.className}`}>
+                                {st.label}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-right font-semibold">
+                              {fmtMoney(r.valor)}
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                /* Mobile: cards */
+                <div className="space-y-2">
+                  {data.map((r) => {
                     const st = STATUS_LABEL[(r.status || '').toLowerCase()] || {
                       label: r.status || '—',
                       className: 'bg-muted text-foreground border-border',
                     };
                     return (
-                      <TableRow key={r.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
-                        <TableCell className="text-sm whitespace-nowrap">
-                          <div className="font-medium">{fmtDate(r.data)}</div>
-                          <div className="text-[11px] text-muted-foreground">{r.hora?.slice(0, 5)}</div>
-                        </TableCell>
-                        <TableCell className="text-sm font-medium">{r.servico || '—'}</TableCell>
-                        <TableCell className="text-xs">
-                          {r.extras.length === 0 ? (
-                            <span className="text-muted-foreground">—</span>
-                          ) : (
+                      <Card key={r.id} className="border">
+                        <CardContent className="p-3 space-y-2">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0">
+                              <div className="text-sm font-semibold truncate">
+                                {r.servico || '—'}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground">
+                                {fmtDate(r.data)} • {r.hora?.slice(0, 5)}
+                              </div>
+                            </div>
+                            <Badge variant="outline" className={`text-[10px] shrink-0 ${st.className}`}>
+                              {st.label}
+                            </Badge>
+                          </div>
+
+                          {r.extras.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {r.extras.map((e) => (
                                 <Badge key={e.nome} variant="outline" className="text-[10px]">
@@ -480,26 +536,24 @@ const ClientServiceHistoryDialog: React.FC<{
                               ))}
                             </div>
                           )}
-                        </TableCell>
-                        <TableCell className="text-sm text-muted-foreground">
-                          {r.barbeiro || '—'}
-                        </TableCell>
-                        <TableCell className="text-center">
-                          <Badge variant="outline" className={`text-[10px] ${st.className}`}>
-                            {st.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-sm text-right font-semibold">
-                          {fmtMoney(r.valor)}
-                        </TableCell>
-                      </TableRow>
+
+                          <div className="flex items-center justify-between text-xs pt-1 border-t">
+                            <span className="text-muted-foreground truncate">
+                              {r.barbeiro || 'Sem barbeiro'}
+                            </span>
+                            <span className="font-semibold text-[#0d0d0d]">
+                              {fmtMoney(r.valor)}
+                            </span>
+                          </div>
+                        </CardContent>
+                      </Card>
                     );
                   })}
-                </TableBody>
-              </Table>
-            </div>
-          </>
-        )}
+                </div>
+              )}
+            </>
+          )}
+        </div>
       </DialogContent>
     </Dialog>
   );
