@@ -30,7 +30,7 @@ function wasDismissedRecently(key: string): boolean {
 
 export const PushPermissionBanner: React.FC<Props> = ({
   role, cliente_id, barbeiro_id, staff_id,
-  storageKey = `push-banner-dismissed-${role}`,
+  storageKey = `push-banner-dismissed-external-v2-${role}`,
 }) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -43,12 +43,17 @@ export const PushPermissionBanner: React.FC<Props> = ({
     if (activationError === 'backend-error' || activationError === 'db-error') return 'Não foi possível salvar este aparelho. Tente novamente.';
     if (activationError === 'no-sw') return 'Não foi possível preparar o telefone para notificações.';
     if (activationError === 'unsupported') return 'Este navegador não suporta notificações externas por PWA.';
+    if (activationError === 'denied') return 'As notificações estão bloqueadas. Ative nas configurações do navegador ou do app instalado.';
     return null;
   }, [activationError]);
 
   useEffect(() => {
     if (!isPushSupported()) return;
-    if (Notification.permission === 'denied') return;
+    if (Notification.permission === 'denied') {
+      setActivationError('denied');
+      setVisible(true);
+      return;
+    }
 
     // iOS: só faz sentido mostrar prompt se instalado como PWA
     if (isIOS() && !isStandalonePWA()) {
@@ -150,7 +155,7 @@ export const PushPermissionBanner: React.FC<Props> = ({
             <Button
               size="sm"
               onClick={handleEnable}
-              disabled={loading || iosHint}
+              disabled={loading || iosHint || activationError === 'denied'}
               className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
             >
               {loading ? 'Ativando…' : 'Ativar'}
