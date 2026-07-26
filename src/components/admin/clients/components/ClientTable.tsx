@@ -44,48 +44,48 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
   };
 
   return (
-    <div className="rounded-lg border border-border overflow-x-auto">
+    <div className="rounded-md border overflow-x-auto bg-background">
       <Table className={cn("table-fixed w-full", compact && 'text-sm')}>
-        <TableHeader>
-          <TableRow className="bg-muted/50">
+        <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
+          <TableRow className="hover:bg-[#0d0d0d]">
             <TableHead className={cn(
-              "font-semibold text-foreground w-[18%]",
+              "text-[#f0d78c] font-semibold w-[18%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nome
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground w-[22%]",
+              "text-[#f0d78c] font-semibold w-[22%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Email
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground w-[14%]",
+              "text-[#f0d78c] font-semibold w-[14%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               WhatsApp
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden lg:table-cell w-[11%]",
+              "text-[#f0d78c] font-semibold hidden lg:table-cell w-[11%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Nascimento
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden xl:table-cell w-[11%]",
+              "text-[#f0d78c] font-semibold hidden xl:table-cell w-[11%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Cadastro
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground hidden lg:table-cell w-[14%]",
+              "text-[#f0d78c] font-semibold hidden lg:table-cell w-[14%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Último Agendamento
             </TableHead>
             <TableHead className={cn(
-              "font-semibold text-foreground text-right w-[10%]",
+              "text-[#f0d78c] font-semibold text-right w-[10%]",
               compact ? "px-3 py-2" : "px-4 py-3"
             )}>
               Ações
@@ -93,10 +93,13 @@ const ClientTable: React.FC<ClientTableProps> = ({ clients, onEdit, onDelete, co
           </TableRow>
         </TableHeader>
         <TableBody>
-          {clients.map((client) => (
+          {clients.map((client, idx) => (
             <TableRow 
               key={client.id}
-              className="hover:bg-muted/50 transition-colors"
+              className={cn(
+                "transition-colors hover:bg-muted/60",
+                idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'
+              )}
             >
               <TableCell className={cn(
                 "font-medium align-middle",
