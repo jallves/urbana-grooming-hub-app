@@ -19,6 +19,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 
 import { ThemeToggle } from '@/components/theme/theme-toggle';
 import WeeklyBirthdayPopup from '@/components/birthday/WeeklyBirthdayPopup';
+import PushPermissionBanner from '@/components/pwa/PushPermissionBanner';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
@@ -141,6 +142,7 @@ const AdminLayout: React.FC<AdminLayoutProps> = ({ children, title = "Painel Adm
         </div>
 
         <WeeklyBirthdayPopup context="admin" />
+        {user?.id && <PushPermissionBanner role="admin" />}
       </main>
     </div>
   );

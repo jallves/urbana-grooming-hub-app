@@ -11,6 +11,7 @@ import { useBarberDataQuery } from '@/hooks/barber/queries/useBarberDataQuery';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import costaUrbanaLogo from '@/assets/logo-costa-urbana.png';
 import WeeklyBirthdayPopup from '@/components/birthday/WeeklyBirthdayPopup';
+import PushPermissionBanner from '@/components/pwa/PushPermissionBanner';
 
 const BarberLayout: React.FC = () => {
   const { user, signOut } = useAuth();
@@ -407,6 +408,13 @@ const BarberLayout: React.FC = () => {
         }
       `}</style>
       <WeeklyBirthdayPopup context="barber" />
+      {(barberData as any)?.id && (
+        <PushPermissionBanner
+          role="barbeiro"
+          barbeiro_id={(barberData as any).id}
+          staff_id={(barberData as any).staff_id ?? null}
+        />
+      )}
     </div>
   );
 };
