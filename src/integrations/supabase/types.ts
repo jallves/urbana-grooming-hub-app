@@ -1436,6 +1436,7 @@ export type Database = {
           painel_barbeiros: Json | null
           painel_clientes: Json | null
           painel_servicos: Json | null
+          reminder_1h_sent_at: string | null
           servico_id: string | null
           servicos_extras: Json | null
           status: string | null
@@ -1460,6 +1461,7 @@ export type Database = {
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null
           painel_servicos?: Json | null
+          reminder_1h_sent_at?: string | null
           servico_id?: string | null
           servicos_extras?: Json | null
           status?: string | null
@@ -1484,6 +1486,7 @@ export type Database = {
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null
           painel_servicos?: Json | null
+          reminder_1h_sent_at?: string | null
           servico_id?: string | null
           servicos_extras?: Json | null
           status?: string | null
