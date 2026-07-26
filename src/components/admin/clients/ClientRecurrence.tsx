@@ -4,11 +4,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Search, Repeat, Calendar, TrendingUp } from 'lucide-react';
+import { Search, Repeat, Calendar, TrendingUp, History } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 const COMPLETED_STATUSES = new Set(['concluido', 'concluído', 'confirmado', 'chegou', 'finalizado']);
 
@@ -26,6 +28,7 @@ interface RecurrenceRow {
 const ClientRecurrence: React.FC = () => {
   const [search, setSearch] = useState('');
   const isDesktop = useMediaQuery('(min-width: 768px)');
+  const [historyClient, setHistoryClient] = useState<{ id: string; nome: string } | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ['clientes-recorrencia'],
@@ -126,6 +129,8 @@ const ClientRecurrence: React.FC = () => {
     }
   };
 
+  const openHistory = (id: string, nome: string) => setHistoryClient({ id, nome });
+
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -178,7 +183,7 @@ const ClientRecurrence: React.FC = () => {
         <div className="rounded-md border overflow-x-auto bg-background">
           <Table>
             <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
-              <TableRow className="hover:bg-[#0d0d0d]">
+              <TableRow className="hover:bg-[#0d0d0d] border-b-0">
                 <TableHead className="text-[#f0d78c] font-semibold w-12">#</TableHead>
                 <TableHead className="text-[#f0d78c] font-semibold">Cliente</TableHead>
                 <TableHead className="text-[#f0d78c] font-semibold">Contato</TableHead>
@@ -204,12 +209,26 @@ const ClientRecurrence: React.FC = () => {
                   <TableCell className="text-sm">{fmt(r.primeiraVisita)}</TableCell>
                   <TableCell className="text-sm font-medium">{fmt(r.ultimaVisita)}</TableCell>
                   <TableCell>
-                    <div className="flex flex-wrap gap-1">
+                    <div className="flex flex-wrap items-center gap-1">
                       {r.servicos.map((s) => (
-                        <Badge key={s.nome} variant="outline" className="text-xs">
+                        <button
+                          key={s.nome}
+                          type="button"
+                          onClick={() => openHistory(r.id, r.nome)}
+                          title="Ver histórico completo de serviços deste cliente"
+                          className="inline-flex items-center rounded-md border border-[#c9a84c]/50 bg-[#c9a84c]/10 px-2 py-0.5 text-xs font-medium text-[#0d0d0d] hover:bg-[#c9a84c]/30 hover:border-[#c9a84c] transition-colors cursor-pointer"
+                        >
                           {s.nome} × {s.qtd}
-                        </Badge>
+                        </button>
                       ))}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-[11px] text-[#0d0d0d] hover:bg-[#c9a84c]/20"
+                        onClick={() => openHistory(r.id, r.nome)}
+                      >
+                        <History className="h-3 w-3 mr-1" /> Ver tudo
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -262,11 +281,24 @@ const ClientRecurrence: React.FC = () => {
                     <div className="text-xs text-muted-foreground mb-1">Serviços</div>
                     <div className="flex flex-wrap gap-1">
                       {r.servicos.map((s) => (
-                        <Badge key={s.nome} variant="outline" className="text-xs">
+                        <button
+                          key={s.nome}
+                          type="button"
+                          onClick={() => openHistory(r.id, r.nome)}
+                          className="inline-flex items-center rounded-md border border-[#c9a84c]/50 bg-[#c9a84c]/10 px-2 py-0.5 text-xs font-medium text-[#0d0d0d] hover:bg-[#c9a84c]/30 transition-colors"
+                        >
                           {s.nome} × {s.qtd}
-                        </Badge>
+                        </button>
                       ))}
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2 h-7 text-xs w-full"
+                      onClick={() => openHistory(r.id, r.nome)}
+                    >
+                      <History className="h-3 w-3 mr-1" /> Ver histórico completo
+                    </Button>
                   </div>
                 )}
               </CardContent>
@@ -274,8 +306,201 @@ const ClientRecurrence: React.FC = () => {
           ))}
         </div>
       )}
+
+      <ClientServiceHistoryDialog
+        client={historyClient}
+        onClose={() => setHistoryClient(null)}
+      />
     </div>
   );
 };
 
 export default ClientRecurrence;
+
+/* ---------- Popup: histórico completo de serviços do cliente ---------- */
+
+interface HistoryRow {
+  id: string;
+  data: string;
+  hora: string;
+  status: string | null;
+  servico: string | null;
+  barbeiro: string | null;
+  valor: number | null;
+  extras: { nome: string; qtd: number }[];
+}
+
+const STATUS_LABEL: Record<string, { label: string; className: string }> = {
+  concluido: { label: 'Concluído', className: 'bg-green-100 text-green-700 border-green-300' },
+  concluído: { label: 'Concluído', className: 'bg-green-100 text-green-700 border-green-300' },
+  finalizado: { label: 'Finalizado', className: 'bg-green-100 text-green-700 border-green-300' },
+  chegou: { label: 'Chegou', className: 'bg-blue-100 text-blue-700 border-blue-300' },
+  confirmado: { label: 'Confirmado', className: 'bg-emerald-100 text-emerald-700 border-emerald-300' },
+  pendente: { label: 'Pendente', className: 'bg-amber-100 text-amber-700 border-amber-300' },
+  cancelado: { label: 'Cancelado', className: 'bg-rose-100 text-rose-700 border-rose-300' },
+  no_show: { label: 'Não compareceu', className: 'bg-orange-100 text-orange-700 border-orange-300' },
+};
+
+const ClientServiceHistoryDialog: React.FC<{
+  client: { id: string; nome: string } | null;
+  onClose: () => void;
+}> = ({ client, onClose }) => {
+  const { data, isLoading } = useQuery({
+    queryKey: ['client-service-history', client?.id],
+    enabled: !!client?.id,
+    queryFn: async (): Promise<HistoryRow[]> => {
+      const { data: ags, error } = await supabase
+        .from('painel_agendamentos')
+        .select('id, data, hora, status, painel_servicos, painel_barbeiros, servicos_extras')
+        .eq('cliente_id', client!.id)
+        .order('data', { ascending: false })
+        .order('hora', { ascending: false });
+      if (error) throw error;
+      return (ags || []).map((a: any) => {
+        const extrasRaw: any[] = Array.isArray(a.servicos_extras) ? a.servicos_extras : [];
+        const extrasMap = new Map<string, number>();
+        let extrasValor = 0;
+        for (const e of extrasRaw) {
+          const n = e?.nome || e?.name;
+          if (!n) continue;
+          const qtd = Number(e?.quantidade || e?.qtd || 1);
+          extrasMap.set(n, (extrasMap.get(n) || 0) + qtd);
+          const preco = Number(e?.preco ?? e?.price ?? 0);
+          extrasValor += preco * qtd;
+        }
+        const svc = a.painel_servicos || {};
+        const principalValor = Number(svc.preco ?? svc.price ?? 0);
+        return {
+          id: a.id,
+          data: a.data,
+          hora: a.hora,
+          status: a.status,
+          servico: svc.nome || svc.name || null,
+          barbeiro: a.painel_barbeiros?.nome || a.painel_barbeiros?.name || null,
+          valor: principalValor + extrasValor || null,
+          extras: Array.from(extrasMap.entries()).map(([nome, qtd]) => ({ nome, qtd })),
+        };
+      });
+    },
+    staleTime: 15000,
+  });
+
+  const totais = useMemo(() => {
+    const list = data || [];
+    const validas = list.filter((r) => {
+      const s = (r.status || '').toLowerCase();
+      return s !== 'cancelado' && s !== 'no_show';
+    });
+    const totalGasto = validas.reduce((s, r) => s + (Number(r.valor) || 0), 0);
+    return { total: list.length, validas: validas.length, totalGasto };
+  }, [data]);
+
+  const fmtDate = (d: string) => {
+    try {
+      return format(parseISO(d), "dd/MM/yyyy", { locale: ptBR });
+    } catch {
+      return d;
+    }
+  };
+
+  const fmtMoney = (v: number | null) =>
+    v == null ? '—' : v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+  return (
+    <Dialog open={!!client} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-5 w-5 text-[#c9a84c]" />
+            Histórico de serviços — {client?.nome}
+          </DialogTitle>
+          <DialogDescription>
+            Todos os agendamentos já realizados por este cliente na barbearia.
+          </DialogDescription>
+        </DialogHeader>
+
+        {isLoading ? (
+          <div className="text-center py-10 text-muted-foreground">Carregando histórico...</div>
+        ) : !data || data.length === 0 ? (
+          <div className="text-center py-10 text-muted-foreground">
+            Nenhum agendamento encontrado.
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-3 gap-2 py-2">
+              <div className="rounded-md border p-2 text-center">
+                <div className="text-[11px] text-muted-foreground uppercase">Total</div>
+                <div className="text-lg font-bold">{totais.total}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center">
+                <div className="text-[11px] text-muted-foreground uppercase">Realizados</div>
+                <div className="text-lg font-bold text-green-700">{totais.validas}</div>
+              </div>
+              <div className="rounded-md border p-2 text-center">
+                <div className="text-[11px] text-muted-foreground uppercase">Total gasto</div>
+                <div className="text-lg font-bold text-[#0d0d0d]">{fmtMoney(totais.totalGasto)}</div>
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-auto rounded-md border">
+              <Table>
+                <TableHeader className="bg-[#0d0d0d] sticky top-0 z-10">
+                  <TableRow className="hover:bg-[#0d0d0d] border-b-0">
+                    <TableHead className="text-[#f0d78c] font-semibold">Data</TableHead>
+                    <TableHead className="text-[#f0d78c] font-semibold">Serviço</TableHead>
+                    <TableHead className="text-[#f0d78c] font-semibold">Extras</TableHead>
+                    <TableHead className="text-[#f0d78c] font-semibold">Barbeiro</TableHead>
+                    <TableHead className="text-[#f0d78c] font-semibold text-center">Status</TableHead>
+                    <TableHead className="text-[#f0d78c] font-semibold text-right">Valor</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {data.map((r, idx) => {
+                    const st = STATUS_LABEL[(r.status || '').toLowerCase()] || {
+                      label: r.status || '—',
+                      className: 'bg-muted text-foreground border-border',
+                    };
+                    return (
+                      <TableRow key={r.id} className={idx % 2 === 0 ? 'bg-background' : 'bg-muted/30'}>
+                        <TableCell className="text-sm whitespace-nowrap">
+                          <div className="font-medium">{fmtDate(r.data)}</div>
+                          <div className="text-[11px] text-muted-foreground">{r.hora?.slice(0, 5)}</div>
+                        </TableCell>
+                        <TableCell className="text-sm font-medium">{r.servico || '—'}</TableCell>
+                        <TableCell className="text-xs">
+                          {r.extras.length === 0 ? (
+                            <span className="text-muted-foreground">—</span>
+                          ) : (
+                            <div className="flex flex-wrap gap-1">
+                              {r.extras.map((e) => (
+                                <Badge key={e.nome} variant="outline" className="text-[10px]">
+                                  {e.nome}
+                                  {e.qtd > 1 ? ` × ${e.qtd}` : ''}
+                                </Badge>
+                              ))}
+                            </div>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {r.barbeiro || '—'}
+                        </TableCell>
+                        <TableCell className="text-center">
+                          <Badge variant="outline" className={`text-[10px] ${st.className}`}>
+                            {st.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-sm text-right font-semibold">
+                          {fmtMoney(r.valor)}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+};
