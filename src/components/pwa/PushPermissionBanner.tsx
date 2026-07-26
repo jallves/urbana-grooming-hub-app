@@ -30,7 +30,7 @@ function wasDismissedRecently(key: string): boolean {
 
 export const PushPermissionBanner: React.FC<Props> = ({
   role, cliente_id, barbeiro_id, staff_id,
-  storageKey = `push-banner-dismissed-external-v2-${role}`,
+  storageKey = `push-banner-dismissed-external-v3-${role}`,
 }) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
