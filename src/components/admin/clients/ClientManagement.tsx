@@ -119,21 +119,24 @@ const ClientManagement: React.FC = () => {
       {/* Tabs: Lista / Recorrência / Recentes — cores fixas Costa Urbana (preto/dourado) */}
       <Tabs defaultValue="lista" className="w-full">
         <TabsList className="w-full grid grid-cols-3 gap-2 h-auto bg-transparent p-0">
+          {/* Lista — preto com dourado */}
           <TabsTrigger
             value="lista"
-            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#0d0d0d] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#c9a84c] data-[state=active]:text-[#0d0d0d] data-[state=active]:shadow-md"
+            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#0d0d0d] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#c9a84c] data-[state=active]:text-[#0d0d0d] data-[state=active]:border-[#c9a84c] data-[state=active]:shadow-md"
           >
             Lista de Clientes
           </TabsTrigger>
+          {/* Recorrência — dourado sólido */}
           <TabsTrigger
             value="recorrencia"
-            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#c9a84c] text-[#0d0d0d] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#0d0d0d] data-[state=active]:text-[#f0d78c] data-[state=active]:shadow-md"
+            className="h-11 rounded-md border-2 border-[#8b7333] bg-[#c9a84c] text-[#0d0d0d] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#f0d78c] data-[state=active]:text-[#0d0d0d] data-[state=active]:border-[#0d0d0d] data-[state=active]:shadow-md"
           >
             Recorrência
           </TabsTrigger>
+          {/* Recém-cadastrados — vinho escuro com dourado */}
           <TabsTrigger
             value="recentes"
-            className="h-11 rounded-md border-2 border-[#0d0d0d] bg-[#1a1a1a] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#f0d78c] data-[state=active]:text-[#0d0d0d] data-[state=active]:shadow-md"
+            className="h-11 rounded-md border-2 border-[#c9a84c] bg-[#5c1a1a] text-[#f0d78c] font-semibold text-xs sm:text-sm data-[state=active]:bg-[#8b2a2a] data-[state=active]:text-[#f0d78c] data-[state=active]:border-[#f0d78c] data-[state=active]:shadow-md"
           >
             Recém-cadastrados
           </TabsTrigger>
