@@ -8,6 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Plus, Users } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from 'sonner';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import ClientRecurrence from './ClientRecurrence';
+import ClientRecent from './ClientRecent';
 
 const ClientManagement: React.FC = () => {
   const [isAddingClient, setIsAddingClient] = useState(false);
@@ -113,18 +116,40 @@ const ClientManagement: React.FC = () => {
         )}
       </div>
 
-      {/* Lista de Clientes */}
-      <div className="w-full">
-        <ClientList
-          clients={clients || []}
-          isLoading={isLoading}
-          onEdit={(id) => {
-            setEditingClient(id);
-            setIsAddingClient(false);
-          }}
-          onDelete={refetch}
-        />
-      </div>
+      {/* Tabs: Lista / Recorrência / Recentes */}
+      <Tabs defaultValue="lista" className="w-full">
+        <TabsList className="w-full flex flex-wrap gap-1 h-auto sm:h-10 bg-muted p-1">
+          <TabsTrigger value="lista" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+            Lista de Clientes
+          </TabsTrigger>
+          <TabsTrigger value="recorrencia" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+            Recorrência
+          </TabsTrigger>
+          <TabsTrigger value="recentes" className="flex-1 min-w-[110px] text-xs sm:text-sm">
+            Recém-cadastrados
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent key="lista" value="lista" className="mt-4">
+          <ClientList
+            clients={clients || []}
+            isLoading={isLoading}
+            onEdit={(id) => {
+              setEditingClient(id);
+              setIsAddingClient(false);
+            }}
+            onDelete={refetch}
+          />
+        </TabsContent>
+
+        <TabsContent key="recorrencia" value="recorrencia" className="mt-4">
+          <ClientRecurrence />
+        </TabsContent>
+
+        <TabsContent key="recentes" value="recentes" className="mt-4">
+          <ClientRecent />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
