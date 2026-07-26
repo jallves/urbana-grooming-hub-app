@@ -7,6 +7,7 @@ export async function getVapidPublicKey(): Promise<string> {
   const { data, error } = await supabase.functions.invoke('push-public-key', { method: 'POST' });
   if (error) throw error;
   cachedPublicKey = (data as any)?.publicKey || '';
+  if (!cachedPublicKey) throw new Error('VAPID public key não configurada');
   return cachedPublicKey;
 }
 
@@ -49,7 +50,9 @@ export async function registerPushServiceWorker(): Promise<ServiceWorkerRegistra
         return reg;
       }
     }
-    return await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+    const registration = await navigator.serviceWorker.register('/push-sw.js', { scope: '/' });
+    await navigator.serviceWorker.ready;
+    return registration;
   } catch (e) {
     console.warn('[push] registrar service worker falhou', e);
     return null;
@@ -76,6 +79,10 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
     : await Notification.requestPermission();
   if (permission !== 'granted') return { ok: false, reason: 'denied' };
 
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  const user_id = userData?.user?.id || null;
+  if (userError || !user_id) return { ok: false, reason: 'not-authenticated' };
+
   const registration = await registerPushServiceWorker();
   if (!registration) return { ok: false, reason: 'no-sw' };
 
@@ -96,9 +103,6 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
   const auth = json.keys?.auth;
   if (!endpoint || !p256dh || !auth) return { ok: false, reason: 'no-keys' };
 
-  const { data: userData } = await supabase.auth.getUser();
-  const user_id = userData?.user?.id || null;
-
   const record = {
     endpoint,
     p256dh,
@@ -112,13 +116,19 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
     active: true,
   };
 
-  // Upsert por endpoint
-  const { error } = await supabase
-    .from('push_subscriptions')
-    .upsert(record, { onConflict: 'endpoint' });
+  // Upsert por endpoint via Edge Function: valida o usuário e evita conflito de RLS
+  // quando o mesmo aparelho já foi usado por outro perfil.
+  const { data, error } = await supabase.functions.invoke('register-push-subscription', {
+    body: record,
+  });
   if (error) {
     console.warn('[push] falha ao salvar subscription', error);
-    return { ok: false, reason: 'db-error' };
+    return { ok: false, reason: 'backend-error' };
+  }
+
+  if (!(data as any)?.success) {
+    console.warn('[push] subscription recusada', data);
+    return { ok: false, reason: (data as any)?.errorCode || 'db-error' };
   }
 
   return { ok: true };

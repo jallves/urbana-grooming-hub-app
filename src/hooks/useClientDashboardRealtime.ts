@@ -62,11 +62,4 @@ export const useClientDashboardRealtime = (onUpdate: () => void) => {
       supabase.removeChannel(channel);
     };
   }, [cliente?.id, onUpdate, toast]);
-
-  // Solicitar permissão para notificações
-  useEffect(() => {
-    if ('Notification' in window && Notification.permission === 'default') {
-      Notification.requestPermission();
-    }
-  }, []);
 };

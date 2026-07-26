@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Bell, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -30,17 +30,30 @@ function wasDismissedRecently(key: string): boolean {
 
 export const PushPermissionBanner: React.FC<Props> = ({
   role, cliente_id, barbeiro_id, staff_id,
-  storageKey = `push-banner-dismissed-${role}`,
+  storageKey = `push-banner-dismissed-external-v2-${role}`,
 }) => {
   const [visible, setVisible] = useState(false);
   const [loading, setLoading] = useState(false);
   const [iosHint, setIosHint] = useState(false);
+  const [activationError, setActivationError] = useState<string | null>(null);
+
+  const permissionLabel = useMemo(() => {
+    if (activationError === 'not-authenticated') return 'Entre novamente para ativar as notificações externas.';
+    if (activationError === 'no-vapid-key') return 'As chaves de notificação ainda não estão disponíveis.';
+    if (activationError === 'backend-error' || activationError === 'db-error') return 'Não foi possível salvar este aparelho. Tente novamente.';
+    if (activationError === 'no-sw') return 'Não foi possível preparar o telefone para notificações.';
+    if (activationError === 'unsupported') return 'Este navegador não suporta notificações externas por PWA.';
+    if (activationError === 'denied') return 'As notificações estão bloqueadas. Ative nas configurações do navegador ou do app instalado.';
+    return null;
+  }, [activationError]);
 
   useEffect(() => {
     if (!isPushSupported()) return;
-    if (Notification.permission === 'granted') return;
-    if (Notification.permission === 'denied') return;
-    if (wasDismissedRecently(storageKey)) return;
+    if (Notification.permission === 'denied') {
+      setActivationError('denied');
+      setVisible(true);
+      return;
+    }
 
     // iOS: só faz sentido mostrar prompt se instalado como PWA
     if (isIOS() && !isStandalonePWA()) {
@@ -48,13 +61,44 @@ export const PushPermissionBanner: React.FC<Props> = ({
       setVisible(true);
       return;
     }
+
+    if (Notification.permission === 'granted') {
+      let cancelled = false;
+      setLoading(true);
+      subscribeToPush({ role, cliente_id, barbeiro_id, staff_id })
+        .then((res) => {
+          if (cancelled) return;
+          if (res.ok) {
+            setVisible(false);
+            setActivationError(null);
+            return;
+          }
+          setActivationError(res.reason || 'db-error');
+          setVisible(true);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setActivationError('backend-error');
+          setVisible(true);
+        })
+        .finally(() => {
+          if (!cancelled) setLoading(false);
+        });
+
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    if (wasDismissedRecently(storageKey)) return;
     setVisible(true);
-  }, [storageKey]);
+  }, [barbeiro_id, cliente_id, role, staff_id, storageKey]);
 
   if (!visible) return null;
 
   const handleEnable = async () => {
     setLoading(true);
+    setActivationError(null);
     try {
       const res = await subscribeToPush({ role, cliente_id, barbeiro_id, staff_id });
       if (res.ok) {
@@ -68,7 +112,11 @@ export const PushPermissionBanner: React.FC<Props> = ({
       } else if (res.reason === 'unsupported') {
         toast.error('Este navegador não suporta notificações push.');
         setVisible(false);
+      } else if (res.reason === 'not-authenticated') {
+        setActivationError(res.reason);
+        toast.error('Entre novamente para ativar as notificações.');
       } else {
+        setActivationError(res.reason || 'db-error');
         toast.error('Não foi possível ativar. Tente novamente.');
       }
     } finally {
@@ -95,6 +143,8 @@ export const PushPermissionBanner: React.FC<Props> = ({
           <p className="mt-0.5 text-xs text-white/70 leading-relaxed">
             {iosHint
               ? 'Adicione o app à Tela de Início (Compartilhar → Adicionar à Tela de Início) e depois toque em Ativar.'
+              : permissionLabel
+              ? permissionLabel
               : role === 'cliente'
               ? 'Receba confirmações, lembretes e avisos de check-in do seu agendamento.'
               : role === 'barbeiro'
@@ -105,7 +155,7 @@ export const PushPermissionBanner: React.FC<Props> = ({
             <Button
               size="sm"
               onClick={handleEnable}
-              disabled={loading || iosHint}
+              disabled={loading || iosHint || activationError === 'denied'}
               className="bg-urbana-gold text-black hover:bg-urbana-gold/90"
             >
               {loading ? 'Ativando…' : 'Ativar'}

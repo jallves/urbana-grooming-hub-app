@@ -31,8 +31,52 @@ const VAPID_PUBLIC = Deno.env.get('VAPID_PUBLIC_KEY') || '';
 const VAPID_PRIVATE = Deno.env.get('VAPID_PRIVATE_KEY') || '';
 const VAPID_SUBJECT = Deno.env.get('VAPID_SUBJECT') || 'mailto:atendimento@barbeariacostaurbana.com.br';
 
-if (VAPID_PUBLIC && VAPID_PRIVATE) {
-  webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE);
+function decodeBase64Url(value: string): Uint8Array {
+  const normalized = value.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = normalized + '='.repeat((4 - (normalized.length % 4)) % 4);
+  return Uint8Array.from(atob(padded), (char) => char.charCodeAt(0));
+}
+
+function encodeBase64Url(bytes: Uint8Array): string {
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
+}
+
+function normalizeVapidPublicKey(value: string): string {
+  if (!value) return '';
+  const decoded = decodeBase64Url(value.trim());
+  if (decoded.length === 65 && decoded[0] === 4) return encodeBase64Url(decoded);
+
+  // Compatibilidade com chave pública salva em DER/SPKI.
+  if (decoded.length > 65) {
+    const rawPoint = decoded.slice(decoded.length - 65);
+    if (rawPoint.length === 65 && rawPoint[0] === 4) return encodeBase64Url(rawPoint);
+  }
+
+  return value;
+}
+
+function normalizeVapidPrivateKey(value: string): string {
+  if (!value) return '';
+  const decoded = decodeBase64Url(value.trim());
+  if (decoded.length === 32) return encodeBase64Url(decoded);
+
+  // Compatibilidade com chave privada salva em DER/PKCS8.
+  for (let index = 0; index < decoded.length - 34; index += 1) {
+    if (decoded[index] === 4 && decoded[index + 1] === 32) {
+      return encodeBase64Url(decoded.slice(index + 2, index + 34));
+    }
+  }
+
+  return value;
+}
+
+const normalizedVapidPublic = normalizeVapidPublicKey(VAPID_PUBLIC);
+const normalizedVapidPrivate = normalizeVapidPrivateKey(VAPID_PRIVATE);
+
+if (normalizedVapidPublic && normalizedVapidPrivate) {
+  webpush.setVapidDetails(VAPID_SUBJECT, normalizedVapidPublic, normalizedVapidPrivate);
 }
 
 const supabase = createClient(
