@@ -2585,6 +2585,7 @@ export type Database = {
         }
         Returns: string
       }
+      notify_push: { Args: { payload: Json; target: Json }; Returns: undefined }
       retention_cleanup_30_days: { Args: never; Returns: undefined }
       revert_vale_from_commissions: {
         Args: { p_vale_id: string }
