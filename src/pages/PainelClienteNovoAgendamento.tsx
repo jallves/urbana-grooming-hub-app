@@ -1657,11 +1657,11 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                 Serviço já agendado
               </AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
+            <AlertDialogDescription className="text-sm text-black font-bold leading-relaxed">
               Você já possui {duplicateAlert.existing.length === 1 ? 'um agendamento' : `${duplicateAlert.existing.length} agendamentos`} de{' '}
-              <span className="font-semibold text-foreground">{selectedService?.nome}</span> ainda não realizado
+              <span className="font-bold text-red-600">{selectedService?.nome}</span> ainda não realizado
               {duplicateAlert.existing.length > 1 ? 's' : ''}:
-              <span className="block mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs space-y-1">
+              <span className="block mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-black font-bold text-xs space-y-1">
                 {duplicateAlert.existing.slice(0, 5).map((d, i) => {
                   const [y, m, day] = d.data.split('-');
                   return (
@@ -1671,7 +1671,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
                   );
                 })}
               </span>
-              <span className="block mt-3">
+              <span className="block mt-3 text-black font-bold">
                 Deseja mesmo assim continuar com este novo agendamento?
               </span>
             </AlertDialogDescription>
