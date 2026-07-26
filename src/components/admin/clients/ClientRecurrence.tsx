@@ -351,7 +351,7 @@ const ClientServiceHistoryDialog: React.FC<{
     queryFn: async (): Promise<HistoryRow[]> => {
       const { data: ags, error } = await supabase
         .from('painel_agendamentos')
-        .select('id, data, hora, status, painel_servicos, painel_barbeiros, servicos_extras, valor_total, valor')
+        .select('id, data, hora, status, painel_servicos, painel_barbeiros, servicos_extras')
         .eq('cliente_id', client!.id)
         .order('data', { ascending: false })
         .order('hora', { ascending: false });
@@ -359,19 +359,25 @@ const ClientServiceHistoryDialog: React.FC<{
       return (ags || []).map((a: any) => {
         const extrasRaw: any[] = Array.isArray(a.servicos_extras) ? a.servicos_extras : [];
         const extrasMap = new Map<string, number>();
+        let extrasValor = 0;
         for (const e of extrasRaw) {
           const n = e?.nome || e?.name;
           if (!n) continue;
-          extrasMap.set(n, (extrasMap.get(n) || 0) + (Number(e?.quantidade || e?.qtd || 1)));
+          const qtd = Number(e?.quantidade || e?.qtd || 1);
+          extrasMap.set(n, (extrasMap.get(n) || 0) + qtd);
+          const preco = Number(e?.preco ?? e?.price ?? 0);
+          extrasValor += preco * qtd;
         }
+        const svc = a.painel_servicos || {};
+        const principalValor = Number(svc.preco ?? svc.price ?? 0);
         return {
           id: a.id,
           data: a.data,
           hora: a.hora,
           status: a.status,
-          servico: a.painel_servicos?.nome || a.painel_servicos?.name || null,
+          servico: svc.nome || svc.name || null,
           barbeiro: a.painel_barbeiros?.nome || a.painel_barbeiros?.name || null,
-          valor: a.valor_total ?? a.valor ?? null,
+          valor: principalValor + extrasValor || null,
           extras: Array.from(extrasMap.entries()).map(([nome, qtd]) => ({ nome, qtd })),
         };
       });
