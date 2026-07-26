@@ -25,6 +25,17 @@ import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
 import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
 import ComboSuggestionDialog, { preloadComboSuggestions } from '@/components/painel-cliente/ComboSuggestionDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AlertTriangle } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -99,6 +110,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
   const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
+
+  // Alerta de duplicidade: cliente já possui agendamento do mesmo serviço não executado
+  const [duplicateAlert, setDuplicateAlert] = useState<{
+    open: boolean;
+    existing: Array<{ data: string; hora: string }>;
+  }>({ open: false, existing: [] });
 
   // Carregar serviços
   useEffect(() => {
