@@ -25,6 +25,17 @@ import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
 import { useClientPendingCheckoutBlock, PENDING_CHECKOUT_BLOCK_DAYS } from '@/hooks/useClientPendingCheckoutBlock';
 import { PendingCheckoutAlertDialog } from '@/components/painel-cliente/PendingCheckoutAlertDialog';
 import ComboSuggestionDialog, { preloadComboSuggestions } from '@/components/painel-cliente/ComboSuggestionDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { AlertTriangle } from 'lucide-react';
 
 interface Service {
   id: string;
@@ -99,6 +110,12 @@ const PainelClienteNovoAgendamento: React.FC = () => {
   const { getAvailableTimeSlots, validateAppointment, isValidating } = useUnifiedAppointmentValidation();
   const pendingCheckout = useClientPendingCheckoutBlock(cliente?.id);
   const [showPendingDialog, setShowPendingDialog] = useState(false);
+
+  // Alerta de duplicidade: cliente já possui agendamento do mesmo serviço não executado
+  const [duplicateAlert, setDuplicateAlert] = useState<{
+    open: boolean;
+    existing: Array<{ data: string; hora: string }>;
+  }>({ open: false, existing: [] });
 
   // Carregar serviços
   useEffect(() => {
@@ -682,8 +699,36 @@ const PainelClienteNovoAgendamento: React.FC = () => {
       );
       return;
     }
+    // Aviso de duplicidade: cliente já possui agendamento do mesmo serviço não executado
+    const duplicates = await checkDuplicateService();
+    if (duplicates.length > 0) {
+      setDuplicateAlert({ open: true, existing: duplicates });
+      return;
+    }
     // Abre o popup de produtos antes de criar o agendamento
     setShowCrossSell(true);
+  };
+
+  // Consulta se o cliente já possui agendamento pendente com o mesmo serviço principal
+  const checkDuplicateService = async (): Promise<Array<{ data: string; hora: string }>> => {
+    if (!cliente || !selectedService) return [];
+    try {
+      const { data, error } = await supabase
+        .from('painel_agendamentos')
+        .select('data, hora, status')
+        .eq('cliente_id', cliente.id)
+        .eq('servico_id', selectedService.id)
+        .in('status', ['agendado', 'confirmado', 'pendente', 'chegou'])
+        .order('data', { ascending: true });
+      if (error) {
+        console.warn('Falha ao verificar duplicidade de serviço', error);
+        return [];
+      }
+      return (data || []).map((r: any) => ({ data: r.data, hora: r.hora }));
+    } catch (e) {
+      console.warn('Erro em checkDuplicateService', e);
+      return [];
+    }
   };
 
   const executeBooking = async (extraProducts: CrossSellProduct[] = []) => {
@@ -1597,6 +1642,54 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           setShowExtrasModal(true);
         }}
       />
+
+      <AlertDialog
+        open={duplicateAlert.open}
+        onOpenChange={(open) => setDuplicateAlert((s) => ({ ...s, open }))}
+      >
+        <AlertDialogContent className="max-w-md border-border bg-background">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-2">
+              <div className="p-2.5 rounded-full bg-amber-100">
+                <AlertTriangle className="h-6 w-6 text-amber-600" />
+              </div>
+              <AlertDialogTitle className="text-lg font-playfair text-foreground">
+                Serviço já agendado
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-sm text-muted-foreground leading-relaxed">
+              Você já possui {duplicateAlert.existing.length === 1 ? 'um agendamento' : `${duplicateAlert.existing.length} agendamentos`} de{' '}
+              <span className="font-semibold text-foreground">{selectedService?.nome}</span> ainda não realizado
+              {duplicateAlert.existing.length > 1 ? 's' : ''}:
+              <span className="block mt-3 p-3 rounded-lg bg-amber-50 border border-amber-200 text-amber-800 text-xs space-y-1">
+                {duplicateAlert.existing.slice(0, 5).map((d, i) => {
+                  const [y, m, day] = d.data.split('-');
+                  return (
+                    <span key={i} className="block">
+                      • {day}/{m}/{y} às {d.hora?.slice(0, 5)}
+                    </span>
+                  );
+                })}
+              </span>
+              <span className="block mt-3">
+                Deseja mesmo assim continuar com este novo agendamento?
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2 sm:gap-2">
+            <AlertDialogCancel className="font-raleway">Cancelar</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setDuplicateAlert({ open: false, existing: [] });
+                setShowCrossSell(true);
+              }}
+              className="font-raleway bg-urbana-gold hover:bg-urbana-gold/90 text-black"
+            >
+              Sim, continuar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </ClientPageContainer>
   );
 };
