@@ -51,7 +51,7 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
         throw new Error('Falha na autenticação');
       }
 
-      console.log('✅ Authentication successful for:', authData.user.email);
+      console.log('✅ Authentication successful');
       
       toast({
         title: "Login realizado com sucesso!",

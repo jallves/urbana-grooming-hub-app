@@ -140,7 +140,7 @@ const BarberRoute: React.FC<BarberRouteProps> = ({
 
   if (!hasAccess) {
     console.log('[BarberRoute] ❌ Acesso NEGADO');
-    console.log('[BarberRoute] Usuário:', user.email);
+    console.log('[BarberRoute] Usuário autenticado');
     console.log('[BarberRoute] isMaster:', isMaster);
     console.log('[BarberRoute] isAdmin:', isAdmin);
     console.log('[BarberRoute] isManager:', isManager);

@@ -65,7 +65,7 @@ export const useBarberAppointments = () => {
       if (!user?.email || isInitialized) return;
 
       try {
-        console.log('Fetching barber ID for:', user.email);
+        console.log('Fetching barber ID...');
         const { data } = await supabase
           .from('painel_barbeiros')
           .select('id, staff_id, commission_rate')
@@ -79,7 +79,7 @@ export const useBarberAppointments = () => {
           console.log('Barber data found:', data);
         } else if (isMounted) {
           setIsInitialized(true);
-          console.log('No barber data found for:', user.email);
+          console.log('No barber data found');
         }
       } catch (error) {
         if (isMounted) {

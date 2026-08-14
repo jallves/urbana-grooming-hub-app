@@ -163,7 +163,7 @@ export const sendConfirmationEmailDirect = async (data: {
   servicePrice: number;
   serviceDuration: number;
 }): Promise<boolean> => {
-  console.log('📧 [Email Direct] Enviando e-mail direto para:', data.clientEmail);
+  console.log('📧 [Email Direct] Enviando e-mail direto...');
   
   try {
     if (!data.clientEmail || !data.clientEmail.includes('@')) {
