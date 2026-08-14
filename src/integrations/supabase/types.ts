@@ -2595,6 +2595,17 @@ export type Database = {
         Returns: Json
       }
       totem_checkin: { Args: { p_agendamento_id: string }; Returns: Json }
+      totem_search_client: {
+        Args: { p_query: string }
+        Returns: {
+          email: string
+          id: string
+          nome: string
+          telefone: string
+          user_id: string
+          whatsapp: string
+        }[]
+      }
       update_session_activity: {
         Args: { p_session_id: string }
         Returns: boolean
