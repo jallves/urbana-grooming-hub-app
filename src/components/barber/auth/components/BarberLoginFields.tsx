@@ -36,7 +36,7 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
                 type="text"
                 inputMode="numeric"
                 autoComplete="username"
-                placeholder="Ex: 1004"
+                placeholder=""
                 {...field}
                 disabled={loading}
                 className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12 transition-colors"
