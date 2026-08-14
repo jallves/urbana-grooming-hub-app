@@ -2539,6 +2539,18 @@ export type Database = {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
+      fila_do_dia: {
+        Args: never
+        Returns: {
+          barbeiro_nome: string
+          cliente_nome: string
+          hora: string
+          id: string
+          servico_nome: string
+          status: string
+          status_totem: string
+        }[]
+      }
       force_logout_user: { Args: { p_user_id: string }; Returns: number }
       get_active_sessions: {
         Args: never
