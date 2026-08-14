@@ -2622,6 +2622,10 @@ export type Database = {
         }[]
       }
       public_clients_count: { Args: never; Returns: number }
+      register_presence: {
+        Args: { p_device_info?: Json; p_user_agent?: string }
+        Returns: string
+      }
       retention_cleanup_30_days: { Args: never; Returns: undefined }
       revert_vale_from_commissions: {
         Args: { p_vale_id: string }
