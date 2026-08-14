@@ -94,7 +94,7 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
             type="text"
             inputMode="numeric"
             autoComplete="username"
-            placeholder="Ex: 1004"
+            placeholder=""
             value={matricula}
             onChange={(e) => setMatricula(e.target.value)}
             className="pl-12 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
