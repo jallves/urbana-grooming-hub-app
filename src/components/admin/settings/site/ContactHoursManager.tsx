@@ -10,6 +10,12 @@ import { useToast } from '@/hooks/use-toast';
 import { Save, Phone, Mail, MapPin, Clock } from 'lucide-react';
 import { DAY_LABELS, DEFAULT_BUSINESS_HOURS, type BusinessHours, type ShopSettings } from '@/hooks/useShopSettings';
 
+const DEFAULT_CONTACT: ShopSettings = {
+  address: 'Rua Castelo Branco, 483 - 29101-480 Praia da Costa - Vila Velha/ES',
+  phone: '(27) 99778-0137',
+  email: 'costaurbanabarbershop@gmail.com',
+};
+
 const ContactHoursManager: React.FC = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -31,11 +37,16 @@ const ContactHoursManager: React.FC = () => {
   const [hours, setHours] = useState<BusinessHours>(DEFAULT_BUSINESS_HOURS);
 
   useEffect(() => {
-    if (data) {
-      setForm(data);
-      if (data.business_hours) {
-        setHours({ ...DEFAULT_BUSINESS_HOURS, ...data.business_hours });
-      }
+    // Pré-preenche com os valores atualmente exibidos no site quando ainda não há dados salvos
+    setForm({
+      ...DEFAULT_CONTACT,
+      ...(data || {}),
+      address: data?.address || DEFAULT_CONTACT.address,
+      phone: data?.phone || DEFAULT_CONTACT.phone,
+      email: data?.email || DEFAULT_CONTACT.email,
+    });
+    if (data?.business_hours) {
+      setHours({ ...DEFAULT_BUSINESS_HOURS, ...data.business_hours });
     }
   }, [data]);
 
