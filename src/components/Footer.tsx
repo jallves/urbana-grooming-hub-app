@@ -118,8 +118,8 @@ const Footer: React.FC = () => {
             </h3>
             <div className="space-y-2 text-sm font-raleway">
               {hourGroups.map((group) => (
-                <div key={group.label} className="flex justify-between gap-3 text-urbana-light/80">
-                  <span>{group.label}</span>
+                <div key={group.label} className="flex items-baseline gap-3 text-urbana-light/80">
+                  <span className="min-w-[9.5rem]">{group.label}</span>
                   <span className={group.value === 'Fechado' ? 'text-urbana-light/50' : 'text-urbana-gold'}>
                     {group.value}
                   </span>
