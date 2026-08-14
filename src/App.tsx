@@ -149,6 +149,7 @@ function App() {
                   <PainelClienteAuthProvider>
                     <TotemAuthProvider>
                       <RealtimeProvider>
+                        <SessionPresence />
                         <div className="min-h-screen">
                           <Routes>
                             <Route path="/" element={
