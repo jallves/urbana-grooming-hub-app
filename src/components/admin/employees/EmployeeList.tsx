@@ -76,8 +76,9 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
     <div className="w-full">
       {/* View Desktop/Tablet */}
       <div className="hidden md:block border rounded-lg border-gray-200 bg-white shadow-sm">
-        <div className="grid grid-cols-7 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-gray-900 font-playfair font-medium text-sm">
+        <div className="grid grid-cols-8 gap-4 p-4 border-b border-gray-200 bg-gray-50 text-gray-900 font-playfair font-medium text-sm">
           <div>Funcionário</div>
+          <div>Matrícula</div>
           <div>Email</div>
           <div>Telefone</div>
           <div>Cargo</div>
@@ -88,7 +89,7 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
         
         {employees.length > 0 ? (
           employees.map((employee) => (
-            <div key={employee.id} className={`grid grid-cols-7 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center ${employee.status === 'inactive' ? 'opacity-60 bg-red-50/30' : ''}`}>
+            <div key={employee.id} className={`grid grid-cols-8 gap-4 p-4 border-b border-gray-200 hover:bg-gray-50 transition-colors items-center ${employee.status === 'inactive' ? 'opacity-60 bg-red-50/30' : ''}`}>
               <div className="flex items-center gap-3">
                 <Avatar className="h-8 w-8 border-2 border-urbana-gold/30">
                   <AvatarImage src={employee.photo_url} />
@@ -97,6 +98,11 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                   </AvatarFallback>
                 </Avatar>
                 <span className="text-gray-900 font-raleway font-medium text-sm truncate">{employee.name}</span>
+              </div>
+              <div>
+                <Badge className="bg-black text-urbana-gold border border-urbana-gold/40 font-mono text-sm tracking-widest">
+                  {employee.matricula || '—'}
+                </Badge>
               </div>
               <div className="text-gray-700 font-raleway text-sm truncate">{employee.email}</div>
               <div className="text-gray-700 font-raleway text-sm">{employee.phone}</div>
@@ -178,7 +184,10 @@ const EmployeeList: React.FC<EmployeeListProps> = ({
                   </Avatar>
                   <div className="flex-1 min-w-0">
                     <h3 className="text-gray-900 font-raleway font-medium text-sm truncate">{employee.name}</h3>
-                    <p className="text-gray-700 font-raleway text-xs truncate">{employee.email}</p>
+                    <p className="font-mono text-xs tracking-widest text-urbana-gold bg-black inline-block px-2 py-0.5 rounded mt-1">
+                      Matrícula: {employee.matricula || '—'}
+                    </p>
+                    <p className="text-gray-700 font-raleway text-xs truncate mt-1">{employee.email}</p>
                   </div>
                 </div>
                 <DropdownMenu>

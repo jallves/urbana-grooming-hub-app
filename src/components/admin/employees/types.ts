@@ -1,6 +1,7 @@
 
 export interface Employee {
   id: string;
+  matricula?: string;
   name: string;
   email: string;
   phone: string;
