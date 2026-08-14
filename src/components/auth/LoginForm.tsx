@@ -199,7 +199,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       } else {
         toast({
           title: "Erro no login",
-          description: error?.message || `Matrícula ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
+          description: error?.message || `Acesso negado. Favor verificar usuário e senha. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
           variant: "destructive",
         });
       }
