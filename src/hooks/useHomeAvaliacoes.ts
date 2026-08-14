@@ -96,9 +96,7 @@ export const useHomeAvaliacoes = () => {
 
       if (clientIds.length > 0) {
         const { data: clients } = await supabase
-          .from('painel_clientes')
-          .select('id, nome')
-          .in('id', clientIds);
+          .rpc('public_client_names', { p_ids: clientIds });
         
         if (clients) {
           clientsMap = clients.reduce((acc, c) => ({ ...acc, [c.id]: c.nome }), {});
