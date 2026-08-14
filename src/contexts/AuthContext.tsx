@@ -83,7 +83,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const checkUserRoles = async (
     u: User
   ): Promise<'master' | 'admin' | 'manager' | 'barber' | 'client' | null> => {
-    console.log('[AuthContext] 🔍 Verificando tipo de usuário para:', u.id, '- Email:', u.email);
+    console.log('[AuthContext] 🔍 Verificando tipo de usuário');
 
     try {
       // PASSO 1: Verificar tabela user_roles PRIMEIRO (fonte de verdade - tem prioridade)
@@ -165,7 +165,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           setLoading(false);
         } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED' || event === 'INITIAL_SESSION') {
           if (currentSession?.user) {
-            console.log('[AuthContext] ✅ Sessão ativa:', event, '- User:', currentSession.user.email);
+            console.log('[AuthContext] ✅ Sessão ativa:', event);
             setUser(currentSession.user);
             
             // Limpar timeout anterior se existir

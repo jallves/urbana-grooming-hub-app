@@ -23,7 +23,7 @@ interface ReceiptEmailData {
 
 export async function sendReceiptEmail(data: ReceiptEmailData): Promise<{ success: boolean; error?: string }> {
   try {
-    console.log('[sendReceiptEmail] Enviando comprovante para:', data.clientEmail);
+    console.log('[sendReceiptEmail] Enviando comprovante...');
     
     const { data: result, error } = await supabase.functions.invoke('send-receipt-email', {
       body: data

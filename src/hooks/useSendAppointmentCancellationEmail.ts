@@ -97,7 +97,7 @@ export const sendAppointmentCancellationEmailDirect = async (params: {
   cancelledBy: 'client' | 'admin' | 'barber';
   cancellationReason?: string;
 }): Promise<boolean> => {
-  console.log('📧 [CancellationEmailDirect] Enviando para:', params.clientEmail);
+  console.log('📧 [CancellationEmailDirect] Enviando e-mail...');
 
   if (!params.clientEmail) {
     console.log('⚠️ [CancellationEmailDirect] Sem e-mail, pulando envio');

@@ -37,7 +37,7 @@ export const useBarberAppointments = () => {
     try {
       setLoading(true);
       
-      console.log('Buscando agendamentos para:', user.email);
+      console.log('Buscando agendamentos do barbeiro...');
       
       // Primeiro, buscar o barbeiro pela email
       const { data: barberData, error: barberError } = await supabase

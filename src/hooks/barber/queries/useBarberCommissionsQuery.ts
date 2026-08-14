@@ -60,7 +60,7 @@ export const useBarberCommissionsQuery = () => {
 
       const barberId = barberData?.id;
       if (!barberId) {
-        console.log('❌ Barbeiro não encontrado para email:', user.email);
+        console.log('❌ Barbeiro não encontrado');
         return { commissions: [], stats: null };
       }
 

@@ -44,7 +44,7 @@ export const useBarberDashboardMetrics = (selectedMonth?: number, selectedYear?:
           .maybeSingle();
 
         if (!barberData?.id) {
-          console.error('Barbeiro não encontrado para o usuário:', user.email);
+          console.error('Barbeiro não encontrado para o usuário logado');
           setLoading(false);
           return;
         }

@@ -53,7 +53,7 @@ export const useBarberAuth = () => {
           is_barber_admin: barberData.is_barber_admin || false,
         });
       } else {
-        console.warn('Barbeiro não encontrado para:', user.email);
+        console.warn('Barbeiro não encontrado para o usuário logado');
         setBarber(null);
       }
     } catch (error) {

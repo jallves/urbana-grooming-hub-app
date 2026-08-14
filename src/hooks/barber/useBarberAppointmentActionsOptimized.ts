@@ -15,7 +15,7 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
       // Verificar autenticação
       const { data: { user } } = await supabase.auth.getUser();
       console.log('🔄 [BARBEIRO] Cancelando agendamento:', appointmentId);
-      console.log('👤 [BARBEIRO] Usuário autenticado:', user?.id, user?.email);
+      console.log('👤 [BARBEIRO] Usuário autenticado');
       console.log('🆔 [BARBEIRO] Barbeiro ID:', barberId);
       
       const { data, error } = await supabase
@@ -67,7 +67,7 @@ export const useBarberAppointmentActionsOptimized = ({ barberId }: UseBarberAppo
       // Verificar autenticação
       const { data: { user } } = await supabase.auth.getUser();
       console.log('🔄 [BARBEIRO] Marcando como ausente:', appointmentId);
-      console.log('👤 [BARBEIRO] Usuário autenticado:', user?.id, user?.email);
+      console.log('👤 [BARBEIRO] Usuário autenticado');
       console.log('🆔 [BARBEIRO] Barbeiro ID:', barberId);
       
       const { data, error } = await supabase
