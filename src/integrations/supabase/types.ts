@@ -2539,6 +2539,18 @@ export type Database = {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
+      fila_do_dia: {
+        Args: never
+        Returns: {
+          barbeiro_nome: string
+          cliente_nome: string
+          hora: string
+          id: string
+          servico_nome: string
+          status: string
+          status_totem: string
+        }[]
+      }
       force_logout_user: { Args: { p_user_id: string }; Returns: number }
       get_active_sessions: {
         Args: never
@@ -2589,12 +2601,31 @@ export type Database = {
         Returns: string
       }
       notify_push: { Args: { payload: Json; target: Json }; Returns: undefined }
+      public_client_names: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
+      public_clients_count: { Args: never; Returns: number }
       retention_cleanup_30_days: { Args: never; Returns: undefined }
       revert_vale_from_commissions: {
         Args: { p_vale_id: string }
         Returns: Json
       }
       totem_checkin: { Args: { p_agendamento_id: string }; Returns: Json }
+      totem_search_client: {
+        Args: { p_query: string }
+        Returns: {
+          email: string
+          id: string
+          nome: string
+          telefone: string
+          user_id: string
+          whatsapp: string
+        }[]
+      }
       update_session_activity: {
         Args: { p_session_id: string }
         Returns: boolean

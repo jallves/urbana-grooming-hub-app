@@ -62,18 +62,11 @@ const TotemSearch: React.FC = () => {
         searchPatterns.push(formatted8);
       }
 
-      // Montar query OR com todos os padrões (whatsapp + telefone)
-      const orClauses = searchPatterns
-        .flatMap(p => [`whatsapp.ilike.%${p}%`, `telefone.ilike.%${p}%`])
-        .join(',');
-
       console.log('🔍 Padrões de busca:', searchPatterns);
 
+      // Busca segura (função server-side, sem expor dados de outros clientes)
       const { data: painelClientes } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .or(orClauses)
-        .limit(5);
+        .rpc('totem_search_client', { p_query: cleanPhone });
 
       let cliente: any = painelClientes?.[0] || null;
       let clientSource = 'painel';

@@ -215,19 +215,7 @@ const PainelFila: React.FC = () => {
   const { data: items = [], refetch } = useQuery<FilaItem[]>({
     queryKey: ['painel-fila', today],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('painel_agendamentos')
-        .select(`
-          id,
-          hora,
-          status,
-          status_totem,
-          painel_clientes(nome),
-          painel_barbeiros(nome),
-          painel_servicos(nome)
-        `)
-        .eq('data', today)
-        .order('hora', { ascending: true });
+      const { data, error } = await supabase.rpc('fila_do_dia');
 
       if (error) throw error;
       return (data ?? []).map((row: any) => ({
@@ -235,9 +223,9 @@ const PainelFila: React.FC = () => {
         hora: row.hora,
         status: row.status,
         status_totem: row.status_totem,
-        cliente_nome: row.painel_clientes?.nome ?? 'Cliente',
-        barbeiro_nome: row.painel_barbeiros?.nome ?? '—',
-        servico_nome: row.painel_servicos?.nome ?? '—',
+        cliente_nome: row.cliente_nome ?? 'Cliente',
+        barbeiro_nome: row.barbeiro_nome ?? '—',
+        servico_nome: row.servico_nome ?? '—',
       }));
     },
     staleTime: 0,
