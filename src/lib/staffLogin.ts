@@ -37,7 +37,7 @@ export const signInWithMatricula = async (
   }
 
   if (!payload?.success) {
-    throw new Error(payload?.error || 'Matrícula ou senha incorretos');
+    throw new Error(payload?.error || 'Acesso negado. Favor verificar usuário e senha.');
   }
 
   const { error: sessionError } = await supabase.auth.setSession({
@@ -73,7 +73,7 @@ export const signInMasterWithEmail = async (
   }
 
   if (!payload?.success) {
-    throw new Error(payload?.error || 'E-mail ou senha incorretos');
+    throw new Error(payload?.error || 'Acesso negado. Favor verificar usuário e senha.');
   }
 
   const { error: sessionError } = await supabase.auth.setSession({

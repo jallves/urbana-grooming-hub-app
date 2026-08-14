@@ -45,7 +45,7 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
     } catch (error: any) {
       toast({
         title: "Erro no login",
-        description: error?.message || "Matrícula ou senha incorretos.",
+        description: error?.message || "Acesso negado. Favor verificar usuário e senha.",
         variant: "destructive",
       });
     } finally {

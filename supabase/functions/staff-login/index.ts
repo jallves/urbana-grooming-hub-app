@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     }
 
     if (code && emailInput) {
-      return json({ success: false, error: 'Informe somente matrícula ou e-mail' }, 400);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 400);
     }
 
     const admin = createClient(
@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     }
 
     if (!email) {
-      return json({ success: false, error: 'Matrícula ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     if (active === false) {
@@ -97,12 +97,12 @@ Deno.serve(async (req) => {
     });
 
     if (signInError || !signIn.session) {
-      return json({ success: false, error: 'Matrícula ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     const signedInUser = signIn.user;
     if (!signedInUser) {
-      return json({ success: false, error: 'Identificação ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     // Regra definitiva: master somente por e-mail; todos os demais somente por matrícula.
@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
 
     if (code && isMaster) {
       return json(
-        { success: false, error: 'O administrador master deve acessar utilizando o e-mail.' },
+        { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
         403
       );
     }
 
     if (emailInput && !isMaster) {
       return json(
-        { success: false, error: 'Administradores e barbeiros devem acessar pela matrícula.' },
+        { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
         403
       );
     }

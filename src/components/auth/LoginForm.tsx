@@ -177,16 +177,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
     } catch (error: any) {
       console.error('❌ [LoginForm] Erro no login:', error);
 
-      // Regra de acesso (não é senha incorreta): não contabiliza tentativa
-      if (typeof error?.message === 'string' && error.message.includes('matrícula')) {
-        toast({
-          title: "Acesso somente por matrícula",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
       
@@ -209,7 +199,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       } else {
         toast({
           title: "Erro no login",
-          description: error?.message || `Matrícula ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
+          description: error?.message || `Acesso negado. Favor verificar usuário e senha. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
           variant: "destructive",
         });
       }
