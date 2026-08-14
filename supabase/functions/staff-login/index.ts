@@ -11,13 +11,18 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
-    const { matricula, password } = await req.json();
+    const { matricula, email: requestedEmail, password } = await req.json();
 
-    if (!matricula?.toString().trim() || !password) {
-      return json({ success: false, error: 'Matrícula e senha são obrigatórias' }, 400);
+    const code = matricula?.toString().trim() ?? '';
+    const emailInput = requestedEmail?.toString().trim().toLowerCase() ?? '';
+
+    if ((!code && !emailInput) || !password) {
+      return json({ success: false, error: 'Identificação e senha são obrigatórias' }, 400);
     }
 
-    const code = matricula.toString().trim();
+    if (code && emailInput) {
+      return json({ success: false, error: 'Informe somente matrícula ou e-mail' }, 400);
+    }
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
@@ -25,17 +30,20 @@ Deno.serve(async (req) => {
       { auth: { persistSession: false } }
     );
 
-    // Resolve matrícula -> e-mail (nunca exposto ao cliente)
-    let email: string | null = null;
+    // Resolve matrícula -> e-mail internamente. E-mail informado diretamente
+    // só será aceito depois da validação server-side da role master.
+    let email: string | null = emailInput || null;
     let active: boolean | null = null;
     let userType: 'admin' | 'barber' = 'admin';
     let name: string | null = null;
 
-    const { data: emp } = await admin
-      .from('employees')
-      .select('email, status, is_active, role, name')
-      .eq('matricula', code)
-      .maybeSingle();
+    const { data: emp } = code
+      ? await admin
+          .from('employees')
+          .select('email, status, is_active, role, name')
+          .eq('matricula', code)
+          .maybeSingle()
+      : { data: null };
 
     if (emp) {
       email = emp.email;
@@ -92,15 +100,29 @@ Deno.serve(async (req) => {
       return json({ success: false, error: 'Matrícula ou senha incorretos' }, 401);
     }
 
-    // Master só acessa por e-mail
+    const signedInUser = signIn.user;
+    if (!signedInUser) {
+      return json({ success: false, error: 'Identificação ou senha incorretos' }, 401);
+    }
+
+    // Regra definitiva: master somente por e-mail; todos os demais somente por matrícula.
     const { data: roles } = await admin
       .from('user_roles')
       .select('role')
-      .eq('user_id', signIn.user!.id);
+      .eq('user_id', signedInUser.id);
 
-    if ((roles || []).some((r: any) => r.role === 'master')) {
+    const isMaster = (roles || []).some((r: { role: string }) => r.role === 'master');
+
+    if (code && isMaster) {
       return json(
         { success: false, error: 'O administrador master deve acessar utilizando o e-mail.' },
+        403
+      );
+    }
+
+    if (emailInput && !isMaster) {
+      return json(
+        { success: false, error: 'Administradores e barbeiros devem acessar pela matrícula.' },
         403
       );
     }
@@ -108,7 +130,7 @@ Deno.serve(async (req) => {
     return json({
       success: true,
       session: signIn.session,
-      user_id: signIn.user!.id,
+      user_id: signedInUser.id,
       user_type: userType,
       name,
     });

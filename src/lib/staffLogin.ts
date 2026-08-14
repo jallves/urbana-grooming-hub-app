@@ -16,7 +16,7 @@ export const signInWithMatricula = async (
   password: string
 ): Promise<StaffLoginResult> => {
   const { data, error } = await supabase.functions.invoke('staff-login', {
-    body: { matricula: matricula.trim(), password },
+    body: { ...(identifier.includes("@") ? { email: identifier.trim().toLowerCase() } : { matricula: identifier.trim() }), password },
   });
 
   let payload: any = data;
@@ -45,6 +45,41 @@ export const signInWithMatricula = async (
     refresh_token: payload.session.refresh_token,
   });
 
+  if (sessionError) throw sessionError;
+
+  return {
+    userId: payload.user_id,
+    userType: payload.user_type,
+    name: payload.name,
+  };
+};
+
+export const signInMasterWithEmail = async (
+  email: string,
+  password: string
+): Promise<StaffLoginResult> => {
+  const { data, error } = await supabase.functions.invoke('staff-login', {
+    body: { email: email.trim().toLowerCase(), password },
+  });
+
+  let payload: any = data;
+  if (error) {
+    try {
+      const context: any = (error as any).context;
+      if (context && typeof context.json === 'function') payload = await context.json();
+    } catch {
+      // A mensagem genérica abaixo evita expor detalhes internos.
+    }
+  }
+
+  if (!payload?.success) {
+    throw new Error(payload?.error || 'E-mail ou senha incorretos');
+  }
+
+  const { error: sessionError } = await supabase.auth.setSession({
+    access_token: payload.session.access_token,
+    refresh_token: payload.session.refresh_token,
+  });
   if (sessionError) throw sessionError;
 
   return {
