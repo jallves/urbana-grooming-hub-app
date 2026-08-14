@@ -115,14 +115,14 @@ Deno.serve(async (req) => {
 
     if (code && isMaster) {
       return json(
-        { success: false, error: 'O administrador master deve acessar utilizando o e-mail.' },
+        { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
         403
       );
     }
 
     if (emailInput && !isMaster) {
       return json(
-        { success: false, error: 'Administradores e barbeiros devem acessar pela matrícula.' },
+        { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
         403
       );
     }
