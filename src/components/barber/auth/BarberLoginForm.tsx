@@ -73,7 +73,7 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
       console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
-        description: error.message || "Matrícula ou senha incorretos.",
+        description: error.message || "Acesso negado. Favor verificar usuário e senha.",
         variant: "destructive",
       });
     } finally {
