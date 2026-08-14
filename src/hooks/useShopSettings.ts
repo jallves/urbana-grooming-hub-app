@@ -127,32 +127,16 @@ export const useShopSettings = () => {
   return { shopSettings, loading, error };
 };
 
-/** Agrupa dias consecutivos com o mesmo horário para exibição no site */
+/** Lista todos os dias da semana individualmente para exibição no site */
 export const groupBusinessHours = (hours?: BusinessHours) => {
   const source = { ...DEFAULT_BUSINESS_HOURS, ...(hours || {}) };
   const order = [1, 2, 3, 4, 5, 6, 0];
-  const groups: { label: string; value: string }[] = [];
 
-  let startIdx = 0;
-  const keyOf = (d: number) => {
-    const c = source[d];
-    return c?.closed ? 'closed' : `${c?.open}-${c?.close}`;
-  };
-
-  for (let i = 0; i <= order.length; i++) {
-    if (i < order.length && keyOf(order[i]) === keyOf(order[startIdx])) continue;
-    const first = order[startIdx];
-    const last = order[i - 1];
-    const cfg = source[first];
-    groups.push({
-      label:
-        first === last
-          ? DAY_SHORT_LABELS[first]
-          : `${DAY_SHORT_LABELS[first]} - ${DAY_SHORT_LABELS[last]}`,
-      value: cfg?.closed ? 'Fechado' : `${cfg.open} - ${cfg.close}`,
-    });
-    startIdx = i;
-  }
-
-  return groups;
+  return order.map((day) => {
+    const cfg = source[day] || DEFAULT_BUSINESS_HOURS[day];
+    return {
+      label: DAY_SHORT_LABELS[day],
+      value: cfg?.closed ? 'Fechado' : `${cfg.open} às ${cfg.close}`,
+    };
+  });
 };
