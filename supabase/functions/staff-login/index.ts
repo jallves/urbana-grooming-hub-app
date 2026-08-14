@@ -21,7 +21,7 @@ Deno.serve(async (req) => {
     }
 
     if (code && emailInput) {
-      return json({ success: false, error: 'Informe somente matrícula ou e-mail' }, 400);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 400);
     }
 
     const admin = createClient(
