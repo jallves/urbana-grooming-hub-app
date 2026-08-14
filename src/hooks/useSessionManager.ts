@@ -71,6 +71,40 @@ class SessionManager {
     }
   }
 
+  /**
+   * Garante que exista uma sessão ativa no banco para o usuário atual.
+   * Se já houver uma sessão válida (mesmo usuário/tipo), apenas atualiza a atividade.
+   */
+  async ensureSession(data: SessionData): Promise<string | null> {
+    try {
+      if (data.userId) {
+        const { data: existing } = await supabase
+          .from('active_sessions')
+          .select('id')
+          .eq('user_id', data.userId)
+          .eq('user_type', data.userType)
+          .eq('is_active', true)
+          .gt('expires_at', new Date().toISOString())
+          .order('last_activity_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (existing?.id) {
+          this.currentSessionId = existing.id;
+          localStorage.setItem(`session_id_${data.userType}`, existing.id);
+          this.startActivityUpdater();
+          await this.updateActivity(existing.id);
+          return existing.id;
+        }
+      }
+
+      return await this.createSession(data);
+    } catch (error) {
+      console.error('Erro ao garantir sessão:', error);
+      return null;
+    }
+  }
+
   // Fallback: criar sessão local
   private createLocalSession(data: SessionData): string {
     const sessionId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;

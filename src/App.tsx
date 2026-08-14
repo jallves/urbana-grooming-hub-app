@@ -5,6 +5,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { PainelClienteAuthProvider } from './contexts/PainelClienteAuthContext';
 import { TotemAuthProvider } from './contexts/TotemAuthContext';
 import { RealtimeProvider } from './contexts/RealtimeContext';
+import SessionPresence from './components/system/SessionPresence';
 import { PermissionsProvider } from './contexts/PermissionsContext';
 import AdminRoute from './components/auth/AdminRoute';
 import AdminRedirectGuard from './components/auth/AdminRedirectGuard';
@@ -149,6 +150,7 @@ function App() {
                   <PainelClienteAuthProvider>
                     <TotemAuthProvider>
                       <RealtimeProvider>
+                        <SessionPresence />
                         <div className="min-h-screen">
                           <Routes>
                             <Route path="/" element={
