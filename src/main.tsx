@@ -1,8 +1,11 @@
 import React from 'react';
+import { installConsoleGuard } from './lib/consoleGuard';
 import { createRoot } from 'react-dom/client';
 import App from './App.tsx';
 import './index.css';
 import { cleanupLegacyAppServiceWorkers } from './utils/pwaServiceWorker';
+
+installConsoleGuard();
 
 cleanupLegacyAppServiceWorkers();
 
