@@ -177,16 +177,6 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
     } catch (error: any) {
       console.error('❌ [LoginForm] Erro no login:', error);
 
-      // Regra de acesso (não é senha incorreta): não contabiliza tentativa
-      if (typeof error?.message === 'string' && error.message.includes('matrícula')) {
-        toast({
-          title: "Acesso somente por matrícula",
-          description: error.message,
-          variant: "destructive",
-        });
-        return;
-      }
-
       const newAttempts = loginAttempts + 1;
       setLoginAttempts(newAttempts);
       
