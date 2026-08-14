@@ -36,31 +36,9 @@ const TotemCheckoutSearch: React.FC = () => {
       
       console.log('🔍 [CheckoutSearch] Buscando cliente:', cleanPhone);
 
-      // Construir padrões de busca otimizados (server-side ilike)
-      const searchPatterns: string[] = [cleanPhone];
-      
-      if (cleanPhone.length >= 9) {
-        const last9 = cleanPhone.slice(-9);
-        searchPatterns.push(last9);
-        searchPatterns.push(`${last9.slice(0, 5)}-${last9.slice(5)}`);
-      }
-      
-      if (cleanPhone.length >= 8) {
-        const last8 = cleanPhone.slice(-8);
-        searchPatterns.push(last8);
-        searchPatterns.push(`${last8.slice(0, 4)}-${last8.slice(4)}`);
-      }
-
-      const orClauses = searchPatterns
-        .flatMap(p => [`whatsapp.ilike.%${p}%`, `telefone.ilike.%${p}%`])
-        .join(',');
-
-      // Buscar cliente com filtro server-side
+      // Busca segura (função server-side, sem expor dados de outros clientes)
       const { data: clientes, error: clientError } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .or(orClauses)
-        .limit(5);
+        .rpc('totem_search_client', { p_query: cleanPhone });
 
       if (clientError) {
         console.error('❌ Erro ao buscar cliente:', clientError);
