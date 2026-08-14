@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
     }
 
     if (!email) {
-      return json({ success: false, error: 'Matrícula ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     if (active === false) {
@@ -97,12 +97,12 @@ Deno.serve(async (req) => {
     });
 
     if (signInError || !signIn.session) {
-      return json({ success: false, error: 'Matrícula ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     const signedInUser = signIn.user;
     if (!signedInUser) {
-      return json({ success: false, error: 'Identificação ou senha incorretos' }, 401);
+      return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
     // Regra definitiva: master somente por e-mail; todos os demais somente por matrícula.
