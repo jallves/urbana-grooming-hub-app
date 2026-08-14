@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { logAdminActivity } from '@/hooks/useActivityLogger';
 import { sessionManager } from '@/hooks/useSessionManager';
-import { signInWithMatricula, isEmailInput } from '@/lib/staffLogin';
+import { signInMasterWithEmail, signInWithMatricula, isEmailInput } from '@/lib/staffLogin';
 
 interface LoginFormProps {
   loading: boolean;
@@ -94,15 +94,12 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       let authName: string | undefined;
 
       if (isEmailInput(identifier)) {
-        // Somente o administrador master acessa por e-mail
-        const { data: emailAuth, error } = await supabase.auth.signInWithPassword({
-          email: identifier,
-          password,
-        });
-        if (error) throw error;
-        authUserId = emailAuth.user?.id ?? null;
-        authEmail = emailAuth.user?.email ?? undefined;
-        authName = emailAuth.user?.user_metadata?.full_name;
+        // A edge function só devolve sessão quando a role validada é master.
+        const result = await signInMasterWithEmail(identifier, password);
+        authUserId = result.userId;
+        authName = result.name || undefined;
+        const { data: sessionData } = await supabase.auth.getSession();
+        authEmail = sessionData.session?.user.email ?? undefined;
       } else {
         const result = await signInWithMatricula(identifier, password);
         authUserId = result.userId;
@@ -202,7 +199,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       } else {
         toast({
           title: "Erro no login",
-          description: `Matrícula/e-mail ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
+          description: error?.message || `Matrícula ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
           variant: "destructive",
         });
       }
