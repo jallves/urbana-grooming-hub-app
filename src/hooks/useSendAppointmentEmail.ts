@@ -23,7 +23,7 @@ export const useSendAppointmentEmail = () => {
         return false;
       }
 
-      console.log('📧 [Email] Enviando confirmação para:', data.clientEmail);
+      console.log('📧 [Email] Enviando confirmação...');
 
       const { error } = await supabase.functions.invoke('send-email-confirmation', {
         body: {

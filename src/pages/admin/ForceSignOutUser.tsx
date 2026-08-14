@@ -42,7 +42,7 @@ const ForceSignOutUser: React.FC = () => {
     setUserData(null);
 
     try {
-      console.log('🔍 Buscando usuário:', searchEmail);
+      console.log('🔍 Buscando usuário...');
 
       // Buscar usuário por email na tabela user_roles
       const { data: userRoles, error: usersError } = await supabase
@@ -114,7 +114,7 @@ const ForceSignOutUser: React.FC = () => {
     setLoading(true);
 
     try {
-      console.log('🚪 Forçando logout do usuário:', userData.email);
+      console.log('🚪 Forçando logout do usuário');
 
       // Usar edge function em vez de RPC que não existe
       const { data, error } = await supabase.functions.invoke('admin-auth-operations', {

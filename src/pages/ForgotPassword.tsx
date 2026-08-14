@@ -28,7 +28,7 @@ export default function ForgotPassword() {
       // URL completa para redirecionamento (usa o domínio atual)
       const redirectUrl = `${window.location.origin}/change-password`;
       
-      console.log('📧 Enviando email de recuperação para:', email);
+      console.log('📧 Enviando email de recuperação...');
       console.log('🔗 Redirect URL:', redirectUrl);
       
       // Usar método nativo do Supabase Auth

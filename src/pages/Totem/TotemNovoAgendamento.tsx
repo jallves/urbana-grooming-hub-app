@@ -315,7 +315,7 @@ const TotemNovoAgendamento: React.FC = () => {
       // Enviar e-mail de confirmação usando dados já disponíveis
       // Usar Promise com timeout para garantir que não bloqueia indefinidamente
       console.log('📧 [Totem] Iniciando envio de e-mail de confirmação...');
-      console.log('📧 [Totem] Cliente:', clientData.nome, '- Email:', clientData.email);
+      console.log('📧 [Totem] Cliente identificado');
       try {
         // Timeout de 10 segundos para o envio do e-mail
         const emailPromise = sendConfirmationEmailDirect({

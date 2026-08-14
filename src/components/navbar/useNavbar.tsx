@@ -34,7 +34,6 @@ export const useNavbar = () => {
 
   const handleSignOut = () => {
     console.log('[useNavbar] 🚪 Logout COMPLETO iniciado da homepage...');
-    console.log('[useNavbar] 📊 Usuário antes do logout:', user?.email);
     
     // 1. Limpar TODAS as sessões e caches locais IMEDIATAMENTE
     localStorage.removeItem('admin_last_route');

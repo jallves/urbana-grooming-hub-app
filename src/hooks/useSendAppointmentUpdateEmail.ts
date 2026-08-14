@@ -75,7 +75,7 @@ export const sendAppointmentUpdateEmail = async (
       updatedBy: data.updatedBy
     };
 
-    console.log('📧 [UpdateEmail] Payload:', JSON.stringify(emailPayload, null, 2));
+    console.log('📧 [UpdateEmail] Payload preparado');
 
     const { data: responseData, error: invokeError } = await supabase.functions.invoke('send-appointment-update-email', {
       body: emailPayload
@@ -113,7 +113,7 @@ export const sendAppointmentUpdateEmailDirect = async (params: {
   updateType: 'reschedule' | 'change_barber' | 'change_service' | 'general';
   updatedBy: 'client' | 'admin' | 'barber';
 }): Promise<boolean> => {
-  console.log('📧 [UpdateEmailDirect] Enviando para:', params.clientEmail);
+  console.log('📧 [UpdateEmailDirect] Enviando e-mail...');
 
   if (!params.clientEmail) {
     console.log('⚠️ [UpdateEmailDirect] Sem e-mail, pulando envio');
