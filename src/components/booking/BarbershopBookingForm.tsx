@@ -216,7 +216,7 @@ const BarbershopBookingForm: React.FC = () => {
     try {
       const { data, error } = await supabase
         .from('staff')
-        .select('*')
+        .select('id, name, role, photo_url, image_url, specialties, experience, is_active')
         .eq('is_active', true)
         .eq('role', 'barber')
         .order('name');
