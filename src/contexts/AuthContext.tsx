@@ -182,6 +182,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
                 // BLOQUEIO: Verificar se o usuário está ativo (barbeiro/admin)
                 if (role === 'barber' || role === 'admin' || role === 'master' || role === 'manager') {
+                  // CORTE GLOBAL: força relogin por matrícula para todos menos o master
+                  if (role !== 'master') {
+                    try {
+                      const { data: cutoffRow } = await supabase
+                        .from('settings')
+                        .select('value')
+                        .eq('key', 'force_logout_cutoff')
+                        .maybeSingle();
+                      const cutoffRaw = (cutoffRow?.value as any)?.at ?? null;
+                      const lastSignIn = currentSession.user.last_sign_in_at;
+                      if (cutoffRaw && lastSignIn && new Date(lastSignIn) < new Date(cutoffRaw)) {
+                        await supabase.auth.signOut();
+                        if (mounted) {
+                          applyRole(null);
+                          setUser(null);
+                          setLoading(false);
+                        }
+                        return;
+                      }
+                    } catch {
+                      /* sem corte configurado: segue o fluxo normal */
+                    }
+                  }
                   const email = currentSession.user.email;
                   if (email) {
                     const [{ data: barberRow }, { data: adminRow }] = await Promise.all([
