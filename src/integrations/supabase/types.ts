@@ -2601,6 +2601,14 @@ export type Database = {
         Returns: string
       }
       notify_push: { Args: { payload: Json; target: Json }; Returns: undefined }
+      public_client_names: {
+        Args: { p_ids: string[] }
+        Returns: {
+          id: string
+          nome: string
+        }[]
+      }
+      public_clients_count: { Args: never; Returns: number }
       retention_cleanup_30_days: { Args: never; Returns: undefined }
       revert_vale_from_commissions: {
         Args: { p_vale_id: string }
