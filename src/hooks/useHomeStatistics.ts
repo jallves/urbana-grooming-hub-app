@@ -29,9 +29,7 @@ export const useHomeStatistics = () => {
         .eq('status', 'concluido');
 
       // Buscar contagem de clientes únicos
-      const { count: uniqueClients } = await supabase
-        .from('painel_clientes')
-        .select('*', { count: 'exact', head: true });
+      const { data: uniqueClients } = await supabase.rpc('public_clients_count');
 
       // Buscar avaliações para calcular a taxa de satisfação real
       const { data: ratings, error: ratingsError } = await supabase
