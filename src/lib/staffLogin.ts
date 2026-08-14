@@ -16,7 +16,7 @@ export const signInWithMatricula = async (
   password: string
 ): Promise<StaffLoginResult> => {
   const { data, error } = await supabase.functions.invoke('staff-login', {
-    body: { matricula: matricula.trim(), password },
+    body: { ...(identifier.includes("@") ? { email: identifier.trim().toLowerCase() } : { matricula: identifier.trim() }), password },
   });
 
   let payload: any = data;
