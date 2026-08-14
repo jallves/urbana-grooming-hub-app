@@ -109,6 +109,7 @@ export type Database = {
           email: string
           id: string
           is_active: boolean | null
+          matricula: string | null
           name: string
           role: string | null
           updated_at: string | null
@@ -119,6 +120,7 @@ export type Database = {
           email: string
           id?: string
           is_active?: boolean | null
+          matricula?: string | null
           name: string
           role?: string | null
           updated_at?: string | null
@@ -129,6 +131,7 @@ export type Database = {
           email?: string
           id?: string
           is_active?: boolean | null
+          matricula?: string | null
           name?: string
           role?: string | null
           updated_at?: string | null
@@ -1105,6 +1108,7 @@ export type Database = {
           email: string | null
           id: string
           is_active: boolean | null
+          matricula: string | null
           name: string
           password_hash: string | null
           phone: string | null
@@ -1120,6 +1124,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          matricula?: string | null
           name: string
           password_hash?: string | null
           phone?: string | null
@@ -1135,6 +1140,7 @@ export type Database = {
           email?: string | null
           id?: string
           is_active?: boolean | null
+          matricula?: string | null
           name?: string
           password_hash?: string | null
           phone?: string | null
@@ -1546,6 +1552,7 @@ export type Database = {
           image_url: string | null
           is_active: boolean | null
           is_barber_admin: boolean
+          matricula: string | null
           nome: string
           role: string | null
           specialties: string[] | null
@@ -1565,6 +1572,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_barber_admin?: boolean
+          matricula?: string | null
           nome: string
           role?: string | null
           specialties?: string[] | null
@@ -1584,6 +1592,7 @@ export type Database = {
           image_url?: string | null
           is_active?: boolean | null
           is_barber_admin?: boolean
+          matricula?: string | null
           nome?: string
           role?: string | null
           specialties?: string[] | null
@@ -1903,6 +1912,7 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          matricula: string | null
           name: string
           phone: string | null
           photo_url: string | null
@@ -1919,6 +1929,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          matricula?: string | null
           name: string
           phone?: string | null
           photo_url?: string | null
@@ -1935,6 +1946,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          matricula?: string | null
           name?: string
           phone?: string | null
           photo_url?: string | null
@@ -2600,6 +2612,7 @@ export type Database = {
         }
         Returns: string
       }
+      next_matricula: { Args: never; Returns: string }
       notify_push: { Args: { payload: Json; target: Json }; Returns: undefined }
       public_client_names: {
         Args: { p_ids: string[] }

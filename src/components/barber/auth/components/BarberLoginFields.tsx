@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Control } from 'react-hook-form';
 import PasswordToggle from './PasswordToggle';
 import { BarberLoginForm } from '../hooks/useBarberLogin';
-import { Mail, Lock } from 'lucide-react';
+import { IdCard, Lock } from 'lucide-react';
 
 interface BarberLoginFieldsProps {
   control: Control<BarberLoginForm>;
@@ -24,17 +24,19 @@ const BarberLoginFields: React.FC<BarberLoginFieldsProps> = ({
     <div className="space-y-4">
       <FormField
         control={control}
-        name="email"
+        name="matricula"
         render={({ field }) => (
           <FormItem className="space-y-2">
             <FormLabel className="text-white font-medium flex items-center gap-2">
-              <Mail className="h-4 w-4 text-amber-400" />
-              Email
+              <IdCard className="h-4 w-4 text-amber-400" />
+              Matrícula
             </FormLabel>
             <FormControl>
               <Input
-                type="email"
-                placeholder="seu@email.com"
+                type="text"
+                inputMode="numeric"
+                autoComplete="username"
+                placeholder="Ex: 1004"
                 {...field}
                 disabled={loading}
                 className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500 focus:border-amber-400 focus:ring-amber-400/20 rounded-xl h-12 transition-colors"

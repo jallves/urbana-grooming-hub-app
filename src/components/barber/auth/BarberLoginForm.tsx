@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import { Eye, EyeOff, IdCard, Lock, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
+import { signInWithMatricula } from '@/lib/staffLogin';
 import { useNavigate } from 'react-router-dom';
 import { logAdminActivity } from '@/hooks/useActivityLogger';
 import { sessionManager } from '@/hooks/useSessionManager';
@@ -16,7 +17,7 @@ interface BarberLoginFormProps {
 }
 
 const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, onLoginSuccess }) => {
-  const [email, setEmail] = useState('');
+  const [matricula, setMatricula] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,70 +32,48 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
     effectiveSetLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      const result = await signInWithMatricula(matricula, password);
 
-      if (error) throw error;
+      const { data: sessionData } = await supabase.auth.getSession();
+      const user = sessionData.session?.user;
 
-      if (data.user) {
-        // BLOQUEIO: Barbeiro inativo não pode acessar
-        const { data: barberRow } = await supabase
-          .from('painel_barbeiros')
-          .select('is_active')
-          .eq('email', data.user.email!)
-          .maybeSingle();
-
-        if (barberRow && barberRow.is_active === false) {
-          await supabase.auth.signOut();
-          toast({
-            title: "Usuário inativo",
-            description: "Seu acesso foi desativado. Contate o administrador.",
-            variant: "destructive",
-          });
-          effectiveSetLoading(false);
-          return;
-        }
-
-        // INTEGRAÇÃO: Registrar log de login
+      if (user) {
         await logAdminActivity({
           action: 'login',
           entityType: 'session',
-          entityId: data.user.id,
-          newData: { 
-            email: data.user.email, 
+          entityId: user.id,
+          newData: {
             userType: 'barber',
+            matricula,
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent
           }
         });
-        
-        // INTEGRAÇÃO: Criar sessão ativa
+
         await sessionManager.createSession({
-          userId: data.user.id,
+          userId: user.id,
           userType: 'barber',
-          userEmail: data.user.email || undefined,
-          userName: data.user.user_metadata?.full_name || data.user.email || undefined,
+          userEmail: user.email || undefined,
+          userName: result.name || undefined,
           expiresInHours: 24
         });
-        
-        toast({
-          title: "Login realizado!",
-          description: "Bem-vindo ao painel do barbeiro!",
-        });
-        
-        if (onLoginSuccess) {
-          onLoginSuccess(data.user.id);
-        }
-        
-        navigate('/barbeiro');
       }
+
+      toast({
+        title: "Login realizado!",
+        description: "Bem-vindo ao painel do barbeiro!",
+      });
+
+      if (onLoginSuccess) {
+        onLoginSuccess(result.userId);
+      }
+
+      navigate('/barbeiro');
     } catch (error: any) {
       console.error('Erro no login:', error);
       toast({
         title: "Erro no login",
-        description: error.message || "Email ou senha incorretos.",
+        description: error.message || "Matrícula ou senha incorretos.",
         variant: "destructive",
       });
     } finally {
@@ -105,17 +84,19 @@ const BarberLoginForm: React.FC<BarberLoginFormProps> = ({ loading, setLoading, 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium text-gray-300">
-          Email
+        <Label htmlFor="matricula" className="text-sm font-medium text-gray-300">
+          Matrícula
         </Label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
+          <IdCard className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-500 group-focus-within:text-urbana-gold transition-colors" />
           <Input
-            id="email"
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="matricula"
+            type="text"
+            inputMode="numeric"
+            autoComplete="username"
+            placeholder="Ex: 1004"
+            value={matricula}
+            onChange={(e) => setMatricula(e.target.value)}
             className="pl-12 h-14 bg-gray-800/50 border-gray-700 text-white placeholder-gray-500 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={effectiveLoading}

@@ -3,12 +3,13 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Eye, EyeOff, Mail, Lock, LogIn } from 'lucide-react';
+import { Eye, EyeOff, IdCard, Lock, LogIn } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { logAdminActivity } from '@/hooks/useActivityLogger';
 import { sessionManager } from '@/hooks/useSessionManager';
+import { signInWithMatricula, isEmailInput } from '@/lib/staffLogin';
 
 interface LoginFormProps {
   loading: boolean;
@@ -16,7 +17,7 @@ interface LoginFormProps {
 }
 
 const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loginAttempts, setLoginAttempts] = useState(0);
@@ -31,10 +32,10 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
 
   // Verificar bloqueio específico do email atual
   useEffect(() => {
-    if (!email) return;
+    if (!identifier) return;
 
     // Bloqueio por usuário específico: loginBlock_email
-    const blockKey = `loginBlock_${email}`;
+    const blockKey = `loginBlock_${identifier}`;
     const blockData = localStorage.getItem(blockKey);
     
     if (blockData) {
@@ -67,7 +68,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         setLoginAttempts(0);
       }
     }
-  }, [email]);
+  }, [identifier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,22 +89,42 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
     setLoading(true);
 
     try {
-      console.log('🔐 [LoginForm] Chamando supabase.auth.signInWithPassword...');
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
+      let authUserId: string | null = null;
+      let authEmail: string | undefined;
+      let authName: string | undefined;
 
-      console.log('🔐 [LoginForm] Resposta:', { hasUser: !!data.user, error });
+      if (isEmailInput(identifier)) {
+        // Somente o administrador master acessa por e-mail
+        const { data: emailAuth, error } = await supabase.auth.signInWithPassword({
+          email: identifier,
+          password,
+        });
+        if (error) throw error;
+        authUserId = emailAuth.user?.id ?? null;
+        authEmail = emailAuth.user?.email ?? undefined;
+        authName = emailAuth.user?.user_metadata?.full_name;
+      } else {
+        const result = await signInWithMatricula(identifier, password);
+        authUserId = result.userId;
+        authName = result.name || undefined;
+        const { data: sessionData } = await supabase.auth.getSession();
+        authEmail = sessionData.session?.user.email ?? undefined;
+      }
 
-      if (error) throw error;
+      const data = {
+        user: authUserId
+          ? { id: authUserId, email: authEmail, user_metadata: { full_name: authName } }
+          : null,
+      } as any;
 
       if (data.user) {
         // BLOQUEIO: Usuário inativo (barbeiro ou admin) não pode acessar
-        const [{ data: barberRow }, { data: adminRow }] = await Promise.all([
-          supabase.from('painel_barbeiros').select('is_active').eq('email', data.user.email!).maybeSingle(),
-          supabase.from('admin_users').select('is_active').eq('email', data.user.email!).maybeSingle(),
-        ]);
+        const [{ data: barberRow }, { data: adminRow }] = data.user.email
+          ? await Promise.all([
+              supabase.from('painel_barbeiros').select('is_active').eq('email', data.user.email).maybeSingle(),
+              supabase.from('admin_users').select('is_active').eq('email', data.user.email).maybeSingle(),
+            ])
+          : [{ data: null }, { data: null }];
 
         const barberInactive = barberRow && barberRow.is_active === false;
         const adminInactive = adminRow && adminRow.is_active === false;
@@ -126,7 +147,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
         console.log('✅ [LoginForm] Login bem-sucedido!');
         // Limpar tentativas em caso de sucesso (específico do usuário)
         setLoginAttempts(0);
-        const blockKey = `loginBlock_${email}`;
+        const blockKey = `loginBlock_${identifier}`;
         localStorage.removeItem(blockKey);
         
         // INTEGRAÇÃO: Registrar log de login
@@ -135,7 +156,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
           entityType: 'session',
           entityId: data.user.id,
           newData: { 
-            email: data.user.email, 
+            identifier, 
             timestamp: new Date().toISOString(),
             userAgent: navigator.userAgent
           }
@@ -146,7 +167,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
           userId: data.user.id,
           userType: 'admin',
           userEmail: data.user.email || undefined,
-          userName: data.user.user_metadata?.full_name || data.user.email || undefined,
+          userName: data.user.user_metadata?.full_name || undefined,
           expiresInHours: 24
         });
         
@@ -164,24 +185,24 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       
       if (newAttempts >= MAX_ATTEMPTS) {
         const blockedUntil = Date.now() + BLOCK_DURATION;
-        const blockKey = `loginBlock_${email}`;
+        const blockKey = `loginBlock_${identifier}`;
         localStorage.setItem(blockKey, JSON.stringify({ 
           blockedUntil, 
           attempts: newAttempts,
-          email 
+          identifier 
         }));
         setIsBlocked(true);
         setBlockTimeLeft(BLOCK_DURATION / 1000);
         
         toast({
           title: "Usuário bloqueado temporariamente",
-          description: `O usuário ${email} foi bloqueado por 15 minutos devido a múltiplas tentativas de login incorretas.`,
+          description: `O usuário ${identifier} foi bloqueado por 15 minutos devido a múltiplas tentativas de login incorretas.`,
           variant: "destructive",
         });
       } else {
         toast({
           title: "Erro no login",
-          description: `Email ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
+          description: `Matrícula/e-mail ou senha incorretos. Tentativas restantes: ${MAX_ATTEMPTS - newAttempts}`,
           variant: "destructive",
         });
       }
@@ -198,7 +219,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             🔒 Usuário bloqueado temporariamente
           </p>
           <p className="text-red-500 text-sm mb-1">
-            O usuário <strong>{email}</strong> está bloqueado.
+            O usuário <strong>{identifier}</strong> está bloqueado.
           </p>
           <p className="text-red-500 text-sm">
             Tempo restante: {Math.floor(blockTimeLeft / 60)}:{(blockTimeLeft % 60).toString().padStart(2, '0')}
@@ -210,17 +231,19 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
       )}
       
       <div className="space-y-2">
-        <Label htmlFor="email" className="text-sm font-medium text-gray-900">
-          Email
+        <Label htmlFor="identifier" className="text-sm font-medium text-gray-900">
+          Matrícula
         </Label>
         <div className="relative group">
-          <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-urbana-gold transition-colors" />
+          <IdCard className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400 group-focus-within:text-urbana-gold transition-colors" />
           <Input
-            id="email"
-            type="email"
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            id="identifier"
+            type="text"
+            inputMode="text"
+            autoComplete="username"
+            placeholder="Ex: 1002"
+            value={identifier}
+            onChange={(e) => setIdentifier(e.target.value)}
             className="pl-12 h-14 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
             required
             disabled={loading || isBlocked}

@@ -3,10 +3,10 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { signInWithMatricula } from '@/lib/staffLogin';
 
 const barberLoginSchema = z.object({
-  email: z.string().email('Por favor, insira um email válido'),
+  matricula: z.string().min(1, 'Informe sua matrícula'),
   password: z.string().min(1, 'A senha é obrigatória'),
 });
 
@@ -24,57 +24,28 @@ export const useBarberLogin = ({ loading, setLoading, onLoginSuccess }: UseBarbe
   const form = useForm<BarberLoginForm>({
     resolver: zodResolver(barberLoginSchema),
     defaultValues: {
-      email: '',
+      matricula: '',
       password: '',
     },
   });
 
   const onSubmit = async (data: BarberLoginForm) => {
     if (loading) return;
-    
+
     setLoading(true);
     try {
-      console.log('🔐 Attempting barber login for:', data.email);
-      
-      // STEP 1: Attempt authentication
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: data.password,
-      });
+      const result = await signInWithMatricula(data.matricula, data.password);
 
-      if (authError) {
-        console.error('❌ Authentication error:', authError);
-        throw authError;
-      }
-
-      if (!authData.user) {
-        throw new Error('Falha na autenticação');
-      }
-
-      console.log('✅ Authentication successful');
-      
       toast({
         title: "Login realizado com sucesso!",
         description: "Bem-vindo ao painel do barbeiro!",
       });
 
-      // Let the AuthContext handle the role verification
-      onLoginSuccess(authData.user.id);
-      
+      onLoginSuccess(result.userId);
     } catch (error: any) {
-      console.error('Erro no login do barbeiro:', error);
-      
-      let errorMessage = "Credenciais inválidas. Verifique seu email e senha.";
-      
-      if (error.message?.includes('Invalid login credentials')) {
-        errorMessage = "Email ou senha incorretos. Tente novamente.";
-      } else if (error.message?.includes('Email not confirmed')) {
-        errorMessage = "Por favor, confirme seu email antes de fazer login.";
-      }
-      
       toast({
         title: "Erro no login",
-        description: errorMessage,
+        description: error?.message || "Matrícula ou senha incorretos.",
         variant: "destructive",
       });
     } finally {
