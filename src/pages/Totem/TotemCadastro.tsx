@@ -119,11 +119,9 @@ const TotemCadastro: React.FC = () => {
 
       // Buscar dados do cliente recém-criado
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: novoCliente } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .eq('email', formData.email.trim())
-        .single();
+      const { data: encontrados } = await supabase
+        .rpc('totem_search_client', { p_query: formData.email.trim() });
+      const novoCliente = encontrados?.[0] || null;
 
       // Redirecionar para o fluxo apropriado
       if (action === 'novo-agendamento') {
