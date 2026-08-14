@@ -101,6 +101,20 @@ const AdminSiteSettings: React.FC = () => {
               </div>
             </TabsContent>
 
+            <TabsContent value="contact" className="space-y-4">
+              <div className="bg-amber-50/50 rounded-xl border border-amber-200/60 p-4 sm:p-6 shadow-sm">
+                <div className="mb-6">
+                  <h2 className="text-lg sm:text-xl font-playfair font-bold text-amber-900 mb-1">
+                    🕐 Horários e Contato
+                  </h2>
+                  <p className="text-sm text-amber-700/70 font-raleway">
+                    Defina o horário de funcionamento por dia da semana e os dados de contato exibidos no site
+                  </p>
+                </div>
+                <ContactHoursManager />
+              </div>
+            </TabsContent>
+
           </Tabs>
         </div>
       </div>
