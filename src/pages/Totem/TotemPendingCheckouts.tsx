@@ -66,9 +66,6 @@ const TotemPendingCheckouts: React.FC = () => {
           barbeiro_id,
           servico_id,
           status_totem,
-          painel_clientes (
-            nome
-          ),
           painel_barbeiros (
             nome
           ),
