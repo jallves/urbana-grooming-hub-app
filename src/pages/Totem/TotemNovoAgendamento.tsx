@@ -124,7 +124,7 @@ const TotemNovoAgendamento: React.FC = () => {
         // Buscar barbeiros ativos disponíveis para agendamento
         const { data: barbersData, error: barbersError } = await supabase
           .from('painel_barbeiros')
-          .select('*')
+          .select('id, nome, foto_url, image_url, specialties, experience, ativo, is_active, staff_id')
           .eq('ativo', true)
           .order('nome');
 
