@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from "framer-motion";
 import { MapPin, Phone, Mail, Clock, Instagram, Facebook, Twitter, Heart, Star, ArrowUp } from 'lucide-react';
-import { useShopSettings } from '@/hooks/useShopSettings';
+import { useShopSettings, groupBusinessHours } from '@/hooks/useShopSettings';
 
 const Footer: React.FC = () => {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -32,29 +32,13 @@ const Footer: React.FC = () => {
   // Extract values or use defaults
   const shopName = shopSettings?.shop_name || "Costa Urbana";
   const address = shopSettings?.address || "Rua Castelo Branco, 483 - 29101-480 Praia da Costa - Vila Velha/ES";
-  const phone = shopSettings?.phone || "+55 11 9876-5432";
-  const email = shopSettings?.email || "contato@costaurbana.com.br";
+  const phone = shopSettings?.phone || "(27) 99778-0137";
+  const email = shopSettings?.email || "costaurbanabarbershop@gmail.com";
+  const hourGroups = groupBusinessHours(shopSettings?.business_hours);
   const instagram = shopSettings?.social_instagram || "#";
   const facebook = shopSettings?.social_facebook || "#";
   const twitter = shopSettings?.social_twitter || "#";
   
-  const footerSections = [
-    {
-      title: "Horário de Funcionamento",
-      items: [
-        { icon: Clock, label: "Segunda - Sábado", value: "8:00 - 20:00" }
-      ]
-    },
-    {
-      title: "Contato",
-      items: [
-        { icon: MapPin, label: "Endereço", value: address },
-        { icon: Phone, label: "Telefone", value: phone },
-        { icon: Mail, label: "Email", value: email }
-      ]
-    }
-  ];
-
   const quickLinks = [
     { name: "Serviços", href: "#services" },
     { name: "Galeria", href: "#gallery" },
@@ -133,10 +117,14 @@ const Footer: React.FC = () => {
               Horário de Funcionamento
             </h3>
             <div className="space-y-2 text-sm font-raleway">
-              <div className="flex justify-between text-urbana-light/80">
-                <span>Segunda - Sábado</span>
-                <span className="text-urbana-gold">8:00 - 20:00</span>
-              </div>
+              {hourGroups.map((group) => (
+                <div key={group.label} className="flex justify-between gap-3 text-urbana-light/80">
+                  <span>{group.label}</span>
+                  <span className={group.value === 'Fechado' ? 'text-urbana-light/50' : 'text-urbana-gold'}>
+                    {group.value}
+                  </span>
+                </div>
+              ))}
             </div>
           </motion.div>
 
@@ -160,11 +148,11 @@ const Footer: React.FC = () => {
               </div>
               <div className="flex items-center gap-2 text-urbana-light/80">
               <Phone className="h-4 w-4 text-urbana-gold flex-shrink-0" />
-                <span>(27) 99778-0137</span>
+                <span>{phone}</span>
               </div>
               <div className="flex items-center gap-2 text-urbana-light/80">
                 <Mail className="h-4 w-4 text-urbana-gold flex-shrink-0" />
-                <span className="break-all">costaurbanabarbershop@gmail.com</span>
+                <span className="break-all">{email}</span>
               </div>
             </div>
           </motion.div>
