@@ -42,20 +42,29 @@ const ContactHoursManager: React.FC = () => {
   const saveMutation = useMutation({
     mutationFn: async () => {
       const payload = { ...form, business_hours: hours };
-      const { error } = await supabase
+      const { data: saved, error } = await supabase
         .from('settings')
         .upsert(
           { key: 'shop_settings', value: payload as any, updated_at: new Date().toISOString() },
           { onConflict: 'key' }
-        );
+        )
+        .select('value')
+        .maybeSingle();
       if (error) throw error;
+      if (!saved) {
+        throw new Error('Sem permissão para salvar (nenhuma linha gravada). Faça login como administrador master.');
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['shop-settings-json'] });
       toast({ title: 'Configurações salvas', description: 'As informações já estão refletidas no site.' });
     },
-    onError: () => {
-      toast({ title: 'Erro', description: 'Não foi possível salvar as configurações.', variant: 'destructive' });
+    onError: (err: any) => {
+      toast({
+        title: 'Erro ao salvar',
+        description: err?.message || 'Não foi possível salvar as configurações.',
+        variant: 'destructive',
+      });
     },
   });
 
