@@ -389,6 +389,19 @@ const EmployeeForm: React.FC<EmployeeFormProps> = ({ employee, onClose }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Matrícula (acesso ao sistema) */}
+          <div className="space-y-2 md:col-span-2">
+            <Label className="text-gray-900 font-raleway font-medium">Matrícula (acesso ao sistema)</Label>
+            <div className="flex items-center gap-3 rounded-lg border border-urbana-gold/40 bg-black px-4 py-3">
+              <span className="font-mono text-2xl tracking-[0.3em] text-urbana-gold">
+                {employee?.matricula || 'Gerada automaticamente'}
+              </span>
+            </div>
+            <p className="text-xs text-gray-600 font-raleway">
+              O colaborador acessa o painel com esta matrícula + senha. O e-mail é apenas cadastral.
+            </p>
+          </div>
+
           {/* Nome */}
           <div className="space-y-2">
             <Label htmlFor="name" className="text-gray-900 font-raleway font-medium">Nome *</Label>
