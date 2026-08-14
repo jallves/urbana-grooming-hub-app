@@ -73,6 +73,7 @@ class SessionManager {
 
   // Fallback: criar sessão local
   private createLocalSession(data: SessionData): string {
+    // (mantido apenas como fallback quando o RPC falha)
     const sessionId = `local-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
     const sessionData = {
       id: sessionId,
