@@ -130,7 +130,8 @@ export const useEmployeeManagement = () => {
     const query = searchQuery.toLowerCase();
     return employees.filter(employee =>
       employee.name.toLowerCase().includes(query) ||
-      employee.email.toLowerCase().includes(query)
+      employee.email.toLowerCase().includes(query) ||
+      (employee.matricula || '').toLowerCase().includes(query)
     );
   }, [employees, searchQuery]);
 
