@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Image, Star } from 'lucide-react';
+import { Image, Star, Clock } from 'lucide-react';
 import BannerManager from '@/components/admin/settings/media/BannerManager';
 import GalleryManager from '@/components/admin/settings/media/GalleryManager';
 import FeaturedServicesManager from '@/components/admin/settings/site/FeaturedServicesManager';
+import ContactHoursManager from '@/components/admin/settings/site/ContactHoursManager';
 import { BannerImage, GalleryImage } from '@/types/settings';
 
 const AdminSiteSettings: React.FC = () => {
@@ -21,7 +22,7 @@ const AdminSiteSettings: React.FC = () => {
         {/* Tabs */}
         <div className="flex-1 overflow-auto p-3 sm:p-4 lg:p-6">
           <Tabs defaultValue="banners" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-4 sm:mb-6 bg-amber-900/10 border border-amber-200 p-1.5 gap-1 rounded-xl">
+            <TabsList className="grid w-full grid-cols-4 mb-4 sm:mb-6 bg-amber-900/10 border border-amber-200 p-1.5 gap-1 rounded-xl">
               <TabsTrigger 
                 value="banners" 
                 className="font-raleway font-semibold py-2 sm:py-2.5 lg:py-3 px-2 sm:px-3 rounded-lg border border-rose-200 bg-rose-50 text-rose-700 data-[state=active]:bg-rose-100 data-[state=active]:text-rose-800 data-[state=active]:shadow-md data-[state=active]:ring-2 data-[state=active]:ring-rose-300 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
@@ -42,6 +43,13 @@ const AdminSiteSettings: React.FC = () => {
               >
                 <Star className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 <span>Destaque</span>
+              </TabsTrigger>
+              <TabsTrigger 
+                value="contact"
+                className="font-raleway font-semibold py-2 sm:py-2.5 lg:py-3 px-2 sm:px-3 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 data-[state=active]:bg-emerald-100 data-[state=active]:text-emerald-800 data-[state=active]:shadow-md data-[state=active]:ring-2 data-[state=active]:ring-emerald-300 flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-2 text-[10px] sm:text-sm"
+              >
+                <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                <span>Horários</span>
               </TabsTrigger>
             </TabsList>
 
