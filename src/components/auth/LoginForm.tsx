@@ -241,7 +241,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ loading, setLoading }) => {
             type="text"
             inputMode="text"
             autoComplete="username"
-            placeholder="Ex: 1002"
+            placeholder=""
             value={identifier}
             onChange={(e) => setIdentifier(e.target.value)}
             className="pl-12 h-14 bg-white border-gray-300 text-gray-900 placeholder-gray-400 focus:border-urbana-gold focus:ring-2 focus:ring-urbana-gold/20 rounded-xl transition-all"
