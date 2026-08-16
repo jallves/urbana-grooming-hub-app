@@ -19,48 +19,25 @@ const ClientManagement: React.FC = () => {
   const { data: clients, isLoading, error, refetch } = useQuery({
     queryKey: ['painel-clients-with-last-appointment'],
     queryFn: async () => {
-      // Fetch clients
-      const { data: clientsData, error: clientsError } = await supabase
-        .from('painel_clientes')
-        .select('*')
-        .order('nome');
-      
-      if (clientsError) throw new Error(clientsError.message);
-      if (!clientsData || clientsData.length === 0) return [];
-
-      // Fetch last appointment for each client
-      const clientIds = clientsData.map(c => c.id);
-      const { data: appointments } = await supabase
-        .from('painel_agendamentos')
-        .select('cliente_id, data, hora, status')
-        .in('cliente_id', clientIds)
-        .order('data', { ascending: false })
-        .order('hora', { ascending: false });
-
-      // Map last appointment per client
-      const lastAppointmentMap = new Map<string, { data: string; hora: string; status: string | null }>();
-      if (appointments) {
-        for (const apt of appointments) {
-          if (apt.cliente_id && !lastAppointmentMap.has(apt.cliente_id)) {
-            lastAppointmentMap.set(apt.cliente_id, { data: apt.data, hora: apt.hora, status: apt.status });
-          }
-        }
-      }
-
-      return clientsData.map(client => ({
-        ...client,
-        ultimo_agendamento: lastAppointmentMap.get(client.id) || null,
-      }));
+      // Consulta única e agregada no servidor (rápida, sem N+1 nem URLs gigantes)
+      const { data, error: rpcError } = await (supabase as any).rpc('admin_clients_overview');
+      if (rpcError) throw new Error(rpcError.message);
+      return (data || []) as any[];
     },
-    staleTime: 30000,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    retry: 1,
   });
 
-  if (error) {
-    toast.error('Erro ao carregar clientes', {
-      description: (error as Error).message
-    });
-  }
+  useEffect(() => {
+    if (error) {
+      toast.error('Erro ao carregar clientes', {
+        description: (error as Error).message,
+      });
+    }
+  }, [error]);
 
   return (
     <div className="w-full max-w-none h-full px-4 sm:px-6 lg:px-8 py-6 space-y-4 sm:space-y-6">
