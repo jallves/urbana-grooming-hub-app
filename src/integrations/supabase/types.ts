@@ -2490,6 +2490,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_clients_overview: {
+        Args: never
+        Returns: {
+          created_at: string
+          data_nascimento: string
+          email: string
+          id: string
+          nome: string
+          telefone: string
+          ultimo_agendamento: Json
+          updated_at: string
+          whatsapp: string
+        }[]
+      }
       apply_coupon_to_appointment: {
         Args: { p_appointment_id: string; p_coupon_code: string }
         Returns: Json
