@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase, TOTEM_TOKEN_STORAGE_KEY } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { sessionManager } from '@/hooks/useSessionManager';
 import { useForceLogoutListener } from '@/hooks/useForceLogoutListener';
@@ -43,8 +43,9 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
   const checkAuth = () => {
     const totemToken = localStorage.getItem('totem_auth_token');
     const totemExpiry = localStorage.getItem('totem_auth_expiry');
-    
-    if (totemToken && totemExpiry) {
+    const sessionToken = localStorage.getItem(TOTEM_TOKEN_STORAGE_KEY);
+
+    if (totemToken && totemExpiry && sessionToken) {
       const expiryTime = new Date(totemExpiry).getTime();
       const now = new Date().getTime();
       
@@ -52,39 +53,33 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
         setIsAuthenticated(true);
         setTotemUserId(totemToken);
       } else {
+        localStorage.removeItem(TOTEM_TOKEN_STORAGE_KEY);
         localStorage.removeItem('totem_auth_token');
         localStorage.removeItem('totem_auth_expiry');
       }
+    } else if (totemToken || sessionToken) {
+      // Sessão antiga (antes do token de servidor): força novo login.
+      localStorage.removeItem(TOTEM_TOKEN_STORAGE_KEY);
+      localStorage.removeItem('totem_auth_token');
+      localStorage.removeItem('totem_auth_expiry');
     }
     
     setLoading(false);
   };
 
-  const hashPin = async (pin: string): Promise<string> => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(pin);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  };
-
   const login = async (pin: string): Promise<boolean> => {
     console.log('🔐 [TotemAuth] Iniciando login...');
     try {
-      const pinHash = await hashPin(pin);
-      console.log('🔐 [TotemAuth] PIN hash gerado');
-      
-      const { data, error } = await supabase
-        .from('totem_auth')
-        .select('*')
-        .eq('pin_hash', pinHash)
-        .eq('is_active', true)
-        .single();
+      // O PIN nunca é validado no navegador: quem confere é o servidor,
+      // que devolve um token de sessão assinado para o totem.
+      const { data, error } = await supabase.functions.invoke('totem-login', {
+        body: { pin },
+      });
 
-      console.log('🔐 [TotemAuth] Resposta do Supabase:', { hasData: !!data, error });
+      console.log('🔐 [TotemAuth] Resposta do servidor:', { ok: !!data?.success });
 
-      if (error || !data) {
-        console.error('❌ [TotemAuth] Falha na autenticação:', error);
+      if (error || !data?.success || !data?.token) {
+        console.error('❌ [TotemAuth] Falha na autenticação');
         toast({
           title: "PIN Inválido",
           description: "O PIN digitado está incorreto",
@@ -94,35 +89,20 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
       }
 
       console.log('✅ [TotemAuth] Autenticação bem-sucedida');
-      
-      // Salvar token com expiração de 8 horas
-      const expiryTime = new Date();
-      expiryTime.setHours(expiryTime.getHours() + 8);
-      
+
+      const expiryTime = data.expiresAt
+        ? new Date(data.expiresAt)
+        : new Date(Date.now() + 8 * 60 * 60 * 1000);
+
       console.log('🔐 [TotemAuth] Salvando token no localStorage...');
-      localStorage.setItem('totem_auth_token', data.id);
+      localStorage.setItem(TOTEM_TOKEN_STORAGE_KEY, data.token);
+      localStorage.setItem('totem_auth_token', data.totemAuthId);
       localStorage.setItem('totem_auth_expiry', expiryTime.toISOString());
-      
-      console.log('🔐 [TotemAuth] Definindo isAuthenticated = true');
-      setIsAuthenticated(true);
-      setTotemUserId(data.id);
-      
-      console.log('🔐 [TotemAuth] Mostrando toast de sucesso');
-      toast({
-        title: "Login realizado",
-        description: "Bem-vindo ao Totem",
-      });
-      
-      // Criar sessão no sistema de controle (não bloqueante - não interrompe o login se falhar)
-      console.log('🔐 [TotemAuth] Criando sessão (não bloqueante)...');
-      sessionManager.createSession({
-        userId: data.id,
-        userType: 'totem',
-        userName: 'Totem',
-        expiresInHours: 8,
-      }).catch(err => console.warn('[Totem] ⚠️ Erro ao criar sessão (não crítico):', err));
-      
-      console.log('✅ [TotemAuth] Login completo!');
+
+      // O token do totem é enviado como cabeçalho fixo do cliente Supabase,
+      // que é criado no carregamento da página. Recarregamos para que todas
+      // as telas do totem já saiam autorizadas.
+      window.location.replace('/totem/welcome');
       return true;
     } catch (error) {
       console.error('❌ [TotemAuth] Erro CRÍTICO no login:', error);
@@ -137,18 +117,28 @@ export const TotemAuthProvider: React.FC<TotemAuthProviderProps> = ({ children }
 
   const logout = (): void => {
     console.log('[TotemAuthContext] 🚪 Iniciando logout IMEDIATO do totem...');
-    
+
+    const token = localStorage.getItem(TOTEM_TOKEN_STORAGE_KEY);
+
     // 1. Limpar estado IMEDIATAMENTE
     setIsAuthenticated(false);
     setTotemUserId(null);
     setLoading(false);
-    
+
+    // 2. Invalidar o token no servidor (não bloqueante)
+    if (token) {
+      supabase.functions
+        .invoke('totem-logout', { body: { token } })
+        .catch(err => console.warn('[TotemAuthContext] ⚠️ Erro ao invalidar token:', err));
+    }
+
     // 2. Invalidar sessão (não bloqueante - não interrompe o logout se falhar)
     sessionManager.invalidateSession('totem').catch(err => 
       console.warn('[TotemAuthContext] ⚠️ Erro ao invalidar sessão (não crítico):', err)
     );
-    
+
     // 3. Limpar localStorage
+    localStorage.removeItem(TOTEM_TOKEN_STORAGE_KEY);
     localStorage.removeItem('totem_auth_token');
     localStorage.removeItem('totem_auth_expiry');
     localStorage.removeItem('totem_last_route');
