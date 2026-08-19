@@ -182,8 +182,15 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
   useEffect(() => {
     if (!open) return;
     const load = async () => {
+      // O serviço principal também fica disponível (cliente pode repetir o
+      // mesmo serviço, ex.: pai + filho), exibido sempre em primeiro lugar.
+      const orderMain = (list: ClientExtraService[]) => {
+        const main = list.find((s) => s.id === mainServiceId);
+        const rest = list.filter((s) => s.id !== mainServiceId);
+        return main ? [main, ...rest] : rest;
+      };
       if (extrasCatalogCache) {
-        setAvailableServices(extrasCatalogCache.services.filter((s) => s.id !== mainServiceId));
+        setAvailableServices(orderMain(extrasCatalogCache.services));
         setAvailableProducts(extrasCatalogCache.products);
         setLoading(false);
         return;
@@ -192,7 +199,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
       setLoading(true);
       try {
         const catalog = await preloadClientBookingExtras();
-        setAvailableServices(catalog.services.filter((s) => s.id !== mainServiceId));
+        setAvailableServices(orderMain(catalog.services));
         setAvailableProducts(catalog.products);
       } catch (e) {
         console.error("[ClientBookingExtrasModal] Erro:", e);
