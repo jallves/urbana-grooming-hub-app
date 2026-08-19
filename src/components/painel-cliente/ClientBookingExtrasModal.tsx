@@ -361,6 +361,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                   availableServices.map((service, index) => {
                     const qty = serviceQty(service.id);
                     const selected = qty > 0;
+                    const isMain = service.id === mainServiceId;
                     return (
                       <div
                         key={service.id}
@@ -389,6 +390,12 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                         {selected && (
                           <div className="absolute top-2 left-2 min-w-7 h-7 px-2 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center text-xs font-black shadow-lg">
                             {qty}x
+                          </div>
+                        )}
+
+                        {isMain && (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-urbana-black/85 border border-urbana-gold/50 text-urbana-gold text-[9px] font-bold uppercase tracking-wide shadow">
+                            Repetir
                           </div>
                         )}
 
