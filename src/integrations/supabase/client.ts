@@ -18,7 +18,16 @@ const readTotemToken = (): string => {
   }
 };
 
-const totemToken = readTotemToken();
+// Injected dynamically on every request so a token created after page load
+// (totem PIN login) is used immediately, without requiring a reload.
+const totemFetch: typeof fetch = (input, init) => {
+  const token = readTotemToken();
+  if (!token) return fetch(input, init);
+
+  const headers = new Headers(init?.headers || (input instanceof Request ? input.headers : undefined));
+  headers.set('x-totem-token', token);
+  return fetch(input, { ...init, headers });
+};
 
 // Import the supabase client like this:
 // import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +39,6 @@ export const supabase = createClient<Database>(SUPABASE_URL, SUPABASE_PUBLISHABL
     autoRefreshToken: true,
   },
   global: {
-    headers: totemToken ? { 'x-totem-token': totemToken } : {},
+    fetch: totemFetch,
   },
 });
