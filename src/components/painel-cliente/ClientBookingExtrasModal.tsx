@@ -182,8 +182,15 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
   useEffect(() => {
     if (!open) return;
     const load = async () => {
+      // O serviço principal também fica disponível (cliente pode repetir o
+      // mesmo serviço, ex.: pai + filho), exibido sempre em primeiro lugar.
+      const orderMain = (list: ClientExtraService[]) => {
+        const main = list.find((s) => s.id === mainServiceId);
+        const rest = list.filter((s) => s.id !== mainServiceId);
+        return main ? [main, ...rest] : rest;
+      };
       if (extrasCatalogCache) {
-        setAvailableServices(extrasCatalogCache.services.filter((s) => s.id !== mainServiceId));
+        setAvailableServices(orderMain(extrasCatalogCache.services));
         setAvailableProducts(extrasCatalogCache.products);
         setLoading(false);
         return;
@@ -192,7 +199,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
       setLoading(true);
       try {
         const catalog = await preloadClientBookingExtras();
-        setAvailableServices(catalog.services.filter((s) => s.id !== mainServiceId));
+        setAvailableServices(orderMain(catalog.services));
         setAvailableProducts(catalog.products);
       } catch (e) {
         console.error("[ClientBookingExtrasModal] Erro:", e);
@@ -354,6 +361,7 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                   availableServices.map((service, index) => {
                     const qty = serviceQty(service.id);
                     const selected = qty > 0;
+                    const isMain = service.id === mainServiceId;
                     return (
                       <div
                         key={service.id}
@@ -382,6 +390,12 @@ const ClientBookingExtrasModal: React.FC<ClientBookingExtrasModalProps> = ({
                         {selected && (
                           <div className="absolute top-2 left-2 min-w-7 h-7 px-2 rounded-full bg-urbana-gold text-urbana-black flex items-center justify-center text-xs font-black shadow-lg">
                             {qty}x
+                          </div>
+                        )}
+
+                        {isMain && (
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-urbana-black/85 border border-urbana-gold/50 text-urbana-gold text-[9px] font-bold uppercase tracking-wide shadow">
+                            Repetir
                           </div>
                         )}
 

@@ -1403,7 +1403,9 @@ const PainelClienteNovoAgendamento: React.FC = () => {
 
                         {/* Itens do pedido */}
                         {(() => {
-                          const mainQty = (selectedService && serviceQuantities[selectedService.id]) || 1;
+                          // O serviço principal conta sempre 1x — as repetições
+                          // do mesmo serviço ficam registradas em extraServices.
+                          const mainQty = 1;
                           const mainUnit = selectedService?.preco || 0;
                           const mainSubtotal = mainUnit * mainQty;
                           const extrasSubtotal = extraServices.reduce((s, x) => s + x.preco * (x.quantidade || 1), 0);
