@@ -42,10 +42,14 @@ export const PushPermissionBanner: React.FC<Props> = ({
     if (activationError === 'no-vapid-key') return 'As chaves de notificação ainda não estão disponíveis.';
     if (activationError === 'backend-error' || activationError === 'db-error') return 'Não foi possível salvar este aparelho. Tente novamente.';
     if (activationError === 'no-sw') return 'Não foi possível preparar o telefone para notificações.';
+    if (activationError === 'subscribe-failed') return 'O navegador recusou a assinatura de notificações. Feche e abra o app e toque em Ativar novamente.';
+    if (activationError === 'unexpected-error') return 'Falha inesperada ao ativar. Toque em Ativar para tentar de novo.';
+    if (activationError === 'no-keys') return 'O aparelho não gerou as chaves de notificação. Tente novamente.';
     if (activationError === 'unsupported') return 'Este navegador não suporta notificações externas por PWA.';
     if (activationError === 'denied') return 'As notificações estão bloqueadas. Ative nas configurações do navegador ou do app instalado.';
     return null;
   }, [activationError]);
+
 
   useEffect(() => {
     if (!isPushSupported()) return;
