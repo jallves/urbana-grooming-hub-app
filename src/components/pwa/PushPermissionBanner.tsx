@@ -109,13 +109,14 @@ export const PushPermissionBanner: React.FC<Props> = ({
         toast.success('🔔 Notificações ativadas!');
         setVisible(false);
       } else if (res.reason === 'denied') {
+        setActivationError('denied');
         toast.error('Permissão negada. Ative nas configurações do navegador.');
-        setVisible(false);
       } else if (res.reason === 'ios-not-installed') {
+        setIosHint(true);
         toast.info('Adicione o app à Tela de Início primeiro.');
       } else if (res.reason === 'unsupported') {
+        setActivationError('unsupported');
         toast.error('Este navegador não suporta notificações push.');
-        setVisible(false);
       } else if (res.reason === 'not-authenticated') {
         setActivationError(res.reason);
         toast.error('Entre novamente para ativar as notificações.');
@@ -123,10 +124,15 @@ export const PushPermissionBanner: React.FC<Props> = ({
         setActivationError(res.reason || 'db-error');
         toast.error('Não foi possível ativar. Tente novamente.');
       }
+    } catch (e) {
+      console.warn('[push] erro ao ativar notificações', e);
+      setActivationError('unexpected-error');
+      toast.error('Falha ao ativar notificações. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleDismiss = () => {
     try { localStorage.setItem(storageKey, String(Date.now())); } catch {}
