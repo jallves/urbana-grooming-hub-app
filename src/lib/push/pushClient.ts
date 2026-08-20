@@ -154,36 +154,39 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
     const auth = json.keys?.auth;
     if (!endpoint || !p256dh || !auth) return { ok: false, reason: 'no-keys' };
 
+    const record = {
+      endpoint,
+      p256dh,
+      auth,
+      user_id,
+      role: opts.role,
+      cliente_id: opts.cliente_id ?? null,
+      barbeiro_id: opts.barbeiro_id ?? null,
+      staff_id: opts.staff_id ?? null,
+      user_agent: navigator.userAgent,
+      active: true,
+    };
 
-  const record = {
-    endpoint,
-    p256dh,
-    auth,
-    user_id,
-    role: opts.role,
-    cliente_id: opts.cliente_id ?? null,
-    barbeiro_id: opts.barbeiro_id ?? null,
-    staff_id: opts.staff_id ?? null,
-    user_agent: navigator.userAgent,
-    active: true,
-  };
+    // Upsert por endpoint via Edge Function: valida o usuário e evita conflito de RLS
+    // quando o mesmo aparelho já foi usado por outro perfil.
+    const { data, error } = await supabase.functions.invoke('register-push-subscription', {
+      body: record,
+    });
+    if (error) {
+      console.warn('[push] falha ao salvar subscription', error);
+      return { ok: false, reason: 'backend-error' };
+    }
 
-  // Upsert por endpoint via Edge Function: valida o usuário e evita conflito de RLS
-  // quando o mesmo aparelho já foi usado por outro perfil.
-  const { data, error } = await supabase.functions.invoke('register-push-subscription', {
-    body: record,
-  });
-  if (error) {
-    console.warn('[push] falha ao salvar subscription', error);
-    return { ok: false, reason: 'backend-error' };
+    if (!(data as any)?.success) {
+      console.warn('[push] subscription recusada', data);
+      return { ok: false, reason: (data as any)?.errorCode || 'db-error' };
+    }
+
+    return { ok: true };
+  } catch (e) {
+    console.warn('[push] erro inesperado ao ativar notificações', e);
+    return { ok: false, reason: 'unexpected-error' };
   }
-
-  if (!(data as any)?.success) {
-    console.warn('[push] subscription recusada', data);
-    return { ok: false, reason: (data as any)?.errorCode || 'db-error' };
-  }
-
-  return { ok: true };
 }
 
 export async function unsubscribeFromPush(): Promise<void> {
