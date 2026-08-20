@@ -42,10 +42,14 @@ export const PushPermissionBanner: React.FC<Props> = ({
     if (activationError === 'no-vapid-key') return 'As chaves de notificação ainda não estão disponíveis.';
     if (activationError === 'backend-error' || activationError === 'db-error') return 'Não foi possível salvar este aparelho. Tente novamente.';
     if (activationError === 'no-sw') return 'Não foi possível preparar o telefone para notificações.';
+    if (activationError === 'subscribe-failed') return 'O navegador recusou a assinatura de notificações. Feche e abra o app e toque em Ativar novamente.';
+    if (activationError === 'unexpected-error') return 'Falha inesperada ao ativar. Toque em Ativar para tentar de novo.';
+    if (activationError === 'no-keys') return 'O aparelho não gerou as chaves de notificação. Tente novamente.';
     if (activationError === 'unsupported') return 'Este navegador não suporta notificações externas por PWA.';
     if (activationError === 'denied') return 'As notificações estão bloqueadas. Ative nas configurações do navegador ou do app instalado.';
     return null;
   }, [activationError]);
+
 
   useEffect(() => {
     if (!isPushSupported()) return;
@@ -105,13 +109,14 @@ export const PushPermissionBanner: React.FC<Props> = ({
         toast.success('🔔 Notificações ativadas!');
         setVisible(false);
       } else if (res.reason === 'denied') {
+        setActivationError('denied');
         toast.error('Permissão negada. Ative nas configurações do navegador.');
-        setVisible(false);
       } else if (res.reason === 'ios-not-installed') {
+        setIosHint(true);
         toast.info('Adicione o app à Tela de Início primeiro.');
       } else if (res.reason === 'unsupported') {
+        setActivationError('unsupported');
         toast.error('Este navegador não suporta notificações push.');
-        setVisible(false);
       } else if (res.reason === 'not-authenticated') {
         setActivationError(res.reason);
         toast.error('Entre novamente para ativar as notificações.');
@@ -119,10 +124,15 @@ export const PushPermissionBanner: React.FC<Props> = ({
         setActivationError(res.reason || 'db-error');
         toast.error('Não foi possível ativar. Tente novamente.');
       }
+    } catch (e) {
+      console.warn('[push] erro ao ativar notificações', e);
+      setActivationError('unexpected-error');
+      toast.error('Falha ao ativar notificações. Tente novamente.');
     } finally {
       setLoading(false);
     }
   };
+
 
   const handleDismiss = () => {
     try { localStorage.setItem(storageKey, String(Date.now())); } catch {}
