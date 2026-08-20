@@ -66,42 +66,94 @@ export interface SubscribeOptions {
   staff_id?: string | null;
 }
 
+function keysMatch(sub: PushSubscription, publicKey: string): boolean {
+  try {
+    const applied = sub.options?.applicationServerKey;
+    if (!applied) return false;
+    const bytes = new Uint8Array(applied as ArrayBuffer);
+    const expected = urlBase64ToUint8Array(publicKey);
+    if (bytes.length !== expected.length) return false;
+    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== expected[i]) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boolean; reason?: string }> {
-  if (!isPushSupported()) return { ok: false, reason: 'unsupported' };
+  try {
+    if (!isPushSupported()) return { ok: false, reason: 'unsupported' };
 
-  // iOS PWA só recebe push instalado na tela inicial
-  if (isIOS() && !isStandalonePWA()) {
-    return { ok: false, reason: 'ios-not-installed' };
-  }
+    // iOS PWA só recebe push instalado na tela inicial
+    if (isIOS() && !isStandalonePWA()) {
+      return { ok: false, reason: 'ios-not-installed' };
+    }
 
-  const permission = Notification.permission === 'granted'
-    ? 'granted'
-    : await Notification.requestPermission();
-  if (permission !== 'granted') return { ok: false, reason: 'denied' };
+    let permission: NotificationPermission = Notification.permission;
+    if (permission !== 'granted') {
+      try {
+        permission = await Notification.requestPermission();
+      } catch {
+        // Safari antigo usa callback
+        permission = await new Promise<NotificationPermission>((resolve) => {
+          try { Notification.requestPermission(resolve); } catch { resolve('denied'); }
+        });
+      }
+    }
+    if (permission !== 'granted') return { ok: false, reason: 'denied' };
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  const user_id = userData?.user?.id || null;
-  if (userError || !user_id) return { ok: false, reason: 'not-authenticated' };
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData?.user?.id || null;
+    if (!user_id) return { ok: false, reason: 'not-authenticated' };
 
-  const registration = await registerPushServiceWorker();
-  if (!registration) return { ok: false, reason: 'no-sw' };
+    const registration = await registerPushServiceWorker();
+    if (!registration) return { ok: false, reason: 'no-sw' };
 
-  const publicKey = await getVapidPublicKey();
-  if (!publicKey) return { ok: false, reason: 'no-vapid-key' };
+    let publicKey: string;
+    try {
+      publicKey = await getVapidPublicKey();
+    } catch (e) {
+      console.warn('[push] falha ao obter VAPID key', e);
+      return { ok: false, reason: 'no-vapid-key' };
+    }
+    if (!publicKey) return { ok: false, reason: 'no-vapid-key' };
 
-  let subscription = await registration.pushManager.getSubscription();
-  if (!subscription) {
-    subscription = await registration.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
-    });
-  }
+    let subscription = await registration.pushManager.getSubscription();
 
-  const json = subscription.toJSON();
-  const endpoint = json.endpoint || subscription.endpoint;
-  const p256dh = json.keys?.p256dh;
-  const auth = json.keys?.auth;
-  if (!endpoint || !p256dh || !auth) return { ok: false, reason: 'no-keys' };
+    // Assinatura antiga criada com outra chave VAPID nunca recebe push: recriar
+    if (subscription && !keysMatch(subscription, publicKey)) {
+      try { await subscription.unsubscribe(); } catch { /* ignore */ }
+      subscription = null;
+    }
+
+    if (!subscription) {
+      try {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
+        });
+      } catch (e) {
+        console.warn('[push] subscribe falhou, tentando limpar assinatura antiga', e);
+        try {
+          const stale = await registration.pushManager.getSubscription();
+          if (stale) await stale.unsubscribe();
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(publicKey).buffer as ArrayBuffer,
+          });
+        } catch (e2) {
+          console.warn('[push] subscribe falhou definitivamente', e2);
+          return { ok: false, reason: 'subscribe-failed' };
+        }
+      }
+    }
+
+    const json = subscription.toJSON();
+    const endpoint = json.endpoint || subscription.endpoint;
+    const p256dh = json.keys?.p256dh;
+    const auth = json.keys?.auth;
+    if (!endpoint || !p256dh || !auth) return { ok: false, reason: 'no-keys' };
+
 
   const record = {
     endpoint,
