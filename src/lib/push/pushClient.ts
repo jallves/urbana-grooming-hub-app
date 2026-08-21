@@ -66,19 +66,26 @@ export interface SubscribeOptions {
   staff_id?: string | null;
 }
 
-function keysMatch(sub: PushSubscription, publicKey: string): boolean {
+/**
+ * Compara a chave VAPID da assinatura existente com a atual.
+ * Retorna 'unknown' quando o navegador não expõe `applicationServerKey`
+ * (Safari/alguns PWAs) — nesse caso a assinatura NÃO deve ser descartada,
+ * senão o usuário perde uma assinatura válida e a reinscrição pode falhar.
+ */
+function compareKeys(sub: PushSubscription, publicKey: string): 'match' | 'mismatch' | 'unknown' {
   try {
     const applied = sub.options?.applicationServerKey;
-    if (!applied) return false;
+    if (!applied) return 'unknown';
     const bytes = new Uint8Array(applied as ArrayBuffer);
     const expected = urlBase64ToUint8Array(publicKey);
-    if (bytes.length !== expected.length) return false;
-    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== expected[i]) return false;
-    return true;
+    if (bytes.length !== expected.length) return 'mismatch';
+    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== expected[i]) return 'mismatch';
+    return 'match';
   } catch {
-    return false;
+    return 'unknown';
   }
 }
+
 
 export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boolean; reason?: string }> {
   try {
@@ -119,9 +126,10 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
     if (!publicKey) return { ok: false, reason: 'no-vapid-key' };
 
     let subscription = await registration.pushManager.getSubscription();
+    const previous = subscription;
 
-    // Assinatura antiga criada com outra chave VAPID nunca recebe push: recriar
-    if (subscription && !keysMatch(subscription, publicKey)) {
+    // Só descarta a assinatura quando temos CERTEZA de que a chave VAPID mudou.
+    if (subscription && compareKeys(subscription, publicKey) === 'mismatch') {
       try { await subscription.unsubscribe(); } catch { /* ignore */ }
       subscription = null;
     }
@@ -143,10 +151,14 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
           });
         } catch (e2) {
           console.warn('[push] subscribe falhou definitivamente', e2);
-          return { ok: false, reason: 'subscribe-failed' };
+          // Fallback: se ainda existir uma assinatura válida no aparelho, usa ela
+          const fallback = (await registration.pushManager.getSubscription()) || previous;
+          if (!fallback) return { ok: false, reason: 'subscribe-failed' };
+          subscription = fallback;
         }
       }
     }
+
 
     const json = subscription.toJSON();
     const endpoint = json.endpoint || subscription.endpoint;
