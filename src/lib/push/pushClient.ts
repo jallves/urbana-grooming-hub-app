@@ -66,19 +66,26 @@ export interface SubscribeOptions {
   staff_id?: string | null;
 }
 
-function keysMatch(sub: PushSubscription, publicKey: string): boolean {
+/**
+ * Compara a chave VAPID da assinatura existente com a atual.
+ * Retorna 'unknown' quando o navegador não expõe `applicationServerKey`
+ * (Safari/alguns PWAs) — nesse caso a assinatura NÃO deve ser descartada,
+ * senão o usuário perde uma assinatura válida e a reinscrição pode falhar.
+ */
+function compareKeys(sub: PushSubscription, publicKey: string): 'match' | 'mismatch' | 'unknown' {
   try {
     const applied = sub.options?.applicationServerKey;
-    if (!applied) return false;
+    if (!applied) return 'unknown';
     const bytes = new Uint8Array(applied as ArrayBuffer);
     const expected = urlBase64ToUint8Array(publicKey);
-    if (bytes.length !== expected.length) return false;
-    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== expected[i]) return false;
-    return true;
+    if (bytes.length !== expected.length) return 'mismatch';
+    for (let i = 0; i < bytes.length; i++) if (bytes[i] !== expected[i]) return 'mismatch';
+    return 'match';
   } catch {
-    return false;
+    return 'unknown';
   }
 }
+
 
 export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boolean; reason?: string }> {
   try {
