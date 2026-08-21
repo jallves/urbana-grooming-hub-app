@@ -2509,6 +2509,10 @@ export type Database = {
         Returns: Json
       }
       apply_vale_to_commissions: { Args: { p_vale_id: string }; Returns: Json }
+      appointment_total_duration: {
+        Args: { p_extras: Json; p_servico_id: string }
+        Returns: number
+      }
       array_to_comma_string: { Args: { arr: string[] }; Returns: string }
       cancel_appointment_by_client: {
         Args: { p_appointment_id: string; p_client_id: string }
