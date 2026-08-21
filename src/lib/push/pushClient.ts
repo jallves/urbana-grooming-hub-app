@@ -126,9 +126,10 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
     if (!publicKey) return { ok: false, reason: 'no-vapid-key' };
 
     let subscription = await registration.pushManager.getSubscription();
+    const previous = subscription;
 
-    // Assinatura antiga criada com outra chave VAPID nunca recebe push: recriar
-    if (subscription && !keysMatch(subscription, publicKey)) {
+    // Só descarta a assinatura quando temos CERTEZA de que a chave VAPID mudou.
+    if (subscription && compareKeys(subscription, publicKey) === 'mismatch') {
       try { await subscription.unsubscribe(); } catch { /* ignore */ }
       subscription = null;
     }
@@ -150,10 +151,14 @@ export async function subscribeToPush(opts: SubscribeOptions): Promise<{ ok: boo
           });
         } catch (e2) {
           console.warn('[push] subscribe falhou definitivamente', e2);
-          return { ok: false, reason: 'subscribe-failed' };
+          // Fallback: se ainda existir uma assinatura válida no aparelho, usa ela
+          const fallback = (await registration.pushManager.getSubscription()) || previous;
+          if (!fallback) return { ok: false, reason: 'subscribe-failed' };
+          subscription = fallback;
         }
       }
     }
+
 
     const json = subscription.toJSON();
     const endpoint = json.endpoint || subscription.endpoint;
