@@ -105,7 +105,8 @@ Deno.serve(async (req) => {
       return json({ success: false, error: 'Acesso negado. Favor verificar usuário e senha.' }, 401);
     }
 
-    // Regra definitiva: master somente por e-mail; todos os demais somente por matrícula.
+    // Regra: e-mail é exclusivo do admin master. Matrícula vale para todos
+    // (inclusive o master, caso ele possua uma matrícula cadastrada).
     const { data: roles } = await admin
       .from('user_roles')
       .select('role')
@@ -113,19 +114,16 @@ Deno.serve(async (req) => {
 
     const isMaster = (roles || []).some((r: { role: string }) => r.role === 'master');
 
-    if (code && isMaster) {
+    if (emailInput && !isMaster) {
+      console.warn('[staff-login] login por e-mail negado: usuário não é master');
       return json(
         { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
         403
       );
     }
 
-    if (emailInput && !isMaster) {
-      return json(
-        { success: false, error: 'Acesso negado. Favor verificar usuário e senha.' },
-        403
-      );
-    }
+    if (isMaster) userType = 'admin';
+
 
     return json({
       success: true,
