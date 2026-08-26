@@ -234,7 +234,7 @@ export default function PainelClienteAgendamentos() {
                     </div>
                     <div className="flex items-center text-urbana-light/80">
                       <User className="h-4 w-4 mr-2 text-urbana-gold" />
-                      <span className="text-sm break-words">{agendamento.painel_barbeiros.nome}</span>
+                      <span className="text-sm break-words">{agendamento.painel_barbeiros?.nome || 'Barbeiro'}</span>
                     </div>
                     {Array.isArray(agendamento.servicos_extras) && agendamento.servicos_extras.length > 0 && (() => {
                       const grouped = agendamento.servicos_extras.reduce<Record<string, { nome: string; preco: number; qty: number }>>((acc, e) => {

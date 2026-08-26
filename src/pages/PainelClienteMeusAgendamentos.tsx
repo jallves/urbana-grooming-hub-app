@@ -445,7 +445,7 @@ export default function PainelClienteMeusAgendamentos() {
                             </div>
                             <div className="flex items-center text-gray-300 group-hover:text-white transition-colors">
                               <User className="h-5 w-5 mr-3 text-urbana-gold flex-shrink-0" />
-                              <span className="text-base font-medium">{agendamento.painel_barbeiros.nome}</span>
+                              <span className="text-base font-medium">{agendamento.painel_barbeiros?.nome || 'Barbeiro'}</span>
                             </div>
                             {extras.length > 0 && (
                               <div className="rounded-xl border border-urbana-gold/20 bg-urbana-gold/5 p-3 space-y-2">
@@ -571,7 +571,7 @@ export default function PainelClienteMeusAgendamentos() {
                   </div>
                   <div className="flex items-center gap-2">
                     <User className="h-4 w-4 text-urbana-gold" />
-                    <span>{cancellingAgendamento.painel_barbeiros.nome}</span>
+                    <span>{cancellingAgendamento.painel_barbeiros?.nome || 'Barbeiro'}</span>
                   </div>
                 </div>
               )}
