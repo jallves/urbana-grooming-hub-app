@@ -261,7 +261,7 @@ export default function PainelClienteAgendamentos() {
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                       <div className="flex flex-col">
                         {(() => {
-                          const basePrice = Number(agendamento.painel_servicos.preco || 0);
+                          const basePrice = Number(agendamento.painel_servicos?.preco || 0);
                           const extrasSum = Array.isArray(agendamento.servicos_extras)
                             ? agendamento.servicos_extras.reduce((s, e: any) => s + (Number(e?.preco) || 0), 0)
                             : 0;

@@ -468,13 +468,13 @@ export default function PainelClienteMeusAgendamentos() {
                             <div className="flex justify-between items-center mb-3">
                               <span className="text-sm text-gray-400">Valor</span>
                               <span className="text-urbana-gold font-bold text-2xl">
-                                R$ {(Number(agendamento.painel_servicos.preco || 0) + extrasTotal).toFixed(2)}
+                                R$ {(Number(agendamento.painel_servicos?.preco || 0) + extrasTotal).toFixed(2)}
                               </span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span className="text-gray-400 text-base">Duração:</span>
                               <span className="text-gray-300 text-base font-medium">
-                                {Number(agendamento.painel_servicos.duracao || 0) + extrasDuration} min
+                                {Number(agendamento.painel_servicos?.duracao || 0) + extrasDuration} min
                               </span>
                             </div>
                           </div>
