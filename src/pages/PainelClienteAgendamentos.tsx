@@ -208,7 +208,7 @@ export default function PainelClienteAgendamentos() {
                     <div className="flex justify-between items-start gap-3">
                       <CardTitle className="text-white text-base sm:text-lg flex items-center gap-2">
                         <StatusIcon className="h-5 w-5 text-urbana-gold shrink-0" />
-                        <span className="break-words">{agendamento.painel_servicos.nome}</span>
+                        <span className="break-words">{agendamento.painel_servicos?.nome || 'Serviço'}</span>
                       </CardTitle>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${

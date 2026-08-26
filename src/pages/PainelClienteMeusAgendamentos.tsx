@@ -426,7 +426,7 @@ export default function PainelClienteMeusAgendamentos() {
                         <CardHeader className="pb-6">
                           <div className="flex justify-between items-start gap-4">
                             <CardTitle className="text-white text-xl sm:text-2xl font-semibold group-hover:text-urbana-gold transition-colors truncate pr-2 flex-1">
-                              {agendamento.painel_servicos.nome}
+                              {agendamento.painel_servicos?.nome || 'Serviço'}
                             </CardTitle>
                             {getStatusBadge(agendamento.status)}
                           </div>
@@ -559,7 +559,7 @@ export default function PainelClienteMeusAgendamentos() {
                 <div className="bg-slate-800/80 rounded-xl p-4 space-y-2 border border-slate-700/50">
                   <div className="flex items-center gap-2">
                     <Scissors className="h-4 w-4 text-urbana-gold" />
-                    <span className="font-medium text-white">{cancellingAgendamento.painel_servicos.nome}</span>
+                    <span className="font-medium text-white">{cancellingAgendamento.painel_servicos?.nome || 'Serviço'}</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <Calendar className="h-4 w-4 text-urbana-gold" />

@@ -537,7 +537,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             </Label>
             <Select value={selectedServicoId} onValueChange={handleServicoChange}>
               <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder={`Manter: ${agendamento.painel_servicos.nome}`} />
+                <SelectValue placeholder={`Manter: ${agendamento.painel_servicos?.nome || 'Serviço'}`} />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {servicos.map((servico) => (

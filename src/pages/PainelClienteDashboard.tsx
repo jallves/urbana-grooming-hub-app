@@ -148,7 +148,7 @@ export default function PainelClienteDashboard() {
             data: a.data,
             hora: a.hora,
             barbeiro: a.painel_barbeiros.nome,
-            servico: a.painel_servicos.nome,
+            servico: a.painel_servicos?.nome || 'Serviço',
           })),
         });
       }
