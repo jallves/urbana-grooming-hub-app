@@ -487,7 +487,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
   const availableSlotsFiltered = availableSlots.filter(s => s.available);
   const effectiveBarbeiroId = selectedBarbeiroId || currentBarbeiroId;
   const selectedBarbeiro = barbeiros.find(b => b.id === effectiveBarbeiroId) || 
-                          { nome: agendamento.painel_barbeiros.nome };
+                          { nome: agendamento.painel_barbeiros?.nome || 'Barbeiro' };
   const effectiveServicoId = selectedServicoId || currentServicoId;
   const extrasTotal = extraServices.reduce(
     (total, extra) => total + (Number(extra.preco) || 0) * Math.max(1, extra.quantidade || 1),
@@ -516,7 +516,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             </Label>
             <Select value={selectedBarbeiroId} onValueChange={handleBarbeiroChange}>
               <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder={`Manter: ${agendamento.painel_barbeiros.nome}`} />
+                <SelectValue placeholder={`Manter: ${agendamento.painel_barbeiros?.nome || 'Barbeiro'}`} />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {barbeiros.map((barbeiro) => (
@@ -537,7 +537,7 @@ export default function EditAgendamentoModal({ isOpen, onClose, agendamento, onU
             </Label>
             <Select value={selectedServicoId} onValueChange={handleServicoChange}>
               <SelectTrigger className="h-11 bg-slate-800 border-slate-600 text-white">
-                <SelectValue placeholder={`Manter: ${agendamento.painel_servicos.nome}`} />
+                <SelectValue placeholder={`Manter: ${agendamento.painel_servicos?.nome || 'Serviço'}`} />
               </SelectTrigger>
               <SelectContent className="bg-slate-800 border-slate-600">
                 {servicos.map((servico) => (

@@ -147,8 +147,8 @@ export default function PainelClienteDashboard() {
           agendamentosFuturos: proximos.map((a) => ({
             data: a.data,
             hora: a.hora,
-            barbeiro: a.painel_barbeiros.nome,
-            servico: a.painel_servicos.nome,
+            barbeiro: a.painel_barbeiros?.nome || 'Barbeiro',
+            servico: a.painel_servicos?.nome || 'Serviço',
           })),
         });
       }

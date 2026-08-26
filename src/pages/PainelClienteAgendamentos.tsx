@@ -208,7 +208,7 @@ export default function PainelClienteAgendamentos() {
                     <div className="flex justify-between items-start gap-3">
                       <CardTitle className="text-white text-base sm:text-lg flex items-center gap-2">
                         <StatusIcon className="h-5 w-5 text-urbana-gold shrink-0" />
-                        <span className="break-words">{agendamento.painel_servicos.nome}</span>
+                        <span className="break-words">{agendamento.painel_servicos?.nome || 'Serviço'}</span>
                       </CardTitle>
                       <span
                         className={`px-3 py-1 rounded-full text-xs font-medium shrink-0 ${
@@ -234,7 +234,7 @@ export default function PainelClienteAgendamentos() {
                     </div>
                     <div className="flex items-center text-urbana-light/80">
                       <User className="h-4 w-4 mr-2 text-urbana-gold" />
-                      <span className="text-sm break-words">{agendamento.painel_barbeiros.nome}</span>
+                      <span className="text-sm break-words">{agendamento.painel_barbeiros?.nome || 'Barbeiro'}</span>
                     </div>
                     {Array.isArray(agendamento.servicos_extras) && agendamento.servicos_extras.length > 0 && (() => {
                       const grouped = agendamento.servicos_extras.reduce<Record<string, { nome: string; preco: number; qty: number }>>((acc, e) => {
@@ -261,7 +261,7 @@ export default function PainelClienteAgendamentos() {
                     <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
                       <div className="flex flex-col">
                         {(() => {
-                          const basePrice = Number(agendamento.painel_servicos.preco || 0);
+                          const basePrice = Number(agendamento.painel_servicos?.preco || 0);
                           const extrasSum = Array.isArray(agendamento.servicos_extras)
                             ? agendamento.servicos_extras.reduce((s, e: any) => s + (Number(e?.preco) || 0), 0)
                             : 0;
