@@ -224,10 +224,11 @@ export const useAppointmentValidation = () => {
 
         // Verificar conflitos
         if (available && existingAppointments) {
-          for (const appt of existingAppointments) {
-            const [apptHour, apptMin] = appt.hora.split(':').map(Number);
+          for (const appt of existingAppointments as any[]) {
+            const [apptHour, apptMin] = String(appt.hora).split(':').map(Number);
             const apptStart = apptHour * 60 + apptMin;
-            const apptDuration = (appt.servico as any)?.duracao || 60;
+            const apptDuration = appt.duracao || 60;
+
             const apptEnd = apptStart + apptDuration;
             
             const slotEnd = mins + serviceDuration;
