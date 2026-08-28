@@ -545,7 +545,10 @@ export const useUnifiedAppointmentValidation = () => {
       const workingHours = workingHoursResult.data;
       const timeOff = timeOffResult.data;
       const availabilityRecords = specificAvailabilityResult.data || [];
-      const existingAppointments = existingAppointmentsResult.data;
+      const existingAppointments = ((existingAppointmentsResult.data as any[]) || []).filter(
+        (apt) => !options?.excludeAppointmentId || apt.appointment_id !== options.excludeAppointmentId
+      );
+
 
       if (!workingHours) {
         console.log('⚠️ [getAvailableTimeSlots] Nenhum horário de trabalho para staff_id:', staffTableId, 'dia:', dayOfWeek);
