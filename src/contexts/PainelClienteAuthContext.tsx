@@ -45,7 +45,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
   const [cliente, setCliente] = useState<Cliente | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
-  const { user, isClient } = useAuth(); // Depende do AuthContext unificado
+  const { user, isClient, rolesChecked } = useAuth(); // Depende do AuthContext unificado
 
   // Carregar perfil quando houver sessão ativa (depende do AuthContext)
   useEffect(() => {
@@ -61,14 +61,18 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
         return;
       }
 
-      // IMPORTANTE: Aguardar isClient ser true antes de carregar o perfil.
-      // O AuthContext precisa completar a verificação de roles primeiro.
-      // Se isClient for false, pode significar que ainda está verificando OU que não é cliente.
+      // Aguardar a verificação de roles terminar. Se já terminou e o usuário
+      // não é cliente, encerramos o loading para não travar a tela.
       if (!isClient) {
-        console.log('[PainelClienteAuthContext] ⏳ Aguardando verificação de role... isClient:', isClient);
-        // Não setar loading=false aqui, pois ainda pode mudar
+        if (rolesChecked) {
+          if (mounted) {
+            setCliente(null);
+            setLoading(false);
+          }
+        }
         return;
       }
+
 
       try {
         console.log('[PainelClienteAuthContext] 🔍 Carregando perfil do cliente:', user.id);
