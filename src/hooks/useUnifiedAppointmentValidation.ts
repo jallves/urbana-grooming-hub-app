@@ -350,43 +350,40 @@ export const useUnifiedAppointmentValidation = () => {
     const newStart = timeToMinutes(time);
     const newEnd = newStart + serviceDuration; // Sem buffer duplo — buffer já incluído no aptEnd
 
-    let query = supabase
-      .from('painel_agendamentos')
-      .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
-      .eq('barbeiro_id', barberId)
-      .eq('data', dateStr)
-      .not('status', 'in', '("cancelado","ausente")');
-
-    if (excludeAppointmentId) {
-      query = query.neq('id', excludeAppointmentId);
-    }
-
-    const { data: appointments, error } = await query;
+    // Usa RPC SECURITY DEFINER: clientes não enxergam agendamentos de outros via RLS,
+    // então a leitura direta retornaria vazio e liberaria horários ocupados.
+    const { data: busy, error } = await supabase.rpc('barber_busy_intervals', {
+      p_barber_id: barberId,
+      p_date: dateStr,
+    });
 
     if (error) {
       console.error('Erro ao verificar conflitos:', error);
       return { valid: false, error: 'Erro ao verificar disponibilidade' };
     }
 
-    if (!appointments || appointments.length === 0) {
+    const appointments = (busy || []).filter(
+      (apt: any) => !excludeAppointmentId || apt.appointment_id !== excludeAppointmentId
+    );
+
+    if (appointments.length === 0) {
       return { valid: true };
     }
 
-    for (const apt of appointments) {
+    for (const apt of appointments as any[]) {
       const aptStart = timeToMinutes(apt.hora);
-      const mainDuration = (apt.servico as any)?.duracao || 60;
-      const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
-      const aptEnd = aptStart + aptDuration; // Sem buffer — permite slots consecutivos
+      const aptEnd = aptStart + (apt.duracao || 60);
 
       // Sobreposição: novo começa antes do existente terminar E novo termina depois do existente começar
       if (newStart < aptEnd && newEnd > aptStart) {
         const nextAvailable = minutesToTime(aptEnd);
         return {
           valid: false,
-          error: `Conflito com agendamento às ${apt.hora}. Próximo horário disponível: ${nextAvailable}`
+          error: `Conflito com agendamento às ${String(apt.hora).substring(0, 5)}. Próximo horário disponível: ${nextAvailable}`
         };
       }
     }
+
 
     return { valid: true };
   }, [formatDateLocal, timeToMinutes, minutesToTime]);
