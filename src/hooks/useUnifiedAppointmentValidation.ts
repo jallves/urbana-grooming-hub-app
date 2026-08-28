@@ -584,13 +584,12 @@ export const useUnifiedAppointmentValidation = () => {
 
       // Mapear períodos ocupados por agendamentos
       const occupiedPeriods: { start: number; end: number }[] = [];
-      existingAppointments?.forEach((apt) => {
+      existingAppointments?.forEach((apt: any) => {
         const aptStart = timeToMinutes(apt.hora);
-        const mainDuration = (apt.servico as any)?.duracao || 60;
-        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
-        const aptEnd = aptStart + aptDuration;
+        const aptEnd = aptStart + (apt.duracao || 60);
         occupiedPeriods.push({ start: aptStart, end: aptEnd });
       });
+
 
       // Gerar slots
       const slots: TimeSlot[] = [];
