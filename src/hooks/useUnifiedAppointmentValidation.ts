@@ -537,19 +537,9 @@ export const useUnifiedAppointmentValidation = () => {
           .eq('barber_id', staffTableId)
           .eq('date', dateStr),
         
-        // 4. Buscar agendamentos existentes (excluir o próprio ao editar)
-        (() => {
-          let query = supabase
-            .from('painel_agendamentos')
-            .select('hora, servicos_extras, servico:painel_servicos(duracao)')
-            .eq('barbeiro_id', barberId)
-            .eq('data', dateStr)
-            .not('status', 'in', '("cancelado","ausente")');
-          if (options?.excludeAppointmentId) {
-            query = query.neq('id', options.excludeAppointmentId);
-          }
-          return query;
-        })()
+        // 4. Buscar horários ocupados via RPC segura (RLS impede clientes de ver agendamentos alheios)
+        supabase.rpc('barber_busy_intervals', { p_barber_id: barberId, p_date: dateStr })
+
       ]);
 
       const workingHours = workingHoursResult.data;
