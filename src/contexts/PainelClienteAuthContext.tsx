@@ -162,7 +162,7 @@ export function PainelClienteAuthProvider({ children }: PainelClienteAuthProvide
     return () => {
       mounted = false;
     };
-  }, [user, isClient, toast]); // Recarregar quando user ou isClient mudar
+  }, [user, isClient, rolesChecked, toast]); // Recarregar quando user, isClient ou rolesChecked mudar
 
   const cadastrar = useCallback(async (dados: CadastroData): Promise<{ error: string | null; needsEmailConfirmation?: boolean }> => {
     try {
