@@ -105,13 +105,12 @@ export default function PainelClienteDashboard() {
       const { data: agendamentos, error } = await supabase
         .from("painel_agendamentos")
         .select(
-          `
-          *,
-          painel_barbeiros!inner(nome),
-          painel_servicos!inner(nome)
-        `
+          `id, data, hora, status,
+           painel_barbeiros(nome),
+           painel_servicos(nome)`
         )
         .eq("cliente_id", cliente.id);
+
 
       if (error) {
         console.error("Erro ao buscar estatísticas:", error);
