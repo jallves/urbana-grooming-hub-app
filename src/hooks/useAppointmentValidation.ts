@@ -194,13 +194,12 @@ export const useAppointmentValidation = () => {
         return [];
       }
 
-      // Buscar agendamentos existentes
-      const { data: existingAppointments } = await supabase
-        .from('painel_agendamentos')
-        .select('hora, servico:painel_servicos(duracao)')
-        .eq('barbeiro_id', staffId)
-        .eq('data', dateStr)
-        .neq('status', 'cancelado');
+      // Buscar horários ocupados via RPC segura (RLS impede leitura direta por clientes)
+      const { data: existingAppointments } = await supabase.rpc('barber_busy_intervals', {
+        p_barber_id: staffId,
+        p_date: dateStr,
+      });
+
 
       // Gerar slots
       const slots: TimeSlot[] = [];
