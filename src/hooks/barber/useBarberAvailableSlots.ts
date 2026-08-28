@@ -79,12 +79,9 @@ export const useBarberAvailableSlots = () => {
           .maybeSingle(),
         
         // Buscar agendamentos existentes (incluindo servicos_extras para duração total)
-        supabase
-          .from('painel_agendamentos')
-          .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
-          .eq('barbeiro_id', barberId)
-          .eq('data', formattedDate)
-          .neq('status', 'cancelado'),
+        // Buscar horários ocupados via RPC segura (evita bloqueio por RLS)
+        supabase.rpc('barber_busy_intervals', { p_barber_id: barberId, p_date: formattedDate }),
+
 
         // Buscar bloqueios de horário
         supabase
@@ -119,14 +116,13 @@ export const useBarberAvailableSlots = () => {
       // Regra: bloquear apenas slots que REALMENTE colidem com a duração ocupada.
       // Sem buffer artificial — horários consecutivos ficam disponíveis quando não há sobreposição.
       const occupiedRanges: { start: number; end: number }[] = [];
-      appointments?.forEach((apt) => {
-        if (excludeAppointmentId && apt.id === excludeAppointmentId) return;
-        const mainDuration = (apt.servico as any)?.duracao || 60;
-        const aptDuration = calculateTotalAppointmentDuration(mainDuration, (apt as any).servicos_extras);
-        const [hh, mm] = apt.hora.split(':').map(Number);
+      (appointments as any[])?.forEach((apt) => {
+        if (excludeAppointmentId && apt.appointment_id === excludeAppointmentId) return;
+        const [hh, mm] = String(apt.hora).split(':').map(Number);
         const start = hh * 60 + mm;
-        occupiedRanges.push({ start, end: start + aptDuration });
+        occupiedRanges.push({ start, end: start + (apt.duracao || 60) });
       });
+
 
       // Gerar slots
       const allSlots: TimeSlot[] = [];

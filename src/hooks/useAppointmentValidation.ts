@@ -194,13 +194,12 @@ export const useAppointmentValidation = () => {
         return [];
       }
 
-      // Buscar agendamentos existentes
-      const { data: existingAppointments } = await supabase
-        .from('painel_agendamentos')
-        .select('hora, servico:painel_servicos(duracao)')
-        .eq('barbeiro_id', staffId)
-        .eq('data', dateStr)
-        .neq('status', 'cancelado');
+      // Buscar horários ocupados via RPC segura (RLS impede leitura direta por clientes)
+      const { data: existingAppointments } = await supabase.rpc('barber_busy_intervals', {
+        p_barber_id: staffId,
+        p_date: dateStr,
+      });
+
 
       // Gerar slots
       const slots: TimeSlot[] = [];
@@ -225,10 +224,11 @@ export const useAppointmentValidation = () => {
 
         // Verificar conflitos
         if (available && existingAppointments) {
-          for (const appt of existingAppointments) {
-            const [apptHour, apptMin] = appt.hora.split(':').map(Number);
+          for (const appt of existingAppointments as any[]) {
+            const [apptHour, apptMin] = String(appt.hora).split(':').map(Number);
             const apptStart = apptHour * 60 + apptMin;
-            const apptDuration = (appt.servico as any)?.duracao || 60;
+            const apptDuration = appt.duracao || 60;
+
             const apptEnd = apptStart + apptDuration;
             
             const slotEnd = mins + serviceDuration;
