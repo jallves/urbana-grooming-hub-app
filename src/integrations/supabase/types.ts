@@ -2514,6 +2514,15 @@ export type Database = {
         Returns: number
       }
       array_to_comma_string: { Args: { arr: string[] }; Returns: string }
+      barber_busy_intervals: {
+        Args: { p_barber_id: string; p_date: string }
+        Returns: {
+          appointment_id: string
+          duracao: number
+          hora: string
+          is_encaixe: boolean
+        }[]
+      }
       cancel_appointment_by_client: {
         Args: { p_appointment_id: string; p_client_id: string }
         Returns: Json
