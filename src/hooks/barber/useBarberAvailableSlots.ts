@@ -79,12 +79,9 @@ export const useBarberAvailableSlots = () => {
           .maybeSingle(),
         
         // Buscar agendamentos existentes (incluindo servicos_extras para duração total)
-        supabase
-          .from('painel_agendamentos')
-          .select('id, hora, servicos_extras, servico:painel_servicos(duracao)')
-          .eq('barbeiro_id', barberId)
-          .eq('data', formattedDate)
-          .neq('status', 'cancelado'),
+        // Buscar horários ocupados via RPC segura (evita bloqueio por RLS)
+        supabase.rpc('barber_busy_intervals', { p_barber_id: barberId, p_date: formattedDate }),
+
 
         // Buscar bloqueios de horário
         supabase
