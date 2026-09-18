@@ -8,6 +8,7 @@ import { format, addDays, addWeeks } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface NextAppointmentSchedulerProps {
   clientId: string;
@@ -71,6 +72,7 @@ export const NextAppointmentScheduler: React.FC<NextAppointmentSchedulerProps> =
         data: dataLocal,
         hora: timeToUse,
         status: 'agendado',
+        ...appointmentOrigin('totem'),
       }).select().single();
 
       if (error) throw error;

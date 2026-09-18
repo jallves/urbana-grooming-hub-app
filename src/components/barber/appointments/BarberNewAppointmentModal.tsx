@@ -20,6 +20,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar as CalendarIcon } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface BarberNewAppointmentModalProps {
   isOpen: boolean;
@@ -273,6 +274,7 @@ const BarberNewAppointmentModal: React.FC<BarberNewAppointmentModalProps> = ({
         status: 'agendado',
         notas: data.notes || null,
         servicos_extras: extras.length > 0 ? extras : null,
+        ...appointmentOrigin('painel_barbeiro'),
       };
 
       console.log('📋 [BarberAdmin] Inserindo agendamento em painel_agendamentos:', painelData);

@@ -1439,6 +1439,9 @@ export type Database = {
           id: string
           is_encaixe: boolean
           notas: string | null
+          origem: string
+          origem_device: string | null
+          origem_user_id: string | null
           painel_barbeiros: Json | null
           painel_clientes: Json | null
           painel_servicos: Json | null
@@ -1464,6 +1467,9 @@ export type Database = {
           id?: string
           is_encaixe?: boolean
           notas?: string | null
+          origem?: string
+          origem_device?: string | null
+          origem_user_id?: string | null
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null
           painel_servicos?: Json | null
@@ -1489,6 +1495,9 @@ export type Database = {
           id?: string
           is_encaixe?: boolean
           notas?: string | null
+          origem?: string
+          origem_device?: string | null
+          origem_user_id?: string | null
           painel_barbeiros?: Json | null
           painel_clientes?: Json | null
           painel_servicos?: Json | null

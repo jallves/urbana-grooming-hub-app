@@ -8,6 +8,7 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, UserPlus, Users, Search, Zap, X, Plus, Minus } from 'lucide-react';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface BarberEncaixeModalProps {
   isOpen: boolean;
@@ -182,6 +183,7 @@ const BarberEncaixeModal: React.FC<BarberEncaixeModalProps> = ({
           status: 'agendado',
           is_encaixe: true,
           notas: '⚡ Encaixe',
+          ...appointmentOrigin('painel_barbeiro'),
           servicos_extras: extrasPayload.length > 0 ? extrasPayload : null,
         });
 

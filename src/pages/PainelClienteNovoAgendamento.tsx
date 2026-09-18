@@ -36,6 +36,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { AlertTriangle } from 'lucide-react';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface Service {
   id: string;
@@ -849,6 +850,7 @@ const PainelClienteNovoAgendamento: React.FC = () => {
           desconto_valor: appliedCoupon?.discount_amount ?? 0,
           valor_original: mainPrice,
           valor_final: appliedCoupon ? Math.max(mainPrice - appliedCoupon.discount_amount, 0) : mainPrice,
+          ...appointmentOrigin('painel_cliente'),
         })
         .select()
         .single();

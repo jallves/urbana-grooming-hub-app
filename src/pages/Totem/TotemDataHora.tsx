@@ -11,6 +11,7 @@ import { TotemButton } from '@/components/totem/TotemButton';
 import { useUnifiedAppointmentValidation } from '@/hooks/useUnifiedAppointmentValidation';
 import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface TimeSlot {
   hora: string;
@@ -410,7 +411,8 @@ const TotemDataHora: React.FC = () => {
           servico_id: service.id,
           data: dataLocal,
           hora: selectedTime,
-          status: 'agendado'
+          status: 'agendado',
+          ...appointmentOrigin('totem')
         })
         .select()
         .single();

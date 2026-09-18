@@ -15,6 +15,7 @@ import { TimeoutWarning } from '@/components/totem/TimeoutWarning';
 import { useTotemTimeout } from '@/hooks/totem/useTotemTimeout';
 import { sendConfirmationEmailDirect } from '@/hooks/useSendAppointmentEmail';
 import barbershopBg from '@/assets/barbershop-background.jpg';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface Service {
   id: string;
@@ -273,7 +274,8 @@ const TotemNovoAgendamento: React.FC = () => {
               servico_id: selectedService.id,
               data: dataLocal,
               hora: selectedTime,
-              status: 'agendado'
+              status: 'agendado',
+              ...appointmentOrigin('totem')
             })
             .select()
             .single();

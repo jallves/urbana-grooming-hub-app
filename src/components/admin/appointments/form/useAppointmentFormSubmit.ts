@@ -9,6 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { useAppointmentValidation } from '@/hooks/useAppointmentValidation';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 
 interface UseAppointmentFormSubmitProps {
@@ -237,7 +238,8 @@ export const useAppointmentFormSubmit = ({
             servico_id: data.service_id,
             data: dataLocal,
             hora: format(startDate, 'HH:mm'),
-            status: 'agendado'
+            status: 'agendado',
+            ...appointmentOrigin('painel_admin')
           };
 
           await supabase
