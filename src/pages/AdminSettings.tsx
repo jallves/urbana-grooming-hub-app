@@ -1,7 +1,7 @@
 import React from 'react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Shield, Smartphone, FileText, Rocket, ScrollText, Settings } from "lucide-react";
+import { Users, Shield, Smartphone, FileText, Rocket, ScrollText, Settings, MapPin } from "lucide-react";
 import TEFDocumentacao from '@/components/admin/tef/TEFDocumentacao';
 import TEFProducao from '@/components/admin/tef/TEFProducao';
 import TotemStatus from '@/components/admin/tef/TotemStatus';
@@ -9,6 +9,7 @@ import UserManagement from '@/components/admin/settings/UserManagement';
 import SessionsManagement from '@/pages/admin/SessionsManagement';
 import { SecurityLogViewer } from '@/components/admin/security/SecurityLogViewer';
 import CheckinModeToggle from '@/components/admin/settings/CheckinModeToggle';
+import AppointmentOriginAudit from '@/components/admin/settings/AppointmentOriginAudit';
 
 const AdminSettings: React.FC = () => {
   return (
@@ -25,7 +26,7 @@ const AdminSettings: React.FC = () => {
             <CheckinModeToggle />
           </div>
 
-          <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-3 md:grid-cols-6 gap-1 p-1.5 h-auto">
+          <TabsList className="bg-gray-100 border border-gray-200 grid grid-cols-3 md:grid-cols-7 gap-1 p-1.5 h-auto">
             <TabsTrigger 
               value="users"
               className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-amber-100 text-amber-800 border border-amber-200 data-[state=active]:bg-amber-200 data-[state=active]:text-amber-900 data-[state=active]:border-amber-400 data-[state=active]:shadow-sm"
@@ -74,6 +75,14 @@ const AdminSettings: React.FC = () => {
               <span className="hidden sm:inline">Log Segurança</span>
               <span className="sm:hidden">Logs</span>
             </TabsTrigger>
+            <TabsTrigger 
+              value="origem"
+              className="py-2.5 px-3 text-xs md:text-sm font-medium rounded-lg bg-teal-100 text-teal-800 border border-teal-200 data-[state=active]:bg-teal-200 data-[state=active]:text-teal-900 data-[state=active]:border-teal-400 data-[state=active]:shadow-sm"
+            >
+              <MapPin className="h-4 w-4 mr-1.5" />
+              <span className="hidden sm:inline">Origem Agend.</span>
+              <span className="sm:hidden">Origem</span>
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="users" className="mt-6">
@@ -94,6 +103,10 @@ const AdminSettings: React.FC = () => {
 
           <TabsContent value="tef-prod" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
             <TEFProducao />
+          </TabsContent>
+
+          <TabsContent value="origem" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
+            <AppointmentOriginAudit />
           </TabsContent>
 
           <TabsContent value="security-log" className="mt-6 h-[calc(100vh-250px)] overflow-auto">
