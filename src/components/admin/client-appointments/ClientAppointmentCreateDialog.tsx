@@ -12,6 +12,7 @@ import { z } from 'zod';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { calculateTotalAppointmentDuration } from '@/lib/utils/appointmentDuration';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 interface ClientAppointmentCreateDialogProps {
   isOpen: boolean;
@@ -605,7 +606,8 @@ const ClientAppointmentCreateDialog: React.FC<ClientAppointmentCreateDialogProps
           servico_id: selectedService.id,
           data: dataLocal,
           hora: selectedTime,
-          status: 'agendado'
+          status: 'agendado',
+          ...appointmentOrigin('painel_admin')
         })
         .select()
         .single();

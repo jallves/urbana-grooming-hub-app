@@ -9,6 +9,7 @@ import { ptBR } from 'date-fns/locale';
 import { sendAppointmentConfirmationEmail } from '@/hooks/useSendAppointmentEmail';
 import { sendAppointmentUpdateEmail } from '@/hooks/useSendAppointmentUpdateEmail';
 import { CrossSellProduct } from '@/hooks/useCrossSellProducts';
+import { appointmentOrigin } from '@/lib/appointmentOrigin';
 
 
 interface UseClientAppointmentSubmitProps {
@@ -180,7 +181,7 @@ export const useClientAppointmentSubmit = ({
       } else {
         const { data: newAppointment, error } = await supabase
           .from('painel_agendamentos')
-          .insert(painelData)
+          .insert({ ...painelData, ...appointmentOrigin('painel_cliente') })
           .select()
           .single();
           
