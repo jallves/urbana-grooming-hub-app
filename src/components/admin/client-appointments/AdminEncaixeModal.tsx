@@ -9,8 +9,8 @@ import { toast } from 'sonner';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Loader2, UserPlus, Users, Search, Zap } from 'lucide-react';
-import {
 import { appointmentOrigin } from '@/lib/appointmentOrigin';
+import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
