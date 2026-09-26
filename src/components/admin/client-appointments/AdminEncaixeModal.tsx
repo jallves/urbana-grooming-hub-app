@@ -153,7 +153,7 @@ const AdminEncaixeModal: React.FC<AdminEncaixeModalProps> = ({
         .eq('data', selectedDate)
         .eq('hora', selectedTime)
         .eq('is_encaixe', true)
-        .not('status', 'in', '("cancelado")');
+        .not('status', 'in', '("cancelado","ausente","concluido","faltou","nao_compareceu")');
 
       if (error) throw error;
       setHasEncaixe((count || 0) >= 1);
@@ -188,10 +188,6 @@ const AdminEncaixeModal: React.FC<AdminEncaixeModalProps> = ({
     }
     if (hasEncaixe) {
       toast.error('Este horário já possui um encaixe (limite: 1 por slot)');
-      return;
-    }
-    if (isSlotInPast()) {
-      toast.error('Não é possível criar encaixe em horário retroativo');
       return;
     }
     setShowConfirmDialog(true);
@@ -442,7 +438,7 @@ const AdminEncaixeModal: React.FC<AdminEncaixeModalProps> = ({
             </Button>
             <Button
               onClick={handleSaveClick}
-              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || !selectedBarberId || isSlotInPast()}
+              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || !selectedBarberId}
               className="w-full sm:flex-1 h-10 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold"
             >
               <Zap className="h-4 w-4 mr-1.5" />
