@@ -438,7 +438,7 @@ const AdminEncaixeModal: React.FC<AdminEncaixeModalProps> = ({
             </Button>
             <Button
               onClick={handleSaveClick}
-              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || !selectedBarberId || isSlotInPast()}
+              disabled={saving || hasEncaixe || checkingEncaixe || !selectedDate || !selectedTime || !selectedServiceId || !selectedBarberId}
               className="w-full sm:flex-1 h-10 bg-purple-600 text-white hover:bg-purple-700 text-sm font-semibold"
             >
               <Zap className="h-4 w-4 mr-1.5" />
