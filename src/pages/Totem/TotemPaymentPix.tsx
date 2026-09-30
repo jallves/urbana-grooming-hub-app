@@ -112,13 +112,23 @@ const TotemPaymentPix: React.FC = () => {
   }, [client, resumo, appointment, extraServices, selectedProducts, total, pendingTransactionData, tipAmount]);
 
   // Função chamada após comprovante enviado/impresso - finaliza tudo (IGUAL AO CARTÃO)
-  const handleReceiptComplete = useCallback(async () => {
-    if (!pendingTransactionData) return;
-    if (finalizingRef.current) return;
-    finalizingRef.current = true;
-    
-    console.log('✅ [PIX] COMPROVANTE PROCESSADO - FINALIZANDO (otimizado)');
+  // Finalização imediata ao aprovar (não depende da tela de comprovante)
+  const finalizePromiseRef = useRef<Promise<{ resolvedVendaId: string | null; checkoutFinalized: boolean; finishPayload: ServiceCheckoutFinishPayload | null }> | null>(null);
 
+  const runFinalize = useCallback((txData: NonNullable<typeof pendingTransactionData>) => {
+    if (finalizePromiseRef.current) return finalizePromiseRef.current;
+    const pendingTransactionData = txData;
+    finalizePromiseRef.current = (async () => {
+    // Registrar pagamento no servidor imediatamente (rastro da aprovação)
+    if (venda_id) {
+      supabase.from('totem_payments').insert({
+        venda_id,
+        amount: Number(total || 0),
+        payment_method: 'PIX',
+        status: 'approved',
+        transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
+      }).then(({ error }) => { if (error) console.warn('[PIX] totem_payments insert:', error); });
+    }
     let resolvedVendaId = venda_id ?? null;
 
     const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && appointment?.id
@@ -165,6 +175,35 @@ const TotemPaymentPix: React.FC = () => {
       console.error('❌ [PIX] venda_id ausente ao finalizar checkout de serviço');
     }
     
+
+    // Atualizar estoque em paralelo (fire-and-forget)
+    if (selectedProducts?.length > 0) {
+      for (const product of selectedProducts) {
+        supabase.rpc('decrease_product_stock', {
+          p_product_id: product.product_id,
+          p_quantity: product.quantidade
+        }).then(({ error }) => {
+          if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
+        });
+      }
+    }
+
+
+    return { resolvedVendaId, checkoutFinalized, finishPayload };
+    })();
+    return finalizePromiseRef.current;
+  }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount, comboDiscount, comboName]);
+
+
+  useEffect(() => {
+    if (pendingTransactionData) runFinalize(pendingTransactionData);
+  }, [pendingTransactionData, runFinalize]);
+
+  const handleReceiptComplete = useCallback(async () => {
+    if (!pendingTransactionData) return;
+    if (finalizingRef.current) return;
+    finalizingRef.current = true;
+    const { resolvedVendaId, checkoutFinalized, finishPayload } = await runFinalize(pendingTransactionData);
     // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
     const successState = { 
       appointment, client, total,
@@ -179,20 +218,7 @@ const TotemPaymentPix: React.FC = () => {
     };
     navigate('/totem/payment-success', { state: successState });
 
-    // Atualizar estoque em paralelo (fire-and-forget)
-    if (selectedProducts?.length > 0) {
-      for (const product of selectedProducts) {
-        supabase.rpc('decrease_product_stock', {
-          p_product_id: product.product_id,
-          p_quantity: product.quantidade
-        }).then(({ error }) => {
-          if (error) console.warn(`[PIX] Estoque fallback para ${product.product_id}:`, error);
-        });
-      }
-    }
-
-    console.log('✅ [PIX] Background tasks disparadas via keepalive');
-  }, [pendingTransactionData, venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount, comboDiscount, comboName]);
+  }, [pendingTransactionData, runFinalize, appointment, client, total, isDirect, selectedProducts, extraServices, resumo, tipAmount, navigate]);
 
   // Handler para resultado do TEF - IGUAL AO CARTÃO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
