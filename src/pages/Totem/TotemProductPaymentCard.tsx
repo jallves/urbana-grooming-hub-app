@@ -110,6 +110,23 @@ const TotemProductPaymentCard: React.FC = () => {
     }
   }, [client, cart, sale, barber, pendingTransactionData]);
 
+  // Finaliza a venda assim que o pagamento é aprovado (não depende do comprovante)
+  const finishedRef = useRef(false);
+  const finishNow = useCallback((txData: any) => {
+    if (finishedRef.current || !sale?.id) return;
+    finishedRef.current = true;
+    const paymentMethod = paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO';
+    supabase.functions.invoke('totem-direct-sale', {
+      body: { action: 'finish', venda_id: sale.id, payment_method: paymentMethod, transaction_data: txData }
+    }).then(({ error }) => {
+      if (error) { console.error('❌ [PRODUCT-CARD] finish error:', error); finishedRef.current = false; }
+    });
+  }, [sale]);
+
+  useEffect(() => {
+    if (pendingTransactionData) finishNow(pendingTransactionData);
+  }, [pendingTransactionData, finishNow]);
+
   // Função chamada após comprovante enviado - finaliza tudo (OTIMIZADO)
   const handleReceiptComplete = useCallback(async () => {
     if (!pendingTransactionData) return;
@@ -137,20 +154,8 @@ const TotemProductPaymentCard: React.FC = () => {
       }
     });
 
-    // Finalizar venda em BACKGROUND (fire-and-forget)
-    try {
-      const paymentMethod = paymentTypeRef.current === 'debit' ? 'DEBITO' : 'CREDITO';
-      await supabase.functions.invoke('totem-direct-sale', {
-        body: {
-          action: 'finish', venda_id: sale?.id,
-          payment_method: paymentMethod, transaction_data: pendingTransactionData
-        }
-      });
-      console.log('✅ [PRODUCT-CARD] Background finalization done');
-    } catch (err) {
-      console.error('❌ [PRODUCT-CARD] Background error:', err);
-    }
-  }, [pendingTransactionData, sale, client, cart, navigate]);
+    finishNow(pendingTransactionData);
+  }, [pendingTransactionData, sale, client, cart, navigate, finishNow]);
 
   // Handler TEF Result - IDÊNTICO AO SERVIÇO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {

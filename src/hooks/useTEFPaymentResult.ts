@@ -10,7 +10,7 @@
  * 4. Storage event listener
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 
 interface UseTEFPaymentResultOptions {
@@ -105,12 +105,24 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
   };
 }
 
+const ACTIVE_KEY = 'tef_active_payment';
+const ACTIVE_TTL = 600000; // 10 min
+
 export function useTEFPaymentResult({
   enabled,
   onResult,
   pollingInterval = 500,
   maxWaitTime = 120000 // 2 minutos
 }: UseTEFPaymentResultOptions) {
+  // Retomar pagamento em andamento se a tela foi recarregada enquanto a PayGo estava aberta
+  const [resumed] = useState(() => {
+    try {
+      const t = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
+      return t > 0 && Date.now() - t < ACTIVE_TTL;
+    } catch { return false; }
+  });
+  enabled = enabled || resumed;
+  if (maxWaitTime < ACTIVE_TTL) maxWaitTime = ACTIVE_TTL;
   const onResultRef = useRef(onResult);
   const enabledRef = useRef(enabled);
   const startTimeRef = useRef<number>(Date.now());
@@ -127,6 +139,7 @@ export function useTEFPaymentResult({
       console.log('[useTEFPaymentResult] ✅ Hook ATIVADO - aguardando resultado do PayGo');
       startTimeRef.current = Date.now();
       processedRef.current = false;
+      try { if (!resumed) localStorage.setItem(ACTIVE_KEY, String(Date.now())); } catch { /* ignore */ }
       globalLastProcessedResultKey = null;
     } else {
       console.log('[useTEFPaymentResult] ⏸️ Hook DESATIVADO');
@@ -173,6 +186,7 @@ export function useTEFPaymentResult({
     
     // Limpar storage (sessionStorage E localStorage)
     try {
+      localStorage.removeItem(ACTIVE_KEY);
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
       localStorage.removeItem('lastTefResult');
@@ -273,7 +287,7 @@ export function useTEFPaymentResult({
           const resultAge = Date.now() - parseInt(storedTime, 10);
           
           // Aceitar resultados dos últimos 60 segundos
-          if (resultAge < 60000) {
+          if (resultAge < 600000) {
             console.log('[useTEFPaymentResult] 📞 Storage POLLING encontrou resultado');
             console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
             
