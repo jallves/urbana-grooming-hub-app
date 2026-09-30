@@ -47,7 +47,7 @@ let globalResultCallback: ((resultado: TEFResultado) => void) | null = null;
 // Persistido em localStorage para sobreviver a navegações de página.
 // ═══════════════════════════════════════════════════════════════
 const COOLDOWN_LS_KEY = 'tef_last_confirmation_ts';
-const CONFIRMATION_COOLDOWN_MS = 7000; // 7 segundos obrigatórios
+const CONFIRMATION_COOLDOWN_MS = 2000; // 7 segundos obrigatórios
 
 function getLastConfirmationTimestamp(): number {
   try {
@@ -570,24 +570,11 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         }
       }
 
-      // Método 4 (NOVO): Fallback - enviar confirmação vazia para limpar
-      // Isso resolve o caso onde o terminal tem uma pendência que os métodos
-      // acima não detectam (ex: pendência órfã de sessão anterior)
-      if (!pendingResolved && TEF?.confirmarTransacao) {
-        try {
-          console.log('[useTEFAndroid] 🔄 Enviando confirmação preventiva (limpeza de estado)');
-          TEF.confirmarTransacao('', 'CONFIRMADO_AUTOMATICO');
-        } catch (e) {
-          // Ignorar - pode falhar se não houver nada para confirmar
-          console.log('[useTEFAndroid] Confirmação preventiva ignorada (sem pendência)');
-        }
-      }
-
       // Se resolveu pendência, aguardar cooldown
       if (pendingResolved) {
-        console.log('[useTEFAndroid] ⏳ Aguardando 8s cooldown por pendência resolvida...');
-        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 7000 });
-        await new Promise(r => setTimeout(r, 8000));
+        console.log('[useTEFAndroid] ⏳ Aguardando 3s cooldown por pendência resolvida...');
+        toast.info('Preparando terminal...', { description: 'Resolvendo pendência anterior', duration: 3000 });
+        await new Promise(r => setTimeout(r, 3000));
         console.log('[useTEFAndroid] ✅ Cooldown de pendência concluído');
         
         logTEFTransaction('tef_init', 'warning', '[TEF] Pendência resolvida antes de iniciar pagamento', {
@@ -605,8 +592,8 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     // rejeitar mesmo que a pendência já tenha sido resolvida.
     // ═══════════════════════════════════════════════════════════════
     if (!pendingResolved) {
-      console.log('[useTEFAndroid] ⏳ Warm-up de 1.5s antes de iniciar...');
-      await new Promise(r => setTimeout(r, 1500));
+      console.log('[useTEFAndroid] ⏳ Warm-up de 0.3s antes de iniciar...');
+      await new Promise(r => setTimeout(r, 300));
     }
 
     // ═══════════════════════════════════════════════════════════════

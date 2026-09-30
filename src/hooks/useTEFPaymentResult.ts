@@ -273,7 +273,7 @@ export function useTEFPaymentResult({
           const resultAge = Date.now() - parseInt(storedTime, 10);
           
           // Aceitar resultados dos últimos 60 segundos
-          if (resultAge < 60000) {
+          if (resultAge < 600000) {
             console.log('[useTEFPaymentResult] 📞 Storage POLLING encontrou resultado');
             console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
             
