@@ -10,7 +10,7 @@
  * 4. Storage event listener
  */
 
-import { useEffect, useRef, useCallback } from 'react';
+import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 
 interface UseTEFPaymentResultOptions {
