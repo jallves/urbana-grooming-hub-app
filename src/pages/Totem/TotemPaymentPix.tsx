@@ -203,7 +203,12 @@ const TotemPaymentPix: React.FC = () => {
     if (!pendingTransactionData) return;
     if (finalizingRef.current) return;
     finalizingRef.current = true;
-    const { resolvedVendaId, checkoutFinalized, finishPayload } = await runFinalize(pendingTransactionData);
+    const fallback = { resolvedVendaId: venda_id ?? null, checkoutFinalized: false, finishPayload: null as ServiceCheckoutFinishPayload | null };
+    // Nunca prender o cliente: no máximo 8s aguardando a finalização
+    const { resolvedVendaId, checkoutFinalized, finishPayload } = await Promise.race([
+      runFinalize(pendingTransactionData).catch(() => fallback),
+      new Promise<typeof fallback>((r) => setTimeout(() => r(fallback), 8000)),
+    ]);
     // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
     const successState = { 
       appointment, client, total,

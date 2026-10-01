@@ -1,11 +1,4 @@
-import React, { useState } from 'react';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { 
   Mail, 
@@ -67,7 +60,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
         
         // Aguardar um pouco e finalizar
         setTimeout(() => {
-          onComplete();
+          safeComplete();
         }, 1500);
       } else {
         setStatus('error');
@@ -116,7 +109,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
         }
         
         setTimeout(() => {
-          onComplete();
+          safeComplete();
         }, 1500);
       } else {
         setStatus('error');
@@ -130,7 +123,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
   };
 
   const handleSkip = () => {
-    onComplete();
+    safeComplete();
   };
 
   const formatCurrency = (value: number) => {
@@ -142,20 +135,47 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
 
   const firstName = clientName?.split(' ')[0] || 'Cliente';
 
+  // Contagem de 10s: sem ação, finaliza sem enviar comprovante
+  const AUTO_SECONDS = 10;
+  const [countdown, setCountdown] = useState(AUTO_SECONDS);
+  const completedRef = useRef(false);
+  const safeComplete = () => {
+    if (completedRef.current) return;
+    completedRef.current = true;
+    safeComplete();
+  };
+  useEffect(() => {
+    if (!isOpen || status !== 'idle') return;
+    const t = setInterval(() => {
+      setCountdown((c) => {
+        if (c <= 1) { clearInterval(t); setTimeout(safeComplete, 0); return 0; }
+        return c - 1;
+      });
+    }, 1000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, status]);
+
+  if (!isOpen) return null;
+
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg bg-urbana-black-soft/95 backdrop-blur-xl border-2 border-urbana-gold/30">
-        <DialogHeader>
-          <DialogTitle className="text-xl sm:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-urbana-gold via-urbana-gold-light to-urbana-gold">
-            {status === 'success' ? '✅ Pagamento Confirmado!' : `${firstName}, como deseja receber o comprovante?`}
-          </DialogTitle>
-          <DialogDescription className="text-urbana-light/70">
-            {status === 'success' 
-              ? 'Obrigado pela preferência!'
-              : `Total: ${formatCurrency(total)}`
-            }
-          </DialogDescription>
-        </DialogHeader>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-urbana-black font-poppins" role="dialog" aria-modal="true">
+      <div className="w-full sm:max-w-lg bg-urbana-black-soft border-2 border-urbana-gold/30 rounded-2xl p-6">
+        <div className="flex flex-col items-center text-center mb-4">
+          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center mb-3">
+            <CheckCircle2 className="w-12 h-12 text-white" strokeWidth={2.5} />
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-green-400">Pagamento Aprovado!</h2>
+          <p className="text-urbana-light/80 mt-1">Obrigado, {firstName}! Total: {formatCurrency(total)}</p>
+        </div>
+        <h3 className="text-lg sm:text-xl font-bold text-urbana-gold text-center">
+          {status === 'success' ? 'Finalizando...' : 'Como deseja receber o comprovante?'}
+        </h3>
+        {status === 'idle' && (
+          <p className="text-center text-urbana-light/60 text-sm mt-1">
+            Finalizando automaticamente sem comprovante em <span className="font-bold text-urbana-gold">{countdown}s</span>
+          </p>
+        )}
 
         <div className="py-4 space-y-4">
           {status === 'idle' && (
@@ -291,7 +311,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
                 Tentar novamente
               </Button>
               <Button
-                onClick={onComplete}
+                onClick={safeComplete}
                 variant="ghost"
                 className="text-urbana-light/60"
               >
@@ -300,8 +320,8 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
             </div>
           )}
         </div>
-      </DialogContent>
-    </Dialog>
+      </div>
+    </div>
   );
 };
 
