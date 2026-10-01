@@ -142,7 +142,7 @@ const TotemReceiptOptionsModal: React.FC<TotemReceiptOptionsModalProps> = ({
   const safeComplete = () => {
     if (completedRef.current) return;
     completedRef.current = true;
-    safeComplete();
+    onComplete();
   };
   useEffect(() => {
     if (!isOpen || status !== 'idle') return;
