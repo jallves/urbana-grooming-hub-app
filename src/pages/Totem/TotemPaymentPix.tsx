@@ -235,6 +235,8 @@ const TotemPaymentPix: React.FC = () => {
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [PIX] Pagamento APROVADO - Mostrando opções de comprovante');
+        setError(null);
+        setProcessing(false);
         setPendingTransactionData({
           nsu: resultado.nsu,
           autorizacao: resultado.autorizacao
@@ -253,6 +255,7 @@ const TotemPaymentPix: React.FC = () => {
       case 'cancelado':
         console.log('⚠️ [PIX] Pagamento CANCELADO');
         toast.info('Pagamento cancelado');
+        setError('O Pix não foi realizado (operação cancelada ou QR Code expirado). Se algum valor foi debitado, ele será devolvido automaticamente pelo banco.');
         setProcessing(false);
         setPaymentStarted(false);
         break;
@@ -269,11 +272,38 @@ const TotemPaymentPix: React.FC = () => {
 
   // Hook dedicado para receber resultado do PayGo
   useTEFPaymentResult({
-    enabled: paymentStarted && processing,
+    enabled: paymentStarted,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000
   });
+
+  // Vigia: se a PayGo devolver o controle sem resultado, ou demorar demais, avisar o cliente
+  useEffect(() => {
+    if (!processing || !paymentStarted || isSimulating) return;
+    const failNoResult = (motivo: string) => {
+      console.warn('⏱️ [PIX] Sem resposta da PayGo:', motivo);
+      setProcessing(false);
+      setError('O Pix não foi confirmado pela maquininha. Se o valor foi debitado, ele será devolvido automaticamente pelo banco. Tente novamente ou escolha outra forma de pagamento.');
+    };
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+    let wasHidden = document.visibilityState === 'hidden';
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        wasHidden = true;
+        if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
+      } else if (wasHidden && !graceTimer) {
+        graceTimer = setTimeout(() => failNoResult('retornou da PayGo sem resultado'), 20000);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    const hardTimer = setTimeout(() => failNoResult('tempo máximo de 5 min'), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      clearTimeout(hardTimer);
+      if (graceTimer) clearTimeout(graceTimer);
+    };
+  }, [processing, paymentStarted, isSimulating]);
 
   // Hook TEF Android
   const {
@@ -625,7 +655,7 @@ const TotemPaymentPix: React.FC = () => {
 
               <div className="space-y-4">
                 <p className="text-xl sm:text-2xl md:text-3xl font-bold text-white">
-                  Falha no pagamento PIX
+                  Pix não realizado
                 </p>
                 <p className="text-base sm:text-lg text-gray-300">
                   {error}
@@ -636,6 +666,8 @@ const TotemPaymentPix: React.FC = () => {
                 <Button
                   onClick={() => {
                     setError(null);
+                    setPaymentStarted(false);
+                    setProcessing(false);
                     finalizingRef.current = false;
                   }}
                   size="lg"
