@@ -5,6 +5,8 @@ import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import org.json.JSONArray
 import org.json.JSONObject
@@ -84,6 +86,41 @@ class PayGoService(private val context: Context) {
     // Transação pendente
     private var pendingTransactionId: String? = null
     private var pendingCallback: ((JSONObject) -> Unit)? = null
+
+    // Vigia do PIX: se a PayGo não devolver resposta (QR Code expirado/travado),
+    // traz o totem de volta para frente e informa o JS que o Pix não foi realizado.
+    private val watchdogHandler = Handler(Looper.getMainLooper())
+    private var pixWatchdog: Runnable? = null
+    private val PIX_WATCHDOG_MS = 150_000L
+
+    private fun cancelPixWatchdog() {
+        pixWatchdog?.let { watchdogHandler.removeCallbacks(it) }
+        pixWatchdog = null
+    }
+
+    private fun startPixWatchdog(transactionId: String) {
+        cancelPixWatchdog()
+        val r = Runnable {
+            if (pendingTransactionId != transactionId) return@Runnable
+            addLog("[WATCHDOG] ⏱️ PIX sem resposta da PayGo em ${PIX_WATCHDOG_MS / 1000}s - voltando ao totem")
+            try {
+                val back = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT or Intent.FLAG_ACTIVITY_SINGLE_TOP
+                }
+                context.startActivity(back)
+            } catch (e: Exception) {
+                addLog("[WATCHDOG] ❌ Falha ao trazer totem para frente: ${e.message}")
+            }
+            // Mantém pendingCallback: se a PayGo aprovar depois, o resultado ainda chega.
+            pendingCallback?.invoke(JSONObject().apply {
+                put("status", "cancelado")
+                put("codigoErro", "PIX_TIMEOUT")
+                put("mensagem", "Pix não confirmado - QR Code expirado")
+            })
+        }
+        pixWatchdog = r
+        watchdogHandler.postDelayed(r, PIX_WATCHDOG_MS)
+    }
     
     // Dados de transação pendente (para resolução)
     private var lastPendingData: JSONObject? = null
@@ -408,6 +445,7 @@ class PayGoService(private val context: Context) {
             
             addLog("[TXN] ✅ Intent enviado!")
             addLog("[TXN] Aguardando resposta do PayGo...")
+            if (metodo == "pix") startPixWatchdog(transactionId)
             
         } catch (e: android.content.ActivityNotFoundException) {
             Log.e(TAG, "ActivityNotFoundException: ${e.message}", e)
@@ -544,6 +582,7 @@ class PayGoService(private val context: Context) {
             addLog("[RESP]   $key = ${responseUri.getQueryParameter(key)}")
         }
         
+        cancelPixWatchdog()
         val callback = pendingCallback
         if (callback == null) {
             addLog("[RESP] ⚠️ Nenhum callback pendente")

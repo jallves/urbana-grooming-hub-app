@@ -181,7 +181,8 @@ export function useTEFPaymentResult({
     console.log('[useTEFPaymentResult] ═══════════════════════════════════════');
     
     globalLastProcessedResultKey = resultKey;
-    processedRef.current = true;
+    // Só trava após aprovação: um Pix pode ser aprovado depois de um aviso de tempo esgotado
+    processedRef.current = normalized.status === 'aprovado';
     lastReceivedResult = normalized;
     
     // Limpar storage (sessionStorage E localStorage)
