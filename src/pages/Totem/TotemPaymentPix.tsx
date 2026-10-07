@@ -559,7 +559,7 @@ const TotemPaymentPix: React.FC = () => {
                   size="lg"
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
-                  Cancelar Pagamento
+                  Escolher outra forma de pagamento Pagamento
                 </Button>
               </>
             ) : (
