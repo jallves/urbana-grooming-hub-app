@@ -257,7 +257,6 @@ const TotemPaymentPix: React.FC = () => {
         toast.info('Pagamento cancelado');
         setError('O Pix não foi realizado (operação cancelada ou QR Code expirado). Se algum valor foi debitado, ele será devolvido automaticamente pelo banco.');
         setProcessing(false);
-        setPaymentStarted(false);
         break;
         
       case 'erro':
