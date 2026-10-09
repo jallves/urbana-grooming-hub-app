@@ -77,7 +77,7 @@ Deno.serve(async (req) => {
       }],
       metadata: { client_id: client.id, plan_id: plan.id, user_id: user.id, kind: 'subscription_plan' },
       payment_intent_data: { metadata: { client_id: client.id, plan_id: plan.id, kind: 'subscription_plan' } },
-      success_url: `${base}/painel-cliente/planos?status=sucesso`,
+      success_url: `${base}/painel-cliente/planos?status=sucesso&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/painel-cliente/planos?status=cancelado`,
       expires_at: Math.floor(Date.now() / 1000) + 60 * 60,
     })
