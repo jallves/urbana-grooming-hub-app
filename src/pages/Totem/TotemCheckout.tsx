@@ -187,9 +187,12 @@ const TotemCheckout: React.FC = () => {
   const isServiceCoveredByPlan = useMemo(() => {
     if (!activeSubscription || selectedServiceCreditItems.length === 0) return false;
     if (activeSubscription.allowed_service_ids.length === 0) return false;
-    return selectedServiceCreditItems.every((service) =>
-      activeSubscription.allowed_service_ids.includes(service.id)
-    );
+    return selectedServiceCreditItems.every((service) => {
+      if (activeSubscription.allowed_service_ids.includes(service.id)) return true;
+      // "Corte e Barba" = 2 créditos quando o plano cobre corte e barba
+      const n = service.nome.toLowerCase();
+      return n.includes('corte') && n.includes('barba') && activeSubscription.allowed_service_ids.length >= 2;
+    });
   }, [activeSubscription, selectedServiceCreditItems]);
 
   // Calcula quantos créditos o atendimento inteiro custa (principal + extras)
@@ -372,7 +375,8 @@ const TotemCheckout: React.FC = () => {
         activeSubscription.id,
         appointment.id,
         subscriptionServiceNames,
-        serviceCreditsCost
+        serviceCreditsCost,
+        selectedServiceCreditItems.map((s) => s.id)
       );
 
       if (!success) {

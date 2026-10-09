@@ -17,6 +17,7 @@ export interface ActiveSubscription {
   credit_unit_value: number;
   status: string;
   start_date: string;
+  expires_at: string | null;
   next_billing_date: string | null;
   allowed_service_ids: string[];
   service_credits_map: Record<string, number>; // service_id -> credits_cost
@@ -83,6 +84,7 @@ export const useClientSubscriptionCredits = () => {
         credit_unit_value: creditUnitValue,
         status: sub.status,
         start_date: sub.start_date,
+        expires_at: (sub as any).expires_at || null,
         next_billing_date: sub.next_billing_date,
         allowed_service_ids: allowedServiceIds,
         service_credits_map: serviceCreditsMap,
@@ -99,50 +101,24 @@ export const useClientSubscriptionCredits = () => {
     }
   }, []);
 
+  // Consumo de créditos feito SOMENTE no servidor (titular, saldo, validade e cobertura)
   const useCredit = useCallback(async (
-    subscriptionId: string,
+    _subscriptionId: string,
     appointmentId: string,
-    serviceName: string | string[],
-    creditsCost: number = 1
+    _serviceName: string | string[],
+    _creditsCost: number = 1,
+    serviceIds: string[] = []
   ): Promise<boolean> => {
     try {
-      // 1. Registrar uso do crédito (uma entrada por crédito consumido)
-      const serviceNames = Array.isArray(serviceName) ? serviceName : [serviceName];
-      const usageInserts = Array.from({ length: creditsCost }, (_, index) => ({
-        subscription_id: subscriptionId,
-        appointment_id: appointmentId,
-        service_name: serviceNames[index] || serviceNames[serviceNames.length - 1] || 'Serviço',
-      }));
-
-      const { error: usageError } = await supabase
-        .from('subscription_usage')
-        .insert(usageInserts);
-
-      if (usageError) {
-        console.error('Erro ao registrar uso:', usageError);
+      const { data, error } = await supabase.rpc('consume_subscription_credits' as any, {
+        p_appointment_id: appointmentId,
+        p_service_ids: serviceIds,
+      });
+      if (error) {
+        console.error('Erro ao usar crédito:', error);
         return false;
       }
-
-      // 2. Incrementar credits_used na assinatura pelo custo correto
-      const { data: current } = await supabase
-        .from('client_subscriptions')
-        .select('credits_used')
-        .eq('id', subscriptionId)
-        .single();
-
-      const newCreditsUsed = (current?.credits_used || 0) + creditsCost;
-
-      const { error: updateError } = await supabase
-        .from('client_subscriptions')
-        .update({ credits_used: newCreditsUsed })
-        .eq('id', subscriptionId);
-
-      if (updateError) {
-        console.error('Erro ao atualizar créditos:', updateError);
-        return false;
-      }
-
-      return true;
+      return (data as any)?.success === true;
     } catch (err) {
       console.error('Erro ao usar crédito:', err);
       return false;

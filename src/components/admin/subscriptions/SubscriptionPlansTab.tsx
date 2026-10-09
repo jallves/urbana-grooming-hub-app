@@ -33,7 +33,7 @@ const planIcons: Record<string, React.ReactNode> = {
 
 const emptyForm: PlanFormData = {
   name: '', slug: '', description: '', price: 0,
-  billing_period: 'monthly', is_active: true, color: 'amber',
+  billing_period: 'annual', is_active: true, color: 'amber',
   display_order: 0, service_ids: [], service_credits: {}, credits_total: 4,
 };
 
@@ -258,7 +258,7 @@ const SubscriptionPlansTab: React.FC = () => {
                   <Select value={form.billing_period} onValueChange={v => setForm(f => ({ ...f, billing_period: v }))}>
                     <SelectTrigger className="text-sm h-10 mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[70]">
-                      <SelectItem value="monthly">Mensal</SelectItem>
+                      <SelectItem value="annual">Anual (365 dias)</SelectItem>
                       <SelectItem value="quarterly">Trimestral</SelectItem>
                       <SelectItem value="yearly">Anual</SelectItem>
                     </SelectContent>
