@@ -6,6 +6,7 @@ import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { Button } from '@/components/ui/button';
 import { Loader2, Crown, CheckCircle2, ShieldCheck, CalendarClock } from 'lucide-react';
 import { toast } from 'sonner';
+import MyPlansStatement from '@/components/painel-cliente/MyPlansStatement';
 
 const brl = (v: number) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
 const fmtDate = (d?: string | null) => (d ? d.split('-').reverse().join('/') : '—');
@@ -134,6 +135,12 @@ const PainelClientePlanos: React.FC = () => {
           ))}
         </div>
       )}
+
+      <div className="space-y-3 pt-2">
+        <h2 className="text-xl sm:text-2xl font-black text-urbana-gold">Meus planos</h2>
+        <p className="text-sm text-urbana-light/60">Histórico completo: créditos, uso, validade e pagamento.</p>
+        <MyPlansStatement refreshKey={sub?.id} />
+      </div>
 
       <p className="flex items-center gap-2 text-xs text-urbana-light/50"><ShieldCheck className="w-4 h-4" /> Pagamento processado com segurança pela Stripe. O plano é ativado automaticamente após a confirmação.</p>
     </div>
