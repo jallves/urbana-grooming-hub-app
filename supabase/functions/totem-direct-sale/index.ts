@@ -305,51 +305,28 @@ serve(async (req) => {
           const planPrice = vendaItensCheck.subtotal || planData?.price || 0
           const planName = planData?.name || vendaItensCheck.nome || 'Assinatura'
 
-          // Verificar se já existe assinatura ativa
-          const { data: existingSub } = await supabase
-            .from('client_subscriptions')
-            .select('id')
-            .eq('client_id', venda.cliente_id)
-            .eq('plan_id', planId)
-            .eq('status', 'active')
-            .maybeSingle()
-
+          // Regra: validade 365 dias; nova assinatura só quando o plano anterior não tiver créditos
+          // (o banco bloqueia via trigger enforce_subscription_rules)
           let subscriptionId: string | null = null
-
-          if (existingSub) {
-            subscriptionId = existingSub.id
-            // Renovar: resetar créditos
-            await supabase
-              .from('client_subscriptions')
-              .update({
-                credits_used: 0,
-                next_billing_date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-                updated_at: toBrazilISOString()
-              })
-              .eq('id', existingSub.id)
-            console.log('✅ [PRODUCT-SALE] Assinatura renovada:', existingSub.id)
-          } else {
-            // Criar nova assinatura
-            const nextBilling = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
-            const { data: newSub } = await supabase
-              .from('client_subscriptions')
-              .insert({
-                client_id: venda.cliente_id,
-                plan_id: planId,
-                status: 'active',
-                credits_total: planData?.credits_total || 4,
-                credits_used: 0,
-                start_date: new Date().toISOString().split('T')[0],
-                next_billing_date: nextBilling,
-                payment_method: payment_method || 'credit_card',
-                notes: `Ativado via Totem - Venda ${venda_id}`
-              })
-              .select('id')
-              .single()
-            
-            subscriptionId = newSub?.id || null
-            console.log('✅ [PRODUCT-SALE] Nova assinatura criada:', subscriptionId)
-          }
+          const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/Sao_Paulo' })
+          const { data: newSub, error: subErr } = await supabase
+            .from('client_subscriptions')
+            .insert({
+              client_id: venda.cliente_id,
+              plan_id: planId,
+              status: 'active',
+              credits_total: planData?.credits_total || 4,
+              credits_used: 0,
+              start_date: today,
+              source: 'balcao',
+              payment_method: payment_method || 'credit_card',
+              notes: `Ativado via Totem - Venda ${venda_id}`
+            })
+            .select('id')
+            .single()
+          if (subErr) console.error('❌ [PRODUCT-SALE] Assinatura não ativada:', subErr.message)
+          subscriptionId = newSub?.id || null
+          console.log('✅ [PRODUCT-SALE] Nova assinatura criada:', subscriptionId)
 
           // ========== REGISTRAR PAGAMENTO NA ABA PAGAMENTOS DO MÓDULO ASSINATURA ==========
           if (subscriptionId) {

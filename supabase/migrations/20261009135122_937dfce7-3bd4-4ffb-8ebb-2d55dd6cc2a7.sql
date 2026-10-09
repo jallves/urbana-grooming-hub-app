@@ -1,0 +1,2 @@
+REVOKE ALL ON FUNCTION public.enforce_subscription_rules() FROM public, anon, authenticated;
+COMMENT ON FUNCTION public.consume_subscription_credits(uuid, uuid[]) IS 'Intencionalmente executável por anon (totem via x-totem-token) e authenticated; autorização validada internamente (titular, equipe ou totem).';

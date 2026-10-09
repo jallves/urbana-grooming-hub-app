@@ -90,18 +90,12 @@ export const useClientSubscriptions = () => {
         .eq('id', data.plan_id)
         .single();
 
-      const startDate = new Date(data.start_date);
-      let nextBilling = new Date(startDate);
-      if (plan?.billing_period === 'monthly') nextBilling.setMonth(nextBilling.getMonth() + 1);
-      else if (plan?.billing_period === 'quarterly') nextBilling.setMonth(nextBilling.getMonth() + 3);
-      else nextBilling.setFullYear(nextBilling.getFullYear() + 1);
-
       // Get credits_total from plan
       const creditsTotal = (plan as any)?.credits_total || 4;
 
       const { error } = await supabase.from('client_subscriptions').insert({
         ...data,
-        next_billing_date: nextBilling.toISOString().split('T')[0],
+        source: 'balcao',
         status: 'active',
         credits_total: creditsTotal,
         credits_used: 0,
@@ -194,17 +188,6 @@ export const useClientSubscriptions = () => {
         payment_date: today,
       } as any);
       if (error) throw error;
-
-      // 2. Update next billing date and reset credits
-      const endDate = new Date(data.period_end);
-      endDate.setMonth(endDate.getMonth() + 1);
-      await supabase
-        .from('client_subscriptions')
-        .update({ 
-          next_billing_date: endDate.toISOString().split('T')[0],
-          credits_used: 0,
-        } as any)
-        .eq('id', data.subscription_id);
 
       // 3. Get subscription details for ERP integration
       const { data: subData } = await supabase

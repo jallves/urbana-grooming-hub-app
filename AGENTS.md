@@ -1,0 +1,1 @@
+- Subscription credits are consumed only via the `consume_subscription_credits` RPC and subscription activation rules live in the `enforce_subscription_rules` trigger — so ownership, balance, expiry and renewal can't be bypassed from any client (totem, panel, admin).

@@ -33,7 +33,7 @@ const planIcons: Record<string, React.ReactNode> = {
 
 const emptyForm: PlanFormData = {
   name: '', slug: '', description: '', price: 0,
-  billing_period: 'monthly', is_active: true, color: 'amber',
+  billing_period: 'annual', is_active: true, color: 'amber',
   display_order: 0, service_ids: [], service_credits: {}, credits_total: 4,
 };
 
@@ -169,7 +169,7 @@ const SubscriptionPlansTab: React.FC = () => {
                   <h3 className="text-base sm:text-xl font-bold mt-1.5 sm:mt-3">{plan.name}</h3>
                   <div className="mt-1 sm:mt-2">
                     <span className="text-xl sm:text-3xl font-black">R$ {plan.price.toFixed(2)}</span>
-                    <span className="text-white/70 text-[10px] sm:text-sm">/{plan.billing_period === 'monthly' ? 'mês' : plan.billing_period === 'quarterly' ? 'trim' : 'ano'}</span>
+                    <span className="text-white/70 text-[10px] sm:text-sm">/365 dias</span>
                   </div>
                 </div>
                 <CardContent className="p-3 sm:p-5 space-y-2 sm:space-y-4">
@@ -258,9 +258,7 @@ const SubscriptionPlansTab: React.FC = () => {
                   <Select value={form.billing_period} onValueChange={v => setForm(f => ({ ...f, billing_period: v }))}>
                     <SelectTrigger className="text-sm h-10 mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[70]">
-                      <SelectItem value="monthly">Mensal</SelectItem>
-                      <SelectItem value="quarterly">Trimestral</SelectItem>
-                      <SelectItem value="yearly">Anual</SelectItem>
+                      <SelectItem value="annual">Anual (365 dias)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

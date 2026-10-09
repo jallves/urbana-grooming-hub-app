@@ -682,13 +682,17 @@ export type Database = {
           credits_total: number
           credits_used: number
           end_date: string | null
+          expires_at: string | null
           id: string
           next_billing_date: string | null
           notes: string | null
           payment_method: string | null
           plan_id: string
+          source: string
           start_date: string
           status: string
+          stripe_payment_intent: string | null
+          stripe_session_id: string | null
           updated_at: string
         }
         Insert: {
@@ -699,13 +703,17 @@ export type Database = {
           credits_total?: number
           credits_used?: number
           end_date?: string | null
+          expires_at?: string | null
           id?: string
           next_billing_date?: string | null
           notes?: string | null
           payment_method?: string | null
           plan_id: string
+          source?: string
           start_date?: string
           status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -716,13 +724,17 @@ export type Database = {
           credits_total?: number
           credits_used?: number
           end_date?: string | null
+          expires_at?: string | null
           id?: string
           next_billing_date?: string | null
           notes?: string | null
           payment_method?: string | null
           plan_id?: string
+          source?: string
           start_date?: string
           status?: string
+          stripe_payment_intent?: string | null
+          stripe_session_id?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -2098,6 +2110,7 @@ export type Database = {
           name: string
           price: number
           slug: string
+          stripe_price_id: string | null
           updated_at: string
         }
         Insert: {
@@ -2113,6 +2126,7 @@ export type Database = {
           name: string
           price?: number
           slug: string
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -2128,6 +2142,7 @@ export type Database = {
           name?: string
           price?: number
           slug?: string
+          stripe_price_id?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2551,6 +2566,10 @@ export type Database = {
       }
       cleanup_expired_sessions: { Args: never; Returns: number }
       cleanup_locked_sessions: { Args: never; Returns: number }
+      consume_subscription_credits: {
+        Args: { p_appointment_id: string; p_service_ids: string[] }
+        Returns: Json
+      }
       create_public_appointment: {
         Args: {
           p_client_id: string
@@ -2587,6 +2606,7 @@ export type Database = {
         Args: { p_product_id: string; p_quantity: number }
         Returns: undefined
       }
+      expire_client_subscriptions: { Args: never; Returns: number }
       fila_do_dia: {
         Args: never
         Returns: {
