@@ -84,7 +84,15 @@ const PainelClientePlanos: React.FC = () => {
         toast.error(msg || 'Não foi possível iniciar o pagamento');
         return;
       }
-      window.location.href = data.url;
+      // A Stripe não abre dentro de janelas embutidas (fica em branco): sai para a janela principal
+      let inFrame = false;
+      try { inFrame = window.self !== window.top; } catch { inFrame = true; }
+      if (inFrame) {
+        const w = window.open(data.url, '_blank', 'noopener');
+        if (!w) { try { window.top!.location.href = data.url; } catch { window.location.href = data.url; } }
+      } else {
+        window.location.href = data.url;
+      }
     } finally {
       setBuying(null);
     }
