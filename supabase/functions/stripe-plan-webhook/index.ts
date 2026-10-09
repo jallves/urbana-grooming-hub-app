@@ -1,5 +1,5 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
-import Stripe from 'https://esm.sh/stripe@14.21.0?target=deno'
+import Stripe from 'npm:stripe@14.21.0'
 import { activatePlanFromSession } from '../_shared/planActivation.ts'
 
 // Webhook da Stripe: única forma de ativar plano comprado online.
