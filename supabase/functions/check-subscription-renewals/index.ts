@@ -20,16 +20,16 @@ Deno.serve(async (req) => {
 
     // 7 days from now
     const sevenDays = new Date(today);
-    sevenDays.setDate(sevenDays.getDate() + 7);
+    sevenDays.setDate(sevenDays.getDate() + 30); // validade anual: avisos a 30, 7, 1 e 0 dias
     const sevenDaysStr = sevenDays.toISOString().split('T')[0];
 
     // Find active subscriptions with next_billing_date within 7 days
     const { data: expiringSubs, error: subsError } = await supabase
       .from('client_subscriptions')
-      .select('id, client_id, plan_id, next_billing_date, credits_used, credits_total')
+      .select('id, client_id, plan_id, next_billing_date:expires_at, credits_used, credits_total')
       .eq('status', 'active')
-      .gte('next_billing_date', todayStr)
-      .lte('next_billing_date', sevenDaysStr);
+      .gte('expires_at', todayStr)
+      .lte('expires_at', sevenDaysStr);
 
     if (subsError) throw subsError;
 
@@ -75,6 +75,8 @@ Deno.serve(async (req) => {
         (new Date(sub.next_billing_date!).getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
       );
 
+      if (![30, 7, 1, 0].includes(daysUntil)) continue;
+      if (sub.credits_used >= sub.credits_total) continue;
       const daysText = daysUntil === 0 ? 'hoje' : daysUntil === 1 ? 'amanhã' : `em ${daysUntil} dias`;
       const creditsRemaining = sub.credits_total - sub.credits_used;
 
