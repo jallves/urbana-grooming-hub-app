@@ -169,7 +169,7 @@ const SubscriptionPlansTab: React.FC = () => {
                   <h3 className="text-base sm:text-xl font-bold mt-1.5 sm:mt-3">{plan.name}</h3>
                   <div className="mt-1 sm:mt-2">
                     <span className="text-xl sm:text-3xl font-black">R$ {plan.price.toFixed(2)}</span>
-                    <span className="text-white/70 text-[10px] sm:text-sm">/{plan.billing_period === 'monthly' ? 'mês' : plan.billing_period === 'quarterly' ? 'trim' : 'ano'}</span>
+                    <span className="text-white/70 text-[10px] sm:text-sm">/365 dias</span>
                   </div>
                 </div>
                 <CardContent className="p-3 sm:p-5 space-y-2 sm:space-y-4">
@@ -259,8 +259,6 @@ const SubscriptionPlansTab: React.FC = () => {
                     <SelectTrigger className="text-sm h-10 mt-1"><SelectValue /></SelectTrigger>
                     <SelectContent className="z-[70]">
                       <SelectItem value="annual">Anual (365 dias)</SelectItem>
-                      <SelectItem value="quarterly">Trimestral</SelectItem>
-                      <SelectItem value="yearly">Anual</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
