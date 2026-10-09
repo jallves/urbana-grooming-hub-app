@@ -33,7 +33,6 @@ const PainelClientePlanos: React.FC = () => {
   const subQ = useQuery({
     queryKey: ['client-own-subscription', cliente?.id],
     enabled: !!cliente?.id,
-    refetchInterval: params.get('status') === 'sucesso' ? 4000 : false,
     queryFn: async () => {
       const { data } = await supabase
         .from('client_subscriptions')
@@ -44,10 +43,31 @@ const PainelClientePlanos: React.FC = () => {
     },
   });
 
+  // Confirma o pagamento no servidor (Stripe) e ativa o plano; guarda a sessão para tentar de novo (Pix)
   useEffect(() => {
     const st = params.get('status');
-    if (st === 'cancelado') { toast.info('Pagamento cancelado'); setParams({}, { replace: true }); }
-    if (st === 'sucesso') toast.success('Pagamento recebido! Seu plano será ativado em instantes.');
+    if (st === 'cancelado') { toast.info('Pagamento cancelado'); setParams({}, { replace: true }); return; }
+    const sid = params.get('session_id') || localStorage.getItem('pending_plan_session');
+    if (!sid) return;
+    localStorage.setItem('pending_plan_session', sid);
+    let tries = 0; let stop = false;
+    const verify = async () => {
+      if (stop) return;
+      const { data } = await supabase.functions.invoke('verify-plan-checkout', { body: { session_id: sid } });
+      if (data?.status === 'active') {
+        localStorage.removeItem('pending_plan_session');
+        toast.success('Plano ativado! Seus créditos já estão disponíveis.');
+        setParams({}, { replace: true });
+        subQ.refetch();
+      } else if (data?.status === 'failed' || data?.error === 'Acesso negado') {
+        localStorage.removeItem('pending_plan_session');
+        if (data?.error) toast.error(data.error);
+      } else if (++tries < 20) {
+        setTimeout(verify, 5000);
+      }
+    };
+    verify();
+    return () => { stop = true; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const sub = subQ.data;
