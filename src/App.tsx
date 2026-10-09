@@ -44,6 +44,7 @@ import PainelClienteNovoAgendamento from './pages/PainelClienteNovoAgendamento';
 import PainelClienteAgendamentos from './pages/PainelClienteAgendamentos';
 import PainelClienteMeusAgendamentos from './pages/PainelClienteMeusAgendamentos';
 import PainelClientePerfil from './pages/PainelClientePerfil';
+import PainelClientePlanos from './pages/PainelClientePlanos';
 import ForgotPassword from './pages/ForgotPassword';
 import BarberAuth from './pages/BarberAuth';
 import BarberDashboard from './pages/BarberDashboard';
@@ -354,6 +355,7 @@ function App() {
                     <Route path="agendar" element={<PainelClienteNovoAgendamento />} />
                     <Route path="agendamentos" element={<PainelClienteMeusAgendamentos />} />
                     <Route path="perfil" element={<PainelClientePerfil />} />
+                    <Route path="planos" element={<PainelClientePlanos />} />
                     <Route index element={<Navigate to="dashboard" replace />} />
                   </Route>
 

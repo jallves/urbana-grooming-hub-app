@@ -1,7 +1,7 @@
 import React from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Calendar, Home, Clock } from 'lucide-react';
+import { LogOut, User, Calendar, Home, Clock, Crown } from 'lucide-react';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { useClientAppointmentNotifier } from '@/hooks/useClientAppointmentNotifier';
@@ -48,6 +48,7 @@ const PainelClienteLayout: React.FC = () => {
     { path: '/painel-cliente/dashboard', icon: Home, label: 'Home', color: 'from-blue-500 to-cyan-500' },
     { path: '/painel-cliente/agendar', icon: Calendar, label: 'Agendar', color: 'from-green-500 to-emerald-500' },
     { path: '/painel-cliente/agendamentos', icon: Clock, label: 'Histórico', color: 'from-purple-500 to-pink-500' },
+    { path: '/painel-cliente/planos', icon: Crown, label: 'Planos', color: 'from-amber-500 to-yellow-500' },
     { path: '/painel-cliente/perfil', icon: User, label: 'Perfil', color: 'from-orange-500 to-red-500' },
   ];
 
