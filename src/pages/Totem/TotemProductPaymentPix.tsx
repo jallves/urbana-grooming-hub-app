@@ -207,7 +207,6 @@ const TotemProductPaymentPix: React.FC = () => {
     isPinpadConnected,
     isProcessing: tefProcessing,
     iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF,
     verificarConexao
   } = useTEFAndroid({});
 
@@ -395,7 +394,7 @@ const TotemProductPaymentPix: React.FC = () => {
   }, []);
 
   const handleCancel = () => {
-    cancelarPagamentoTEF();
+    // Sem cancelamento nativo: ele descarta a resposta final da PayGo e quebra o próximo Pix.
     setIsProcessing(false);
     setPaymentStarted(false);
     clearActivePayment();

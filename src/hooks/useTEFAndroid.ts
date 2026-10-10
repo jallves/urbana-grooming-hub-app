@@ -15,7 +15,7 @@ import {
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
-import { claimApproval, classifyLateApproval, isKnownApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
+import { claimApproval, classifyLateApproval, isKnownApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval, markNativeAwaiting, clearNativeAwaiting, nativeAwaitingRemaining } from '@/lib/tef/tefGuards';
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
@@ -150,6 +150,9 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         }));
         savePendingDataToLocalStorage(rawData);
       }
+
+      // Qualquer resposta da PayGo encerra a espera pela cobrança anterior
+      clearNativeAwaiting();
 
       // Normalizar resultado
       const normalizedResult = normalizePayGoResult(resultado as Record<string, unknown>);
@@ -554,6 +557,21 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       return false;
     }
 
+    // A maquininha ainda não respondeu a cobrança anterior (ex.: cliente saiu da tela
+    // com o QR Code aberto). Iniciar outra agora faz a PayGo recusar ou deixar
+    // pendência, e a venda seguinte fica em aberto mesmo paga.
+    const busyLeft = nativeAwaitingRemaining();
+    if (busyLeft > 0) {
+      logTEFTransaction('tef_init', 'warning', '[TEF] Nova cobrança bloqueada: PayGo ainda sem resposta da anterior', {
+        ordemId: params.ordemId, segundosRestantes: busyLeft,
+      });
+      toast.error('A maquininha ainda está com o Pix anterior aberto', {
+        description: `Cancele o Pix na maquininha ou aguarde até ${busyLeft}s e tente de novo.`,
+        duration: 8000,
+      });
+      return false;
+    }
+
     const TEF = (window as any).TEF;
 
     // ═══════════════════════════════════════════════════════════════
@@ -692,6 +710,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     
     setIsProcessing(true);
     markPaymentStarted(params.ordemId);
+    markNativeAwaiting(params.ordemId);
     console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
     logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
       ordemId: params.ordemId,
@@ -722,6 +741,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
 
       if (!success) {
         setIsProcessing(false);
+        clearNativeAwaiting();
         globalResultCallback = null;
         toast.error('Falha ao iniciar pagamento');
         resolve(false);

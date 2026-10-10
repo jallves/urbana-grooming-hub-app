@@ -338,7 +338,6 @@ const TotemPaymentPix: React.FC = () => {
     isAndroidAvailable,
     isPinpadConnected,
     iniciarPagamento: iniciarPagamentoTEF,
-    cancelarPagamento: cancelarPagamentoTEF,
     verificarConexao
   } = useTEFAndroid({});
 
@@ -467,11 +466,12 @@ const TotemPaymentPix: React.FC = () => {
   }, [isSimulating, simulationStatus]);
 
   const handleCancelPayment = () => {
+    // Não chamar o cancelamento nativo: ele descarta a resposta final da PayGo
+    // e deixa a cobrança sem confirmação, quebrando os próximos pagamentos.
+    // A PayGo encerra o QR Code sozinha (ou pelo cancelar da maquininha).
     if (isSimulating) {
       setIsSimulating(false);
       setSimulationStatus('waiting');
-    } else {
-      cancelarPagamentoTEF();
     }
     setProcessing(false);
     setPaymentStarted(false);
