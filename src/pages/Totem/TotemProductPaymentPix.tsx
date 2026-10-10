@@ -227,8 +227,9 @@ const TotemProductPaymentPix: React.FC = () => {
     if (!isProcessing || !paymentStarted) return;
     const failNoResult = (motivo: string) => {
       console.warn('⏱️ [PRODUCT-PIX] Sem resposta da PayGo:', motivo);
+      // Não cancela a transação nem limpa o estado: uma aprovação atrasada continua aceita.
       setIsProcessing(false);
-      setError({ title: 'Pix não realizado', message: 'O Pix não foi confirmado pela maquininha. Se o valor foi debitado, ele será devolvido automaticamente pelo banco. Tente novamente ou escolha outra forma de pagamento.' });
+      setError({ title: 'Pix não confirmado', message: 'O Pix não foi confirmado pela maquininha em 30 segundos. Se você já pagou, aguarde: a confirmação ainda pode chegar. Se o valor foi debitado e o Pix não concluir, o banco devolve automaticamente. Você pode tentar novamente ou escolher outra forma de pagamento.' });
     };
     let graceTimer: ReturnType<typeof setTimeout> | null = null;
     let wasHidden = document.visibilityState === 'hidden';
