@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
-import { clearActivePayment } from '@/lib/tef/tefGuards';
+import { clearActivePayment, claimFinalization } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -121,7 +121,9 @@ const TotemPaymentPix: React.FC = () => {
     const pendingTransactionData = txData;
     finalizePromiseRef.current = (async () => {
     // Registrar pagamento no servidor imediatamente (rastro da aprovação)
-    if (venda_id) {
+    // Uma vez por venda: após reload da tela não inserir um segundo totem_payments
+    // (a finalização no servidor continua sendo chamada — ela é idempotente).
+    if (venda_id && claimFinalization(venda_id as string)) {
       supabase.from('totem_payments').insert({
         venda_id,
         amount: Number(total || 0),

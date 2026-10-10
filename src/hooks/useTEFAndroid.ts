@@ -15,7 +15,7 @@ import {
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
-import { claimApproval, claimConfirmation, isWithinLateApprovalWindow, markPaymentStarted } from '@/lib/tef/tefGuards';
+import { claimApproval, classifyLateApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
@@ -160,11 +160,25 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       // Mantemos apenas o log para diagnóstico.
       const isLateApproval = !processingRef.current && !globalResultCallback;
       if (isLateApproval) {
-        // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"): não descartar
-        if (normalizedResult.status === 'aprovado' && isWithinLateApprovalWindow()) {
-          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia recebida — propagando', {
-            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+        // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"):
+        // só propagar se o ordemId devolvido pelo APK provar que é da cobrança aberta.
+        const late = normalizedResult.status === 'aprovado' ? classifyLateApproval(normalizedResult.ordemId) : 'expired';
+        if (late === 'accept') {
+          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia correlacionada pelo ordemId — propagando', {
+            ordemId: normalizedResult.ordemId, nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
           });
+        } else if (late === 'ambiguous') {
+          // Sem prova de que pertence à venda aberta: NÃO finalizar. Registrar para revisão.
+          recordAmbiguousApproval({
+            motivo: 'aprovacao_tardia_sem_correlacao', ordemId: normalizedResult.ordemId || null,
+            nsu: normalizedResult.nsu || null, autorizacao: normalizedResult.autorizacao || null,
+            valor: normalizedResult.valor ?? null, confirmationTransactionId: normalizedResult.confirmationTransactionId || null,
+          });
+          logTEFTransaction('tef_init', 'error', '[TEF] Aprovação tardia AMBÍGUA — não finalizada, requer revisão', {
+            ordemId: normalizedResult.ordemId, nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+          });
+          toast.warning('Pagamento recebido fora do tempo', { description: 'Chame um atendente para conferir.', duration: 10000 });
+          return;
         } else {
           console.log('[useTEFAndroid] Resultado recebido sem operação ativa — ignorando callbacks de UI.');
           logTEFTransaction('tef_init', 'info', '[TEF] Resultado descartado (sem operação ativa)', {
@@ -186,12 +200,22 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata:', resultKey);
         return;
       }
-      // Aprovação repetida (entrega duplicada do nativo após 3 s): ignorar
-      if (normalizedResult.status === 'aprovado' && !claimApproval(normalizedResult.nsu, normalizedResult.autorizacao)) {
-        logTEFTransaction('tef_init', 'info', '[TEF] Aprovação duplicada ignorada', {
-          nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
-        });
-        return;
+      // Aprovação repetida (entrega duplicada do nativo): só com chave forte (NSU E autorização).
+      // Sem chave forte não deduplicamos aqui (poderiam ser transações distintas); a proteção
+      // fica por conta do processedRef/finalização única por venda.
+      if (normalizedResult.status === 'aprovado') {
+        const claim = claimApproval(normalizedResult.nsu, normalizedResult.autorizacao);
+        if (claim === false) {
+          logTEFTransaction('tef_init', 'info', '[TEF] Aprovação duplicada ignorada', {
+            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+          });
+          return;
+        }
+        if (claim === null) {
+          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação sem NSU+autorização completos — sem deduplicação forte', {
+            nsu: normalizedResult.nsu || null, autorizacao: normalizedResult.autorizacao || null, ordemId: normalizedResult.ordemId || null,
+          });
+        }
       }
       logTEFTransaction('tef_init', 'info', `[TEF] Resultado recebido: ${normalizedResult.status}`, {
         nsu: normalizedResult.nsu, tardio: isLateApproval, codigoErro: normalizedResult.codigoErro,
@@ -264,19 +288,27 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid]   requiresConfirmation:', normalizedResult.requiresConfirmation);
           console.log('[useTEFAndroid]   needsConfirm (tem ID):', needsConfirm);
           
-          if (needsConfirm && !claimConfirmation(confId)) {
+          if (needsConfirm && isConfirmed(confId)) {
             console.log('[useTEFAndroid] ℹ️ Confirmação deste id já enviada pelo frontend — não reenviar');
             logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação repetida pulada', { confirmationTransactionId: confId });
           } else if (needsConfirm) {
             try {
               console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
-              confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
-              console.log('[useTEFAndroid] ✅ Confirmação enviada com sucesso');
-              logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação enviada ao terminal', {
-                confirmationTransactionId: confId,
-                nsu: normalizedResult.nsu,
-                autorizacao: normalizedResult.autorizacao
-              });
+              // Retorno true = chamada à bridge não lançou erro (a bridge nativa é void;
+              // não há confirmação de sucesso vinda da PayGo). Só então marcamos o id.
+              const sent = confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
+              if (sent) {
+                markConfirmed(confId);
+                logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação entregue à bridge', {
+                  confirmationTransactionId: confId,
+                  nsu: normalizedResult.nsu,
+                  autorizacao: normalizedResult.autorizacao
+                });
+              } else {
+                logTEFTransaction('checkout_servico', 'error', '[TEF] Bridge recusou confirmação — id não marcado', {
+                  confirmationTransactionId: confId,
+                });
+              }
             } catch (confError) {
               console.error('[useTEFAndroid] ❌ Erro ao confirmar:', confError);
               logTEFTransaction('checkout_servico', 'error', '[TEF] ERRO ao enviar confirmação', {
@@ -652,7 +684,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     }
     
     setIsProcessing(true);
-    markPaymentStarted();
+    markPaymentStarted(params.ordemId);
     console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
     logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
       ordemId: params.ordemId,

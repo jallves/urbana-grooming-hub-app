@@ -46,10 +46,10 @@ const TotemProductPaymentPix: React.FC = () => {
       return;
     }
     
+    // paymentId pode faltar após reload da tela (retomada): o servidor (totem-direct-sale finish)
+    // localiza o pagamento existente pela venda, então seguimos sem ele.
     if (!paymentId) {
-      console.error('[PRODUCT-PIX] ❌ paymentId não existe!');
-      toast.error('Erro crítico: ID do pagamento não encontrado');
-      return;
+      console.warn('[PRODUCT-PIX] paymentId ausente — finalizando pela venda (servidor resolve)');
     }
     
     // Prevenir múltiplas finalizações
@@ -79,7 +79,7 @@ const TotemProductPaymentPix: React.FC = () => {
         body: {
           action: 'finish',
           venda_id: sale.id,
-          payment_id: paymentId,
+          payment_id: paymentId || undefined,
           payment_method: 'pix',
           transaction_data: transactionData
         }
