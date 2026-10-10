@@ -140,48 +140,64 @@ export function correlateResult(
   return 'process';
 }
 
-// ─── Registro do pagamento por venda (claim → insert → marca/libera) ───────
-const inFlightRegistrations = new Set<string>();
+// ─── Registro do pagamento por venda (totem_payments) ──────────────────────
+/**
+ * Estados por venda:
+ *  - 'already'  : já gravado com sucesso (marca em localStorage, 30 min; sobrevive a reload).
+ *  - 'inserted' : esta chamada (ou a chamada concorrente que ela aguardou) gravou sem erro.
+ *  - 'failed'   : o insert devolveu erro ou lançou. Nada é marcado; nova chamada explícita pode tentar.
+ * Chamadas simultâneas para a mesma venda AGUARDAM a mesma Promise (não há 'skipped' ambíguo).
+ *
+ * Limitação: totem_payments não tem restrição única por venda no banco, e um erro de rede
+ * não prova que o servidor não gravou. Por isso NÃO há nova tentativa automática após falha:
+ * a falha fica registrada para revisão e só uma chamada explícita tenta de novo.
+ */
+export type RegisterResult = 'inserted' | 'already' | 'failed';
+const inFlightRegistrations = new Map<string, Promise<'inserted' | 'failed'>>();
 
 /** Já registrado com sucesso nesta venda (30 min)? */
 export function isPaymentRegistered(vendaId: string, now = Date.now()): boolean {
   return hasId(FINALIZED_KEY, vendaId, now);
 }
+/** Há insert em andamento para esta venda nesta página? */
+export function isRegistrationInFlight(vendaId: string): boolean {
+  return inFlightRegistrations.has(vendaId);
+}
 
-/**
- * Executa o insert do pagamento no máximo uma vez com sucesso por venda.
- *  - 'skipped': já registrado (localStorage, sobrevive a reload) ou outro envio em andamento
- *    nesta mesma página (callbacks simultâneos).
- *  - 'inserted': insert retornou sem erro → só AGORA marca como registrado.
- *  - 'failed': insert retornou erro ou lançou → libera; o próximo processamento pode tentar de novo.
- * Reload durante o envio: a trava em memória some e a marca ainda não existe → nova tentativa
- * é permitida (preferimos possível repetição a perder o registro).
- */
-export async function registerPaymentOnce(
-  vendaId: string | null | undefined,
+export function registerPaymentOnce(
+  vendaId: string,
   insert: () => PromiseLike<{ error: unknown }>,
   now: () => number = Date.now,
-): Promise<'inserted' | 'skipped' | 'failed'> {
-  if (!vendaId) return 'skipped';
-  if (isPaymentRegistered(vendaId, now()) || inFlightRegistrations.has(vendaId)) return 'skipped';
-  inFlightRegistrations.add(vendaId);
-  try {
-    const res = await insert();
-    if (res && res.error) return 'failed';
-    addId(FINALIZED_KEY, vendaId, now());
-    return 'inserted';
-  } catch {
-    return 'failed';
-  } finally {
-    inFlightRegistrations.delete(vendaId);
-  }
+): Promise<RegisterResult> {
+  if (isPaymentRegistered(vendaId, now())) return Promise.resolve('already');
+  const running = inFlightRegistrations.get(vendaId);
+  if (running) return running;
+  const p = (async (): Promise<'inserted' | 'failed'> => {
+    try {
+      const res = await insert();
+      if (res && res.error) {
+        recordRegistrationIssue({ vendaId, motivo: 'insert_erro', erro: String((res.error as { message?: string })?.message || res.error) });
+        return 'failed';
+      }
+      addId(FINALIZED_KEY, vendaId, now());
+      return 'inserted';
+    } catch (e) {
+      recordRegistrationIssue({ vendaId, motivo: 'insert_excecao', erro: String((e as Error)?.message || e) });
+      return 'failed';
+    } finally {
+      inFlightRegistrations.delete(vendaId);
+    }
+  })();
+  inFlightRegistrations.set(vendaId, p);
+  return p;
 }
 
 // ─── Sequência: registro do pagamento → finalização ────────────────────────
 const REG_FAIL_KEY = 'tef_payment_registration_failures';
-export type RegistrationStatus = 'inserted' | 'skipped' | 'failed' | 'timeout';
+/** 'pending' = o limite de espera acabou e o insert AINDA não respondeu (não é sucesso). */
+export type RegistrationStatus = RegisterResult | 'pending' | 'no_sale';
 
-/** Guarda no tablet as vendas cujo registro do pagamento não foi confirmado (diagnóstico/recuperação). */
+/** Guarda no tablet ocorrências do registro do pagamento (diagnóstico). */
 export function recordRegistrationIssue(data: Record<string, unknown>, now = Date.now()) {
   try {
     const l = JSON.parse(localStorage.getItem(REG_FAIL_KEY) || '[]');
@@ -193,33 +209,47 @@ export function recordRegistrationIssue(data: Record<string, unknown>, now = Dat
 export function getRegistrationIssues(): Array<Record<string, unknown>> {
   try { const l = JSON.parse(localStorage.getItem(REG_FAIL_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch { return []; }
 }
+/** Registro confirmado? Só 'inserted' e 'already' contam; 'pending'/'failed'/'no_sale' não. */
+export function isRegistrationConfirmed(s: RegistrationStatus): boolean {
+  return s === 'inserted' || s === 'already';
+}
+
+export const REGISTRATION_WAIT_MS = 5000;
 
 /**
- * Aguarda o registro do pagamento ANTES de iniciar a finalização.
- *  - 'inserted'/'skipped' (já registrado ou em andamento): segue para finalizar.
- *  - 'failed': registra diagnóstico (venda NÃO marcada → nova tentativa possível) e segue
- *    para finalizar — a finalização no servidor não depende desse registro e é idempotente;
- *    o retorno informa que o registro NÃO foi confirmado.
- *  - 'timeout' (registro não respondeu em `timeoutMs`): o envio continua em andamento com a
- *    trava ativa (sem duplicar); registra diagnóstico e segue para finalizar.
+ * Aguarda o registro do pagamento ANTES de iniciar a finalização (contrato de ordem).
+ * Semântica do limite (`timeoutMs`):
+ *  - Se o insert responder dentro do limite → status real ('inserted' | 'already' | 'failed').
+ *  - Se não responder → status 'pending'. Isso NÃO é sucesso: a venda não é marcada, o insert
+ *    continua em andamento com a trava ativa (novas chamadas aguardam a MESMA Promise, sem
+ *    segundo insert) e a conclusão tardia (sucesso ou erro) é registrada no diagnóstico.
+ *    `settled` expõe o resultado real para quem quiser observar.
+ * A finalização da venda no servidor (totem-checkout) não depende de totem_payments; por isso
+ * segue mesmo com 'failed'/'pending', e o chamador deve tratar o registro como NÃO confirmado.
  */
 export async function registerThenFinalize<T>(
   vendaId: string | null | undefined,
-  register: () => Promise<'inserted' | 'skipped' | 'failed'>,
+  register: (() => Promise<RegisterResult>) | null,
   finalize: (registration: RegistrationStatus) => Promise<T>,
-  timeoutMs = 5000,
-): Promise<{ registration: RegistrationStatus; result: T }> {
+  timeoutMs = REGISTRATION_WAIT_MS,
+): Promise<{ registration: RegistrationStatus; result: T; settled: Promise<RegistrationStatus> }> {
+  if (!vendaId || !register) {
+    const result = await finalize('no_sale');
+    return { registration: 'no_sale', result, settled: Promise.resolve('no_sale') };
+  }
+  const real = register().catch(() => 'failed' as const);
   let timer: ReturnType<typeof setTimeout> | undefined;
-  const registration: RegistrationStatus = await Promise.race([
-    register().catch(() => 'failed' as const),
-    new Promise<'timeout'>((r) => { timer = setTimeout(() => r('timeout'), timeoutMs); }),
+  const first: RegistrationStatus = await Promise.race([
+    real,
+    new Promise<'pending'>((r) => { timer = setTimeout(() => r('pending'), timeoutMs); }),
   ]);
   if (timer) clearTimeout(timer);
-  if (registration === 'failed' || registration === 'timeout') {
-    recordRegistrationIssue({ vendaId: vendaId || null, motivo: registration });
+  if (first === 'pending') {
+    recordRegistrationIssue({ vendaId, motivo: 'pendente_apos_limite', limiteMs: timeoutMs });
+    real.then((late) => recordRegistrationIssue({ vendaId, motivo: late === 'failed' ? 'tardio_falhou' : 'tardio_gravado', resultado: late }));
   }
-  const result = await finalize(registration);
-  return { registration, result };
+  const result = await finalize(first);
+  return { registration: first, result, settled: real };
 }
 
 // ─── Pagamento ativo (retomada após reload) ────────────────────────────────
