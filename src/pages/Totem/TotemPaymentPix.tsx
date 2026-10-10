@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
-import { clearActivePayment, registerPaymentOnce, registerThenFinalize, isPaymentRegistered } from '@/lib/tef/tefGuards';
+import { clearActivePayment, registerPaymentOnce, registerThenFinalize, isRegistrationConfirmed, REGISTRATION_WAIT_MS, type RegistrationStatus } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -114,28 +114,18 @@ const TotemPaymentPix: React.FC = () => {
 
   // Função chamada após comprovante enviado/impresso - finaliza tudo (IGUAL AO CARTÃO)
   // Finalização imediata ao aprovar (não depende da tela de comprovante)
-  const finalizePromiseRef = useRef<Promise<{ resolvedVendaId: string | null; checkoutFinalized: boolean; finishPayload: ServiceCheckoutFinishPayload | null; paymentRegistered?: boolean }> | null>(null);
+  type FinalizeOutcome = { resolvedVendaId: string | null; checkoutFinalized: boolean; finishPayload: ServiceCheckoutFinishPayload | null; paymentRegistration: RegistrationStatus };
+  const finalizePromiseRef = useRef<Promise<FinalizeOutcome> | null>(null);
+  // Estado observável para o fallback do comprovante (não presume sucesso)
+  const finishPayloadRef = useRef<ServiceCheckoutFinishPayload | null>(null);
+  const registrationRef = useRef<RegistrationStatus>('pending');
 
   const runFinalize = useCallback((txData: NonNullable<typeof pendingTransactionData>) => {
     if (finalizePromiseRef.current) return finalizePromiseRef.current;
     const pendingTransactionData = txData;
-    finalizePromiseRef.current = (async () => {
-    // 1) Registrar pagamento e AGUARDAR o resultado; 2) só então finalizar a venda.
-    // Marca a venda só após insert sem erro; falha fica diagnosticada e permite nova tentativa.
-    const { registration, result } = await registerThenFinalize(
-      venda_id as string | null,
-      () => registerPaymentOnce(venda_id as string, () =>
-        supabase.from('totem_payments').insert({
-          venda_id,
-          amount: Number(total || 0),
-          payment_method: 'PIX',
-          status: 'approved',
-          transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
-        }),
-      ),
-      async () => {
-    let resolvedVendaId = venda_id ?? null;
-
+    finalizePromiseRef.current = (async (): Promise<FinalizeOutcome> => {
+    // Dados da finalização montados e guardados ANTES de qualquer espera:
+    // se a tela de comprovante desistir, a tela de sucesso ainda consegue finalizar.
     const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && appointment?.id
       ? {
           venda_id: venda_id ?? undefined,
@@ -150,11 +140,25 @@ const TotemPaymentPix: React.FC = () => {
           combo_name: comboName || null,
         }
       : null;
+    finishPayloadRef.current = finishPayload;
+    if (finishPayload) persistPendingServiceCheckout(finishPayload);
 
-    if (finishPayload) {
-      persistPendingServiceCheckout(finishPayload);
-    }
-
+    // 1) Registrar pagamento (totem_payments) e aguardar; 2) só então finalizar a venda.
+    // A finalização no servidor (totem-checkout) é independente desse registro.
+    const { registration, result, settled } = await registerThenFinalize(
+      venda_id as string | null,
+      venda_id ? () => registerPaymentOnce(venda_id as string, () =>
+        supabase.from('totem_payments').insert({
+          venda_id,
+          amount: Number(total || 0),
+          payment_method: 'PIX',
+          status: 'approved',
+          transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
+        }),
+      ) : null,
+      async () => {
+    registrationRef.current = 'pending';
+    let resolvedVendaId = venda_id ?? null;
     let checkoutFinalized = isDirect;
 
     if (isDirect) {
@@ -179,7 +183,6 @@ const TotemPaymentPix: React.FC = () => {
     } else {
       console.error('❌ [PIX] venda_id ausente ao finalizar checkout de serviço');
     }
-    
 
     // Atualizar estoque em paralelo (fire-and-forget)
     if (selectedProducts?.length > 0) {
@@ -193,14 +196,18 @@ const TotemPaymentPix: React.FC = () => {
       }
     }
 
-
     return { resolvedVendaId, checkoutFinalized, finishPayload };
       },
     );
-    if (registration === 'failed' || registration === 'timeout') {
-      console.warn(`[PIX] Registro do pagamento NÃO confirmado (${registration}) — venda não marcada; diagnóstico salvo no tablet`);
+    registrationRef.current = registration;
+    if (registration === 'pending') {
+      // Conclusão tardia: atualiza o estado observado (o diagnóstico é gravado em tefGuards)
+      settled.then((late) => { registrationRef.current = late; });
     }
-    return { ...result, paymentRegistered: !!venda_id && isPaymentRegistered(venda_id as string) };
+    if (!isRegistrationConfirmed(registration) && registration !== 'no_sale') {
+      console.warn(`[PIX] Registro do pagamento NÃO confirmado (${registration}) — venda finalizada no servidor separadamente; diagnóstico salvo no tablet`);
+    }
+    return { ...result, paymentRegistration: registration };
     })();
     return finalizePromiseRef.current;
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount, comboDiscount, comboName]);
@@ -214,11 +221,16 @@ const TotemPaymentPix: React.FC = () => {
     if (!pendingTransactionData) return;
     if (finalizingRef.current) return;
     finalizingRef.current = true;
-    const fallback = { resolvedVendaId: venda_id ?? null, checkoutFinalized: false, finishPayload: null as ServiceCheckoutFinishPayload | null };
-    // Nunca prender o cliente: no máximo 8s aguardando a finalização
-    const { resolvedVendaId, checkoutFinalized, finishPayload } = await Promise.race([
-      runFinalize(pendingTransactionData).catch(() => fallback),
-      new Promise<typeof fallback>((r) => setTimeout(() => r(fallback), 8000)),
+    // Fallback honesto: não finalizado, registro com o último estado observado (nunca presume sucesso),
+    // e com os dados guardados para a tela de sucesso tentar finalizar de novo.
+    const makeFallback = (): FinalizeOutcome => ({
+      resolvedVendaId: venda_id ?? null, checkoutFinalized: false,
+      finishPayload: finishPayloadRef.current, paymentRegistration: registrationRef.current,
+    });
+    // Limite: espera do registro (REGISTRATION_WAIT_MS) + os 8s que já existiam para a finalização
+    const { resolvedVendaId, checkoutFinalized, finishPayload, paymentRegistration } = await Promise.race([
+      runFinalize(pendingTransactionData).catch(() => makeFallback()),
+      new Promise<FinalizeOutcome>((r) => setTimeout(() => r(makeFallback()), REGISTRATION_WAIT_MS + 8000)),
     ]);
     // NAVEGAR IMEDIATAMENTE para tela de sucesso - não bloquear o usuário
     const successState = { 
@@ -231,6 +243,8 @@ const TotemPaymentPix: React.FC = () => {
       venda_id: resolvedVendaId,
       checkoutFinishPayload: finishPayload ? { ...finishPayload, venda_id: resolvedVendaId ?? finishPayload.venda_id } : null,
       checkoutFinalized,
+      paymentRegistration,
+      paymentRegistered: isRegistrationConfirmed(paymentRegistration),
     };
     navigate('/totem/payment-success', { state: successState });
 
