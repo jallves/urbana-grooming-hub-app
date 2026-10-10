@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
-import { clearActivePayment, registerPaymentOnce, registerThenFinalize } from '@/lib/tef/tefGuards';
+import { clearActivePayment, registerPaymentOnce, registerThenFinalize, isPaymentRegistered } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -200,7 +200,7 @@ const TotemPaymentPix: React.FC = () => {
     if (registration === 'failed' || registration === 'timeout') {
       console.warn(`[PIX] Registro do pagamento NÃO confirmado (${registration}) — venda não marcada; diagnóstico salvo no tablet`);
     }
-    return { ...result, paymentRegistered: registration === 'inserted' || registration === 'skipped' };
+    return { ...result, paymentRegistered: !!venda_id && isPaymentRegistered(venda_id as string) };
     })();
     return finalizePromiseRef.current;
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount, comboDiscount, comboName]);
