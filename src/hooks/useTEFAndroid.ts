@@ -15,7 +15,7 @@ import {
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
-import { claimApproval, claimConfirmation, isWithinLateApprovalWindow, markPaymentStarted } from '@/lib/tef/tefGuards';
+import { claimApproval, classifyLateApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
@@ -288,19 +288,27 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid]   requiresConfirmation:', normalizedResult.requiresConfirmation);
           console.log('[useTEFAndroid]   needsConfirm (tem ID):', needsConfirm);
           
-          if (needsConfirm && !claimConfirmation(confId)) {
+          if (needsConfirm && isConfirmed(confId)) {
             console.log('[useTEFAndroid] ℹ️ Confirmação deste id já enviada pelo frontend — não reenviar');
             logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação repetida pulada', { confirmationTransactionId: confId });
           } else if (needsConfirm) {
             try {
               console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
-              confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
-              console.log('[useTEFAndroid] ✅ Confirmação enviada com sucesso');
-              logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação enviada ao terminal', {
-                confirmationTransactionId: confId,
-                nsu: normalizedResult.nsu,
-                autorizacao: normalizedResult.autorizacao
-              });
+              // Retorno true = chamada à bridge não lançou erro (a bridge nativa é void;
+              // não há confirmação de sucesso vinda da PayGo). Só então marcamos o id.
+              const sent = confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
+              if (sent) {
+                markConfirmed(confId);
+                logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação entregue à bridge', {
+                  confirmationTransactionId: confId,
+                  nsu: normalizedResult.nsu,
+                  autorizacao: normalizedResult.autorizacao
+                });
+              } else {
+                logTEFTransaction('checkout_servico', 'error', '[TEF] Bridge recusou confirmação — id não marcado', {
+                  confirmationTransactionId: confId,
+                });
+              }
             } catch (confError) {
               console.error('[useTEFAndroid] ❌ Erro ao confirmar:', confError);
               logTEFTransaction('checkout_servico', 'error', '[TEF] ERRO ao enviar confirmação', {
@@ -676,7 +684,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     }
     
     setIsProcessing(true);
-    markPaymentStarted();
+    markPaymentStarted(params.ordemId);
     console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
     logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
       ordemId: params.ordemId,
