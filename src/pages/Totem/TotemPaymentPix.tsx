@@ -318,7 +318,9 @@ const TotemPaymentPix: React.FC = () => {
         wasHidden = true;
         if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
       } else if (wasHidden && !graceTimer) {
-        graceTimer = setTimeout(() => failNoResult('retornou da PayGo sem resultado'), 20000);
+        // 30s de tolerância após voltar da PayGo: não cancela nada, só avisa e oferece
+        // tentar de novo / outra forma de pagamento. Aprovação atrasada continua aceita.
+        graceTimer = setTimeout(() => failNoResult('30s sem resposta após retornar da PayGo'), 30000);
       }
     };
     document.addEventListener('visibilitychange', onVis);
