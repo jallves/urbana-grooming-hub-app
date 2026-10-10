@@ -156,8 +156,8 @@ const TotemPaymentPix: React.FC = () => {
           transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
         }),
       ) : null,
-      async () => {
-    registrationRef.current = 'pending';
+      async (reg) => {
+    registrationRef.current = reg;
     let resolvedVendaId = venda_id ?? null;
     let checkoutFinalized = isDirect;
 

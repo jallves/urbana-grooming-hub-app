@@ -55,6 +55,7 @@ const TotemPaymentSuccess: React.FC = () => {
     venda_id = null,
     checkoutFinishPayload = null as ServiceCheckoutFinishPayload | null,
     checkoutFinalized = false,
+    paymentRegistration = null as string | null, // Pix: registro interno do pagamento (null = não informado)
   } = location.state || {};
 
   const ratingRedirect = !isDirect && appointment;
@@ -282,6 +283,12 @@ const TotemPaymentSuccess: React.FC = () => {
             </p>
           )}
           
+          {(paymentRegistration === 'failed' || paymentRegistration === 'pending') && (
+            <p className="text-sm text-urbana-gold font-semibold">
+              Registro interno do pagamento pendente — avise o atendente.
+            </p>
+          )}
+
           {transactionData?.nsu && (
             <p className="text-sm text-urbana-light/60">
               NSU: {transactionData.nsu}
