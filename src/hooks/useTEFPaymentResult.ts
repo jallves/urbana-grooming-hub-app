@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
-import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment } from '@/lib/tef/tefGuards';
+import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment, matchOrdem, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
 
 interface UseTEFPaymentResultOptions {
   enabled: boolean;
@@ -100,6 +100,8 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
     comprovanteCliente: (raw.cardholderReceipt || raw.comprovanteCliente || '') as string,
     comprovanteLojista: (raw.merchantReceipt || raw.comprovanteLojista || '') as string,
     timestamp: Date.now(),
+    // ordemId devolvido pelo APK (venda enviada, truncada no 1º "_") — usado para correlacionar
+    ordemId: (raw.ordemId || '') as string,
     // CRÍTICO: Preservar dados de confirmação TEF
     confirmationTransactionId: (raw.confirmationTransactionId || raw.confirmationId || '') as string,
     requiresConfirmation: raw.requiresConfirmation === true || raw.requiresConfirmation === 'true' || !!(raw.confirmationTransactionId || raw.confirmationId)
@@ -122,6 +124,9 @@ export function useTEFPaymentResult({
   const enabledRef = useRef(enabled);
   const startTimeRef = useRef<number>(Date.now());
   const processedRef = useRef(false);
+  const paymentKeyRef = useRef(paymentKey);
+  paymentKeyRef.current = paymentKey;
+  const resumedRef = useRef(resumed);
   
   // Atualizar refs quando props mudarem
   useEffect(() => {
@@ -160,6 +165,24 @@ export function useTEFPaymentResult({
     }
     
     const normalized = normalizePayGoResult(resultado as Record<string, unknown>);
+
+    // Correlação com a venda desta tela (só quando a tela informou paymentKey)
+    if (paymentKeyRef.current) {
+      const m = matchOrdem(normalized.ordemId, paymentKeyRef.current);
+      const ambiguousResume = m === 'unknown' && resumedRef.current;
+      if (m === 'mismatch' || ambiguousResume) {
+        console.warn('[useTEFPaymentResult] ⛔ Resultado não pertence a esta venda — ignorando', { ordemId: normalized.ordemId, esperado: paymentKeyRef.current });
+        if (normalized.status === 'aprovado') {
+          recordAmbiguousApproval({
+            motivo: m === 'mismatch' ? 'ordem_diferente_da_venda' : 'retomada_sem_ordemId',
+            ordemId: normalized.ordemId || null, esperado: paymentKeyRef.current,
+            nsu: normalized.nsu || null, autorizacao: normalized.autorizacao || null,
+          });
+        }
+        return;
+      }
+    }
+
     const resultKey = `${normalized.status}-${normalized.nsu}-${normalized.timestamp}`;
     
     if (globalLastProcessedResultKey === resultKey) {
