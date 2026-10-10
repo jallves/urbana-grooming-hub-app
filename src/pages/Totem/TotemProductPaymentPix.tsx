@@ -166,9 +166,14 @@ const TotemProductPaymentPix: React.FC = () => {
     }
   }, [sale, client, cart, paymentId, navigate]);
 
+  // iniciarPagamento devolve false para QUALQUER resultado não aprovado; se a PayGo já
+  // respondeu, a tela já tratou e deve continuar ouvindo esta venda.
+  const tefResultSeenRef = useRef(false);
+
   // Handler para resultado do TEF - IGUAL AO SERVIÇO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PRODUCT-PIX] handleTEFResult:', resultado.status);
+    tefResultSeenRef.current = true;
     
     switch (resultado.status) {
       case 'aprovado':
@@ -182,7 +187,7 @@ const TotemProductPaymentPix: React.FC = () => {
         toast.error('Pagamento PIX negado', { description: resultado.mensagem || 'Tente novamente' });
         setError({ title: 'Pagamento Negado', message: resultado.mensagem || 'Tente novamente' });
         setIsProcessing(false);
-        setPaymentStarted(false);
+        // Continua ouvindo: se a PayGo aprovar esta venda depois, finaliza normalmente.
         break;
         
       case 'cancelado':
@@ -196,7 +201,7 @@ const TotemProductPaymentPix: React.FC = () => {
         toast.error('Erro no pagamento PIX', { description: resultado.mensagem });
         setError({ title: 'Erro no Pagamento', message: resultado.mensagem || 'Erro desconhecido' });
         setIsProcessing(false);
-        setPaymentStarted(false);
+        // Continua ouvindo: se a PayGo aprovar esta venda depois, finaliza normalmente.
         break;
     }
   }, [handlePaymentSuccess]);
@@ -359,6 +364,7 @@ const TotemProductPaymentPix: React.FC = () => {
 
     try {
       const ordemId = sale.id || `PIX_PRODUCT_${Date.now()}`;
+      tefResultSeenRef.current = false;
 
       const success = await iniciarPagamentoTEF({
         ordemId,
@@ -367,7 +373,9 @@ const TotemProductPaymentPix: React.FC = () => {
         parcelas: 1
       });
 
-      if (!success) {
+      if (!success && tefResultSeenRef.current) {
+        console.log('ℹ️ [PRODUCT-PIX] PayGo respondeu sem aprovação — tela já tratou; segue ouvindo esta venda');
+      } else if (!success) {
         toast.error('Erro ao iniciar pagamento PIX', {
           description: 'A bridge TEF retornou falha.'
         });
