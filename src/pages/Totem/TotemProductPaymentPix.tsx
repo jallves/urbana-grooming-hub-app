@@ -9,6 +9,7 @@ import { TotemErrorFeedback } from '@/components/totem/TotemErrorFeedback';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
+import { clearActivePayment } from '@/lib/tef/tefGuards';
 import { TEFResultado, resolverPendenciaAndroid } from '@/lib/tef/tefAndroidBridge';
 import barbershopBg from '@/assets/barbershop-background.jpg';
 
@@ -185,9 +186,10 @@ const TotemProductPaymentPix: React.FC = () => {
         break;
         
       case 'cancelado':
+        // Mantém paymentStarted: um Pix pode ser aprovado depois do aviso de tempo esgotado
         toast.info('Pagamento cancelado');
+        setError({ title: 'Pix não realizado', message: 'O Pix não foi realizado (operação cancelada ou QR Code expirado). Se algum valor foi debitado, ele será devolvido automaticamente pelo banco.' });
         setIsProcessing(false);
-        setPaymentStarted(false);
         break;
         
       case 'erro':
@@ -213,11 +215,39 @@ const TotemProductPaymentPix: React.FC = () => {
 
   // Hook para receber resultado do PayGo - IGUAL AO SERVIÇO
   useTEFPaymentResult({
-    enabled: paymentStarted && isProcessing,
+    enabled: paymentStarted,
+    paymentKey: sale?.id || null,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000
   });
+
+  // Vigia: se a PayGo devolver o controle sem resultado, ou demorar demais, avisar o cliente
+  useEffect(() => {
+    if (!isProcessing || !paymentStarted) return;
+    const failNoResult = (motivo: string) => {
+      console.warn('⏱️ [PRODUCT-PIX] Sem resposta da PayGo:', motivo);
+      setIsProcessing(false);
+      setError({ title: 'Pix não realizado', message: 'O Pix não foi confirmado pela maquininha. Se o valor foi debitado, ele será devolvido automaticamente pelo banco. Tente novamente ou escolha outra forma de pagamento.' });
+    };
+    let graceTimer: ReturnType<typeof setTimeout> | null = null;
+    let wasHidden = document.visibilityState === 'hidden';
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        wasHidden = true;
+        if (graceTimer) { clearTimeout(graceTimer); graceTimer = null; }
+      } else if (wasHidden && !graceTimer) {
+        graceTimer = setTimeout(() => failNoResult('retornou da PayGo sem resultado'), 20000);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    const hardTimer = setTimeout(() => failNoResult('tempo máximo de 5 min'), 5 * 60 * 1000);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      clearTimeout(hardTimer);
+      if (graceTimer) clearTimeout(graceTimer);
+    };
+  }, [isProcessing, paymentStarted]);
 
   // Delay inicial para verificar conexão TEF
   useEffect(() => {
@@ -233,7 +263,7 @@ const TotemProductPaymentPix: React.FC = () => {
   }, [isAndroidAvailable, isPinpadConnected, isCheckingConnection]);
 
   // Iniciar pagamento PIX - IGUAL AO SERVIÇO
-  const handleStartPix = async () => {
+  const handleStartPix = async (force = false) => {
     console.log('💚 [PRODUCT-PIX] ═══════════════════════════════════════');
     console.log('💚 [PRODUCT-PIX] INICIANDO PAGAMENTO PIX DE PRODUTO');
     console.log('💚 [PRODUCT-PIX] Valor:', sale?.total);
@@ -244,7 +274,7 @@ const TotemProductPaymentPix: React.FC = () => {
       return;
     }
 
-    if (isProcessing || paymentStarted) return;
+    if (isProcessing || (paymentStarted && !force)) return;
 
     setError(null);
     finalizingRef.current = false;
@@ -339,6 +369,7 @@ const TotemProductPaymentPix: React.FC = () => {
         toast.error('Erro ao iniciar pagamento PIX', {
           description: 'A bridge TEF retornou falha.'
         });
+        clearActivePayment();
         setIsProcessing(false);
         setPaymentStarted(false);
       } else {
@@ -364,6 +395,7 @@ const TotemProductPaymentPix: React.FC = () => {
     cancelarPagamentoTEF();
     setIsProcessing(false);
     setPaymentStarted(false);
+    clearActivePayment();
     navigate('/totem/product-checkout', { state: { client, cart, barber } });
   };
 
@@ -376,6 +408,8 @@ const TotemProductPaymentPix: React.FC = () => {
         message={error.message}
         onRetry={async () => {
           setError(null);
+          setPaymentStarted(false);
+          clearActivePayment();
           finalizingRef.current = false;
           
           // Resolver pendências antes de retry
@@ -398,9 +432,9 @@ const TotemProductPaymentPix: React.FC = () => {
             console.warn('[PRODUCT-PIX] Erro ao resolver pendência:', e);
           }
           
-          handleStartPix();
+          handleStartPix(true);
         }}
-        onGoHome={() => navigate('/totem')}
+        onGoHome={() => { clearActivePayment(); setPaymentStarted(false); navigate('/totem'); }}
       />
     );
   }
@@ -489,7 +523,7 @@ const TotemProductPaymentPix: React.FC = () => {
               </div>
               
               <Button
-                onClick={handleStartPix}
+                onClick={() => handleStartPix()}
                 size="lg"
                 className="w-full h-16 text-xl font-bold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
               >
