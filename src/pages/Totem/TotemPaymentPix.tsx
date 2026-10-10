@@ -250,6 +250,11 @@ const TotemPaymentPix: React.FC = () => {
 
   }, [pendingTransactionData, runFinalize, appointment, client, total, isDirect, selectedProducts, extraServices, resumo, tipAmount, navigate]);
 
+  // A promessa de iniciarPagamento devolve false para QUALQUER resultado não aprovado.
+  // Isso não é "falha ao iniciar": se a PayGo já respondeu, a tela já tratou o resultado
+  // e deve continuar ouvindo esta venda (uma aprovação posterior ainda finaliza).
+  const tefResultSeenRef = useRef(false);
+
   // Handler para resultado do TEF - IGUAL AO CARTÃO
   const handleTEFResult = useCallback((resultado: TEFResultado) => {
     console.log('📞 [PIX] ═══════════════════════════════════════');
@@ -257,6 +262,7 @@ const TotemPaymentPix: React.FC = () => {
     console.log('📞 [PIX] Status:', resultado.status);
     console.log('📞 [PIX] ═══════════════════════════════════════');
     
+    tefResultSeenRef.current = true;
     switch (resultado.status) {
       case 'aprovado':
         console.log('✅ [PIX] Pagamento APROVADO - Mostrando opções de comprovante');
@@ -274,7 +280,7 @@ const TotemPaymentPix: React.FC = () => {
         toast.error('Pagamento PIX negado', { description: resultado.mensagem || 'Tente novamente' });
         setError(resultado.mensagem || 'Pagamento negado');
         setProcessing(false);
-        setPaymentStarted(false);
+        // Continua ouvindo: se a PayGo aprovar esta venda depois, finaliza normalmente.
         break;
         
       case 'cancelado':
@@ -289,7 +295,7 @@ const TotemPaymentPix: React.FC = () => {
         toast.error('Erro no pagamento PIX', { description: resultado.mensagem });
         setError(resultado.mensagem || 'Erro desconhecido');
         setProcessing(false);
-        setPaymentStarted(false);
+        // Continua ouvindo: se a PayGo aprovar esta venda depois, finaliza normalmente.
         break;
     }
   }, []);
@@ -411,6 +417,7 @@ const TotemPaymentPix: React.FC = () => {
 
     try {
       const ordemId = (venda_id as string) || `PIX_${Date.now()}`;
+      tefResultSeenRef.current = false;
 
       // CHAMAR PAYGO COM TIPO PIX - PayGo abrirá a tela de seleção de carteiras digitais
       const success = await iniciarPagamentoTEF({
@@ -420,7 +427,9 @@ const TotemPaymentPix: React.FC = () => {
         parcelas: 1
       });
 
-      if (!success) {
+      if (!success && tefResultSeenRef.current) {
+        console.log('ℹ️ [PIX] PayGo respondeu sem aprovação — tela já tratou; segue ouvindo esta venda');
+      } else if (!success) {
         toast.error('Erro ao iniciar pagamento PIX', {
           description: 'A bridge TEF retornou falha ao iniciar a transação.'
         });
