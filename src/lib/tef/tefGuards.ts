@@ -118,13 +118,63 @@ export function claimApproval(nsu?: string | null, autorizacao?: string | null, 
   return true;
 }
 
-// ─── Finalização por venda ─────────────────────────────────────────────────
-/** true na primeira vez para esta venda (30 min); evita registrar o pagamento duas vezes após reload. */
-export function claimFinalization(vendaId?: string | null, now = Date.now()): boolean {
-  if (!vendaId) return true;
-  if (hasId(FINALIZED_KEY, vendaId, now)) return false;
-  addId(FINALIZED_KEY, vendaId, now);
-  return true;
+// ─── Correlação resultado ↔ venda da tela ───────────────────────────────────
+/**
+ * Decide o que fazer com um resultado TEF numa tela que conhece a venda (paymentKey).
+ *  - sem paymentKey → 'process' (tela não informou venda; comportamento anterior)
+ *  - APROVADO: só 'process' com ordemId que bate com a venda ('match');
+ *    vazio/inconfiável/diferente → 'ambiguous' (NÃO finalizar; registrar para revisão)
+ *  - NÃO aprovado (cancelado/negado/erro): ordemId de outra venda → 'ignore';
+ *    sem ordemId → 'process' (ex.: aviso do vigia nativo não traz ordemId), exceto
+ *    em retomada após reload, onde sem ordemId não dá para atribuir → 'ignore'.
+ */
+export type Correlation = 'process' | 'ignore' | 'ambiguous';
+export function correlateResult(
+  status: string, resultOrdemId: string | null | undefined, paymentKey: string | null | undefined, resumed = false,
+): Correlation {
+  if (!paymentKey) return 'process';
+  const m = matchOrdem(resultOrdemId, paymentKey);
+  if (status === 'aprovado') return m === 'match' ? 'process' : 'ambiguous';
+  if (m === 'mismatch') return 'ignore';
+  if (m === 'unknown' && resumed) return 'ignore';
+  return 'process';
+}
+
+// ─── Registro do pagamento por venda (claim → insert → marca/libera) ───────
+const inFlightRegistrations = new Set<string>();
+
+/** Já registrado com sucesso nesta venda (30 min)? */
+export function isPaymentRegistered(vendaId: string, now = Date.now()): boolean {
+  return hasId(FINALIZED_KEY, vendaId, now);
+}
+
+/**
+ * Executa o insert do pagamento no máximo uma vez com sucesso por venda.
+ *  - 'skipped': já registrado (localStorage, sobrevive a reload) ou outro envio em andamento
+ *    nesta mesma página (callbacks simultâneos).
+ *  - 'inserted': insert retornou sem erro → só AGORA marca como registrado.
+ *  - 'failed': insert retornou erro ou lançou → libera; o próximo processamento pode tentar de novo.
+ * Reload durante o envio: a trava em memória some e a marca ainda não existe → nova tentativa
+ * é permitida (preferimos possível repetição a perder o registro).
+ */
+export async function registerPaymentOnce(
+  vendaId: string | null | undefined,
+  insert: () => PromiseLike<{ error: unknown }>,
+  now: () => number = Date.now,
+): Promise<'inserted' | 'skipped' | 'failed'> {
+  if (!vendaId) return 'skipped';
+  if (isPaymentRegistered(vendaId, now()) || inFlightRegistrations.has(vendaId)) return 'skipped';
+  inFlightRegistrations.add(vendaId);
+  try {
+    const res = await insert();
+    if (res && res.error) return 'failed';
+    addId(FINALIZED_KEY, vendaId, now());
+    return 'inserted';
+  } catch {
+    return 'failed';
+  } finally {
+    inFlightRegistrations.delete(vendaId);
+  }
 }
 
 // ─── Pagamento ativo (retomada após reload) ────────────────────────────────
