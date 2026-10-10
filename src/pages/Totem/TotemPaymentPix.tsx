@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
-import { clearActivePayment, claimFinalization } from '@/lib/tef/tefGuards';
+import { clearActivePayment, registerPaymentOnce } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -121,16 +121,21 @@ const TotemPaymentPix: React.FC = () => {
     const pendingTransactionData = txData;
     finalizePromiseRef.current = (async () => {
     // Registrar pagamento no servidor imediatamente (rastro da aprovação)
-    // Uma vez por venda: após reload da tela não inserir um segundo totem_payments
+    // Uma vez por venda: marca só DEPOIS do insert sem erro; falha libera para nova tentativa.
     // (a finalização no servidor continua sendo chamada — ela é idempotente).
-    if (venda_id && claimFinalization(venda_id as string)) {
-      supabase.from('totem_payments').insert({
-        venda_id,
-        amount: Number(total || 0),
-        payment_method: 'PIX',
-        status: 'approved',
-        transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
-      }).then(({ error }) => { if (error) console.warn('[PIX] totem_payments insert:', error); });
+    if (venda_id) {
+      registerPaymentOnce(venda_id as string, () =>
+        supabase.from('totem_payments').insert({
+          venda_id,
+          amount: Number(total || 0),
+          payment_method: 'PIX',
+          status: 'approved',
+          transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
+        }),
+      ).then((r) => {
+        // Falha não marca a venda: um novo processamento (ex.: reload/retomada) pode registrar.
+        if (r === 'failed') console.warn('[PIX] totem_payments insert falhou — venda não marcada, nova tentativa permitida');
+      });
     }
     let resolvedVendaId = venda_id ?? null;
 

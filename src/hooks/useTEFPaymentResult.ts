@@ -12,7 +12,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
-import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment, matchOrdem, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
+import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment, matchOrdem, recordAmbiguousApproval, correlateResult } from '@/lib/tef/tefGuards';
 
 interface UseTEFPaymentResultOptions {
   enabled: boolean;
@@ -166,15 +166,16 @@ export function useTEFPaymentResult({
     
     const normalized = normalizePayGoResult(resultado as Record<string, unknown>);
 
-    // Correlação com a venda desta tela (só quando a tela informou paymentKey)
+    // Correlação com a venda desta tela (só quando a tela informou paymentKey).
+    // Aprovação só segue com ordemId que bate com a venda; ambígua nunca finaliza.
     if (paymentKeyRef.current) {
-      const m = matchOrdem(normalized.ordemId, paymentKeyRef.current);
-      const ambiguousResume = m === 'unknown' && resumedRef.current;
-      if (m === 'mismatch' || ambiguousResume) {
-        console.warn('[useTEFPaymentResult] ⛔ Resultado não pertence a esta venda — ignorando', { ordemId: normalized.ordemId, esperado: paymentKeyRef.current });
-        if (normalized.status === 'aprovado') {
+      const decision = correlateResult(normalized.status, normalized.ordemId, paymentKeyRef.current, resumedRef.current);
+      if (decision !== 'process') {
+        const m = matchOrdem(normalized.ordemId, paymentKeyRef.current);
+        console.warn('[useTEFPaymentResult] ⛔ Resultado não atribuível a esta venda — não processado', { decision, status: normalized.status, ordemId: normalized.ordemId, esperado: paymentKeyRef.current });
+        if (decision === 'ambiguous') {
           recordAmbiguousApproval({
-            motivo: m === 'mismatch' ? 'ordem_diferente_da_venda' : 'retomada_sem_ordemId',
+            motivo: m === 'mismatch' ? 'ordem_diferente_da_venda' : (resumedRef.current ? 'retomada_sem_ordemId' : 'aprovado_sem_ordemId_confiavel'),
             ordemId: normalized.ordemId || null, esperado: paymentKeyRef.current,
             nsu: normalized.nsu || null, autorizacao: normalized.autorizacao || null,
           });

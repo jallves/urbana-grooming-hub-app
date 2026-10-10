@@ -1,6 +1,6 @@
 import {
   isConfirmed, markConfirmed, claimApproval, strongApprovalKey, markPaymentStarted, classifyLateApproval,
-  matchOrdem, setActivePayment, clearActivePayment, shouldResume, claimFinalization,
+  matchOrdem, setActivePayment, clearActivePayment, shouldResume, registerPaymentOnce, isPaymentRegistered, correlateResult,
   LATE_APPROVAL_WINDOW_MS, ACTIVE_TTL,
 } from '../tefGuards';
 
@@ -56,8 +56,48 @@ test('retomada só na mesma venda, dentro do prazo, e não após cancelamento', 
   expect(shouldResume(VENDA, t + 1000)).toBe(false);
 });
 
-test('registro do pagamento acontece uma vez por venda', () => {
-  expect(claimFinalization(VENDA)).toBe(true);
-  expect(claimFinalization(VENDA)).toBe(false);
-  expect(claimFinalization(OUTRA)).toBe(true);
+test('aprovação com ordemId vazio/inconfiável/diferente na tela ativa é ambígua (não finaliza)', () => {
+  expect(correlateResult('aprovado', '', VENDA)).toBe('ambiguous');
+  expect(correlateResult('aprovado', undefined, VENDA)).toBe('ambiguous');
+  expect(correlateResult('aprovado', 'PIX', VENDA)).toBe('ambiguous');
+  expect(correlateResult('aprovado', OUTRA, VENDA)).toBe('ambiguous');
+  expect(correlateResult('aprovado', VENDA, VENDA)).toBe('process');
+  // tela sem venda conhecida: comportamento anterior
+  expect(correlateResult('aprovado', '', null)).toBe('process');
+});
+
+test('cancelado/erro sem ordemId continua sendo tratado; de outra venda é ignorado', () => {
+  expect(correlateResult('cancelado', '', VENDA)).toBe('process');
+  expect(correlateResult('erro', '', VENDA)).toBe('process');
+  expect(correlateResult('negado', VENDA, VENDA)).toBe('process');
+  expect(correlateResult('cancelado', OUTRA, VENDA)).toBe('ignore');
+  expect(correlateResult('cancelado', '', VENDA, true)).toBe('ignore'); // retomada sem ordemId
+});
+
+test('falha no insert não bloqueia: nova tentativa registra e depois fica idempotente', async () => {
+  const fail = jest.fn().mockResolvedValue({ error: { message: 'rede' } });
+  expect(await registerPaymentOnce(VENDA, fail)).toBe('failed');
+  expect(isPaymentRegistered(VENDA)).toBe(false);
+
+  const throws = jest.fn().mockRejectedValue(new Error('offline'));
+  expect(await registerPaymentOnce(VENDA, throws)).toBe('failed');
+  expect(isPaymentRegistered(VENDA)).toBe(false);
+
+  const ok = jest.fn().mockResolvedValue({ error: null });
+  expect(await registerPaymentOnce(VENDA, ok)).toBe('inserted');
+  expect(isPaymentRegistered(VENDA)).toBe(true);
+  expect(await registerPaymentOnce(VENDA, ok)).toBe('skipped');
+  expect(ok).toHaveBeenCalledTimes(1);
+  expect(await registerPaymentOnce(OUTRA, ok)).toBe('inserted');
+});
+
+test('callbacks simultâneos fazem um único insert', async () => {
+  let resolve!: (v: { error: unknown }) => void;
+  const insert = jest.fn(() => new Promise<{ error: unknown }>((r) => { resolve = r; }));
+  const p1 = registerPaymentOnce(VENDA, insert);
+  const p2 = registerPaymentOnce(VENDA, insert);
+  expect(await p2).toBe('skipped');
+  resolve({ error: null });
+  expect(await p1).toBe('inserted');
+  expect(insert).toHaveBeenCalledTimes(1);
 });
