@@ -15,7 +15,7 @@ import {
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
-import { claimApproval, classifyLateApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
+import { claimApproval, classifyLateApproval, isKnownApproval, isConfirmed, markConfirmed, markPaymentStarted, recordAmbiguousApproval } from '@/lib/tef/tefGuards';
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
@@ -162,6 +162,13 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       if (isLateApproval) {
         // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"):
         // só propagar se o ordemId devolvido pelo APK provar que é da cobrança aberta.
+        // Entrega repetida de uma aprovação JÁ processada (venda já finalizada): ignorar em silêncio.
+        if (normalizedResult.status === 'aprovado' && isKnownApproval(normalizedResult.nsu, normalizedResult.autorizacao, normalizedResult.confirmationTransactionId)) {
+          logTEFTransaction('tef_init', 'info', '[TEF] Entrega repetida de aprovação já processada — ignorada', {
+            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao, ordemId: normalizedResult.ordemId,
+          });
+          return;
+        }
         const late = normalizedResult.status === 'aprovado' ? classifyLateApproval(normalizedResult.ordemId) : 'expired';
         if (late === 'accept') {
           logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia correlacionada pelo ordemId — propagando', {

@@ -1,6 +1,6 @@
 import {
   isConfirmed, markConfirmed, claimApproval, strongApprovalKey, markPaymentStarted, classifyLateApproval,
-  matchOrdem, setActivePayment, clearActivePayment, shouldResume, registerPaymentOnce, isPaymentRegistered, correlateResult, registerThenFinalize, getRegistrationIssues, isRegistrationInFlight, isRegistrationConfirmed,
+  matchOrdem, setActivePayment, clearActivePayment, shouldResume, registerPaymentOnce, isPaymentRegistered, correlateResult, registerThenFinalize, getRegistrationIssues, isRegistrationInFlight, isRegistrationConfirmed, isKnownApproval,
   LATE_APPROVAL_WINDOW_MS, ACTIVE_TTL,
 } from '../tefGuards';
 
@@ -175,4 +175,13 @@ test('sem venda: não grava e não declara registro confirmado', async () => {
   const out = await registerThenFinalize(null, null, async () => 'ok');
   expect(out.registration).toBe('no_sale');
   expect(isRegistrationConfirmed(out.registration)).toBe(false);
+});
+
+test('aprovação já processada é reconhecida como repetida (sem alerta "fora do tempo")', () => {
+  expect(isKnownApproval('555', 'B5', 'conf-1')).toBe(false);
+  claimApproval('555', 'B5');
+  expect(isKnownApproval('555', 'B5', '')).toBe(true);
+  markConfirmed('conf-9');
+  expect(isKnownApproval('', '', 'conf-9')).toBe(true);
+  expect(isKnownApproval('777', '', 'outro')).toBe(false); // chave fraca e id desconhecido: não presume repetição
 });

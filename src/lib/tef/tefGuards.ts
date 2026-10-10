@@ -118,6 +118,17 @@ export function claimApproval(nsu?: string | null, autorizacao?: string | null, 
   return true;
 }
 
+/**
+ * Aprovação já conhecida (entrega repetida do nativo)? Sem registrar nada.
+ * Verdadeiro se a chave forte (NSU+autorização) já foi processada OU o id de confirmação
+ * já foi confirmado pelo frontend. Usado para não alertar "fora do tempo" à toa.
+ */
+export function isKnownApproval(nsu?: string | null, autorizacao?: string | null, confirmationId?: string | null, now = Date.now()): boolean {
+  const key = strongApprovalKey(nsu, autorizacao);
+  if (key && hasId(APPROVED_KEY, key, now)) return true;
+  return !!confirmationId && isConfirmed(confirmationId, now);
+}
+
 // ─── Correlação resultado ↔ venda da tela ───────────────────────────────────
 /**
  * Decide o que fazer com um resultado TEF numa tela que conhece a venda (paymentKey).
