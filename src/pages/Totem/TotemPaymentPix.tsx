@@ -8,7 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
-import { clearActivePayment, registerPaymentOnce } from '@/lib/tef/tefGuards';
+import { clearActivePayment, registerPaymentOnce, registerThenFinalize } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -114,17 +114,17 @@ const TotemPaymentPix: React.FC = () => {
 
   // Função chamada após comprovante enviado/impresso - finaliza tudo (IGUAL AO CARTÃO)
   // Finalização imediata ao aprovar (não depende da tela de comprovante)
-  const finalizePromiseRef = useRef<Promise<{ resolvedVendaId: string | null; checkoutFinalized: boolean; finishPayload: ServiceCheckoutFinishPayload | null }> | null>(null);
+  const finalizePromiseRef = useRef<Promise<{ resolvedVendaId: string | null; checkoutFinalized: boolean; finishPayload: ServiceCheckoutFinishPayload | null; paymentRegistered?: boolean }> | null>(null);
 
   const runFinalize = useCallback((txData: NonNullable<typeof pendingTransactionData>) => {
     if (finalizePromiseRef.current) return finalizePromiseRef.current;
     const pendingTransactionData = txData;
     finalizePromiseRef.current = (async () => {
-    // Registrar pagamento no servidor imediatamente (rastro da aprovação)
-    // Uma vez por venda: marca só DEPOIS do insert sem erro; falha libera para nova tentativa.
-    // (a finalização no servidor continua sendo chamada — ela é idempotente).
-    if (venda_id) {
-      registerPaymentOnce(venda_id as string, () =>
+    // 1) Registrar pagamento e AGUARDAR o resultado; 2) só então finalizar a venda.
+    // Marca a venda só após insert sem erro; falha fica diagnosticada e permite nova tentativa.
+    const { registration, result } = await registerThenFinalize(
+      venda_id as string | null,
+      () => registerPaymentOnce(venda_id as string, () =>
         supabase.from('totem_payments').insert({
           venda_id,
           amount: Number(total || 0),
@@ -132,11 +132,8 @@ const TotemPaymentPix: React.FC = () => {
           status: 'approved',
           transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
         }),
-      ).then((r) => {
-        // Falha não marca a venda: um novo processamento (ex.: reload/retomada) pode registrar.
-        if (r === 'failed') console.warn('[PIX] totem_payments insert falhou — venda não marcada, nova tentativa permitida');
-      });
-    }
+      ),
+      async () => {
     let resolvedVendaId = venda_id ?? null;
 
     const finishPayload: ServiceCheckoutFinishPayload | null = !isDirect && appointment?.id
@@ -198,6 +195,12 @@ const TotemPaymentPix: React.FC = () => {
 
 
     return { resolvedVendaId, checkoutFinalized, finishPayload };
+      },
+    );
+    if (registration === 'failed' || registration === 'timeout') {
+      console.warn(`[PIX] Registro do pagamento NÃO confirmado (${registration}) — venda não marcada; diagnóstico salvo no tablet`);
+    }
+    return { ...result, paymentRegistered: registration === 'inserted' || registration === 'skipped' };
     })();
     return finalizePromiseRef.current;
   }, [venda_id, session_id, isDirect, selectedProducts, appointment, client, total, navigate, extraServices, resumo, tipAmount, comboDiscount, comboName]);

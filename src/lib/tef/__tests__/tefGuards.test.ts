@@ -1,6 +1,6 @@
 import {
   isConfirmed, markConfirmed, claimApproval, strongApprovalKey, markPaymentStarted, classifyLateApproval,
-  matchOrdem, setActivePayment, clearActivePayment, shouldResume, registerPaymentOnce, isPaymentRegistered, correlateResult,
+  matchOrdem, setActivePayment, clearActivePayment, shouldResume, registerPaymentOnce, isPaymentRegistered, correlateResult, registerThenFinalize, getRegistrationIssues,
   LATE_APPROVAL_WINDOW_MS, ACTIVE_TTL,
 } from '../tefGuards';
 
@@ -99,5 +99,47 @@ test('callbacks simultâneos fazem um único insert', async () => {
   expect(await p2).toBe('skipped');
   resolve({ error: null });
   expect(await p1).toBe('inserted');
+  expect(insert).toHaveBeenCalledTimes(1);
+});
+
+test('finalização só começa depois que o insert do pagamento resolve', async () => {
+  const order: string[] = [];
+  let resolveInsert!: (v: { error: unknown }) => void;
+  const insert = jest.fn(() => new Promise<{ error: unknown }>((r) => { resolveInsert = r; }));
+  const finalize = jest.fn(async (reg: string) => { order.push(`finalize:${reg}`); return 'ok'; });
+  const p = registerThenFinalize(VENDA, () => registerPaymentOnce(VENDA, insert), finalize);
+  await Promise.resolve(); await Promise.resolve();
+  expect(insert).toHaveBeenCalledTimes(1);
+  expect(finalize).not.toHaveBeenCalled();
+  order.push('insert-resolve');
+  resolveInsert({ error: null });
+  const out = await p;
+  expect(order).toEqual(['insert-resolve', 'finalize:inserted']);
+  expect(out.registration).toBe('inserted');
+  expect(getRegistrationIssues()).toHaveLength(0);
+});
+
+test('insert com erro: finaliza mesmo assim, informa não confirmado, salva diagnóstico e permite retry', async () => {
+  const finalize = jest.fn(async () => 'ok');
+  const out = await registerThenFinalize(VENDA, () => registerPaymentOnce(VENDA, async () => ({ error: { message: 'x' } })), finalize);
+  expect(out.registration).toBe('failed');
+  expect(finalize).toHaveBeenCalledWith('failed');
+  expect(getRegistrationIssues()).toHaveLength(1);
+  expect(isPaymentRegistered(VENDA)).toBe(false);
+  expect(await registerPaymentOnce(VENDA, async () => ({ error: null }))).toBe('inserted');
+});
+
+test('insert sem resposta: segue após o limite sem liberar trava (sem insert duplicado)', async () => {
+  jest.useFakeTimers();
+  const insert = jest.fn(() => new Promise<{ error: unknown }>(() => {}));
+  const finalize = jest.fn(async () => 'ok');
+  const p = registerThenFinalize(VENDA, () => registerPaymentOnce(VENDA, insert), finalize, 5000);
+  await Promise.resolve();
+  expect(finalize).not.toHaveBeenCalled();
+  jest.advanceTimersByTime(5000);
+  jest.useRealTimers();
+  const out = await p;
+  expect(out.registration).toBe('timeout');
+  expect(await registerPaymentOnce(VENDA, insert)).toBe('skipped');
   expect(insert).toHaveBeenCalledTimes(1);
 });

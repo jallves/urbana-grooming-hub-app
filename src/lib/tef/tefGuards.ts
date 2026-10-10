@@ -177,6 +177,51 @@ export async function registerPaymentOnce(
   }
 }
 
+// ─── Sequência: registro do pagamento → finalização ────────────────────────
+const REG_FAIL_KEY = 'tef_payment_registration_failures';
+export type RegistrationStatus = 'inserted' | 'skipped' | 'failed' | 'timeout';
+
+/** Guarda no tablet as vendas cujo registro do pagamento não foi confirmado (diagnóstico/recuperação). */
+export function recordRegistrationIssue(data: Record<string, unknown>, now = Date.now()) {
+  try {
+    const l = JSON.parse(localStorage.getItem(REG_FAIL_KEY) || '[]');
+    const arr = Array.isArray(l) ? l : [];
+    arr.push({ ...data, ts: now, at: new Date(now).toISOString() });
+    localStorage.setItem(REG_FAIL_KEY, JSON.stringify(arr.slice(-50)));
+  } catch { /* ignore */ }
+}
+export function getRegistrationIssues(): Array<Record<string, unknown>> {
+  try { const l = JSON.parse(localStorage.getItem(REG_FAIL_KEY) || '[]'); return Array.isArray(l) ? l : []; } catch { return []; }
+}
+
+/**
+ * Aguarda o registro do pagamento ANTES de iniciar a finalização.
+ *  - 'inserted'/'skipped' (já registrado ou em andamento): segue para finalizar.
+ *  - 'failed': registra diagnóstico (venda NÃO marcada → nova tentativa possível) e segue
+ *    para finalizar — a finalização no servidor não depende desse registro e é idempotente;
+ *    o retorno informa que o registro NÃO foi confirmado.
+ *  - 'timeout' (registro não respondeu em `timeoutMs`): o envio continua em andamento com a
+ *    trava ativa (sem duplicar); registra diagnóstico e segue para finalizar.
+ */
+export async function registerThenFinalize<T>(
+  vendaId: string | null | undefined,
+  register: () => Promise<'inserted' | 'skipped' | 'failed'>,
+  finalize: (registration: RegistrationStatus) => Promise<T>,
+  timeoutMs = 5000,
+): Promise<{ registration: RegistrationStatus; result: T }> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const registration: RegistrationStatus = await Promise.race([
+    register().catch(() => 'failed' as const),
+    new Promise<'timeout'>((r) => { timer = setTimeout(() => r('timeout'), timeoutMs); }),
+  ]);
+  if (timer) clearTimeout(timer);
+  if (registration === 'failed' || registration === 'timeout') {
+    recordRegistrationIssue({ vendaId: vendaId || null, motivo: registration });
+  }
+  const result = await finalize(registration);
+  return { registration, result };
+}
+
 // ─── Pagamento ativo (retomada após reload) ────────────────────────────────
 export interface ActivePayment { ts: number; vendaId?: string | null }
 
