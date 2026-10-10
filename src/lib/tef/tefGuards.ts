@@ -287,3 +287,31 @@ export function shouldResume(vendaId?: string | null, now = Date.now()): boolean
   if (!a || now - a.ts >= ACTIVE_TTL) return false;
   return isReliableOrdemId(vendaId) && a.vendaId === vendaId;
 }
+
+// ─── Maquininha ainda com uma cobrança aberta ───────────────────────────────
+/**
+ * Marca que a PayGo recebeu uma cobrança e ainda não devolveu resposta.
+ * O APK descarta a resposta final quando o site chama cancelarPagamento (zera o
+ * callback nativo), deixando a cobrança sem confirmação na PayGo e quebrando as
+ * próximas. Por isso o site não cancela mais no nativo e, enquanto não chegar a
+ * resposta da cobrança anterior, não inicia outra.
+ * Limite de 160 s: o vigia nativo do Pix devolve "cancelado" em 150 s.
+ */
+export const NATIVE_BUSY_KEY = 'tef_native_awaiting';
+export const NATIVE_BUSY_TTL = 160 * 1000;
+export function markNativeAwaiting(ordemId: string, now = Date.now()) {
+  try { localStorage.setItem(NATIVE_BUSY_KEY, JSON.stringify({ ts: now, ordemId })); } catch { /* ignore */ }
+}
+export function clearNativeAwaiting() {
+  try { localStorage.removeItem(NATIVE_BUSY_KEY); } catch { /* ignore */ }
+}
+/** Segundos restantes de espera pela resposta da cobrança anterior (0 = livre). */
+export function nativeAwaitingRemaining(now = Date.now()): number {
+  try {
+    const p = JSON.parse(localStorage.getItem(NATIVE_BUSY_KEY) || 'null');
+    if (!p || typeof p.ts !== 'number') return 0;
+    const left = NATIVE_BUSY_TTL - (now - p.ts);
+    if (left <= 0) { clearNativeAwaiting(); return 0; }
+    return Math.ceil(left / 1000);
+  } catch { return 0; }
+}

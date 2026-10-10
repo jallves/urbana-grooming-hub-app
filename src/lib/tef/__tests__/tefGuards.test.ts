@@ -185,3 +185,21 @@ test('aprovação já processada é reconhecida como repetida (sem alerta "fora 
   expect(isKnownApproval('', '', 'conf-9')).toBe(true);
   expect(isKnownApproval('777', '', 'outro')).toBe(false); // chave fraca e id desconhecido: não presume repetição
 });
+
+describe('maquininha com cobrança anterior aberta', () => {
+  const g = require('../tefGuards');
+  beforeEach(() => localStorage.clear());
+
+  it('bloqueia nova cobrança até a resposta da anterior chegar', () => {
+    g.markNativeAwaiting('venda-aaaaaaaa', 1_000_000);
+    expect(g.nativeAwaitingRemaining(1_000_000 + 60_000)).toBe(100);
+    g.clearNativeAwaiting();
+    expect(g.nativeAwaitingRemaining(1_000_000 + 60_000)).toBe(0);
+  });
+
+  it('libera sozinho depois de 160 segundos sem resposta', () => {
+    g.markNativeAwaiting('venda-aaaaaaaa', 1_000_000);
+    expect(g.nativeAwaitingRemaining(1_000_000 + 160_000)).toBe(0);
+    expect(localStorage.getItem(g.NATIVE_BUSY_KEY)).toBeNull();
+  });
+});
