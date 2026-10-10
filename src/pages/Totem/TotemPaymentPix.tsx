@@ -133,10 +133,8 @@ const TotemPaymentPix: React.FC = () => {
           transaction_id: pendingTransactionData?.nsu || pendingTransactionData?.autorizacao || null,
         }),
       ).then((r) => {
-        if (r === 'failed') {
-          console.warn('[PIX] totem_payments insert falhou — liberado para nova tentativa');
-          finalizePromiseRef.current = null; // permite reprocessar o registro
-        }
+        // Falha não marca a venda: um novo processamento (ex.: reload/retomada) pode registrar.
+        if (r === 'failed') console.warn('[PIX] totem_payments insert falhou — venda não marcada, nova tentativa permitida');
       });
     }
     let resolvedVendaId = venda_id ?? null;
