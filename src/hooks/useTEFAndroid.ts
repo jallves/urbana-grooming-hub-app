@@ -160,11 +160,25 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       // Mantemos apenas o log para diagnóstico.
       const isLateApproval = !processingRef.current && !globalResultCallback;
       if (isLateApproval) {
-        // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"): não descartar
-        if (normalizedResult.status === 'aprovado' && isWithinLateApprovalWindow()) {
-          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia recebida — propagando', {
-            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+        // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"):
+        // só propagar se o ordemId devolvido pelo APK provar que é da cobrança aberta.
+        const late = normalizedResult.status === 'aprovado' ? classifyLateApproval(normalizedResult.ordemId) : 'expired';
+        if (late === 'accept') {
+          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia correlacionada pelo ordemId — propagando', {
+            ordemId: normalizedResult.ordemId, nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
           });
+        } else if (late === 'ambiguous') {
+          // Sem prova de que pertence à venda aberta: NÃO finalizar. Registrar para revisão.
+          recordAmbiguousApproval({
+            motivo: 'aprovacao_tardia_sem_correlacao', ordemId: normalizedResult.ordemId || null,
+            nsu: normalizedResult.nsu || null, autorizacao: normalizedResult.autorizacao || null,
+            valor: normalizedResult.valor ?? null, confirmationTransactionId: normalizedResult.confirmationTransactionId || null,
+          });
+          logTEFTransaction('tef_init', 'error', '[TEF] Aprovação tardia AMBÍGUA — não finalizada, requer revisão', {
+            ordemId: normalizedResult.ordemId, nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+          });
+          toast.warning('Pagamento recebido fora do tempo', { description: 'Chame um atendente para conferir.', duration: 10000 });
+          return;
         } else {
           console.log('[useTEFAndroid] Resultado recebido sem operação ativa — ignorando callbacks de UI.');
           logTEFTransaction('tef_init', 'info', '[TEF] Resultado descartado (sem operação ativa)', {
@@ -186,12 +200,22 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata:', resultKey);
         return;
       }
-      // Aprovação repetida (entrega duplicada do nativo após 3 s): ignorar
-      if (normalizedResult.status === 'aprovado' && !claimApproval(normalizedResult.nsu, normalizedResult.autorizacao)) {
-        logTEFTransaction('tef_init', 'info', '[TEF] Aprovação duplicada ignorada', {
-          nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
-        });
-        return;
+      // Aprovação repetida (entrega duplicada do nativo): só com chave forte (NSU E autorização).
+      // Sem chave forte não deduplicamos aqui (poderiam ser transações distintas); a proteção
+      // fica por conta do processedRef/finalização única por venda.
+      if (normalizedResult.status === 'aprovado') {
+        const claim = claimApproval(normalizedResult.nsu, normalizedResult.autorizacao);
+        if (claim === false) {
+          logTEFTransaction('tef_init', 'info', '[TEF] Aprovação duplicada ignorada', {
+            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+          });
+          return;
+        }
+        if (claim === null) {
+          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação sem NSU+autorização completos — sem deduplicação forte', {
+            nsu: normalizedResult.nsu || null, autorizacao: normalizedResult.autorizacao || null, ordemId: normalizedResult.ordemId || null,
+          });
+        }
       }
       logTEFTransaction('tef_init', 'info', `[TEF] Resultado recebido: ${normalizedResult.status}`, {
         nsu: normalizedResult.nsu, tardio: isLateApproval, codigoErro: normalizedResult.codigoErro,
