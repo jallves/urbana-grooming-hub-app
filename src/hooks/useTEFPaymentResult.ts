@@ -105,22 +105,16 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
   };
 }
 
-const ACTIVE_KEY = 'tef_active_payment';
-const ACTIVE_TTL = 600000; // 10 min
-
 export function useTEFPaymentResult({
   enabled,
   onResult,
   pollingInterval = 500,
-  maxWaitTime = 120000 // 2 minutos
-}: UseTEFPaymentResultOptions) {
+  maxWaitTime = 120000, // 2 minutos
+  paymentKey,
+}: UseTEFPaymentResultOptions & { paymentKey?: string | null }) {
   // Retomar pagamento em andamento se a tela foi recarregada enquanto a PayGo estava aberta
-  const [resumed] = useState(() => {
-    try {
-      const t = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
-      return t > 0 && Date.now() - t < ACTIVE_TTL;
-    } catch { return false; }
-  });
+  // (somente para a MESMA venda — evita atribuir resultado a outra tela/cobrança)
+  const [resumed] = useState(() => shouldResume(paymentKey));
   enabled = enabled || resumed;
   if (maxWaitTime < ACTIVE_TTL) maxWaitTime = ACTIVE_TTL;
   const onResultRef = useRef(onResult);
