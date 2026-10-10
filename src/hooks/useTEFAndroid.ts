@@ -264,7 +264,10 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid]   requiresConfirmation:', normalizedResult.requiresConfirmation);
           console.log('[useTEFAndroid]   needsConfirm (tem ID):', needsConfirm);
           
-          if (needsConfirm) {
+          if (needsConfirm && !claimConfirmation(confId)) {
+            console.log('[useTEFAndroid] ℹ️ Confirmação deste id já enviada pelo frontend — não reenviar');
+            logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação repetida pulada', { confirmationTransactionId: confId });
+          } else if (needsConfirm) {
             try {
               console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
               confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
@@ -649,6 +652,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     }
     
     setIsProcessing(true);
+    markPaymentStarted();
     console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
     logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
       ordemId: params.ordemId,
