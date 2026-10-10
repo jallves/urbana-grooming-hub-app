@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
+import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment } from '@/lib/tef/tefGuards';
 
 interface UseTEFPaymentResultOptions {
   enabled: boolean;
@@ -133,7 +134,7 @@ export function useTEFPaymentResult({
       console.log('[useTEFPaymentResult] ✅ Hook ATIVADO - aguardando resultado do PayGo');
       startTimeRef.current = Date.now();
       processedRef.current = false;
-      try { if (!resumed) localStorage.setItem(ACTIVE_KEY, String(Date.now())); } catch { /* ignore */ }
+      if (!resumed) setActivePayment(paymentKey);
       globalLastProcessedResultKey = null;
     } else {
       console.log('[useTEFPaymentResult] ⏸️ Hook DESATIVADO');
@@ -181,7 +182,7 @@ export function useTEFPaymentResult({
     
     // Limpar storage (sessionStorage E localStorage)
     try {
-      localStorage.removeItem(ACTIVE_KEY);
+      clearActivePayment();
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
       localStorage.removeItem('lastTefResult');
