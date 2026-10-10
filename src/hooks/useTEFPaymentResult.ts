@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useCallback, useState } from 'react';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
+import { ACTIVE_TTL, shouldResume, setActivePayment, clearActivePayment } from '@/lib/tef/tefGuards';
 
 interface UseTEFPaymentResultOptions {
   enabled: boolean;
@@ -105,22 +106,16 @@ function normalizePayGoResult(raw: Record<string, unknown>): TEFResultado {
   };
 }
 
-const ACTIVE_KEY = 'tef_active_payment';
-const ACTIVE_TTL = 600000; // 10 min
-
 export function useTEFPaymentResult({
   enabled,
   onResult,
   pollingInterval = 500,
-  maxWaitTime = 120000 // 2 minutos
-}: UseTEFPaymentResultOptions) {
+  maxWaitTime = 120000, // 2 minutos
+  paymentKey,
+}: UseTEFPaymentResultOptions & { paymentKey?: string | null }) {
   // Retomar pagamento em andamento se a tela foi recarregada enquanto a PayGo estava aberta
-  const [resumed] = useState(() => {
-    try {
-      const t = parseInt(localStorage.getItem(ACTIVE_KEY) || '0', 10);
-      return t > 0 && Date.now() - t < ACTIVE_TTL;
-    } catch { return false; }
-  });
+  // (somente para a MESMA venda — evita atribuir resultado a outra tela/cobrança)
+  const [resumed] = useState(() => shouldResume(paymentKey));
   enabled = enabled || resumed;
   if (maxWaitTime < ACTIVE_TTL) maxWaitTime = ACTIVE_TTL;
   const onResultRef = useRef(onResult);
@@ -139,7 +134,7 @@ export function useTEFPaymentResult({
       console.log('[useTEFPaymentResult] ✅ Hook ATIVADO - aguardando resultado do PayGo');
       startTimeRef.current = Date.now();
       processedRef.current = false;
-      try { if (!resumed) localStorage.setItem(ACTIVE_KEY, String(Date.now())); } catch { /* ignore */ }
+      if (!resumed) setActivePayment(paymentKey);
       globalLastProcessedResultKey = null;
     } else {
       console.log('[useTEFPaymentResult] ⏸️ Hook DESATIVADO');
@@ -187,7 +182,7 @@ export function useTEFPaymentResult({
     
     // Limpar storage (sessionStorage E localStorage)
     try {
-      localStorage.removeItem(ACTIVE_KEY);
+      clearActivePayment();
       sessionStorage.removeItem('lastTefResult');
       sessionStorage.removeItem('lastTefResultTime');
       localStorage.removeItem('lastTefResult');

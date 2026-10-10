@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useTEFAndroid } from '@/hooks/useTEFAndroid';
 import { useInternetHealth } from '@/hooks/useInternetHealth';
+import { clearActivePayment } from '@/lib/tef/tefGuards';
 import { useTEFPaymentResult } from '@/hooks/useTEFPaymentResult';
 import { TEFResultado } from '@/lib/tef/tefAndroidBridge';
 import { QRCodeSVG } from 'qrcode.react';
@@ -272,6 +273,7 @@ const TotemPaymentPix: React.FC = () => {
   // Hook dedicado para receber resultado do PayGo
   useTEFPaymentResult({
     enabled: paymentStarted,
+    paymentKey: (venda_id as string) || null,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000
@@ -396,6 +398,7 @@ const TotemPaymentPix: React.FC = () => {
         toast.error('Erro ao iniciar pagamento PIX', {
           description: 'A bridge TEF retornou falha ao iniciar a transação.'
         });
+        clearActivePayment();
         setProcessing(false);
         setPaymentStarted(false);
       } else {
@@ -445,6 +448,7 @@ const TotemPaymentPix: React.FC = () => {
     }
     setProcessing(false);
     setPaymentStarted(false);
+    clearActivePayment();
     finalizingRef.current = false;
     toast.info('Pagamento cancelado');
     navigate('/totem/checkout', { state: location.state });
@@ -559,7 +563,7 @@ const TotemPaymentPix: React.FC = () => {
                   size="lg"
                   className="border-red-500/50 text-red-400 hover:bg-red-500/10"
                 >
-                  Escolher outra forma de pagamento Pagamento
+                  Escolher outra forma de pagamento
                 </Button>
               </>
             ) : (
@@ -667,6 +671,7 @@ const TotemPaymentPix: React.FC = () => {
                     setError(null);
                     setPaymentStarted(false);
                     setProcessing(false);
+                    clearActivePayment();
                     finalizingRef.current = false;
                   }}
                   size="lg"

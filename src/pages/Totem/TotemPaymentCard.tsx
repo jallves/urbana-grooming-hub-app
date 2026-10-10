@@ -323,6 +323,7 @@ const TotemPaymentCard: React.FC = () => {
   // Importante: Este hook já tem proteções contra duplicatas e múltiplos mecanismos de recepção
   useTEFPaymentResult({
     enabled: paymentStarted && processing,
+    paymentKey: (venda_id as string) || null,
     onResult: handleTEFResult,
     pollingInterval: 500,
     maxWaitTime: 180000 // 3 minutos

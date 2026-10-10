@@ -15,6 +15,7 @@ import {
   TEFResultado,
   TEFPinpadStatus
 } from '@/lib/tef/tefAndroidBridge';
+import { claimApproval, claimConfirmation, isWithinLateApprovalWindow, markPaymentStarted } from '@/lib/tef/tefGuards';
 
 interface UseTEFAndroidOptions {
   onSuccess?: (resultado: TEFResultado) => void;
@@ -157,9 +158,20 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
       // Se NÃO há operação em andamento e também não há promise aguardando,
       // não disparar UI/toasts (ex: chamadas administrativas como resolverPendencia).
       // Mantemos apenas o log para diagnóstico.
-      if (!processingRef.current && !globalResultCallback) {
-        console.log('[useTEFAndroid] Resultado recebido sem operação ativa — ignorando callbacks de UI.');
-        return;
+      const isLateApproval = !processingRef.current && !globalResultCallback;
+      if (isLateApproval) {
+        // Aprovação tardia (ex.: depois do vigia nativo enviar "cancelado"): não descartar
+        if (normalizedResult.status === 'aprovado' && isWithinLateApprovalWindow()) {
+          logTEFTransaction('tef_init', 'warning', '[TEF] Aprovação tardia recebida — propagando', {
+            nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+          });
+        } else {
+          console.log('[useTEFAndroid] Resultado recebido sem operação ativa — ignorando callbacks de UI.');
+          logTEFTransaction('tef_init', 'info', '[TEF] Resultado descartado (sem operação ativa)', {
+            status: normalizedResult.status, nsu: normalizedResult.nsu,
+          });
+          return;
+        }
       }
 
       // Evitar processamento duplicado usando chave mais robusta
@@ -174,6 +186,16 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
         console.log('[useTEFAndroid] ⚠️ Resultado já processado, ignorando duplicata:', resultKey);
         return;
       }
+      // Aprovação repetida (entrega duplicada do nativo após 3 s): ignorar
+      if (normalizedResult.status === 'aprovado' && !claimApproval(normalizedResult.nsu, normalizedResult.autorizacao)) {
+        logTEFTransaction('tef_init', 'info', '[TEF] Aprovação duplicada ignorada', {
+          nsu: normalizedResult.nsu, autorizacao: normalizedResult.autorizacao,
+        });
+        return;
+      }
+      logTEFTransaction('tef_init', 'info', `[TEF] Resultado recebido: ${normalizedResult.status}`, {
+        nsu: normalizedResult.nsu, tardio: isLateApproval, codigoErro: normalizedResult.codigoErro,
+      });
       globalLastProcessedResult = resultKey;
 
       // Limpar chave após 3 segundos para permitir novas transações
@@ -242,7 +264,10 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
           console.log('[useTEFAndroid]   requiresConfirmation:', normalizedResult.requiresConfirmation);
           console.log('[useTEFAndroid]   needsConfirm (tem ID):', needsConfirm);
           
-          if (needsConfirm) {
+          if (needsConfirm && !claimConfirmation(confId)) {
+            console.log('[useTEFAndroid] ℹ️ Confirmação deste id já enviada pelo frontend — não reenviar');
+            logTEFTransaction('checkout_servico', 'info', '[TEF] Confirmação repetida pulada', { confirmationTransactionId: confId });
+          } else if (needsConfirm) {
             try {
               console.log('[useTEFAndroid] ✅ Enviando confirmação via frontend (safety net)');
               confirmarTransacaoTEF(confId, 'CONFIRMADO_AUTOMATICO');
@@ -627,6 +652,7 @@ export function useTEFAndroid(options: UseTEFAndroidOptions = {}): UseTEFAndroid
     }
     
     setIsProcessing(true);
+    markPaymentStarted();
     console.log('[useTEFAndroid] 🚀 Iniciando pagamento TEF:', params);
     logTEFTransaction('tef_init', 'info', `[TEF] Iniciando pagamento: ${params.tipo} R$${params.valor}`, {
       ordemId: params.ordemId,
