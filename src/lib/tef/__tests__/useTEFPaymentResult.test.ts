@@ -36,3 +36,12 @@ test('tela ativa: cancelamento sem ordemId continua chegando à tela', () => {
   expect(onResult).toHaveBeenCalledTimes(1);
   expect(onResult.mock.calls[0][0].status).toBe('cancelado');
 });
+
+test('aprovação antiga guardada no tablet (de antes deste pagamento) NÃO finaliza a venda', () => {
+  const old = Date.now() - 3 * 60 * 1000; // 3 minutos antes
+  localStorage.setItem('lastTefResult', JSON.stringify({ status: 'aprovado', ordemId: VENDA, nsu: '333', autorizacao: 'A3', timestamp: old }));
+  localStorage.setItem('lastTefResultTime', String(old));
+  const onResult = jest.fn();
+  renderHook(() => useTEFPaymentResult({ enabled: true, onResult, paymentKey: VENDA }));
+  expect(onResult).not.toHaveBeenCalled();
+});
