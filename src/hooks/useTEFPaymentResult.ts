@@ -306,8 +306,10 @@ export function useTEFPaymentResult({
         if (storedResult && storedTime) {
           const resultAge = Date.now() - parseInt(storedTime, 10);
           
-          // Aceitar resultados dos últimos 60 segundos
-          if (resultAge < 600000) {
+          // Só aceitar resultado gravado DEPOIS que este pagamento começou.
+          // Um resultado antigo (ex.: aprovação de outra venda minutos antes) nunca
+          // pode ser atribuído a esta cobrança.
+          if (resultAge < 600000 && parseInt(storedTime, 10) >= startTimeRef.current) {
             console.log('[useTEFPaymentResult] 📞 Storage POLLING encontrou resultado');
             console.log('[useTEFPaymentResult] Idade do resultado:', resultAge, 'ms');
             
