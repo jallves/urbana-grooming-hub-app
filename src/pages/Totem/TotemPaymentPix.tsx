@@ -381,6 +381,21 @@ const TotemPaymentPix: React.FC = () => {
     setError(null);
     finalizingRef.current = false;
 
+    // Sem o número da venda não dá para ligar a resposta da maquininha a esta venda:
+    // um resultado de outra cobrança poderia finalizar este checkout sem pagamento.
+    if (!venda_id) {
+      toast.error('Venda ainda não preparada', { description: 'Volte e escolha Pix novamente.' });
+      return;
+    }
+
+    // Descartar qualquer resultado antigo guardado no tablet
+    try {
+      sessionStorage.removeItem('lastTefResult');
+      sessionStorage.removeItem('lastTefResultTime');
+      localStorage.removeItem('lastTefResult');
+      localStorage.removeItem('lastTefResultTime');
+    } catch { /* ignore */ }
+
     // Checar diretamente o objeto injetado pelo WebView
     const hasNativeBridge = typeof window !== 'undefined' && typeof (window as any).TEF !== 'undefined';
 

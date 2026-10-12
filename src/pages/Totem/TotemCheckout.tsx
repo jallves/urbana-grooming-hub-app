@@ -602,11 +602,38 @@ const TotemCheckout: React.FC = () => {
     });
   };
 
-  const handlePayment = (method: 'pix' | 'card' | 'cash') => {
+  const handlePayment = async (method: 'pix' | 'card' | 'cash') => {
     if (!resumo) return;
     setProcessing(true);
 
-    const currentVendaId = vendaIdRef.current ?? vendaId;
+    let currentVendaId = vendaIdRef.current ?? vendaId;
+    // A venda precisa existir antes do pagamento: é ela que liga a resposta da
+    // maquininha a este checkout. Se o cliente tocou rápido, criar/obter agora.
+    if (!currentVendaId) {
+      try {
+        const { data } = await supabase.functions.invoke('totem-checkout', {
+          body: {
+            action: 'start',
+            agendamento_id: appointment.id,
+            session_id: session.id,
+            extras: extraServices.map((s: any) => ({ id: s.id, nome: s.nome, preco: s.preco, tipo: 'SERVICO_EXTRA' })),
+            products: productCart.map((p: any) => ({ id: p.id, nome: p.nome, preco: p.preco, quantidade: p.quantidade })),
+          },
+        });
+        if (data?.venda_id) {
+          currentVendaId = data.venda_id;
+          vendaIdRef.current = data.venda_id;
+          setVendaId(data.venda_id);
+        }
+      } catch (e) {
+        console.error('[TotemCheckout] Erro ao preparar venda antes do pagamento:', e);
+      }
+      if (!currentVendaId) {
+        toast.error('Não foi possível preparar a venda', { description: 'Tente novamente em alguns segundos.' });
+        setProcessing(false);
+        return;
+      }
+    }
 
     const paymentState = {
       venda_id: currentVendaId,
