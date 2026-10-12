@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Navigate } from 'react-router-dom';
+import { canAccessClientPlans } from '@/lib/clientPlansAccess';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { usePainelClienteAuth } from '@/contexts/PainelClienteAuthContext';
@@ -147,4 +148,11 @@ const PainelClientePlanos: React.FC = () => {
   );
 };
 
-export default PainelClientePlanos;
+const PainelClientePlanosGuard: React.FC = () => {
+  const { cliente } = usePainelClienteAuth() as any;
+  if (cliente && !canAccessClientPlans(cliente.email)) return <Navigate to="/painel-cliente/dashboard" replace />;
+  if (!cliente) return null;
+  return <PainelClientePlanos />;
+};
+
+export default PainelClientePlanosGuard;
