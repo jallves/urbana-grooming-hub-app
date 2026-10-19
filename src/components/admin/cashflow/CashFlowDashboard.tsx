@@ -79,7 +79,7 @@ const CashFlowDashboard: React.FC = () => {
       
       return data || [];
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   // Buscar SALDO TOTAL (tudo que entrou - tudo que saiu desde o início)
@@ -112,7 +112,7 @@ const CashFlowDashboard: React.FC = () => {
         balance: totalRevenue - totalExpense
       };
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   // Buscar dados do mês anterior ao selecionado para comparação

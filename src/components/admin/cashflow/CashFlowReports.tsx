@@ -62,7 +62,7 @@ const CashFlowReports: React.FC = () => {
 
       return months;
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   // Dados anuais consolidados
@@ -159,7 +159,7 @@ const CashFlowReports: React.FC = () => {
         serviceRevenue: services.reduce((sum, s) => sum + Number(s.net_amount), 0),
       };
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   // Dados detalhados de comissões por barbeiro

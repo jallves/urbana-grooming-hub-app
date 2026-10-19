@@ -88,7 +88,7 @@ const TopBarbersWidget: React.FC<TopBarbersWidgetProps> = ({ month, year }) => {
         .sort((a, b) => b.total_revenue - a.total_revenue)
         .slice(0, 5);
     },
-    refetchInterval: 300000,
+    refetchInterval: 600000,
   });
 
   if (isLoading) {

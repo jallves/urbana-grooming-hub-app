@@ -38,7 +38,7 @@ const CashRegister: React.FC = () => {
       if (error) throw error;
       return data;
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   // Fetch previous session (for carryover balance)
@@ -70,7 +70,7 @@ const CashRegister: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // Fetch today's financial movements (income/expense)
@@ -118,7 +118,7 @@ const CashRegister: React.FC = () => {
 
       return { income, expense, net: income - expense };
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   const isOpen = todaySession?.status === 'open';

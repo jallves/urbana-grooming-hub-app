@@ -81,7 +81,7 @@ const CashFlowTransactions: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // Fetch barber_commissions
@@ -98,7 +98,7 @@ const CashFlowTransactions: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // Fetch contas_pagar
@@ -115,7 +115,7 @@ const CashFlowTransactions: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   // Fetch contas_receber
@@ -132,7 +132,7 @@ const CashFlowTransactions: React.FC = () => {
       if (error) throw error;
       return data || [];
     },
-    refetchInterval: 15000,
+    refetchInterval: 60000,
   });
 
   const isLoading = loadingFR || loadingComm || loadingCP || loadingCR;
