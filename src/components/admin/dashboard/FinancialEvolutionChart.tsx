@@ -51,7 +51,7 @@ const FinancialEvolutionChart: React.FC = () => {
 
       return months;
     },
-    refetchInterval: 300000,
+    refetchInterval: 600000,
   });
 
   if (isLoading) {

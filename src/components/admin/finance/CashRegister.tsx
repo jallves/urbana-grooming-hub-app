@@ -56,7 +56,7 @@ const CashRegister: React.FC = () => {
         status: data.status as 'open' | 'closed'
       };
     },
-    refetchInterval: 30000, // Atualiza a cada 30 segundos
+    refetchInterval: 60000, // Atualiza a cada 30 segundos
   });
 
   const { data: todayTransactions } = useQuery({

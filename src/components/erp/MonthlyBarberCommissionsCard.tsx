@@ -88,7 +88,7 @@ const MonthlyBarberCommissionsCard: React.FC = () => {
 
       return Object.values(map).sort((a, b) => b.total - a.total);
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const totals = useMemo(() => {

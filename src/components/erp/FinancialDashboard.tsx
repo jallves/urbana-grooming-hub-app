@@ -92,7 +92,7 @@ const FinancialDashboard: React.FC = () => {
         balance: totalRevenue - totalExpense
       };
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
   
   // Query para dados anuais dos cards superiores
@@ -140,7 +140,7 @@ const FinancialDashboard: React.FC = () => {
         net_profit
       };
     },
-    refetchInterval: 30000,
+    refetchInterval: 60000,
   });
 
   const { data: metrics, error } = useQuery({
@@ -223,7 +223,7 @@ const FinancialDashboard: React.FC = () => {
         year: year_metrics
       };
     },
-    refetchInterval: 30000, // Atualizar a cada 30 segundos
+    refetchInterval: 60000, // Atualizar a cada 30 segundos
     retry: 3,
     retryDelay: 1000
   });

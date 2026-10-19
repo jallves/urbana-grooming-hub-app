@@ -43,7 +43,7 @@ const CategoryChart: React.FC = () => {
 
       return chartData.sort((a, b) => b.value - a.value);
     },
-    refetchInterval: 10000, // Atualizar a cada 10 segundos
+    refetchInterval: 60000, // Atualizar a cada 10 segundos
   });
 
   // Cores vibrantes para categorias

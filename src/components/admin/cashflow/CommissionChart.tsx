@@ -53,7 +53,7 @@ const CommissionChart: React.FC<CommissionChartProps> = ({ startDate, endDate })
 
       return chartData.sort((a, b) => b.value - a.value);
     },
-    refetchInterval: 10000,
+    refetchInterval: 60000,
   });
 
   if (isLoading) {
