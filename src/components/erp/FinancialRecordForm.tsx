@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -23,12 +23,24 @@ const formSchema = z.object({
   gross_amount: z.number().min(0.01, 'Valor deve ser maior que zero'),
   discount_amount: z.number().min(0).default(0),
   tax_amount: z.number().min(0).default(0),
-  description: z.string().min(1, 'Descrição é obrigatória'),
+  description: z.string().optional(),
   transaction_date: z.date(),
   status: z.enum(['pending', 'completed', 'cancelled']),
   payment_method: z.string().optional(),
   notes: z.string().optional(),
   barber_name: z.string().optional(),
+  client_id: z.string().optional(),
+  client_name: z.string().optional(),
+  client_payment_method: z.string().optional(),
+}).superRefine((v, ctx) => {
+  if (v.category === 'gorjeta') {
+    if (!v.barber_name) ctx.addIssue({ code: 'custom', path: ['barber_name'], message: 'Selecione o barbeiro' });
+    if (!v.client_id) ctx.addIssue({ code: 'custom', path: ['client_id'], message: 'Selecione o cliente' });
+    if (!v.client_payment_method) ctx.addIssue({ code: 'custom', path: ['client_payment_method'], message: 'Informe como o cliente pagou' });
+    if (!v.payment_method) ctx.addIssue({ code: 'custom', path: ['payment_method'], message: 'Informe como a barbearia vai pagar' });
+  } else if (!v.description || !v.description.trim()) {
+    ctx.addIssue({ code: 'custom', path: ['description'], message: 'Descrição é obrigatória' });
+  }
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -118,6 +130,24 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
 
   const transactionType = form.watch('transaction_type');
   const categoryValue = form.watch('category');
+  const isGorjeta = categoryValue === 'gorjeta';
+  const [clientSearch, setClientSearch] = useState('');
+
+  const { data: clients = [] } = useQuery({
+    queryKey: ['form-clients-search', clientSearch],
+    queryFn: async () => {
+      let q = supabase
+        .from('painel_clientes')
+        .select('id, nome, telefone, whatsapp')
+        .order('nome')
+        .limit(50);
+      const s = clientSearch.trim();
+      if (s) q = q.or(`nome.ilike.%${s}%,telefone.ilike.%${s}%,whatsapp.ilike.%${s}%`);
+      const { data } = await q;
+      return (data || []) as Array<{ id: string; nome: string; telefone: string | null; whatsapp: string | null }>;
+    },
+    enabled: open && isGorjeta,
+  });
   const grossAmount = form.watch('gross_amount') || 0;
   const discountAmount = form.watch('discount_amount') || 0;
   const taxAmount = form.watch('tax_amount') || 0;
@@ -129,6 +159,7 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
 
   const categories: Record<'expense' | 'commission', Array<{ value: string; label: string }>> = {
     expense: [
+      { value: 'gorjeta', label: 'Gorjeta (repassar ao barbeiro)' },
       { value: 'vale', label: 'Vale (Adiantamento de Funcionário)' },
       { value: 'supplies', label: 'Insumos' },
       { value: 'rent', label: 'Aluguel' },
@@ -137,13 +168,14 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
       { value: 'other', label: 'Outros' },
     ],
     commission: [
+      { value: 'gorjeta', label: 'Gorjeta (repassar ao barbeiro)' },
       { value: 'staff_payments', label: 'Pagamento de Funcionários' },
       { value: 'vale', label: 'Vale (Adiantamento de Funcionário)' },
     ],
   };
 
   // Categorias que exigem seleção de barbeiro
-  const requiresBarber = (cat: string) => ['vale', 'staff_payments'].includes(cat);
+  const requiresBarber = (cat: string) => ['vale', 'staff_payments', 'gorjeta'].includes(cat);
 
   const paymentMethods = [
     { value: 'cash', label: 'Dinheiro' },
@@ -264,12 +296,82 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                       </SelectContent>
                     </Select>
                     <p className="text-xs text-muted-foreground mt-1">
-                      Vincula este lançamento ao barbeiro para descontar do total a pagar de comissões.
+                      {isGorjeta
+                        ? 'A gorjeta aparecerá no histórico de comissões deste barbeiro.'
+                        : 'Vincula este lançamento ao barbeiro para descontar do total a pagar de comissões.'}
                     </p>
                     <FormMessage />
                   </FormItem>
                 )}
               />
+            )}
+
+            {isGorjeta && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                <FormField
+                  control={form.control}
+                  name="client_id"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">
+                        Cliente que deu a gorjeta <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Input
+                        value={clientSearch}
+                        onChange={(e) => setClientSearch(e.target.value)}
+                        placeholder="Buscar por nome ou telefone"
+                        className="h-9 text-sm mb-2"
+                      />
+                      <Select
+                        onValueChange={(v) => {
+                          field.onChange(v);
+                          const c = clients.find((x) => x.id === v);
+                          form.setValue('client_name', c?.nome || '');
+                        }}
+                        value={field.value || ''}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Selecione o cliente" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {clients.map((c) => (
+                            <SelectItem key={c.id} value={c.id}>
+                              {c.nome}{c.whatsapp || c.telefone ? ` — ${c.whatsapp || c.telefone}` : ''}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={form.control}
+                  name="client_payment_method"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">
+                        Como o cliente pagou <span className="text-destructive">*</span>
+                      </FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                        <FormControl>
+                          <SelectTrigger className="h-9 text-sm">
+                            <SelectValue placeholder="Selecione" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {paymentMethods.map((m) => (
+                            <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
             )}
 
             <FormField
@@ -393,7 +495,9 @@ const FinancialRecordForm: React.FC<FinancialRecordFormProps> = ({
                 name="payment_method"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm">Forma de Pagamento</FormLabel>
+                    <FormLabel className="text-sm">
+                      {isGorjeta ? 'Como a barbearia vai pagar o barbeiro' : 'Forma de Pagamento'}
+                    </FormLabel>
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl>
                         <SelectTrigger className="h-9 text-sm">
