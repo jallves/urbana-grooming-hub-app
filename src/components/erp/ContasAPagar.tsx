@@ -293,8 +293,29 @@ export const ContasAPagar: React.FC = () => {
       const initialStatus = isVale ? 'pendente' : (values.status === 'completed' ? 'pago' : 'pendente');
       const initialPaymentDate = isVale ? null : (values.status === 'completed' ? format(new Date(), 'yyyy-MM-dd') : null);
 
+      const isGorjeta = values.category === 'gorjeta';
+      const pmLabel: Record<string, string> = { cash: 'Dinheiro', debit: 'Débito', credit: 'Crédito', pix: 'PIX', transfer: 'Transferência' };
+      let descricao = values.description;
+      let observacoes = values.notes || null;
+      let barberId: string | null = null;
+      if (isGorjeta) {
+        const clientPm = pmLabel[values.client_payment_method] || values.client_payment_method;
+        descricao = values.description?.trim()
+          || `Gorjeta - ${values.barber_name} (cliente: ${values.client_name || '-'})`;
+        observacoes = [
+          `Gorjeta do cliente: ${values.client_name || '-'}`,
+          `Cliente pagou via: ${clientPm}`,
+          `Barbearia vai pagar via: ${pmLabel[values.payment_method] || values.payment_method}`,
+          values.notes ? `Obs: ${values.notes}` : null,
+        ].filter(Boolean).join(' | ');
+        const { data: bb, error: bbErr } = await supabase
+          .from('painel_barbeiros').select('id').eq('nome', values.barber_name).maybeSingle();
+        if (bbErr || !bb?.id) throw new Error('Barbeiro não encontrado');
+        barberId = bb.id;
+      }
+
       const { data: inserted, error } = await supabase.from('contas_pagar').insert({
-        descricao: values.description,
+        descricao,
         valor: valorFinal,
         data_vencimento: format(values.transaction_date, 'yyyy-MM-dd'),
         data_pagamento: initialPaymentDate,
@@ -302,10 +323,41 @@ export const ContasAPagar: React.FC = () => {
         fornecedor: values.barber_name || null,
         status: initialStatus,
         forma_pagamento: values.payment_method || null,
-        observacoes: values.notes || null,
+        observacoes,
       }).select('id').single();
 
       if (error) throw error;
+
+      // 💈 Gorjeta: registra no histórico do barbeiro e avisa
+      if (isGorjeta && barberId) {
+        const paid = initialStatus === 'pago';
+        const { error: cErr } = await supabase.from('barber_commissions').insert({
+          barber_id: barberId,
+          barber_name: values.barber_name,
+          valor: valorFinal,
+          amount: valorFinal,
+          commission_rate: 100,
+          tipo: 'gorjeta',
+          status: paid ? 'paid' : 'pending',
+          data_pagamento: paid ? initialPaymentDate : null,
+          payment_date: paid ? initialPaymentDate : null,
+          appointment_source: 'manual',
+        });
+        if (cErr) {
+          await supabase.from('contas_pagar').delete().eq('id', inserted.id);
+          throw new Error(`Falha ao registrar gorjeta no histórico do barbeiro: ${cErr.message}`);
+        }
+        supabase.functions.invoke('send-push', {
+          body: {
+            target: { barbeiro_id: barberId },
+            payload: {
+              title: '💰 Nova gorjeta registrada',
+              body: `${values.client_name || 'Um cliente'} deixou R$ ${Number(valorFinal).toFixed(2).replace('.', ',')} de gorjeta para você.`,
+              url: '/barbeiro/comissoes',
+            },
+          },
+        }).catch(() => {});
+      }
 
       // 🔁 Se for vale com fornecedor (barbeiro), aciona o abatimento automático em comissões
       if (isVale && values.barber_name && inserted?.id) {
