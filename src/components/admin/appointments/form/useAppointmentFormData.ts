@@ -168,5 +168,6 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     staffMembers: staffMembers || [],
     clients: clients || [],
     selectedService,
+    appointmentStatus: appointmentData?.status ?? null,
   };
 };
