@@ -44,7 +44,10 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
     queryKey: ['appointment', appointmentId],
     queryFn: async () => {
       if (!appointmentId) return null;
-      
+
+      // A lista do admin usa ids com prefixo "painel_"; remover antes de consultar
+      const realId = appointmentId.replace(/^painel_/, '');
+
       const { data, error } = await supabase
         .from('painel_agendamentos')
         .select(`
@@ -53,7 +56,7 @@ export const useAppointmentFormData = (appointmentId?: string, defaultDate: Date
           servico:painel_servicos(*),
           barbeiro:painel_barbeiros(*)
         `)
-        .eq('id', appointmentId)
+        .eq('id', realId)
         .single();
       
       if (error) throw new Error(error.message);
