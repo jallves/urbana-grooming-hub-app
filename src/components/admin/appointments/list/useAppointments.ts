@@ -72,12 +72,12 @@ export const useAppointments = () => {
           throw error;
         }
         
-        // Converter formato
+        // Converter formato (id com prefixo painel_ para edição/exclusão na tabela correta)
         regularAppointments = (data || []).map((appt: any) => {
           const startTime = new Date(`${appt.data}T${appt.hora}`);
           const endTime = new Date(startTime.getTime() + (appt.servico?.duracao || 60) * 60000);
           return {
-            id: appt.id,
+            id: `painel_${appt.id}`,
             client_id: appt.cliente_id,
             service_id: appt.servico_id,
             staff_id: appt.barbeiro?.staff_id || null,
