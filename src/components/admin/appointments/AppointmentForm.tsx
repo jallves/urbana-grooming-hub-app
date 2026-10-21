@@ -2,6 +2,7 @@
 import React from 'react';
 import { DialogContent, DialogHeader, DialogTitle, Dialog } from "@/components/ui/dialog";
 import { Form } from "@/components/ui/form";
+import { AlertTriangle, Info } from 'lucide-react';
 import { useAppointmentFormData } from './form/useAppointmentFormData';
 import { useAppointmentFormSubmit } from './form/useAppointmentFormSubmit';
 import ClientSelect from './form/ClientSelect';
@@ -31,7 +32,8 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
     services,
     staffMembers,
     clients,
-    selectedService
+    selectedService,
+    appointmentStatus
   } = useAppointmentFormData(appointmentId, defaultDate);
   
   const { handleSubmit, isLoading: isSubmitLoading } = useAppointmentFormSubmit({
