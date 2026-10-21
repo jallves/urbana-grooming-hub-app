@@ -1,2 +1,3 @@
 - Subscription credits are consumed only via the `consume_subscription_credits` RPC and subscription activation rules live in the `enforce_subscription_rules` trigger — so ownership, balance, expiry and renewal can't be bypassed from any client (totem, panel, admin).
 - TEF/PayGo frontend guards (late approval window, one confirmation per id, sale-bound resume) live in src/lib/tef/tefGuards.ts — so duplicate native deliveries and the native Pix watchdog can't drop or double-process results without an APK rebuild.
+- Appointment RLS must use `private.is_this_barber(barbeiro_id)` for barber ownership instead of querying `painel_barbeiros` directly — its client-history policy reads appointments and would create a recursive policy cycle.
