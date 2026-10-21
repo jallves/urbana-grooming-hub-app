@@ -573,9 +573,16 @@ export const useClientAppointments = () => {
       
       toast.success('✅ Agendamento atualizado com sucesso!');
       return true;
-    } catch (error) {
+    } catch (error: any) {
       console.error('Erro ao atualizar agendamento:', error);
-      toast.error('Erro ao atualizar agendamento');
+      const msg: string = error?.message || '';
+      let description = msg || 'Não foi possível salvar. Tente novamente.';
+      if (msg.includes('Este horário já está ocupado')) {
+        description = 'Este horário já está ocupado para este barbeiro. Escolha outro horário ou marque como encaixe.';
+      } else if (msg.includes('Já existe um encaixe')) {
+        description = 'Já existe um encaixe neste horário para este barbeiro. Escolha outro horário.';
+      }
+      toast.error('Erro ao atualizar agendamento', { description });
       return false;
     }
   }, [fetchAppointments]);

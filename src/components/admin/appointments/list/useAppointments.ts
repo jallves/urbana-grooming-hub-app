@@ -72,12 +72,12 @@ export const useAppointments = () => {
           throw error;
         }
         
-        // Converter formato
+        // Converter formato (id com prefixo painel_ para edição/exclusão na tabela correta)
         regularAppointments = (data || []).map((appt: any) => {
           const startTime = new Date(`${appt.data}T${appt.hora}`);
           const endTime = new Date(startTime.getTime() + (appt.servico?.duracao || 60) * 60000);
           return {
-            id: appt.id,
+            id: `painel_${appt.id}`,
             client_id: appt.cliente_id,
             service_id: appt.servico_id,
             staff_id: appt.barbeiro?.staff_id || null,
@@ -94,93 +94,11 @@ export const useAppointments = () => {
         });
       }
 
-      // Buscar agendamentos do painel do cliente (apenas para admins)
-      let painelAppointments: Appointment[] = [];
-      if (isAdmin) {
-        const { data: painelData, error: painelError } = await supabase
-          .from('painel_agendamentos')
-          .select(`
-            *,
-            painel_clientes!inner(nome, email, whatsapp),
-            painel_barbeiros!inner(nome, email, telefone),
-            painel_servicos!inner(nome, preco, duracao)
-          `)
-          .order('data', { ascending: true });
-
-        if (painelError) {
-          console.error('Error fetching painel appointments:', painelError);
-        } else {
-          // Converter agendamentos do painel para o formato padrão
-          painelAppointments = (painelData || []).map((painel: any) => {
-            const startTime = new Date(`${painel.data}T${painel.hora}`);
-            const endTime = new Date(startTime.getTime() + (painel.painel_servicos.duracao * 60000));
-
-            return {
-              id: `painel_${painel.id}`,
-              client_id: painel.cliente_id,
-              service_id: painel.servico_id,
-              staff_id: painel.barbeiro_id,
-              start_time: startTime.toISOString(),
-              end_time: endTime.toISOString(),
-              status: painel.status === 'cancelado' ? 'cancelled' : 
-                      painel.status === 'confirmado' ? 'confirmed' : 
-                      painel.status === 'concluido' ? 'completed' :
-                      painel.status === 'ausente' ? 'ausente' : 'scheduled',
-              notes: null,
-              created_at: painel.created_at,
-              updated_at: painel.updated_at,
-              coupon_code: null,
-              discount_amount: null,
-              client: {
-                id: painel.cliente_id,
-                name: painel.painel_clientes.nome,
-                email: painel.painel_clientes.email,
-                phone: painel.painel_clientes.whatsapp,
-                whatsapp: painel.painel_clientes.whatsapp,
-                birth_date: null,
-                created_at: painel.created_at,
-                updated_at: painel.updated_at,
-                password_hash: null,
-                email_verified: null,
-                email_verification_token: null,
-                email_verification_expires: null
-              },
-              service: {
-                id: painel.servico_id,
-                name: painel.painel_servicos.nome,
-                price: painel.painel_servicos.preco,
-                duration: painel.painel_servicos.duracao,
-                description: null,
-                is_active: true,
-                created_at: painel.created_at,
-                updated_at: painel.updated_at
-              },
-              staff: {
-                id: painel.barbeiro_id,
-                name: painel.painel_barbeiros.nome,
-                email: painel.painel_barbeiros.email,
-                phone: painel.painel_barbeiros.telefone,
-                role: 'barber',
-                is_active: true,
-                specialties: null,
-                experience: null,
-                image_url: null,
-                commission_rate: null,
-                created_at: painel.created_at,
-                updated_at: painel.updated_at
-              }
-            } as Appointment;
-          });
-        }
-      }
-
       // Combinar e ordenar todos os agendamentos
-      const allAppointments = [...regularAppointments, ...painelAppointments]
+      const allAppointments = [...regularAppointments]
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       console.log('📊 [Admin] Agendamentos carregados:', {
-        regular: regularAppointments.length,
-        painel: painelAppointments.length,
         total: allAppointments.length,
         timestamp: new Date().toISOString()
       });

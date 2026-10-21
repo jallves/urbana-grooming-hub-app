@@ -70,20 +70,26 @@ export const useAppointmentFormSubmit = ({
       console.log('Converted startDate:', startDate);
       console.log('Start time ISO:', startTimeISO);
       
-      // Validar disponibilidade antes de salvar (admin pode agendar retroativo)
-      const validation = await validateAppointment(
-        data.staff_id,
-        data.date,
-        data.time,
-        selectedService.duration,
-        appointmentId, // Excluir o próprio agendamento se for edição
-        { skipPastValidation: true }
-      );
+      // Validar disponibilidade antes de salvar (admin pode agendar retroativo).
+      // Na EDIÇÃO, a checagem RPC não consegue excluir o próprio agendamento e
+      // marcaria o horário atual como ocupado; o gatilho do banco
+      // (prevent_appointment_overlap) já valida conflitos excluindo o próprio
+      // registro, então a validação RPC só roda na criação.
+      if (!appointmentId) {
+        const validation = await validateAppointment(
+          data.staff_id,
+          data.date,
+          data.time,
+          selectedService.duration,
+          undefined,
+          { skipPastValidation: true }
+        );
 
-      if (!validation.valid) {
-        // Erro já foi mostrado pelo hook
-        setIsLoading(false);
-        return;
+        if (!validation.valid) {
+          // Erro já foi mostrado pelo hook
+          setIsLoading(false);
+          return;
+        }
       }
       
       // Insert or update appointment
@@ -113,11 +119,11 @@ export const useAppointmentFormSubmit = ({
           const day = String(startDate.getDate()).padStart(2, '0');
           const dataLocal = `${year}-${month}-${day}`;
 
-          // Buscar barbeiro_id da tabela painel_barbeiros
+          // O formulário usa o id do painel_barbeiros diretamente
           const { data: staffData } = await supabase
             .from('painel_barbeiros')
             .select('id')
-            .eq('staff_id', data.staff_id)
+            .eq('id', data.staff_id)
             .maybeSingle();
 
           if (!staffData) {
@@ -222,7 +228,7 @@ export const useAppointmentFormSubmit = ({
         const { data: staffData } = await supabase
           .from('painel_barbeiros')
           .select('id')
-          .eq('staff_id', data.staff_id)
+          .eq('id', data.staff_id)
           .single();
 
         if (clientData && staffData) {
