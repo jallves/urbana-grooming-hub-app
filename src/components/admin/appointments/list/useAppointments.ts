@@ -99,8 +99,6 @@ export const useAppointments = () => {
         .sort((a, b) => new Date(a.start_time).getTime() - new Date(b.start_time).getTime());
 
       console.log('📊 [Admin] Agendamentos carregados:', {
-        regular: regularAppointments.length,
-        painel: painelAppointments.length,
         total: allAppointments.length,
         timestamp: new Date().toISOString()
       });
