@@ -77,6 +77,29 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
         
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {isEditingUnfinished && (
+              <div className="flex items-start gap-2 rounded-lg border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+                <Info className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>
+                  <span className="font-semibold">Atenção:</span> este agendamento ainda não foi finalizado
+                  (status atual: <span className="font-medium">{appointmentStatus}</span>). As alterações de
+                  data, horário, serviço ou profissional serão aplicadas imediatamente e o cliente será
+                  notificado por e-mail.
+                </p>
+              </div>
+            )}
+
+            {isRetroactive && (
+              <div className="flex items-start gap-2 rounded-lg border border-red-300 bg-red-50 p-3 text-sm text-red-900">
+                <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+                <p>
+                  <span className="font-semibold">Data/horário retroativo:</span> você está
+                  {appointmentId ? ' movendo este agendamento' : ' criando um agendamento'} para uma data ou
+                  horário que já passou. Confira se é isso mesmo que deseja antes de salvar.
+                </p>
+              </div>
+            )}
+
             <ClientSelect clients={clients} form={form} />
             
             <ServiceSelect services={services} form={form} />
