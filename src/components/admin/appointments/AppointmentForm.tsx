@@ -50,6 +50,21 @@ const AppointmentForm: React.FC<AppointmentFormProps> = ({
   const selectedDate = form.watch('date');
   const selectedTime = form.watch('time');
   const selectedStaffId = form.watch('staff_id');
+
+  // Avisos para o administrador
+  const isFinishedStatus = ['concluido', 'finalizado', 'cancelado', 'ausente', 'faltou'].includes(
+    (appointmentStatus || '').toLowerCase()
+  );
+  const isEditingUnfinished = !!appointmentId && !!appointmentStatus && !isFinishedStatus;
+
+  const isRetroactive = React.useMemo(() => {
+    if (!selectedDate || !selectedTime) return false;
+    const [h, m] = String(selectedTime).split(':').map(Number);
+    if (Number.isNaN(h) || Number.isNaN(m)) return false;
+    const dt = new Date(selectedDate);
+    dt.setHours(h, m, 0, 0);
+    return dt.getTime() < Date.now();
+  }, [selectedDate, selectedTime]);
   
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
